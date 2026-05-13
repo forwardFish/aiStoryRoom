@@ -1,0 +1,471 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  openid         String    @unique
+  unionid        String?
+  nickname       String?
+  avatarUrl      String?
+  status         String    @default("active")
+  policyAgreedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  ownedRuns      StoryRun[]     @relation("StoryRunOwner")
+  players        StoryPlayer[]
+  actions        PlayerAction[]
+  notifications  Notification[]
+  eventLogs      EventLog[]
+  shareTokens    ShareToken[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model WorldTemplate {
+  id         String   @id
+  name       String
+  genre      String
+  hook       String   @db.Text
+  worldBase  String   @db.Text
+  status     String   @default("draft")
+  configJson Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  storyRuns  StoryRun[]
+
+  @@index([status])
+  @@index([genre])
+}
+
+model StoryRun {
+  id                 String   @id @default(cuid())
+  templateId          String
+  ownerUserId         String
+  title               String
+  hook                String   @db.Text
+  mode                String   @default("invite")
+  status              String   @default("waiting_players")
+  currentChapter      Int      @default(1)
+  currentNodeId       String?
+  maxPlayers          Int      @default(5)
+  activeHumanCount    Int      @default(1)
+  aiPlayerCount       Int      @default(0)
+  dangerLevel         Int      @default(1)
+  maxDangerLevel      Int      @default(5)
+  chapterCount        Int      @default(0)
+  completedNodeCount  Int      @default(0)
+  summary             String?  @db.Text
+  stateJson           Json
+  visibility          String   @default("link")
+  inviteCode          String   @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  template            WorldTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  owner               User          @relation("StoryRunOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  players             StoryPlayer[]
+  roles               StoryRole[]
+  relations           RoleRelation[]
+  sandboxes           ChapterSandbox[]
+  nodes               SceneNode[]
+  actions             PlayerAction[]
+  resolutions         DirectorResolution[]
+  narrativeSegments   NarrativeSegment[]
+  clues               Clue[]
+  snapshots           WorldStateSnapshot[]
+  chapters            Chapter[]
+  notifications       Notification[]
+  aiTasks             AiTask[]
+  events              EventLog[]
+  shareTokens         ShareToken[]
+
+  @@index([templateId])
+  @@index([ownerUserId])
+  @@index([status, updatedAt])
+  @@index([visibility, status])
+}
+
+model StoryPlayer {
+  id           String    @id @default(cuid())
+  runId        String
+  userId       String?
+  roleId       String?
+  playerType   String    @default("human")
+  status       String    @default("active")
+  joinedAt     DateTime  @default(now())
+  lastActiveAt DateTime?
+
+  run          StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role         StoryRole? @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@unique([runId, userId])
+  @@unique([runId, roleId])
+  @@index([runId, status])
+  @@index([userId])
+}
+
+model StoryRole {
+  id             String   @id @default(cuid())
+  runId          String
+  roleKey        String
+  roleName       String
+  identity       String
+  publicInfo     String   @db.Text
+  hiddenSecret   String?  @db.Text
+  personalGoal   String   @db.Text
+  currentState   String   @db.Text
+  abilityText    String?  @db.Text
+  arcText        String?  @db.Text
+  knownInfoJson  Json
+  cannotDoJson   Json
+  isAiControlled Boolean  @default(false)
+  status         String   @default("available")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  run            StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  players        StoryPlayer[]
+  actions        PlayerAction[]
+  ownedClues     Clue[]
+  fromRelations  RoleRelation[] @relation("RelationFromRole")
+  toRelations    RoleRelation[] @relation("RelationToRole")
+
+  @@unique([runId, roleKey])
+  @@index([runId, status])
+  @@index([isAiControlled])
+}
+
+model RoleRelation {
+  id              String   @id @default(cuid())
+  runId           String
+  fromRoleId      String
+  toRoleId        String
+  relationType    String
+  score           Int      @default(0)
+  publicNote      String?  @db.Text
+  hiddenNote      String?  @db.Text
+  updatedByNodeId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  run             StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  fromRole        StoryRole @relation("RelationFromRole", fields: [fromRoleId], references: [id], onDelete: Cascade)
+  toRole          StoryRole @relation("RelationToRole", fields: [toRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, fromRoleId, toRoleId, relationType])
+  @@index([runId])
+  @@index([fromRoleId])
+  @@index([toRoleId])
+}
+
+model ChapterSandbox {
+  id              String   @id @default(cuid())
+  runId           String
+  chapterIndex    Int
+  title           String
+  mainLocation    String
+  chapterGoal     String   @db.Text
+  currentQuestion String   @db.Text
+  sandboxJson     Json
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  run             StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, chapterIndex])
+  @@index([runId, status])
+}
+
+model SceneNode {
+  id                String   @id @default(cuid())
+  runId             String
+  chapterIndex      Int
+  nodeIndex         Int
+  title             String
+  publicNarration   String   @db.Text
+  nodeGoal          String   @db.Text
+  status            String   @default("open_for_actions")
+  actionOptionsJson Json
+  resolutionId      String?
+  openedAt          DateTime @default(now())
+  resolvedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  run               StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  actions           PlayerAction[]
+  resolution        DirectorResolution?
+  narrativeSegments NarrativeSegment[]
+  snapshots         WorldStateSnapshot[]
+  aiTasks           AiTask[]
+  events            EventLog[]
+  notifications     Notification[]
+
+  @@unique([runId, chapterIndex, nodeIndex])
+  @@index([runId, status])
+  @@index([chapterIndex])
+}
+
+model PlayerAction {
+  id             String   @id @default(cuid())
+  runId          String
+  nodeId         String
+  chapterIndex   Int
+  userId         String?
+  roleId         String
+  playerType     String   @default("human")
+  actionType     String
+  targetType     String?
+  targetId       String?
+  targetText     String?
+  method         String   @db.Text
+  intent         String   @db.Text
+  riskLevel      String   @default("normal")
+  freeText       String?  @db.Text
+  normalizedJson Json?
+  guardStatus    String   @default("pending")
+  guardReason    String?  @db.Text
+  auditStatus    String   @default("pending")
+  status         String   @default("draft")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  run            StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node           SceneNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role           StoryRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  aiTasks        AiTask[]
+  events         EventLog[]
+
+  @@unique([nodeId, roleId])
+  @@index([runId, nodeId])
+  @@index([userId])
+  @@index([status, auditStatus, guardStatus])
+}
+
+model DirectorResolution {
+  id                  String   @id @default(cuid())
+  runId               String
+  nodeId              String   @unique
+  chapterIndex        Int
+  summary             String   @db.Text
+  publicNarration     String   @db.Text
+  privateResultsJson  Json
+  actionResultsJson   Json
+  statePatchJson      Json
+  clueChangesJson     Json
+  relationChangesJson Json
+  dangerBefore        Int
+  dangerAfter         Int
+  nextNodeHook        String?  @db.Text
+  nextOptionsJson     Json?
+  auditStatus         String   @default("ok")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  run                 StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node                SceneNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  narrativeSegments   NarrativeSegment[]
+
+  @@index([runId, chapterIndex])
+  @@index([auditStatus])
+}
+
+model NarrativeSegment {
+  id              String   @id @default(cuid())
+  runId           String
+  nodeId          String
+  resolutionId    String
+  chapterIndex    Int
+  content         String   @db.Text
+  contributorJson Json
+  auditStatus     String   @default("ok")
+  createdAt       DateTime @default(now())
+
+  run             StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node            SceneNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  resolution      DirectorResolution @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
+
+  @@index([runId, chapterIndex])
+  @@index([nodeId])
+  @@index([auditStatus])
+}
+
+model Clue {
+  id               String   @id @default(cuid())
+  runId             String
+  clueKey           String
+  title             String
+  description       String   @db.Text
+  visibility        String   @default("public")
+  ownerRoleId       String?
+  discoveredNodeId  String?
+  status            String   @default("active")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  run               StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  ownerRole         StoryRole? @relation(fields: [ownerRoleId], references: [id], onDelete: SetNull)
+
+  @@unique([runId, clueKey])
+  @@index([runId, visibility, status])
+  @@index([ownerRoleId])
+}
+
+model WorldStateSnapshot {
+  id           String   @id @default(cuid())
+  runId        String
+  nodeId       String?
+  chapterIndex Int
+  stateJson    Json
+  factsJson    Json
+  createdAt    DateTime @default(now())
+
+  run          StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node         SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+
+  @@index([runId, createdAt])
+  @@index([nodeId])
+}
+
+model Chapter {
+  id              String   @id @default(cuid())
+  runId            String
+  chapterIndex     Int
+  title            String
+  content          String   @db.Text
+  highlightsJson   Json
+  keyChoicesJson   Json
+  contributorJson  Json
+  nextHook         String?  @db.Text
+  auditStatus      String   @default("ok")
+  status           String   @default("generated")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  run              StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  notifications    Notification[]
+  aiTasks          AiTask[]
+  shareTokens      ShareToken[]
+
+  @@unique([runId, chapterIndex])
+  @@index([runId, status])
+  @@index([auditStatus])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  runId     String?
+  nodeId    String?
+  chapterId String?
+  type      String
+  title     String
+  content   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  run       StoryRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node      SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt])
+  @@index([runId])
+}
+
+model AiTask {
+  id            String   @id @default(cuid())
+  runId          String?
+  nodeId         String?
+  actionId       String?
+  chapterId      String?
+  taskType       String
+  modelType      String
+  promptVersion  String?
+  status         String   @default("pending")
+  inputJson      Json?
+  resultJson     Json?
+  inputTokens    Int?
+  outputTokens   Int?
+  cost           Float?
+  errorMessage   String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  run            StoryRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node           SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  action         PlayerAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+  chapter        Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+
+  @@index([taskType, status])
+  @@index([runId])
+  @@index([nodeId])
+  @@index([chapterId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  targetType String
+  targetId   String?
+  content    String   @db.Text
+  result     String
+  riskType   String?
+  provider   String   @default("mock")
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([result, createdAt])
+}
+
+model EventLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  runId      String?
+  nodeId     String?
+  actionId   String?
+  eventName  String
+  source     String?
+  shareToken String?
+  payload    Json?
+  createdAt  DateTime @default(now())
+
+  user       User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  run        StoryRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node       SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  action     PlayerAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+
+  @@index([eventName, createdAt])
+  @@index([userId])
+  @@index([runId])
+}
+
+model ShareToken {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  runId       String
+  chapterId   String?
+  shareUserId String
+  scene       String
+  channel     String
+  createdAt   DateTime @default(now())
+
+  run         StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  chapter     Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  shareUser   User @relation(fields: [shareUserId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([chapterId])
+  @@index([shareUserId])
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+.runtime/
+.cache/
+.turbo/
+coverage/
+scripts/test-reports/*.json
+apps/miniprogram/.swc/
+apps/miniprogram/dist/
+apps/miniprogram/project.private.config.json

@@ -1,0 +1,10 @@
+{
+  "name": "@apps/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node src/server.mjs",
+    "typecheck": "node -c src/server.mjs && node -c public/app.js",
+    "build": "node -e \"console.log('web validation cabin is static; no build step required')\""
+  }
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 多人故事局 Web 验证舱</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">AI 多人故事局 · MVP P0 Web 验证舱</p>
+          <h1>一页跑通故事闭环</h1>
+          <p class="muted">选择世界模板 → 创建故事局 → 选择命运线 → 行动 → AI 结算 → 多 POV 章节。</p>
+        </div>
+        <div class="api-box">
+          <label>API Base</label>
+          <input id="apiBase" value="http://localhost:3001/api" />
+          <button id="saveApi">保存 API</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <aside class="panel sticky">
+          <h2>会话 / 玩家</h2>
+          <div class="row">
+            <select id="playerSelect"></select>
+            <button id="loginBtn">登录当前玩家</button>
+          </div>
+          <div id="sessionInfo" class="note">尚未登录。</div>
+          <button id="resetBtn" class="ghost">重置验证舱状态</button>
+          <div class="divider"></div>
+          <h3>验收检查</h3>
+          <ul id="checklist" class="checklist"></ul>
+        </aside>
+
+        <section class="stack">
+          <section class="panel" id="templatesPanel"></section>
+          <section class="panel" id="runPanel"></section>
+          <section class="panel" id="rolesPanel"></section>
+          <section class="panel" id="roomPanel"></section>
+          <section class="panel" id="actionPanel"></section>
+          <section class="panel" id="resolutionPanel"></section>
+          <section class="panel" id="chapterPanel"></section>
+          <section class="panel" id="debugPanel"></section>
+        </section>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
