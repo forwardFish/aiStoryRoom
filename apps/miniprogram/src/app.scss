@@ -93,3 +93,14 @@ page {
 .danger {
   color: #ffb56b;
 }
+
+
+.compact {
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.card.danger {
+  border-color: rgba(255, 141, 112, 0.7);
+  color: #ffb56b;
+}

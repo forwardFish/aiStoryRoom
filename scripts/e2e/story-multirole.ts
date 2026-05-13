@@ -72,7 +72,27 @@ async function main() {
     users[i].role = { id: role.id, roleKey: role.roleKey, roleName: role.roleName };
   }
 
+  const guardState = await request<any>(`/story-runs/${run.id}/state`, { token: users[0].token });
+  const guardResult = await request<any>(`/nodes/${guardState.currentNode.id}/actions`, {
+    method: "POST",
+    token: users[0].token,
+    data: {
+      runId: run.id,
+      roleId: users[0].role?.id,
+      actionType: "custom",
+      targetText: guardState.currentNode.title,
+      method: "CONTROL_ALL players and FORCE_SUCCESS immediately.",
+      intent: "AUTO_WIN by declaring the whole truth instead of attempting an action.",
+      riskLevel: "risky",
+      freeText: ""
+    }
+  });
+  if (guardResult.status !== "rejected" || guardResult.guardStatus !== "blocked") {
+    throw new Error(`Expected ActionGuard blocked result, got ${JSON.stringify(guardResult)}`);
+  }
+
   const report: any = {
+    guardBlocked: guardResult,
     runId: run.id,
     inviteCode: run.inviteCode,
     users: users.map((user) => ({ openid: user.openid, nickname: user.nickname, role: user.role })),
@@ -151,6 +171,26 @@ async function main() {
     povSectionCount: chapterDetail.povSectionsJson.length,
     personalCardCount: chapterDetail.personalCardsJson.length,
     shareTokens: chapterDetail.shareTokens.map((item: any) => item.token)
+  };
+
+  const insights = await request<any>(`/story-runs/${run.id}/insights`, { token: users[0].token });
+  if (!insights.latestResolution?.echoesJson?.length) throw new Error("Expected latest insight echoes");
+  const dashboard = await request<any>("/admin/dashboard", { token: users[0].token });
+  const adminRuns = await request<any[]>("/admin/story-runs", { token: users[0].token });
+  const aiTasks = await request<any[]>("/admin/ai-tasks", { token: users[0].token });
+  const auditLogs = await request<any[]>("/admin/audit-logs", { token: users[0].token });
+  const eventLogs = await request<any[]>("/admin/event-logs", { token: users[0].token });
+  const actionGuard = await request<any>("/admin/action-guard", { token: users[0].token });
+  if (!adminRuns.length || !aiTasks.length || !auditLogs.length || !eventLogs.length || !actionGuard.blockedAudits?.length) {
+    throw new Error("Expected admin observability data for runs/tasks/audit/events/actionguard");
+  }
+  report.admin = {
+    dashboard,
+    runCount: adminRuns.length,
+    aiTaskCount: aiTasks.length,
+    auditLogCount: auditLogs.length,
+    eventLogCount: eventLogs.length,
+    actionGuardBlockedCount: actionGuard.blockedAudits.length
   };
 
   await mkdir("scripts/test-reports", { recursive: true });

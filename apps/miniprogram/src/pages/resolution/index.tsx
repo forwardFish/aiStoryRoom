@@ -1,7 +1,7 @@
 import { Button, Text, View } from "@tarojs/components";
 import { useDidShow, useRouter } from "@tarojs/taro";
 import { useState } from "react";
-import { api, redirect } from "../../lib/api";
+import { api, nav, redirect } from "../../lib/api";
 
 export default function ResolutionPage() {
   const router = useRouter();

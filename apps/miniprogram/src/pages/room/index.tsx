@@ -28,6 +28,8 @@ export default function RoomPage() {
       <View className="card">
         <Text>我的角色：{myRole?.role?.roleName || "未选择"}</Text>
         <Text className="subtitle">{myRole?.role?.personalGoal}</Text>
+        <Text className="label">????</Text>
+        <Text>{myRole?.role?.destinyQuestion}</Text>
       </View>
       <View className="card">
         <Text>已知线索</Text>

@@ -25,6 +25,10 @@ export default function RolesPage() {
             <Text className="tag">{role.identity}</Text>
           </View>
           <Text className="subtitle">{role.publicInfo}</Text>
+          <Text className="label">????</Text>
+          <Text className="subtitle">{role.personalHook}</Text>
+          <Text className="label">????</Text>
+          <Text>{role.destinyQuestion}</Text>
           <Button className="button secondary" onClick={() => nav(`/pages/role-card/index?runId=${runId}&roleId=${role.id}`)}>查看角色卡</Button>
           <Button className="button" onClick={() => claim(role.id)}>确认选择 {role.roleName}</Button>
         </View>

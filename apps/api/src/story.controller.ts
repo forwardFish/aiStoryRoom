@@ -169,6 +169,57 @@ export class StoryController {
     return this.story.shareChapter(this.openid(headers), chapterId);
   }
 
+
+  @Get("notifications")
+  notifications(@Headers() headers: Record<string, string | undefined>) {
+    return this.story.notifications(this.openid(headers));
+  }
+
+  @Post("feedback/report")
+  reportFeedback(@Headers() headers: Record<string, string | undefined>, @Body() body: Record<string, unknown>) {
+    return this.story.reportFeedback(this.openid(headers), body);
+  }
+
+  @Get("story-runs/:runId/insights")
+  insights(@Headers() headers: Record<string, string | undefined>, @Param("runId") runId: string) {
+    return this.story.insights(this.openid(headers), runId);
+  }
+
+  @Get("admin/dashboard")
+  adminDashboard() {
+    return this.story.adminDashboard();
+  }
+
+  @Get("admin/story-runs")
+  adminStoryRuns() {
+    return this.story.adminStoryRuns();
+  }
+
+  @Get("admin/story-runs/:runId")
+  adminStoryRun(@Param("runId") runId: string) {
+    return this.story.adminStoryRun(runId);
+  }
+
+  @Get("admin/ai-tasks")
+  adminAiTasks() {
+    return this.story.adminAiTasks();
+  }
+
+  @Get("admin/audit-logs")
+  adminAuditLogs() {
+    return this.story.adminAuditLogs();
+  }
+
+  @Get("admin/event-logs")
+  adminEventLogs() {
+    return this.story.adminEventLogs();
+  }
+
+  @Get("admin/action-guard")
+  adminActionGuard() {
+    return this.story.adminActionGuard();
+  }
+
   private openid(headers: Record<string, string | undefined>) {
     const auth = headers.authorization || "";
     return headers["x-mock-openid"] || auth.replace(/^Bearer\s+/i, "") || "mock_openid_owner_001";

@@ -13,7 +13,9 @@ export default defineAppConfig({
     "pages/resolution/index",
     "pages/chapter/index",
     "pages/share/index",
-    "pages/my-runs/index"
+    "pages/my-runs/index",
+    "pages/insight/index",
+    "pages/admin/index"
   ],
   window: {
     backgroundTextStyle: "light",

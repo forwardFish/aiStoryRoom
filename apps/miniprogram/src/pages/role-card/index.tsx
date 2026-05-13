@@ -25,6 +25,7 @@ export default function RoleCardPage() {
         <Text className="subtitle">{role?.personalGoal}</Text>
         <Text className="label">隐藏秘密</Text>
         <Text className="subtitle danger">{role?.hiddenSecret}</Text>
+        {(role?.privateClues || []).map((clue: string) => <View key={clue} className="tag">{clue}</View>)}
       </View>
       <Button className="button" onClick={() => redirect(`/pages/room/index?runId=${runId}`)}>进入故事局房间</Button>
     </View>

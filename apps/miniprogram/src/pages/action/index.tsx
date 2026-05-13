@@ -1,7 +1,7 @@
 import { Button, Input, Picker, Text, Textarea, View } from "@tarojs/components";
 import { useRouter } from "@tarojs/taro";
 import { useState } from "react";
-import { api, redirect } from "../../lib/api";
+import { api, nav, redirect } from "../../lib/api";
 
 const actionTypes = ["observe", "investigate", "ask", "cooperate", "confront", "custom"];
 const riskLevels = ["safe", "normal", "risky"];
@@ -49,7 +49,7 @@ export default function ActionPage() {
           <View className="input">{riskLevel}</View>
         </Picker>
       </View>
-      {message ? <Text className="subtitle">{message}</Text> : null}
+      {message ? <View className="card danger"><Text>{message}</Text><Button className="button secondary" onClick={() => nav(`/pages/insight/index?runId=${runId}&kind=actionguard`)}>?? ActionGuard ????</Button></View> : null}
       <Button className="button" onClick={submit}>提交行动</Button>
     </View>
   );

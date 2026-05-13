@@ -1,7 +1,7 @@
 import { Button, Text, View } from "@tarojs/components";
 import { useDidShow, useRouter } from "@tarojs/taro";
 import { useState } from "react";
-import { api } from "../../lib/api";
+import { api, nav } from "../../lib/api";
 
 export default function SharePage() {
   const chapterId = String(useRouter().params.chapterId || "");

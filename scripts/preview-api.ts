@@ -33,6 +33,9 @@ type Run = {
 
 const users = new Map<string, User>();
 const runs = new Map<string, Run>();
+const auditLogs: any[] = [];
+const eventLogs: any[] = [];
+const aiTasks: any[] = [];
 
 function id(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -83,6 +86,7 @@ function createRun(openid: string, body: any) {
   };
   runs.set(run.id, run);
   ensureUser(openid);
+  logEvent("story_run_created", { runId: run.id, openid });
   return run;
 }
 
@@ -108,6 +112,12 @@ async function body(req: IncomingMessage) {
   for await (const chunk of req) chunks.push(Buffer.from(chunk));
   const text = Buffer.concat(chunks).toString("utf8");
   return text ? JSON.parse(text) : {};
+}
+
+function logEvent(eventName: string, payload: Record<string, unknown> = {}) {
+  const event = { id: id("event"), eventName, source: "preview-api", payload, createdAt: new Date().toISOString() };
+  eventLogs.unshift(event);
+  return event;
 }
 
 function send(res: ServerResponse, status: number, data: unknown) {
@@ -154,7 +164,9 @@ function generateChapter(run: Run) {
     shareTokens: [{ token: `share_${run.id.slice(-4)}` }]
   };
   run.chapters.push(chapter);
+  aiTasks.unshift({ id: id("task"), runId: run.id, chapterId: chapter.id, taskType: "generate_chapter", modelType: "mock-director-v1", status: "completed", createdAt: new Date().toISOString(), resultJson: { title: chapter.title } });
   run.status = "chapter_generated";
+  logEvent("chapter_generated", { runId: run.id, chapterId: chapter.id });
   return chapter;
 }
 
@@ -184,7 +196,8 @@ export const server = createServer(async (req, res) => {
           "GET /api/health",
           "GET /api/world-templates",
           "POST /api/auth/wechat-login",
-          "GET /api/my/story-runs"
+          "GET /api/my/story-runs",
+          "GET /api/admin/dashboard"
         ]
       });
     }
@@ -202,6 +215,34 @@ export const server = createServer(async (req, res) => {
     }
     if (method === "POST" && path === "/story-runs") return send(res, 200, createRun(openid, await body(req)));
     if (method === "GET" && path === "/my/story-runs") return send(res, 200, Array.from(runs.values()));
+    if (method === "GET" && path === "/notifications") {
+      return send(res, 200, Array.from(runs.values()).slice(0, 5).flatMap((run) => [
+        { id: `notice_action_${run.id}`, type: "action_reminder", title: "???????", content: `${run.title} ?????`, runId: run.id, isRead: false },
+        { id: `notice_ai_${run.id}`, type: "ai_resolution", title: "AI ????", content: run.status === "chapter_generated" ? "???????" : "mock AI ???????", runId: run.id, isRead: false }
+      ]));
+    }
+    if (method === "POST" && path === "/feedback/report") {
+      const input = await body(req);
+      const log = { id: id("audit"), targetType: "FeedbackReport", targetId: input.runId, content: input.content || "????/??", result: "queued", riskType: input.category || "content_safety", provider: "mock", createdAt: new Date().toISOString() };
+      auditLogs.unshift(log);
+      logEvent("feedback_reported", { auditLogId: log.id, runId: input.runId });
+      return send(res, 200, { status: "queued", auditLogId: log.id, provider: "mock" });
+    }
+    if (method === "GET" && path === "/admin/dashboard") {
+      return send(res, 200, { activeRuns: Array.from(runs.values()).filter((run) => ["playing", "chapter_generated"].includes(run.status)).length, pendingAiTasks: aiTasks.filter((task) => ["pending", "running", "failed"].includes(task.status)).length, auditIssues: auditLogs.filter((log) => log.result !== "ok").length, eventCount: eventLogs.length, latestRuns: Array.from(runs.values()).slice(-5).reverse() });
+    }
+    if (method === "GET" && path === "/admin/story-runs") return send(res, 200, Array.from(runs.values()).reverse());
+    if (method === "GET" && path === "/admin/ai-tasks") return send(res, 200, aiTasks);
+    if (method === "GET" && path === "/admin/audit-logs") return send(res, 200, auditLogs);
+    if (method === "GET" && path === "/admin/event-logs") return send(res, 200, eventLogs);
+    if (method === "GET" && path === "/admin/action-guard") return send(res, 200, { blockedAudits: auditLogs.filter((log) => log.targetType === "PlayerActionDraft" || log.riskType === "action_overreach"), guardEvents: eventLogs.filter((event) => event.eventName === "action_guard_blocked"), rejectedActions: [] });
+
+    const adminRunMatch = path.match(/^\/admin\/story-runs\/([^/]+)$/);
+    if (method === "GET" && adminRunMatch) {
+      const run = runs.get(adminRunMatch[1]);
+      if (!run) return send(res, 404, { message: "run not found" });
+      return send(res, 200, { ...run, events: eventLogs.filter((event) => event.payload?.runId === run.id), aiTasks: aiTasks.filter((task) => task.runId === run.id), auditLogs: auditLogs.filter((log) => log.targetId === run.id) });
+    }
 
     const runMatch = path.match(/^\/story-runs\/([^/]+)(.*)$/);
     if (runMatch) {
@@ -210,8 +251,14 @@ export const server = createServer(async (req, res) => {
       const tail = runMatch[2];
       if (method === "GET" && tail === "") return send(res, 200, run);
       if (method === "GET" && tail === "/state") return send(res, 200, state(run));
+      if (method === "GET" && tail === "/insights") {
+        const snapshot = state(run);
+        const latestResolution = run.resolutions[run.resolutions.length - 1] || null;
+        return send(res, 200, { ...snapshot, myRole: (() => { const role = run.roles.find((item) => item.id === run.players[openid]); return role ? { role: enrichFateLine(role as any) } : null; })(), nodes: midnightStoreTemplate.nodes.slice(0, run.currentNodeIndex).map((_, index) => ({ ...currentNode({ ...run, currentNodeIndex: index + 1 }), nodeIndex: index + 1 })), actions: run.actions, resolutions: run.resolutions, latestResolution, worldSnapshots: [{ stateJson: { dangerLevel: run.dangerLevel } }], suspicious: snapshot.clues.map((clue) => ({ ...clue, risk: run.dangerLevel })) });
+      }
       if (method === "POST" && tail === "/join") {
         ensureUser(openid);
+        logEvent("story_run_joined", { runId: run.id, openid });
         return send(res, 200, { runId: run.id, player: { openid } });
       }
       if (method === "GET" && tail === "/roles") return send(res, 200, run.roles.map((role) => enrichFateLine(role as any)));
@@ -222,6 +269,7 @@ export const server = createServer(async (req, res) => {
         role.status = "claimed";
         role.playerOpenid = openid;
         run.players[openid] = role.id;
+        logEvent("role_claimed", { runId: run.id, openid, roleId: role.id });
         return send(res, 200, { roleId: role.id, roleName: role.roleName, playerId: id("player") });
       }
       if (method === "GET" && tail === "/my-role") {
@@ -252,13 +300,40 @@ export const server = createServer(async (req, res) => {
       if (method === "POST" && tail === "/actions") {
         const input = await body(req);
         const text = `${input.method || ""} ${input.intent || ""}`;
-        if (/(杀死|我成功|操控|揭开全部真相|立刻通关)/.test(text)) {
-          return send(res, 200, { status: "rejected", guardStatus: "blocked", message: "行动越界：不能宣布结果或操控其他角色。" });
+        if (/(杀死|我成功|操控|揭开全部真相|立刻通关|CONTROL_ALL|FORCE_SUCCESS|AUTO_WIN)/.test(text)) {
+          const audit = {
+            id: id("audit"),
+            targetType: "PlayerActionDraft",
+            targetId: nodeId,
+            content: text,
+            result: "blocked",
+            riskType: "action_overreach",
+            provider: "mock",
+            createdAt: new Date().toISOString()
+          };
+          auditLogs.unshift(audit);
+          logEvent("action_guard_blocked", { runId: run.id, nodeId, auditLogId: audit.id });
+          return send(res, 200, {
+            status: "rejected",
+            guardStatus: "blocked",
+            message: "行动越界：不能宣布结果或操控其他角色。",
+            rewriteSuggestion: { method: "我尝试观察并推进，不宣布结果。", intent: "把结果交给 AI 导演结算。" }
+          });
         }
         const role = run.roles.find((item) => item.id === input.roleId);
         if (!role) return send(res, 404, { message: "role not found" });
         const action = { id: id("action"), nodeId, roleId: role.id, roleName: role.roleName, status: "accepted", method: input.method, intent: input.intent };
         run.actions.push(action);
+        auditLogs.unshift({
+          id: id("audit"),
+          targetType: "PlayerAction",
+          targetId: action.id,
+          content: `${input.method}\n${input.intent}`,
+          result: "ok",
+          provider: "mock",
+          createdAt: new Date().toISOString()
+        });
+        logEvent("action_submitted", { runId: run.id, nodeId, actionId: action.id, roleId: role.id });
         return send(res, 200, { actionId: action.id, status: "accepted", guardStatus: "ok", message: "行动已提交，等待本节点结算。" });
       }
       if (method === "POST" && tail === "/resolve") {
@@ -285,7 +360,9 @@ export const server = createServer(async (req, res) => {
           clueChangesJson: [{ title: `节点 ${nodeIndex} 线索`, description: source.resolutionSummary }],
           relationChangesJson: [{ relationType: "trust", publicNote: "共同经历异常后产生信任。" }]
         };
+        aiTasks.unshift({ id: id("task"), runId: run.id, nodeId, taskType: "resolve_node", modelType: "mock-director-v1", status: "completed", createdAt: new Date().toISOString(), resultJson: { summary: resolution.summary } });
         run.resolutions.push(resolution);
+        logEvent("node_resolved", { runId: run.id, nodeId, resolutionId: resolution.id });
         run.dangerLevel = resolution.dangerAfter;
         if (nodeIndex < 5) run.currentNodeIndex = nodeIndex + 1;
         else generateChapter(run);

@@ -258,7 +258,8 @@ export class StoryService {
       }
     });
     if (!guard.ok) {
-      return { status: "rejected", guardStatus: "blocked", message: guard.reason };
+      await this.logEvent("action_guard_blocked", user.id, node.runId, nodeId, undefined, { roleId: input.roleId, reason: guard.reason });
+      return { status: "rejected", guardStatus: "blocked", message: guard.reason, rewriteSuggestion: this.rewriteSuggestion(input) };
     }
 
     const role = await this.prisma.storyRole.findFirst({ where: { id: input.roleId, runId: node.runId } });
@@ -551,6 +552,136 @@ export class StoryService {
     });
   }
 
+
+  async notifications(openid: string) {
+    const user = await this.ensureUser(openid);
+    const stored = await this.prisma.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20
+    });
+    if (stored.length) return stored;
+    const runs = await this.myRuns(openid);
+    return runs.slice(0, 5).flatMap((run) => [
+      {
+        id: `mock_action_${run.id}`,
+        type: "action_reminder",
+        title: "???????",
+        content: `${run.title} ?????????`,
+        runId: run.id,
+        isRead: false,
+        createdAt: run.updatedAt
+      },
+      {
+        id: `mock_ai_${run.id}`,
+        type: "ai_resolution",
+        title: "AI ????",
+        content: run.status === "chapter_generated" ? "??????????? POV ???" : "mock AI ????????????",
+        runId: run.id,
+        isRead: false,
+        createdAt: run.updatedAt
+      }
+    ]);
+  }
+
+  async reportFeedback(openid: string, body: Record<string, unknown>) {
+    const user = await this.ensureUser(openid);
+    const content = String(body.content || body.description || "????/??");
+    const log = await this.prisma.auditLog.create({
+      data: {
+        targetType: "FeedbackReport",
+        targetId: typeof body.runId === "string" ? body.runId : undefined,
+        content,
+        result: "queued",
+        riskType: typeof body.category === "string" ? body.category : "content_safety",
+        provider: "mock"
+      }
+    });
+    await this.logEvent("feedback_reported", user.id, typeof body.runId === "string" ? body.runId : undefined, undefined, undefined, { auditLogId: log.id });
+    return { status: "queued", auditLogId: log.id, provider: "mock" };
+  }
+
+  async insights(openid: string, runId: string) {
+    const [state, myRole, nodes, actions, resolutions, snapshots] = await Promise.all([
+      this.getRunState(runId),
+      this.myRole(openid, runId).catch(() => null),
+      this.nodes(runId),
+      this.prisma.playerAction.findMany({ where: { runId }, include: { role: true }, orderBy: { createdAt: "asc" } }),
+      this.prisma.directorResolution.findMany({ where: { runId }, orderBy: { createdAt: "asc" } }),
+      this.prisma.worldStateSnapshot.findMany({ where: { runId }, orderBy: { createdAt: "desc" }, take: 5 })
+    ]);
+    const latestResolution = resolutions.length ? this.enrichResolution(resolutions[resolutions.length - 1] as any) : null;
+    return {
+      ...state,
+      myRole,
+      nodes,
+      actions,
+      resolutions: resolutions.map((item) => this.enrichResolution(item as any)),
+      latestResolution,
+      worldSnapshots: snapshots,
+      suspicious: state.clues.map((clue: any) => ({ title: clue.title, description: clue.description, risk: state.run.dangerLevel }))
+    };
+  }
+
+  async adminDashboard() {
+    const [activeRuns, pendingAiTasks, auditIssues, eventCount, latestRuns] = await Promise.all([
+      this.prisma.storyRun.count({ where: { status: { in: ["playing", "chapter_ready", "chapter_generated"] } } }),
+      this.prisma.aiTask.count({ where: { status: { in: ["pending", "running", "failed"] } } }),
+      this.prisma.auditLog.count({ where: { result: { not: "ok" } } }),
+      this.prisma.eventLog.count(),
+      this.prisma.storyRun.findMany({ orderBy: { updatedAt: "desc" }, take: 5 })
+    ]);
+    return { activeRuns, pendingAiTasks, auditIssues, eventCount, latestRuns };
+  }
+
+  async adminStoryRuns() {
+    return this.prisma.storyRun.findMany({
+      include: { template: true, players: { include: { role: true, user: true } }, chapters: true, aiTasks: true },
+      orderBy: { updatedAt: "desc" },
+      take: 30
+    });
+  }
+
+  async adminStoryRun(runId: string) {
+    const run = await this.prisma.storyRun.findUnique({
+      where: { id: runId },
+      include: {
+        template: true,
+        players: { include: { role: true, user: true } },
+        roles: true,
+        nodes: { include: { actions: { include: { role: true, user: true } }, resolution: true }, orderBy: [{ chapterIndex: "asc" }, { nodeIndex: "asc" }] },
+        actions: { include: { role: true, user: true }, orderBy: { createdAt: "asc" } },
+        resolutions: true,
+        chapters: true,
+        aiTasks: true,
+        events: { orderBy: { createdAt: "desc" }, take: 50 }
+      }
+    });
+    if (!run) throw new NotFoundException("story run not found");
+    return run;
+  }
+
+  async adminAiTasks() {
+    return this.prisma.aiTask.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
+  }
+
+  async adminAuditLogs() {
+    return this.prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
+  }
+
+  async adminEventLogs() {
+    return this.prisma.eventLog.findMany({ orderBy: { createdAt: "desc" }, take: 80 });
+  }
+
+  async adminActionGuard() {
+    const [blockedAudits, guardEvents, rejectedActions] = await Promise.all([
+      this.prisma.auditLog.findMany({ where: { OR: [{ targetType: "PlayerActionDraft" }, { riskType: "action_overreach" }] }, orderBy: { createdAt: "desc" }, take: 30 }),
+      this.prisma.eventLog.findMany({ where: { eventName: "action_guard_blocked" }, orderBy: { createdAt: "desc" }, take: 30 }),
+      this.prisma.playerAction.findMany({ where: { OR: [{ guardStatus: { not: "ok" } }, { auditStatus: { not: "ok" } }] }, include: { role: true }, orderBy: { createdAt: "desc" }, take: 30 })
+    ]);
+    return { blockedAudits, guardEvents, rejectedActions };
+  }
+
   private async ensureUser(openid: string) {
     return this.prisma.user.upsert({
       where: { openid },
@@ -647,7 +778,21 @@ export class StoryService {
 
   private guardAction(input: SubmitActionInput): { ok: true } | { ok: false; reason: string } {
     const text = `${input.method} ${input.intent} ${input.freeText || ""}`;
-    const forbidden = ["我成功", "直接杀死", "杀死", "破解全部", "揭开全部真相", "操控", "替他", "替她", "所有人都", "立刻通关"];
+    const forbidden = [
+      "我成功",
+      "直接杀死",
+      "杀死",
+      "破解全部",
+      "揭开全部真相",
+      "操控",
+      "替他",
+      "替她",
+      "所有人都",
+      "立刻通关",
+      "CONTROL_ALL",
+      "FORCE_SUCCESS",
+      "AUTO_WIN"
+    ];
     const matched = forbidden.find((word) => text.includes(word));
     if (matched) {
       return { ok: false, reason: `行动越界：不能宣布结果或操控其他角色（命中：${matched}）。` };
@@ -656,6 +801,16 @@ export class StoryService {
       return { ok: false, reason: "请说明行动方式和行动目的。" };
     }
     return { ok: true };
+  }
+
+  private rewriteSuggestion(input: SubmitActionInput) {
+    return {
+      method: input.method
+        ? input.method.replace(/我成功|直接杀死|杀死|破解全部|揭开全部真相|操控|立刻通关|CONTROL_ALL|FORCE_SUCCESS|AUTO_WIN/g, "我尝试观察并推进")
+        : "描述角色尝试做什么，不宣布结果。",
+      intent: "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+      strategy: "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+    };
   }
 
   private async nextInviteCode() {
