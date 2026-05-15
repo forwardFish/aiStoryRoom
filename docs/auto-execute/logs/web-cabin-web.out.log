@@ -1,0 +1,10 @@
+
+> ai-story-room@0.1.0 dev:web D:\lyh\agent\agent-frame\aiStoryRoom
+> pnpm --filter @apps/web dev
+
+
+> @apps/web@0.1.0 dev D:\lyh\agent\agent-frame\aiStoryRoom\apps\web
+> node src/server.mjs
+
+AI Story Room Web validation cabin: http://localhost:5177
+Default API base: http://localhost:3001/api (run `pnpm dev:preview-api` first)

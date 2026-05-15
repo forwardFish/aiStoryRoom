@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "webUrl": "http://localhost:5177",
+  "apiBase": "http://localhost:3001/api",
+  "viewport": {
+    "width": 1610,
+    "height": 977,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "summary": {
+    "title": "AI故事局测试台",
+    "bodyLength": 1353,
+    "hasTitle": true,
+    "templateCount": 3,
+    "runId": "run_qxg4lec4",
+    "activeHumanCount": 3,
+    "roleCount": 3,
+    "currentNodeIndex": 5,
+    "guardStatus": "blocked",
+    "guardMatchedRules": [
+      "control_others",
+      "skip_plot"
+    ],
+    "chapterTitle": "午夜便利店：第一章终局",
+    "povCount": 3,
+    "personalCardCount": 3,
+    "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+    "apiLogCount": 30,
+    "checklistDone": [
+      "PASS templates loaded",
+      "PASS mock login",
+      "PASS run created",
+      "PASS 3 players joined",
+      "PASS roles/fate/private clues",
+      "PASS ActionGuard",
+      "PASS AI resolution",
+      "PASS POV/personal cards"
+    ],
+    "lastError": null
+  },
+  "blockingRuntimeErrorCount": 0,
+  "runtimeErrors": []
+}

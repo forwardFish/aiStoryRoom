@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PASS_WITH_LIMITATION",
+  "generatedAt": "2026-05-14",
+  "reference": {
+    "path": "docs/UI/2/模拟页面.png",
+    "width": 1610,
+    "height": 977,
+    "pixelFormat": "Format24bppRgb"
+  },
+  "actual": {
+    "path": "docs/auto-execute/screenshots/web-cabin-smoke.png",
+    "width": 1610,
+    "height": 977,
+    "pixelFormat": "Format24bppRgb"
+  },
+  "visualTarget": "wide simulator dashboard: left run/template rail, center story/action/resolution/POV workspace, right role/clue/status rail",
+  "matchedStructure": [
+    "left run and world-template rail",
+    "top current-run heading and status chips",
+    "center current story and goal panel",
+    "role switching strip",
+    "action submission panel with risk controls",
+    "bottom AI resolution, multi-POV, and personal story-card panels",
+    "right role status, clue/fate net, and runtime status panels"
+  ],
+  "limitations": [
+    "pixel-perfect PASS is not claimed",
+    "template thumbnail images are represented by dark placeholder art in the static Web cabin",
+    "narrow-screen responsiveness is usability-only and not part of the 1610x977 match target"
+  ]
+}

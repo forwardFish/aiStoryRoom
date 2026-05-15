@@ -1,0 +1,272 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "status":  "PASS_WITH_LIMITATION",
+    "generatedAt":  "2026-05-14T21:10:16",
+    "source":  "docs/auto-execute/story-target.json",
+    "testPoints":  [
+                       {
+                           "storyId":  "STORY-001",
+                           "requirementId":  "P0-REQ-001",
+                           "testPointId":  "STORY-001-TP-01",
+                           "kind":  "api_contract",
+                           "status":  "PASS",
+                           "evidence":  "docs/auto-execute/logs/backend-test.log"
+                       },
+                       {
+                           "storyId":  "STORY-001",
+                           "requirementId":  "P0-REQ-001",
+                           "testPointId":  "STORY-001-TP-02",
+                           "kind":  "frontend",
+                           "status":  "PASS",
+                           "evidence":  "docs/auto-execute/logs/frontend-typecheck.log"
+                       },
+                       {
+                           "storyId":  "STORY-001",
+                           "requirementId":  "P0-REQ-001",
+                           "testPointId":  "STORY-001-TP-03",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/auto-execute/logs/frontend-build.log"
+                       },
+                       {
+                           "storyId":  "STORY-001",
+                           "requirementId":  "P0-REQ-001",
+                           "testPointId":  "STORY-001-TP-04",
+                           "kind":  "e2e",
+                           "status":  "PASS",
+                           "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                       },
+                       {
+                           "storyId":  "STORY-001",
+                           "requirementId":  "P0-REQ-001",
+                           "testPointId":  "STORY-001-TP-05",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/auto-execute/screenshots/web-cabin-smoke.png"
+                       },
+                       {
+                           "storyId":  "STORY-001",
+                           "requirementId":  "P0-REQ-001",
+                           "testPointId":  "STORY-001-TP-06",
+                           "kind":  "api_contract",
+                           "status":  "PASS",
+                           "evidence":  "docs/auto-execute/results/contract-discovery.json"
+                       },
+                       {
+                           "storyId":  "STORY-002",
+                           "requirementId":  "P0-REQ-002",
+                           "testPointId":  "STORY-002-TP-01",
+                           "kind":  "evidence",
+                           "status":  "PASS",
+                           "evidence":  "packages/templates/src/index.ts"
+                       },
+                       {
+                           "storyId":  "STORY-002",
+                           "requirementId":  "P0-REQ-002",
+                           "testPointId":  "STORY-002-TP-02",
+                           "kind":  "e2e",
+                           "status":  "PASS",
+                           "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                       },
+                       {
+                           "storyId":  "STORY-002",
+                           "requirementId":  "P0-REQ-002",
+                           "testPointId":  "STORY-002-TP-03",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/UI/2/21_my_fate_line.png"
+                       },
+                       {
+                           "storyId":  "STORY-002",
+                           "requirementId":  "P0-REQ-002",
+                           "testPointId":  "STORY-002-TP-04",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/UI/2/27_private_clue_detail.png"
+                       },
+                       {
+                           "storyId":  "STORY-003",
+                           "requirementId":  "P0-REQ-003",
+                           "testPointId":  "STORY-003-TP-01",
+                           "kind":  "e2e",
+                           "status":  "PASS",
+                           "evidence":  "scripts/e2e/story-multirole.ts"
+                       },
+                       {
+                           "storyId":  "STORY-003",
+                           "requirementId":  "P0-REQ-003",
+                           "testPointId":  "STORY-003-TP-02",
+                           "kind":  "e2e",
+                           "status":  "PASS",
+                           "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                       },
+                       {
+                           "storyId":  "STORY-003",
+                           "requirementId":  "P0-REQ-003",
+                           "testPointId":  "STORY-003-TP-03",
+                           "kind":  "e2e",
+                           "status":  "PASS",
+                           "evidence":  "docs/auto-execute/FULL_FLOW_ACCEPTANCE.md"
+                       },
+                       {
+                           "storyId":  "STORY-004",
+                           "requirementId":  "P0-REQ-004",
+                           "testPointId":  "STORY-004-TP-01",
+                           "kind":  "evidence",
+                           "status":  "PASS",
+                           "evidence":  "packages/shared/src/index.ts"
+                       },
+                       {
+                           "storyId":  "STORY-004",
+                           "requirementId":  "P0-REQ-004",
+                           "testPointId":  "STORY-004-TP-02",
+                           "kind":  "e2e",
+                           "status":  "PASS",
+                           "evidence":  "scripts/e2e/story-multirole.ts"
+                       },
+                       {
+                           "storyId":  "STORY-004",
+                           "requirementId":  "P0-REQ-004",
+                           "testPointId":  "STORY-004-TP-03",
+                           "kind":  "e2e",
+                           "status":  "PASS",
+                           "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                       },
+                       {
+                           "storyId":  "STORY-004",
+                           "requirementId":  "P0-REQ-004",
+                           "testPointId":  "STORY-004-TP-04",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/UI/2/26_actionguard_rewrite.png"
+                       },
+                       {
+                           "storyId":  "STORY-004",
+                           "requirementId":  "P0-REQ-004",
+                           "testPointId":  "STORY-004-TP-05",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/auto-execute/screenshots/web-cabin-smoke.png"
+                       },
+                       {
+                           "storyId":  "STORY-005",
+                           "requirementId":  "P0-REQ-005",
+                           "testPointId":  "STORY-005-TP-01",
+                           "kind":  "e2e",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                       },
+                       {
+                           "storyId":  "STORY-005",
+                           "requirementId":  "P0-REQ-005",
+                           "testPointId":  "STORY-005-TP-02",
+                           "kind":  "visual",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "docs/UI/2/16_chapter_reader.png"
+                       },
+                       {
+                           "storyId":  "STORY-005",
+                           "requirementId":  "P0-REQ-005",
+                           "testPointId":  "STORY-005-TP-03",
+                           "kind":  "visual",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "docs/UI/2/18_share_story_card.png"
+                       },
+                       {
+                           "storyId":  "STORY-005",
+                           "requirementId":  "P0-REQ-005",
+                           "testPointId":  "STORY-005-TP-04",
+                           "kind":  "visual",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "docs/UI/2/23_notification_center.png"
+                       },
+                       {
+                           "storyId":  "STORY-005",
+                           "requirementId":  "P0-REQ-005",
+                           "testPointId":  "STORY-005-TP-05",
+                           "kind":  "visual",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "docs/UI/2/24_report_feedback.png"
+                       },
+                       {
+                           "storyId":  "STORY-006",
+                           "requirementId":  "P1-REQ-006",
+                           "testPointId":  "STORY-006-TP-01",
+                           "kind":  "e2e",
+                           "status":  "PASS",
+                           "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                       },
+                       {
+                           "storyId":  "STORY-006",
+                           "requirementId":  "P1-REQ-006",
+                           "testPointId":  "STORY-006-TP-02",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/UI/2/admin_01_dashboard.png"
+                       },
+                       {
+                           "storyId":  "STORY-006",
+                           "requirementId":  "P1-REQ-006",
+                           "testPointId":  "STORY-006-TP-03",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/UI/2/admin_03_ai_logs.png"
+                       },
+                       {
+                           "storyId":  "STORY-006",
+                           "requirementId":  "P1-REQ-006",
+                           "testPointId":  "STORY-006-TP-04",
+                           "kind":  "visual",
+                           "status":  "PASS",
+                           "evidence":  "docs/UI/2/admin_04_content_audit.png"
+                       },
+                       {
+                           "storyId":  "STORY-006",
+                           "requirementId":  "P1-REQ-006",
+                           "testPointId":  "STORY-006-TP-05",
+                           "kind":  "api_contract",
+                           "status":  "PASS",
+                           "evidence":  "docs/auto-execute/results/contract-discovery.json"
+                       },
+                       {
+                           "storyId":  "STORY-007",
+                           "requirementId":  "P1-REQ-007",
+                           "testPointId":  "STORY-007-TP-01",
+                           "kind":  "visual",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "docs/auto-execute/ui-target.json"
+                       },
+                       {
+                           "storyId":  "STORY-007",
+                           "requirementId":  "P1-REQ-007",
+                           "testPointId":  "STORY-007-TP-02",
+                           "kind":  "visual",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "docs/auto-execute/screenshots/web-cabin-smoke.png"
+                       },
+                       {
+                           "storyId":  "STORY-007",
+                           "requirementId":  "P1-REQ-007",
+                           "testPointId":  "STORY-007-TP-03",
+                           "kind":  "visual",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "docs/auto-execute/visual-diff-report.md"
+                       },
+                       {
+                           "storyId":  "STORY-P2-008",
+                           "requirementId":  "P2-REQ-008",
+                           "testPointId":  "STORY-P2-008-TP-01",
+                           "kind":  "evidence",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "harness.yml"
+                       },
+                       {
+                           "storyId":  "STORY-P2-008",
+                           "requirementId":  "P2-REQ-008",
+                           "testPointId":  "STORY-P2-008-TP-02",
+                           "kind":  "evidence",
+                           "status":  "PASS_WITH_LIMITATION",
+                           "evidence":  "docs/auto-execute/05-known-gaps-and-assumptions.md"
+                       }
+                   ]
+}

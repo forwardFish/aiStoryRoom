@@ -1,0 +1,82 @@
+﻿{
+    "manualReviewRequired":  [
+                                 {
+                                     "status":  "PASS_WITH_LIMITATION",
+                                     "blockers":  [
+
+                                                  ],
+                                     "file":  "docs\\auto-execute\\results\\acceptance-compare.json",
+                                     "lane":  "acceptance-compare"
+                                 },
+                                 {
+                                     "status":  "PASS_WITH_LIMITATION",
+                                     "blockers":  [
+
+                                                  ],
+                                     "file":  "docs\\auto-execute\\results\\code-review.json",
+                                     "lane":  "code-review"
+                                 },
+                                 {
+                                     "status":  "PASS_WITH_LIMITATION",
+                                     "blockers":  [
+
+                                                  ],
+                                     "file":  "docs\\auto-execute\\results\\compare-requirements.json",
+                                     "lane":  "compare-requirements"
+                                 },
+                                 {
+                                     "status":  "PASS_WITH_LIMITATION",
+                                     "blockers":  [
+                                                      null
+                                                  ],
+                                     "file":  "docs\\auto-execute\\results\\simulator-visual-compare.json",
+                                     "lane":  null
+                                 },
+                                 {
+                                     "status":  "PASS_WITH_LIMITATION",
+                                     "blockers":  [
+
+                                                  ],
+                                     "file":  "docs\\auto-execute\\results\\verifier-dependencies.json",
+                                     "lane":  "verifier-dependencies"
+                                 },
+                                 {
+                                     "status":  "PASS_WITH_LIMITATION",
+                                     "blockers":  [
+
+                                                  ],
+                                     "file":  "docs\\auto-execute\\results\\visual.json",
+                                     "lane":  "visual"
+                                 }
+                             ],
+    "deferred":  [
+
+                 ],
+    "hardFails":  [
+
+                  ],
+    "documentedBlockers":  [
+                               {
+                                   "status":  "DOCUMENTED_BLOCKER",
+                                   "blockers":  [
+                                                    "Docker CLI is installed but Docker daemon is unavailable or Docker Desktop is unable to start"
+                                                ],
+                                   "file":  "docs\\auto-execute\\results\\db-e2e.json",
+                                   "lane":  "db-e2e"
+                               }
+                           ],
+    "finalVerdict":  "PASS_WITH_LIMITATION",
+    "schemaVersion":  "1.3",
+    "acceptanceConfidence":  0.85,
+    "confidenceFactors":  {
+                              "requirementsCovered":  true,
+                              "storiesCovered":  true,
+                              "uiScreenshotsCovered":  true,
+                              "contractVerified":  true,
+                              "e2eVerified":  true,
+                              "manualReviewRemaining":  true
+                          },
+    "finalReport":  "docs\\auto-execute\\final-convergence-report.md",
+    "nextRecommendedAction":  "Review limitations before final acceptance.",
+    "updatedAt":  "2026-05-14T21:46:45"
+}

@@ -1,0 +1,19 @@
+﻿{
+    "blockers":  [
+
+                 ],
+    "commands":  [
+
+                 ],
+    "lane":  "compare-ui",
+    "status":  "PASS",
+    "evidence":  [
+                     "docs\\auto-execute\\ui-target.json",
+                     "docs\\auto-execute\\gap-list.json"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+                        null
+                    ],
+    "updatedAt":  "2026-05-14T21:43:52"
+}

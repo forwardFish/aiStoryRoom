@@ -1,0 +1,17 @@
+﻿{
+    "finalVerdict":  "PASS_WITH_LIMITATION",
+    "currentRound":  1,
+    "acceptanceConfidence":  0.85,
+    "lastGapCount":  0,
+    "status":  "PASS_WITH_LIMITATION",
+    "updatedAt":  "2026-05-14T21:46:45",
+    "schemaVersion":  "1.3",
+    "confidenceFactors":  {
+                              "requirementsCovered":  true,
+                              "storiesCovered":  true,
+                              "uiScreenshotsCovered":  true,
+                              "contractVerified":  true,
+                              "e2eVerified":  true,
+                              "manualReviewRemaining":  true
+                          }
+}

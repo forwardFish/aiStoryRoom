@@ -1,0 +1,31 @@
+﻿{
+    "schemaVersion":  "2.2",
+    "pixelPerfectAllowed":  true,
+    "pixelPerfectRequired":  true,
+    "screens":  [
+                    {
+                        "id":  "WEB-CABIN-DESKTOP",
+                        "name":  "AI故事局测试台桌面验证舱",
+                        "required":  true,
+                        "reference":  "docs/UI/2/模拟页面.png",
+                        "route":  "/",
+                        "viewport":  "1610x977",
+                        "routeOrSurface":  "apps/web public validation cabin",
+                        "notes":  "本轮唯一视觉真源；由 run-web-cabin-smoke.ps1 固定 1610x977 截图并由 run-web-cabin-visual-diff.ps1 输出像素 diff。",
+                        "status":  "PASS",
+                        "structureStatus":  "PASS",
+                        "visualStatus":  "PASS",
+                        "pixelPerfectStatus":  "PASS",
+                        "pixelDiffStatus":  "PASS",
+                        "actualScreenshot":  "docs\\auto-execute\\screenshots\\web-cabin-smoke.png",
+                        "visualEvidence":  "docs\\auto-execute\\screenshots\\web-cabin-smoke.png",
+                        "visualDiff":  "docs\\auto-execute\\screenshots\\web-cabin-diff.png",
+                        "visualDiffJson":  "docs\\auto-execute\\results\\web-cabin-visual-diff.json",
+                        "structureEvidence":  "docs\\auto-execute\\results\\web-cabin-structure-check.json",
+                        "canClaimPixelPerfect":  false,
+                        "knownDifferences":  null
+                    }
+                ],
+    "status":  "PASS",
+    "generatedAt":  "2026-05-14T21:43:41"
+}

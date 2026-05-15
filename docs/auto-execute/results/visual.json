@@ -1,0 +1,22 @@
+﻿{
+    "blockers":  [
+
+                 ],
+    "commands":  [
+
+                 ],
+    "lane":  "visual",
+    "status":  "PASS_WITH_LIMITATION",
+    "evidence":  [
+                     "docs\\auto-execute\\UI_REFERENCE_INVENTORY.md",
+                     "docs\\auto-execute\\screenshots\\web-cabin-smoke.png",
+                     "docs\\auto-execute\\ui-target.json",
+                     "docs\\auto-execute\\visual-diff-report.md",
+                     "docs\\auto-execute\\results\\basic-visual-diff.json"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+                        "Manual pixel-level comparison remains required before pixel-perfect PASS."
+                    ],
+    "updatedAt":  "2026-05-14T21:35:50"
+}

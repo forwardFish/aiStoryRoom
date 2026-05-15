@@ -200,6 +200,22 @@ export class StoryController {
     return this.story.adminStoryRun(runId);
   }
 
+
+  @Get("admin/roles")
+  adminRoles() {
+    return this.story.adminRoles();
+  }
+
+  @Get("admin/actions")
+  adminActions() {
+    return this.story.adminActions();
+  }
+
+  @Get("admin/resolutions")
+  adminResolutions() {
+    return this.story.adminResolutions();
+  }
+
   @Get("admin/ai-tasks")
   adminAiTasks() {
     return this.story.adminAiTasks();

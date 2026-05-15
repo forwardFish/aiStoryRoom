@@ -1,0 +1,28 @@
+﻿{
+    "pixelDiffStatus":  "PASS",
+    "actual":  "docs\\auto-execute\\screenshots\\web-cabin-smoke.png",
+    "diffPng":  "docs\\auto-execute\\screenshots\\web-cabin-diff.png",
+    "reference":  "docs\\UI\\2\\模拟页面.png",
+    "lane":  "web-cabin-visual-diff",
+    "canClaimPixelPerfect":  false,
+    "status":  "PASS",
+    "knownDifferences":  {
+
+                         },
+    "updatedAt":  "2026-05-14T21:43:41",
+    "diffThreshold":  0.185,
+    "schemaVersion":  "1.3",
+    "metrics":  {
+                    "referenceSize":  "1610x977",
+                    "maxRgbDelta":  1,
+                    "sizeMismatch":  false,
+                    "comparedSize":  "1610x977",
+                    "meanRgbDelta":  0.098243,
+                    "ratio":  0.181279,
+                    "tolerance":  0.1,
+                    "changedPixels":  285147,
+                    "actualSize":  "1610x977",
+                    "comparedPixels":  1572970
+                },
+    "viewport":  "1610x977"
+}

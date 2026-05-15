@@ -1,0 +1,452 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "status":  "PASS_WITH_LIMITATION",
+    "generatedAt":  "2026-05-14T21:10:16",
+    "source":  "docs/auto-execute/requirement-target.json",
+    "stories":  [
+                    {
+                        "id":  "STORY-001",
+                        "requirementIds":  [
+                                               "P0-REQ-001"
+                                           ],
+                        "title":  "apps/miniprogram core pages; apps/web validation cabin; preview-api/story APIs",
+                        "description":  "????????????????????/?????????????????",
+                        "priority":  "P0",
+                        "normalized":  true,
+                        "status":  "PASS",
+                        "scopeClassification":  "IN_SCOPE_MUST_CLOSE",
+                        "acceptanceCriteria":  [
+                                                   "?? 3 ???????",
+                                                   "??? invite ?????",
+                                                   "3 ???????????",
+                                                   "??/?????????????"
+                                               ],
+                        "testPoints":  [
+                                           {
+                                               "id":  "STORY-001-TP-01",
+                                               "kind":  "api_contract",
+                                               "status":  "PASS",
+                                               "command":  "acceptance contract/backend/API gate",
+                                               "evidence":  "docs/auto-execute/logs/backend-test.log"
+                                           },
+                                           {
+                                               "id":  "STORY-001-TP-02",
+                                               "kind":  "frontend",
+                                               "status":  "PASS",
+                                               "command":  "pnpm --filter @apps/web typecheck / frontend build gate",
+                                               "evidence":  "docs/auto-execute/logs/frontend-typecheck.log"
+                                           },
+                                           {
+                                               "id":  "STORY-001-TP-03",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/auto-execute/logs/frontend-build.log"
+                                           },
+                                           {
+                                               "id":  "STORY-001-TP-04",
+                                               "kind":  "e2e",
+                                               "status":  "PASS",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                                           },
+                                           {
+                                               "id":  "STORY-001-TP-05",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/auto-execute/screenshots/web-cabin-smoke.png"
+                                           },
+                                           {
+                                               "id":  "STORY-001-TP-06",
+                                               "kind":  "api_contract",
+                                               "status":  "PASS",
+                                               "command":  "acceptance contract/backend/API gate",
+                                               "evidence":  "docs/auto-execute/results/contract-discovery.json"
+                                           }
+                                       ],
+                        "evidence":  [
+                                         "docs/auto-execute/logs/backend-test.log",
+                                         "docs/auto-execute/logs/frontend-typecheck.log",
+                                         "docs/auto-execute/logs/frontend-build.log",
+                                         "scripts/test-reports/story-e2e-1778678522059.json",
+                                         "docs/auto-execute/screenshots/web-cabin-smoke.png",
+                                         "docs/auto-execute/results/contract-discovery.json"
+                                     ],
+                        "limitation":  ""
+                    },
+                    {
+                        "id":  "STORY-002",
+                        "requirementIds":  [
+                                               "P0-REQ-002"
+                                           ],
+                        "title":  "packages/templates; /story-runs/:runId/roles; role/insight UI",
+                        "description":  "??????????????????????????????",
+                        "priority":  "P0",
+                        "normalized":  true,
+                        "status":  "PASS",
+                        "scopeClassification":  "IN_SCOPE_MUST_CLOSE",
+                        "acceptanceCriteria":  [
+                                                   "?????? 3 ???",
+                                                   "???? personalHook?destinyQuestion?privateClues?cannotDo",
+                                                   "??? claim role ?? UI ????????"
+                                               ],
+                        "testPoints":  [
+                                           {
+                                               "id":  "STORY-002-TP-01",
+                                               "kind":  "evidence",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "packages/templates/src/index.ts"
+                                           },
+                                           {
+                                               "id":  "STORY-002-TP-02",
+                                               "kind":  "e2e",
+                                               "status":  "PASS",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                                           },
+                                           {
+                                               "id":  "STORY-002-TP-03",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/21_my_fate_line.png"
+                                           },
+                                           {
+                                               "id":  "STORY-002-TP-04",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/27_private_clue_detail.png"
+                                           }
+                                       ],
+                        "evidence":  [
+                                         "packages/templates/src/index.ts",
+                                         "scripts/test-reports/story-e2e-1778678522059.json",
+                                         "docs/UI/2/21_my_fate_line.png",
+                                         "docs/UI/2/27_private_clue_detail.png"
+                                     ],
+                        "limitation":  ""
+                    },
+                    {
+                        "id":  "STORY-003",
+                        "requirementIds":  [
+                                               "P0-REQ-003"
+                                           ],
+                        "title":  "/story-runs/:runId/state; /nodes/:nodeId/actions; /nodes/:nodeId/resolve; /chapters/:chapterId",
+                        "description":  "SceneNode ???????????????AI/????????? 5 ?????????",
+                        "priority":  "P0",
+                        "normalized":  true,
+                        "status":  "PASS",
+                        "scopeClassification":  "IN_SCOPE_MUST_CLOSE",
+                        "acceptanceCriteria":  [
+                                                   "????? 5 ???",
+                                                   "??????? 3 ?????",
+                                                   "?????? summary?echoes?crossImpacts?clue/relation changes",
+                                                   "???????? nextHook"
+                                               ],
+                        "testPoints":  [
+                                           {
+                                               "id":  "STORY-003-TP-01",
+                                               "kind":  "e2e",
+                                               "status":  "PASS",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "scripts/e2e/story-multirole.ts"
+                                           },
+                                           {
+                                               "id":  "STORY-003-TP-02",
+                                               "kind":  "e2e",
+                                               "status":  "PASS",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                                           },
+                                           {
+                                               "id":  "STORY-003-TP-03",
+                                               "kind":  "e2e",
+                                               "status":  "PASS",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "docs/auto-execute/FULL_FLOW_ACCEPTANCE.md"
+                                           }
+                                       ],
+                        "evidence":  [
+                                         "scripts/e2e/story-multirole.ts",
+                                         "scripts/test-reports/story-e2e-1778678522059.json",
+                                         "docs/auto-execute/FULL_FLOW_ACCEPTANCE.md"
+                                     ],
+                        "limitation":  ""
+                    },
+                    {
+                        "id":  "STORY-004",
+                        "requirementIds":  [
+                                               "P0-REQ-004"
+                                           ],
+                        "title":  "/nodes/:nodeId/actions; /admin/action-guard; apps/miniprogram insight/admin; apps/web guard panel",
+                        "description":  "ActionGuard ????????? accepted/rejected?guardStatus?matchedRules?suggestedRewrite ? reason??????????",
+                        "priority":  "P0",
+                        "normalized":  true,
+                        "status":  "PASS",
+                        "scopeClassification":  "IN_SCOPE_MUST_CLOSE",
+                        "acceptanceCriteria":  [
+                                                   "???? accepted",
+                                                   "???? rewrite_needed ? blocked",
+                                                   "?? matchedRules/suggestedRewrite/reason",
+                                                   "admin action-guard ? blockedAudits/guardEvents/rejectedActions"
+                                               ],
+                        "testPoints":  [
+                                           {
+                                               "id":  "STORY-004-TP-01",
+                                               "kind":  "evidence",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "packages/shared/src/index.ts"
+                                           },
+                                           {
+                                               "id":  "STORY-004-TP-02",
+                                               "kind":  "e2e",
+                                               "status":  "PASS",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "scripts/e2e/story-multirole.ts"
+                                           },
+                                           {
+                                               "id":  "STORY-004-TP-03",
+                                               "kind":  "e2e",
+                                               "status":  "PASS",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                                           },
+                                           {
+                                               "id":  "STORY-004-TP-04",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/26_actionguard_rewrite.png"
+                                           },
+                                           {
+                                               "id":  "STORY-004-TP-05",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/auto-execute/screenshots/web-cabin-smoke.png"
+                                           }
+                                       ],
+                        "evidence":  [
+                                         "packages/shared/src/index.ts",
+                                         "scripts/e2e/story-multirole.ts",
+                                         "scripts/test-reports/story-e2e-1778678522059.json",
+                                         "docs/UI/2/26_actionguard_rewrite.png",
+                                         "docs/auto-execute/screenshots/web-cabin-smoke.png"
+                                     ],
+                        "limitation":  ""
+                    },
+                    {
+                        "id":  "STORY-005",
+                        "requirementIds":  [
+                                               "P0-REQ-005"
+                                           ],
+                        "title":  "/chapters/:chapterId; /chapters/:chapterId/share; /notifications; /feedback/report",
+                        "description":  "?????????????????????????/?????????????",
+                        "priority":  "P0",
+                        "normalized":  true,
+                        "status":  "PASS_WITH_LIMITATION",
+                        "scopeClassification":  "IN_SCOPE_PASS_WITH_LIMITATION",
+                        "acceptanceCriteria":  [
+                                                   "???? POV sections?personal cards?share token",
+                                                   "??????",
+                                                   "??/??? queued",
+                                                   "??????? mock/provider"
+                                               ],
+                        "testPoints":  [
+                                           {
+                                               "id":  "STORY-005-TP-01",
+                                               "kind":  "e2e",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                                           },
+                                           {
+                                               "id":  "STORY-005-TP-02",
+                                               "kind":  "visual",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/16_chapter_reader.png"
+                                           },
+                                           {
+                                               "id":  "STORY-005-TP-03",
+                                               "kind":  "visual",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/18_share_story_card.png"
+                                           },
+                                           {
+                                               "id":  "STORY-005-TP-04",
+                                               "kind":  "visual",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/23_notification_center.png"
+                                           },
+                                           {
+                                               "id":  "STORY-005-TP-05",
+                                               "kind":  "visual",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/24_report_feedback.png"
+                                           }
+                                       ],
+                        "evidence":  [
+                                         "scripts/test-reports/story-e2e-1778678522059.json",
+                                         "docs/UI/2/16_chapter_reader.png",
+                                         "docs/UI/2/18_share_story_card.png",
+                                         "docs/UI/2/23_notification_center.png",
+                                         "docs/UI/2/24_report_feedback.png"
+                                     ],
+                        "limitation":  "?????? mock/preview provider?????????????????????"
+                    },
+                    {
+                        "id":  "STORY-006",
+                        "requirementIds":  [
+                                               "P1-REQ-006"
+                                           ],
+                        "title":  "/admin/dashboard; /admin/story-runs; /admin/ai-tasks; /admin/audit-logs; /admin/event-logs; /admin/action-guard; admin UI",
+                        "description":  "??/admin ???????AI ????????????? ActionGuard ???",
+                        "priority":  "P1",
+                        "normalized":  true,
+                        "status":  "PASS",
+                        "scopeClassification":  "IN_SCOPE_MUST_CLOSE",
+                        "acceptanceCriteria":  [
+                                                   "admin dashboard ?????",
+                                                   "story runs/roles/actions/resolutions ???",
+                                                   "AI tasks/audit/event/actionguard ???? E2E ?????"
+                                               ],
+                        "testPoints":  [
+                                           {
+                                               "id":  "STORY-006-TP-01",
+                                               "kind":  "e2e",
+                                               "status":  "PASS",
+                                               "command":  "pnpm test:story:e2e",
+                                               "evidence":  "scripts/test-reports/story-e2e-1778678522059.json"
+                                           },
+                                           {
+                                               "id":  "STORY-006-TP-02",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/admin_01_dashboard.png"
+                                           },
+                                           {
+                                               "id":  "STORY-006-TP-03",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/admin_03_ai_logs.png"
+                                           },
+                                           {
+                                               "id":  "STORY-006-TP-04",
+                                               "kind":  "visual",
+                                               "status":  "PASS",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/UI/2/admin_04_content_audit.png"
+                                           },
+                                           {
+                                               "id":  "STORY-006-TP-05",
+                                               "kind":  "api_contract",
+                                               "status":  "PASS",
+                                               "command":  "acceptance contract/backend/API gate",
+                                               "evidence":  "docs/auto-execute/results/contract-discovery.json"
+                                           }
+                                       ],
+                        "evidence":  [
+                                         "scripts/test-reports/story-e2e-1778678522059.json",
+                                         "docs/UI/2/admin_01_dashboard.png",
+                                         "docs/UI/2/admin_03_ai_logs.png",
+                                         "docs/UI/2/admin_04_content_audit.png",
+                                         "docs/auto-execute/results/contract-discovery.json"
+                                     ],
+                        "limitation":  ""
+                    },
+                    {
+                        "id":  "STORY-007",
+                        "requirementIds":  [
+                                               "P1-REQ-007"
+                                           ],
+                        "title":  "apps/miniprogram; apps/web validation cabin; docs/UI/2",
+                        "description":  "UI/2 ??????????? reference/actual evidence ????????????",
+                        "priority":  "P1",
+                        "normalized":  true,
+                        "status":  "PASS_WITH_LIMITATION",
+                        "scopeClassification":  "IN_SCOPE_PASS_WITH_LIMITATION",
+                        "acceptanceCriteria":  [
+                                                   "?? UI screen ? reference path",
+                                                   "????????",
+                                                   "pixelPerfectStatus ?? PASS????????? visual diff"
+                                               ],
+                        "testPoints":  [
+                                           {
+                                               "id":  "STORY-007-TP-01",
+                                               "kind":  "visual",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/auto-execute/ui-target.json"
+                                           },
+                                           {
+                                               "id":  "STORY-007-TP-02",
+                                               "kind":  "visual",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/auto-execute/screenshots/web-cabin-smoke.png"
+                                           },
+                                           {
+                                               "id":  "STORY-007-TP-03",
+                                               "kind":  "visual",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/auto-execute/visual-diff-report.md"
+                                           }
+                                       ],
+                        "evidence":  [
+                                         "docs/auto-execute/ui-target.json",
+                                         "docs/auto-execute/screenshots/web-cabin-smoke.png",
+                                         "docs/auto-execute/visual-diff-report.md"
+                                     ],
+                        "limitation":  "??? Web ?????? UI reference ??????? pixel diff?????? VISUAL_PASS/PASS_WITH_LIMITATION?"
+                    },
+                    {
+                        "id":  "STORY-P2-008",
+                        "requirementIds":  [
+                                               "P2-REQ-008"
+                                           ],
+                        "title":  "docs/UI/2/20_unlock_next_chapter.png",
+                        "description":  "????/???????? P0/P1???????????",
+                        "priority":  "P2",
+                        "normalized":  true,
+                        "status":  "PASS_WITH_LIMITATION",
+                        "scopeClassification":  "DEFERRED_OUT_OF_SCOPE",
+                        "acceptanceCriteria":  [
+                                                   "???????",
+                                                   "???????",
+                                                   "? gap/decision/report ??? out-of-scope ? limitation"
+                                               ],
+                        "testPoints":  [
+                                           {
+                                               "id":  "STORY-P2-008-TP-01",
+                                               "kind":  "evidence",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "harness.yml"
+                                           },
+                                           {
+                                               "id":  "STORY-P2-008-TP-02",
+                                               "kind":  "evidence",
+                                               "status":  "PASS_WITH_LIMITATION",
+                                               "command":  "acceptance evidence file check",
+                                               "evidence":  "docs/auto-execute/05-known-gaps-and-assumptions.md"
+                                           }
+                                       ],
+                        "evidence":  [
+                                         "harness.yml",
+                                         "docs/auto-execute/05-known-gaps-and-assumptions.md"
+                                     ],
+                        "limitation":  "????????????????????????"
+                    }
+                ]
+}

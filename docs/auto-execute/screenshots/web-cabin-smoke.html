@@ -1,0 +1,5456 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI故事局测试台</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main id="app" class="simulator-shell" data-testid="web-cabin-root">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">AI</div>
+        <h1 id="mainTitle" class="brand-title">AI故事局测试台</h1>
+        <span class="brand-version">v1.0.0</span>
+      </div>
+      <button id="newRunBtn" class="primary-wide" data-testid="create-run">创建新测试局</button>
+      <div class="section-title"><span>我的测试局</span><span class="tiny">⌃</span></div>
+      <div class="run-list">
+
+    <article class="run-item active">
+      <div class="item-row">
+        <span class="item-title">午夜便利店 - 测试局1</span>
+        <span class="badge green">进行中</span>
+      </div>
+      <div class="item-subtitle">第1章 · 深夜的开始</div>
+    </article>
+
+    <article class="run-item ">
+      <div class="item-row">
+        <span class="item-title">青云宗门 - 测试局</span>
+        <span class="badge yellow">草稿</span>
+      </div>
+      <div class="item-subtitle">未开始</div>
+    </article>
+
+    <article class="run-item ">
+      <div class="item-row">
+        <span class="item-title">穿越荒村 - 测试局</span>
+        <span class="badge green">已完成</span>
+      </div>
+      <div class="item-subtitle">第3章 · 迷雾散去</div>
+    </article>
+
+      </div>
+      <button id="resetBtn" class="primary-wide ghost" style="margin-top:10px" data-testid="reset-btn">管理测试局</button>
+      <div class="section-title"><span>世界模板</span></div>
+      <div class="template-list">
+
+    <article class="template-item active">
+      <div class="template-art ref-thumb tmpl-0"></div>
+      <div>
+        <div class="item-row">
+          <span class="item-title">午夜便利店</span>
+        </div>
+        <div class="item-subtitle">深夜的便利店，2:17 的秘密</div>
+        <div class="template-actions">
+          <button class="" data-template="template_midnight_store_001">使用中</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="template-item ">
+      <div class="template-art ref-thumb tmpl-1"></div>
+      <div>
+        <div class="item-row">
+          <span class="item-title">青云宗门</span>
+        </div>
+        <div class="item-subtitle">修仙世界的门派纷争</div>
+        <div class="template-actions">
+          <button class="ghost" data-template="template_qingyun_sect_001">使用</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="template-item ">
+      <div class="template-art ref-thumb tmpl-2"></div>
+      <div>
+        <div class="item-row">
+          <span class="item-title">穿越荒村</span>
+        </div>
+        <div class="item-subtitle">迷失在时间里的村庄</div>
+        <div class="template-actions">
+          <button class="ghost" data-template="template_wild_village_001">使用</button>
+        </div>
+      </div>
+    </article>
+
+      </div>
+      <p class="tiny" style="margin-top:16px">更多模板开发中...</p>
+    </aside>
+
+    <section class="workspace">
+
+    <header class="topbar">
+      <div class="run-heading">
+        <h1>当前测试局：午夜便利店 - 测试局1</h1>
+        <span class="badge green">进行中</span>
+      </div>
+      <div class="top-actions">
+        <button id="exportBtn" class="ghost">导出数据</button>
+        <button id="saveApi" class="ghost" data-testid="save-api">存档</button>
+        <button id="debugToggle" class="ghost">设置</button>
+      </div>
+    </header>
+
+
+    <div class="status-row">
+      <span class="chip">世界模板：<strong>午夜便利店</strong></span>
+      <span class="chip">当前章节：<strong>第1章 · 深夜的开始</strong></span>
+      <span class="chip">当前节点：<strong>1/5　发现硬币</strong></span>
+      <span class="chip">当前时间：<strong>22:17</strong></span>
+      <span class="chip">危险等级：<strong style="color:#46df84">12%（轻微）</strong></span>
+    </div>
+
+      <div class="dashboard-grid">
+
+    <article class="panel story-target">
+      <section>
+        <h2 class="panel-title">当前剧情 <span class="panel-subtitle">（公共剧情）</span></h2>
+        <div class="story-copy">
+          <p>夜色笼罩着这座城市，雨点敲打着便利店的玻璃窗。</p><p>你（夜班店员）整理着货架，收银机里传来一声轻响。</p><p>你低头看去，发现了一枚从未见过的旧硬币，硬币上刻着奇怪的符号。</p>
+          <p>就在这时，门上的风铃突然无风自动，发出清脆的声响……</p>
+        </div>
+      </section>
+      <section class="goal-stack">
+        <div class="info-block">
+          <h3>当前目标</h3>
+          <p class="muted">探索便利店内发生的异常，找出硬币的来源。</p>
+        </div>
+        <div class="info-block">
+          <h3>我的命运问题</h3>
+          <p class="muted">硬币的真正用途到底是什么？</p>
+        </div>
+        <div class="info-block">
+          <h3>当前可疑信息</h3>
+          <ul>
+            <li>便利店在 2:17 会发生异常</li><li>有人在暗中监视这家便利店</li>
+            <li>ActionGuard：blocked</li>
+          </ul>
+        </div>
+      </section>
+    </article>
+
+
+    <section class="panel">
+      <div class="control-header">
+        <h2 class="panel-title">切换控制角色 <span class="panel-subtitle">（当前：A - 夜班店员（你））</span></h2>
+      </div>
+      <div class="control-strip" id="rolesPanel" data-testid="roles-panel">
+
+          <article class="role-item active" data-role-index="0">
+            <div class="avatar avatar-a">A</div>
+            <div>
+              <div class="role-name">A - 夜班店员（你）</div>
+              <div class="role-desc">在便利店上夜班，发现了异常的硬币。</div>
+            </div>
+            <span class="badge green">已行动</span>
+          </article>
+
+          <article class="role-item " data-role-index="1">
+            <div class="avatar avatar-b">B</div>
+            <div>
+              <div class="role-name">B - 外卖骑手</div>
+              <div class="role-desc">接到一份诡异的订单，收货人是自己。</div>
+            </div>
+            <span class="badge yellow">未行动</span>
+          </article>
+
+          <article class="role-item " data-role-index="2">
+            <div class="avatar avatar-c">C</div>
+            <div>
+              <div class="role-name">C - 实习记者</div>
+              <div class="role-desc">调查父亲当年的神秘失踪案。</div>
+            </div>
+            <span class="badge green">已行动</span>
+          </article>
+
+      </div>
+    </section>
+
+
+    <section class="panel action-zone" id="actionPanel" data-testid="action-panel">
+      <div>
+        <h2 class="panel-title">行动提交区 <span class="panel-subtitle">（为当前角色提交行动）</span></h2>
+        <div class="form-grid">
+          <div class="field">
+            <label for="actionType">行动类型</label>
+            <select id="actionType">
+              <option value="investigate">调查</option>
+              <option value="observe">观察</option>
+              <option value="ask">询问</option>
+              <option value="cooperate">协作</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="target">行动对象</label>
+            <select id="target">
+              <option>收银机 / 硬币</option>
+              <option>便利店门口</option>
+              <option>监控回放</option>
+              <option>仓库门</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="intent">行动方式</label>
+            <select id="intent">
+              <option>仔细检查硬币上的符号</option>
+              <option>比对监控和小票时间</option>
+              <option>询问其他角色看到的细节</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="method">行动内容 <span class="panel-subtitle">（详细描述你的行动）</span></label>
+          <textarea id="method" data-testid="method-input">夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。</textarea>
+        </div>
+        <textarea id="intentText" data-testid="intent-input" style="display:none">帮助队伍理解发现硬币，不宣布行动结果。</textarea>
+      </div>
+      <div class="action-buttons">
+        <fieldset class="risk-box">
+          <legend>风险档位</legend>
+          <label><input type="radio" name="risk" value="normal" checked=""> 低风险</label>
+          <label><input type="radio" name="risk" value="risky"> 中风险</label>
+          <label><input type="radio" name="risk" value="risky"> 高风险</label>
+        </fieldset>
+        <button id="submitActionBtn" data-testid="submit-action">提交行动</button>
+        <div class="automation-controls">
+          <button id="loginBtn" data-testid="login-btn">模拟登录</button>
+          <button id="simulateBtn" data-testid="simulate-players">模拟三玩家</button>
+          <button id="submitAllBtn" data-testid="submit-all-actions">提交全员行动</button>
+          <button id="invalidActionBtn" data-testid="trigger-guard">触发 ActionGuard</button>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="bottom-grid">
+
+    <article class="panel pad" id="resolutionPanel" data-testid="resolution-panel">
+      <h2 class="panel-title">AI 结算结果 / 章节结果 <span class="panel-subtitle">（本轮结算后显示）</span></h2>
+      <div class="result-grid">
+        <section class="result-card">
+          <h3 style="color:#62e58f">个人回响 <span class="panel-subtitle">（对你）</span></h3>
+          <p>你戴上手套拿起硬币，冰凉的触感让你突然想起昨晚的梦境：一个模糊的声音在耳边说“守夜人会被选中”。</p>
+        </section>
+        <section class="result-card">
+          <h3 style="color:#d795ff">他人回响 <span class="panel-subtitle">（影响其他角色）</span></h3>
+          <p>外卖骑手发现订单轨迹波动，实习记者的相机拍下了新的线索。</p>
+        </section>
+        <section class="result-card">
+          <h3 style="color:#7bd0ff">世界回响 <span class="panel-subtitle">（世界变化）</span></h3>
+          <p>便利店内温度下降，收银机屏幕闪烁了一下，店外的雨声突然停了，但街道变得异常安静。</p>
+        </section>
+      </div>
+      <div class="wide-note">
+        <strong>跨角色影响</strong>
+        <span class="muted"> 因为你检查了硬币，外卖骑手的订单备注更新为：“他已经握了硬币，不要让他收下。”</span>
+      </div>
+      <div class="wide-note">
+        <strong>下一节点钩子</strong>
+        <span class="muted"> 收银机屏幕上突然显示一行字：2:17 交换开始，你准备好了吗？</span>
+      </div>
+      <div class="status-row" style="margin-bottom:0">
+        <button id="resolveBtn" data-testid="resolve-node">结算当前节点</button>
+        <button id="fullChapterBtn" class="ghost" data-testid="run-five-nodes">跑完 5 个节点</button>
+      </div>
+    </article>
+
+    </section>
+
+      </div>
+    </section>
+
+    <aside class="rightbar">
+
+    <article class="panel chapter-feature" id="chapterPanel" data-testid="chapter-panel">
+      <div style="padding: 12px 12px 0">
+        <h2 class="panel-title">多 POV 章节正文 <span class="panel-subtitle">（预览）</span></h2>
+      </div>
+      <div class="pov-tabs">
+
+          <button class="pov-tab active" data-pov-index="0">
+            林鹿
+          </button>
+
+          <button class="pov-tab " data-pov-index="1">
+            陈舟
+          </button>
+
+          <button class="pov-tab " data-pov-index="2">
+            顾言
+          </button>
+
+          <button class="pov-tab " data-pov-index="3">
+            全文
+          </button>
+
+      </div>
+      <div class="pov-paper">林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。</div>
+      <div style="padding: 0 10px 10px">
+        <button id="loadChapterBtn" class="ghost" data-testid="load-chapter">加载章节 / 故事卡</button>
+      </div>
+    </article>
+
+      <details class="side-details">
+        <summary>角色状态 / 行动状态</summary>
+        <section class="side-panel">
+          <div class="status-list">
+
+              <article class="side-role">
+                <div class="avatar avatar-a">A</div>
+                <div>
+                  <div class="role-name">A - 夜班店员（你）</div>
+                  <div class="role-desc">22:16 提交：调查收银机</div>
+                </div>
+                <span class="badge green">已行动</span>
+              </article>
+
+              <article class="side-role">
+                <div class="avatar avatar-b">B</div>
+                <div>
+                  <div class="role-name">B - 外卖骑手</div>
+                  <div class="role-desc">等待行动...</div>
+                </div>
+                <span class="badge yellow">未行动</span>
+              </article>
+
+              <article class="side-role">
+                <div class="avatar avatar-c">C</div>
+                <div>
+                  <div class="role-name">C - 实习记者</div>
+                  <div class="role-desc">22:14 提交：检查旧照片</div>
+                </div>
+                <span class="badge green">已行动</span>
+              </article>
+
+          </div>
+        </section>
+      </details>
+      <details class="side-details">
+        <summary>线索 / 命运网</summary>
+        <section class="side-panel">
+          <div class="tabs">
+            <button class="tab active">线索信息</button>
+            <button class="tab">命运关系网</button>
+          </div>
+
+    <div class="clue-group">
+      <h3>我的线索 <span class="panel-subtitle">（仅自己可见）</span></h3>
+      <ul><li>收银机里的旧硬币刻着符号</li><li>昨晚梦里听到“不要让外卖员进来”</li></ul>
+    </div>
+    <div class="clue-group">
+      <h3>公开线索 <span class="panel-subtitle">（所有人可见）</span></h3>
+      <ul><li>便利店在 2:17 会发生异常</li><li>有人在暗中监视这家便利店</li></ul>
+    </div>
+    <div class="clue-group">
+      <h3>可疑信息 <span class="panel-subtitle">（可能重要）</span></h3>
+      <ul>
+        <li>实习记者似乎与旧案有关</li>
+        <li>老板最近行为很奇怪</li>
+        <li>越权行动已被 ActionGuard 拦截</li>
+      </ul>
+    </div>
+
+        </section>
+      </details>
+      <details class="side-details">
+        <summary>个人故事卡</summary>
+
+    <article class="panel pad">
+      <h2 class="panel-title">个人故事卡 <span class="panel-subtitle">（预览）</span></h2>
+      <section class="story-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div class="avatar avatar-a">A</div>
+          <div>
+            <h3>夜班店员</h3>
+            <div class="muted">线索发现者 / 异常触发者</div>
+          </div>
+        </div>
+        <table>
+          <tbody><tr><th>本章关键选择</th><td>林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。</td></tr>
+          <tr><th>影响了谁</th><td>你在收银机里发现一枚不属于今晚账目的旧硬币。</td></tr>
+          <tr><th>角色定位</th><td>线索发现者 / 异常触发者</td></tr>
+          <tr><th>未解之谜</th><td>你到底是被困者，还是下一任守夜人？</td></tr>
+        </tbody></table>
+      </section>
+    </article>
+
+      </details>
+    </aside>
+
+    <aside id="debugPanel" class="debug-tray " data-testid="debug-panel"><pre>{
+  "run": {
+    "id": "run_qxg4lec4",
+    "inviteCode": "ZGAEFH",
+    "templateId": "template_midnight_store_001",
+    "title": "午夜便利店：第一章",
+    "hook": "凌晨 2:17，便利店自动门自己打开，一位没有影子的客人走了进来。",
+    "mode": "invite",
+    "status": "chapter_generated",
+    "maxPlayers": 3,
+    "activeHumanCount": 3,
+    "aiPlayerCount": 0,
+    "dangerLevel": 3,
+    "currentNodeIndex": 5,
+    "roles": [
+      {
+        "roleKey": "lin_lu",
+        "roleName": "林鹿",
+        "identity": "夜班店员",
+        "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+        "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+        "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+        "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+        "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+        "arcText": "从逃避异常，到主动面对真相。",
+        "knownInfo": [
+          "仓库门今晚曾经自动反锁",
+          "收银系统里出现过 0 元小票"
+        ],
+        "cannotDo": [
+          "直接宣布怪客身份",
+          "独自离开整家便利店"
+        ],
+        "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+        "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+        "privateClues": [
+          "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "仓库门今晚曾经自动反锁",
+          "收银系统里出现过 0 元小票"
+        ],
+        "id": "role_0x8ffmda",
+        "status": "claimed",
+        "playerOpenid": "mock_openid_web_owner"
+      },
+      {
+        "roleKey": "chen_zhou",
+        "roleName": "陈舟",
+        "identity": "外卖骑手",
+        "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+        "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+        "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+        "currentState": "衣服湿透，手机电量只剩 12%。",
+        "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+        "arcText": "从旁观者变成关键目击者。",
+        "knownInfo": [
+          "巷口有一盏路灯只照人不照影子",
+          "订单地址在地图上不存在"
+        ],
+        "cannotDo": [
+          "凭空知道店内秘密",
+          "强迫其他角色交出物品"
+        ],
+        "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+        "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+        "privateClues": [
+          "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+          "巷口有一盏路灯只照人不照影子",
+          "订单地址在地图上不存在"
+        ],
+        "id": "role_1hk2vhde",
+        "status": "claimed",
+        "playerOpenid": "mock_openid_web_player_b"
+      },
+      {
+        "roleKey": "gu_yan",
+        "roleName": "顾言",
+        "identity": "民俗研究生",
+        "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+        "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+        "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+        "currentState": "冷静观察，随身带着旧相机和笔记本。",
+        "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+        "arcText": "从研究真相，到承担干预后果。",
+        "knownInfo": [
+          "没有影子的客人可能不是第一个",
+          "旧相机能拍到肉眼忽略的痕迹"
+        ],
+        "cannotDo": [
+          "直接封印异常",
+          "替他人决定是否牺牲"
+        ],
+        "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+        "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+        "privateClues": [
+          "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+          "没有影子的客人可能不是第一个",
+          "旧相机能拍到肉眼忽略的痕迹"
+        ],
+        "id": "role_248k1hcv",
+        "status": "claimed",
+        "playerOpenid": "mock_openid_web_player_c"
+      }
+    ],
+    "actions": [
+      {
+        "id": "action_95mzwhhv",
+        "nodeId": "run_qxg4lec4:node:1",
+        "roleId": "role_0x8ffmda",
+        "roleName": "林鹿",
+        "status": "accepted",
+        "guardStatus": "ok",
+        "method": "夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。",
+        "intent": "仔细检查硬币上的符号"
+      }
+    ],
+    "resolutions": [
+      {
+        "id": "resolution_6bji11l1",
+        "nodeId": "run_qxg4lec4:node:1",
+        "nodeIndex": 1,
+        "title": "自动门打开",
+        "summary": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。",
+        "publicNarration": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。",
+        "nextNodeHook": "仓库门后传来三下敲击声，像有人在里面回应你们。",
+        "dangerBefore": 1,
+        "dangerAfter": 1,
+        "actionResultsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "result": "partial_success",
+            "text": "林鹿尝试夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。，获得了线索，但也让异常更接近一步。"
+          }
+        ],
+        "privateResultsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "privateNote": "林鹿的私密线索被轻微触动。"
+          }
+        ],
+        "echoesJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "personalEcho": "林鹿的行动让自己的命运问题更接近答案。",
+            "otherEcho": "林鹿的选择改变了其他人的判断与信任。",
+            "worldEcho": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+          }
+        ],
+        "crossImpactsJson": [
+          {
+            "sourceRoleId": "role_0x8ffmda",
+            "sourceRoleName": "林鹿",
+            "targetRoleId": "role_0x8ffmda",
+            "targetRoleName": "林鹿",
+            "impactType": "clue_change",
+            "visibility": "public",
+            "title": "林鹿影响了林鹿",
+            "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+          }
+        ],
+        "clueChangesJson": [
+          {
+            "title": "节点 1 线索",
+            "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+          }
+        ],
+        "relationChangesJson": [
+          {
+            "relationType": "trust",
+            "publicNote": "共同经历异常后产生信任。"
+          }
+        ]
+      },
+      {
+        "id": "resolution_kr23agw0",
+        "nodeId": "run_qxg4lec4:node:2",
+        "nodeIndex": 2,
+        "title": "仓库门后的敲击",
+        "summary": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。",
+        "publicNarration": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+        "nextNodeHook": "收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+        "dangerBefore": 1,
+        "dangerAfter": 1,
+        "actionResultsJson": [],
+        "privateResultsJson": [],
+        "echoesJson": [],
+        "crossImpactsJson": [],
+        "clueChangesJson": [
+          {
+            "title": "节点 2 线索",
+            "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+          }
+        ],
+        "relationChangesJson": [
+          {
+            "relationType": "trust",
+            "publicNote": "共同经历异常后产生信任。"
+          }
+        ]
+      },
+      {
+        "id": "resolution_n8dp3mbf",
+        "nodeId": "run_qxg4lec4:node:3",
+        "nodeIndex": 3,
+        "title": "0 元小票",
+        "summary": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。",
+        "publicNarration": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+        "nextNodeHook": "旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+        "dangerBefore": 1,
+        "dangerAfter": 1,
+        "actionResultsJson": [],
+        "privateResultsJson": [],
+        "echoesJson": [],
+        "crossImpactsJson": [],
+        "clueChangesJson": [
+          {
+            "title": "节点 3 线索",
+            "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+          }
+        ],
+        "relationChangesJson": [
+          {
+            "relationType": "trust",
+            "publicNote": "共同经历异常后产生信任。"
+          }
+        ]
+      },
+      {
+        "id": "resolution_ypzvm93j",
+        "nodeId": "run_qxg4lec4:node:4",
+        "nodeIndex": 4,
+        "title": "冷柜里的第五张脸",
+        "summary": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。",
+        "publicNarration": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+        "nextNodeHook": "便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+        "dangerBefore": 1,
+        "dangerAfter": 2,
+        "actionResultsJson": [],
+        "privateResultsJson": [],
+        "echoesJson": [],
+        "crossImpactsJson": [],
+        "clueChangesJson": [
+          {
+            "title": "节点 4 线索",
+            "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+          }
+        ],
+        "relationChangesJson": [
+          {
+            "relationType": "trust",
+            "publicNote": "共同经历异常后产生信任。"
+          }
+        ]
+      },
+      {
+        "id": "resolution_y0fs6g5j",
+        "nodeId": "run_qxg4lec4:node:5",
+        "nodeIndex": 5,
+        "title": "第五道影子",
+        "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+        "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+        "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+        "dangerBefore": 2,
+        "dangerAfter": 3,
+        "actionResultsJson": [],
+        "privateResultsJson": [],
+        "echoesJson": [],
+        "crossImpactsJson": [],
+        "clueChangesJson": [
+          {
+            "title": "节点 5 线索",
+            "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+          }
+        ],
+        "relationChangesJson": [
+          {
+            "relationType": "trust",
+            "publicNote": "共同经历异常后产生信任。"
+          }
+        ]
+      }
+    ],
+    "chapters": [
+      {
+        "id": "chapter_13rqlloc",
+        "runId": "run_qxg4lec4",
+        "chapterIndex": 1,
+        "title": "午夜便利店：第一章终局",
+        "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+        "highlightsJson": [
+          {
+            "roleName": "林鹿",
+            "highlight": "林鹿在关键节点留下了决定性行动。"
+          },
+          {
+            "roleName": "陈舟",
+            "highlight": "陈舟在关键节点留下了决定性行动。"
+          },
+          {
+            "roleName": "顾言",
+            "highlight": "顾言在关键节点留下了决定性行动。"
+          }
+        ],
+        "keyChoicesJson": [
+          {
+            "node": 1,
+            "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+          },
+          {
+            "node": 2,
+            "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+          },
+          {
+            "node": 3,
+            "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+          },
+          {
+            "node": 4,
+            "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+          },
+          {
+            "node": 5,
+            "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+          }
+        ],
+        "povSectionsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "title": "第 1 节：林鹿",
+            "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+          },
+          {
+            "roleId": "role_1hk2vhde",
+            "roleName": "陈舟",
+            "title": "第 2 节：陈舟",
+            "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+          },
+          {
+            "roleId": "role_248k1hcv",
+            "roleName": "顾言",
+            "title": "第 3 节：顾言",
+            "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+          }
+        ],
+        "personalCardsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "title": "林鹿的个人故事卡",
+            "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+          },
+          {
+            "roleId": "role_1hk2vhde",
+            "roleName": "陈舟",
+            "title": "陈舟的个人故事卡",
+            "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+          },
+          {
+            "roleId": "role_248k1hcv",
+            "roleName": "顾言",
+            "title": "顾言的个人故事卡",
+            "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+          }
+        ],
+        "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+        "shareTokens": [
+          {
+            "token": "share_lec4"
+          }
+        ]
+      }
+    ],
+    "players": {
+      "mock_openid_web_owner": "role_0x8ffmda",
+      "mock_openid_web_player_b": "role_1hk2vhde",
+      "mock_openid_web_player_c": "role_248k1hcv"
+    },
+    "joinedPlayers": [
+      "mock_openid_web_owner",
+      "mock_openid_web_player_b",
+      "mock_openid_web_player_c"
+    ]
+  },
+  "currentNode": {
+    "id": "run_qxg4lec4:node:5",
+    "runId": "run_qxg4lec4",
+    "chapterIndex": 1,
+    "nodeIndex": 5,
+    "title": "第五道影子",
+    "publicNarration": "灯灭之后，所有声音都被雨吞掉。门外路灯下，多出来的影子正慢慢走向货架尽头。",
+    "nodeGoal": "决定如何面对第五道影子，并为本章收束真相。",
+    "actionOptionsJson": [
+      "合力逼近影子",
+      "保护关键证据",
+      "用各自秘密换取线索"
+    ],
+    "status": "resolved",
+    "actions": [],
+    "resolution": {
+      "id": "resolution_y0fs6g5j",
+      "nodeId": "run_qxg4lec4:node:5",
+      "nodeIndex": 5,
+      "title": "第五道影子",
+      "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+      "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+      "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+      "dangerBefore": 2,
+      "dangerAfter": 3,
+      "actionResultsJson": [],
+      "privateResultsJson": [],
+      "echoesJson": [],
+      "crossImpactsJson": [],
+      "clueChangesJson": [
+        {
+          "title": "节点 5 线索",
+          "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+        }
+      ],
+      "relationChangesJson": [
+        {
+          "relationType": "trust",
+          "publicNote": "共同经历异常后产生信任。"
+        }
+      ]
+    }
+  },
+  "activePlayer": {
+    "openid": "mock_openid_web_owner",
+    "nickname": "夜班店员",
+    "code": "A"
+  },
+  "guardResult": {
+    "status": "rejected",
+    "accepted": false,
+    "rejected": true,
+    "guardStatus": "blocked",
+    "matchedRules": [
+      "control_others",
+      "skip_plot"
+    ],
+    "suggestedRewrite": {
+      "method": "我尝试观察并推进 players and 我尝试观察并推进",
+      "intent": "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+      "strategy": "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+    },
+    "reason": "玩家不能操控其他角色或替他人决定。；玩家不能跳过当前剧情节点。",
+    "message": "玩家不能操控其他角色或替他人决定。；玩家不能跳过当前剧情节点。",
+    "rewriteSuggestion": {
+      "method": "我尝试观察并推进 players and 我尝试观察并推进",
+      "intent": "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+      "strategy": "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+    }
+  },
+  "resolution": {
+    "id": "resolution_y0fs6g5j",
+    "nodeId": "run_qxg4lec4:node:5",
+    "nodeIndex": 5,
+    "title": "第五道影子",
+    "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+    "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+    "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+    "dangerBefore": 2,
+    "dangerAfter": 3,
+    "actionResultsJson": [],
+    "privateResultsJson": [],
+    "echoesJson": [],
+    "crossImpactsJson": [],
+    "clueChangesJson": [
+      {
+        "title": "节点 5 线索",
+        "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+      }
+    ],
+    "relationChangesJson": [
+      {
+        "relationType": "trust",
+        "publicNote": "共同经历异常后产生信任。"
+      }
+    ]
+  },
+  "chapter": {
+    "id": "chapter_13rqlloc",
+    "runId": "run_qxg4lec4",
+    "chapterIndex": 1,
+    "title": "午夜便利店：第一章终局",
+    "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+    "highlightsJson": [
+      {
+        "roleName": "林鹿",
+        "highlight": "林鹿在关键节点留下了决定性行动。"
+      },
+      {
+        "roleName": "陈舟",
+        "highlight": "陈舟在关键节点留下了决定性行动。"
+      },
+      {
+        "roleName": "顾言",
+        "highlight": "顾言在关键节点留下了决定性行动。"
+      }
+    ],
+    "keyChoicesJson": [
+      {
+        "node": 1,
+        "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+      },
+      {
+        "node": 2,
+        "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+      },
+      {
+        "node": 3,
+        "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+      },
+      {
+        "node": 4,
+        "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+      },
+      {
+        "node": 5,
+        "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+      }
+    ],
+    "povSectionsJson": [
+      {
+        "roleId": "role_0x8ffmda",
+        "roleName": "林鹿",
+        "title": "第 1 节：林鹿",
+        "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+      },
+      {
+        "roleId": "role_1hk2vhde",
+        "roleName": "陈舟",
+        "title": "第 2 节：陈舟",
+        "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+      },
+      {
+        "roleId": "role_248k1hcv",
+        "roleName": "顾言",
+        "title": "第 3 节：顾言",
+        "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+      }
+    ],
+    "personalCardsJson": [
+      {
+        "roleId": "role_0x8ffmda",
+        "roleName": "林鹿",
+        "title": "林鹿的个人故事卡",
+        "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+        "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+        "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+      },
+      {
+        "roleId": "role_1hk2vhde",
+        "roleName": "陈舟",
+        "title": "陈舟的个人故事卡",
+        "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+        "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+        "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+      },
+      {
+        "roleId": "role_248k1hcv",
+        "roleName": "顾言",
+        "title": "顾言的个人故事卡",
+        "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+        "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+        "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+      }
+    ],
+    "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+    "shareTokens": [
+      {
+        "token": "share_lec4"
+      }
+    ]
+  },
+  "lastResponse": {
+    "at": "2026-05-15T15:28:51.431Z",
+    "path": "/chapters/chapter_13rqlloc",
+    "method": "GET",
+    "status": 200,
+    "ok": true,
+    "data": {
+      "id": "chapter_13rqlloc",
+      "runId": "run_qxg4lec4",
+      "chapterIndex": 1,
+      "title": "午夜便利店：第一章终局",
+      "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+      "highlightsJson": [
+        {
+          "roleName": "林鹿",
+          "highlight": "林鹿在关键节点留下了决定性行动。"
+        },
+        {
+          "roleName": "陈舟",
+          "highlight": "陈舟在关键节点留下了决定性行动。"
+        },
+        {
+          "roleName": "顾言",
+          "highlight": "顾言在关键节点留下了决定性行动。"
+        }
+      ],
+      "keyChoicesJson": [
+        {
+          "node": 1,
+          "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+        },
+        {
+          "node": 2,
+          "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+        },
+        {
+          "node": 3,
+          "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+        },
+        {
+          "node": 4,
+          "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+        },
+        {
+          "node": 5,
+          "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+        }
+      ],
+      "povSectionsJson": [
+        {
+          "roleId": "role_0x8ffmda",
+          "roleName": "林鹿",
+          "title": "第 1 节：林鹿",
+          "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+        },
+        {
+          "roleId": "role_1hk2vhde",
+          "roleName": "陈舟",
+          "title": "第 2 节：陈舟",
+          "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+        },
+        {
+          "roleId": "role_248k1hcv",
+          "roleName": "顾言",
+          "title": "第 3 节：顾言",
+          "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+        }
+      ],
+      "personalCardsJson": [
+        {
+          "roleId": "role_0x8ffmda",
+          "roleName": "林鹿",
+          "title": "林鹿的个人故事卡",
+          "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+          "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+        },
+        {
+          "roleId": "role_1hk2vhde",
+          "roleName": "陈舟",
+          "title": "陈舟的个人故事卡",
+          "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+          "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+          "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+        },
+        {
+          "roleId": "role_248k1hcv",
+          "roleName": "顾言",
+          "title": "顾言的个人故事卡",
+          "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+          "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+          "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+        }
+      ],
+      "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+      "shareTokens": [
+        {
+          "token": "share_lec4"
+        }
+      ]
+    }
+  },
+  "lastError": null,
+  "apiLog": [
+    {
+      "at": "2026-05-15T15:28:51.431Z",
+      "path": "/chapters/chapter_13rqlloc",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "chapter_13rqlloc",
+        "runId": "run_qxg4lec4",
+        "chapterIndex": 1,
+        "title": "午夜便利店：第一章终局",
+        "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+        "highlightsJson": [
+          {
+            "roleName": "林鹿",
+            "highlight": "林鹿在关键节点留下了决定性行动。"
+          },
+          {
+            "roleName": "陈舟",
+            "highlight": "陈舟在关键节点留下了决定性行动。"
+          },
+          {
+            "roleName": "顾言",
+            "highlight": "顾言在关键节点留下了决定性行动。"
+          }
+        ],
+        "keyChoicesJson": [
+          {
+            "node": 1,
+            "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+          },
+          {
+            "node": 2,
+            "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+          },
+          {
+            "node": 3,
+            "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+          },
+          {
+            "node": 4,
+            "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+          },
+          {
+            "node": 5,
+            "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+          }
+        ],
+        "povSectionsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "title": "第 1 节：林鹿",
+            "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+          },
+          {
+            "roleId": "role_1hk2vhde",
+            "roleName": "陈舟",
+            "title": "第 2 节：陈舟",
+            "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+          },
+          {
+            "roleId": "role_248k1hcv",
+            "roleName": "顾言",
+            "title": "第 3 节：顾言",
+            "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+          }
+        ],
+        "personalCardsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "title": "林鹿的个人故事卡",
+            "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+          },
+          {
+            "roleId": "role_1hk2vhde",
+            "roleName": "陈舟",
+            "title": "陈舟的个人故事卡",
+            "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+          },
+          {
+            "roleId": "role_248k1hcv",
+            "roleName": "顾言",
+            "title": "顾言的个人故事卡",
+            "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+          }
+        ],
+        "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+        "shareTokens": [
+          {
+            "token": "share_lec4"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.417Z",
+      "path": "/chapters/chapter_13rqlloc",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "chapter_13rqlloc",
+        "runId": "run_qxg4lec4",
+        "chapterIndex": 1,
+        "title": "午夜便利店：第一章终局",
+        "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+        "highlightsJson": [
+          {
+            "roleName": "林鹿",
+            "highlight": "林鹿在关键节点留下了决定性行动。"
+          },
+          {
+            "roleName": "陈舟",
+            "highlight": "陈舟在关键节点留下了决定性行动。"
+          },
+          {
+            "roleName": "顾言",
+            "highlight": "顾言在关键节点留下了决定性行动。"
+          }
+        ],
+        "keyChoicesJson": [
+          {
+            "node": 1,
+            "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+          },
+          {
+            "node": 2,
+            "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+          },
+          {
+            "node": 3,
+            "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+          },
+          {
+            "node": 4,
+            "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+          },
+          {
+            "node": 5,
+            "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+          }
+        ],
+        "povSectionsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "title": "第 1 节：林鹿",
+            "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+          },
+          {
+            "roleId": "role_1hk2vhde",
+            "roleName": "陈舟",
+            "title": "第 2 节：陈舟",
+            "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+          },
+          {
+            "roleId": "role_248k1hcv",
+            "roleName": "顾言",
+            "title": "第 3 节：顾言",
+            "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+          }
+        ],
+        "personalCardsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "title": "林鹿的个人故事卡",
+            "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+          },
+          {
+            "roleId": "role_1hk2vhde",
+            "roleName": "陈舟",
+            "title": "陈舟的个人故事卡",
+            "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+          },
+          {
+            "roleId": "role_248k1hcv",
+            "roleName": "顾言",
+            "title": "顾言的个人故事卡",
+            "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+          }
+        ],
+        "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+        "shareTokens": [
+          {
+            "token": "share_lec4"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.415Z",
+      "path": "/nodes/run_qxg4lec4:node:5/resolution",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "resolution_y0fs6g5j",
+        "nodeId": "run_qxg4lec4:node:5",
+        "nodeIndex": 5,
+        "title": "第五道影子",
+        "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+        "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+        "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+        "dangerBefore": 2,
+        "dangerAfter": 3,
+        "actionResultsJson": [],
+        "privateResultsJson": [],
+        "echoesJson": [],
+        "crossImpactsJson": [],
+        "clueChangesJson": [
+          {
+            "title": "节点 5 线索",
+            "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+          }
+        ],
+        "relationChangesJson": [
+          {
+            "relationType": "trust",
+            "publicNote": "共同经历异常后产生信任。"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.412Z",
+      "path": "/nodes/run_qxg4lec4:node:5/actions",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": []
+    },
+    {
+      "at": "2026-05-15T15:28:51.410Z",
+      "path": "/story-runs/run_qxg4lec4/my-role",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "role": {
+          "roleKey": "lin_lu",
+          "roleName": "林鹿",
+          "identity": "夜班店员",
+          "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+          "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+          "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+          "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+          "arcText": "从逃避异常，到主动面对真相。",
+          "knownInfo": [
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "cannotDo": [
+            "直接宣布怪客身份",
+            "独自离开整家便利店"
+          ],
+          "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+          "privateClues": [
+            "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "id": "role_0x8ffmda",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_owner"
+        }
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.408Z",
+      "path": "/story-runs/run_qxg4lec4/state",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "run": {
+          "id": "run_qxg4lec4",
+          "inviteCode": "ZGAEFH",
+          "templateId": "template_midnight_store_001",
+          "title": "午夜便利店：第一章",
+          "hook": "凌晨 2:17，便利店自动门自己打开，一位没有影子的客人走了进来。",
+          "mode": "invite",
+          "status": "chapter_generated",
+          "maxPlayers": 3,
+          "activeHumanCount": 3,
+          "aiPlayerCount": 0,
+          "dangerLevel": 3,
+          "currentNodeIndex": 5,
+          "roles": [
+            {
+              "roleKey": "lin_lu",
+              "roleName": "林鹿",
+              "identity": "夜班店员",
+              "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+              "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+              "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+              "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+              "arcText": "从逃避异常，到主动面对真相。",
+              "knownInfo": [
+                "仓库门今晚曾经自动反锁",
+                "收银系统里出现过 0 元小票"
+              ],
+              "cannotDo": [
+                "直接宣布怪客身份",
+                "独自离开整家便利店"
+              ],
+              "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+              "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+              "privateClues": [
+                "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+                "仓库门今晚曾经自动反锁",
+                "收银系统里出现过 0 元小票"
+              ],
+              "id": "role_0x8ffmda",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_owner"
+            },
+            {
+              "roleKey": "chen_zhou",
+              "roleName": "陈舟",
+              "identity": "外卖骑手",
+              "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+              "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+              "currentState": "衣服湿透，手机电量只剩 12%。",
+              "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+              "arcText": "从旁观者变成关键目击者。",
+              "knownInfo": [
+                "巷口有一盏路灯只照人不照影子",
+                "订单地址在地图上不存在"
+              ],
+              "cannotDo": [
+                "凭空知道店内秘密",
+                "强迫其他角色交出物品"
+              ],
+              "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+              "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+              "privateClues": [
+                "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+                "巷口有一盏路灯只照人不照影子",
+                "订单地址在地图上不存在"
+              ],
+              "id": "role_1hk2vhde",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_player_b"
+            },
+            {
+              "roleKey": "gu_yan",
+              "roleName": "顾言",
+              "identity": "民俗研究生",
+              "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+              "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+              "currentState": "冷静观察，随身带着旧相机和笔记本。",
+              "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+              "arcText": "从研究真相，到承担干预后果。",
+              "knownInfo": [
+                "没有影子的客人可能不是第一个",
+                "旧相机能拍到肉眼忽略的痕迹"
+              ],
+              "cannotDo": [
+                "直接封印异常",
+                "替他人决定是否牺牲"
+              ],
+              "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+              "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+              "privateClues": [
+                "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+                "没有影子的客人可能不是第一个",
+                "旧相机能拍到肉眼忽略的痕迹"
+              ],
+              "id": "role_248k1hcv",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_player_c"
+            }
+          ],
+          "actions": [
+            {
+              "id": "action_95mzwhhv",
+              "nodeId": "run_qxg4lec4:node:1",
+              "roleId": "role_0x8ffmda",
+              "roleName": "林鹿",
+              "status": "accepted",
+              "guardStatus": "ok",
+              "method": "夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。",
+              "intent": "仔细检查硬币上的符号"
+            }
+          ],
+          "resolutions": [
+            {
+              "id": "resolution_6bji11l1",
+              "nodeId": "run_qxg4lec4:node:1",
+              "nodeIndex": 1,
+              "title": "自动门打开",
+              "summary": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。",
+              "publicNarration": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。",
+              "nextNodeHook": "仓库门后传来三下敲击声，像有人在里面回应你们。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "result": "partial_success",
+                  "text": "林鹿尝试夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。，获得了线索，但也让异常更接近一步。"
+                }
+              ],
+              "privateResultsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "privateNote": "林鹿的私密线索被轻微触动。"
+                }
+              ],
+              "echoesJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "personalEcho": "林鹿的行动让自己的命运问题更接近答案。",
+                  "otherEcho": "林鹿的选择改变了其他人的判断与信任。",
+                  "worldEcho": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "crossImpactsJson": [
+                {
+                  "sourceRoleId": "role_0x8ffmda",
+                  "sourceRoleName": "林鹿",
+                  "targetRoleId": "role_0x8ffmda",
+                  "targetRoleName": "林鹿",
+                  "impactType": "clue_change",
+                  "visibility": "public",
+                  "title": "林鹿影响了林鹿",
+                  "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "clueChangesJson": [
+                {
+                  "title": "节点 1 线索",
+                  "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_kr23agw0",
+              "nodeId": "run_qxg4lec4:node:2",
+              "nodeIndex": 2,
+              "title": "仓库门后的敲击",
+              "summary": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。",
+              "publicNarration": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+              "nextNodeHook": "收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 2 线索",
+                  "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_n8dp3mbf",
+              "nodeId": "run_qxg4lec4:node:3",
+              "nodeIndex": 3,
+              "title": "0 元小票",
+              "summary": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。",
+              "publicNarration": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+              "nextNodeHook": "旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 3 线索",
+                  "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_ypzvm93j",
+              "nodeId": "run_qxg4lec4:node:4",
+              "nodeIndex": 4,
+              "title": "冷柜里的第五张脸",
+              "summary": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。",
+              "publicNarration": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+              "nextNodeHook": "便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+              "dangerBefore": 1,
+              "dangerAfter": 2,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 4 线索",
+                  "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_y0fs6g5j",
+              "nodeId": "run_qxg4lec4:node:5",
+              "nodeIndex": 5,
+              "title": "第五道影子",
+              "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+              "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+              "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+              "dangerBefore": 2,
+              "dangerAfter": 3,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 5 线索",
+                  "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            }
+          ],
+          "chapters": [
+            {
+              "id": "chapter_13rqlloc",
+              "runId": "run_qxg4lec4",
+              "chapterIndex": 1,
+              "title": "午夜便利店：第一章终局",
+              "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+              "highlightsJson": [
+                {
+                  "roleName": "林鹿",
+                  "highlight": "林鹿在关键节点留下了决定性行动。"
+                },
+                {
+                  "roleName": "陈舟",
+                  "highlight": "陈舟在关键节点留下了决定性行动。"
+                },
+                {
+                  "roleName": "顾言",
+                  "highlight": "顾言在关键节点留下了决定性行动。"
+                }
+              ],
+              "keyChoicesJson": [
+                {
+                  "node": 1,
+                  "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+                },
+                {
+                  "node": 2,
+                  "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+                },
+                {
+                  "node": 3,
+                  "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+                },
+                {
+                  "node": 4,
+                  "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+                },
+                {
+                  "node": 5,
+                  "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+                }
+              ],
+              "povSectionsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "title": "第 1 节：林鹿",
+                  "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+                },
+                {
+                  "roleId": "role_1hk2vhde",
+                  "roleName": "陈舟",
+                  "title": "第 2 节：陈舟",
+                  "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+                },
+                {
+                  "roleId": "role_248k1hcv",
+                  "roleName": "顾言",
+                  "title": "第 3 节：顾言",
+                  "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+                }
+              ],
+              "personalCardsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "title": "林鹿的个人故事卡",
+                  "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+                  "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                  "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+                },
+                {
+                  "roleId": "role_1hk2vhde",
+                  "roleName": "陈舟",
+                  "title": "陈舟的个人故事卡",
+                  "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+                  "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                  "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+                },
+                {
+                  "roleId": "role_248k1hcv",
+                  "roleName": "顾言",
+                  "title": "顾言的个人故事卡",
+                  "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+                  "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                  "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+                }
+              ],
+              "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+              "shareTokens": [
+                {
+                  "token": "share_lec4"
+                }
+              ]
+            }
+          ],
+          "players": {
+            "mock_openid_web_owner": "role_0x8ffmda",
+            "mock_openid_web_player_b": "role_1hk2vhde",
+            "mock_openid_web_player_c": "role_248k1hcv"
+          },
+          "joinedPlayers": [
+            "mock_openid_web_owner",
+            "mock_openid_web_player_b",
+            "mock_openid_web_player_c"
+          ]
+        },
+        "currentNode": {
+          "id": "run_qxg4lec4:node:5",
+          "runId": "run_qxg4lec4",
+          "chapterIndex": 1,
+          "nodeIndex": 5,
+          "title": "第五道影子",
+          "publicNarration": "灯灭之后，所有声音都被雨吞掉。门外路灯下，多出来的影子正慢慢走向货架尽头。",
+          "nodeGoal": "决定如何面对第五道影子，并为本章收束真相。",
+          "actionOptionsJson": [
+            "合力逼近影子",
+            "保护关键证据",
+            "用各自秘密换取线索"
+          ],
+          "status": "resolved",
+          "actions": [],
+          "resolution": {
+            "id": "resolution_y0fs6g5j",
+            "nodeId": "run_qxg4lec4:node:5",
+            "nodeIndex": 5,
+            "title": "第五道影子",
+            "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+            "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+            "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+            "dangerBefore": 2,
+            "dangerAfter": 3,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 5 线索",
+                "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          }
+        },
+        "clues": [
+          {
+            "id": "missing_minute",
+            "title": "缺失的一分钟",
+            "description": "便利店监控在凌晨 2:16 到 2:17 之间出现空白。"
+          },
+          {
+            "id": "clue_1",
+            "title": "节点 1 线索",
+            "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+          },
+          {
+            "id": "clue_2",
+            "title": "节点 2 线索",
+            "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+          },
+          {
+            "id": "clue_3",
+            "title": "节点 3 线索",
+            "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+          },
+          {
+            "id": "clue_4",
+            "title": "节点 4 线索",
+            "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+          },
+          {
+            "id": "clue_5",
+            "title": "节点 5 线索",
+            "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+          }
+        ],
+        "relations": [
+          {
+            "id": "rel_1",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_2",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_3",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_4",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_5",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          }
+        ],
+        "roles": [
+          {
+            "roleKey": "lin_lu",
+            "roleName": "林鹿",
+            "identity": "夜班店员",
+            "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+            "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+            "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+            "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+            "arcText": "从逃避异常，到主动面对真相。",
+            "knownInfo": [
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "cannotDo": [
+              "直接宣布怪客身份",
+              "独自离开整家便利店"
+            ],
+            "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+            "privateClues": [
+              "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "id": "role_0x8ffmda",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_owner"
+          },
+          {
+            "roleKey": "chen_zhou",
+            "roleName": "陈舟",
+            "identity": "外卖骑手",
+            "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+            "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+            "currentState": "衣服湿透，手机电量只剩 12%。",
+            "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+            "arcText": "从旁观者变成关键目击者。",
+            "knownInfo": [
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "cannotDo": [
+              "凭空知道店内秘密",
+              "强迫其他角色交出物品"
+            ],
+            "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+            "privateClues": [
+              "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "id": "role_1hk2vhde",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_b"
+          },
+          {
+            "roleKey": "gu_yan",
+            "roleName": "顾言",
+            "identity": "民俗研究生",
+            "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+            "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+            "currentState": "冷静观察，随身带着旧相机和笔记本。",
+            "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+            "arcText": "从研究真相，到承担干预后果。",
+            "knownInfo": [
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "cannotDo": [
+              "直接封印异常",
+              "替他人决定是否牺牲"
+            ],
+            "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+            "privateClues": [
+              "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "id": "role_248k1hcv",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_c"
+          }
+        ],
+        "chapters": [
+          {
+            "id": "chapter_13rqlloc",
+            "runId": "run_qxg4lec4",
+            "chapterIndex": 1,
+            "title": "午夜便利店：第一章终局",
+            "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+            "highlightsJson": [
+              {
+                "roleName": "林鹿",
+                "highlight": "林鹿在关键节点留下了决定性行动。"
+              },
+              {
+                "roleName": "陈舟",
+                "highlight": "陈舟在关键节点留下了决定性行动。"
+              },
+              {
+                "roleName": "顾言",
+                "highlight": "顾言在关键节点留下了决定性行动。"
+              }
+            ],
+            "keyChoicesJson": [
+              {
+                "node": 1,
+                "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+              },
+              {
+                "node": 2,
+                "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+              },
+              {
+                "node": 3,
+                "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+              },
+              {
+                "node": 4,
+                "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+              },
+              {
+                "node": 5,
+                "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+              }
+            ],
+            "povSectionsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "title": "第 1 节：林鹿",
+                "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+              },
+              {
+                "roleId": "role_1hk2vhde",
+                "roleName": "陈舟",
+                "title": "第 2 节：陈舟",
+                "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+              },
+              {
+                "roleId": "role_248k1hcv",
+                "roleName": "顾言",
+                "title": "第 3 节：顾言",
+                "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+              }
+            ],
+            "personalCardsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "title": "林鹿的个人故事卡",
+                "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+                "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+              },
+              {
+                "roleId": "role_1hk2vhde",
+                "roleName": "陈舟",
+                "title": "陈舟的个人故事卡",
+                "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+                "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+              },
+              {
+                "roleId": "role_248k1hcv",
+                "roleName": "顾言",
+                "title": "顾言的个人故事卡",
+                "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+                "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+              }
+            ],
+            "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+            "shareTokens": [
+              {
+                "token": "share_lec4"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.403Z",
+      "path": "/story-runs/run_qxg4lec4/roles",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": [
+        {
+          "roleKey": "lin_lu",
+          "roleName": "林鹿",
+          "identity": "夜班店员",
+          "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+          "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+          "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+          "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+          "arcText": "从逃避异常，到主动面对真相。",
+          "knownInfo": [
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "cannotDo": [
+            "直接宣布怪客身份",
+            "独自离开整家便利店"
+          ],
+          "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+          "privateClues": [
+            "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "id": "role_0x8ffmda",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_owner"
+        },
+        {
+          "roleKey": "chen_zhou",
+          "roleName": "陈舟",
+          "identity": "外卖骑手",
+          "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+          "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+          "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+          "currentState": "衣服湿透，手机电量只剩 12%。",
+          "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+          "arcText": "从旁观者变成关键目击者。",
+          "knownInfo": [
+            "巷口有一盏路灯只照人不照影子",
+            "订单地址在地图上不存在"
+          ],
+          "cannotDo": [
+            "凭空知道店内秘密",
+            "强迫其他角色交出物品"
+          ],
+          "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+          "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+          "privateClues": [
+            "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "巷口有一盏路灯只照人不照影子",
+            "订单地址在地图上不存在"
+          ],
+          "id": "role_1hk2vhde",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_player_b"
+        },
+        {
+          "roleKey": "gu_yan",
+          "roleName": "顾言",
+          "identity": "民俗研究生",
+          "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+          "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+          "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+          "currentState": "冷静观察，随身带着旧相机和笔记本。",
+          "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+          "arcText": "从研究真相，到承担干预后果。",
+          "knownInfo": [
+            "没有影子的客人可能不是第一个",
+            "旧相机能拍到肉眼忽略的痕迹"
+          ],
+          "cannotDo": [
+            "直接封印异常",
+            "替他人决定是否牺牲"
+          ],
+          "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+          "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+          "privateClues": [
+            "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "没有影子的客人可能不是第一个",
+            "旧相机能拍到肉眼忽略的痕迹"
+          ],
+          "id": "role_248k1hcv",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_player_c"
+        }
+      ]
+    },
+    {
+      "at": "2026-05-15T15:28:51.396Z",
+      "path": "/story-runs/run_qxg4lec4",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "run_qxg4lec4",
+        "inviteCode": "ZGAEFH",
+        "templateId": "template_midnight_store_001",
+        "title": "午夜便利店：第一章",
+        "hook": "凌晨 2:17，便利店自动门自己打开，一位没有影子的客人走了进来。",
+        "mode": "invite",
+        "status": "chapter_generated",
+        "maxPlayers": 3,
+        "activeHumanCount": 3,
+        "aiPlayerCount": 0,
+        "dangerLevel": 3,
+        "currentNodeIndex": 5,
+        "roles": [
+          {
+            "roleKey": "lin_lu",
+            "roleName": "林鹿",
+            "identity": "夜班店员",
+            "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+            "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+            "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+            "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+            "arcText": "从逃避异常，到主动面对真相。",
+            "knownInfo": [
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "cannotDo": [
+              "直接宣布怪客身份",
+              "独自离开整家便利店"
+            ],
+            "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+            "privateClues": [
+              "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "id": "role_0x8ffmda",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_owner"
+          },
+          {
+            "roleKey": "chen_zhou",
+            "roleName": "陈舟",
+            "identity": "外卖骑手",
+            "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+            "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+            "currentState": "衣服湿透，手机电量只剩 12%。",
+            "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+            "arcText": "从旁观者变成关键目击者。",
+            "knownInfo": [
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "cannotDo": [
+              "凭空知道店内秘密",
+              "强迫其他角色交出物品"
+            ],
+            "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+            "privateClues": [
+              "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "id": "role_1hk2vhde",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_b"
+          },
+          {
+            "roleKey": "gu_yan",
+            "roleName": "顾言",
+            "identity": "民俗研究生",
+            "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+            "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+            "currentState": "冷静观察，随身带着旧相机和笔记本。",
+            "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+            "arcText": "从研究真相，到承担干预后果。",
+            "knownInfo": [
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "cannotDo": [
+              "直接封印异常",
+              "替他人决定是否牺牲"
+            ],
+            "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+            "privateClues": [
+              "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "id": "role_248k1hcv",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_c"
+          }
+        ],
+        "actions": [
+          {
+            "id": "action_95mzwhhv",
+            "nodeId": "run_qxg4lec4:node:1",
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "status": "accepted",
+            "guardStatus": "ok",
+            "method": "夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。",
+            "intent": "仔细检查硬币上的符号"
+          }
+        ],
+        "resolutions": [
+          {
+            "id": "resolution_6bji11l1",
+            "nodeId": "run_qxg4lec4:node:1",
+            "nodeIndex": 1,
+            "title": "自动门打开",
+            "summary": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。",
+            "publicNarration": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。",
+            "nextNodeHook": "仓库门后传来三下敲击声，像有人在里面回应你们。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "result": "partial_success",
+                "text": "林鹿尝试夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。，获得了线索，但也让异常更接近一步。"
+              }
+            ],
+            "privateResultsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "privateNote": "林鹿的私密线索被轻微触动。"
+              }
+            ],
+            "echoesJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "personalEcho": "林鹿的行动让自己的命运问题更接近答案。",
+                "otherEcho": "林鹿的选择改变了其他人的判断与信任。",
+                "worldEcho": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "crossImpactsJson": [
+              {
+                "sourceRoleId": "role_0x8ffmda",
+                "sourceRoleName": "林鹿",
+                "targetRoleId": "role_0x8ffmda",
+                "targetRoleName": "林鹿",
+                "impactType": "clue_change",
+                "visibility": "public",
+                "title": "林鹿影响了林鹿",
+                "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "clueChangesJson": [
+              {
+                "title": "节点 1 线索",
+                "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_kr23agw0",
+            "nodeId": "run_qxg4lec4:node:2",
+            "nodeIndex": 2,
+            "title": "仓库门后的敲击",
+            "summary": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。",
+            "publicNarration": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+            "nextNodeHook": "收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 2 线索",
+                "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_n8dp3mbf",
+            "nodeId": "run_qxg4lec4:node:3",
+            "nodeIndex": 3,
+            "title": "0 元小票",
+            "summary": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。",
+            "publicNarration": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+            "nextNodeHook": "旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 3 线索",
+                "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_ypzvm93j",
+            "nodeId": "run_qxg4lec4:node:4",
+            "nodeIndex": 4,
+            "title": "冷柜里的第五张脸",
+            "summary": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。",
+            "publicNarration": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+            "nextNodeHook": "便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+            "dangerBefore": 1,
+            "dangerAfter": 2,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 4 线索",
+                "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_y0fs6g5j",
+            "nodeId": "run_qxg4lec4:node:5",
+            "nodeIndex": 5,
+            "title": "第五道影子",
+            "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+            "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+            "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+            "dangerBefore": 2,
+            "dangerAfter": 3,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 5 线索",
+                "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          }
+        ],
+        "chapters": [
+          {
+            "id": "chapter_13rqlloc",
+            "runId": "run_qxg4lec4",
+            "chapterIndex": 1,
+            "title": "午夜便利店：第一章终局",
+            "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+            "highlightsJson": [
+              {
+                "roleName": "林鹿",
+                "highlight": "林鹿在关键节点留下了决定性行动。"
+              },
+              {
+                "roleName": "陈舟",
+                "highlight": "陈舟在关键节点留下了决定性行动。"
+              },
+              {
+                "roleName": "顾言",
+                "highlight": "顾言在关键节点留下了决定性行动。"
+              }
+            ],
+            "keyChoicesJson": [
+              {
+                "node": 1,
+                "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+              },
+              {
+                "node": 2,
+                "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+              },
+              {
+                "node": 3,
+                "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+              },
+              {
+                "node": 4,
+                "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+              },
+              {
+                "node": 5,
+                "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+              }
+            ],
+            "povSectionsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "title": "第 1 节：林鹿",
+                "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+              },
+              {
+                "roleId": "role_1hk2vhde",
+                "roleName": "陈舟",
+                "title": "第 2 节：陈舟",
+                "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+              },
+              {
+                "roleId": "role_248k1hcv",
+                "roleName": "顾言",
+                "title": "第 3 节：顾言",
+                "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+              }
+            ],
+            "personalCardsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "title": "林鹿的个人故事卡",
+                "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+                "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+              },
+              {
+                "roleId": "role_1hk2vhde",
+                "roleName": "陈舟",
+                "title": "陈舟的个人故事卡",
+                "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+                "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+              },
+              {
+                "roleId": "role_248k1hcv",
+                "roleName": "顾言",
+                "title": "顾言的个人故事卡",
+                "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+                "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+              }
+            ],
+            "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+            "shareTokens": [
+              {
+                "token": "share_lec4"
+              }
+            ]
+          }
+        ],
+        "players": {
+          "mock_openid_web_owner": "role_0x8ffmda",
+          "mock_openid_web_player_b": "role_1hk2vhde",
+          "mock_openid_web_player_c": "role_248k1hcv"
+        },
+        "joinedPlayers": [
+          "mock_openid_web_owner",
+          "mock_openid_web_player_b",
+          "mock_openid_web_player_c"
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.380Z",
+      "path": "/chapters/chapter_13rqlloc",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "chapter_13rqlloc",
+        "runId": "run_qxg4lec4",
+        "chapterIndex": 1,
+        "title": "午夜便利店：第一章终局",
+        "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+        "highlightsJson": [
+          {
+            "roleName": "林鹿",
+            "highlight": "林鹿在关键节点留下了决定性行动。"
+          },
+          {
+            "roleName": "陈舟",
+            "highlight": "陈舟在关键节点留下了决定性行动。"
+          },
+          {
+            "roleName": "顾言",
+            "highlight": "顾言在关键节点留下了决定性行动。"
+          }
+        ],
+        "keyChoicesJson": [
+          {
+            "node": 1,
+            "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+          },
+          {
+            "node": 2,
+            "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+          },
+          {
+            "node": 3,
+            "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+          },
+          {
+            "node": 4,
+            "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+          },
+          {
+            "node": 5,
+            "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+          }
+        ],
+        "povSectionsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "title": "第 1 节：林鹿",
+            "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+          },
+          {
+            "roleId": "role_1hk2vhde",
+            "roleName": "陈舟",
+            "title": "第 2 节：陈舟",
+            "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+          },
+          {
+            "roleId": "role_248k1hcv",
+            "roleName": "顾言",
+            "title": "第 3 节：顾言",
+            "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+          }
+        ],
+        "personalCardsJson": [
+          {
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "title": "林鹿的个人故事卡",
+            "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+          },
+          {
+            "roleId": "role_1hk2vhde",
+            "roleName": "陈舟",
+            "title": "陈舟的个人故事卡",
+            "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+          },
+          {
+            "roleId": "role_248k1hcv",
+            "roleName": "顾言",
+            "title": "顾言的个人故事卡",
+            "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+            "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+          }
+        ],
+        "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+        "shareTokens": [
+          {
+            "token": "share_lec4"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.376Z",
+      "path": "/nodes/run_qxg4lec4:node:5/resolution",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "resolution_y0fs6g5j",
+        "nodeId": "run_qxg4lec4:node:5",
+        "nodeIndex": 5,
+        "title": "第五道影子",
+        "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+        "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+        "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+        "dangerBefore": 2,
+        "dangerAfter": 3,
+        "actionResultsJson": [],
+        "privateResultsJson": [],
+        "echoesJson": [],
+        "crossImpactsJson": [],
+        "clueChangesJson": [
+          {
+            "title": "节点 5 线索",
+            "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+          }
+        ],
+        "relationChangesJson": [
+          {
+            "relationType": "trust",
+            "publicNote": "共同经历异常后产生信任。"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.372Z",
+      "path": "/nodes/run_qxg4lec4:node:5/actions",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": []
+    },
+    {
+      "at": "2026-05-15T15:28:51.371Z",
+      "path": "/story-runs/run_qxg4lec4/my-role",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "role": {
+          "roleKey": "lin_lu",
+          "roleName": "林鹿",
+          "identity": "夜班店员",
+          "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+          "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+          "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+          "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+          "arcText": "从逃避异常，到主动面对真相。",
+          "knownInfo": [
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "cannotDo": [
+            "直接宣布怪客身份",
+            "独自离开整家便利店"
+          ],
+          "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+          "privateClues": [
+            "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "id": "role_0x8ffmda",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_owner"
+        }
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.368Z",
+      "path": "/story-runs/run_qxg4lec4/state",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "run": {
+          "id": "run_qxg4lec4",
+          "inviteCode": "ZGAEFH",
+          "templateId": "template_midnight_store_001",
+          "title": "午夜便利店：第一章",
+          "hook": "凌晨 2:17，便利店自动门自己打开，一位没有影子的客人走了进来。",
+          "mode": "invite",
+          "status": "chapter_generated",
+          "maxPlayers": 3,
+          "activeHumanCount": 3,
+          "aiPlayerCount": 0,
+          "dangerLevel": 3,
+          "currentNodeIndex": 5,
+          "roles": [
+            {
+              "roleKey": "lin_lu",
+              "roleName": "林鹿",
+              "identity": "夜班店员",
+              "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+              "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+              "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+              "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+              "arcText": "从逃避异常，到主动面对真相。",
+              "knownInfo": [
+                "仓库门今晚曾经自动反锁",
+                "收银系统里出现过 0 元小票"
+              ],
+              "cannotDo": [
+                "直接宣布怪客身份",
+                "独自离开整家便利店"
+              ],
+              "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+              "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+              "privateClues": [
+                "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+                "仓库门今晚曾经自动反锁",
+                "收银系统里出现过 0 元小票"
+              ],
+              "id": "role_0x8ffmda",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_owner"
+            },
+            {
+              "roleKey": "chen_zhou",
+              "roleName": "陈舟",
+              "identity": "外卖骑手",
+              "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+              "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+              "currentState": "衣服湿透，手机电量只剩 12%。",
+              "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+              "arcText": "从旁观者变成关键目击者。",
+              "knownInfo": [
+                "巷口有一盏路灯只照人不照影子",
+                "订单地址在地图上不存在"
+              ],
+              "cannotDo": [
+                "凭空知道店内秘密",
+                "强迫其他角色交出物品"
+              ],
+              "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+              "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+              "privateClues": [
+                "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+                "巷口有一盏路灯只照人不照影子",
+                "订单地址在地图上不存在"
+              ],
+              "id": "role_1hk2vhde",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_player_b"
+            },
+            {
+              "roleKey": "gu_yan",
+              "roleName": "顾言",
+              "identity": "民俗研究生",
+              "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+              "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+              "currentState": "冷静观察，随身带着旧相机和笔记本。",
+              "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+              "arcText": "从研究真相，到承担干预后果。",
+              "knownInfo": [
+                "没有影子的客人可能不是第一个",
+                "旧相机能拍到肉眼忽略的痕迹"
+              ],
+              "cannotDo": [
+                "直接封印异常",
+                "替他人决定是否牺牲"
+              ],
+              "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+              "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+              "privateClues": [
+                "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+                "没有影子的客人可能不是第一个",
+                "旧相机能拍到肉眼忽略的痕迹"
+              ],
+              "id": "role_248k1hcv",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_player_c"
+            }
+          ],
+          "actions": [
+            {
+              "id": "action_95mzwhhv",
+              "nodeId": "run_qxg4lec4:node:1",
+              "roleId": "role_0x8ffmda",
+              "roleName": "林鹿",
+              "status": "accepted",
+              "guardStatus": "ok",
+              "method": "夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。",
+              "intent": "仔细检查硬币上的符号"
+            }
+          ],
+          "resolutions": [
+            {
+              "id": "resolution_6bji11l1",
+              "nodeId": "run_qxg4lec4:node:1",
+              "nodeIndex": 1,
+              "title": "自动门打开",
+              "summary": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。",
+              "publicNarration": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。",
+              "nextNodeHook": "仓库门后传来三下敲击声，像有人在里面回应你们。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "result": "partial_success",
+                  "text": "林鹿尝试夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。，获得了线索，但也让异常更接近一步。"
+                }
+              ],
+              "privateResultsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "privateNote": "林鹿的私密线索被轻微触动。"
+                }
+              ],
+              "echoesJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "personalEcho": "林鹿的行动让自己的命运问题更接近答案。",
+                  "otherEcho": "林鹿的选择改变了其他人的判断与信任。",
+                  "worldEcho": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "crossImpactsJson": [
+                {
+                  "sourceRoleId": "role_0x8ffmda",
+                  "sourceRoleName": "林鹿",
+                  "targetRoleId": "role_0x8ffmda",
+                  "targetRoleName": "林鹿",
+                  "impactType": "clue_change",
+                  "visibility": "public",
+                  "title": "林鹿影响了林鹿",
+                  "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "clueChangesJson": [
+                {
+                  "title": "节点 1 线索",
+                  "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_kr23agw0",
+              "nodeId": "run_qxg4lec4:node:2",
+              "nodeIndex": 2,
+              "title": "仓库门后的敲击",
+              "summary": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。",
+              "publicNarration": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+              "nextNodeHook": "收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 2 线索",
+                  "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_n8dp3mbf",
+              "nodeId": "run_qxg4lec4:node:3",
+              "nodeIndex": 3,
+              "title": "0 元小票",
+              "summary": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。",
+              "publicNarration": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+              "nextNodeHook": "旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 3 线索",
+                  "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_ypzvm93j",
+              "nodeId": "run_qxg4lec4:node:4",
+              "nodeIndex": 4,
+              "title": "冷柜里的第五张脸",
+              "summary": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。",
+              "publicNarration": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+              "nextNodeHook": "便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+              "dangerBefore": 1,
+              "dangerAfter": 2,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 4 线索",
+                  "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_y0fs6g5j",
+              "nodeId": "run_qxg4lec4:node:5",
+              "nodeIndex": 5,
+              "title": "第五道影子",
+              "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+              "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+              "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+              "dangerBefore": 2,
+              "dangerAfter": 3,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 5 线索",
+                  "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            }
+          ],
+          "chapters": [
+            {
+              "id": "chapter_13rqlloc",
+              "runId": "run_qxg4lec4",
+              "chapterIndex": 1,
+              "title": "午夜便利店：第一章终局",
+              "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+              "highlightsJson": [
+                {
+                  "roleName": "林鹿",
+                  "highlight": "林鹿在关键节点留下了决定性行动。"
+                },
+                {
+                  "roleName": "陈舟",
+                  "highlight": "陈舟在关键节点留下了决定性行动。"
+                },
+                {
+                  "roleName": "顾言",
+                  "highlight": "顾言在关键节点留下了决定性行动。"
+                }
+              ],
+              "keyChoicesJson": [
+                {
+                  "node": 1,
+                  "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+                },
+                {
+                  "node": 2,
+                  "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+                },
+                {
+                  "node": 3,
+                  "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+                },
+                {
+                  "node": 4,
+                  "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+                },
+                {
+                  "node": 5,
+                  "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+                }
+              ],
+              "povSectionsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "title": "第 1 节：林鹿",
+                  "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+                },
+                {
+                  "roleId": "role_1hk2vhde",
+                  "roleName": "陈舟",
+                  "title": "第 2 节：陈舟",
+                  "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+                },
+                {
+                  "roleId": "role_248k1hcv",
+                  "roleName": "顾言",
+                  "title": "第 3 节：顾言",
+                  "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+                }
+              ],
+              "personalCardsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "title": "林鹿的个人故事卡",
+                  "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+                  "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                  "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+                },
+                {
+                  "roleId": "role_1hk2vhde",
+                  "roleName": "陈舟",
+                  "title": "陈舟的个人故事卡",
+                  "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+                  "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                  "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+                },
+                {
+                  "roleId": "role_248k1hcv",
+                  "roleName": "顾言",
+                  "title": "顾言的个人故事卡",
+                  "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+                  "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                  "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+                }
+              ],
+              "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+              "shareTokens": [
+                {
+                  "token": "share_lec4"
+                }
+              ]
+            }
+          ],
+          "players": {
+            "mock_openid_web_owner": "role_0x8ffmda",
+            "mock_openid_web_player_b": "role_1hk2vhde",
+            "mock_openid_web_player_c": "role_248k1hcv"
+          },
+          "joinedPlayers": [
+            "mock_openid_web_owner",
+            "mock_openid_web_player_b",
+            "mock_openid_web_player_c"
+          ]
+        },
+        "currentNode": {
+          "id": "run_qxg4lec4:node:5",
+          "runId": "run_qxg4lec4",
+          "chapterIndex": 1,
+          "nodeIndex": 5,
+          "title": "第五道影子",
+          "publicNarration": "灯灭之后，所有声音都被雨吞掉。门外路灯下，多出来的影子正慢慢走向货架尽头。",
+          "nodeGoal": "决定如何面对第五道影子，并为本章收束真相。",
+          "actionOptionsJson": [
+            "合力逼近影子",
+            "保护关键证据",
+            "用各自秘密换取线索"
+          ],
+          "status": "resolved",
+          "actions": [],
+          "resolution": {
+            "id": "resolution_y0fs6g5j",
+            "nodeId": "run_qxg4lec4:node:5",
+            "nodeIndex": 5,
+            "title": "第五道影子",
+            "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+            "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+            "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+            "dangerBefore": 2,
+            "dangerAfter": 3,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 5 线索",
+                "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          }
+        },
+        "clues": [
+          {
+            "id": "missing_minute",
+            "title": "缺失的一分钟",
+            "description": "便利店监控在凌晨 2:16 到 2:17 之间出现空白。"
+          },
+          {
+            "id": "clue_1",
+            "title": "节点 1 线索",
+            "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+          },
+          {
+            "id": "clue_2",
+            "title": "节点 2 线索",
+            "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+          },
+          {
+            "id": "clue_3",
+            "title": "节点 3 线索",
+            "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+          },
+          {
+            "id": "clue_4",
+            "title": "节点 4 线索",
+            "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+          },
+          {
+            "id": "clue_5",
+            "title": "节点 5 线索",
+            "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+          }
+        ],
+        "relations": [
+          {
+            "id": "rel_1",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_2",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_3",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_4",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_5",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          }
+        ],
+        "roles": [
+          {
+            "roleKey": "lin_lu",
+            "roleName": "林鹿",
+            "identity": "夜班店员",
+            "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+            "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+            "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+            "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+            "arcText": "从逃避异常，到主动面对真相。",
+            "knownInfo": [
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "cannotDo": [
+              "直接宣布怪客身份",
+              "独自离开整家便利店"
+            ],
+            "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+            "privateClues": [
+              "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "id": "role_0x8ffmda",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_owner"
+          },
+          {
+            "roleKey": "chen_zhou",
+            "roleName": "陈舟",
+            "identity": "外卖骑手",
+            "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+            "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+            "currentState": "衣服湿透，手机电量只剩 12%。",
+            "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+            "arcText": "从旁观者变成关键目击者。",
+            "knownInfo": [
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "cannotDo": [
+              "凭空知道店内秘密",
+              "强迫其他角色交出物品"
+            ],
+            "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+            "privateClues": [
+              "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "id": "role_1hk2vhde",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_b"
+          },
+          {
+            "roleKey": "gu_yan",
+            "roleName": "顾言",
+            "identity": "民俗研究生",
+            "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+            "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+            "currentState": "冷静观察，随身带着旧相机和笔记本。",
+            "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+            "arcText": "从研究真相，到承担干预后果。",
+            "knownInfo": [
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "cannotDo": [
+              "直接封印异常",
+              "替他人决定是否牺牲"
+            ],
+            "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+            "privateClues": [
+              "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "id": "role_248k1hcv",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_c"
+          }
+        ],
+        "chapters": [
+          {
+            "id": "chapter_13rqlloc",
+            "runId": "run_qxg4lec4",
+            "chapterIndex": 1,
+            "title": "午夜便利店：第一章终局",
+            "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+            "highlightsJson": [
+              {
+                "roleName": "林鹿",
+                "highlight": "林鹿在关键节点留下了决定性行动。"
+              },
+              {
+                "roleName": "陈舟",
+                "highlight": "陈舟在关键节点留下了决定性行动。"
+              },
+              {
+                "roleName": "顾言",
+                "highlight": "顾言在关键节点留下了决定性行动。"
+              }
+            ],
+            "keyChoicesJson": [
+              {
+                "node": 1,
+                "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+              },
+              {
+                "node": 2,
+                "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+              },
+              {
+                "node": 3,
+                "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+              },
+              {
+                "node": 4,
+                "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+              },
+              {
+                "node": 5,
+                "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+              }
+            ],
+            "povSectionsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "title": "第 1 节：林鹿",
+                "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+              },
+              {
+                "roleId": "role_1hk2vhde",
+                "roleName": "陈舟",
+                "title": "第 2 节：陈舟",
+                "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+              },
+              {
+                "roleId": "role_248k1hcv",
+                "roleName": "顾言",
+                "title": "第 3 节：顾言",
+                "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+              }
+            ],
+            "personalCardsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "title": "林鹿的个人故事卡",
+                "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+                "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+              },
+              {
+                "roleId": "role_1hk2vhde",
+                "roleName": "陈舟",
+                "title": "陈舟的个人故事卡",
+                "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+                "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+              },
+              {
+                "roleId": "role_248k1hcv",
+                "roleName": "顾言",
+                "title": "顾言的个人故事卡",
+                "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+                "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+              }
+            ],
+            "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+            "shareTokens": [
+              {
+                "token": "share_lec4"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.365Z",
+      "path": "/story-runs/run_qxg4lec4/roles",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": [
+        {
+          "roleKey": "lin_lu",
+          "roleName": "林鹿",
+          "identity": "夜班店员",
+          "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+          "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+          "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+          "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+          "arcText": "从逃避异常，到主动面对真相。",
+          "knownInfo": [
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "cannotDo": [
+            "直接宣布怪客身份",
+            "独自离开整家便利店"
+          ],
+          "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+          "privateClues": [
+            "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "id": "role_0x8ffmda",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_owner"
+        },
+        {
+          "roleKey": "chen_zhou",
+          "roleName": "陈舟",
+          "identity": "外卖骑手",
+          "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+          "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+          "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+          "currentState": "衣服湿透，手机电量只剩 12%。",
+          "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+          "arcText": "从旁观者变成关键目击者。",
+          "knownInfo": [
+            "巷口有一盏路灯只照人不照影子",
+            "订单地址在地图上不存在"
+          ],
+          "cannotDo": [
+            "凭空知道店内秘密",
+            "强迫其他角色交出物品"
+          ],
+          "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+          "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+          "privateClues": [
+            "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "巷口有一盏路灯只照人不照影子",
+            "订单地址在地图上不存在"
+          ],
+          "id": "role_1hk2vhde",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_player_b"
+        },
+        {
+          "roleKey": "gu_yan",
+          "roleName": "顾言",
+          "identity": "民俗研究生",
+          "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+          "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+          "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+          "currentState": "冷静观察，随身带着旧相机和笔记本。",
+          "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+          "arcText": "从研究真相，到承担干预后果。",
+          "knownInfo": [
+            "没有影子的客人可能不是第一个",
+            "旧相机能拍到肉眼忽略的痕迹"
+          ],
+          "cannotDo": [
+            "直接封印异常",
+            "替他人决定是否牺牲"
+          ],
+          "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+          "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+          "privateClues": [
+            "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "没有影子的客人可能不是第一个",
+            "旧相机能拍到肉眼忽略的痕迹"
+          ],
+          "id": "role_248k1hcv",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_player_c"
+        }
+      ]
+    },
+    {
+      "at": "2026-05-15T15:28:51.358Z",
+      "path": "/story-runs/run_qxg4lec4",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "run_qxg4lec4",
+        "inviteCode": "ZGAEFH",
+        "templateId": "template_midnight_store_001",
+        "title": "午夜便利店：第一章",
+        "hook": "凌晨 2:17，便利店自动门自己打开，一位没有影子的客人走了进来。",
+        "mode": "invite",
+        "status": "chapter_generated",
+        "maxPlayers": 3,
+        "activeHumanCount": 3,
+        "aiPlayerCount": 0,
+        "dangerLevel": 3,
+        "currentNodeIndex": 5,
+        "roles": [
+          {
+            "roleKey": "lin_lu",
+            "roleName": "林鹿",
+            "identity": "夜班店员",
+            "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+            "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+            "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+            "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+            "arcText": "从逃避异常，到主动面对真相。",
+            "knownInfo": [
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "cannotDo": [
+              "直接宣布怪客身份",
+              "独自离开整家便利店"
+            ],
+            "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+            "privateClues": [
+              "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "id": "role_0x8ffmda",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_owner"
+          },
+          {
+            "roleKey": "chen_zhou",
+            "roleName": "陈舟",
+            "identity": "外卖骑手",
+            "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+            "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+            "currentState": "衣服湿透，手机电量只剩 12%。",
+            "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+            "arcText": "从旁观者变成关键目击者。",
+            "knownInfo": [
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "cannotDo": [
+              "凭空知道店内秘密",
+              "强迫其他角色交出物品"
+            ],
+            "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+            "privateClues": [
+              "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "id": "role_1hk2vhde",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_b"
+          },
+          {
+            "roleKey": "gu_yan",
+            "roleName": "顾言",
+            "identity": "民俗研究生",
+            "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+            "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+            "currentState": "冷静观察，随身带着旧相机和笔记本。",
+            "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+            "arcText": "从研究真相，到承担干预后果。",
+            "knownInfo": [
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "cannotDo": [
+              "直接封印异常",
+              "替他人决定是否牺牲"
+            ],
+            "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+            "privateClues": [
+              "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "id": "role_248k1hcv",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_c"
+          }
+        ],
+        "actions": [
+          {
+            "id": "action_95mzwhhv",
+            "nodeId": "run_qxg4lec4:node:1",
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "status": "accepted",
+            "guardStatus": "ok",
+            "method": "夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。",
+            "intent": "仔细检查硬币上的符号"
+          }
+        ],
+        "resolutions": [
+          {
+            "id": "resolution_6bji11l1",
+            "nodeId": "run_qxg4lec4:node:1",
+            "nodeIndex": 1,
+            "title": "自动门打开",
+            "summary": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。",
+            "publicNarration": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。",
+            "nextNodeHook": "仓库门后传来三下敲击声，像有人在里面回应你们。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "result": "partial_success",
+                "text": "林鹿尝试夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。，获得了线索，但也让异常更接近一步。"
+              }
+            ],
+            "privateResultsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "privateNote": "林鹿的私密线索被轻微触动。"
+              }
+            ],
+            "echoesJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "personalEcho": "林鹿的行动让自己的命运问题更接近答案。",
+                "otherEcho": "林鹿的选择改变了其他人的判断与信任。",
+                "worldEcho": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "crossImpactsJson": [
+              {
+                "sourceRoleId": "role_0x8ffmda",
+                "sourceRoleName": "林鹿",
+                "targetRoleId": "role_0x8ffmda",
+                "targetRoleName": "林鹿",
+                "impactType": "clue_change",
+                "visibility": "public",
+                "title": "林鹿影响了林鹿",
+                "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "clueChangesJson": [
+              {
+                "title": "节点 1 线索",
+                "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_kr23agw0",
+            "nodeId": "run_qxg4lec4:node:2",
+            "nodeIndex": 2,
+            "title": "仓库门后的敲击",
+            "summary": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。",
+            "publicNarration": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+            "nextNodeHook": "收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 2 线索",
+                "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_n8dp3mbf",
+            "nodeId": "run_qxg4lec4:node:3",
+            "nodeIndex": 3,
+            "title": "0 元小票",
+            "summary": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。",
+            "publicNarration": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+            "nextNodeHook": "旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 3 线索",
+                "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_ypzvm93j",
+            "nodeId": "run_qxg4lec4:node:4",
+            "nodeIndex": 4,
+            "title": "冷柜里的第五张脸",
+            "summary": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。",
+            "publicNarration": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+            "nextNodeHook": "便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+            "dangerBefore": 1,
+            "dangerAfter": 2,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 4 线索",
+                "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_y0fs6g5j",
+            "nodeId": "run_qxg4lec4:node:5",
+            "nodeIndex": 5,
+            "title": "第五道影子",
+            "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+            "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+            "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+            "dangerBefore": 2,
+            "dangerAfter": 3,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 5 线索",
+                "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          }
+        ],
+        "chapters": [
+          {
+            "id": "chapter_13rqlloc",
+            "runId": "run_qxg4lec4",
+            "chapterIndex": 1,
+            "title": "午夜便利店：第一章终局",
+            "content": "《午夜便利店：第一章终局》\n\n【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。\n【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。\n【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。\n【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。\n【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。\n\n下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+            "highlightsJson": [
+              {
+                "roleName": "林鹿",
+                "highlight": "林鹿在关键节点留下了决定性行动。"
+              },
+              {
+                "roleName": "陈舟",
+                "highlight": "陈舟在关键节点留下了决定性行动。"
+              },
+              {
+                "roleName": "顾言",
+                "highlight": "顾言在关键节点留下了决定性行动。"
+              }
+            ],
+            "keyChoicesJson": [
+              {
+                "node": 1,
+                "choice": "【自动门打开】监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。"
+              },
+              {
+                "node": 2,
+                "choice": "【仓库门后的敲击】门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。"
+              },
+              {
+                "node": 3,
+                "choice": "【0 元小票】小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。"
+              },
+              {
+                "node": 4,
+                "choice": "【冷柜里的第五张脸】照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。"
+              },
+              {
+                "node": 5,
+                "choice": "【第五道影子】你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。"
+              }
+            ],
+            "povSectionsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "title": "第 1 节：林鹿",
+                "content": "林鹿沿着自己的命运线推进：确认没有影子的客人到底是不是活人，并保护店内其他人。"
+              },
+              {
+                "roleId": "role_1hk2vhde",
+                "roleName": "陈舟",
+                "title": "第 2 节：陈舟",
+                "content": "陈舟沿着自己的命运线推进：弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。"
+              },
+              {
+                "roleId": "role_248k1hcv",
+                "roleName": "顾言",
+                "title": "第 3 节：顾言",
+                "content": "顾言沿着自己的命运线推进：收集足够证据证明传说真实，但不能让事件失控。"
+              }
+            ],
+            "personalCardsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "title": "林鹿的个人故事卡",
+                "hook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+                "highlight": "林鹿在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "你到底是被困者，还是下一任守夜人？"
+              },
+              {
+                "roleId": "role_1hk2vhde",
+                "roleName": "陈舟",
+                "title": "陈舟的个人故事卡",
+                "hook": "你接到一份没有平台记录的订单，收货人是你自己。",
+                "highlight": "陈舟在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "这份订单是让你送货，还是让你替别人留下？"
+              },
+              {
+                "roleId": "role_248k1hcv",
+                "roleName": "顾言",
+                "title": "顾言的个人故事卡",
+                "hook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+                "highlight": "顾言在本章留下了关键选择：午夜便利店：第一章终局的选择改变了每条命运线。",
+                "unresolvedQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？"
+              }
+            ],
+            "nextHook": "下一章钩子：下一章《第五个人》将在北巷 24 号继续。",
+            "shareTokens": [
+              {
+                "token": "share_lec4"
+              }
+            ]
+          }
+        ],
+        "players": {
+          "mock_openid_web_owner": "role_0x8ffmda",
+          "mock_openid_web_player_b": "role_1hk2vhde",
+          "mock_openid_web_player_c": "role_248k1hcv"
+        },
+        "joinedPlayers": [
+          "mock_openid_web_owner",
+          "mock_openid_web_player_b",
+          "mock_openid_web_player_c"
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.352Z",
+      "path": "/nodes/run_qxg4lec4:node:5/resolve",
+      "method": "POST",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "resolution_y0fs6g5j",
+        "nodeId": "run_qxg4lec4:node:5",
+        "nodeIndex": 5,
+        "title": "第五道影子",
+        "summary": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。",
+        "publicNarration": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。 下一章《第五个人》将在北巷 24 号继续。",
+        "nextNodeHook": "下一章《第五个人》将在北巷 24 号继续。",
+        "dangerBefore": 2,
+        "dangerAfter": 3,
+        "actionResultsJson": [],
+        "privateResultsJson": [],
+        "echoesJson": [],
+        "crossImpactsJson": [],
+        "clueChangesJson": [
+          {
+            "title": "节点 5 线索",
+            "description": "你们没有抓住客人，却保住了影子和证据。第五个人留下下一章地址：北巷 24 号。"
+          }
+        ],
+        "relationChangesJson": [
+          {
+            "relationType": "trust",
+            "publicNote": "共同经历异常后产生信任。"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.342Z",
+      "path": "/nodes/run_qxg4lec4:node:5/resolution",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": null
+    },
+    {
+      "at": "2026-05-15T15:28:51.340Z",
+      "path": "/nodes/run_qxg4lec4:node:5/actions",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": []
+    },
+    {
+      "at": "2026-05-15T15:28:51.339Z",
+      "path": "/story-runs/run_qxg4lec4/my-role",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "role": {
+          "roleKey": "lin_lu",
+          "roleName": "林鹿",
+          "identity": "夜班店员",
+          "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+          "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+          "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+          "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+          "arcText": "从逃避异常，到主动面对真相。",
+          "knownInfo": [
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "cannotDo": [
+            "直接宣布怪客身份",
+            "独自离开整家便利店"
+          ],
+          "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+          "privateClues": [
+            "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "id": "role_0x8ffmda",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_owner"
+        }
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.337Z",
+      "path": "/story-runs/run_qxg4lec4/state",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "run": {
+          "id": "run_qxg4lec4",
+          "inviteCode": "ZGAEFH",
+          "templateId": "template_midnight_store_001",
+          "title": "午夜便利店：第一章",
+          "hook": "凌晨 2:17，便利店自动门自己打开，一位没有影子的客人走了进来。",
+          "mode": "invite",
+          "status": "playing",
+          "maxPlayers": 3,
+          "activeHumanCount": 3,
+          "aiPlayerCount": 0,
+          "dangerLevel": 2,
+          "currentNodeIndex": 5,
+          "roles": [
+            {
+              "roleKey": "lin_lu",
+              "roleName": "林鹿",
+              "identity": "夜班店员",
+              "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+              "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+              "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+              "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+              "arcText": "从逃避异常，到主动面对真相。",
+              "knownInfo": [
+                "仓库门今晚曾经自动反锁",
+                "收银系统里出现过 0 元小票"
+              ],
+              "cannotDo": [
+                "直接宣布怪客身份",
+                "独自离开整家便利店"
+              ],
+              "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+              "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+              "privateClues": [
+                "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+                "仓库门今晚曾经自动反锁",
+                "收银系统里出现过 0 元小票"
+              ],
+              "id": "role_0x8ffmda",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_owner"
+            },
+            {
+              "roleKey": "chen_zhou",
+              "roleName": "陈舟",
+              "identity": "外卖骑手",
+              "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+              "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+              "currentState": "衣服湿透，手机电量只剩 12%。",
+              "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+              "arcText": "从旁观者变成关键目击者。",
+              "knownInfo": [
+                "巷口有一盏路灯只照人不照影子",
+                "订单地址在地图上不存在"
+              ],
+              "cannotDo": [
+                "凭空知道店内秘密",
+                "强迫其他角色交出物品"
+              ],
+              "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+              "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+              "privateClues": [
+                "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+                "巷口有一盏路灯只照人不照影子",
+                "订单地址在地图上不存在"
+              ],
+              "id": "role_1hk2vhde",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_player_b"
+            },
+            {
+              "roleKey": "gu_yan",
+              "roleName": "顾言",
+              "identity": "民俗研究生",
+              "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+              "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+              "currentState": "冷静观察，随身带着旧相机和笔记本。",
+              "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+              "arcText": "从研究真相，到承担干预后果。",
+              "knownInfo": [
+                "没有影子的客人可能不是第一个",
+                "旧相机能拍到肉眼忽略的痕迹"
+              ],
+              "cannotDo": [
+                "直接封印异常",
+                "替他人决定是否牺牲"
+              ],
+              "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+              "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+              "privateClues": [
+                "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+                "没有影子的客人可能不是第一个",
+                "旧相机能拍到肉眼忽略的痕迹"
+              ],
+              "id": "role_248k1hcv",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_player_c"
+            }
+          ],
+          "actions": [
+            {
+              "id": "action_95mzwhhv",
+              "nodeId": "run_qxg4lec4:node:1",
+              "roleId": "role_0x8ffmda",
+              "roleName": "林鹿",
+              "status": "accepted",
+              "guardStatus": "ok",
+              "method": "夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。",
+              "intent": "仔细检查硬币上的符号"
+            }
+          ],
+          "resolutions": [
+            {
+              "id": "resolution_6bji11l1",
+              "nodeId": "run_qxg4lec4:node:1",
+              "nodeIndex": 1,
+              "title": "自动门打开",
+              "summary": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。",
+              "publicNarration": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。",
+              "nextNodeHook": "仓库门后传来三下敲击声，像有人在里面回应你们。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "result": "partial_success",
+                  "text": "林鹿尝试夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。，获得了线索，但也让异常更接近一步。"
+                }
+              ],
+              "privateResultsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "privateNote": "林鹿的私密线索被轻微触动。"
+                }
+              ],
+              "echoesJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "personalEcho": "林鹿的行动让自己的命运问题更接近答案。",
+                  "otherEcho": "林鹿的选择改变了其他人的判断与信任。",
+                  "worldEcho": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "crossImpactsJson": [
+                {
+                  "sourceRoleId": "role_0x8ffmda",
+                  "sourceRoleName": "林鹿",
+                  "targetRoleId": "role_0x8ffmda",
+                  "targetRoleName": "林鹿",
+                  "impactType": "clue_change",
+                  "visibility": "public",
+                  "title": "林鹿影响了林鹿",
+                  "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "clueChangesJson": [
+                {
+                  "title": "节点 1 线索",
+                  "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_kr23agw0",
+              "nodeId": "run_qxg4lec4:node:2",
+              "nodeIndex": 2,
+              "title": "仓库门后的敲击",
+              "summary": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。",
+              "publicNarration": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+              "nextNodeHook": "收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 2 线索",
+                  "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_n8dp3mbf",
+              "nodeId": "run_qxg4lec4:node:3",
+              "nodeIndex": 3,
+              "title": "0 元小票",
+              "summary": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。",
+              "publicNarration": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+              "nextNodeHook": "旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 3 线索",
+                  "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_ypzvm93j",
+              "nodeId": "run_qxg4lec4:node:4",
+              "nodeIndex": 4,
+              "title": "冷柜里的第五张脸",
+              "summary": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。",
+              "publicNarration": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+              "nextNodeHook": "便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+              "dangerBefore": 1,
+              "dangerAfter": 2,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 4 线索",
+                  "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            }
+          ],
+          "chapters": [],
+          "players": {
+            "mock_openid_web_owner": "role_0x8ffmda",
+            "mock_openid_web_player_b": "role_1hk2vhde",
+            "mock_openid_web_player_c": "role_248k1hcv"
+          },
+          "joinedPlayers": [
+            "mock_openid_web_owner",
+            "mock_openid_web_player_b",
+            "mock_openid_web_player_c"
+          ]
+        },
+        "currentNode": {
+          "id": "run_qxg4lec4:node:5",
+          "runId": "run_qxg4lec4",
+          "chapterIndex": 1,
+          "nodeIndex": 5,
+          "title": "第五道影子",
+          "publicNarration": "灯灭之后，所有声音都被雨吞掉。门外路灯下，多出来的影子正慢慢走向货架尽头。",
+          "nodeGoal": "决定如何面对第五道影子，并为本章收束真相。",
+          "actionOptionsJson": [
+            "合力逼近影子",
+            "保护关键证据",
+            "用各自秘密换取线索"
+          ],
+          "status": "open_for_actions",
+          "actions": []
+        },
+        "clues": [
+          {
+            "id": "missing_minute",
+            "title": "缺失的一分钟",
+            "description": "便利店监控在凌晨 2:16 到 2:17 之间出现空白。"
+          },
+          {
+            "id": "clue_1",
+            "title": "节点 1 线索",
+            "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+          },
+          {
+            "id": "clue_2",
+            "title": "节点 2 线索",
+            "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+          },
+          {
+            "id": "clue_3",
+            "title": "节点 3 线索",
+            "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+          },
+          {
+            "id": "clue_4",
+            "title": "节点 4 线索",
+            "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+          }
+        ],
+        "relations": [
+          {
+            "id": "rel_1",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_2",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_3",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_4",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          }
+        ],
+        "roles": [
+          {
+            "roleKey": "lin_lu",
+            "roleName": "林鹿",
+            "identity": "夜班店员",
+            "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+            "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+            "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+            "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+            "arcText": "从逃避异常，到主动面对真相。",
+            "knownInfo": [
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "cannotDo": [
+              "直接宣布怪客身份",
+              "独自离开整家便利店"
+            ],
+            "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+            "privateClues": [
+              "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "id": "role_0x8ffmda",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_owner"
+          },
+          {
+            "roleKey": "chen_zhou",
+            "roleName": "陈舟",
+            "identity": "外卖骑手",
+            "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+            "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+            "currentState": "衣服湿透，手机电量只剩 12%。",
+            "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+            "arcText": "从旁观者变成关键目击者。",
+            "knownInfo": [
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "cannotDo": [
+              "凭空知道店内秘密",
+              "强迫其他角色交出物品"
+            ],
+            "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+            "privateClues": [
+              "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "id": "role_1hk2vhde",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_b"
+          },
+          {
+            "roleKey": "gu_yan",
+            "roleName": "顾言",
+            "identity": "民俗研究生",
+            "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+            "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+            "currentState": "冷静观察，随身带着旧相机和笔记本。",
+            "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+            "arcText": "从研究真相，到承担干预后果。",
+            "knownInfo": [
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "cannotDo": [
+              "直接封印异常",
+              "替他人决定是否牺牲"
+            ],
+            "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+            "privateClues": [
+              "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "id": "role_248k1hcv",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_c"
+          }
+        ],
+        "chapters": []
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.336Z",
+      "path": "/story-runs/run_qxg4lec4/roles",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": [
+        {
+          "roleKey": "lin_lu",
+          "roleName": "林鹿",
+          "identity": "夜班店员",
+          "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+          "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+          "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+          "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+          "arcText": "从逃避异常，到主动面对真相。",
+          "knownInfo": [
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "cannotDo": [
+            "直接宣布怪客身份",
+            "独自离开整家便利店"
+          ],
+          "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+          "privateClues": [
+            "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "id": "role_0x8ffmda",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_owner"
+        },
+        {
+          "roleKey": "chen_zhou",
+          "roleName": "陈舟",
+          "identity": "外卖骑手",
+          "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+          "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+          "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+          "currentState": "衣服湿透，手机电量只剩 12%。",
+          "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+          "arcText": "从旁观者变成关键目击者。",
+          "knownInfo": [
+            "巷口有一盏路灯只照人不照影子",
+            "订单地址在地图上不存在"
+          ],
+          "cannotDo": [
+            "凭空知道店内秘密",
+            "强迫其他角色交出物品"
+          ],
+          "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+          "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+          "privateClues": [
+            "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "巷口有一盏路灯只照人不照影子",
+            "订单地址在地图上不存在"
+          ],
+          "id": "role_1hk2vhde",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_player_b"
+        },
+        {
+          "roleKey": "gu_yan",
+          "roleName": "顾言",
+          "identity": "民俗研究生",
+          "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+          "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+          "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+          "currentState": "冷静观察，随身带着旧相机和笔记本。",
+          "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+          "arcText": "从研究真相，到承担干预后果。",
+          "knownInfo": [
+            "没有影子的客人可能不是第一个",
+            "旧相机能拍到肉眼忽略的痕迹"
+          ],
+          "cannotDo": [
+            "直接封印异常",
+            "替他人决定是否牺牲"
+          ],
+          "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+          "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+          "privateClues": [
+            "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "没有影子的客人可能不是第一个",
+            "旧相机能拍到肉眼忽略的痕迹"
+          ],
+          "id": "role_248k1hcv",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_player_c"
+        }
+      ]
+    },
+    {
+      "at": "2026-05-15T15:28:51.334Z",
+      "path": "/story-runs/run_qxg4lec4",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "id": "run_qxg4lec4",
+        "inviteCode": "ZGAEFH",
+        "templateId": "template_midnight_store_001",
+        "title": "午夜便利店：第一章",
+        "hook": "凌晨 2:17，便利店自动门自己打开，一位没有影子的客人走了进来。",
+        "mode": "invite",
+        "status": "playing",
+        "maxPlayers": 3,
+        "activeHumanCount": 3,
+        "aiPlayerCount": 0,
+        "dangerLevel": 2,
+        "currentNodeIndex": 5,
+        "roles": [
+          {
+            "roleKey": "lin_lu",
+            "roleName": "林鹿",
+            "identity": "夜班店员",
+            "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+            "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+            "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+            "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+            "arcText": "从逃避异常，到主动面对真相。",
+            "knownInfo": [
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "cannotDo": [
+              "直接宣布怪客身份",
+              "独自离开整家便利店"
+            ],
+            "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+            "privateClues": [
+              "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "id": "role_0x8ffmda",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_owner"
+          },
+          {
+            "roleKey": "chen_zhou",
+            "roleName": "陈舟",
+            "identity": "外卖骑手",
+            "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+            "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+            "currentState": "衣服湿透，手机电量只剩 12%。",
+            "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+            "arcText": "从旁观者变成关键目击者。",
+            "knownInfo": [
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "cannotDo": [
+              "凭空知道店内秘密",
+              "强迫其他角色交出物品"
+            ],
+            "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+            "privateClues": [
+              "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "id": "role_1hk2vhde",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_b"
+          },
+          {
+            "roleKey": "gu_yan",
+            "roleName": "顾言",
+            "identity": "民俗研究生",
+            "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+            "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+            "currentState": "冷静观察，随身带着旧相机和笔记本。",
+            "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+            "arcText": "从研究真相，到承担干预后果。",
+            "knownInfo": [
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "cannotDo": [
+              "直接封印异常",
+              "替他人决定是否牺牲"
+            ],
+            "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+            "privateClues": [
+              "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "id": "role_248k1hcv",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_c"
+          }
+        ],
+        "actions": [
+          {
+            "id": "action_95mzwhhv",
+            "nodeId": "run_qxg4lec4:node:1",
+            "roleId": "role_0x8ffmda",
+            "roleName": "林鹿",
+            "status": "accepted",
+            "guardStatus": "ok",
+            "method": "夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。",
+            "intent": "仔细检查硬币上的符号"
+          }
+        ],
+        "resolutions": [
+          {
+            "id": "resolution_6bji11l1",
+            "nodeId": "run_qxg4lec4:node:1",
+            "nodeIndex": 1,
+            "title": "自动门打开",
+            "summary": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。",
+            "publicNarration": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。",
+            "nextNodeHook": "仓库门后传来三下敲击声，像有人在里面回应你们。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "result": "partial_success",
+                "text": "林鹿尝试夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。，获得了线索，但也让异常更接近一步。"
+              }
+            ],
+            "privateResultsJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "privateNote": "林鹿的私密线索被轻微触动。"
+              }
+            ],
+            "echoesJson": [
+              {
+                "roleId": "role_0x8ffmda",
+                "roleName": "林鹿",
+                "personalEcho": "林鹿的行动让自己的命运问题更接近答案。",
+                "otherEcho": "林鹿的选择改变了其他人的判断与信任。",
+                "worldEcho": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "crossImpactsJson": [
+              {
+                "sourceRoleId": "role_0x8ffmda",
+                "sourceRoleName": "林鹿",
+                "targetRoleId": "role_0x8ffmda",
+                "targetRoleName": "林鹿",
+                "impactType": "clue_change",
+                "visibility": "public",
+                "title": "林鹿影响了林鹿",
+                "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "clueChangesJson": [
+              {
+                "title": "节点 1 线索",
+                "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_kr23agw0",
+            "nodeId": "run_qxg4lec4:node:2",
+            "nodeIndex": 2,
+            "title": "仓库门后的敲击",
+            "summary": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。",
+            "publicNarration": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+            "nextNodeHook": "收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 2 线索",
+                "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_n8dp3mbf",
+            "nodeId": "run_qxg4lec4:node:3",
+            "nodeIndex": 3,
+            "title": "0 元小票",
+            "summary": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。",
+            "publicNarration": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+            "nextNodeHook": "旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+            "dangerBefore": 1,
+            "dangerAfter": 1,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 3 线索",
+                "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          },
+          {
+            "id": "resolution_ypzvm93j",
+            "nodeId": "run_qxg4lec4:node:4",
+            "nodeIndex": 4,
+            "title": "冷柜里的第五张脸",
+            "summary": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。",
+            "publicNarration": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+            "nextNodeHook": "便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+            "dangerBefore": 1,
+            "dangerAfter": 2,
+            "actionResultsJson": [],
+            "privateResultsJson": [],
+            "echoesJson": [],
+            "crossImpactsJson": [],
+            "clueChangesJson": [
+              {
+                "title": "节点 4 线索",
+                "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+              }
+            ],
+            "relationChangesJson": [
+              {
+                "relationType": "trust",
+                "publicNote": "共同经历异常后产生信任。"
+              }
+            ]
+          }
+        ],
+        "chapters": [],
+        "players": {
+          "mock_openid_web_owner": "role_0x8ffmda",
+          "mock_openid_web_player_b": "role_1hk2vhde",
+          "mock_openid_web_player_c": "role_248k1hcv"
+        },
+        "joinedPlayers": [
+          "mock_openid_web_owner",
+          "mock_openid_web_player_b",
+          "mock_openid_web_player_c"
+        ]
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.331Z",
+      "path": "/nodes/run_qxg4lec4:node:5/actions",
+      "method": "POST",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "status": "rejected",
+        "accepted": false,
+        "rejected": true,
+        "guardStatus": "rewrite_needed",
+        "matchedRules": [
+          "declare_result"
+        ],
+        "suggestedRewrite": {
+          "method": "实习记者围绕第五道影子行动，只描述尝试与信息边界。",
+          "intent": "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+          "strategy": "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+        },
+        "reason": "玩家只能提交行动意图，不能宣布结算结果。",
+        "message": "玩家只能提交行动意图，不能宣布结算结果。",
+        "rewriteSuggestion": {
+          "method": "实习记者围绕第五道影子行动，只描述尝试与信息边界。",
+          "intent": "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+          "strategy": "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+        }
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.330Z",
+      "path": "/nodes/run_qxg4lec4:node:5/actions",
+      "method": "POST",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "status": "rejected",
+        "accepted": false,
+        "rejected": true,
+        "guardStatus": "rewrite_needed",
+        "matchedRules": [
+          "declare_result"
+        ],
+        "suggestedRewrite": {
+          "method": "外卖骑手围绕第五道影子行动，只描述尝试与信息边界。",
+          "intent": "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+          "strategy": "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+        },
+        "reason": "玩家只能提交行动意图，不能宣布结算结果。",
+        "message": "玩家只能提交行动意图，不能宣布结算结果。",
+        "rewriteSuggestion": {
+          "method": "外卖骑手围绕第五道影子行动，只描述尝试与信息边界。",
+          "intent": "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+          "strategy": "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+        }
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.328Z",
+      "path": "/nodes/run_qxg4lec4:node:5/actions",
+      "method": "POST",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "status": "rejected",
+        "accepted": false,
+        "rejected": true,
+        "guardStatus": "rewrite_needed",
+        "matchedRules": [
+          "declare_result"
+        ],
+        "suggestedRewrite": {
+          "method": "夜班店员围绕第五道影子行动，只描述尝试与信息边界。",
+          "intent": "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+          "strategy": "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+        },
+        "reason": "玩家只能提交行动意图，不能宣布结算结果。",
+        "message": "玩家只能提交行动意图，不能宣布结算结果。",
+        "rewriteSuggestion": {
+          "method": "夜班店员围绕第五道影子行动，只描述尝试与信息边界。",
+          "intent": "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
+          "strategy": "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+        }
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.326Z",
+      "path": "/story-runs/run_qxg4lec4/roles",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": [
+        {
+          "roleKey": "lin_lu",
+          "roleName": "林鹿",
+          "identity": "夜班店员",
+          "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+          "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+          "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+          "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+          "arcText": "从逃避异常，到主动面对真相。",
+          "knownInfo": [
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "cannotDo": [
+            "直接宣布怪客身份",
+            "独自离开整家便利店"
+          ],
+          "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+          "privateClues": [
+            "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "id": "role_0x8ffmda",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_owner"
+        },
+        {
+          "roleKey": "chen_zhou",
+          "roleName": "陈舟",
+          "identity": "外卖骑手",
+          "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+          "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+          "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+          "currentState": "衣服湿透，手机电量只剩 12%。",
+          "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+          "arcText": "从旁观者变成关键目击者。",
+          "knownInfo": [
+            "巷口有一盏路灯只照人不照影子",
+            "订单地址在地图上不存在"
+          ],
+          "cannotDo": [
+            "凭空知道店内秘密",
+            "强迫其他角色交出物品"
+          ],
+          "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+          "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+          "privateClues": [
+            "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "巷口有一盏路灯只照人不照影子",
+            "订单地址在地图上不存在"
+          ],
+          "id": "role_1hk2vhde",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_player_b"
+        },
+        {
+          "roleKey": "gu_yan",
+          "roleName": "顾言",
+          "identity": "民俗研究生",
+          "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+          "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+          "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+          "currentState": "冷静观察，随身带着旧相机和笔记本。",
+          "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+          "arcText": "从研究真相，到承担干预后果。",
+          "knownInfo": [
+            "没有影子的客人可能不是第一个",
+            "旧相机能拍到肉眼忽略的痕迹"
+          ],
+          "cannotDo": [
+            "直接封印异常",
+            "替他人决定是否牺牲"
+          ],
+          "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+          "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+          "privateClues": [
+            "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "没有影子的客人可能不是第一个",
+            "旧相机能拍到肉眼忽略的痕迹"
+          ],
+          "id": "role_248k1hcv",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_player_c"
+        }
+      ]
+    },
+    {
+      "at": "2026-05-15T15:28:51.317Z",
+      "path": "/nodes/run_qxg4lec4:node:5/resolution",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": null
+    },
+    {
+      "at": "2026-05-15T15:28:51.315Z",
+      "path": "/nodes/run_qxg4lec4:node:5/actions",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": []
+    },
+    {
+      "at": "2026-05-15T15:28:51.313Z",
+      "path": "/story-runs/run_qxg4lec4/my-role",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "role": {
+          "roleKey": "lin_lu",
+          "roleName": "林鹿",
+          "identity": "夜班店员",
+          "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+          "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+          "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+          "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+          "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+          "arcText": "从逃避异常，到主动面对真相。",
+          "knownInfo": [
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "cannotDo": [
+            "直接宣布怪客身份",
+            "独自离开整家便利店"
+          ],
+          "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+          "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+          "privateClues": [
+            "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "仓库门今晚曾经自动反锁",
+            "收银系统里出现过 0 元小票"
+          ],
+          "id": "role_0x8ffmda",
+          "status": "claimed",
+          "playerOpenid": "mock_openid_web_owner"
+        }
+      }
+    },
+    {
+      "at": "2026-05-15T15:28:51.311Z",
+      "path": "/story-runs/run_qxg4lec4/state",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "run": {
+          "id": "run_qxg4lec4",
+          "inviteCode": "ZGAEFH",
+          "templateId": "template_midnight_store_001",
+          "title": "午夜便利店：第一章",
+          "hook": "凌晨 2:17，便利店自动门自己打开，一位没有影子的客人走了进来。",
+          "mode": "invite",
+          "status": "playing",
+          "maxPlayers": 3,
+          "activeHumanCount": 3,
+          "aiPlayerCount": 0,
+          "dangerLevel": 2,
+          "currentNodeIndex": 5,
+          "roles": [
+            {
+              "roleKey": "lin_lu",
+              "roleName": "林鹿",
+              "identity": "夜班店员",
+              "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+              "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+              "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+              "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+              "arcText": "从逃避异常，到主动面对真相。",
+              "knownInfo": [
+                "仓库门今晚曾经自动反锁",
+                "收银系统里出现过 0 元小票"
+              ],
+              "cannotDo": [
+                "直接宣布怪客身份",
+                "独自离开整家便利店"
+              ],
+              "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+              "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+              "privateClues": [
+                "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+                "仓库门今晚曾经自动反锁",
+                "收银系统里出现过 0 元小票"
+              ],
+              "id": "role_0x8ffmda",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_owner"
+            },
+            {
+              "roleKey": "chen_zhou",
+              "roleName": "陈舟",
+              "identity": "外卖骑手",
+              "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+              "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+              "currentState": "衣服湿透，手机电量只剩 12%。",
+              "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+              "arcText": "从旁观者变成关键目击者。",
+              "knownInfo": [
+                "巷口有一盏路灯只照人不照影子",
+                "订单地址在地图上不存在"
+              ],
+              "cannotDo": [
+                "凭空知道店内秘密",
+                "强迫其他角色交出物品"
+              ],
+              "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+              "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+              "privateClues": [
+                "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+                "巷口有一盏路灯只照人不照影子",
+                "订单地址在地图上不存在"
+              ],
+              "id": "role_1hk2vhde",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_player_b"
+            },
+            {
+              "roleKey": "gu_yan",
+              "roleName": "顾言",
+              "identity": "民俗研究生",
+              "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+              "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+              "currentState": "冷静观察，随身带着旧相机和笔记本。",
+              "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+              "arcText": "从研究真相，到承担干预后果。",
+              "knownInfo": [
+                "没有影子的客人可能不是第一个",
+                "旧相机能拍到肉眼忽略的痕迹"
+              ],
+              "cannotDo": [
+                "直接封印异常",
+                "替他人决定是否牺牲"
+              ],
+              "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+              "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+              "privateClues": [
+                "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+                "没有影子的客人可能不是第一个",
+                "旧相机能拍到肉眼忽略的痕迹"
+              ],
+              "id": "role_248k1hcv",
+              "status": "claimed",
+              "playerOpenid": "mock_openid_web_player_c"
+            }
+          ],
+          "actions": [
+            {
+              "id": "action_95mzwhhv",
+              "nodeId": "run_qxg4lec4:node:1",
+              "roleId": "role_0x8ffmda",
+              "roleName": "林鹿",
+              "status": "accepted",
+              "guardStatus": "ok",
+              "method": "夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。",
+              "intent": "仔细检查硬币上的符号"
+            }
+          ],
+          "resolutions": [
+            {
+              "id": "resolution_6bji11l1",
+              "nodeId": "run_qxg4lec4:node:1",
+              "nodeIndex": 1,
+              "title": "自动门打开",
+              "summary": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。",
+              "publicNarration": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。 仓库门后传来三下敲击声，像有人在里面回应你们。",
+              "nextNodeHook": "仓库门后传来三下敲击声，像有人在里面回应你们。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "result": "partial_success",
+                  "text": "林鹿尝试夜班店员：我决定戴上手套，仔细拿起那枚硬币，检查上面刻着的符号和文字，希望能找出它的来历。，获得了线索，但也让异常更接近一步。"
+                }
+              ],
+              "privateResultsJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "privateNote": "林鹿的私密线索被轻微触动。"
+                }
+              ],
+              "echoesJson": [
+                {
+                  "roleId": "role_0x8ffmda",
+                  "roleName": "林鹿",
+                  "personalEcho": "林鹿的行动让自己的命运问题更接近答案。",
+                  "otherEcho": "林鹿的选择改变了其他人的判断与信任。",
+                  "worldEcho": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "crossImpactsJson": [
+                {
+                  "sourceRoleId": "role_0x8ffmda",
+                  "sourceRoleName": "林鹿",
+                  "targetRoleId": "role_0x8ffmda",
+                  "targetRoleName": "林鹿",
+                  "impactType": "clue_change",
+                  "visibility": "public",
+                  "title": "林鹿影响了林鹿",
+                  "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "clueChangesJson": [
+                {
+                  "title": "节点 1 线索",
+                  "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_kr23agw0",
+              "nodeId": "run_qxg4lec4:node:2",
+              "nodeIndex": 2,
+              "title": "仓库门后的敲击",
+              "summary": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。",
+              "publicNarration": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。 收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+              "nextNodeHook": "收银机突然打印出一张 0 元小票，购买人姓名栏写着“第五个人”。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 2 线索",
+                  "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_n8dp3mbf",
+              "nodeId": "run_qxg4lec4:node:3",
+              "nodeIndex": 3,
+              "title": "0 元小票",
+              "summary": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。",
+              "publicNarration": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。 旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+              "nextNodeHook": "旧相机闪光后，冷柜玻璃上映出并不存在的第五张脸。",
+              "dangerBefore": 1,
+              "dangerAfter": 1,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 3 线索",
+                  "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            },
+            {
+              "id": "resolution_ypzvm93j",
+              "nodeId": "run_qxg4lec4:node:4",
+              "nodeIndex": 4,
+              "title": "冷柜里的第五张脸",
+              "summary": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。",
+              "publicNarration": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。 便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+              "nextNodeHook": "便利店灯光全部熄灭，只剩门外路灯照出四个人和第五道影子。",
+              "dangerBefore": 1,
+              "dangerAfter": 2,
+              "actionResultsJson": [],
+              "privateResultsJson": [],
+              "echoesJson": [],
+              "crossImpactsJson": [],
+              "clueChangesJson": [
+                {
+                  "title": "节点 4 线索",
+                  "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+                }
+              ],
+              "relationChangesJson": [
+                {
+                  "relationType": "trust",
+                  "publicNote": "共同经历异常后产生信任。"
+                }
+              ]
+            }
+          ],
+          "chapters": [],
+          "players": {
+            "mock_openid_web_owner": "role_0x8ffmda",
+            "mock_openid_web_player_b": "role_1hk2vhde",
+            "mock_openid_web_player_c": "role_248k1hcv"
+          },
+          "joinedPlayers": [
+            "mock_openid_web_owner",
+            "mock_openid_web_player_b",
+            "mock_openid_web_player_c"
+          ]
+        },
+        "currentNode": {
+          "id": "run_qxg4lec4:node:5",
+          "runId": "run_qxg4lec4",
+          "chapterIndex": 1,
+          "nodeIndex": 5,
+          "title": "第五道影子",
+          "publicNarration": "灯灭之后，所有声音都被雨吞掉。门外路灯下，多出来的影子正慢慢走向货架尽头。",
+          "nodeGoal": "决定如何面对第五道影子，并为本章收束真相。",
+          "actionOptionsJson": [
+            "合力逼近影子",
+            "保护关键证据",
+            "用各自秘密换取线索"
+          ],
+          "status": "open_for_actions",
+          "actions": []
+        },
+        "clues": [
+          {
+            "id": "missing_minute",
+            "title": "缺失的一分钟",
+            "description": "便利店监控在凌晨 2:16 到 2:17 之间出现空白。"
+          },
+          {
+            "id": "clue_1",
+            "title": "节点 1 线索",
+            "description": "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+          },
+          {
+            "id": "clue_2",
+            "title": "节点 2 线索",
+            "description": "门缝下没有影子，水迹里却浮着一张被泡软的小票，小票时间是明天凌晨。"
+          },
+          {
+            "id": "clue_3",
+            "title": "节点 3 线索",
+            "description": "小票二维码扫出一段店内货架画面，画面里你们身后站着一个没有影子的人。"
+          },
+          {
+            "id": "clue_4",
+            "title": "节点 4 线索",
+            "description": "照片里出现一行反写文字：不要让它借走你们的影子。危险等级上升。"
+          }
+        ],
+        "relations": [
+          {
+            "id": "rel_1",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_2",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_3",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          },
+          {
+            "id": "rel_4",
+            "publicNote": "共同经历异常后产生新的信任与怀疑。"
+          }
+        ],
+        "roles": [
+          {
+            "roleKey": "lin_lu",
+            "roleName": "林鹿",
+            "identity": "夜班店员",
+            "publicInfo": "负责凌晨班，熟悉店内监控和仓库，但今晚一直心神不宁。",
+            "hiddenSecret": "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+            "personalGoal": "确认没有影子的客人到底是不是活人，并保护店内其他人。",
+            "currentState": "紧张但清醒，手边有收银台钥匙和监控权限。",
+            "abilityText": "熟悉店铺动线，能快速找到监控、票据和库存异常。",
+            "arcText": "从逃避异常，到主动面对真相。",
+            "knownInfo": [
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "cannotDo": [
+              "直接宣布怪客身份",
+              "独自离开整家便利店"
+            ],
+            "personalHook": "你在收银机里发现一枚不属于今晚账目的旧硬币。",
+            "destinyQuestion": "你到底是被困者，还是下一任守夜人？",
+            "privateClues": [
+              "你在一周前见过同一位没有影子的客人，当时监控也缺失了一分钟。",
+              "仓库门今晚曾经自动反锁",
+              "收银系统里出现过 0 元小票"
+            ],
+            "id": "role_0x8ffmda",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_owner"
+          },
+          {
+            "roleKey": "chen_zhou",
+            "roleName": "陈舟",
+            "identity": "外卖骑手",
+            "publicInfo": "雨夜进店避雨，声称只是等订单，却对店外巷口很熟。",
+            "hiddenSecret": "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+            "personalGoal": "弄清自己的订单和便利店异常是否有关，同时别被其他人怀疑。",
+            "currentState": "衣服湿透，手机电量只剩 12%。",
+            "abilityText": "熟悉附近街区，能判断路线、门牌和异常位置。",
+            "arcText": "从旁观者变成关键目击者。",
+            "knownInfo": [
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "cannotDo": [
+              "凭空知道店内秘密",
+              "强迫其他角色交出物品"
+            ],
+            "personalHook": "你接到一份没有平台记录的订单，收货人是你自己。",
+            "destinyQuestion": "这份订单是让你送货，还是让你替别人留下？",
+            "privateClues": [
+              "你今晚送过一单到不存在的门牌号，收件人备注是“不要回头”。",
+              "巷口有一盏路灯只照人不照影子",
+              "订单地址在地图上不存在"
+            ],
+            "id": "role_1hk2vhde",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_b"
+          },
+          {
+            "roleKey": "gu_yan",
+            "roleName": "顾言",
+            "identity": "民俗研究生",
+            "publicInfo": "来店里买电池和胶卷，对地方传闻很感兴趣。",
+            "hiddenSecret": "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+            "personalGoal": "收集足够证据证明传说真实，但不能让事件失控。",
+            "currentState": "冷静观察，随身带着旧相机和笔记本。",
+            "abilityText": "能识别民俗线索、旧符号和反常仪式痕迹。",
+            "arcText": "从研究真相，到承担干预后果。",
+            "knownInfo": [
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "cannotDo": [
+              "直接封印异常",
+              "替他人决定是否牺牲"
+            ],
+            "personalHook": "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。",
+            "destinyQuestion": "你是在调查旧案，还是在重走亲人失踪前的路？",
+            "privateClues": [
+              "你正在调查“借影人”的传说，便利店是传闻中的第三个地点。",
+              "没有影子的客人可能不是第一个",
+              "旧相机能拍到肉眼忽略的痕迹"
+            ],
+            "id": "role_248k1hcv",
+            "status": "claimed",
+            "playerOpenid": "mock_openid_web_player_c"
+          }
+        ],
+        "chapters": []
+      }
+    }
+  ]
+}</pre></aside>
+    <ul id="checklist" class="hidden-checklist" data-testid="checklist"><li class="done">PASS templates loaded</li><li class="done">PASS mock login</li><li class="done">PASS run created</li><li class="done">PASS 3 players joined</li><li class="done">PASS roles/fate/private clues</li><li class="done">PASS ActionGuard</li><li class="done">PASS AI resolution</li><li class="done">PASS POV/personal cards</li></ul>
+  </main>
+    <script src="./app.js"></script>
+
+
+</body></html>

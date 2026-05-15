@@ -1,0 +1,188 @@
+﻿{
+    "apiDefinitions":  [
+                           {
+                               "def":  "Get(\"health\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"auth/wechat-login\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"user/me\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"user/agree-policy\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"world-templates\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"world-templates/:templateId\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"story-runs\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"story-runs/:runId\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"story-runs/:runId/state\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"my/story-runs\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"story-runs/:runId/join\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"story-runs/:runId/start\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"story-runs/:runId/pause\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"story-runs/:runId/roles\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"story-runs/:runId/roles/:roleId/claim\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"story-runs/:runId/my-role\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"story-runs/:runId/current-node\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"story-runs/:runId/nodes\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"nodes/:nodeId\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"nodes/:nodeId/actions\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"nodes/:nodeId/actions\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"nodes/:nodeId/ai-fill-missing-actions\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"nodes/:nodeId/resolve\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"nodes/:nodeId/resolution\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"story-runs/:runId/narrative-segments\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"story-runs/:runId/generate-chapter\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"chapters/:chapterId\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"chapters/:chapterId/share\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"notifications\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Post(\"feedback/report\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"story-runs/:runId/insights\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/dashboard\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/story-runs\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/story-runs/:runId\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/roles\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/actions\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/resolutions\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/ai-tasks\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/audit-logs\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/event-logs\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           },
+                           {
+                               "def":  "Get(\"admin/action-guard\")",
+                               "file":  "apps\\api\\src\\story.controller.ts"
+                           }
+                       ],
+    "evidence":  [
+                     "docs\\auto-execute\\04-contract-map.md",
+                     "docs\\auto-execute\\13-frontend-backend-contract-map.md"
+                 ],
+    "nextActions":  [
+                        "Keep 04-contract-map.md and 13-frontend-backend-contract-map.md aligned with frontend calls and backend API definitions."
+                    ],
+    "frontendCalls":  [
+
+                      ],
+    "blockers":  [
+
+                 ],
+    "commands":  [
+
+                 ],
+    "generatedAt":  "2026-05-14T21:33:50",
+    "status":  "PASS",
+    "schemaVersion":  "1.3",
+    "lane":  "contract-discovery"
+}

@@ -1,0 +1,19 @@
+﻿{
+    "blockers":  [
+
+                 ],
+    "commands":  [
+
+                 ],
+    "lane":  "acceptance-compare",
+    "status":  "PASS_WITH_LIMITATION",
+    "evidence":  [
+                     "docs\\auto-execute\\comparison\\round-011.json",
+                     "docs\\auto-execute\\comparison\\round-011.md"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+                        "No hard comparison gaps detected. Preserve limitations in final report; do not claim pure PASS or pixel-perfect completion."
+                    ],
+    "updatedAt":  "2026-05-14T21:43:56"
+}

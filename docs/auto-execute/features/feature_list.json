@@ -1,0 +1,32 @@
+﻿{
+    "generatedAt":  "2026-05-13T16:48:11",
+    "schemaVersion":  "0.1",
+    "project":  "aiStoryRoom",
+    "features":  [
+                     {
+                         "source":  "docs/auto-execute",
+                         "id":  "FE-HARNESS-001",
+                         "passes":  false,
+                         "evidence":  [
+
+                                      ],
+                         "category":  "harness",
+                         "description":  "Harness is initialized and run-all fast mode has been executed",
+                         "surface":  "harness",
+                         "evidenceRequired":  [
+                                                  "verification-results.md",
+                                                  "AUTO_EXECUTE_DELIVERY_REPORT.md"
+                                              ],
+                         "requiredGates":  [
+                                               "init-harness",
+                                               "run-all-fast"
+                                           ],
+                         "relatedFiles":  [
+                                              "docs/auto-execute",
+                                              "scripts/acceptance"
+                                          ],
+                         "priority":  "P0",
+                         "notes":  ""
+                     }
+                 ]
+}

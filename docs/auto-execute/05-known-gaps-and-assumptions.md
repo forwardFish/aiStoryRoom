@@ -1,7 +1,10 @@
-# 05 Known Gaps and Assumptions
+# Known Gaps and Assumptions
 
-- The newest UI/2 images were already staged as add/delete/modify changes before implementation. They are treated as user-provided desired asset state.
-- The mini program uses a shared insight route with kind parameters instead of twenty separate physical pages; each latest UI surface has a route entry point and data section.
-- Admin UI is MVP observable, not production-authenticated admin. Real admin auth is non-P0.
-- Mock WeChat, mock AI, mock audit remain intentionally in place with provider-like route/service boundaries.
-- Real payment and 20_unlock_next_chapter are non-P0 placeholders.
+| Item | Status | Notes |
+|---|---|---|
+| Docker / local Postgres runtime | DOCUMENTED_BLOCKER | `docker ps` failed because Docker daemon is unavailable in this host session. Preview API and Web cabin are not blocked. |
+| Production database | NON_GOAL | No production DB connection was attempted. |
+| Real payment | NON_GOAL | No payment integration was added. |
+| P1/P2 platform features | NON_GOAL | Work stayed within MVP P0-A. |
+| Node module type warning | DEFERRED | API test still uses a direct Node smoke file; warning is not a P0-A functional blocker. |
+| Pixel-perfect visual comparison | DEFERRED | Current visual gate indexes references and captures Web cabin screenshot; it does not assert pixel-perfect matching. |

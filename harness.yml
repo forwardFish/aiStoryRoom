@@ -1,0 +1,79 @@
+﻿project:
+  name: aiStoryRoom
+  root: D:\lyh\agent\agent-frame\aiStoryRoom
+
+docs:
+  requirements:
+    - "D:\lyh\agent\agent-frame\aiStoryRoom\docs\AI多人故事局_PRD_阶段化工程完整增强版_v5.md"
+  ui:
+    - "D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\模拟页面.png"
+lanes:
+  intake:
+    enabled: true
+  requirements:
+    enabled: true
+  frontend:
+    enabled: true
+  backend:
+    enabled: true
+  contract:
+    enabled: true
+  visual:
+    enabled: true
+  integration:
+    enabled: true
+  reportIntegrity:
+    enabled: true
+  secretGuard:
+    enabled: true
+
+commands:
+  install: "pnpm install --frozen-lockfile"
+  lint: ""
+  typecheck: "pnpm --filter @apps/web typecheck; pnpm typecheck"
+  test: "pnpm --filter @apps/api test; pnpm test:story:e2e"
+  build: "pnpm --filter @apps/miniprogram build:weapp"
+  smoke: "powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-api-smoke.ps1 -ProjectRoot \"D:\\lyh\\agent\\agent-frame\\aiStoryRoom\" -Mode full; powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-web-cabin-smoke.ps1 -ProjectRoot \"D:\\lyh\\agent\\agent-frame\\aiStoryRoom\" -Mode full"
+  acceptance: "powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-convergence.ps1 -ProjectRoot \"D:\\lyh\\agent\\agent-frame\\aiStoryRoom\" -Mode full -MaxRounds 5 -Strict"
+  uiBaseUrl: "http://localhost:5177"
+
+uiMapping:
+  - id: WEB-CABIN-DESKTOP
+    reference: "docs/UI/2/模拟页面.png"
+    route: "/"
+    viewport: "1610x977"
+    required: true
+    pixelPerfectRequired: true
+
+visual:
+  diffThreshold: 0.185
+  viewport: "1610x977"
+  requiredScreenshot: "docs/auto-execute/screenshots/web-cabin-smoke.png"
+  requiredDiffJson: "docs/auto-execute/results/web-cabin-visual-diff.json"
+  requiredDiffPng: "docs/auto-execute/screenshots/web-cabin-diff.png"
+
+convergence:
+  maxRepairRounds: 5
+
+verifierDependencies:
+  allowInstallDevDependencies: false
+  allowEphemeralNpx: true
+  installPlaywrightBrowsers: false
+  packages:
+    - playwright
+    - pixelmatch
+    - pngjs
+
+safety:
+  allowCommit: false
+  allowPush: false
+  allowDeploy: false
+  allowProductionDb: false
+  allowPayment: false
+  policy:
+    - "do not run git reset or git clean"
+    - "do not use git add -A"
+    - "do not force push"
+    - "do not delete PRD/UI/test/history reports"
+    - "do not weaken tests or fabricate evidence"
+    - "do not access production services, real payment, or production data"

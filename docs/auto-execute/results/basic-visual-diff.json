@@ -1,0 +1,23 @@
+﻿{
+    "blockers":  [
+
+                 ],
+    "commands":  [
+                     {
+                         "status":  "PASS",
+                         "command":  "powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-basic-visual-diff.ps1",
+                         "log":  "docs\\auto-execute\\results\\basic-visual-diff.json"
+                     }
+                 ],
+    "lane":  "basic-visual-diff",
+    "status":  "PASS",
+    "evidence":  [
+                     "docs\\auto-execute\\results\\basic-visual-diff.json",
+                     "docs\\auto-execute\\visual-diff-report.md"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+                        "Use real per-route screenshots and full pixelmatch/pngjs diff before claiming pixel-perfect UI PASS."
+                    ],
+    "updatedAt":  "2026-05-14T21:35:54"
+}

@@ -1,0 +1,22 @@
+﻿{
+    "blockers":  [
+
+                 ],
+    "commands":  [
+                     {
+                         "status":  "PASS",
+                         "command":  "AI_DIRECTOR_PROVIDER=deepseek without DEEPSEEK_API_KEY preview resolve smoke",
+                         "log":  "docs/auto-execute/logs/deepseek-nokey-ai-task.json"
+                     }
+                 ],
+    "lane":  "deepseek-nokey",
+    "status":  "PASS",
+    "evidence":  [
+                     "docs/auto-execute/logs/deepseek-nokey-ai-task.json"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+                        "Inject DEEPSEEK_API_KEY in the shell to verify a live DeepSeek completed task."
+                    ],
+    "updatedAt":  "2026-05-14T20:19:34"
+}

@@ -1,0 +1,20 @@
+﻿{
+    "requiredLayout":  {
+                           "hasDesktopBench":  true,
+                           "hasFiveNodeControls":  true,
+                           "hasActionGuardSurface":  true,
+                           "hasThreeRoleSwitch":  true,
+                           "hasMultiPovChapter":  true,
+                           "leftSidebarPx":  264,
+                           "hasHiddenDebugControls":  true,
+                           "hasPersonalStoryCard":  true
+                       },
+    "requiredViewport":  "1610x977",
+    "lane":  "web-cabin-structure-check",
+    "evidence":  [
+                     "docs\\auto-execute\\screenshots\\web-cabin-smoke.png"
+                 ],
+    "schemaVersion":  "1.3",
+    "status":  "PASS",
+    "updatedAt":  "2026-05-14T21:43:41"
+}

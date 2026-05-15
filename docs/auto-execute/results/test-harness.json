@@ -1,0 +1,356 @@
+﻿{
+    "checks":  [
+                   {
+                       "name":  "script exists: init-harness.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-all.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-convergence.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-final-gate.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-acceptance-compare.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-compare-requirements.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-compare-ui.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-gap-repair.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-report-integrity.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-secret-guard.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: run-status.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "script exists: test-harness.ps1",
+                       "passed":  true,
+                       "details":  "missing script"
+                   },
+                   {
+                       "name":  "parse: claim-task.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: collect-env.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: collect-git-status.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: init-harness.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: lib.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: list-available-tasks.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: mark-feature-status.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: plan-fullstack-delivery.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: release-task.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: resume-convergence.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-acceptance-compare.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-adapter-detect.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-all.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-api-smoke.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-architecture-guard.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-backend.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-basic-visual-diff.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-code-review.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-compare-requirements.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-compare-ui.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-contract.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-convergence.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-db-e2e.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-final-gate.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-frontend.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-full-flow-smoke.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-gap-repair.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-report-integrity.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-requirements.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-scope-classification.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-secret-guard.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-status.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-verifier-dependencies.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-visual-smoke.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: run-web-cabin-smoke.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: select-next-feature.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: summarize-errors.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: test-harness.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "parse: write-handoff.ps1",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "run-convergence supports MaxRounds default 5",
+                       "passed":  true,
+                       "details":  "MaxRounds default is not 5"
+                   },
+                   {
+                       "name":  "run-convergence supports ResetConvergence",
+                       "passed":  true,
+                       "details":  "ResetConvergence parameter missing"
+                   },
+                   {
+                       "name":  "run-all supports fast/gate/full",
+                       "passed":  true,
+                       "details":  "Mode ValidateSet missing"
+                   },
+                   {
+                       "name":  "run-all supports SkipCompare",
+                       "passed":  true,
+                       "details":  "SkipCompare parameter missing"
+                   },
+                   {
+                       "name":  "run-all supports SkipFinalGate",
+                       "passed":  true,
+                       "details":  "SkipFinalGate parameter missing"
+                   },
+                   {
+                       "name":  "run-all does not write COMPLETED verdict",
+                       "passed":  true,
+                       "details":  "COMPLETED still appears as a status"
+                   },
+                   {
+                       "name":  "exit code PASS",
+                       "passed":  true,
+                       "details":  "PASS exit code must be 0"
+                   },
+                   {
+                       "name":  "exit code PASS_WITH_LIMITATION",
+                       "passed":  true,
+                       "details":  "PASS_WITH_LIMITATION exit code must be 3"
+                   },
+                   {
+                       "name":  "exit code REPAIR_REQUIRED",
+                       "passed":  true,
+                       "details":  "REPAIR_REQUIRED exit code must be 2"
+                   },
+                   {
+                       "name":  "exit code HARD_FAIL",
+                       "passed":  true,
+                       "details":  "HARD_FAIL exit code must be 1"
+                   },
+                   {
+                       "name":  "exit code BLOCKED",
+                       "passed":  true,
+                       "details":  "BLOCKED exit code must be 4"
+                   },
+                   {
+                       "name":  "doc exists: STATUS_SEMANTICS.md",
+                       "passed":  true,
+                       "details":  "missing docs/auto-execute/STATUS_SEMANTICS.md"
+                   },
+                   {
+                       "name":  "doc exists: QUALITY_GATES.md",
+                       "passed":  true,
+                       "details":  "missing docs/auto-execute/QUALITY_GATES.md"
+                   },
+                   {
+                       "name":  "doc exists: GOLDEN_RULES.md",
+                       "passed":  true,
+                       "details":  "missing docs/auto-execute/GOLDEN_RULES.md"
+                   },
+                   {
+                       "name":  "machine-summary writable",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "gap-list writable",
+                       "passed":  true,
+                       "details":  ""
+                   },
+                   {
+                       "name":  "report-integrity runnable",
+                       "passed":  true,
+                       "details":  "exit 0"
+                   },
+                   {
+                       "name":  "secret-guard runnable",
+                       "passed":  true,
+                       "details":  "exit 0"
+                   }
+               ],
+    "lane":  "test-harness",
+    "failures":  [
+
+                 ],
+    "schemaVersion":  "1.3",
+    "status":  "PASS",
+    "updatedAt":  "2026-05-14T15:46:30"
+}

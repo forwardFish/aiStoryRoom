@@ -1,0 +1,26 @@
+﻿{
+    "blockers":  [
+
+                 ],
+    "commands":  [
+                     {
+                         "status":  "PASS",
+                         "command":  "powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-web-cabin-smoke.ps1 -Mode full",
+                         "log":  "docs\\auto-execute\\logs\\web-cabin-browser.log"
+                     }
+                 ],
+    "lane":  "web-cabin-smoke",
+    "status":  "PASS",
+    "evidence":  [
+                     "docs\\auto-execute\\summaries\\web-cabin-smoke.md",
+                     "docs/auto-execute/screenshots/web-cabin-smoke.png",
+                     "docs/auto-execute/logs/web-cabin-browser-summary.json",
+                     "docs/auto-execute/results/web-cabin-visual-diff.json",
+                     "docs/auto-execute/results/web-cabin-structure-check.json"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+
+                    ],
+    "updatedAt":  "2026-05-14T21:43:41"
+}

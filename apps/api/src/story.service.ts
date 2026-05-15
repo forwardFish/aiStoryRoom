@@ -4,7 +4,10 @@ import {
   buildEchoes,
   buildPersonalCards,
   buildPovSections,
+  directorTaskMeta,
   enrichFateLine,
+  generateChapterWithDirector,
+  resolveNodeWithDirector,
   type CreateStoryRunInput,
   type MockLoginInput,
   type SubmitActionInput
@@ -77,7 +80,7 @@ export class StoryService {
         mode,
         status: "playing",
         maxPlayers,
-        activeHumanCount: mode === "single" ? 1 : 0,
+        activeHumanCount: 0,
         aiPlayerCount: mode === "single" ? Math.max(0, maxPlayers - 1) : input.aiPlayerCount || 0,
         stateJson: {
           tone: input.tone || "悬疑",
@@ -147,6 +150,9 @@ export class StoryService {
     const user = await this.ensureUser(openid);
     const run = await this.prisma.storyRun.findUnique({ where: { id: runId } });
     if (!run) throw new NotFoundException("story run not found");
+    const existing = await this.prisma.storyPlayer.findUnique({
+      where: { runId_userId: { runId, userId: user.id } }
+    });
 
     const player = await this.prisma.storyPlayer.upsert({
       where: { runId_userId: { runId, userId: user.id } },
@@ -154,13 +160,15 @@ export class StoryService {
       create: { runId, userId: user.id, playerType: "human", status: "active", lastActiveAt: new Date() }
     });
 
-    await this.prisma.storyRun.update({
-      where: { id: runId },
-      data: { activeHumanCount: { increment: player ? 0 : 1 } }
-    }).catch(() => undefined);
+    if (!existing) {
+      await this.prisma.storyRun.update({
+        where: { id: runId },
+        data: { activeHumanCount: { increment: 1 } }
+      }).catch(() => undefined);
+    }
 
-    await this.logEvent("story_run_joined", user.id, runId, undefined, undefined, { openid });
-    return { player, runId };
+    await this.logEvent("story_run_joined", user.id, runId, undefined, undefined, { openid, wasNew: !existing });
+    return { player, runId, activeHumanCountIncremented: !existing };
   }
 
   async startRun(runId: string) {
@@ -195,6 +203,12 @@ export class StoryService {
       update: { roleId, status: "active", lastActiveAt: new Date() },
       create: { runId, userId: user.id, roleId, playerType: "human", status: "active", lastActiveAt: new Date() }
     });
+    if (!existing) {
+      await this.prisma.storyRun.update({
+        where: { id: runId },
+        data: { activeHumanCount: { increment: 1 } }
+      }).catch(() => undefined);
+    }
 
     await this.prisma.storyRole.update({
       where: { id: roleId },
@@ -258,8 +272,18 @@ export class StoryService {
       }
     });
     if (!guard.ok) {
-      await this.logEvent("action_guard_blocked", user.id, node.runId, nodeId, undefined, { roleId: input.roleId, reason: guard.reason });
-      return { status: "rejected", guardStatus: "blocked", message: guard.reason, rewriteSuggestion: this.rewriteSuggestion(input) };
+      await this.logEvent("action_guard_blocked", user.id, node.runId, nodeId, undefined, { roleId: input.roleId, reason: guard.reason, matchedRules: guard.matchedRules, guardStatus: guard.guardStatus });
+      return {
+        status: "rejected",
+        accepted: false,
+        rejected: true,
+        guardStatus: guard.guardStatus,
+        matchedRules: guard.matchedRules,
+        suggestedRewrite: this.rewriteSuggestion(input),
+        reason: guard.reason,
+        message: guard.reason,
+        rewriteSuggestion: this.rewriteSuggestion(input)
+      };
     }
 
     const role = await this.prisma.storyRole.findFirst({ where: { id: input.roleId, runId: node.runId } });
@@ -350,26 +374,43 @@ export class StoryService {
     const template = getTemplate(node.run.templateId);
     const templateNode = template.nodes[node.nodeIndex - 1] || midnightStoreTemplate.nodes[node.nodeIndex - 1];
     const dangerAfter = Math.min(node.run.maxDangerLevel, node.run.dangerLevel + (node.nodeIndex >= 4 ? 1 : 0));
-    const actionResults = actions.map((action) => ({
-      actionId: action.id,
-      roleId: action.roleId,
-      roleName: action.role.roleName,
-      result: "partial_success",
-      text: `${action.role.roleName}尝试${action.method}，获得了线索，但也让异常更接近一步。`
+    const directorResult = await resolveNodeWithDirector({
+      templateName: template.name,
+      nodeTitle: node.title,
+      nodeGoal: node.nodeGoal,
+      publicNarration: node.publicNarration,
+      resolutionSummary: templateNode.resolutionSummary,
+      nextHook: templateNode.nextHook,
+      dangerBefore: node.run.dangerLevel,
+      dangerAfter,
+      actions: actions.map((action) => ({
+        roleId: action.roleId,
+        roleName: action.role.roleName,
+        method: action.method,
+        intent: action.intent,
+        riskLevel: action.riskLevel
+      }))
+    });
+    const actionResults = directorResult.actionResults.map((result, index) => ({
+      actionId: actions[index]?.id,
+      roleId: result.roleId || actions[index]?.roleId,
+      roleName: result.roleName || actions[index]?.role.roleName,
+      result: result.result || "partial_success",
+      text: result.text || `${actions[index]?.role.roleName || "角色"}尝试推进当前节点，获得了线索。`
     }));
     const echoActions = actionResults.map((action) => ({ roleId: action.roleId, roleName: action.roleName }));
-    const echoesJson = buildEchoes(echoActions, templateNode.resolutionSummary);
-    const crossImpactsJson = buildCrossImpacts(echoActions, templateNode.resolutionSummary);
+    const echoesJson = buildEchoes(echoActions, directorResult.summary);
+    const crossImpactsJson = buildCrossImpacts(echoActions, directorResult.summary);
 
     const aiTask = await this.prisma.aiTask.create({
       data: {
         runId: node.runId,
         nodeId,
         taskType: "resolve_node",
-        modelType: "mock-director-v1",
-        status: "completed",
-        inputJson: { actions: actions.map((action) => action.normalizedJson), node: node.title },
-        resultJson: { summary: templateNode.resolutionSummary }
+        modelType: directorResult.model,
+        status: directorResult.status === "completed" ? "completed" : "failed",
+        inputJson: { actionCount: actions.length, node: node.title, provider: directorResult.provider },
+        resultJson: { ...directorTaskMeta(directorResult), summary: directorResult.summary }
       }
     });
 
@@ -378,16 +419,16 @@ export class StoryService {
         runId: node.runId,
         nodeId,
         chapterIndex: node.chapterIndex,
-        summary: templateNode.resolutionSummary,
-        publicNarration: `${templateNode.resolutionSummary} ${templateNode.nextHook}`,
-        privateResultsJson: actionResults,
+        summary: directorResult.summary,
+        publicNarration: directorResult.publicNarration,
+        privateResultsJson: directorResult.privateResults,
         actionResultsJson: actionResults,
         statePatchJson: { resolvedNode: node.title, aiTaskId: aiTask.id, echoesJson, crossImpactsJson },
-        clueChangesJson: [{ title: `节点 ${node.nodeIndex} 新线索`, description: templateNode.resolutionSummary }],
+        clueChangesJson: [{ title: `节点 ${node.nodeIndex} 新线索`, description: directorResult.summary }],
         relationChangesJson: this.mockRelationChanges(actions),
         dangerBefore: node.run.dangerLevel,
         dangerAfter,
-        nextNodeHook: templateNode.nextHook,
+        nextNodeHook: directorResult.nextNodeHook,
         nextOptionsJson: template.nodes[node.nodeIndex]?.actionOptions || []
       }
     });
@@ -398,7 +439,7 @@ export class StoryService {
         nodeId,
         resolutionId: resolution.id,
         chapterIndex: node.chapterIndex,
-        content: `【${node.title}】${templateNode.resolutionSummary} ${actions.map((action) => action.role.roleName).join("、")}的选择让局面继续推进。`,
+        content: `【${node.title}】${directorResult.summary} ${actions.map((action) => action.role.roleName).join("、")}的选择让局面继续推进。`,
         contributorJson: actions.map((action) => ({ roleId: action.roleId, roleName: action.role.roleName }))
       }
     });
@@ -410,7 +451,7 @@ export class StoryService {
         runId: node.runId,
         clueKey: `node_${node.nodeIndex}_clue`,
         title: `节点 ${node.nodeIndex} 线索`,
-        description: templateNode.resolutionSummary,
+        description: directorResult.summary,
         visibility: "public",
         discoveredNodeId: node.id
       }
@@ -423,7 +464,7 @@ export class StoryService {
         nodeId,
         chapterIndex: node.chapterIndex,
         stateJson: { dangerLevel: dangerAfter, latestResolution: resolution.summary },
-        factsJson: { segmentId: segment.id, clue: templateNode.resolutionSummary }
+        factsJson: { segmentId: segment.id, clue: directorResult.summary }
       }
     });
 
@@ -483,24 +524,25 @@ export class StoryService {
     const segments = await this.segments(runId);
     if (segments.length < 5) throw new BadRequestException("chapter requires 5 resolved nodes");
 
-    const content = [
-      "《没有影子的客人》",
-      "",
-      ...segments.map((segment) => segment.content),
-      "",
-      "雨停之前，第五个人没有现身，却把北巷 24 号留给了下一章。"
-    ].join("\n");
+    const template = getTemplate(run.templateId);
+    const directorResult = await generateChapterWithDirector({
+      templateName: template.name,
+      title: "没有影子的客人",
+      segments: segments.map((segment) => segment.content),
+      roles: run.roles.map((role) => ({ id: role.id, roleName: role.roleName, personalGoal: role.personalGoal })),
+      fallbackNextHook: "第 2 章《第五个人》：北巷 24 号的门牌在雨后亮了起来。"
+    });
 
     const chapter = await this.prisma.chapter.create({
       data: {
         runId,
         chapterIndex: 1,
-        title: "没有影子的客人",
-        content,
-        highlightsJson: run.roles.map((role) => ({ roleName: role.roleName, highlight: `${role.roleName}在关键节点留下了决定性行动。` })),
-        keyChoicesJson: segments.map((segment, index) => ({ node: index + 1, choice: segment.content.slice(0, 80) })),
+        title: directorResult.title,
+        content: directorResult.content,
+        highlightsJson: directorResult.highlights,
+        keyChoicesJson: directorResult.keyChoices,
         contributorJson: run.roles.map((role) => ({ roleId: role.id, roleName: role.roleName })),
-        nextHook: "第 2 章《第五个人》：北巷 24 号的门牌在雨后亮了起来。"
+        nextHook: directorResult.nextHook
       }
     });
 
@@ -509,9 +551,10 @@ export class StoryService {
         runId,
         chapterId: chapter.id,
         taskType: "generate_chapter",
-        modelType: "mock-director-v1",
-        status: "completed",
-        resultJson: { title: chapter.title, segmentCount: segments.length }
+        modelType: directorResult.model,
+        status: directorResult.status === "completed" ? "completed" : "failed",
+        inputJson: { segmentCount: segments.length, roleCount: run.roles.length, provider: directorResult.provider },
+        resultJson: { ...directorTaskMeta(directorResult), title: chapter.title, segmentCount: segments.length }
       }
     });
 
@@ -566,8 +609,8 @@ export class StoryService {
       {
         id: `mock_action_${run.id}`,
         type: "action_reminder",
-        title: "???????",
-        content: `${run.title} ?????????`,
+        title: "行动提醒",
+        content: `${run.title} 等待玩家提交行动`,
         runId: run.id,
         isRead: false,
         createdAt: run.updatedAt
@@ -575,8 +618,8 @@ export class StoryService {
       {
         id: `mock_ai_${run.id}`,
         type: "ai_resolution",
-        title: "AI ????",
-        content: run.status === "chapter_generated" ? "??????????? POV ???" : "mock AI ????????????",
+        title: "AI 结算",
+        content: run.status === "chapter_generated" ? "本章已生成多 POV 章节" : "mock AI 正在记录局势",
         runId: run.id,
         isRead: false,
         createdAt: run.updatedAt
@@ -586,7 +629,7 @@ export class StoryService {
 
   async reportFeedback(openid: string, body: Record<string, unknown>) {
     const user = await this.ensureUser(openid);
-    const content = String(body.content || body.description || "????/??");
+    const content = String(body.content || body.description || "反馈 / 举报");
     const log = await this.prisma.auditLog.create({
       data: {
         targetType: "FeedbackReport",
@@ -659,6 +702,31 @@ export class StoryService {
     });
     if (!run) throw new NotFoundException("story run not found");
     return run;
+  }
+
+
+  async adminRoles() {
+    return this.prisma.storyRole.findMany({
+      include: { run: true, players: { include: { user: true } } },
+      orderBy: { updatedAt: "desc" },
+      take: 100
+    });
+  }
+
+  async adminActions() {
+    return this.prisma.playerAction.findMany({
+      include: { run: true, node: true, role: true, user: true },
+      orderBy: { createdAt: "desc" },
+      take: 120
+    });
+  }
+
+  async adminResolutions() {
+    return this.prisma.directorResolution.findMany({
+      include: { run: true, node: true, narrativeSegments: true },
+      orderBy: { createdAt: "desc" },
+      take: 80
+    });
   }
 
   async adminAiTasks() {
@@ -776,29 +844,21 @@ export class StoryService {
     });
   }
 
-  private guardAction(input: SubmitActionInput): { ok: true } | { ok: false; reason: string } {
+  private guardAction(input: SubmitActionInput): { ok: true } | { ok: false; reason: string; guardStatus: "rewrite_needed" | "blocked"; matchedRules: string[] } {
     const text = `${input.method} ${input.intent} ${input.freeText || ""}`;
-    const forbidden = [
-      "我成功",
-      "直接杀死",
-      "杀死",
-      "破解全部",
-      "揭开全部真相",
-      "操控",
-      "替他",
-      "替她",
-      "所有人都",
-      "立刻通关",
-      "CONTROL_ALL",
-      "FORCE_SUCCESS",
-      "AUTO_WIN"
+    const rules = [
+      { id: "declare_result", status: "rewrite_needed" as const, pattern: /(\u6211\u6210\u529f|\u76f4\u63a5\u6210\u529f|\u5ba3\u5e03\u7ed3\u679c|\u7834\u89e3\u5168\u90e8|\u63ed\u5f00\u5168\u90e8\u771f\u76f8|FORCE_SUCCESS)/iu, reason: "ActionGuard rewrite_needed: player can submit intent but cannot declare the result." },
+      { id: "control_others", status: "blocked" as const, pattern: /(\u64cd\u63a7|\u63a7\u5236\u5176\u4ed6|\u66ff\u4ed6|\u66ff\u5979|\u6240\u6709\u4eba\u90fd|CONTROL_ALL)/iu, reason: "ActionGuard blocked: player cannot control other characters." },
+      { id: "skip_plot", status: "blocked" as const, pattern: /(\u8df3\u8fc7|\u7acb\u523b\u901a\u5173|\u76f4\u63a5\u5230\u7ed3\u5c40|AUTO_WIN)/iu, reason: "ActionGuard blocked: player cannot skip the current plot node." },
+      { id: "overreach", status: "blocked" as const, pattern: /(\u6740\u6b7b|\u6467\u6bc1\u4e16\u754c|\u5c01\u5370\u5168\u90e8|\u4e00\u5200\u89e3\u51b3)/iu, reason: "ActionGuard blocked: action overreaches the role authority." }
     ];
-    const matched = forbidden.find((word) => text.includes(word));
-    if (matched) {
-      return { ok: false, reason: `行动越界：不能宣布结果或操控其他角色（命中：${matched}）。` };
+    const matched = rules.filter((rule) => rule.pattern.test(text));
+    if (matched.length > 0) {
+      const guardStatus = matched.some((rule) => rule.status === "blocked") ? "blocked" : "rewrite_needed";
+      return { ok: false, guardStatus, matchedRules: matched.map((rule) => rule.id), reason: matched.map((rule) => rule.reason).join("; ") };
     }
     if (!input.method || !input.intent) {
-      return { ok: false, reason: "请说明行动方式和行动目的。" };
+      return { ok: false, guardStatus: "rewrite_needed", matchedRules: ["missing_fields"], reason: "ActionGuard rewrite_needed: method and intent are required." };
     }
     return { ok: true };
   }
@@ -806,10 +866,10 @@ export class StoryService {
   private rewriteSuggestion(input: SubmitActionInput) {
     return {
       method: input.method
-        ? input.method.replace(/我成功|直接杀死|杀死|破解全部|揭开全部真相|操控|立刻通关|CONTROL_ALL|FORCE_SUCCESS|AUTO_WIN/g, "我尝试观察并推进")
-        : "描述角色尝试做什么，不宣布结果。",
-      intent: "只表达行动意图和信息边界，把结果交给 AI 导演结算。",
-      strategy: "公开线索可说明；私密线索只作为角色动机；不要替其他玩家决定。"
+        ? input.method.replace(/(\u6211\u6210\u529f|\u76f4\u63a5\u6210\u529f|\u5ba3\u5e03\u7ed3\u679c|\u7834\u89e3\u5168\u90e8|\u63ed\u5f00\u5168\u90e8\u771f\u76f8|\u64cd\u63a7|\u63a7\u5236\u5176\u4ed6|\u66ff\u4ed6|\u66ff\u5979|\u6240\u6709\u4eba\u90fd|\u8df3\u8fc7|\u7acb\u523b\u901a\u5173|\u76f4\u63a5\u5230\u7ed3\u5c40|\u6740\u6b7b|CONTROL_ALL|FORCE_SUCCESS|AUTO_WIN)/giu, "I try to observe and move the scene forward")
+        : "Describe what the role tries to do, without declaring the result.",
+      intent: "Only state action intent and information boundary; leave the outcome to the AI Director.",
+      strategy: "Use public clues openly, private clues as motivation, and do not decide for other players."
     };
   }
 

@@ -19,24 +19,24 @@ export default function AdminPage() {
   return (
     <View className="page">
       <Text className="subtitle">admin_01_dashboard.png / admin_02_story_runs.png / admin_03_ai_logs.png / admin_04_content_audit.png</Text>
-      <View className="title">?????</View>
+      <View className="title">后台基础查看</View>
       <View className="card">
         <Text className="label">Dashboard</Text>
-        <View className="tag">????? {dashboard?.activeRuns || 0}</View>
-        <View className="tag">??? AI {dashboard?.pendingAiTasks || 0}</View>
-        <View className="tag">???? {dashboard?.auditIssues || 0}</View>
-        <View className="tag">??? {dashboard?.eventCount || 0}</View>
+        <View className="tag">活跃故事局 {dashboard?.activeRuns || 0}</View>
+        <View className="tag">待处理 AI {dashboard?.pendingAiTasks || 0}</View>
+        <View className="tag">审核问题 {dashboard?.auditIssues || 0}</View>
+        <View className="tag">事件数 {dashboard?.eventCount || 0}</View>
       </View>
       <View className="card">
-        <Text className="label">?????/??</Text>
-        {runs.map((run) => <View key={run.id} className="card compact"><Text>{run.title}</Text><Text className="subtitle">{run.status} / ?? {run.completedNodeCount || 0}</Text></View>)}
+        <Text className="label">故事局 / 角色</Text>
+        {runs.map((run) => <View key={run.id} className="card compact"><Text>{run.title}</Text><Text className="subtitle">{run.status} / 已完成节点 {run.completedNodeCount || 0}</Text></View>)}
       </View>
       <View className="card">
-        <Text className="label">AI ??</Text>
+        <Text className="label">AI 任务</Text>
         {aiTasks.map((task) => <View key={task.id} className="tag">{task.taskType}:{task.status}</View>)}
       </View>
       <View className="card">
-        <Text className="label">???? / ActionGuard</Text>
+        <Text className="label">审核日志 / ActionGuard</Text>
         {auditLogs.map((log) => <View key={log.id} className="tag">{log.targetType}:{log.result}</View>)}
       </View>
       <View className="card">

@@ -1,0 +1,122 @@
+﻿# UI Reference Inventory
+Generated: 05/14/2026 21:35:50
+
+
+## D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\1\ChatGPT Image 2026年5月4日 12_15_28 (1).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\1\ChatGPT Image 2026年5月4日 12_15_29 (2).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\1\ChatGPT Image 2026年5月4日 12_15_29 (3).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\1\ChatGPT Image 2026年5月4日 12_15_29 (4).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\1\ChatGPT Image 2026年5月4日 12_15_29 (5).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\1\ChatGPT Image 2026年5月4日 12_15_30 (6).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\1\ChatGPT Image 2026年5月4日 12_15_30 (7).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\1\ChatGPT Image 2026年5月4日 12_15_30 (8).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\21_my_role_profile.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\22_my_chapters.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\23_notifications.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\24_report_feedback.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\25_action_guard_blocked.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\26_ai_resolving_loading.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\27_ai_resolution_failed_retry.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\28_chapter_generation_failed.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\29_content_audit_failed.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\30_owner_stuck_node_controls.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\31_admin_dashboard.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\32_admin_story_run_detail.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\33_admin_action_logs.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\34_admin_ai_task_audit_logs.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\35_admin_template_metrics.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_26 (1).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_27 (2).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_27 (3).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_28 (4).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_28 (5).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_29 (6).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_29 (7).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_29 (8).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_30 (10).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 21_41_30 (9).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_18 (1).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_19 (2).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_19 (3).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_20 (4).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_21 (5).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_22 (6).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_22 (7).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_24 (10).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_24 (8).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_02_24 (9).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (1).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (10).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (2).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (3).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (4).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (5).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (6).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (7).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (8).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\backup\ChatGPT Image 2026年5月12日 22_35_52 (9).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\00_landing_pitch.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\01_wechat_auth_login.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\02_home_story_hub.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\03_mode_select.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\04_world_template_select.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\05_create_story_run_config.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\06_join_story_hall.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\07_story_created_invite_lobby.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\08_role_select.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\09_role_card_detail.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\10_story_room_node_overview.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\11_action_submit_form.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\12_waiting_players_actions.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\13_ai_resolution_summary.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\14_node_result_detail.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\15_chapter_complete_summary.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\16_chapter_reader.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\17_next_chapter_preview.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\18_share_story_card.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\19_my_story_runs.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\20_unlock_next_chapter.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\21_my_fate_line.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\22_my_chapters.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\23_notification_center.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\24_report_feedback.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\25_ai_generating_status.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\26_actionguard_rewrite.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\27_private_clue_detail.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\28_fate_net_lite.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\29_three_echoes_summary.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\30_cross_role_influence_detail.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\31_action_information_strategy.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\32_ai_error_or_fallback.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\33_chapter_reader_multi_pov.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\34_chapter_catalog_timeline.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\35_personal_story_card_detail.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\36_personal_role_poster_share.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\37_world_status_overview.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\38_character_relationship_overview.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\39_plot_timeline.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\40_suspicious_information_panel.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\admin_01_dashboard.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\admin_02_story_runs.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\admin_03_ai_logs.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\admin_04_content_audit.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\_ui2_contact_sheet_review.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\模拟页面.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_30_07 (1).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_30_07 (2).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_30_07 (3).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_30_08 (4).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_30_08 (5).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_34_19 (1).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_34_19 (2).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_34_20 (3).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_34_20 (4).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_34_20 (5).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_48_56 (1).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_48_56 (2).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_48_56 (3).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_48_56 (4).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\总\ChatGPT Image 2026年5月4日 12_48_56 (5).png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\ChatGPT Image 2026年5月6日 11_50_36.png
+- D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\ChatGPT Image 2026年5月6日 12_07_30.png

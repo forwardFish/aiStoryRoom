@@ -1,0 +1,23 @@
+﻿{
+    "id":  "task_8lp0hjbc",
+    "runId":  "run_bx1jb58d",
+    "nodeId":  "run_bx1jb58d:node:1",
+    "taskType":  "resolve_node",
+    "modelType":  "mock-director-v1",
+    "status":  "failed",
+    "createdAt":  "2026-05-14T12:11:28.020Z",
+    "inputJson":  {
+                      "actionCount":  1,
+                      "nodeTitle":  "自动门打开",
+                      "provider":  "mock"
+                  },
+    "resultJson":  {
+                       "provider":  "mock",
+                       "model":  "mock-director-v1",
+                       "status":  "mock_fallback",
+                       "errorCode":  "deepseek_runtime_unavailable",
+                       "errorMessage":  "DEEPSEEK_API_KEY is required when AI_DIRECTOR_PROVIDER=deepseek",
+                       "fallbackReason":  "DEEPSEEK_API_KEY is required when AI_DIRECTOR_PROVIDER=deepseek",
+                       "summary":  "监控在 2:16 到 2:17 之间缺失了一分钟，地上却出现一串向店内延伸的水迹。"
+                   }
+}

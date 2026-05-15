@@ -1,0 +1,43 @@
+﻿{
+    "nextActions":  [
+                        "No hard comparison gaps detected. Preserve limitations in final report; do not claim pure PASS or pixel-perfect completion."
+                    ],
+    "round":  11,
+    "gaps":  [
+
+             ],
+    "compared":  [
+                     "docs\\auto-execute\\02-requirement-traceability-matrix.md",
+                     "docs\\auto-execute\\04-visual-acceptance-checklist.md",
+                     "docs\\auto-execute\\03-surface-map.md",
+                     "docs\\auto-execute\\04-contract-map.md",
+                     "docs\\auto-execute\\14-frontend-implementation-plan.md",
+                     "docs\\auto-execute\\15-backend-implementation-plan.md",
+                     "docs\\auto-execute\\16-integrated-verification-plan.md",
+                     "docs\\auto-execute\\17-final-acceptance-checklist.md"
+                 ],
+    "generatedAt":  "2026-05-14T21:43:56",
+    "limitations":  [
+                        {
+                            "detail":  "Limitation/status pattern found: \\bDOCUMENTED_BLOCKER\\b",
+                            "path":  "docs\\auto-execute\\02-requirement-traceability-matrix.md",
+                            "severity":  "PASS_WITH_LIMITATION",
+                            "kind":  "requirements"
+                        },
+                        {
+                            "detail":  "Limitation/status pattern found: \\bPASS_WITH_LIMITATION\\b",
+                            "path":  "docs\\auto-execute\\04-contract-map.md",
+                            "severity":  "PASS_WITH_LIMITATION",
+                            "kind":  "contract"
+                        },
+                        {
+                            "detail":  "machine-summary finalVerdict is PASS_WITH_LIMITATION",
+                            "path":  "docs\\auto-execute\\machine-summary.json",
+                            "severity":  "PASS_WITH_LIMITATION",
+                            "kind":  "machineSummary"
+                        }
+                    ],
+    "status":  "PASS_WITH_LIMITATION",
+    "schemaVersion":  "1.3",
+    "lane":  "acceptance-compare"
+}

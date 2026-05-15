@@ -1,0 +1,13 @@
+# Frontend/Backend Contract Map
+
+Generated: 2026-05-13T21:55:43
+
+| ID | UI surface/component | Frontend action/call | Backend endpoint/service | Request shape | Response shape | Auth/session | Loading/empty/error/success states | Status | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| C-001 | Web validation cabin template cards | `loadTemplates()` | GET `/api/world-templates` | none | template list with `configJson` | mock bearer/openid | loading templates / cards / error banner | PASS | `apps/web/public/app.js`, `scripts/test-reports/story-e2e-1778678522059.json` |
+| C-002 | Create/invite lobby | `createRun(templateId)`, `simulatePlayers()` | POST `/api/story-runs`, POST `/api/story-runs/:runId/join` | templateId, mode, maxPlayers, aiPlayerCount | run id, inviteCode, activeHumanCount | mock tokens | create first / lobby cards / error banner | PASS | `docs/auto-execute/screenshots/web-cabin-smoke.png` |
+| C-003 | Role select/detail | `roles`, `claim role`, `my-role` | GET `/api/story-runs/:runId/roles`, POST claim, GET my-role | roleId | roleName, identity, personalHook, destinyQuestion, privateClues, cannotDo | mock bearer | roles load after run / claimed role | PASS | `scripts/test-reports/story-e2e-1778678522059.json` |
+| C-004 | SceneNode action form | `submitAction`, `submitAllRoleActions` | POST `/api/nodes/:nodeId/actions` | runId, roleId, actionType, targetText, method, intent, riskLevel | status, accepted/rejected, guardStatus, matchedRules, suggestedRewrite, reason | mock bearer | normal accepted / rewrite / blocked / error banner | PASS | `scripts/e2e/story-multirole.ts` |
+| C-005 | AI resolution/chapter | `resolveNode`, `resolveFullChapter`, `loadChapter` | POST `/api/nodes/:nodeId/resolve`, GET `/api/chapters/:chapterId` | nodeId/runId | summary, actionResultsJson, echoesJson, crossImpactsJson, chapter POV/personal cards | mock bearer | generating / result / retry/error | PASS | `docs/auto-execute/FULL_FLOW_ACCEPTANCE.md` |
+| C-006 | Notifications/report/share | notification/report/share calls | GET `/api/notifications`, POST `/api/feedback/report`, POST `/api/chapters/:chapterId/share` | report category/content, chapterId | queued status, token | mock bearer | empty/queued/success | PASS_WITH_LIMITATION | mock provider only; no production notification/payment |
+| C-007 | Admin observability | admin pages / debug surfaces | GET `/api/admin/*` | none/runId | dashboard, runs, roles, actions, resolutions, aiTasks, auditLogs, eventLogs, actionGuard object | mock bearer | empty after no flow / populated after E2E | PASS | `scripts/test-reports/story-e2e-1778678522059.json` |

@@ -1,0 +1,1 @@
+﻿{"ok":true,"name":"AI Story Room Preview API","mode":"preview-memory","endpoints":["GET /api/health","GET /api/world-templates","POST /api/auth/wechat-login","GET /api/admin/dashboard"]}

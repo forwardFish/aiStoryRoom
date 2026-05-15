@@ -1,0 +1,24 @@
+﻿{
+    "keyPresent":  true,
+    "runId":  "run_ylz48bx7",
+    "updatedAt":  "2026-05-14T21:44:22",
+    "model":  "deepseek-v4-pro",
+    "task":  {
+                 "modelType":  "deepseek-v4-pro",
+                 "provider":  "deepseek",
+                 "taskType":  "resolve_node",
+                 "status":  "completed",
+                 "errorCode":  null,
+                 "resultStatus":  "completed",
+                 "usage":  {
+                               "promptTokens":  242,
+                               "completionTokens":  344,
+                               "totalTokens":  586
+                           },
+                 "errorMessage":  null
+             },
+    "baseUrl":  "https://api.deepseek.com",
+    "status":  "PASS",
+    "schemaVersion":  "1.3",
+    "lane":  "deepseek-live-smoke"
+}

@@ -1,0 +1,68 @@
+﻿{
+    "nextActions":  [
+                        "Use this comparison round as the next repair input, update implementation/evidence, then run another comparison round."
+                    ],
+    "round":  2,
+    "gaps":  [
+                 {
+                     "detail":  "Hard pattern found: \\bgap\\b",
+                     "path":  "docs\\auto-execute\\verification-results.md",
+                     "severity":  "IN_SCOPE_GAP",
+                     "kind":  "verification"
+                 },
+                 {
+                     "detail":  "Hard pattern found: \\bgap\\b",
+                     "path":  "docs\\auto-execute\\machine-summary.json",
+                     "severity":  "IN_SCOPE_GAP",
+                     "kind":  "machineSummary"
+                 },
+                 {
+                     "detail":  "machine-summary finalVerdict is HARD_FAIL",
+                     "path":  "docs\\auto-execute\\machine-summary.json",
+                     "severity":  "HARD_FAIL",
+                     "kind":  "machineSummary"
+                 }
+             ],
+    "compared":  [
+                     "docs\\auto-execute\\02-requirement-traceability-matrix.md",
+                     "docs\\auto-execute\\04-visual-acceptance-checklist.md",
+                     "docs\\auto-execute\\03-surface-map.md",
+                     "docs\\auto-execute\\04-contract-map.md",
+                     "docs\\auto-execute\\14-frontend-implementation-plan.md",
+                     "docs\\auto-execute\\15-backend-implementation-plan.md",
+                     "docs\\auto-execute\\16-integrated-verification-plan.md",
+                     "docs\\auto-execute\\17-final-acceptance-checklist.md",
+                     "docs\\auto-execute\\verification-results.md",
+                     "docs\\auto-execute\\machine-summary.json"
+                 ],
+    "generatedAt":  "2026-05-13T21:59:50",
+    "limitations":  [
+                        {
+                            "detail":  "Limitation/status pattern found: \\bDOCUMENTED_BLOCKER\\b",
+                            "path":  "docs\\auto-execute\\02-requirement-traceability-matrix.md",
+                            "severity":  "PASS_WITH_LIMITATION",
+                            "kind":  "requirements"
+                        },
+                        {
+                            "detail":  "Limitation/status pattern found: \\bPASS_WITH_LIMITATION\\b",
+                            "path":  "docs\\auto-execute\\04-contract-map.md",
+                            "severity":  "PASS_WITH_LIMITATION",
+                            "kind":  "contract"
+                        },
+                        {
+                            "detail":  "Limitation/status pattern found: \\bPASS_WITH_LIMITATION\\b",
+                            "path":  "docs\\auto-execute\\verification-results.md",
+                            "severity":  "PASS_WITH_LIMITATION",
+                            "kind":  "verification"
+                        },
+                        {
+                            "detail":  "Limitation/status pattern found: \\bDOCUMENTED_BLOCKER\\b",
+                            "path":  "docs\\auto-execute\\machine-summary.json",
+                            "severity":  "PASS_WITH_LIMITATION",
+                            "kind":  "machineSummary"
+                        }
+                    ],
+    "status":  "HARD_FAIL",
+    "schemaVersion":  "1.3",
+    "lane":  "acceptance-compare"
+}

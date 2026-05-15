@@ -1,0 +1,18 @@
+﻿{
+    "blockers":  [
+
+                 ],
+    "commands":  [
+
+                 ],
+    "lane":  "gap-repair",
+    "status":  "PASS",
+    "evidence":  [
+                     "docs\\auto-execute\\gap-list.json"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+                        "No repair handoff has been generated for this round yet."
+                    ],
+    "updatedAt":  "2026-05-14T20:19:58"
+}

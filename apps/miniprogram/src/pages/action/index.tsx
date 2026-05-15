@@ -49,7 +49,7 @@ export default function ActionPage() {
           <View className="input">{riskLevel}</View>
         </Picker>
       </View>
-      {message ? <View className="card danger"><Text>{message}</Text><Button className="button secondary" onClick={() => nav(`/pages/insight/index?runId=${runId}&kind=actionguard`)}>?? ActionGuard ????</Button></View> : null}
+      {message ? <View className="card danger"><Text>{message}</Text><Button className="button secondary" onClick={() => nav(`/pages/insight/index?runId=${runId}&kind=actionguard`)}>?? ActionGuard ??</Button></View> : null}
       <Button className="button" onClick={submit}>提交行动</Button>
     </View>
   );

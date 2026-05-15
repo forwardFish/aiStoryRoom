@@ -1,0 +1,27 @@
+﻿{
+    "blockers":  [
+
+                 ],
+    "commands":  [
+                     {
+                         "status":  "PASS",
+                         "command":  "pnpm test:story:e2e",
+                         "log":  "docs\\auto-execute\\logs\\story-e2e.log"
+                     }
+                 ],
+    "lane":  "integration",
+    "status":  "PASS",
+    "evidence":  [
+                     "docs\\auto-execute\\FULL_FLOW_ACCEPTANCE.md",
+                     "docs\\auto-execute\\logs\\story-e2e.log",
+                     "scripts\\test-reports\\story-e2e-1778766115309.json",
+                     "docs\\auto-execute\\summaries\\web-cabin-smoke.md",
+                     "docs\\auto-execute\\screenshots\\web-cabin-smoke.png",
+                     "docs\\auto-execute\\logs\\web-cabin-browser-summary.json"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+                        "Repair story E2E or web cabin smoke before final acceptance."
+                    ],
+    "updatedAt":  "2026-05-14T21:43:43"
+}

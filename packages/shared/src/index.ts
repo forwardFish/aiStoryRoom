@@ -50,6 +50,18 @@ export type FateLineView = {
   privateClues: string[];
 };
 
+export type ActionGuardStatus = "ok" | "rewrite_needed" | "blocked";
+
+export type ActionGuardContract = {
+  status: "accepted" | "rejected";
+  accepted: boolean;
+  rejected: boolean;
+  guardStatus: ActionGuardStatus;
+  matchedRules: string[];
+  suggestedRewrite: { method: string; intent: string; strategy?: string } | null;
+  reason: string;
+};
+
 export type EchoView = {
   roleId?: string;
   roleName?: string;
@@ -85,6 +97,19 @@ export type PersonalStoryCardView = {
   unresolvedQuestion: string;
 };
 
+export {
+  directorTaskMeta,
+  generateChapterWithDirector,
+  resolveNodeWithDirector,
+  type DirectorChapterInput,
+  type DirectorChapterOutput,
+  type DirectorNodeInput,
+  type DirectorNodeOutput,
+  type DirectorProviderMeta,
+  type DirectorProviderName,
+  type DirectorUsage
+} from "./director-provider";
+
 export function derivePersonalHook(role: {
   roleKey?: string;
   roleName?: string;
@@ -95,16 +120,17 @@ export function derivePersonalHook(role: {
 }): string {
   const knownInfo = asStringArray((role as { knownInfoJson?: unknown }).knownInfoJson ?? (role as { knownInfo?: unknown }).knownInfo);
   const firstKnown = knownInfo[0];
+  const name = role.roleName || "这个角色";
   if (role.roleKey === "lin_lu") return "你在收银机里发现一枚不属于今晚账目的旧硬币。";
   if (role.roleKey === "chen_zhou") return "你接到一份没有平台记录的订单，收货人是你自己。";
   if (role.roleKey === "gu_yan") return "你找到父亲十年前留下的旧新闻，照片里出现午夜便利店。";
-  return firstKnown || role.personalGoal || role.publicInfo || "你的选择会改变这一章故事的走向。";
+  return firstKnown || role.personalGoal || role.publicInfo || `${name}的选择会改变本章走向。`;
 }
 
 export function deriveDestinyQuestion(role: { roleKey?: string; personalGoal?: string; roleName?: string }): string {
   if (role.roleKey === "lin_lu") return "你到底是被困者，还是下一任守夜人？";
   if (role.roleKey === "chen_zhou") return "这份订单是让你送货，还是让你替别人留下？";
-  if (role.roleKey === "gu_yan") return "你是在调查旧案，还是在重走父亲失踪前的路？";
+  if (role.roleKey === "gu_yan") return "你是在调查旧案，还是在重走亲人失踪前的路？";
   return role.personalGoal ? `${role.personalGoal}，你愿意为此付出什么代价？` : "你的命运线会把所有人带向哪里？";
 }
 
@@ -117,7 +143,7 @@ export function enrichFateLine<T extends Record<string, unknown>>(role: T): T & 
     ...role,
     personalHook: typeof role.personalHook === "string" ? role.personalHook : derivePersonalHook(role),
     destinyQuestion: typeof role.destinyQuestion === "string" ? role.destinyQuestion : deriveDestinyQuestion(role),
-    privateClues: Array.isArray(role.privateClues) ? role.privateClues as string[] : derivePrivateClues(role)
+    privateClues: Array.isArray(role.privateClues) ? (role.privateClues as string[]) : derivePrivateClues(role)
   };
 }
 

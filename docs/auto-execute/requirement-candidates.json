@@ -1,0 +1,1208 @@
+﻿{
+    "candidates":  [
+                       {
+                           "source":  "docs\\02-implementation-roadmap.md",
+                           "normalized":  false,
+                           "id":  "REQ-001",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. ?????????`docs/00-project-audit.md`?`docs/01-prd-gap-analysis.md`?`docs/02-implementation-roadmap.md`?`docs/03-mvp-p0-acceptance-criteria.md`?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\02-implementation-roadmap.md",
+                           "normalized":  false,
+                           "id":  "REQ-002",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "?????? `docs/03-mvp-p0-acceptance-criteria.md`?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-003",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "濡傛灉涓€寮€濮嬪彧鍋氣€淎I 澶氫汉鍓ф儏灞€鈥濓紝浜у搧瀹规槗鍋滅暀鍦ㄤ竴娆℃€уū涔愶細鐢ㄦ埛鐜╁畬涓€绔狅紝瑙夊緱鏂伴矞锛屼絾娌℃湁鎸佺画娌夋穩銆傚鏋滀竴寮€濮嬬洿鎺ュ仛鈥淎I 缇ゅ儚鏁呬簨涓栫晫鍏卞垱骞冲彴鈥濓紝寮€鍙戦噺銆佺敤鎴风悊瑙ｆ垚鏈€佸唴瀹规不鐞嗐€丄I 鎴愭湰閮戒細澶辨帶銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-004",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛鍏堥€氳繃鈥滅帺涓€绔犫€濊繘鍏ワ紝鍚庣画鍐嶉€愭鎰熺煡锛氭垜鐨勮鑹茬嚎杩樺湪銆佹垜鐨勬敮绾垮彲浠ョ户缁€佹垜鐨勮础鐚彲浠ヨ繘鍏ユ鍙层€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-005",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鍓嶅彴蹇呴』浣庨棬妲涖€佸己鍙嶉銆佹湁鎮康銆佹湁琛屽姩銆佹湁缁撴灉銆傜敤鎴蜂笉鑳戒竴涓婃潵闈㈠澶嶆潅鐨勨€滀粨搴撱€佸垎鏀€佸悎骞躲€佹鍙测€濄€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-006",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鏈€缁堝舰鎬佷腑锛屼竴涓敤鎴峰彲浠ュ垱寤轰竴涓晠浜嬩笘鐣岋紝鍏朵粬鐢ㄦ埛鍙互杩涘叆杩欎釜涓栫晫锛岄€夋嫨瑙掕壊绾裤€佽ˉ鍏呮敮绾裤€佹帹鍔ㄤ簨浠躲€佹彁浜ょ暘澶栥€佸紑鍚钩琛屽垎鏀€侫I 璐熻矗鏍￠獙涓栫晫瑙傘€佹鏌ュ啿绐併€佹暣鐞嗘椂闂寸嚎銆佺敓鎴愭鍙茬珷鑺傦紝骞跺府鍔╀笘鐣屼富瀹屾垚鍐呭娌荤悊銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-007",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "## B.2 鏈€缁堢増鏍稿績鐢ㄦ埛",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-008",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鏈€缁堢増蹇呴』鏈夆€滄鍙测€濇蹇点€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-009",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛鏈€寮烘垚灏辨劅鏉ヨ嚜锛?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-010",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鐢ㄦ埛鐞嗚В鎴愭湰楂樸€?2. 鏁版嵁妯″瀷澶嶆潅銆?3. AI 鍚堝苟閫昏緫闅惧害楂樸€?4. 鍐呭瀹夊叏娌荤悊澶嶆潅銆?5. 鍒涗綔鑰呯敓鎬侀渶瑕佺敤鎴峰熀纭€銆?6. 姝ｅ彶/鍒嗘敮/鏀剁泭鍒嗘垚闇€瑕佸ぇ閲忚鍒欍€?7. 娌℃湁 MVP 鏁版嵁鍓嶏紝璐哥劧鍋氬钩鍙伴闄╂瀬楂樸€?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-011",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鍥犳褰撳墠蹇呴』鍏堝仛 MVP銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-012",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "# C. MVP鐗堬細褰撳墠蹇呴』瀹炵幇鐨勬渶灏忓彲楠岃瘉鐗堟湰",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-013",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "\u003e **鐢ㄦ埛鏄惁鎰挎剰杩涘叆涓€涓晠浜嬩笘鐣岋紝閫夋嫨瑙掕壊锛屾彁浜よ鍔紝鐪?AI 瀵兼紨缁撶畻锛屽苟鍥犱负鈥滄垜鐨勮鍔ㄥ奖鍝嶄簡鍒汉鍜屼笘鐣岋紝鏈€鍚庣敓鎴愭垜鐨?POV 绔犺妭鈥濊€屾効鎰忓垎浜€佸鐜┿€佺户缁笅涓€绔犮€?*",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-014",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "## C.3 MVP 蹇呴』瀹炵幇鐨勫叚涓綋楠?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-015",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛涓嶆槸鍐欐鏂囷紝鑰屾槸鎻愪氦琛屽姩鎰忓浘銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-016",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "姣忚疆缁撶畻蹇呴』灞曠ず锛?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-017",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "## C.4 MVP 鍔熻兘鑼冨洿",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-018",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 瀹屾暣寮€鏀句笘鐣屻€?2. 鐢ㄦ埛鑷畾涔夊ぇ涓栫晫銆?3. 瀹屾暣鏀嚎鍚堝苟銆?4. 姝ｅ彶瀹℃牳宸ヤ綔娴併€?5. 鍒涗綔鑰呮敹鐩婂垎鎴愩€?6. 澶嶆潅绀惧尯銆?7. 鍦板浘绯荤粺銆?8. 瑁呭/绛夌骇/鎴樻枟鏁板€笺€?9. IP 鏀圭紪绯荤粺銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-019",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐩爣锛氳鐢ㄦ埛 30 绉掑唴鏄庣櫧杩欐槸鈥滃彲浠ョ帺鐨勬晠浜嬧€濄€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-020",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐩爣锛氳鐢ㄦ埛鎰熻涓嶆槸閫夎亴涓氾紝鑰屾槸閫夊懡杩愮嚎銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-021",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "chapterShouldEnd: boolean;",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-022",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "浣犳槸 AI 澶氫汉鏁呬簨灞€鐨勮鍔ㄨ鍒ゃ€?浣犵殑浠诲姟鏄垽鏂帺瀹舵彁浜ょ殑琛屽姩鏄惁鍏佽杩涘叆鏁呬簨缁撶畻銆?鐜╁鍙兘鎻愪氦鈥滆嚜宸辩殑琛屽姩鎰忓浘鈥濓紝涓嶈兘瀹ｅ竷缁撴灉锛屼笉鑳芥搷鎺т粬浜猴紝涓嶈兘璺宠繃褰撳墠鍓ф儏闃舵锛屼笉鑳芥柊澧炵牬鍧忎笘鐣岃鐨勫ぇ璁惧畾銆?杈撳嚭蹇呴』鏄悎娉?JSON銆?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-023",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "浣犳槸 AI 澶氫汉鏁呬簨灞€鐨勭兢鍍忓婕斿拰瑁佸垽銆?浣犺鏍规嵁褰撳墠鑺傜偣銆佺帺瀹惰鍔ㄣ€佷笘鐣岃鍒欍€佽鑹茬瀵嗐€佸凡鐭ョ嚎绱紝缁撶畻鏈妭鐐广€?姣忔缁撶畻蹇呴』鍋氬埌锛?1. 淇濈暀姣忎釜鐜╁琛屽姩鐨勬牳蹇冩剰鍥俱€?2. 鍒ゆ柇琛屽姩缁撴灉锛氭垚鍔熴€佸け璐ャ€侀儴鍒嗘垚鍔熴€佹垚鍔熶絾浠樺嚭浠ｄ环銆佽Е鍙戦闄┿€?3. 鏇存柊绾跨储銆佸叧绯汇€佸嵄闄╃瓑绾у拰涓栫晫鐘舵€併€?4. 杈撳嚭姣忎釜娲昏穬瑙掕壊鐨勪笁涓洖鍝嶏細涓汉鍥炲搷銆佷粬浜哄洖鍝嶃€佷笘鐣屽洖鍝嶃€?5. 鑷冲皯浜х敓 1 涓法瑙掕壊褰卞搷銆?6. 涓嶆浛鐜╁鍋氶噸澶у喅瀹氥€?7. 涓嶅墽閫忔湭鍏紑绉樺瘑銆?8. 涓嶈烦鍒板ぇ缁撳眬銆?9. 蹇呴』鐣欎笅涓嬩竴鑺傜偣鍙鍔ㄩ挬瀛愩€?10. 涓嶈璁╂煇涓帺瀹堕暱鏈熸拨涓洪厤瑙掋€?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-024",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "浣犳槸绔犺妭缂栬緫銆?浣犺鎶婃湰绔?3-5 涓墽鎯呰妭鐐圭殑鍏叡鍙欎簨銆佺帺瀹惰鍔ㄣ€佽鍔ㄧ粨鏋溿€佺嚎绱㈠彉鍖栥€佸叧绯诲彉鍖栥€佷笁涓洖鍝嶃€佽法瑙掕壊褰卞搷锛屾暣鐞嗘垚涓€绔犲 POV 缇ゅ儚灏忚銆?瑕佹眰锛?1. 绗笁浜虹О銆?2. 缁熶竴鏂囬銆?3. 姣忎釜鐜╁鑷冲皯鏈変竴涓?POV 鐗囨鎴栭珮鍏夋钀姐€?4. 淇濈暀鏈珷鍏抽敭閫夋嫨鍜岃法瑙掕壊褰卞搷銆?5. 涓嶆柊澧炵牬鍧忓悗缁墽鎯呯殑澶ц瀹氥€?6. 涓嶅墽閫忔湭鍏紑绉樺瘑銆?7. 缁撳熬蹇呴』鏈変笅涓€绔犳偓蹇点€?杈撳嚭鍚堟硶 JSON銆?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-025",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛杈撳叆澶辫触锛氱姝㈡彁浜わ紝鎻愮ず鏀瑰啓銆?AI 杈撳嚭澶辫触锛氳嚜鍔ㄩ噸璇曚竴娆°€?閲嶈瘯澶辫触锛氫娇鐢?fallback銆?绔犺妭澶辫触锛氳繘鍏?manual_review锛屼笉鍏佽鍒嗕韩銆?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-026",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "MVP 蹇呴』婊¤冻锛?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-027",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛鍙櫥褰?鐢ㄦ埛鍙垱寤烘晠浜嬪眬",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-028",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛鍙€夋嫨涓栫晫妯℃澘",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-029",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛鍙€夋嫨瑙掕壊/鍛借繍绾?鐢ㄦ埛鍙煡鐪嬭鑹插崱",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-030",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛鍙湅鍒颁笓灞炲紑鍦哄拰鍛借繍闂",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-031",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛鍙彁浜ょ粨鏋勫寲琛屽姩",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-032",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "\u003e 鏍稿績鐩爣锛氳鐢ㄦ埛鍍忕帺娓告垙涓€鏍疯繘鍏ヨ鑹层€佸仛琛屽姩銆佺湅鍚庢灉銆佽鍓ф儏閽╀綇锛屽悓鏃惰姣忎釜鐜╁鎰熺煡鈥滄垜鏄嚜宸卞懡杩愮嚎鐨勪富瑙掆€濓紝鏈€鍚庤嚜鍔ㄧ敓鎴愪竴绔犲 POV 缇ゅ儚灏忚銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-033",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鍘?v2.1 鏂囨。鐨勪骇鍝佸舰鎬佸亸銆岄檶鐢熶汉寮傛鎺ラ緳鍐欎綔骞冲彴銆嶏細鐢ㄦ埛閫夋嫨瑙掕壊瑙嗚锛屾彁浜や竴娈靛墽鎯呮兂娉曪紝AI 鏀瑰啓鍚庡彂甯冩垚姝ｆ枃锛岄檶鐢熺敤鎴风户缁帴娈碉紝10 娈垫垚绔犮€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-034",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "| 鐢ㄦ埛琛屼负 | 鎺ヤ竴娈靛墽鎯?| 瑙掕壊琛屽姩锛氭帰绱€佽闂€侀殣鐬掋€佸崗浣溿€佸啋闄┿€侀€夋嫨 |",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-035",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "| 闃蹭贡鍐欐柟寮?| AI 鏀瑰啓鐢ㄦ埛鐧借瘽 | 琛屽姩绾︽潫 + 鏉冮檺鍒ゆ柇 + 涓栫晫瑙勫垯閿?+ AI 缁撶畻缁撴灉 |",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-036",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "璇蜂紭鍏堝畬鎴?P0-A 鏈€灏忓彲涓婄嚎闂幆銆備笉瑕佹搮鑷鍔犱骇鍝佸姛鑳斤紝涓嶈瀹炵幇 P1/P2 鍔熻兘锛屼笉瑕佹妸浜у搧鍋氭垚鏅€氬皬璇寸珯銆佹櫘閫?AI 缁啓鍣ㄣ€佹櫘閫氳亰澶╁銆佷紶缁熷墽鏈潃銆佸畬鏁村紑鏀句笘鐣?RPG銆侀噸鏁板€兼父鎴忔垨鍗曚竴棰樻潗浜у搧銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-037",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. MVP 鏄€孉I 澶氫汉鍓ф儏娓告垙 / 杞?RPG 鍖栧浜轰簰鍔ㄥ皬璇淬€嶏紝涓嶆槸鍗曠函澶氫汉鍐欎綔骞冲彴銆?2. 鐢ㄦ埛涓嶆槸鏉ュ啓灏忚姝ｆ枃锛岃€屾槸鏉ユ壆婕旇鑹层€佹彁浜よ鍔ㄣ€佽鐪?AI 瀵兼紨缁撶畻銆?3. 鐢ㄦ埛杈撳叆蹇呴』鏄€岃鍔ㄦ剰鍥俱€嶏紝涓嶆槸銆屽墽鎯呯粨鏋溿€嶃€傜敤鎴峰彧鑳借鑷繁灏濊瘯鍋氫粈涔堬紝涓嶈兘鐩存帴瀹ｅ竷鎴愬姛銆佹潃姝汇€佺牬瑙ｃ€佹彮寮€鍏ㄩ儴鐪熺浉鎴栨搷鎺у叾浠栬鑹层€?4. AI 涓嶆槸鍗曠函缁啓鍣紝鑰屾槸瀵兼紨绯荤粺锛岃礋璐ｏ細鍦烘櫙鎺ㄨ繘銆佽鍔ㄥ悎娉曟€у垽鏂€佺粨鏋滅粨绠椼€佺姸鎬佹洿鏂般€佺嚎绱?鍏崇郴/鍗遍櫓绛夌骇鍙樺寲銆佸皬璇寸墖娈电敓鎴愩€佺珷鑺傛垚鏂囥€?5. MVP 涓嶅仛瀹屾暣寮€鏀句笘鐣屻€傞噰鐢ㄣ€岀珷鑺傛矙鐩掋€嶏細姣忕珷鏈夊浐瀹氬満鏅€佺洰鏍囥€佸彲鎺㈢储瀵硅薄銆佸墽鎯呰妭鐐瑰拰鏀舵潫鏉′欢銆?6. MVP 鏀寔鏃犳椂闂撮檺鍒剁殑寮傛鍙備笌锛屼絾蹇呴』鐢ㄣ€岃鍔ㄦЫ + 鑺傜偣缁撶畻銆嶉槻姝㈡晠浜嬫棤闄愬崱浣忋€?7. 姣忎釜鍓ф儏鑺傜偣鍐咃紝姣忎釜娲昏穬鐜╁鏈€澶氭彁浜や竴娆¤鍔ㄣ€傛墍鏈夋椿璺冪帺瀹惰鍔ㄥ畬鎴愶紝鎴栨埧涓荤偣鍑烩€滄帹杩涘墽鎯呪€濓紝鍗冲彲瑙﹀彂 AI 缁撶畻銆?8. 鏈鍔ㄧ帺瀹跺彲浠ヨ烦杩囷紝鎴栫敱 AI 鎵樼涓恒€岃交鍔ㄤ綔銆嶏紝浣?AI 涓嶅緱鏇跨帺瀹跺仛鏍稿績閫夋嫨銆?9. P0 蹇呴』鏀寔 1 浜鸿瘯鐜┿€傚崟浜烘ā寮忕敱 AI 鎵樼鍏朵粬瑙掕壊锛岀敤浜庨檷浣庡喎鍚姩闂ㄦ銆?10. P0 鎺ㄨ崘鏀寔 2-5 浜烘晠浜嬪眬銆傜啛浜洪個璇锋槸鏍稿績鍐峰惎鍔ㄦ柟寮忥紱鍏紑鏁呬簨姹犲彲浣滀负 P1 鎵╁睍銆?11. 鎵€鏈夌敤鎴峰唴瀹瑰繀椤荤粡杩囧唴瀹瑰畨鍏ㄥ鏍革紱鎵€鏈?AI 杈撳嚭涔熷繀椤荤粡杩囧鏍稿啀灞曠ず銆?12. 鎵€鏈夌涓夋柟鑳藉姏鍏堜娇鐢?mock adapter锛屼繚鐣欑湡瀹?adapter 鎺ュ彛銆?13. 浠ｇ爜蹇呴』鍙湰鍦板惎鍔ㄣ€佸彲娴嬭瘯銆佸彲鎺ュ叆鐪熷疄寰俊灏忕▼搴忓拰鐪熷疄澶фā鍨嬫湇鍔°€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-038",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "浠讳綍鍔熻兘濡傛灉涓嶈兘澧炲己涓婅堪 8 椤逛箣涓€锛孭0 涓嶅仛銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-039",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "MVP 闃舵鐢ㄦ埛鏈€瀹规槗鐞嗚В鐨勬槸锛?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-040",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "浣嗕负浜嗛伩鍏嶄骇鍝佸彉鎴愭櫘閫氬浜鸿В璋滃眬锛孭0 蹇呴』鍐呯疆鍛借繍绾挎満鍒躲€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-041",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "#### 2.4.2 鐢ㄦ埛涓轰粈涔堜細鎰熻鑷繁鏄富瑙?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-042",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛涓嶆槸鍥犱负鈥滆鑹插鈥濊€岃寰楄嚜宸辨槸涓昏锛岃€屾槸鍥犱负浠栬兘杩炵画鎰熺煡鍒帮細",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-043",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "### 3.1 鐢ㄦ埛涓绘祦绋?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-044",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛杩涘叆灏忕▼搴?鈫?寰俊鐧诲綍",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-045",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鈫?AI 鏍规嵁妯℃澘鐢熸垚鏈眬绔犺妭娌欑洅銆佸紑鍦轰簨浠跺拰瑙掕壊鍗?鈫?鐢ㄦ埛閫夋嫨瑙掕壊鎴栨帴鍙?AI 鍒嗛厤",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-046",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "绗竴灞€蹇呴』鍋氬埌锛?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-047",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鐢ㄦ埛鏄惁鎰挎剰鎻愪氦绗竴娆¤鍔ㄣ€?2. 鐢ㄦ埛鏄惁鐞嗚В鑷繁鐨勮鑹茬洰鏍囥€?3. AI 缁撶畻鏄惁璁╃敤鎴疯寰椻€滄垜鐨勮鍔ㄦ湁鍚庢灉鈥濄€?4. 澶氫汉涔嬮棿鏄惁鍑虹幇褰卞搷銆佸崗浣溿€佹€€鐤戙€佷繚鎶ゃ€侀殣鐬掋€?5. 绔犺妭缁撴灉鏄惁鍊煎緱鍒嗕韩銆?6. 鐢ㄦ埛鏄惁鎯崇户缁笅涓€绔犮€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-048",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鍏紑鏁呬簨姹犮€?2. 闄岀敓浜哄姞鍏ュ叕鍏辨晠浜嬪眬銆?3. 鐐硅禐銆佹敹钘忋€佽瘎璁恒€?4. 鍒涗綔鑰呭垱寤轰笘鐣岀瀛愩€?5. 涓栫晫妯℃澘甯傚満銆?6. 浠樿垂寮€楂樼骇鏁呬簨灞€銆?7. 闀跨瘒杩炵画绔犺妭銆?8. 瑙掕壊闀挎湡鎴愰暱銆?9. 鐢ㄦ埛涓婚〉鍜岃础鐚銆?10. 鏇寸簿缁嗙殑 AI 妯″瀷璋冨害銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-049",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛鎻愪氦鐨勪笉鏄鏂囷紝鑰屾槸琛屽姩鎰忓浘銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-050",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "AI 瀵兼紨缁撶畻鍚庣敓鎴愮殑姝ｅ紡鍙欎簨鐗囨銆傚畠涓嶆槸鐢ㄦ埛鐩存帴鍐欑殑锛岃€屾槸 AI 鍩轰簬琛屽姩鍜岀粨绠楃敓鎴愩€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-051",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "姣忎釜瑙掕壊蹇呴』鏈夛細",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-052",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "姣忔鑺傜偣缁撶畻鍚庯紝AI 蹇呴』涓烘瘡涓椿璺冪帺瀹剁敓鎴愪笁涓洖鍝嶃€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-053",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "v3.1 蹇呴』鍖哄垎淇℃伅鍙鎬с€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-054",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鎵€鏈?active human players 宸叉彁浜よ鍔ㄣ€?2. 鍗曚汉妯″紡涓紝鐢ㄦ埛宸叉彁浜よ鍔ㄣ€?3. 鎴夸富鐐瑰嚮銆屾帹杩涘墽鎯呫€嶃€?4. 鎴夸富閫夋嫨銆岃 AI 鎵樼鏈鍔ㄨ鑹层€嶃€?5. 鍚庡彴杩愯惀寮哄埗鎺ㄨ繘銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-055",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "## 7. 闃叉鐢ㄦ埛涔卞啓鐨勬満鍒?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-056",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 寮傚父瀛樺湪蹇呴』閬靛畧瑙勫垯銆?2. 鐪熺浉蹇呴』閫氳繃绾跨储閫愭鎻ず銆?3. 涓嶅厑璁哥獊鐒跺彉鎴愯秴鑳藉姏澶ф垬銆?4. 涓嶅厑璁镐竴姝ユ彮寮€鍏ㄩ儴鐪熺浉銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-057",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐢ㄦ埛涓嶈兘鍦ㄧ涓€鑺傜偣鐩存帴鍐欏ぇ缁撳眬銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-058",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鐧诲綍椤点€?2. Dashboard銆?3. 涓栫晫妯℃澘鍒楄〃銆?4. 涓栫晫妯℃澘缂栬緫銆?5. 鏁呬簨灞€鍒楄〃銆?6. 鏁呬簨灞€璇︽儏銆?7. 鐜╁琛屽姩鍒楄〃銆?8. 鑺傜偣缁撶畻鏃ュ織銆?9. 涓栫晫鐘舵€佸揩鐓с€?10. AI 浠诲姟鏃ュ織銆?11. 鍐呭瀹℃牳鏃ュ織銆?12. 鐢ㄦ埛琛屼负鏃ュ織銆?13. 鏁呬簨灞€鏆傚仠/涓嬫灦銆?14. 妯℃澘鏁版嵁鐪嬫澘銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-059",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐩爣锛氳鐢ㄦ埛绔嬪埢鐭ラ亾杩欐槸鍙帺鐨勶紝涓嶆槸鍐欎綔宸ュ叿銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-060",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "蹇呴』灞曠ず 6 涓尯鍩燂細",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-061",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "| \u0027rewrite_required\u0027",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-062",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. `my-arc` 杩斿洖褰撳墠鐢ㄦ埛瑙掕壊鐨勫懡杩愰棶棰樸€佷笓灞炲紑鍦恒€佺瀵嗙嚎绱㈠拰涓汉绾胯繘搴︺€?2. `private-clues` 鍙繑鍥炲綋鍓嶈鑹叉湁鏉冮檺鐪嬪埌鐨勭瀵嗕俊鎭€?3. AI 鎵樼瑙掕壊鐨勯殣钘忎俊鎭笉瀵?human player 鐩存帴鍏紑銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-063",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鏍￠獙鐢ㄦ埛銆?2. 璇诲彇 WorldTemplate銆?3. 鍒涘缓 StoryRun锛宻tatus=waiting_players銆?4. 鏍规嵁 template.configJson 鍒涘缓 StoryRole銆?5. 鍒涘缓 ChapterSandbox 绗?1 绔犮€?6. 鍒涘缓 SceneNode 绗?1 鑺傜偣銆?7. 濡傛灉 single mode锛屽垱寤?AI 鎵樼瑙掕壊銆?8. 鍐欏叆 WorldStateSnapshot 鍒濆鐘舵€併€?9. 璁板綍 event: story_run_created銆?10. 杩斿洖 runId銆?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-064",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 姣忎釜鐢ㄦ埛鍦ㄤ竴涓?run 涓彧鑳?claim 涓€涓?human role銆?2. 宸茶鍏朵粬 human claim 鐨勮鑹蹭笉鍙啀閫夈€?3. AI 瑙掕壊 P0 涓嶅厑璁歌鎺ョ銆?4. claim 鍚庡垱寤?StoryPlayer銆?5. 濡傛灉杈惧埌鏈€灏忓紑濮嬫潯浠讹紝StoryRun 鍙繘鍏?role_selecting/playing銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-065",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鏍￠獙 StoryRun 鐘舵€佸繀椤?playing銆?2. 鏍￠獙 SceneNode 鐘舵€佸繀椤?open_for_actions銆?3. 鏍￠獙鐢ㄦ埛灞炰簬 run銆?4. 鏍￠獙鐢ㄦ埛 roleId 鏄惁鍖归厤銆?5. 鏍￠獙鏈妭鐐硅 role 灏氭湭鎻愪氦琛屽姩銆?6. 鍐呭瀹夊叏瀹℃牳鐢ㄦ埛 freeText/method/intent銆?7. 璋冪敤 ActionGuard 妫€鏌ヤ笘鐣岃鍒欍€佽鑹叉潈闄愩€佸墽鎯呴樁娈点€?8. 濡傛灉 blocked锛岃繑鍥炵姝㈠師鍥犮€?9. 濡傛灉 rewrite_needed锛岃繑鍥炲缓璁敼鍐欍€?10. 鍐欏叆 PlayerAction锛宻tatus=accepted銆?11. 妫€鏌ヨ妭鐐规槸鍚?ready_to_resolve銆?12. 璁板綍 event: action_submitted銆?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-066",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "AI 蹇呴』杩斿洖涓ユ牸 JSON锛?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-067",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "chapterShouldEnd: boolean;",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-068",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "蹇呴』閬靛畧锛?1. 鐜╁鍙兘鎺у埗鑷繁鐨勮鑹层€?2. 鐜╁鍙兘澹版槑鎰忓浘锛屼笉鑳藉甯冪粨鏋溿€?3. 鐜╁涓嶈兘鐩存帴鎻紑鍏ㄩ儴鐪熺浉銆?4. 鐜╁涓嶈兘杩濆弽涓栫晫瑙勫垯銆?5. 鐜╁涓嶈兘鎿嶆帶鍏朵粬鐜╁瑙掕壊鍋氬喅瀹氥€?6. 鐜╁涓嶈兘璺宠繃褰撳墠鍓ф儏闃舵銆?7. 鐜╁涓嶈兘鏂板鐮村潖涓栫晫瑙傜殑澶ц瀹氥€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-069",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鐩爣锛?1. 淇濈暀姣忎釜鐜╁琛屽姩鐨勬牳蹇冩剰鍥俱€?2. 鍒ゆ柇琛屽姩缁撴灉锛氭垚鍔熴€佸け璐ャ€侀儴鍒嗘垚鍔熴€佹垚鍔熶絾浠樺嚭浠ｄ环銆佽Е鍙戦闄┿€?3. 鏇存柊绾跨储銆佸叧绯汇€佸嵄闄╃瓑绾у拰涓栫晫鐘舵€併€?4. 鐢熸垚 200-500 瀛楀叕鍏卞彊浜嬨€?5. 涓嶆浛鐜╁鍋氶噸澶у喅瀹氥€?6. 涓嶅墽閫忔湭鍏紑绉樺瘑銆?7. 涓嶈烦鍒板ぇ缁撳眬銆?8. 蹇呴』鐣欎笅涓嬩竴鑺傜偣鍙鍔ㄩ挬瀛愩€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-070",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "杈撳嚭蹇呴』鏄悎娉?JSON锛屽瓧娈靛繀椤荤鍚?ResolveNodeOutput schema銆?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-071",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "姣忔缁撶畻蹇呴』棰濆鍋氬埌锛?1. 鎺ㄨ繘姣忎釜娲昏穬鐜╁鐨勪釜浜虹嚎銆?2. 鑷冲皯浜х敓 1 涓法瑙掕壊褰卞搷銆?3. 杈撳嚭姣忎釜鐜╁鐨勪笁涓洖鍝嶏細涓汉鍥炲搷銆佷粬浜哄洖鍝嶃€佷笘鐣屽洖鍝嶃€?4. 涓嶈璁╂煇涓帺瀹堕暱鏈熸拨涓洪厤瑙掋€?5. 涓嶈寮鸿灏嗘墍鏈夌帺瀹舵媺鍒板悓涓€鍦扮偣銆?6. 鎵€鏈変氦缁囧繀椤绘潵鑷鑹茬洰鏍囥€侀殣钘忕瀵嗐€佺嚎绱€佸湴鐐规垨涓栫晫瑙勫垯銆?7. 鍙互鍒堕€犲欢杩熷悗鏋滐紝璁╂湰杞鍔ㄥ湪鍚庣画鑺傜偣浜х敓褰卞搷銆?8. 蹇呴』淇濈暀淇℃伅鏉冮檺锛屼笉鑳芥妸绉佸瘑淇℃伅鐩存帴鍏紑缁欐墍鏈夌帺瀹躲€?9. 濡傛灉鏌愪釜鐜╁鏈疆琛屽姩杈冨急锛屼篃瑕佺粰浠栬嚦灏戜竴涓釜浜虹嚎鍙嶉銆?10. 濡傛灉鏌愪釜鐜╁杩炵画 2 涓妭鐐规病鏈夋湁鏁堝奖鍝嶏紝闇€瑕侀€氳繃瀵兼紨浜嬩欢缁欎粬涓€涓噸鏂拌繘鍏ヤ富绾跨殑鏈轰細銆?[code-fence]",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-072",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "瑕佹眰锛?1. 绗笁浜虹О銆?2. 缁熶竴鏂囬銆?3. 淇濈暀涓昏鐜╁琛屽姩銆?4. 淇濈暀鏈珷鍏抽敭閫夋嫨鍜岄珮鍏夈€?5. 涓嶆柊澧炵牬鍧忓悗缁墽鎯呯殑澶ц瀹氥€?6. 涓嶅墽閫忔湭鍏紑绉樺瘑銆?7. 瀛楁暟 800-1500 瀛椼€?8. 缁撳熬蹇呴』鏈変笅涓€绔犳偓蹇点€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-073",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "绔犺妭灞曠ず缁撴瀯蹇呴』浼樺厛浣跨敤 POV锛?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-074",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "\"寮傚父蹇呴』閫氳繃绾跨储閫愭鎻ず\",",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-075",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鐢ㄦ埛鏄电О銆?2. 鐢ㄦ埛琛屽姩 freeText銆乵ethod銆乮ntent銆?3. 涓炬姤鍙嶉銆?4. 鍒嗕韩鑷畾涔夋枃妗堛€?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-076",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鐢ㄦ埛杈撳叆瀹℃牳澶辫触锛氫笉杩涘叆琛屽姩缁撶畻銆?2. AI 杈撳嚭瀹℃牳澶辫触锛氳嚜鍔ㄩ噸璇曚竴娆°€?3. 閲嶈瘯浠嶅け璐ワ細浣跨敤 fallback 鏂囨湰銆?4. 绔犺妭瀹℃牳澶辫触锛氳繘鍏?manual_review锛屼笉鍏佽鍒嗕韩銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-077",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "P0 蹇呴』鎺у埗杈撳嚭闀垮害銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-078",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "1. 鍒涘缓 StoryRun銆?2. 閫夋嫨瑙掕壊銆?3. 鍚屼竴鐢ㄦ埛涓嶈兘閫夋嫨澶氫釜瑙掕壊銆?4. 鍚屼竴鑺傜偣鍚屼竴瑙掕壊涓嶈兘鎻愪氦涓ゆ琛屽姩銆?5. ActionGuard 闃绘鎿嶆帶鍒汉瑙掕壊銆?6. ActionGuard 闃绘瀹ｅ竷缁撴灉銆?7. 鑺傜偣缁撶畻鍚庡垱寤?DirectorResolution銆?8. 缁撶畻鍚庢洿鏂?Clue銆?9. 缁撶畻鍚庢洿鏂?RoleRelation銆?10. 杈惧埌鑺傜偣鏁拌Е鍙戠珷鑺傜敓鎴愩€?11. AI 澶辫触 fallback銆?12. 瀹℃牳澶辫触闃绘灞曠ず銆?13. 姣忎釜瑙掕壊鐢熸垚 personalHook 鍜?destinyQuestion銆?14. DirectorResolution 蹇呴』杩斿洖 echoes銆?15. DirectorResolution 蹇呴』杩斿洖鑷冲皯 1 涓?crossImpact銆?16. ChapterGenerate 蹇呴』杩斿洖 povSections銆?17. ChapterGenerate 蹇呴』杩斿洖 personalCards銆?18. 绉佸瘑绾跨储涓嶈兘灞曠ず缁欐棤鏉冮檺瑙掕壊銆?19. delayed_effect 鑳藉湪鍚庣画鑺傜偣瑙﹀彂銆?",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P0"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-079",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鈫?鐢ㄦ埛 A 閫夋嫨鏋楅箍",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       },
+                       {
+                           "source":  "docs\\AI多人故事局_PRD_阶段化工程完整增强版_v5.md",
+                           "normalized":  false,
+                           "id":  "REQ-080",
+                           "evidence":  [
+
+                                        ],
+                           "description":  "鈫?鐢ㄦ埛 B 閫夋嫨椤捐█",
+                           "surface":  "",
+                           "acceptance":  [
+
+                                          ],
+                           "status":  "CANDIDATE",
+                           "priority":  "P1"
+                       }
+                   ],
+    "status":  "CANDIDATE",
+    "schemaVersion":  "1.3",
+    "generatedAt":  "2026-05-14T21:32:39",
+    "note":  "Auto-extracted requirements are candidates only. Agent must normalize them into P0/P1/P2 acceptance criteria with surface/test/evidence before implementation or final PASS."
+}

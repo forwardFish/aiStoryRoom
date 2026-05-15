@@ -4,18 +4,29 @@ import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 
 const root = normalize(join(fileURLToPath(new URL(".", import.meta.url)), "..", "public"));
+const projectRoot = normalize(join(root, "..", "..", ".."));
+const uiRoot = normalize(join(projectRoot, "docs", "UI", "2"));
 const port = Number(process.env.PORT || 5177);
 
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8"
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png"
 };
 
 export const server = createServer((req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const requested = url.pathname === "/" ? "/index.html" : url.pathname;
+  if (requested.startsWith("/ui/2/")) {
+    const uiPath = normalize(join(uiRoot, decodeURIComponent(requested.replace("/ui/2/", ""))));
+    if (uiPath.startsWith(uiRoot) && existsSync(uiPath)) {
+      res.writeHead(200, { "content-type": types[extname(uiPath)] || "application/octet-stream" });
+      createReadStream(uiPath).pipe(res);
+      return;
+    }
+  }
   const safePath = normalize(join(root, requested));
   if (!safePath.startsWith(root) || !existsSync(safePath)) {
     res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });

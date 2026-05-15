@@ -1,0 +1,26 @@
+﻿{
+    "blockers":  [
+                     null
+                 ],
+    "commands":  [
+                     {
+                         "status":  "PASS",
+                         "command":  "powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-web-cabin-visual-diff.ps1",
+                         "log":  "docs\\auto-execute\\results\\web-cabin-visual-diff.json"
+                     }
+                 ],
+    "lane":  "web-cabin-visual-diff-status",
+    "status":  "PASS",
+    "evidence":  [
+                     "docs\\auto-execute\\results\\web-cabin-visual-diff.json",
+                     "docs\\auto-execute\\screenshots\\web-cabin-diff.png",
+                     "docs\\auto-execute\\results\\web-cabin-structure-check.json",
+                     "docs\\UI\\2\\模拟页面.png",
+                     "docs\\auto-execute\\screenshots\\web-cabin-smoke.png"
+                 ],
+    "schemaVersion":  "1.3",
+    "nextActions":  [
+                        "Repair apps/web visual mismatch and rerun web cabin smoke/diff."
+                    ],
+    "updatedAt":  "2026-05-14T21:43:41"
+}

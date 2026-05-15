@@ -1,0 +1,14 @@
+﻿{
+    "GAP-REQ-001":  {
+                        "attempts":  1,
+                        "lastError":  "No normalized requirements are listed in requirement-target.json",
+                        "status":  "RETRYING",
+                        "updatedAt":  "2026-05-13T21:51:37"
+                    },
+    "GAP-UI-001":  {
+                       "attempts":  1,
+                       "lastError":  "UI references exist but ui-target.json has no screens.",
+                       "status":  "RETRYING",
+                       "updatedAt":  "2026-05-13T21:51:37"
+                   }
+}
