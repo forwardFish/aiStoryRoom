@@ -122,7 +122,7 @@
 
   function appendCausalMessage(card) {
     const stream = document.getElementById("messageStream");
-    if (!stream || stream.querySelector("[data-generated-causal-message]")) return;
+    if (!stream || stream.querySelector("[data-generated-causal-message], .message-card.causal_visible")) return;
     const article = document.createElement("article");
     article.className = "message-card causal_visible";
     article.setAttribute("data-generated-causal-message", "true");
