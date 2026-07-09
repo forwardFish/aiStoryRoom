@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Headers, Param, Post } from "@nestjs/common";
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
 import { StoryService } from "./story.service";
+import { ensureMvpCausalView } from "./mvp-causal-runtime";
 
 @Controller()
 export class StoryController {
@@ -53,17 +54,17 @@ export class StoryController {
 
   @Post("v4/story-runs")
   createMvpRun(@Body() body: Record<string, unknown>) {
-    return this.story.createMvpRun(body);
+    return ensureMvpCausalView(this.story.createMvpRun(body), "read");
   }
 
   @Get("v4/story-runs/:runId")
   getMvpRun(@Param("runId") runId: string) {
-    return this.story.getMvpRun(runId);
+    return ensureMvpCausalView(this.story.getMvpRun(runId), "read");
   }
 
   @Get("v4/story-runs/:runId/messages")
   getMvpMessages(@Param("runId") runId: string) {
-    return this.story.getMvpMessages(runId);
+    return ensureMvpCausalView(this.story.getMvpMessages(runId), "read");
   }
 
   @Get("v4/story-runs/:runId/dashboard")
@@ -77,17 +78,17 @@ export class StoryController {
     @Param("messageId") messageId: string,
     @Body() body: Record<string, unknown>
   ) {
-    return this.story.submitMvpDecision(runId, messageId, body);
+    return ensureMvpCausalView(this.story.submitMvpDecision(runId, messageId, body), "decision");
   }
 
   @Post("v4/story-runs/:runId/advance-day")
   advanceMvpDay(@Param("runId") runId: string) {
-    return this.story.advanceMvpDay(runId);
+    return ensureMvpCausalView(this.story.advanceMvpDay(runId), "advance");
   }
 
   @Post("v4/story-runs/:runId/finalize")
   finalizeMvpRun(@Param("runId") runId: string) {
-    return this.story.finalizeMvpRun(runId);
+    return ensureMvpCausalView(this.story.finalizeMvpRun(runId), "finalize");
   }
 
   @Post("story-runs")
@@ -208,7 +209,6 @@ export class StoryController {
     return this.story.shareChapter(this.openid(headers), chapterId);
   }
 
-
   @Get("notifications")
   notifications(@Headers() headers: Record<string, string | undefined>) {
     return this.story.notifications(this.openid(headers));
@@ -238,7 +238,6 @@ export class StoryController {
   adminStoryRun(@Param("runId") runId: string) {
     return this.story.adminStoryRun(runId);
   }
-
 
   @Get("admin/roles")
   adminRoles() {
