@@ -1,8 +1,7 @@
 (() => {
   const state = {
-    lastDecisionTitle: "",
     hasDecisionResult: false,
-    hasRecall: false
+    lastSignature: ""
   };
 
   const ROLE_MODELS = [
@@ -101,8 +100,12 @@
     const decisionResultText = getText(".message-card.decision_result, .message-card.causal_visible");
     const hasDecision = Boolean(decisionResultText.trim());
     const title = inferCurrentDecision();
-    const card = buildCausalCard(title);
+    const hasAdvanced = /因果回响|暗账浮出|局势继续推进|第 4 天/.test(getText(".message-card, .top-day"));
+    const signature = `${hasDecision}|${title}|${hasAdvanced}|${document.querySelectorAll(".message-card").length}`;
+    if (signature === state.lastSignature) return;
+    state.lastSignature = signature;
 
+    const card = buildCausalCard(title);
     document.querySelectorAll("[data-causal-overlay]").forEach((node) => node.remove());
     const wrapper = document.createElement("div");
     wrapper.setAttribute("data-causal-overlay", "true");
@@ -143,9 +146,7 @@
       .replace(/"/g, "&quot;");
   }
 
-  const observer = new MutationObserver(() => {
-    window.requestAnimationFrame(renderOverlay);
-  });
+  const observer = new MutationObserver(() => window.requestAnimationFrame(renderOverlay));
 
   function start() {
     observer.observe(document.body, { childList: true, subtree: true });
