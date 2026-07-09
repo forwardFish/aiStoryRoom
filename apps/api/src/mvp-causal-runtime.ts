@@ -63,9 +63,12 @@ export function ensureMvpCausalView(payload: any, phase: CausalPhase = "read") {
   view.causalLedger.roleDecisionModels ||= ROLE_DECISION_MODELS;
 
   const latestDecision = view.decisionHistory[view.decisionHistory.length - 1];
-  if (latestDecision && !view.dashboard.visibleCausalCard) {
+  if (latestDecision) {
     const option = normalizeHistoryOption(latestDecision);
-    createCausalBundle(view, option, latestDecision.originEventId || latestDecision.eventId || `evt_day${latestDecision.day}_${latestDecision.optionKey || "choice"}`, true);
+    const originEventId = latestDecision.originEventId || latestDecision.eventId || `evt_day${latestDecision.day}_${latestDecision.optionKey || "choice"}_${view.decisionHistory.length}`;
+    if (view.dashboard.visibleCausalCard?.originEventId !== originEventId) {
+      createCausalBundle(view, option, originEventId, true);
+    }
   }
   if (phase === "advance") triggerCausalRecall(view);
   if (phase === "finalize") attachFinalJudgementInputs(view);
