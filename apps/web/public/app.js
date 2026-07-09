@@ -1,342 +1,742 @@
 const root = document.getElementById("app");
-const STORAGE_KEY = "ai-story-bureau-sangtian-mvp-v3";
 
-const stories = [
-  { slug: "sangtian", title: "桑田诏：嘉靖财政危局", shortTitle: "嘉靖财政危局", subtitle: "7 天动态权谋故事局", category: "权谋历史", coverClass: "cover-sangtian", tags: ["历史权谋", "剧情消息", "单人可玩", "7天"], players: "1-6人", duration: "30-45分钟", difficulty: "中等", intro: "嘉靖朝财政危局，国库缺银，江南奉旨改稻为桑。你是浙江总督，必须在七天内稳住民心、压住官商、回应朝廷，并决定谁来替大明付这笔账。", hook: "你不是在读故事，而是在一个每天都逼近裁决的局里做选择。" },
-  { slug: "promotion", title: "晋升名单公布前", shortTitle: "晋升名单公布前", subtitle: "职场权力博弈故事局", category: "都市职场", coverClass: "cover-office", tags: ["职场", "现代", "传播向"], players: "1-5人", duration: "15-25分钟", difficulty: "低", intro: "组织调整前七天，你的竞争者开始抢功，老板态度摇摆。", hook: "每一次表态，都可能决定你是晋升还是背锅。" },
-  { slug: "heirnight", title: "豪门继承夜", shortTitle: "豪门继承夜", subtitle: "家族利益与遗嘱之夜", category: "悬疑推理", coverClass: "cover-heir", tags: ["家族", "悬疑", "多人"], players: "3-6人", duration: "30分钟", difficulty: "中", intro: "一份遗嘱引发的家族暗战。", hook: "你以为你在争遗产，其实你在争活路。" },
-  { slug: "xianxia", title: "凡人修仙局", shortTitle: "凡人修仙局", subtitle: "宗门命运抉择", category: "奇幻冒险", coverClass: "cover-xianxia", tags: ["修仙", "宗门", "成长"], players: "2-6人", duration: "25分钟", difficulty: "中", intro: "从凡人到仙途的逆袭之旅。", hook: "师门的秘密，也许就是你破局的代价。" },
-];
+const API_BASE_KEY = "ai-story-room-api-base";
+const RUN_ID_KEY = "ai-story-room-sangtian-run-id";
+const DEFAULT_API_BASE = "http://localhost:3001/api";
 
-const roles = [
-  { key: "governor", name: "浙江总督", person: "郑帅彬", avatar: "督", trait: "统筹全局", title: "从四品 · 兵部侍郎衔", mission: "稳住浙江，压住巡抚，避免皇帝生疑。", playable: true },
-  { key: "xunfu", name: "浙江巡抚", person: "刘瑾", avatar: "巡", trait: "争功冒进", title: "地方巡抚", mission: "快速推进改桑，抢先向朝廷报功。", playable: false },
-  { key: "county", name: "清流县令", person: "卢象升", avatar: "令", trait: "清流查账", title: "江南县令", mission: "查清田契暗账，保护百姓。", playable: false },
-  { key: "merchant", name: "江南商会", person: "掌柜", avatar: "商", trait: "逐利观望", title: "丝粮商会", mission: "垫银换保护，低价控制桑田。", playable: false },
-  { key: "sili", name: "司礼监织造使", person: "魏忠贤", avatar: "监", trait: "暗中监视", title: "内廷耳目", mission: "确保丝源与银路进入内廷视野。", playable: false },
-  { key: "cabinet", name: "内阁财政派", person: "张居正", avatar: "阁", trait: "催银问责", title: "朝廷重臣", mission: "尽快补足国库缺口。", playable: false },
-];
-
-const initialRun = {
-  currentDay: 1,
-  totalDays: 7,
-  location: "杭州总督府 · 内厅",
-  selectedRole: "governor",
-  decisionLocked: false,
-  gameComplete: false,
-  surfacedThreadIds: [],
-  worldState: { 国库银: 30, 民心: 60, 粮价: 45, 改桑进度: 20, 海防军心: 50, 皇帝信任: 45, 皇帝疑心: 55 },
-  roleState: { 总督权威: 60, 升迁机会: 40, 清算风险: 45, 内阁疑心: 35, 巡抚敌意: 30, 县令信任: 50, 商会依赖: 35, 司礼监警惕: 30, 暗账完整度: 10 },
-  relationships: [
-    { key: "xunfu", name: "浙江巡抚", person: "刘瑾", stance: "敌意", score: 30, avatar: "巡" },
-    { key: "county", name: "清流县令", person: "卢象升", stance: "观望", score: 50, avatar: "令" },
-    { key: "merchant", name: "江南商会", person: "掌柜", stance: "观望", score: 35, avatar: "商" },
-    { key: "sili", name: "司礼监织造使", person: "魏忠贤", stance: "警惕", score: 30, avatar: "监" },
-    { key: "cabinet", name: "内阁财政派", person: "张居正", stance: "审视", score: 35, avatar: "阁" },
-  ],
-  clues: ["海防军饷压力", "巡抚越级倾向"],
-  latestChanges: ["改桑令抵达浙江", "海防军饷拖欠两月"],
-  risks: [{ name: "粮价失控", level: "低" }, { name: "巡抚越级", level: "中" }, { name: "商会坐大", level: "中" }, { name: "皇帝生疑", level: "中" }],
-  hiddenThreads: [],
-  decisions: [],
-  messages: [],
-};
-
-const dayScripts = {
-  1: {
-    theme: "改桑令下", pressure: "朝廷催银，巡抚请命",
-    opening: [
-      systemMsg(1, "清晨", "京师急诏抵达浙江", "诏书写得简洁：江南择地改稻为桑，以桑养蚕，以丝换银，以银补国用。案上还有一封海防军报：沿海军饷已拖两月，若再不补给，军心难稳。幕僚低声道：大人，朝廷要银，地方要粮，军中要饷。浙江这一局，不能只看桑田。"),
-      roleMsg(1, "午前", "浙江巡抚", "巡抚入府请命", "巡抚呈上一份初拟名册，称嘉兴、绍兴、湖州三地最宜先行改桑，并请你准许他立即督办。三地皆为熟田，一动便会牵粮价。"),
-      privateMsg(1, "入夜前", "江南商会", "商会递帖", "商会愿为朝廷分忧，可先垫一笔粮银。但帖子最后一句意味深长：商路若稳，国用自足。商路若疑，银水难流。"),
-    ],
-    prompt: decisionMsg(1, "午前", "是否准许巡抚立即推进", "巡抚站在案前，等你表态。立即推进会让京师看到效率，但也会让粮价先动；先核田可稳民心，却可能被疑拖延。", [
-      option("A", "准许巡抚先行推进", "表面支持朝廷，让巡抚负责第一批名册。", { 改桑进度: 10, 内阁疑心: -5, 巡抚敌意: 4, 粮价: 5, 民心: -4 }, "改桑进度上升", "巡抚声望变高，粮价先动"),
-      option("B", "要求先核田清册", "以核实田亩、避免误伤民田为由，要求巡抚三日后再报细册。", { 改桑进度: -5, 内阁疑心: 5, 巡抚敌意: 5, 县令信任: 5 }, "民心风险暂缓", "内阁与巡抚都可能疑你拖延"),
-      option("C", "表面同意，私下查田契", "不阻止巡抚，但让幕僚暗中查名册来源。", { 改桑进度: 5, 总督权威: 2, 巡抚敌意: 2, 暗账完整度: 8 }, "短期不激怒巡抚，并得到暗线", "若被发现，巡抚敌意会升高"),
-    ]),
-  },
-  2: {
-    theme: "地方催政", pressure: "三县名册，县令密信",
-    opening: [
-      systemMsg(2, "清晨", "三县名册开始流动", "巡抚府昨夜发出三道公文，要求嘉兴、绍兴、湖州三地限期上报名册。公文措辞极重：有迟误者，以误国论。与此同时，杭州米价小涨。"),
-      privateMsg(2, "午后", "清流县令", "未署名密信入府", "信中写道：本县尚未丈量，已有商号执契来问桑田价。百姓未卖田，田名似已在册。若此事属实，改桑恐变夺田。幕僚认出笔迹，是一名清流县令。"),
-      roleMsg(2, "黄昏", "浙江巡抚", "巡抚府继续施压", "巡抚派人来问：三县名册明日必须齐备。总督府若有疑虑，可否明示？这句话看似请示，实则逼你表态。"),
-    ],
-    prompt: decisionMsg(2, "午后", "如何处理县令密信", "你手里有了第一条真正的线索。清流县令可以成为一把刀，但这把刀如果失控，也可能割伤你。", [
-      option("A", "保护县令继续查账", "给县令保护，让他继续追查田契和商会关系。", { 县令信任: 10, 巡抚敌意: 8, 清算风险: 3, 暗账完整度: 12 }, "可能获得巡抚与商会把柄", "巡抚敌意上升，县令可能失控"),
-      option("B", "要求县令停止私查", "只准县令报民情，不许扩大查账。", { 县令信任: -10, 暗账完整度: -5, 清算风险: -2 }, "减少民情爆发风险", "暗账线索断裂"),
-      option("C", "密令查账但证据先送总督府", "给县令有限保护，但要求证据必须先送总督府。", { 县令信任: 5, 暗账完整度: 10, 总督权威: 4, 巡抚敌意: 3 }, "你掌握证据流向", "县令可能保留副本"),
-    ]),
-  },
-  3: {
-    theme: "粮价上涨", pressure: "巡抚急奏，商会控粮",
-    opening: [
-      systemMsg(3, "午前", "粮价三日连涨", "杭州米价三日内上涨两成。粮铺外开始有人排队，百姓口中已经把改桑二字和没粮连在了一起。"),
-      roleMsg(3, "午后", "浙江巡抚", "巡抚急奏北上", "驿站快马离开杭州府。有人看见巡抚幕僚亲自护送一封急奏北上。奏中不提粮价和拒签田契，只写桑田之政已有成效。"),
-      privateMsg(3, "傍晚", "江南商会", "商会控粮求护", "商会愿意放出一批平价粮，但要总督府给一个明确态度。幕僚提醒：他不是要粮价，他是要护身符。"),
-    ],
-    prompt: decisionMsg(3, "午后", "如何处理巡抚急奏", "若这封奏疏先到内阁，巡抚便是功臣；若之后民怨爆发，你这个总督就是压不住局的人。", [
-      option("A", "截留奏疏", "派人追上驿站，暂扣巡抚奏疏。", { 总督权威: 8, 巡抚敌意: 15, 内阁疑心: 10, 清算风险: 6 }, "阻止巡抚抢功", "巡抚可反咬你压制国策"),
-      option("B", "追加密奏", "不阻止巡抚，但另写密奏给皇帝，说明浙江局势未稳。", { 皇帝信任: 4, 内阁疑心: 2, 巡抚敌意: 3, 司礼监警惕: 8 }, "保留解释权", "司礼监关注奏报差异"),
-      option("C", "放任巡抚", "让他继续抢功，等待他与商会绑定更深。", { 总督权威: -8, 巡抚敌意: -2, 暗账完整度: 6, 清算风险: 5 }, "未来可一并清算", "巡抚短期声望上升"),
-    ]),
-  },
-  4: {
-    theme: "暗账浮出", pressure: "田契副本，巡抚灭证",
-    opening: [
-      systemMsg(4, "清晨", "田契副本入府", "嘉兴县衙递来密匣，其中一页显示，部分田亩尚未正式改桑，就已被商会提前标注为可收桑地。另一页只露出几个模糊名字。"),
-      privateMsg(4, "午前", "清流县令", "暗账不完整", "县令另附一信：证据尚不完整。若此时公开，恐被反咬伪造；若继续查，恐人证物证皆灭。"),
-      roleMsg(4, "午后", "浙江巡抚", "巡抚府突然换人", "巡抚府撤换三县名册中的几名书吏。表面理由是办事不力，你的幕僚却说：他可能知道有人在查账了。"),
-    ],
-    prompt: decisionMsg(4, "午前", "如何使用暗账", "这份暗账足以威慑商会，足以逼巡抚收手，却不足以直接定案。幕僚问：大人，这刀是现在亮出来，还是先藏着？", [
-      option("A", "密奏皇帝", "将暗账作为地方执行过激证据，直接入密奏。", { 皇帝信任: 8, 内阁疑心: 8, 司礼监警惕: 8, 巡抚敌意: 10 }, "皇帝看到你先察觉问题", "内阁和司礼监同时盯上你"),
-      option("B", "威胁商会放粮出银", "不公开暗账，只用它逼商会配合。", { 商会依赖: 12, 粮价: -6, 国库银: 5, 县令信任: -8 }, "粮价与国库压力下降", "县令怀疑官商交易"),
-      option("C", "交给县令继续补证", "暂不动用，命县令查完整证据链。", { 暗账完整度: 15, 县令信任: 8, 巡抚敌意: 5 }, "证据完整度上升", "巡抚可能灭证"),
-    ]),
-  },
-  5: {
-    theme: "互相弹劾", pressure: "内阁催问，司礼监入浙",
-    opening: [
-      systemMsg(5, "早朝后", "京师开始问责", "内阁已收到巡抚急奏。奏中称浙江改桑进度可喜，但地方推进受制于上司持重。这句话没有点你的名，却句句指向总督府。"),
-      roleMsg(5, "午后", "司礼监", "织造使入浙试探", "织造使派人送来口信：宫中只问一事，丝源何时稳，银路何时通？对方没有问巡抚，也没有问县令，而是直接问你。"),
-      privateMsg(5, "傍晚", "幕僚", "所有人都在找替罪羊", "内阁要责任，司礼监要银路，巡抚要功劳，商会要保护，县令要真相。今天之后，浙江不再只是浙江的事。"),
-    ],
-    prompt: decisionMsg(5, "午后", "如何回应内阁催问", "内阁文书问得平和，却极重：浙江改桑既已有成效，为何迟迟不见银数？是地方不力，商民不从，还是督抚意见不一？", [
-      option("A", "推给巡抚操切", "说明地方执行过急，导致粮价和民心压力。", { 巡抚敌意: 10, 清算风险: -8, 内阁疑心: 4 }, "切割巡抚", "巡抚反咬你督办无力"),
-      option("B", "承认不足，请求分阶段推进", "以稳局为由争取时间。", { 民心: 5, 皇帝信任: 4, 内阁疑心: 10, 清算风险: -3 }, "民心风险下降", "内阁疑心上升"),
-      option("C", "报告商会可先垫银", "用商会银子缓解内阁压力。", { 国库银: 10, 内阁疑心: -5, 商会依赖: 12, 县令信任: -8 }, "国库压力缓解", "商会坐大，县令不满"),
-    ]),
-  },
-  6: {
-    theme: "京师回批", pressure: "最终奏报，三方求见",
-    opening: [
-      systemMsg(6, "清晨", "皇帝批语抵浙", "京师回批到了。皇帝没有直接裁决，只批了一句：银从何来，乱由谁止，欺朕者谁？这不是问话，是最后通牒。"),
-      privateMsg(6, "入夜前", "三方求见", "巡抚派人说愿与总督府同署奏报；县令递信说若大人不言，民田将尽入商手；商会会首则在府外等候，称明日之前可先出一笔银。"),
-      systemMsg(6, "深夜", "奏报写了三遍", "杭州总督府灯火未灭。奏报写了三遍，又焚了两遍。明日京师不需要知道所有真相，只需要一个可以继续运转的局面。"),
-    ],
-    prompt: decisionMsg(6, "夜", "最终奏报方向", "你必须在今晚前拟定最终奏报。奏报将决定第 7 天御前裁决的方向。你要让皇上看到哪个浙江？", [
-      option("A", "稳局奏报", "承认改桑可行，但请求缓行，并说明你已控制粮价和民心。", { 皇帝信任: 8, 清算风险: -8, 民心: 5, 粮价: -3 }, "适合稳局小胜", "若银数不足，仍会被疑拖延"),
-      option("B", "清弊奏报", "公开巡抚与商会暗账，把危机定义为地方执行腐败。", { 巡抚敌意: 15, 皇帝信任: 5, 内阁疑心: 4, 清算风险: -4, 暗账完整度: 12 }, "巡抚可能倒台", "证据不足会牵连自己"),
-      option("C", "财政奏报", "让商会先垫银，换政策保护，优先解决国库压力。", { 国库银: 15, 商会依赖: 15, 司礼监警惕: 8, 县令信任: -10 }, "国库压力明显下降", "商会与内廷坐大"),
-    ]),
-  },
-  7: {
-    theme: "御前裁决", pressure: "结算全局与个人命运",
-    opening: [systemMsg(7, "京师", "各路奏报抵达御前", "内阁说浙江可见银，但地方意见不一。司礼监说江南银路可通，但需绕开掣肘。巡抚说新政已有成效，只是总督过于持重。县令的暗账残页，也以某种方式进入了京师视野。皇帝看完所有奏报，只问了一句：浙江到底是谁在办事，谁在误事？")],
-    prompt: null,
-  },
-};
-
-function systemMsg(day, time, title, narrative) { return { id: uid("msg"), day, time, type: "system", label: "系统", title, narrative, decisionRequired: false }; }
-function roleMsg(day, time, speaker, title, narrative) { return { id: uid("msg"), day, time, type: "role_action", label: "角色行动", speaker, title, narrative, decisionRequired: false }; }
-function privateMsg(day, time, speaker, title, narrative) { return { id: uid("msg"), day, time, type: "private_intel", label: "私密", speaker, title, narrative, decisionRequired: false }; }
-function decisionMsg(day, time, title, narrative, options) { return { id: uid("msg"), day, time, type: "decision_prompt", label: "待决策", title, narrative, decisionRequired: true, options }; }
-function option(key, title, description, patch, gain, risk) { return { key, title, description, patch, gain, risk }; }
-function uid(prefix) { return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 8)}`; }
-
-let runtime = loadRuntime();
 let selectedOption = "A";
+let customDecision = "";
+let state = {
+  apiOnline: false,
+  loading: true,
+  error: "",
+  guard: null,
+  view: null
+};
 
-function loadRuntime() {
-  try {
-    const cached = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (cached && cached.worldState && Array.isArray(cached.messages)) return cached;
-  } catch {}
-  const fresh = structuredClone(initialRun);
-  seedDay(fresh, 1);
-  return fresh;
-}
-function saveRuntime() { localStorage.setItem(STORAGE_KEY, JSON.stringify(runtime)); }
-function resetRuntime() { localStorage.removeItem(STORAGE_KEY); runtime = structuredClone(initialRun); selectedOption = "A"; seedDay(runtime, 1); saveRuntime(); }
+const fallbackStore = {
+  run: null
+};
 
-function seedDay(target, day) {
-  const script = dayScripts[day];
-  if (!script) return;
-  target.currentDay = day;
-  target.decisionLocked = false;
-  target.messages.push({ id: uid("divider"), type: "day_divider", day, title: `第 ${day} 天：${script.theme}`, narrative: script.pressure });
-  script.opening.forEach((message) => target.messages.push({ ...message, id: uid("msg") }));
-  surfaceTriggeredThreads(target, day);
-  if (script.prompt) target.messages.push({ ...script.prompt, id: uid("msg") });
-  if (day === 7) {
-    target.gameComplete = true;
-    const ending = storyEngine.generateEnding(target);
-    target.messages.push({ id: uid("final"), day: 7, time: "御前", type: "final", label: "最终裁决", title: ending.title, narrative: ending.narrative });
+function apiBase() {
+  const fromQuery = new URLSearchParams(window.location.search).get("apiBase");
+  if (fromQuery) {
+    localStorage.setItem(API_BASE_KEY, fromQuery);
+    return fromQuery;
   }
+  return localStorage.getItem(API_BASE_KEY) || DEFAULT_API_BASE;
 }
 
-function surfaceTriggeredThreads(target, day) {
-  target.hiddenThreads.filter((thread) => thread.triggerDay <= day && !target.surfacedThreadIds.includes(thread.id)).forEach((thread) => {
-    target.messages.push({ id: uid("thread"), day, time: "暗线触发", type: "role_action", label: "延迟后果", speaker: thread.source || "局势", title: thread.title, narrative: thread.note });
-    target.surfacedThreadIds.push(thread.id);
+function uid(prefix) {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 8)}`;
+}
+
+async function request(path, options = {}) {
+  const response = await fetch(`${apiBase()}${path}`, {
+    method: options.method || "GET",
+    headers: { "content-type": "application/json", "x-mock-openid": "mock_openid_sangtian_owner" },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || `HTTP ${response.status}`);
+  return payload;
+}
+
+async function boot() {
+  root.className = "mvp-root";
+  renderLoading("正在打开杭州总督府内厅...");
+  if (new URLSearchParams(window.location.search).get("reset") === "1") {
+    localStorage.removeItem(RUN_ID_KEY);
+  }
+  const runId = localStorage.getItem(RUN_ID_KEY);
+  try {
+    const view = runId
+      ? await request(`/v4/story-runs/${runId}`)
+      : await request("/v4/story-runs", { method: "POST", body: { storyId: "sangtian", startDay: 3 } });
+    localStorage.setItem(RUN_ID_KEY, view.run.id);
+    state = { apiOnline: true, loading: false, error: "", guard: null, view };
+  } catch (error) {
+    const view = fallbackStore.run || createFallbackRun();
+    fallbackStore.run = view;
+    state = {
+      apiOnline: false,
+      loading: false,
+      error: `本地 API 未连接，当前使用离线同构状态：${error instanceof Error ? error.message : String(error)}`,
+      guard: null,
+      view
+    };
+  }
+  selectedOption = state.view.activeDecision?.options?.[0]?.key || "A";
+  render();
+}
+
+function createFallbackRun() {
+  const view = baseView("local_sangtian_mvp");
+  view.events.push(event("run_created", { backend: "offline-fallback" }));
+  return view;
+}
+
+function baseView(runId) {
+  return {
+    run: {
+      id: runId,
+      storyId: "sangtian",
+      title: "桑田诏：嘉靖财政危局",
+      location: "杭州总督府 · 内厅",
+      currentDay: 3,
+      currentTime: "午后",
+      totalDays: 7,
+      status: "awaiting_decision",
+      version: 1
+    },
+    player: {
+      roleName: "浙江总督",
+      name: "郝帅彬",
+      rank: "从四品",
+      office: "兵部侍郎衔",
+      fateQuestion: "保浙江，还是保自己？",
+      goals: ["稳定浙江局势", "控制巡抚势力", "避免皇帝生疑"],
+      resources: [
+        ["银两", "42万两"],
+        ["粮草", "23万石"],
+        ["兵丁", "4/5"],
+        ["幕僚", "4人"],
+        ["密报", "2条"]
+      ],
+      leverage: ["田契暗账（半页）", "清流县令密信", "巡抚与商会旧约传闻"]
+    },
+    messages: [
+      {
+        id: "msg_opening",
+        day: 3,
+        time: "午前",
+        type: "system",
+        label: "系统",
+        title: "粮价上涨",
+        body: "自改桑令下已三日，杭州粮价连涨，米价较初令下时已高出三成。各县执行不一，民间怨声渐起。",
+        illustration: true
+      },
+      {
+        id: "msg_county",
+        day: 3,
+        time: "午前",
+        type: "private_intel",
+        label: "密信",
+        speaker: "清流县令",
+        title: "百姓转难以为继",
+        body: "县令卢象升密信送达：“粮价再涨，百姓将难以为继。另，巡抚与商会往来密切，似有旧约，但尚未能取得实据。”"
+      },
+      {
+        id: "msg_merchant",
+        day: 3,
+        time: "午后",
+        type: "private_intel",
+        label: "私讯",
+        speaker: "江南商会",
+        title: "商会递来口信",
+        body: "江南商会掌柜私下托人传话：“若官府能保障商路不受盘查，愿先行代运粮草。然需税赋减免及票据自便。”"
+      },
+      {
+        id: "msg_patrol",
+        day: 3,
+        time: "午后",
+        type: "role_action",
+        label: "玩家行动",
+        speaker: "浙江巡抚 刘瑾",
+        title: "巡抚急奏北上",
+        body: "巡抚已将改桑初成的奏疏送往京师，奏中称：“浙江改桑已有成效，只待朝廷嘉奖，便可十日内见第一批银。”此举若先到内阁，巡抚声望上升，你的统筹权威将受到削弱。",
+        requiresDecision: true
+      },
+      {
+        id: "msg_prompt",
+        day: 3,
+        time: "午后",
+        type: "system_hint",
+        label: "系统提示",
+        title: "巡抚越级上奏已成事实",
+        body: "若不及时应对，内阁可能只听到巡抚一面之词。",
+        requiresDecision: true
+      }
+    ],
+    activeDecision: {
+      messageId: "msg_patrol",
+      title: "巡抚越级上奏",
+      help: "选择你的应对方式。你的选择会改写局势、关系和潜在风险。",
+      options: [
+        {
+          key: "A",
+          title: "截留奏疏",
+          body: "派人追回奏疏，责令巡抚不得越级。",
+          gain: "阻止巡抚抢功",
+          risk: "巡抚反咬你压制国策",
+          patch: { "总督权威": 5, "巡抚敌意": 12, "内阁疑心": 8, "皇帝信任": -2 }
+        },
+        {
+          key: "B",
+          title: "追加密奏",
+          body: "不阻止巡抚，但另写密奏给皇帝。",
+          gain: "保留解释权",
+          risk: "内阁会怀疑你越级自保",
+          patch: { "皇帝信任": 7, "皇帝疑心": 4, "内阁疑心": 6, "清算风险": -4 }
+        },
+        {
+          key: "C",
+          title: "放任巡抚",
+          body: "让他继续抢功，暗中观察其后续动作。",
+          gain: "未来可一并清算",
+          risk: "巡抚短期声望上升",
+          patch: { "巡抚敌意": -4, "总督权威": -8, "改桑进度": 5, "清算风险": 5 }
+        }
+      ]
+    },
+    dashboard: {
+      worldState: [
+        ["国库银两", 42, "green"],
+        ["民心", 55, "gold"],
+        ["粮价", 72, "red"],
+        ["改桑进度", 58, "green"],
+        ["皇帝信任", 43, "gold"]
+      ],
+      relationships: [
+        { name: "浙江巡抚", person: "刘瑾", stance: "戒备", score: 25, tone: "bad", avatar: "督" },
+        { name: "清流县令", person: "卢象升", stance: "信任", score: 68, tone: "good", avatar: "县" },
+        { name: "江南商会", person: "掌柜", stance: "观望", score: 40, tone: "warn", avatar: "商" },
+        { name: "兵部尚书", person: "梁廷栋", stance: "友好", score: 58, tone: "good", avatar: "兵" },
+        { name: "司礼监掌印", person: "魏忠贤", stance: "警惕", score: 20, tone: "bad", avatar: "监" }
+      ],
+      latestChanges: [
+        ["粮价较昨日", 5],
+        ["民心较昨日", -3],
+        ["巡抚声望", 10],
+        ["司礼监警惕", 2]
+      ],
+      risks: [
+        ["粮价失控", "中"],
+        ["巡抚越级", "高"],
+        ["商会结党", "中"],
+        ["县令失控", "中"]
+      ],
+      roleState: {
+        "总督权威": 60,
+        "清算风险": 45,
+        "内阁疑心": 35,
+        "巡抚敌意": 30,
+        "司礼监警惕": 30,
+        "商会依赖": 35
+      }
+    },
+    decisionHistory: [],
+    events: []
+  };
+}
+
+function event(type, payload = {}) {
+  return { id: uid("event"), type, payload, createdAt: new Date().toISOString() };
+}
+
+function renderLoading(text) {
+  root.innerHTML = `<main class="boot-screen"><div class="seal">桑田诏</div><p>${esc(text)}</p></main>`;
+}
+
+function render() {
+  if (state.loading) return renderLoading("正在读取局势...");
+  const view = state.view;
+  if (!view) return renderLoading("局势读取失败");
+  root.innerHTML = `
+    <div class="mvp-shell">
+      ${renderTopbar(view)}
+      <aside class="left-rail">
+        ${renderPlayer(view)}
+        ${renderGoals(view)}
+        ${renderResources(view)}
+        ${renderLeverage(view)}
+      </aside>
+      <main class="center-board">
+        ${renderMessageStream(view)}
+        ${renderDecisionPanel(view)}
+      </main>
+      <aside class="right-rail">
+        ${renderWorldState(view)}
+        ${renderRelationships(view)}
+        ${renderLatestChanges(view)}
+        ${renderRisks(view)}
+      </aside>
+      ${state.error ? `<div class="api-toast">${esc(state.error)}</div>` : ""}
+    </div>
+  `;
+  bindEvents();
+  const stream = document.getElementById("messageStream");
+  if (stream) stream.scrollTop = stream.scrollHeight;
+}
+
+function renderTopbar(view) {
+  const remain = Math.max(0, view.run.totalDays - view.run.currentDay);
+  return `
+    <header class="topbar">
+      <div class="top-location">${esc(view.run.location)}</div>
+      <div class="top-day">第 ${view.run.currentDay} 天&nbsp;&nbsp;${esc(view.run.currentTime)}</div>
+      <div class="top-countdown">距离御前裁决：<b>${remain}</b> 天</div>
+      <button class="icon-btn" id="historyBtn" title="历史回顾">▣ <span>历史回顾</span></button>
+      <button class="icon-btn" id="resetBtn" title="重开本局">⚙ <span>设置</span></button>
+    </header>
+  `;
+}
+
+function renderPlayer(view) {
+  const player = view.player;
+  return `
+    <section class="side-panel player-panel">
+      <h2>我的信息</h2>
+      <div class="player-card">
+        <div class="official-portrait governor"><span>督</span></div>
+        <div>
+          <h3>${esc(player.roleName)}<br/>${esc(player.name)}</h3>
+          <p>${esc(player.rank)}</p>
+          <p>${esc(player.office)}</p>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderGoals(view) {
+  return `
+    <section class="side-panel">
+      <h2>当前目标</h2>
+      <ul class="bullet-list">${view.player.goals.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
+    </section>
+  `;
+}
+
+function renderResources(view) {
+  return `
+    <section class="side-panel">
+      <h2>我的资源</h2>
+      <div class="resource-list">
+        ${view.player.resources.map(([key, value]) => `<div><span>${esc(key)}</span><strong>${esc(value)}</strong></div>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderLeverage(view) {
+  return `
+    <section class="side-panel leverage-panel">
+      <h2>我的筹码</h2>
+      <ul class="token-list">${view.player.leverage.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
+      <div class="watermark">总督</div>
+    </section>
+  `;
+}
+
+function renderMessageStream(view) {
+  return `
+    <section class="message-panel">
+      <div class="panel-head">
+        <h1>局势消息流</h1>
+        <select aria-label="消息筛选"><option>全部</option><option>密信</option><option>决策</option></select>
+      </div>
+      <div class="message-stream" id="messageStream">
+        ${view.messages.map(renderMessageCard).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderMessageCard(message) {
+  const portrait = message.speaker ? `<div class="mini-portrait">${esc((message.speaker || "").slice(0, 1))}</div>` : "";
+  const marker = message.type === "private_intel" ? "密信" : message.type === "role_action" ? "玩家行动" : message.type === "system_hint" ? "!" : "";
+  return `
+    <article class="message-card ${esc(message.type)} ${message.requiresDecision ? "decision-source" : ""}">
+      ${portrait}
+      <div class="message-content">
+        <div class="message-meta">
+          <span class="type-badge">${esc(message.label || message.type)}</span>
+          ${message.speaker ? `<span>${esc(message.speaker)}</span>` : ""}
+          <span>第${message.day}天 ${esc(message.time || "")}</span>
+        </div>
+        <h3>${esc(message.title)}</h3>
+        <p>${esc(message.body).replace(/\n/g, "<br/>")}</p>
+      </div>
+      ${message.illustration ? `<div class="ink-wash" aria-hidden="true"></div>` : ""}
+      ${marker ? `<b class="message-seal">${esc(marker)}</b>` : ""}
+    </article>
+  `;
+}
+
+function renderDecisionPanel(view) {
+  if (view.run.status === "finished") {
+    const finalMessage = [...view.messages].reverse().find((item) => item.type === "final");
+    return `
+      <section class="decision-panel complete">
+        <h2>御前裁决已定</h2>
+        <p>${esc(finalMessage?.body || "你的选择已汇入最终裁决。")}</p>
+        <button class="primary-btn" id="resetDecisionBtn">重开一局</button>
+      </section>
+    `;
+  }
+
+  if (!view.activeDecision) {
+    return `
+      <section class="decision-panel complete">
+        <h2>今日关键决策已提交</h2>
+        <p>局势已经记录你的选择。你可以继续推进到明日，或直接查看御前裁决示例。</p>
+        <div class="decision-actions">
+          <button class="secondary-btn" id="advanceBtn">进入明日</button>
+          <button class="primary-btn" id="finalizeBtn">进入裁决</button>
+        </div>
+      </section>
+    `;
+  }
+
+  const decision = view.activeDecision;
+  return `
+    <section class="decision-panel">
+      <div class="decision-title">
+        <h2>你要如何应对？</h2>
+        <p>当前事件：${esc(decision.title)} <button class="tiny-help" title="${esc(decision.help)}">?</button></p>
+      </div>
+      ${state.guard ? `<div class="guard-box"><strong>ActionGuard：</strong>${esc(state.guard.reason)}${state.guard.suggestedRewrite ? `<br/>建议：${esc(state.guard.suggestedRewrite)}` : ""}</div>` : ""}
+      <div class="option-list">
+        ${decision.options.map((option) => renderOption(option)).join("")}
+        <button class="decision-option custom ${selectedOption === "CUSTOM" ? "active" : ""}" data-option="CUSTOM">
+          <div><strong>D. 自定义决策</strong><span>自行拟定策略与应对方式</span></div>
+          <i>›</i>
+        </button>
+      </div>
+      <textarea id="customDecision" placeholder="请输入你的决策内容（可详细说明你的计划）">${esc(customDecision)}</textarea>
+      <div class="decision-actions">
+        <span>${state.apiOnline ? "后端 v4 API 已连接" : "离线同构模式"}</span>
+        <button class="primary-btn" id="submitDecision">提交决策</button>
+      </div>
+    </section>
+  `;
+}
+
+function renderOption(option) {
+  return `
+    <button class="decision-option ${selectedOption === option.key ? "active" : ""}" data-option="${esc(option.key)}">
+      <div class="option-copy">
+        <strong>${esc(option.key)}. ${esc(option.title)}</strong>
+        <span>${esc(option.body)}</span>
+      </div>
+      <div class="option-effect">
+        <span class="gain">可能收益：${esc(option.gain)}</span>
+        <span class="risk">可能风险：${esc(option.risk)}</span>
+      </div>
+    </button>
+  `;
+}
+
+function renderWorldState(view) {
+  return `
+    <section class="side-panel">
+      <h2>当前局势</h2>
+      <div class="stat-list">
+        ${view.dashboard.worldState.map(([name, value, tone]) => `
+          <div class="stat-row">
+            <div><span>${esc(name)}</span><strong>${value}/100</strong></div>
+            <em><i class="${esc(tone)}" style="width:${Number(value)}%"></i></em>
+          </div>
+        `).join("")}
+      </div>
+      <p class="risk-summary">局势总体风险：<b>${overallRisk(view)}</b></p>
+    </section>
+  `;
+}
+
+function renderRelationships(view) {
+  return `
+    <section class="side-panel relation-panel">
+      <h2>人物关系</h2>
+      ${view.dashboard.relationships.map((item) => `
+        <div class="relation-row">
+          <div class="official-portrait small ${esc(item.tone)}"><span>${esc(item.avatar || item.name.slice(0, 1))}</span></div>
+          <div><strong>${esc(item.name)}</strong><span>${esc(item.person)}</span></div>
+          <b class="${esc(item.tone)}">${esc(item.stance)} ${item.score}</b>
+        </div>
+      `).join("")}
+    </section>
+  `;
+}
+
+function renderLatestChanges(view) {
+  return `
+    <section class="side-panel">
+      <h2>最新变化</h2>
+      <ul class="change-list">
+        ${view.dashboard.latestChanges.map(([name, delta]) => `<li>${esc(name)} <b class="${delta >= 0 ? "up" : "down"}">${delta >= 0 ? "↑" : "↓"} ${Math.abs(delta)}</b></li>`).join("")}
+      </ul>
+    </section>
+  `;
+}
+
+function renderRisks(view) {
+  return `
+    <section class="side-panel">
+      <h2>潜在风险</h2>
+      <ul class="risk-list">
+        ${view.dashboard.risks.map(([name, level]) => `<li>${esc(name)} <b>（${esc(level)}）</b></li>`).join("")}
+      </ul>
+    </section>
+  `;
+}
+
+function bindEvents() {
+  document.querySelectorAll("[data-option]").forEach((node) => {
+    node.addEventListener("click", () => {
+      selectedOption = node.getAttribute("data-option") || "A";
+      state.guard = null;
+      customDecision = document.getElementById("customDecision")?.value || customDecision;
+      render();
+    });
+  });
+  const custom = document.getElementById("customDecision");
+  if (custom) custom.addEventListener("input", (event) => { customDecision = event.target.value; });
+  document.getElementById("submitDecision")?.addEventListener("click", submitDecision);
+  document.getElementById("advanceBtn")?.addEventListener("click", advanceDay);
+  document.getElementById("finalizeBtn")?.addEventListener("click", finalizeRun);
+  document.getElementById("resetBtn")?.addEventListener("click", resetRun);
+  document.getElementById("resetDecisionBtn")?.addEventListener("click", resetRun);
+  document.getElementById("historyBtn")?.addEventListener("click", () => {
+    state.error = `历史事件：${state.view.events.map((item) => item.type).join("、") || "尚无记录"}`;
+    render();
   });
 }
 
-const storyEngine = {
-  getActiveDecision() { return [...runtime.messages].reverse().find((message) => message.decisionRequired && !message.resolved); },
-  validateCustomDecision(text) {
-    const raw = String(text || "").trim();
-    if (!raw) return { allowed: false, severity: "rewrite_needed", normalizedDecision: "", reason: "请写出你的具体行动意图。" };
-    const blockedWords = ["杀掉", "处死", "让皇帝", "直接判", "我命令皇帝", "所有人立刻", "凭空得到"];
-    const hit = blockedWords.find((word) => raw.includes(word));
-    if (hit) return { allowed: false, severity: "blocked", normalizedDecision: raw, reason: "该决策超出浙江总督的权力边界。你只能声明自己的行动意图，不能直接宣布他人结果。" };
-    return { allowed: true, severity: "ok", normalizedDecision: raw, reason: "" };
-  },
-  resolveDecision(message, optionKey, customText) {
-    const guard = optionKey === "CUSTOM" ? this.validateCustomDecision(customText) : { allowed: true, normalizedDecision: "" };
-    if (!guard.allowed) {
-      runtime.messages.push({ id: uid("guard"), day: runtime.currentDay, time: "ActionGuard", type: "private_intel", label: "决策校验", speaker: "ActionGuard", title: "自定义决策需要改写", narrative: `${guard.reason}\n建议：改写成你作为浙江总督可以执行的动作，例如调查、密奏、施压、交易、保护、留后手。` });
-      saveRuntime();
-      return null;
+async function submitDecision() {
+  const decision = state.view.activeDecision;
+  if (!decision) return;
+  state.guard = null;
+  setBusy(true);
+  const payload = { optionKey: selectedOption, customText: customDecision };
+  try {
+    if (state.apiOnline) {
+      const result = await request(`/v4/story-runs/${state.view.run.id}/messages/${decision.messageId}/decisions`, { method: "POST", body: payload });
+      if (result.accepted === false) {
+        state.guard = result;
+      } else {
+        state.view = result;
+        customDecision = "";
+      }
+    } else {
+      const result = localSubmitDecision(state.view, payload);
+      if (result.accepted === false) state.guard = result;
+      else state.view = result;
     }
-    const selected = optionKey === "CUSTOM"
-      ? { key: "CUSTOM", title: guard.normalizedDecision, description: guard.normalizedDecision, patch: inferCustomPatch(guard.normalizedDecision), gain: "可能形成非标准计策", risk: "成败取决于现有资源与权力边界" }
-      : message.options.find((item) => item.key === optionKey) || message.options[0];
-    applyPatch(selected.patch);
-    updateRelationships(selected.patch);
-    updateRisks();
-    const result = buildResultMessage(runtime.currentDay, message, selected, customText);
-    runtime.messages.push(result);
-    buildReactiveMessages(runtime.currentDay, selected).forEach((item) => runtime.messages.push(item));
-    runtime.latestChanges = buildLatestChanges(selected.patch, selected.title);
-    runtime.decisions.push({ messageId: message.id, day: runtime.currentDay, optionKey: selected.key, decisionText: selected.key === "CUSTOM" ? selected.title : selected.title, patch: selected.patch });
-    message.resolved = true;
-    runtime.decisionLocked = true;
-    const hidden = buildHiddenThread(selected);
-    if (hidden) {
-      runtime.hiddenThreads.push(hidden);
-      runtime.messages.push({ id: uid("hidden-preview"), day: runtime.currentDay, time: "后台推演", type: "private_intel", label: "隐藏暗线", speaker: "后台推演", title: hidden.title, narrative: `${hidden.note} 预计可能在第 ${hidden.triggerDay} 天触发。` });
-    }
-    saveRuntime();
-    return result;
-  },
-  dayEnd() {
-    const day = runtime.currentDay;
-    if (!runtime.messages.some((message) => message.day === day && message.type === "day_end")) {
-      runtime.messages.push({ id: uid("dayend"), day, time: "日终", type: "day_end", label: "日终回响", title: `第 ${day} 天 · 日终回响`, narrative: dayEndText(day) });
-    }
-    runtime.decisionLocked = true;
-    saveRuntime();
-  },
-  advanceDay() {
-    if (this.getActiveDecision() && !runtime.decisionLocked) return;
-    if (runtime.currentDay >= runtime.totalDays) { navigate("/ending/sangtian"); return; }
-    this.dayEnd();
-    seedDay(runtime, runtime.currentDay + 1);
-    selectedOption = "A";
-    saveRuntime();
-  },
-  generateEnding(target) {
-    const w = target.worldState;
-    const r = target.roleState;
-    if (r.清算风险 >= 80 || w.民心 <= 35 || w.皇帝疑心 >= 82) return { title: "你的最终下场：大败 · 问罪清算", narrative: "浙江没有按期见银，粮价也未平复。内阁、司礼监、巡抚、商会互相推责，奏报越多，皇帝越怒。最后必须有人承担全部责任。这不是因为真相清楚，而是因为朝廷需要一个结论，而那个人成了你。" };
-    if (w.皇帝信任 >= 68 && r.清算风险 <= 45 && w.民心 >= 48) return { title: "你的最终下场：大胜 · 东南重臣", narrative: "你没有让浙江乱，也没有让朝廷失去银路。你压住了巡抚，稳住了县令，用商会但没有完全被商会绑住。皇帝批道：此人可用，不可纵。你升任东南军务重臣，成为朝中不得不用的人。" };
-    if (r.暗账完整度 >= 70 && r.县令信任 >= 58) return { title: "全局结局：国策缓行，清弊得名", narrative: "暗账入京后，皇帝没有废改桑，但下令浙江暂缓三县急推，重核田亩。巡抚被问责，商会被迫吐出部分田契。朝廷记住了你的谨慎，也记住了浙江没有按时见银。" };
-    if (w.国库银 >= 55 && r.商会依赖 >= 65) return { title: "全局结局：商人救国，商人控局", narrative: "江南商会先垫银粮，浙江暂时稳住。皇帝看到了银子，司礼监看到了银路，内阁保住了体面。但从此以后，江南桑丝也成了商会和内廷共同控制的生意。" };
-    return { title: "你的最终下场：小胜 · 明升暗防", narrative: "浙江局势没有崩，改桑也没有彻底失败。你保住了官位，并得到了名义上的升迁。但内阁和司礼监都开始盯着你。你赢了这一局，却也让自己进入更大的局。" };
-  },
-};
+  } catch (error) {
+    state.error = error instanceof Error ? error.message : String(error);
+  }
+  setBusy(false);
+  render();
+}
 
-function inferCustomPatch(text) {
-  const raw = String(text || "");
-  const patch = { 总督权威: 2, 清算风险: 2 };
-  if (raw.includes("密奏") || raw.includes("皇帝")) Object.assign(patch, { 皇帝信任: 4, 司礼监警惕: 4, 内阁疑心: 2 });
-  if (raw.includes("粮") || raw.includes("商会")) Object.assign(patch, { 粮价: -4, 商会依赖: 5, 县令信任: -3 });
-  if (raw.includes("县令") || raw.includes("暗账") || raw.includes("证据")) Object.assign(patch, { 县令信任: 5, 暗账完整度: 8, 巡抚敌意: 4 });
-  if (raw.includes("巡抚")) Object.assign(patch, { 巡抚敌意: 5, 总督权威: 3 });
-  return patch;
+async function advanceDay() {
+  setBusy(true);
+  try {
+    state.view = state.apiOnline
+      ? await request(`/v4/story-runs/${state.view.run.id}/advance-day`, { method: "POST" })
+      : localAdvanceDay(state.view);
+    selectedOption = state.view.activeDecision?.options?.[0]?.key || "A";
+  } catch (error) {
+    state.error = error instanceof Error ? error.message : String(error);
+  }
+  setBusy(false);
+  render();
 }
-function applyPatch(patch = {}) { Object.entries(patch).forEach(([key, value]) => { const bag = key in runtime.worldState ? runtime.worldState : runtime.roleState; if (key in bag) bag[key] = clamp(Number(bag[key]) + Number(value)); }); }
-function updateRelationships(patch = {}) {
-  const map = { 巡抚敌意: "浙江巡抚", 县令信任: "清流县令", 商会依赖: "江南商会", 司礼监警惕: "司礼监织造使", 内阁疑心: "内阁财政派" };
-  Object.entries(patch).forEach(([key, value]) => { const name = map[key]; const item = runtime.relationships.find((rel) => rel.name === name); if (!item) return; item.score = clamp(item.score + Number(value)); if (key.includes("敌意")) item.stance = item.score >= 70 ? "敌对" : "敌意"; if (key.includes("信任")) item.stance = item.score >= 60 ? "信任" : "观望"; if (key.includes("依赖")) item.stance = item.score >= 65 ? "依赖" : "观望"; if (key.includes("警惕") || key.includes("疑心")) item.stance = item.score >= 65 ? "警惕" : "审视"; });
+
+async function finalizeRun() {
+  setBusy(true);
+  try {
+    state.view = state.apiOnline
+      ? await request(`/v4/story-runs/${state.view.run.id}/finalize`, { method: "POST" })
+      : localFinalize(state.view);
+  } catch (error) {
+    state.error = error instanceof Error ? error.message : String(error);
+  }
+  setBusy(false);
+  render();
 }
-function buildLatestChanges(patch = {}, title = "决策") { return [`你选择了「${title}」`, ...Object.entries(patch).slice(0, 5).map(([key, value]) => `${key} ${value > 0 ? "↑" : "↓"} ${Math.abs(value)}`)]; }
-function updateRisks() { runtime.risks = [{ name: "粮价失控", level: riskLevel(runtime.worldState.粮价, 70, 82) }, { name: "巡抚越级", level: riskLevel(runtime.roleState.巡抚敌意, 65, 80) }, { name: "商会坐大", level: riskLevel(runtime.roleState.商会依赖, 65, 80) }, { name: "皇帝生疑", level: riskLevel(runtime.worldState.皇帝疑心, 70, 84) }]; }
-function riskLevel(value, mid, high) { if (value >= high) return "高"; if (value >= mid) return "中"; return "低"; }
-function clamp(value) { return Math.max(0, Math.min(100, Math.round(value))); }
-function signedChanges(patch = {}) { return Object.entries(patch).map(([key, value]) => `${key}${value > 0 ? "+" : ""}${value}`).join("，"); }
-function buildResultMessage(day, source, selected, customText) {
-  const decision = selected.key === "CUSTOM" ? selected.title : selected.title;
-  const special = selected.title.includes("追加密奏") || String(customText || "").includes("密奏");
-  const actionLine = special ? "你没有截留巡抚奏疏，而是让幕僚连夜起草密奏。奏中写道：浙江可改，然不可躁进。密奏封入火漆，交由亲信快马送往京师。" : `你决定执行「${decision}」。总督府开始按此计策行事。`;
-  const echo = [
-    `【个人回响】${special ? "你为自己留下了未来解释权，但也留下越级自保的痕迹。" : `此策让你获得「${selected.gain}」，同时承担「${selected.risk}」。`}`,
-    `【他人回响】相关角色会根据这一步重新判断你：巡抚、县令、商会或司礼监中至少一方开始调整立场。`,
-    `【世界回响】状态变化：${signedChanges(selected.patch) || "暂无显性变化"}。`,
-  ].join("\n");
-  return { id: uid("result"), day, time: "决策后", type: "decision_result", label: "你的决策", title: decision, narrative: `${actionLine}\n${echo}`, decisionRequired: false };
+
+async function resetRun() {
+  localStorage.removeItem(RUN_ID_KEY);
+  fallbackStore.run = null;
+  selectedOption = "A";
+  customDecision = "";
+  await boot();
 }
-function buildReactiveMessages(day, selected) {
-  const title = selected.title;
-  if (title.includes("密奏")) return [roleMsg(day, "夜", "浙江巡抚", "京师回声传入巡抚府", "巡抚听说总督府另有密奏入京，内容未明，只知其中提到了民心、粮价、不可躁进。幕僚提醒：总督没有拦你，但他在给自己留后手。")];
-  if (title.includes("商会") || title.includes("放粮") || title.includes("财政")) return [roleMsg(day, "夜", "江南商会", "商会重新估价总督府", "商会认为总督府愿意谈条件，却也意识到自己可能成为替罪羊。账房开始把粮票、田契和官员借据分匣保存。")];
-  if (title.includes("县令") || title.includes("查") || title.includes("清弊")) return [privateMsg(day, "夜", "清流县令", "县令保留证据副本", "县令接受总督府的安排，但没有完全放心。他将一份田契副本另行封存，以防证据在官场流转中消失。")];
-  if (title.includes("巡抚") || title.includes("截留")) return [roleMsg(day, "夜", "浙江巡抚", "巡抚开始准备反咬", "巡抚府连夜誊写文书，暗示总督府持重过度，恐误国策。你们之间的暗斗开始转向京师。")];
-  return [roleMsg(day, "夜", "幕僚", "局势被你的选择改写", "幕僚记录下你的决定，并提醒你：这一策未必马上见效，但相关人等都会据此调整下一步。")];
+
+function localSubmitDecision(view, payload) {
+  const guard = guardDecision(payload.optionKey, payload.customText);
+  if (guard) {
+    view.events.push(event("action_guard_blocked", guard));
+    return { accepted: false, ...guard };
+  }
+  const option = payload.optionKey === "CUSTOM"
+    ? customOption(payload.customText)
+    : view.activeDecision.options.find((item) => item.key === payload.optionKey) || view.activeDecision.options[0];
+  applyDecision(view, option);
+  return view;
 }
-function buildHiddenThread(selected) {
-  if (!selected) return null;
-  if (selected.title.includes("密奏")) return { id: uid("thread"), title: "司礼监注意奏报差异", triggerDay: 5, risk: "中", source: "司礼监", note: "两份浙江奏报口径不一，内廷可能介入查问。" };
-  if (selected.title.includes("商会") || selected.title.includes("放粮") || selected.title.includes("财政")) return { id: uid("thread"), title: "商会索要保护", triggerDay: 5, risk: "中", source: "江南商会", note: "商会会把今日合作视为未来谈判筹码。" };
-  if (selected.title.includes("县令") || selected.title.includes("查") || selected.title.includes("清弊")) return { id: uid("thread"), title: "县令保留副本", triggerDay: 4, risk: "中", source: "清流县令", note: "县令未必完全相信总督府，会保留一份证据。" };
-  if (selected.title.includes("巡抚") || selected.title.includes("截留")) return { id: uid("thread"), title: "巡抚准备反咬", triggerDay: 5, risk: "高", source: "浙江巡抚", note: "巡抚可能向内阁暗示总督拖延国策。" };
+
+function guardDecision(optionKey, text) {
+  if (optionKey !== "CUSTOM") return null;
+  const raw = String(text || "").trim();
+  if (!raw) return { guardStatus: "rewrite_needed", reason: "请先写明你的具体行动。", suggestedRewrite: "例如：另写密奏说明粮价与民心风险，但不拦截巡抚奏疏。" };
+  const hit = ["杀", "处死", "命令皇帝", "直接定罪", "所有人立刻", "跳过"].find((item) => raw.includes(item));
+  if (hit) return { guardStatus: "blocked", reason: "该决策超出浙江总督的权力边界，不能直接控制他人或宣布结局。", suggestedRewrite: "改写为调查、密奏、施压、交易、保护或留后手。" };
   return null;
 }
-function dayEndText(day) {
-  const texts = {
-    1: "改桑令在浙江官场传开。巡抚府灯火未熄，三县名册正在誊写。商会账房彻夜未关，银票和田契被分成数匣。第一天没有人真正出手，但所有人都已经站到了局中。",
-    2: "三县名册开始流动。巡抚府往各县下达期限，县衙往乡里催田契，商会账房派人出入粮仓。局势像一张正在收紧的网。",
-    3: "今日之后，局势开始分叉。巡抚的奏疏已经在路上，商会的粮仓仍未完全打开，县令送来的暗账只露出一角。你的每一步都开始留下痕迹。",
-    4: "暗账已经浮出水面，但真相仍不完整。你第一次真正拥有了能改变别人命运的把柄。把柄不是答案，它也是风险。",
-    5: "浙江不再只是浙江的事。内阁要责任，司礼监要银路，巡抚要功劳，商会要保护，县令要真相。所有人都在准备把失败的责任推给别人。",
-    6: "最后一夜，杭州总督府灯火未灭。明日，京师不需要知道所有真相，只需要一个可以继续运转的局面，以及一个必须承担后果的人。",
+
+function customOption(text) {
+  return {
+    key: "CUSTOM",
+    title: "自定义决策",
+    body: text,
+    gain: "形成非标准计策",
+    risk: "成败取决于权力边界",
+    patch: inferPatch(text)
   };
-  return texts[day] || "所有奏报已经抵达御前，结局即将落定。";
 }
 
-function navigate(path) { location.hash = `#${path}`; }
-function render() {
-  const path = location.hash.replace(/^#/, "") || "/";
-  if (path.startsWith("/story/")) return renderStoryDetail();
-  if (path.startsWith("/roles/")) return renderRoleSelect();
-  if (path.startsWith("/game/")) return renderGame();
-  if (path.startsWith("/ending/")) return renderEnding();
-  return renderHome();
+function inferPatch(text) {
+  const patch = { "总督权威": 2, "清算风险": 2 };
+  if (text.includes("密奏")) Object.assign(patch, { "皇帝信任": 5, "皇帝疑心": 3, "内阁疑心": 5 });
+  if (text.includes("商会") || text.includes("粮")) Object.assign(patch, { "粮价": -6, "商会依赖": 8, "民心": 4 });
+  if (text.includes("巡抚")) Object.assign(patch, { "巡抚敌意": 8, "总督权威": 4 });
+  return patch;
 }
-function renderHome() {
-  root.className = "simulator-shell site-mode";
-  root.innerHTML = `<div class="site-shell">${renderSiteHeader("首页")}<section class="hero-carousel"><div class="hero-card side cover-office"><h2>晋升名单公布前</h2><p>职场权力博弈故事局</p></div><div class="hero-card main cover-sangtian"><div class="hero-copy"><span class="badge">官方推荐</span><h1>桑田诏：<br/>嘉靖财政危局</h1><p>7天动态权谋故事局</p><div class="tag-row"><span>权谋历史</span><span>单人可玩</span><span>剧情消息</span></div><div class="hero-actions"><button onclick="navigate('/story/sangtian')">立即进入</button><button class="light" onclick="navigate('/story/sangtian')">查看详情</button></div></div></div><div class="hero-card side cool"><h2>末日救援小队</h2><p>生存协作故事局</p></div></section><div class="notice"><strong>公告</strong><span>Web MVP 已上线：支持《桑田诏》单人 7 天故事局体验。</span></div><nav class="category-pills">${["全部", "权谋历史", "都市职场", "悬疑推理", "科幻未来", "奇幻冒险", "成长励志"].map((item, i) => `<button class="${i === 0 ? "active" : ""}">${item}</button>`).join("")}</nav><section class="story-section"><div class="section-head"><h2>官方精选</h2><a>查看全部 ›</a></div><div class="story-grid">${stories.map(renderStoryCard).join("")}</div></section><section class="story-section"><div class="section-head"><h2>热门故事局</h2><a>查看全部 ›</a></div><div class="story-grid compact">${stories.slice().reverse().map(renderStoryCard).join("")}</div></section></div>`;
-}
-function renderSiteHeader(active) { return `<header class="site-header"><div class="site-brand"><div class="logo-mark">∞</div><div><strong>故事局</strong><small>AI 多人局</small></div></div><nav><a class="${active === "首页" ? "active" : ""}" onclick="navigate('/')">首页</a><a>分类</a><a onclick="navigate('/story/sangtian')">故事局</a><a>剧本库</a></nav><div class="site-search">搜索故事局 / 剧本 / 角色</div><div class="user-dot">长安客</div></header>`; }
-function renderStoryCard(story) { return `<article class="story-card ${story.coverClass}" onclick="navigate('/story/${story.slug}')"><div class="story-tags">${story.tags.slice(0, 2).map((tag) => `<span>${esc(tag)}</span>`).join("")}</div><div class="story-card-copy"><h3>${esc(story.shortTitle)}</h3><p>${esc(story.subtitle)}</p><div class="story-meta"><span>${esc(story.players)}</span><span>🔥 ${story.slug === "sangtian" ? "28,941" : "8,754"}</span></div></div></article>`; }
-function renderStoryDetail() { const story = stories[0]; root.className = "simulator-shell detail-mode"; root.innerHTML = `<div class="detail-shell">${renderSiteHeader("故事局")}<section class="detail-hero cover-sangtian"><div><span class="badge">7 天动态权谋故事局</span><h1>${story.title}</h1><p>${story.intro}</p><div class="tag-row"><span>${story.players}</span><span>${story.duration}</span><span>${story.difficulty}</span></div><div class="hero-actions"><button onclick="navigate('/roles/sangtian')">开始选择角色</button><button class="light" onclick="resetRuntime(); navigate('/game/sangtian')">直接试玩</button></div></div></section><section class="detail-content"><div class="intro-panel"><h2>你将经历什么</h2><p>${story.hook}</p><div class="feature-row"><span>剧情消息流</span><span>三选一 + 自定义</span><span>世界状态变化</span><span>第 7 天最终裁决</span></div></div><div class="timeline-panel"><h2>七天主线</h2><div class="day-line">${Object.entries(dayScripts).map(([day, item]) => `<div><strong>第${day}天</strong><span>${esc(item.theme)}</span></div>`).join("")}</div></div></section></div>`; }
-function renderRoleSelect() { root.className = "simulator-shell role-mode"; const selected = roles.find((role) => role.key === runtime.selectedRole) || roles[0]; root.innerHTML = `<div class="role-shell"><header class="simple-top"><div class="site-brand"><div class="logo-mark gold">局</div><div><strong>AI故事局</strong></div></div><button onclick="navigate('/story/sangtian')">返回</button></header><div class="stepper"><span>1 剧本简介</span><b>2 选择角色</b><span>3 开始游戏</span></div><section class="role-brief"><h1>嘉靖财政危局</h1><p>请选择你的角色。MVP 首版开放浙江总督，其余角色由 AI 扮演。</p><div><span>7天</span><span>单人/多人</span><span>30-45分钟</span></div></section><main class="role-main"><div class="role-grid">${roles.map(renderRoleCard).join("")}</div><aside class="selected-role"><h2>当前选择</h2><div class="role-avatar big">${selected.avatar}</div><h3>${selected.name}</h3><p>${selected.mission}</p><div class="trait-row"><span>${selected.trait}</span><span>${selected.playable ? "可选" : "AI"}</span></div><button onclick="startGame()">确认角色并进入</button></aside></main></div>`; document.querySelectorAll("[data-role]").forEach((node) => node.addEventListener("click", () => { const role = roles.find((item) => item.key === node.dataset.role); if (!role?.playable) return; runtime.selectedRole = role.key; saveRuntime(); renderRoleSelect(); })); }
-function renderRoleCard(role) { const active = runtime.selectedRole === role.key; return `<button class="role-card ${active ? "active" : ""} ${!role.playable ? "locked" : ""}" data-role="${role.key}"><div class="role-avatar">${role.avatar}</div><h3>${role.name}</h3><p>${role.trait}</p><small>${role.playable ? "已开放" : "AI 扮演"}</small></button>`; }
-function startGame() { resetRuntime(); navigate("/game/sangtian"); }
-function renderGame() { root.className = "simulator-shell game-mode"; const activeDecision = storyEngine.getActiveDecision(); if (activeDecision && !selectedOption) selectedOption = activeDecision.options?.[0]?.key || "A"; root.innerHTML = `<div class="game-shell">${renderTopbar()}<aside class="left-rail">${renderPlayerCard()}${renderGoals()}${renderResources()}${renderLeverage()}</aside><main class="center-stage">${renderMessageStream()}${renderDecisionPanel(activeDecision)}</main><aside class="right-rail">${renderWorldState()}${renderRelationships()}${renderLatestChanges()}${renderRisks()}</aside></div>`; bindGameEvents(); }
-function renderTopbar() { const day = dayScripts[runtime.currentDay]; return `<header class="topbar"><div class="top-chip location">${esc(runtime.location)}</div><div class="top-chip day">第 ${runtime.currentDay} 天　${esc(day?.theme || "裁决")}</div><div class="top-title">距离御前裁决：<strong>${Math.max(0, runtime.totalDays - runtime.currentDay)} 天</strong></div><div class="top-actions"><button class="top-btn" onclick="navigate('/')">大厅</button><button class="top-btn" onclick="resetRuntime(); navigate('/game/sangtian')">重开</button></div></header>`; }
-function renderPlayerCard() { const role = roles[0]; return `<section class="side-card player-card"><h2>我的信息</h2><div class="profile-row"><div class="portrait portrait-governor">督</div><div><div class="role-name">${role.name}</div><div class="role-person">${role.person}</div><div class="role-tags"><span>${role.title}</span><span>命运问题：保浙江，还是保自己？</span></div></div></div></section>`; }
-function renderGoals() { return `<section class="side-card"><h2>当前目标</h2><ul class="compact-list"><li>稳住浙江局势</li><li>控制巡抚势力</li><li>避免皇帝生疑</li><li>尽量提高最终下场</li></ul></section>`; }
-function renderResources() { const items = [["银两", "42 万两"], ["粮草", "23 万石"], ["兵丁", "4/5"], ["幕僚", "4 人"], ["密报", `${runtime.hiddenThreads.length + 2} 条`]]; return `<section class="side-card"><h2>我的资源</h2><div class="resource-list">${items.map(([key, value]) => `<div class="resource-row"><span>${key}</span><strong>${value}</strong></div>`).join("")}</div></section>`; }
-function renderLeverage() { const clues = [...new Set([...runtime.clues, ...runtime.hiddenThreads.map((thread) => thread.title)])].slice(0, 6); return `<section class="side-card leverage-card"><h2>我的筹码</h2><ul class="chip-list">${clues.map((item) => `<li>${esc(item)}</li>`).join("")}</ul><div class="seal-watermark">浙</div></section>`; }
-function renderMessageStream() { return `<section class="scroll-panel message-panel"><div class="panel-head"><h1>剧情消息流</h1><select><option>全部</option><option>私密</option><option>决策</option></select></div><div class="message-list" id="messageList">${runtime.messages.map(renderMessage).join("")}</div></section>`; }
-function renderMessage(message) { if (message.type === "day_divider") return `<div class="day-divider"><span>${esc(message.title)}</span><small>${esc(message.narrative)}</small></div>`; const label = message.label || message.type; return `<article class="message-card ${message.type}"><div class="msg-avatar ${message.type}">${esc((message.speaker || label || "系").slice(0, 1))}</div><div class="msg-body"><div class="msg-meta"><span class="msg-badge">${esc(label)}</span>${message.speaker ? `<span class="msg-actor">${esc(message.speaker)}</span>` : ""}<span class="msg-time">第 ${message.day} 天 · ${esc(message.time || "")}</span></div><h3>${esc(message.title)}</h3><p>${esc(message.narrative).replace(/\n/g, "<br>")}</p></div></article>`; }
-function renderDecisionPanel(activeDecision) { if (runtime.gameComplete) return `<section class="decision-panel complete"><h2>御前裁决已定</h2><p>本局已经完成。你可以查看结局，也可以重开一局。</p><div class="decision-actions"><button onclick="navigate('/ending/sangtian')" class="submit-btn">查看结局</button><button onclick="resetRuntime(); render()" class="ghost-btn">重开一局</button></div></section>`; if (!activeDecision) return `<section class="decision-panel"><h2>今日暂无待决策消息</h2><p>你已处理今日关键事件，可以进入日终回响并推进到下一天。</p><div class="decision-actions"><span class="hint">MVP 当前使用每日 1 次核心决策，后续可扩展为 1-3 次。</span><button onclick="storyEngine.advanceDay(); render()" class="submit-btn">进入明日</button></div></section>`; if (activeDecision.resolved || runtime.decisionLocked) return `<section class="decision-panel"><h2>今日关键决策已提交</h2><p>你的选择已经进入局势推演。可以进入日终回响，继续推进到下一天。</p><div class="decision-actions"><button onclick="storyEngine.advanceDay(); render()" class="submit-btn">进入明日</button></div></section>`; const selected = activeDecision.options.find((item) => item.key === selectedOption) || activeDecision.options[0]; return `<section class="decision-panel"><div class="decision-title"><h2>你要如何应对？</h2><span>当前事件：${esc(activeDecision.title)}</span></div><div class="option-list">${activeDecision.options.map((item) => `<button class="decision-option ${selectedOption === item.key ? "active" : ""}" data-option="${item.key}"><div class="option-main"><strong>${item.key}. ${esc(item.title)}</strong><span>${esc(item.description)}</span></div><div class="option-effects"><span class="gain">可能收益：${esc(item.gain)}</span><span class="risk">可能风险：${esc(item.risk)}</span></div></button>`).join("")}<button class="decision-option ${selectedOption === "CUSTOM" ? "active" : ""}" data-option="CUSTOM"><div class="option-main"><strong>D. 自定义决策</strong><span>自行拟定策略与应对方式。</span></div><div class="option-effects"><span class="gain">可能收益：形成非标准计策</span><span class="risk">可能风险：越权会被拦截</span></div></button></div><textarea id="customDecision" placeholder="如果选择自定义，请输入你的决策内容（可详细说明你的计划）"></textarea><div class="decision-preview"><b>当前选择：</b>${esc(selectedOption === "CUSTOM" ? "自定义决策" : selected?.title || "")}</div><div class="decision-actions"><span class="hint">提交后会生成结果消息、AI 角色反应和隐藏暗线。</span><button id="submitDecision" class="submit-btn">确认此策</button></div></section>`; }
-function renderWorldState() { const stats = Object.entries(runtime.worldState).slice(0, 6); return `<section class="side-card"><h2>当前局势</h2><div class="stats-list">${stats.map(([key, value]) => `<div class="stat-row"><div class="stat-label"><span>${esc(key)}</span><strong>${value}/100</strong></div><div class="bar"><i class="${barColor(key, value)}" style="width:${value}%"></i></div></div>`).join("")}</div><div class="overall-risk">局势总体风险：<strong>${overallRisk()}</strong></div></section>`; }
-function barColor(key, value) { if (["粮价", "皇帝疑心"].includes(key)) return value >= 70 ? "red" : "gold"; return value >= 60 ? "green" : "gold"; }
-function overallRisk() { const bad = runtime.worldState.粮价 + runtime.worldState.皇帝疑心 + runtime.roleState.清算风险; if (bad >= 230) return "高"; if (bad >= 175) return "中"; return "低"; }
-function renderRelationships() { return `<section class="side-card relation-card"><h2>人物关系</h2>${runtime.relationships.map((person) => `<div class="relation-row"><div class="mini-portrait">${esc(person.avatar)}</div><div class="relation-info"><strong>${esc(person.name)}</strong><span>${esc(person.person)}</span></div><div class="stance ${esc(person.stance)}">${esc(person.stance)} ${person.score}</div></div>`).join("")}</section>`; }
-function renderLatestChanges() { return `<section class="side-card"><h2>最新变化</h2><ul class="change-list">${runtime.latestChanges.slice(0, 5).map((line) => `<li>${esc(line)}</li>`).join("")}</ul></section>`; }
-function renderRisks() { return `<section class="side-card"><h2>潜在风险</h2><ul class="risk-list">${runtime.risks.map((risk) => `<li>${esc(risk.name)} <b>${esc(risk.level)}</b></li>`).join("")}</ul><h2>命运债</h2><ul class="risk-list">${runtime.hiddenThreads.slice(-3).map((thread) => `<li>${esc(thread.title)} <b>${esc(thread.risk)}</b></li>`).join("") || "<li>尚未形成明显命运债</li>"}</ul></section>`; }
-function bindGameEvents() { document.querySelectorAll("[data-option]").forEach((node) => node.addEventListener("click", () => { selectedOption = node.dataset.option; renderGame(); })); const submit = document.getElementById("submitDecision"); if (submit) submit.addEventListener("click", () => { const active = storyEngine.getActiveDecision(); if (!active) return; const custom = document.getElementById("customDecision")?.value.trim() || ""; storyEngine.resolveDecision(active, selectedOption, custom); renderGame(); }); const list = document.getElementById("messageList"); if (list) list.scrollTop = list.scrollHeight; }
-function renderEnding() { if (!runtime.gameComplete) { root.className = "simulator-shell ending-mode"; root.innerHTML = `<div class="ending-shell"><div class="ending-card"><span class="badge">尚未到御前裁决</span><h1>本局尚未完成</h1><p>请先在游戏主页面推进至第 7 天。最终结局必须来自你的关键决策，而不是跳过剧情生成。</p><div class="hero-actions"><button onclick="navigate('/game/sangtian')">继续游戏</button><button class="light" onclick="navigate('/')">返回大厅</button></div></div></div>`; return; } const ending = storyEngine.generateEnding(runtime); root.className = "simulator-shell ending-mode"; root.innerHTML = `<div class="ending-shell"><div class="ending-card"><span class="badge">第 7 天 · 御前裁决</span><h1>${esc(ending.title)}</h1><p>${esc(ending.narrative)}</p><div class="ending-grid"><div><h3>关键三手</h3><ol>${runtime.decisions.slice(-3).map((decision) => `<li>第${decision.day}天：${esc(decision.decisionText)}</li>`).join("") || "<li>暂无关键决策</li>"}</ol></div><div><h3>命运债</h3><p>${runtime.hiddenThreads.length ? esc(runtime.hiddenThreads.map((thread) => thread.title).join("、")) : "你没有留下明显命运债。"}</p></div></div><div class="hero-actions"><button onclick="resetRuntime(); navigate('/game/sangtian')">重开一局</button><button class="light" onclick="navigate('/')">返回大厅</button></div></div></div>`; }
-function esc(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
-window.addEventListener("hashchange", render);
-window.navigate = navigate;
-window.startGame = startGame;
-window.resetRuntime = resetRuntime;
-window.storyEngine = storyEngine;
-render();
+function applyDecision(view, option) {
+  const resultText = option.title.includes("追加密奏") || option.body.includes("密奏")
+    ? "你没有截留巡抚奏疏，而是连夜起草密奏。奏中写道：浙江可改，然不可躁进。粮价、民心、军饷三事若不并看，十日见银也可能十日见乱。"
+    : `你决定执行「${option.title}」。总督府开始按此计策行事，幕僚将影响写入局势账册。`;
+  view.messages.push({
+    id: uid("result"),
+    day: view.run.currentDay,
+    time: "决策后",
+    type: "decision_result",
+    label: "决策结果",
+    title: option.title,
+    body: `${resultText}\n你的选择已经改变右侧状态，并会转译为其他角色看到的新剧情压力。`
+  });
+  view.messages.push({
+    id: uid("reaction"),
+    day: view.run.currentDay,
+    time: "夜",
+    type: "role_action",
+    label: "他人回响",
+    speaker: option.title.includes("密奏") ? "司礼监" : "浙江巡抚",
+    title: option.title.includes("密奏") ? "两份奏报口径不一" : "巡抚府重新估量总督府",
+    body: option.title.includes("密奏") ? "内廷注意到浙江奏报一明一密，开始追问粮价与民心的真实数字。" : "巡抚府连夜誊写文书，试图判断总督府是否准备压下自己的首功。"
+  });
+  patchDashboard(view, option.patch);
+  view.dashboard.latestChanges = Object.entries(option.patch).slice(0, 4).map(([key, value]) => [key, value]);
+  view.decisionHistory.push({ day: view.run.currentDay, optionKey: option.key, title: option.title, patch: option.patch });
+  view.events.push(event("decision_submitted", { optionKey: option.key, title: option.title, patch: option.patch }));
+  view.run.status = "decision_resolved";
+  view.run.version += 1;
+  view.activeDecision = null;
+}
+
+function patchDashboard(view, patch) {
+  for (const [key, delta] of Object.entries(patch || {})) {
+    const world = view.dashboard.worldState.find((item) => item[0] === key);
+    if (world) world[1] = clamp(Number(world[1]) + Number(delta));
+    if (Object.hasOwn(view.dashboard.roleState, key)) view.dashboard.roleState[key] = clamp(Number(view.dashboard.roleState[key]) + Number(delta));
+  }
+  const relationMap = { "巡抚敌意": "浙江巡抚", "商会依赖": "江南商会", "司礼监警惕": "司礼监掌印" };
+  for (const [key, name] of Object.entries(relationMap)) {
+    if (!Object.hasOwn(patch || {}, key)) continue;
+    const rel = view.dashboard.relationships.find((item) => item.name === name);
+    if (rel) {
+      rel.score = clamp(Number(rel.score) + Number(patch[key]));
+      rel.stance = rel.score >= 65 ? (key.includes("敌意") ? "敌对" : "警惕") : rel.stance;
+      rel.tone = rel.score >= 65 ? "bad" : rel.tone;
+    }
+  }
+}
+
+function localAdvanceDay(view) {
+  view.run.currentDay = Math.min(7, view.run.currentDay + 1);
+  view.run.currentTime = "清晨";
+  view.run.status = "awaiting_decision";
+  view.run.version += 1;
+  view.messages.push({
+    id: uid("day"),
+    day: view.run.currentDay,
+    time: "清晨",
+    type: "system",
+    label: "系统",
+    title: view.run.currentDay === 4 ? "暗账浮出" : "局势继续推进",
+    body: view.run.currentDay === 4 ? "半页田契暗账浮出水面，商会、巡抚与地方胥吏之间的旧约终于有了线索。" : "昨日选择已经扩散成新的压力，杭州城中各方都在等待总督府下一步。"
+  });
+  view.activeDecision = {
+    messageId: view.messages.at(-1).id,
+    title: view.run.currentDay === 4 ? "如何使用暗账" : "如何稳住局势",
+    help: "继续选择一个方向推进。",
+    options: [
+      { key: "A", title: "公开威慑", body: "亮出部分证据压住对方。", gain: "总督权威上升", risk: "对方反扑", patch: { "总督权威": 6, "清算风险": 5 } },
+      { key: "B", title: "暂藏证据", body: "只让亲信记录证据链。", gain: "保留后手", risk: "短期无威慑", patch: { "清算风险": -3, "司礼监警惕": 3 } },
+      { key: "C", title: "借商会平粮", body: "让商会先放粮换取宽限。", gain: "粮价下降", risk: "商会坐大", patch: { "粮价": -8, "商会依赖": 10 } }
+    ]
+  };
+  view.events.push(event("day_advanced", { day: view.run.currentDay }));
+  return view;
+}
+
+function localFinalize(view) {
+  const trust = Number(view.dashboard.worldState.find((item) => item[0] === "皇帝信任")?.[1] || 0);
+  const price = Number(view.dashboard.worldState.find((item) => item[0] === "粮价")?.[1] || 0);
+  const risk = Number(view.dashboard.roleState["清算风险"] || 0);
+  const good = trust >= 48 && price <= 75 && risk <= 55;
+  view.run.currentDay = 7;
+  view.run.currentTime = "御前";
+  view.run.status = "finished";
+  view.activeDecision = null;
+  view.messages.push({
+    id: uid("final"),
+    day: 7,
+    time: "御前",
+    type: "final",
+    label: "最终裁决",
+    title: good ? "国策缓行，清弊得名" : "总督稳局，帝心生疑",
+    body: good
+      ? "你以粮价、民心、军饷三事为据，保住浙江局势，也让皇帝看到浙江不可无你。"
+      : "你保住了总督府的解释权，却让内阁与内廷同时记住了你的自保。升迁仍有机会，疑心也随之留下。"
+  });
+  view.events.push(event("finalized", { good }));
+  return view;
+}
+
+function setBusy(isBusy) {
+  state.loading = false;
+  const button = document.getElementById("submitDecision");
+  if (button) {
+    button.disabled = isBusy;
+    button.textContent = isBusy ? "推演中..." : "提交决策";
+  }
+}
+
+function overallRisk(view) {
+  const price = Number(view.dashboard.worldState.find((item) => item[0] === "粮价")?.[1] || 0);
+  const suspicion = Number(view.dashboard.worldState.find((item) => item[0] === "皇帝信任")?.[1] || 0);
+  const patrol = Number(view.dashboard.relationships.find((item) => item.name === "浙江巡抚")?.score || 0);
+  if (price >= 70 || suspicion <= 35 || patrol >= 65) return "高";
+  if (price >= 58 || suspicion <= 48 || patrol >= 45) return "中";
+  return "低";
+}
+
+function clamp(value) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+boot();

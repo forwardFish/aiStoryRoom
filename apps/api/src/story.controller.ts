@@ -51,6 +51,45 @@ export class StoryController {
     return this.story.template(templateId);
   }
 
+  @Post("v4/story-runs")
+  createMvpRun(@Body() body: Record<string, unknown>) {
+    return this.story.createMvpRun(body);
+  }
+
+  @Get("v4/story-runs/:runId")
+  getMvpRun(@Param("runId") runId: string) {
+    return this.story.getMvpRun(runId);
+  }
+
+  @Get("v4/story-runs/:runId/messages")
+  getMvpMessages(@Param("runId") runId: string) {
+    return this.story.getMvpMessages(runId);
+  }
+
+  @Get("v4/story-runs/:runId/dashboard")
+  getMvpDashboard(@Param("runId") runId: string) {
+    return this.story.getMvpDashboard(runId);
+  }
+
+  @Post("v4/story-runs/:runId/messages/:messageId/decisions")
+  submitMvpDecision(
+    @Param("runId") runId: string,
+    @Param("messageId") messageId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.story.submitMvpDecision(runId, messageId, body);
+  }
+
+  @Post("v4/story-runs/:runId/advance-day")
+  advanceMvpDay(@Param("runId") runId: string) {
+    return this.story.advanceMvpDay(runId);
+  }
+
+  @Post("v4/story-runs/:runId/finalize")
+  finalizeMvpRun(@Param("runId") runId: string) {
+    return this.story.finalizeMvpRun(runId);
+  }
+
   @Post("story-runs")
   createRun(@Headers() headers: Record<string, string | undefined>, @Body() body: CreateStoryRunInput) {
     return this.story.createRun(this.openid(headers), body);
