@@ -1,0 +1,100 @@
+/* v1.1 可见因果 / 因果账本前台展示 */
+.fate-question {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(201, 154, 83, 0.24);
+  border-radius: 6px;
+  background: rgba(201, 154, 83, 0.08);
+  color: #e8ca8d;
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+.causal-panel,
+.causal-overlay-panel {
+  border-color: rgba(242, 216, 150, 0.34) !important;
+  background:
+    linear-gradient(180deg, rgba(47, 36, 19, 0.97), rgba(19, 18, 13, 0.97)),
+    repeating-linear-gradient(120deg, rgba(255,255,255,0.025), rgba(255,255,255,0.025) 1px, transparent 1px, transparent 8px) !important;
+}
+
+.causal-overlay-panel.empty p,
+.causal-overlay-panel p,
+.recall-overlay-panel p,
+.trace-overlay-panel li {
+  color: #dec89a;
+  line-height: 1.65;
+}
+
+.causal-overlay-panel h3 {
+  margin: 0 0 10px;
+  color: #f2d896;
+  font-size: 17px;
+}
+
+.causal-summary {
+  margin: 0 0 12px;
+  color: #e1c28e;
+  line-height: 1.65;
+}
+
+.causal-overlay-panel dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.causal-overlay-panel dt {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(201, 154, 83, 0.16);
+  color: #f2d896;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.causal-overlay-panel dd {
+  margin: -4px 0 0;
+  color: #dbc28e;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.message-card.causal_visible {
+  background: linear-gradient(180deg, rgba(249, 235, 202, 0.96), rgba(228, 204, 161, 0.94));
+  border-color: rgba(163, 101, 36, 0.4);
+}
+
+.message-card.causal_recall {
+  background: linear-gradient(180deg, rgba(239, 218, 185, 0.94), rgba(207, 177, 132, 0.94));
+  border-color: rgba(137, 54, 38, 0.36);
+}
+
+.causal_visible .type-badge,
+.causal_recall .type-badge {
+  background: #7b4f24;
+}
+
+.trace-overlay-panel .token-list li::before {
+  content: "痕";
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border: 1px solid rgba(201, 154, 83, 0.5);
+  border-radius: 50%;
+  color: #f2d896;
+  font-size: 12px;
+}
+
+.causal-overlay-badge {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 4px 8px;
+  border: 1px solid rgba(201, 154, 83, 0.35);
+  border-radius: 999px;
+  color: #f2d896;
+  font-size: 12px;
+}
