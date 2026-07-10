@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import {
   buildCrossImpacts,
   buildEchoes,
@@ -14,112 +14,49 @@ import {
 } from "@ai-story/shared";
 import { getTemplate, midnightStoreTemplate } from "@ai-story/templates";
 import { PrismaService } from "./prisma.service";
+import { MvpStoryEngine } from "./mvp-causal-runtime";
+import { FileMvpStoryStorage } from "./mvp-storage";
+import { createConfiguredMvpNarrativeProvider } from "./mvp-narrative-provider";
 
 type JsonValue = Record<string, unknown> | unknown[];
 
 @Injectable()
 export class StoryService {
-  private readonly mvpRuns = new Map<string, any>();
+  private readonly mvpStory: MvpStoryEngine;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
+    this.mvpStory = new MvpStoryEngine(
+      new FileMvpStoryStorage(),
+      createConfiguredMvpNarrativeProvider()
+    );
+  }
 
   createMvpRun(input: Record<string, unknown>) {
-    const view: any = this.buildMvpView(`mvp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`);
-    if (Number(input.startDay) && Number(input.startDay) !== 3) view.run.currentDay = Number(input.startDay);
-    this.mvpRuns.set(view.run.id, view);
-    view.events.push(this.mvpEvent("run_created", { storyId: input.storyId || "sangtian" }));
-    return view;
+    return this.mvpStory.create(input);
   }
 
   getMvpRun(runId: string) {
-    return this.ensureMvpRun(runId);
+    return this.mvpStory.get(runId);
   }
 
   getMvpMessages(runId: string) {
-    const view = this.ensureMvpRun(runId);
-    return {
-      run: view.run,
-      messages: view.messages,
-      activeDecision: view.activeDecision,
-      dashboard: view.dashboard,
-      decisionHistory: view.decisionHistory
-    };
+    return this.mvpStory.get(runId);
   }
 
-  getMvpDashboard(runId: string) {
-    return this.ensureMvpRun(runId).dashboard;
+  async getMvpDashboard(runId: string) {
+    return (await this.mvpStory.get(runId)).dashboard;
   }
 
   submitMvpDecision(runId: string, messageId: string, input: Record<string, unknown>) {
-    const view = this.ensureMvpRun(runId);
-    if (!view.activeDecision || view.activeDecision.messageId !== messageId) {
-      throw new BadRequestException("message is not awaiting decision");
-    }
-    const optionKey = String(input.optionKey || "A");
-    const customText = String(input.customText || "");
-    const guard = this.guardMvpDecision(optionKey, customText);
-    if (guard) {
-      view.events.push(this.mvpEvent("action_guard_blocked", { messageId, optionKey, guardStatus: guard.guardStatus }));
-      return guard;
-    }
-    const option = optionKey === "CUSTOM"
-      ? this.customMvpOption(customText)
-      : view.activeDecision.options.find((item: any) => item.key === optionKey) || view.activeDecision.options[0];
-    this.applyMvpDecision(view, option);
-    return view;
+    return this.mvpStory.submitDecision(runId, messageId, input as any);
   }
 
-  advanceMvpDay(runId: string) {
-    const view = this.ensureMvpRun(runId);
-    view.run.currentDay = Math.min(7, Number(view.run.currentDay) + 1);
-    view.run.currentTime = "清晨";
-    view.run.status = "awaiting_decision";
-    view.run.version += 1;
-    view.messages.push({
-      id: this.mvpId("msg"),
-      day: view.run.currentDay,
-      time: "清晨",
-      type: "system",
-      label: "系统",
-      title: view.run.currentDay === 4 ? "暗账浮出" : "局势继续推进",
-      body: view.run.currentDay === 4 ? "半页田契暗账浮出水面，商会、巡抚与地方胥吏之间的旧约终于有了线索。" : "昨日选择已经扩散成新的压力，杭州城中各方都在等待总督府下一步。"
-    });
-    const latest = view.messages[view.messages.length - 1];
-    view.activeDecision = {
-      messageId: latest.id,
-      title: view.run.currentDay === 4 ? "如何使用暗账" : "如何稳住局势",
-      help: "继续选择一个方向推进。",
-      options: [
-        { key: "A", title: "公开威慑", body: "亮出部分证据压住对方。", gain: "总督权威上升", risk: "对方反扑", patch: { "总督权威": 6, "清算风险": 5 } },
-        { key: "B", title: "暂藏证据", body: "只让亲信记录证据链。", gain: "保留后手", risk: "短期无威慑", patch: { "清算风险": -3, "司礼监警惕": 3 } },
-        { key: "C", title: "借商会平粮", body: "让商会先放粮换取宽限。", gain: "粮价下降", risk: "商会坐大", patch: { "粮价": -8, "商会依赖": 10 } }
-      ]
-    };
-    view.events.push(this.mvpEvent("day_advanced", { day: view.run.currentDay }));
-    return view;
+  advanceMvpDay(runId: string, input: Record<string, unknown>) {
+    return this.mvpStory.advanceDay(runId, input as any);
   }
 
-  finalizeMvpRun(runId: string) {
-    const view = this.ensureMvpRun(runId);
-    const trust = Number(view.dashboard.worldState.find((item: any[]) => item[0] === "皇帝信任")?.[1] || 0);
-    const price = Number(view.dashboard.worldState.find((item: any[]) => item[0] === "粮价")?.[1] || 0);
-    const risk = Number(view.dashboard.roleState["清算风险"] || 0);
-    const good = trust >= 48 && price <= 75 && risk <= 55;
-    view.run.currentDay = 7;
-    view.run.currentTime = "御前";
-    view.run.status = "finished";
-    view.activeDecision = null;
-    view.messages.push({
-      id: this.mvpId("msg"),
-      day: 7,
-      time: "御前",
-      type: "final",
-      label: "最终裁决",
-      title: good ? "国策缓行，清弊得名" : "总督稳局，帝心生疑",
-      body: good ? "你以粮价、民心、军饷三事为据，保住浙江局势，也让皇帝看到浙江不可无你。" : "你保住了总督府的解释权，却让内阁与内廷同时记住了你的自保。升迁仍有机会，疑心也随之留下。"
-    });
-    view.events.push(this.mvpEvent("finalized", { good }));
-    return view;
+  finalizeMvpRun(runId: string, input: Record<string, unknown>) {
+    return this.mvpStory.finalize(runId, input as any);
   }
 
   async login(input: MockLoginInput) {
@@ -849,134 +786,6 @@ export class StoryService {
       this.prisma.playerAction.findMany({ where: { OR: [{ guardStatus: { not: "ok" } }, { auditStatus: { not: "ok" } }] }, include: { role: true }, orderBy: { createdAt: "desc" }, take: 30 })
     ]);
     return { blockedAudits, guardEvents, rejectedActions };
-  }
-
-  private ensureMvpRun(runId: string) {
-    const view = this.mvpRuns.get(runId);
-    if (!view) throw new NotFoundException("mvp story run not found");
-    return view;
-  }
-
-  private buildMvpView(runId: string) {
-    return {
-      run: {
-        id: runId,
-        storyId: "sangtian",
-        title: "桑田诏：嘉靖财政危局",
-        location: "杭州总督府 · 内厅",
-        currentDay: 3,
-        currentTime: "午后",
-        totalDays: 7,
-        status: "awaiting_decision",
-        version: 1
-      },
-      player: {
-        roleName: "浙江总督",
-        name: "郝帅彬",
-        rank: "从四品",
-        office: "兵部侍郎衔",
-        fateQuestion: "保浙江，还是保自己？",
-        goals: ["稳定浙江局势", "控制巡抚势力", "避免皇帝生疑"],
-        resources: [["银两", "42万两"], ["粮草", "23万石"], ["兵丁", "4/5"], ["幕僚", "4人"], ["密报", "2条"]],
-        leverage: ["田契暗账（半页）", "清流县令密信", "巡抚与商会旧约传闻"]
-      },
-      messages: [
-        { id: "msg_opening", day: 3, time: "午前", type: "system", label: "系统", title: "粮价上涨", body: "自改桑令下已三日，杭州粮价连涨，米价较初令下时已高出三成。各县执行不一，民间怨声渐起。", illustration: true },
-        { id: "msg_county", day: 3, time: "午前", type: "private_intel", label: "密信", speaker: "清流县令", title: "百姓转难以为继", body: "县令卢象升密信送达：“粮价再涨，百姓将难以为继。另，巡抚与商会往来密切，似有旧约，但尚未能取得实据。”" },
-        { id: "msg_merchant", day: 3, time: "午后", type: "private_intel", label: "私讯", speaker: "江南商会", title: "商会递来口信", body: "江南商会掌柜私下托人传话：“若官府能保障商路不受盘查，愿先行代运粮草。然需税赋减免及票据自便。”" },
-        { id: "msg_patrol", day: 3, time: "午后", type: "role_action", label: "玩家行动", speaker: "浙江巡抚 刘瑾", title: "巡抚急奏北上", body: "巡抚已将改桑初成的奏疏送往京师，奏中称：“浙江改桑已有成效，只待朝廷嘉奖，便可十日内见第一批银。”此举若先到内阁，巡抚声望上升，你的统筹权威将受到削弱。", requiresDecision: true },
-        { id: "msg_prompt", day: 3, time: "午后", type: "system_hint", label: "系统提示", title: "巡抚越级上奏已成事实", body: "若不及时应对，内阁可能只听到巡抚一面之词。", requiresDecision: true }
-      ],
-      activeDecision: {
-        messageId: "msg_patrol",
-        title: "巡抚越级上奏",
-        help: "选择你的应对方式。你的选择会改写局势、关系和潜在风险。",
-        options: [
-          { key: "A", title: "截留奏疏", body: "派人追回奏疏，责令巡抚不得越级。", gain: "阻止巡抚抢功", risk: "巡抚反咬你压制国策", patch: { "总督权威": 5, "巡抚敌意": 12, "内阁疑心": 8, "皇帝信任": -2 } },
-          { key: "B", title: "追加密奏", body: "不阻止巡抚，但另写密奏给皇帝。", gain: "保留解释权", risk: "内阁会怀疑你越级自保", patch: { "皇帝信任": 7, "皇帝疑心": 4, "内阁疑心": 6, "清算风险": -4 } },
-          { key: "C", title: "放任巡抚", body: "让他继续抢功，暗中观察其后续动作。", gain: "未来可一并清算", risk: "巡抚短期声望上升", patch: { "巡抚敌意": -4, "总督权威": -8, "改桑进度": 5, "清算风险": 5 } }
-        ]
-      },
-      dashboard: {
-        worldState: [["国库银两", 42, "green"], ["民心", 55, "gold"], ["粮价", 72, "red"], ["改桑进度", 58, "green"], ["皇帝信任", 43, "gold"]],
-        relationships: [
-          { name: "浙江巡抚", person: "刘瑾", stance: "戒备", score: 25, tone: "bad", avatar: "督" },
-          { name: "清流县令", person: "卢象升", stance: "信任", score: 68, tone: "good", avatar: "县" },
-          { name: "江南商会", person: "掌柜", stance: "观望", score: 40, tone: "warn", avatar: "商" },
-          { name: "兵部尚书", person: "梁廷栋", stance: "友好", score: 58, tone: "good", avatar: "兵" },
-          { name: "司礼监掌印", person: "魏忠贤", stance: "警惕", score: 20, tone: "bad", avatar: "监" }
-        ],
-        latestChanges: [["粮价较昨日", 5], ["民心较昨日", -3], ["巡抚声望", 10], ["司礼监警惕", 2]],
-        risks: [["粮价失控", "中"], ["巡抚越级", "高"], ["商会结党", "中"], ["县令失控", "中"]],
-        roleState: { "总督权威": 60, "清算风险": 45, "内阁疑心": 35, "巡抚敌意": 30, "司礼监警惕": 30, "商会依赖": 35 }
-      },
-      decisionHistory: [],
-      events: []
-    };
-  }
-
-  private mvpId(prefix: string) {
-    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 8)}`;
-  }
-
-  private mvpEvent(type: string, payload: Record<string, unknown> = {}) {
-    return { id: this.mvpId("event"), type, payload, createdAt: new Date().toISOString() };
-  }
-
-  private guardMvpDecision(optionKey: string, customText: string) {
-    if (optionKey !== "CUSTOM") return null;
-    const raw = String(customText || "").trim();
-    if (!raw) return { accepted: false, guardStatus: "rewrite_needed", reason: "请先写明你的具体行动。", suggestedRewrite: "例如：另写密奏说明粮价与民心风险，但不拦截巡抚奏疏。" };
-    if (/(杀|处死|命令皇帝|直接定罪|所有人立刻|跳过)/.test(raw)) {
-      return { accepted: false, guardStatus: "blocked", reason: "该决策超出浙江总督的权力边界，不能直接控制他人或宣布结局。", suggestedRewrite: "改写为调查、密奏、施压、交易、保护或留后手。" };
-    }
-    return null;
-  }
-
-  private customMvpOption(text: string) {
-    const patch: Record<string, number> = { "总督权威": 2, "清算风险": 2 };
-    if (text.includes("密奏")) Object.assign(patch, { "皇帝信任": 5, "皇帝疑心": 3, "内阁疑心": 5 });
-    if (text.includes("商会") || text.includes("粮")) Object.assign(patch, { "粮价": -6, "商会依赖": 8, "民心": 4 });
-    if (text.includes("巡抚")) Object.assign(patch, { "巡抚敌意": 8, "总督权威": 4 });
-    return { key: "CUSTOM", title: "自定义决策", body: text, gain: "形成非标准计策", risk: "成败取决于权力边界", patch };
-  }
-
-  private applyMvpDecision(view: any, option: any) {
-    const special = String(option.title).includes("追加密奏") || String(option.body).includes("密奏");
-    const resultText = special
-      ? "你没有截留巡抚奏疏，而是连夜起草密奏。奏中写道：浙江可改，然不可躁进。粮价、民心、军饷三事若不并看，十日见银也可能十日见乱。"
-      : `你决定执行「${option.title}」。总督府开始按此计策行事，幕僚将影响写入局势账册。`;
-    view.messages.push({ id: this.mvpId("msg"), day: view.run.currentDay, time: "决策后", type: "decision_result", label: "决策结果", title: option.title, body: `${resultText}\n你的选择已经改变右侧状态，并会转译为其他角色看到的新剧情压力。` });
-    view.messages.push({ id: this.mvpId("msg"), day: view.run.currentDay, time: "夜", type: "role_action", label: "他人回响", speaker: special ? "司礼监" : "浙江巡抚", title: special ? "两份奏报口径不一" : "巡抚府重新估量总督府", body: special ? "内廷注意到浙江奏报一明一密，开始追问粮价与民心的真实数字。" : "巡抚府连夜誊写文书，试图判断总督府是否准备压下自己的首功。" });
-    this.patchMvpDashboard(view, option.patch || {});
-    view.dashboard.latestChanges = Object.entries(option.patch || {}).slice(0, 4).map(([key, value]) => [key, value]);
-    view.decisionHistory.push({ day: view.run.currentDay, optionKey: option.key, title: option.title, patch: option.patch });
-    view.events.push(this.mvpEvent("decision_submitted", { optionKey: option.key, title: option.title, patch: option.patch }));
-    view.run.status = "decision_resolved";
-    view.run.version += 1;
-    view.activeDecision = null;
-  }
-
-  private patchMvpDashboard(view: any, patch: Record<string, number>) {
-    const clamp = (value: unknown) => Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-    for (const [key, delta] of Object.entries(patch || {})) {
-      const stat = view.dashboard.worldState.find((item: any[]) => item[0] === key);
-      if (stat) stat[1] = clamp(Number(stat[1]) + Number(delta));
-      if (Object.prototype.hasOwnProperty.call(view.dashboard.roleState, key)) {
-        view.dashboard.roleState[key] = clamp(Number(view.dashboard.roleState[key]) + Number(delta));
-      }
-    }
-    const relationMap: Record<string, string> = { "巡抚敌意": "浙江巡抚", "商会依赖": "江南商会", "司礼监警惕": "司礼监掌印" };
-    for (const [key, name] of Object.entries(relationMap)) {
-      if (!Object.prototype.hasOwnProperty.call(patch || {}, key)) continue;
-      const rel = view.dashboard.relationships.find((item: any) => item.name === name);
-      if (!rel) continue;
-      rel.score = clamp(Number(rel.score) + Number(patch[key]));
-      if (rel.score >= 65) {
-        rel.stance = key.includes("敌意") ? "敌对" : "警惕";
-        rel.tone = "bad";
-      }
-    }
   }
 
   private async ensureUser(openid: string) {

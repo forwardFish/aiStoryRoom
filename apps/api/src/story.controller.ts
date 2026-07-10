@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Headers, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Inject, Param, Post } from "@nestjs/common";
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
 import { StoryService } from "./story.service";
 
 @Controller()
 export class StoryController {
-  constructor(private readonly story: StoryService) {}
+  constructor(@Inject(StoryService) private readonly story: StoryService) {}
 
   @Get()
   index() {
@@ -81,13 +81,13 @@ export class StoryController {
   }
 
   @Post("v4/story-runs/:runId/advance-day")
-  advanceMvpDay(@Param("runId") runId: string) {
-    return this.story.advanceMvpDay(runId);
+  advanceMvpDay(@Param("runId") runId: string, @Body() body: Record<string, unknown>) {
+    return this.story.advanceMvpDay(runId, body);
   }
 
   @Post("v4/story-runs/:runId/finalize")
-  finalizeMvpRun(@Param("runId") runId: string) {
-    return this.story.finalizeMvpRun(runId);
+  finalizeMvpRun(@Param("runId") runId: string, @Body() body: Record<string, unknown>) {
+    return this.story.finalizeMvpRun(runId, body);
   }
 
   @Post("story-runs")
@@ -208,7 +208,6 @@ export class StoryController {
     return this.story.shareChapter(this.openid(headers), chapterId);
   }
 
-
   @Get("notifications")
   notifications(@Headers() headers: Record<string, string | undefined>) {
     return this.story.notifications(this.openid(headers));
@@ -238,7 +237,6 @@ export class StoryController {
   adminStoryRun(@Param("runId") runId: string) {
     return this.story.adminStoryRun(runId);
   }
-
 
   @Get("admin/roles")
   adminRoles() {

@@ -1,742 +1,630 @@
-const root = document.getElementById("app");
+import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js";
 
-const API_BASE_KEY = "ai-story-room-api-base";
-const RUN_ID_KEY = "ai-story-room-sangtian-run-id";
-const DEFAULT_API_BASE = "http://localhost:3001/api";
+const DAY_DECISIONS = 2;
+const FINAL_DAY = 7;
 
-let selectedOption = "A";
-let customDecision = "";
-let state = {
-  apiOnline: false,
-  loading: true,
-  error: "",
-  guard: null,
-  view: null
-};
+export function createStoryApp({
+  root,
+  window: browserWindow = globalThis.window,
+  storage = new ApiStoryStorage({
+    baseUrl: defaultApiBase(browserWindow?.location),
+    fetchImpl: browserWindow?.fetch?.bind(browserWindow),
+    localStorage: browserWindow?.localStorage
+  }),
+  debugBuild = globalThis.__AI_STORY_DEBUG_BUILD__ === true
+} = {}) {
+  if (!root) throw new TypeError("createStoryApp requires a root element");
 
-const fallbackStore = {
-  run: null
-};
-
-function apiBase() {
-  const fromQuery = new URLSearchParams(window.location.search).get("apiBase");
-  if (fromQuery) {
-    localStorage.setItem(API_BASE_KEY, fromQuery);
-    return fromQuery;
-  }
-  return localStorage.getItem(API_BASE_KEY) || DEFAULT_API_BASE;
-}
-
-function uid(prefix) {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 8)}`;
-}
-
-async function request(path, options = {}) {
-  const response = await fetch(`${apiBase()}${path}`, {
-    method: options.method || "GET",
-    headers: { "content-type": "application/json", "x-mock-openid": "mock_openid_sangtian_owner" },
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.message || `HTTP ${response.status}`);
-  return payload;
-}
-
-async function boot() {
-  root.className = "mvp-root";
-  renderLoading("正在打开杭州总督府内厅...");
-  if (new URLSearchParams(window.location.search).get("reset") === "1") {
-    localStorage.removeItem(RUN_ID_KEY);
-  }
-  const runId = localStorage.getItem(RUN_ID_KEY);
-  try {
-    const view = runId
-      ? await request(`/v4/story-runs/${runId}`)
-      : await request("/v4/story-runs", { method: "POST", body: { storyId: "sangtian", startDay: 3 } });
-    localStorage.setItem(RUN_ID_KEY, view.run.id);
-    state = { apiOnline: true, loading: false, error: "", guard: null, view };
-  } catch (error) {
-    const view = fallbackStore.run || createFallbackRun();
-    fallbackStore.run = view;
-    state = {
-      apiOnline: false,
-      loading: false,
-      error: `本地 API 未连接，当前使用离线同构状态：${error instanceof Error ? error.message : String(error)}`,
-      guard: null,
-      view
-    };
-  }
-  selectedOption = state.view.activeDecision?.options?.[0]?.key || "A";
-  render();
-}
-
-function createFallbackRun() {
-  const view = baseView("local_sangtian_mvp");
-  view.events.push(event("run_created", { backend: "offline-fallback" }));
-  return view;
-}
-
-function baseView(runId) {
-  return {
-    run: {
-      id: runId,
-      storyId: "sangtian",
-      title: "桑田诏：嘉靖财政危局",
-      location: "杭州总督府 · 内厅",
-      currentDay: 3,
-      currentTime: "午后",
-      totalDays: 7,
-      status: "awaiting_decision",
-      version: 1
-    },
-    player: {
-      roleName: "浙江总督",
-      name: "郝帅彬",
-      rank: "从四品",
-      office: "兵部侍郎衔",
-      fateQuestion: "保浙江，还是保自己？",
-      goals: ["稳定浙江局势", "控制巡抚势力", "避免皇帝生疑"],
-      resources: [
-        ["银两", "42万两"],
-        ["粮草", "23万石"],
-        ["兵丁", "4/5"],
-        ["幕僚", "4人"],
-        ["密报", "2条"]
-      ],
-      leverage: ["田契暗账（半页）", "清流县令密信", "巡抚与商会旧约传闻"]
-    },
-    messages: [
-      {
-        id: "msg_opening",
-        day: 3,
-        time: "午前",
-        type: "system",
-        label: "系统",
-        title: "粮价上涨",
-        body: "自改桑令下已三日，杭州粮价连涨，米价较初令下时已高出三成。各县执行不一，民间怨声渐起。",
-        illustration: true
-      },
-      {
-        id: "msg_county",
-        day: 3,
-        time: "午前",
-        type: "private_intel",
-        label: "密信",
-        speaker: "清流县令",
-        title: "百姓转难以为继",
-        body: "县令卢象升密信送达：“粮价再涨，百姓将难以为继。另，巡抚与商会往来密切，似有旧约，但尚未能取得实据。”"
-      },
-      {
-        id: "msg_merchant",
-        day: 3,
-        time: "午后",
-        type: "private_intel",
-        label: "私讯",
-        speaker: "江南商会",
-        title: "商会递来口信",
-        body: "江南商会掌柜私下托人传话：“若官府能保障商路不受盘查，愿先行代运粮草。然需税赋减免及票据自便。”"
-      },
-      {
-        id: "msg_patrol",
-        day: 3,
-        time: "午后",
-        type: "role_action",
-        label: "玩家行动",
-        speaker: "浙江巡抚 刘瑾",
-        title: "巡抚急奏北上",
-        body: "巡抚已将改桑初成的奏疏送往京师，奏中称：“浙江改桑已有成效，只待朝廷嘉奖，便可十日内见第一批银。”此举若先到内阁，巡抚声望上升，你的统筹权威将受到削弱。",
-        requiresDecision: true
-      },
-      {
-        id: "msg_prompt",
-        day: 3,
-        time: "午后",
-        type: "system_hint",
-        label: "系统提示",
-        title: "巡抚越级上奏已成事实",
-        body: "若不及时应对，内阁可能只听到巡抚一面之词。",
-        requiresDecision: true
-      }
-    ],
-    activeDecision: {
-      messageId: "msg_patrol",
-      title: "巡抚越级上奏",
-      help: "选择你的应对方式。你的选择会改写局势、关系和潜在风险。",
-      options: [
-        {
-          key: "A",
-          title: "截留奏疏",
-          body: "派人追回奏疏，责令巡抚不得越级。",
-          gain: "阻止巡抚抢功",
-          risk: "巡抚反咬你压制国策",
-          patch: { "总督权威": 5, "巡抚敌意": 12, "内阁疑心": 8, "皇帝信任": -2 }
-        },
-        {
-          key: "B",
-          title: "追加密奏",
-          body: "不阻止巡抚，但另写密奏给皇帝。",
-          gain: "保留解释权",
-          risk: "内阁会怀疑你越级自保",
-          patch: { "皇帝信任": 7, "皇帝疑心": 4, "内阁疑心": 6, "清算风险": -4 }
-        },
-        {
-          key: "C",
-          title: "放任巡抚",
-          body: "让他继续抢功，暗中观察其后续动作。",
-          gain: "未来可一并清算",
-          risk: "巡抚短期声望上升",
-          patch: { "巡抚敌意": -4, "总督权威": -8, "改桑进度": 5, "清算风险": 5 }
-        }
-      ]
-    },
-    dashboard: {
-      worldState: [
-        ["国库银两", 42, "green"],
-        ["民心", 55, "gold"],
-        ["粮价", 72, "red"],
-        ["改桑进度", 58, "green"],
-        ["皇帝信任", 43, "gold"]
-      ],
-      relationships: [
-        { name: "浙江巡抚", person: "刘瑾", stance: "戒备", score: 25, tone: "bad", avatar: "督" },
-        { name: "清流县令", person: "卢象升", stance: "信任", score: 68, tone: "good", avatar: "县" },
-        { name: "江南商会", person: "掌柜", stance: "观望", score: 40, tone: "warn", avatar: "商" },
-        { name: "兵部尚书", person: "梁廷栋", stance: "友好", score: 58, tone: "good", avatar: "兵" },
-        { name: "司礼监掌印", person: "魏忠贤", stance: "警惕", score: 20, tone: "bad", avatar: "监" }
-      ],
-      latestChanges: [
-        ["粮价较昨日", 5],
-        ["民心较昨日", -3],
-        ["巡抚声望", 10],
-        ["司礼监警惕", 2]
-      ],
-      risks: [
-        ["粮价失控", "中"],
-        ["巡抚越级", "高"],
-        ["商会结党", "中"],
-        ["县令失控", "中"]
-      ],
-      roleState: {
-        "总督权威": 60,
-        "清算风险": 45,
-        "内阁疑心": 35,
-        "巡抚敌意": 30,
-        "司礼监警惕": 30,
-        "商会依赖": 35
-      }
-    },
-    decisionHistory: [],
-    events: []
+  const state = {
+    loading: true,
+    busy: false,
+    error: "",
+    notice: "",
+    guard: null,
+    view: null,
+    selectedOption: "A",
+    customText: "",
+    historyOpen: false,
+    debugBuild: debugBuild === true
   };
-}
 
-function event(type, payload = {}) {
-  return { id: uid("event"), type, payload, createdAt: new Date().toISOString() };
+  async function boot() {
+    state.loading = true;
+    state.error = "";
+    render();
+    try {
+      acceptView(await storage.restoreOrCreate());
+    } catch (error) {
+      state.error = errorMessage(error);
+    } finally {
+      state.loading = false;
+      render();
+    }
+  }
+
+  async function retry() {
+    await boot();
+  }
+
+  async function refresh({ conflict = false } = {}) {
+    if (!state.view?.run?.id && !storage.savedRunId) return boot();
+    state.busy = true;
+    state.error = "";
+    render();
+    try {
+      acceptView(await storage.getRun(state.view?.run?.id || storage.savedRunId));
+      state.notice = conflict ? "局势已被其他请求更新，已为你刷新到最新版本。请重新确认这一步。" : "局势已刷新。";
+    } catch (error) {
+      state.error = errorMessage(error);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
+  async function submitDecision() {
+    const decision = state.view?.activeDecision;
+    if (!decision || state.busy) return;
+    const selected = root.querySelector('input[name="decision"]:checked')?.value || state.selectedOption || "A";
+    const customText = root.querySelector("#customDecision")?.value.trim() || state.customText.trim();
+    state.selectedOption = selected;
+    state.customText = customText;
+    state.guard = null;
+    state.error = "";
+    state.notice = "";
+    state.busy = true;
+    render();
+
+    try {
+      const result = await storage.submitDecision(state.view, {
+        messageId: decision.messageId,
+        optionKey: selected,
+        customText
+      });
+      if (result.accepted === false) {
+        state.guard = {
+          reason: result.reason || "这一步暂时无法执行，请调整行动方式。",
+          suggestedRewrite: result.suggestedRewrite || ""
+        };
+      } else {
+        acceptView(result);
+        state.notice = "决策已落账。它会改变其他角色接下来看到的局势。";
+      }
+    } catch (error) {
+      if (isVersionConflict(error)) {
+        state.busy = false;
+        await refresh({ conflict: true });
+        return;
+      }
+      state.error = errorMessage(error);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
+  async function advanceDay() {
+    if (!canAdvance(state.view) || state.busy) return;
+    await mutate((view) => storage.advanceDay(view), "新一天的局势已经展开。");
+  }
+
+  async function finalize() {
+    if (!canFinalize(state.view) || state.busy) return;
+    await mutate((view) => storage.finalize(view), "御前裁决已经落定。");
+  }
+
+  async function resetRun() {
+    if (state.busy) return;
+    if (browserWindow?.confirm && !browserWindow.confirm("确定重开《桑田诏》吗？当前故事局仍会保留在服务端。")) return;
+    state.busy = true;
+    state.error = "";
+    state.notice = "";
+    state.guard = null;
+    render();
+    try {
+      acceptView(await storage.createRun());
+      state.notice = "新故事局已创建。";
+    } catch (error) {
+      state.error = errorMessage(error);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
+  async function mutate(operation, successNotice) {
+    state.busy = true;
+    state.error = "";
+    state.notice = "";
+    render();
+    try {
+      acceptView(await operation(state.view));
+      state.notice = successNotice;
+    } catch (error) {
+      if (isVersionConflict(error)) {
+        state.busy = false;
+        await refresh({ conflict: true });
+        return;
+      }
+      state.error = errorMessage(error);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
+  function acceptView(view) {
+    state.view = view;
+    state.guard = null;
+    state.selectedOption = view.activeDecision?.options?.[0]?.key || "A";
+    state.customText = "";
+  }
+
+  function render() {
+    root.className = "causal-player-root";
+    if (state.loading) {
+      root.innerHTML = renderLoading("正在读取总督府局势……");
+      return;
+    }
+    if (!state.view) {
+      root.innerHTML = renderFatalError(state.error || "暂时无法读取故事局。", state.busy);
+      bindEvents();
+      return;
+    }
+
+    const view = state.view;
+    root.innerHTML = `
+      <div class="causal-shell" data-testid="story-shell">
+        ${renderTopbar(view, state)}
+        <aside class="causal-left" aria-label="玩家信息">
+          ${renderPlayer(view.player)}
+          ${renderDayMission(view)}
+          ${renderResources(view.player)}
+          ${renderLeverage(view.player)}
+        </aside>
+        <main class="causal-center">
+          ${renderMessageStream(view.messages)}
+          ${renderDecisionZone(view, state)}
+        </main>
+        <aside class="causal-right" aria-label="局势与因果">
+          ${renderWorldState(view.dashboard)}
+          ${renderVisibleCausal(view)}
+          ${renderCausalRecalls(view)}
+          ${renderTraces(view.dashboard)}
+          ${renderRelationships(view.dashboard)}
+          ${renderRisks(view.dashboard)}
+          ${renderPublicRoleInferences(view)}
+          ${state.debugBuild ? renderBuildDiagnostics(view) : ""}
+        </aside>
+        ${state.historyOpen ? renderHistory(view.decisionHistory) : ""}
+        ${state.error ? renderBanner("error", state.error) : ""}
+        ${!state.error && state.notice ? renderBanner("notice", state.notice) : ""}
+      </div>`;
+    bindEvents();
+    const stream = root.querySelector("#messageStream");
+    if (stream && !state.historyOpen) stream.scrollTop = stream.scrollHeight;
+  }
+
+  function bindEvents() {
+    root.querySelector("#retryBtn")?.addEventListener("click", retry);
+    root.querySelector("#refreshBtn")?.addEventListener("click", () => refresh());
+    root.querySelector("#submitDecision")?.addEventListener("click", submitDecision);
+    root.querySelector("#advanceBtn")?.addEventListener("click", advanceDay);
+    root.querySelector("#finalizeBtn")?.addEventListener("click", finalize);
+    root.querySelector("#resetBtn")?.addEventListener("click", resetRun);
+    root.querySelector("#resetDecisionBtn")?.addEventListener("click", resetRun);
+    root.querySelector("#historyBtn")?.addEventListener("click", () => {
+      state.historyOpen = true;
+      render();
+    });
+    root.querySelector("#closeHistoryBtn")?.addEventListener("click", () => {
+      state.historyOpen = false;
+      render();
+    });
+    root.querySelectorAll('input[name="decision"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.selectedOption = input.value;
+        root.querySelector("#customDecision")?.toggleAttribute("disabled", input.value !== "CUSTOM");
+      });
+    });
+    root.querySelector("#customDecision")?.addEventListener("input", (event) => {
+      state.customText = event.target.value;
+    });
+  }
+
+  return {
+    boot,
+    refresh,
+    submitDecision,
+    advanceDay,
+    finalize,
+    resetRun,
+    render,
+    getState: () => state
+  };
 }
 
 function renderLoading(text) {
-  root.innerHTML = `<main class="boot-screen"><div class="seal">桑田诏</div><p>${esc(text)}</p></main>`;
+  return `<section class="boot-screen" data-testid="loading"><div class="seal">桑田诏</div><p>${esc(text)}</p></section>`;
 }
 
-function render() {
-  if (state.loading) return renderLoading("正在读取局势...");
-  const view = state.view;
-  if (!view) return renderLoading("局势读取失败");
-  root.innerHTML = `
-    <div class="mvp-shell">
-      ${renderTopbar(view)}
-      <aside class="left-rail">
-        ${renderPlayer(view)}
-        ${renderGoals(view)}
-        ${renderResources(view)}
-        ${renderLeverage(view)}
-      </aside>
-      <main class="center-board">
-        ${renderMessageStream(view)}
-        ${renderDecisionPanel(view)}
-      </main>
-      <aside class="right-rail">
-        ${renderWorldState(view)}
-        ${renderRelationships(view)}
-        ${renderLatestChanges(view)}
-        ${renderRisks(view)}
-      </aside>
-      ${state.error ? `<div class="api-toast">${esc(state.error)}</div>` : ""}
+function renderFatalError(message, busy) {
+  return `<section class="boot-screen boot-error" data-testid="fatal-error"><div class="seal">桑田诏</div><h1>剧情服务暂不可用</h1><p>${esc(message)}</p><div class="boot-actions"><button id="retryBtn" ${busy ? "disabled" : ""}>重新连接</button><button id="resetBtn" ${busy ? "disabled" : ""}>明确重开新局</button></div><small>本页面不会用本地预制剧情冒充服务端推演，也不会在恢复失败时静默替换故事局。</small></section>`;
+}
+
+function renderTopbar(view, state) {
+  const run = view.run;
+  const remaining = Math.max(0, Number(run.totalDays || FINAL_DAY) - Number(run.currentDay));
+  return `<header class="causal-topbar">
+    <div><b>${esc(run.title || "桑田诏：嘉靖财政危局")}</b><span>${esc(run.location || "杭州总督府")}</span></div>
+    <div>第 ${number(run.currentDay)} 天 · ${esc(run.currentTime || "局势推演中")}</div>
+    <div>${Number(run.currentDay) >= FINAL_DAY ? "御前裁决之日" : `距离御前裁决 <b>${remaining}</b> 天`}</div>
+    <div class="top-actions"><button id="historyBtn" type="button">回顾</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>重开</button></div>
+  </header>`;
+}
+
+function renderPlayer(player = {}) {
+  const goals = array(player.goals);
+  return `<section class="causal-panel player">
+    <h2>我的身份</h2>
+    <div class="portrait" aria-hidden="true">督</div>
+    <h3>${esc(player.roleName || "浙江总督")}</h3>
+    <p>${esc([player.name, player.rank, player.office].filter(Boolean).join(" · "))}</p>
+    ${player.fateQuestion ? `<em>${esc(player.fateQuestion)}</em>` : ""}
+    ${goals.length ? `<h4>本局目标</h4><ul>${goals.map((goal) => `<li>${esc(goal)}</li>`).join("")}</ul>` : ""}
+  </section>`;
+}
+
+function renderDayMission(view) {
+  const progress = dayProgress(view);
+  if (Number(view.run.currentDay) >= FINAL_DAY) {
+    return `<section class="causal-panel day-mission"><h2>第七日</h2><p>今日不再新增决策。此前十二次选择，将在御前被重新串成一条因果链。</p></section>`;
+  }
+  return `<section class="causal-panel day-mission">
+    <h2>今日关键决策</h2>
+    <div class="decision-progress" data-testid="day-progress"><b>${progress.completed}</b><span>/ ${progress.required}</span></div>
+    <p>每天严格两次关键决策。两次都落账后，才能进入下一天。</p>
+  </section>`;
+}
+
+function renderResources(player = {}) {
+  const resources = array(player.resources);
+  return `<section class="causal-panel"><h2>我的资源</h2>${resources.length
+    ? resources.map((item) => {
+        const [key, value] = Array.isArray(item) ? item : [item?.name || item?.key, item?.value];
+        return `<div class="kv"><span>${esc(key)}</span><b>${esc(value)}</b></div>`;
+      }).join("")
+    : `<p>暂无可公开资源。</p>`}</section>`;
+}
+
+function renderLeverage(player = {}) {
+  const leverage = array(player.leverage);
+  return `<section class="causal-panel"><h2>我的筹码</h2>${leverage.length ? `<ul>${leverage.map((item) => `<li>${esc(typeof item === "string" ? item : item?.title)}</li>`).join("")}</ul>` : `<p>尚未获得可用筹码。</p>`}</section>`;
+}
+
+function renderMessageStream(messages = []) {
+  const visibleMessages = array(messages).filter(isPublicMessage);
+  return `<section class="stream-panel">
+    <div class="stream-head"><div><h1>局势消息流</h1><p>每个角色的行动，都会变成你必须应对的新压力。</p></div><span>${visibleMessages.length} 条局势</span></div>
+    <div class="causal-stream" id="messageStream" aria-live="polite">${visibleMessages.map(renderMessage).join("")}</div>
+  </section>`;
+}
+
+function renderMessage(message) {
+  const causal = message.causalCard ? renderMiniCausal(message.causalCard) : "";
+  return `<article class="story-card ${className(message.type)}" data-message-id="${esc(message.id)}">
+    <div class="meta"><b>${esc(message.label || labelForType(message.type))}</b>${message.speaker ? `<span>${esc(message.speaker)}</span>` : ""}<span>第${number(message.day)}天 ${esc(message.time)}</span></div>
+    <h3>${esc(message.title)}</h3>
+    ${causal || `<p>${lineBreaks(message.body)}</p>`}
+  </article>`;
+}
+
+function renderMiniCausal(card = {}) {
+  return `<div class="mini-causal">
+    ${card.decisionSummary ? `<p>${esc(card.decisionSummary)}</p>` : ""}
+    <dl>
+      ${definition("个人回响", card.personalEcho)}
+      ${definition("他人回响", publicEchoes(card.othersEcho).join("；"))}
+      ${definition("世界回响", card.worldEcho)}
+      ${definition("留下痕迹", array(card.tracesLeft).join("、"))}
+    </dl>
+  </div>`;
+}
+
+function renderDecisionZone(view, state) {
+  const run = view.run;
+  if (run.status === "finished") return renderFinalJudgement(view);
+
+  const progress = dayProgress(view);
+  if (view.activeDecision) {
+    const decision = view.activeDecision;
+    const options = array(decision.options).filter((option) => /^[A-Z]$/.test(option?.key || ""));
+    const selected = state.selectedOption === "CUSTOM" || options.some((option) => option.key === state.selectedOption) ? state.selectedOption : options[0]?.key;
+    const customLabel = nextOptionLabel(options);
+    return `<section class="decision-zone" data-testid="decision-zone">
+      <div class="decision-zone-head"><div><h2>第 ${progress.completed + 1} 个关键决策</h2><p>${esc(decision.title)}</p></div><span>${progress.completed + 1} / ${progress.required}</span></div>
+      ${decision.help ? `<p class="decision-help">${esc(decision.help)}</p>` : ""}
+      <div class="options">${options.map((option) => renderOption(option, option.key === selected)).join("")}
+        <label class="option-card custom"><input type="radio" name="decision" value="CUSTOM" ${selected === "CUSTOM" ? "checked" : ""}/><b>${esc(customLabel)}. 自定义决策</b><span>你可以拟定自己的策略，系统会先校验身份、资源、时代与当前阶段。</span></label>
+      </div>
+      <textarea id="customDecision" ${selected === "CUSTOM" ? "" : "disabled"} maxlength="500" placeholder="例如：不拦巡抚急奏，但另写密奏，并请县令整理粮价证据。">${esc(state.customText)}</textarea>
+      ${state.guard ? `<div class="guard-result" data-testid="guard-error"><b>这一步暂时无法执行</b><p>${esc(state.guard.reason)}</p>${state.guard.suggestedRewrite ? `<p>可改为：${esc(state.guard.suggestedRewrite)}</p>` : ""}</div>` : ""}
+      <div class="actions"><span>确认后会写入因果账本，无法撤回。</span><button id="submitDecision" type="button" ${state.busy || options.length === 0 ? "disabled" : ""}>${state.busy ? "正在推演……" : "确认此策"}</button></div>
+    </section>`;
+  }
+
+  if (canAdvance(view)) {
+    return `<section class="decision-zone complete" data-testid="day-complete">
+      ${renderDaySummary(latestDaySummary(view))}
+      <div class="day-next"><div><h2>今日两次决策均已落账</h2><p>日终回响已经生成。进入下一天后，旧选择可能在新条件下带来帮助或反噬。</p></div><button id="advanceBtn" type="button" ${state.busy ? "disabled" : ""}>${state.busy ? "正在推演……" : "进入下一天"}</button></div>
+    </section>`;
+  }
+
+  if (canFinalize(view)) {
+    return `<section class="decision-zone final-ready" data-testid="final-ready"><div><h2>十二次选择，等待御前裁决</h2><p>第七日不再新增决策。皇帝会依据证据、责任、角色定性与世界局势作出最终判断。</p></div><button id="finalizeBtn" type="button" ${state.busy ? "disabled" : ""}>${state.busy ? "正在裁决……" : "进入御前裁决"}</button></section>`;
+  }
+
+  return `<section class="decision-zone complete"><div class="day-next"><div><h2>正在等待下一段局势</h2><p>当前服务端没有返回可执行决策。刷新可重新读取最新 StoryRun。</p></div><button id="refreshBtn" type="button" ${state.busy ? "disabled" : ""}>刷新局势</button></div></section>`;
+}
+
+function renderOption(option, checked) {
+  return `<label class="option-card"><input type="radio" name="decision" value="${esc(option.key)}" ${checked ? "checked" : ""}/><b>${esc(option.key)}. ${esc(option.title)}</b><span>${esc(option.body)}</span><small>收益：${esc(option.gain || "局势变化")}${option.risk ? ` ｜ 风险：${esc(option.risk)}` : ""}</small></label>`;
+}
+
+function renderDaySummary(summary) {
+  if (!summary) return `<div class="day-summary"><h3>日终回响</h3><p>今日选择已经汇入局势，新的压力正在形成。</p></div>`;
+  const decisions = array(summary.playerKeyDecisions || summary.keyDecisions).map((item) => typeof item === "string" ? item : item?.summary || item?.title).filter(Boolean);
+  const risks = textItems(summary.riskForTomorrow ?? summary.tomorrowRisks ?? summary.tomorrowPressure);
+  return `<div class="day-summary" data-testid="day-summary"><h3>第 ${number(summary.day)} 天 · 日终回响</h3><p>${esc(summary.publicSummary || summary.summary || "今日局势已经收束。")}</p>${decisions.length ? `<p><b>你的关键选择：</b>${decisions.map(esc).join("、")}</p>` : ""}${risks.length ? `<p><b>明日压力：</b>${risks.map(esc).join("、")}</p>` : ""}</div>`;
+}
+
+function renderFinalJudgement(view) {
+  const final = normalizeFinal(view);
+  if (!final.valid) {
+    return `<section class="decision-zone final-data-error" data-testid="final-data-error"><h2>最终裁决数据不完整</h2><p>${esc(final.error)}</p><button id="refreshBtn" type="button">重新读取裁决</button></section>`;
+  }
+  return `<section class="decision-zone final-judgement" data-testid="final-judgement">
+    <div class="final-seal">裁</div><p class="final-kicker">御前裁决 · 第七日</p><h2>${esc(final.title)}</h2>
+    ${final.globalOutcome ? `<p class="final-global">${esc(final.globalOutcome)}</p>` : ""}
+    <div class="final-grid">
+      <article><h3>个人结局 · ${esc(final.tier)}</h3>${final.personalTitle ? `<b class="personal-ending-title">${esc(final.personalTitle)}</b>` : ""}${final.archetype ? `<small class="ending-archetype">命运原型：${esc(final.archetype)}</small>` : ""}<p>${esc(final.personalStory)}</p></article>
+      ${final.emperorComment ? `<article><h3>皇帝评语</h3><p>${esc(final.emperorComment)}</p></article>` : ""}
+      ${final.futureRipple ? `<article><h3>未来余波</h3><p>${esc(final.futureRipple)}</p></article>` : ""}
     </div>
-  `;
-  bindEvents();
-  const stream = document.getElementById("messageStream");
-  if (stream) stream.scrollTop = stream.scrollHeight;
+    ${final.saved.length ? `<div class="judgement-list good"><b>救你的几步</b><ul>${final.saved.map((item) => `<li>${esc(item)}</li>`).join("")}</ul></div>` : ""}
+    ${final.hurt.length ? `<div class="judgement-list bad"><b>害你的几步</b><ul>${final.hurt.map((item) => `<li>${esc(item)}</li>`).join("")}</ul></div>` : ""}
+    ${final.debt ? `<p class="fate-debt"><b>命运债：</b>${esc(final.debt)}</p>` : ""}
+    <button id="resetDecisionBtn" type="button">重开一局</button>
+  </section>`;
 }
 
-function renderTopbar(view) {
-  const remain = Math.max(0, view.run.totalDays - view.run.currentDay);
-  return `
-    <header class="topbar">
-      <div class="top-location">${esc(view.run.location)}</div>
-      <div class="top-day">第 ${view.run.currentDay} 天&nbsp;&nbsp;${esc(view.run.currentTime)}</div>
-      <div class="top-countdown">距离御前裁决：<b>${remain}</b> 天</div>
-      <button class="icon-btn" id="historyBtn" title="历史回顾">▣ <span>历史回顾</span></button>
-      <button class="icon-btn" id="resetBtn" title="重开本局">⚙ <span>设置</span></button>
-    </header>
-  `;
+function renderWorldState(dashboard = {}) {
+  const entries = worldEntries(dashboard.worldState);
+  return `<section class="causal-panel"><h2>世界状态</h2>${entries.length ? entries.map(([key, value]) => {
+    const score = clamp(value);
+    return `<div class="bar-row"><div><span>${esc(key)}</span><b>${score}/100</b></div><em><i style="width:${score}%"></i></em></div>`;
+  }).join("") : `<p>局势数据正在汇总。</p>`}</section>`;
 }
 
-function renderPlayer(view) {
-  const player = view.player;
-  return `
-    <section class="side-panel player-panel">
-      <h2>我的信息</h2>
-      <div class="player-card">
-        <div class="official-portrait governor"><span>督</span></div>
-        <div>
-          <h3>${esc(player.roleName)}<br/>${esc(player.name)}</h3>
-          <p>${esc(player.rank)}</p>
-          <p>${esc(player.office)}</p>
-        </div>
-      </div>
-    </section>
-  `;
+function renderVisibleCausal(view) {
+  const card = view.dashboard?.visibleCausalCard || view.visibleCausalCard;
+  if (!card) return `<section class="causal-panel emphasis"><h2>因果回响</h2><p>完成关键决策后，这里只展示玩家可见的个人、他人和世界回响。后台触发条件与角色私密判断不会在此出现。</p></section>`;
+  return `<section class="causal-panel emphasis" data-testid="causal-card"><h2>因果回响</h2><h3>${esc(card.decisionTitle)}</h3>
+    <p>${esc(card.decisionSummary || card.playerFacingHint)}</p><dl>
+      ${definition("个人回响", card.personalEcho)}
+      ${definition("他人回响", publicEchoes(card.othersEcho).join("；"))}
+      ${definition("世界回响", card.worldEcho)}
+      ${definition("状态变化", array(card.stateChangesText).join("；"))}
+      ${definition("留下痕迹", array(card.tracesLeft).join("、"))}
+      ${definition("潜在风险", array(card.potentialRisks).join("；"))}
+    </dl></section>`;
 }
 
-function renderGoals(view) {
-  return `
-    <section class="side-panel">
-      <h2>当前目标</h2>
-      <ul class="bullet-list">${view.player.goals.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
-    </section>
-  `;
+function renderCausalRecalls(view) {
+  const recalls = array(view.dashboard?.causalRecallMessages || view.causalRecallMessages)
+    .filter((recall) => isPublicVisibility(recall?.visibility))
+    .slice(-3);
+  if (!recalls.length) return "";
+  return `<section class="causal-panel recall" data-testid="causal-recall"><h2>因果回溯</h2>${recalls.map((recall) => `<article><b>${esc(recall.title)}</b>${recall.activation ? `<span class="activation ${className(recall.activation)}">${recall.activation === "help" ? "正在帮助你" : recall.activation === "backfire" ? "正在反噬你" : esc(recall.activation)}</span>` : ""}<p>${esc(recall.recallText)}</p>${recall.reframedBy ? `<p>被 ${esc(recall.reframedBy)} 重新解释</p>` : ""}${recall.newFrame ? `<p>新的定性：${esc(recall.newFrame)}</p>` : ""}${recall.currentPressure ? `<p>当前压力：${esc(recall.currentPressure)}</p>` : ""}</article>`).join("")}</section>`;
 }
 
-function renderResources(view) {
-  return `
-    <section class="side-panel">
-      <h2>我的资源</h2>
-      <div class="resource-list">
-        ${view.player.resources.map(([key, value]) => `<div><span>${esc(key)}</span><strong>${esc(value)}</strong></div>`).join("")}
-      </div>
-    </section>
-  `;
+function renderTraces(dashboard = {}) {
+  const traces = array(dashboard.traces);
+  return `<section class="causal-panel"><h2>留下的痕迹</h2>${traces.length ? `<ul>${traces.map((trace) => `<li>${esc(typeof trace === "string" ? trace : trace?.title)}</li>`).join("")}</ul>` : `<p>还没有形成玩家可见的因果痕迹。</p>`}</section>`;
 }
 
-function renderLeverage(view) {
-  return `
-    <section class="side-panel leverage-panel">
-      <h2>我的筹码</h2>
-      <ul class="token-list">${view.player.leverage.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
-      <div class="watermark">总督</div>
-    </section>
-  `;
+function renderRelationships(dashboard = {}) {
+  const relationships = array(dashboard.relationships);
+  return `<section class="causal-panel"><h2>人物关系</h2>${relationships.length ? relationships.map((item) => `<div class="rel"><div><b>${esc(item.name)}</b>${item.person ? `<small>${esc(item.person)}</small>` : ""}</div><span>${esc(item.stance)} ${number(item.score)}</span></div>`).join("") : `<p>人物关系尚未公开。</p>`}</section>`;
 }
 
-function renderMessageStream(view) {
-  return `
-    <section class="message-panel">
-      <div class="panel-head">
-        <h1>局势消息流</h1>
-        <select aria-label="消息筛选"><option>全部</option><option>密信</option><option>决策</option></select>
-      </div>
-      <div class="message-stream" id="messageStream">
-        ${view.messages.map(renderMessageCard).join("")}
-      </div>
-    </section>
-  `;
+function renderRisks(dashboard = {}) {
+  const risks = array(dashboard.risks);
+  if (!risks.length) return "";
+  return `<section class="causal-panel"><h2>当前风险</h2>${risks.map((item) => {
+    const [name, level] = Array.isArray(item) ? item : [item?.name || item?.title, item?.level];
+    return `<div class="kv"><span>${esc(name)}</span><b class="risk-${className(level)}">${esc(level)}</b></div>`;
+  }).join("")}</section>`;
 }
 
-function renderMessageCard(message) {
-  const portrait = message.speaker ? `<div class="mini-portrait">${esc((message.speaker || "").slice(0, 1))}</div>` : "";
-  const marker = message.type === "private_intel" ? "密信" : message.type === "role_action" ? "玩家行动" : message.type === "system_hint" ? "!" : "";
-  return `
-    <article class="message-card ${esc(message.type)} ${message.requiresDecision ? "decision-source" : ""}">
-      ${portrait}
-      <div class="message-content">
-        <div class="message-meta">
-          <span class="type-badge">${esc(message.label || message.type)}</span>
-          ${message.speaker ? `<span>${esc(message.speaker)}</span>` : ""}
-          <span>第${message.day}天 ${esc(message.time || "")}</span>
-        </div>
-        <h3>${esc(message.title)}</h3>
-        <p>${esc(message.body).replace(/\n/g, "<br/>")}</p>
-      </div>
-      ${message.illustration ? `<div class="ink-wash" aria-hidden="true"></div>` : ""}
-      ${marker ? `<b class="message-seal">${esc(marker)}</b>` : ""}
-    </article>
-  `;
+function renderPublicRoleInferences(view) {
+  const roles = array(view.publicRoleInferences || view.dashboard?.publicRoleInferences);
+  if (!roles.length) return "";
+  return `<section class="causal-panel"><h2>可见角色判断</h2>${roles.map((role) => `<details><summary>${esc(role.publicIdentity || role.name)}</summary>${role.publicGoal ? `<p>公开目标：${esc(role.publicGoal)}</p>` : ""}${array(role.observableSignals || role.observable).length ? `<p>你能观察到：${array(role.observableSignals || role.observable).map(esc).join("、")}</p>` : ""}</details>`).join("")}</section>`;
 }
 
-function renderDecisionPanel(view) {
-  if (view.run.status === "finished") {
-    const finalMessage = [...view.messages].reverse().find((item) => item.type === "final");
-    return `
-      <section class="decision-panel complete">
-        <h2>御前裁决已定</h2>
-        <p>${esc(finalMessage?.body || "你的选择已汇入最终裁决。")}</p>
-        <button class="primary-btn" id="resetDecisionBtn">重开一局</button>
-      </section>
-    `;
-  }
-
-  if (!view.activeDecision) {
-    return `
-      <section class="decision-panel complete">
-        <h2>今日关键决策已提交</h2>
-        <p>局势已经记录你的选择。你可以继续推进到明日，或直接查看御前裁决示例。</p>
-        <div class="decision-actions">
-          <button class="secondary-btn" id="advanceBtn">进入明日</button>
-          <button class="primary-btn" id="finalizeBtn">进入裁决</button>
-        </div>
-      </section>
-    `;
-  }
-
-  const decision = view.activeDecision;
-  return `
-    <section class="decision-panel">
-      <div class="decision-title">
-        <h2>你要如何应对？</h2>
-        <p>当前事件：${esc(decision.title)} <button class="tiny-help" title="${esc(decision.help)}">?</button></p>
-      </div>
-      ${state.guard ? `<div class="guard-box"><strong>ActionGuard：</strong>${esc(state.guard.reason)}${state.guard.suggestedRewrite ? `<br/>建议：${esc(state.guard.suggestedRewrite)}` : ""}</div>` : ""}
-      <div class="option-list">
-        ${decision.options.map((option) => renderOption(option)).join("")}
-        <button class="decision-option custom ${selectedOption === "CUSTOM" ? "active" : ""}" data-option="CUSTOM">
-          <div><strong>D. 自定义决策</strong><span>自行拟定策略与应对方式</span></div>
-          <i>›</i>
-        </button>
-      </div>
-      <textarea id="customDecision" placeholder="请输入你的决策内容（可详细说明你的计划）">${esc(customDecision)}</textarea>
-      <div class="decision-actions">
-        <span>${state.apiOnline ? "后端 v4 API 已连接" : "离线同构模式"}</span>
-        <button class="primary-btn" id="submitDecision">提交决策</button>
-      </div>
-    </section>
-  `;
+function renderBuildDiagnostics(view) {
+  // This switch can only be injected by the build; URL query parameters are
+  // intentionally ignored. Diagnostics remain metadata-only and never dump
+  // private causal ledgers or model reasoning.
+  return `<section class="causal-panel build-debug"><h2>构建诊断</h2><div class="kv"><span>Run</span><b>${esc(view.run.id)}</b></div><div class="kv"><span>Version</span><b>${number(view.run.version)}</b></div></section>`;
 }
 
-function renderOption(option) {
-  return `
-    <button class="decision-option ${selectedOption === option.key ? "active" : ""}" data-option="${esc(option.key)}">
-      <div class="option-copy">
-        <strong>${esc(option.key)}. ${esc(option.title)}</strong>
-        <span>${esc(option.body)}</span>
-      </div>
-      <div class="option-effect">
-        <span class="gain">可能收益：${esc(option.gain)}</span>
-        <span class="risk">可能风险：${esc(option.risk)}</span>
-      </div>
-    </button>
-  `;
+function renderHistory(history = []) {
+  const items = array(history);
+  return `<div class="history-backdrop" role="dialog" aria-modal="true" aria-label="决策回顾"><section class="history-panel"><div class="history-head"><h2>十二步决策回顾</h2><button id="closeHistoryBtn" type="button">关闭</button></div>${items.length ? `<ol>${items.map((item, index) => `<li><span>第 ${number(item.day)} 天 · 第 ${number(item.decisionIndex || ((index % DAY_DECISIONS) + 1))} 策</span><b>${esc(item.title || item.decisionTitle || item.optionKey)}</b></li>`).join("")}</ol>` : `<p>尚未作出关键决策。</p>`}</section></div>`;
 }
 
-function renderWorldState(view) {
-  return `
-    <section class="side-panel">
-      <h2>当前局势</h2>
-      <div class="stat-list">
-        ${view.dashboard.worldState.map(([name, value, tone]) => `
-          <div class="stat-row">
-            <div><span>${esc(name)}</span><strong>${value}/100</strong></div>
-            <em><i class="${esc(tone)}" style="width:${Number(value)}%"></i></em>
-          </div>
-        `).join("")}
-      </div>
-      <p class="risk-summary">局势总体风险：<b>${overallRisk(view)}</b></p>
-    </section>
-  `;
+function renderBanner(kind, message) {
+  return `<div class="api-banner ${kind}" role="status" data-testid="${kind}-banner">${esc(message)}</div>`;
 }
 
-function renderRelationships(view) {
-  return `
-    <section class="side-panel relation-panel">
-      <h2>人物关系</h2>
-      ${view.dashboard.relationships.map((item) => `
-        <div class="relation-row">
-          <div class="official-portrait small ${esc(item.tone)}"><span>${esc(item.avatar || item.name.slice(0, 1))}</span></div>
-          <div><strong>${esc(item.name)}</strong><span>${esc(item.person)}</span></div>
-          <b class="${esc(item.tone)}">${esc(item.stance)} ${item.score}</b>
-        </div>
-      `).join("")}
-    </section>
-  `;
+export function dayProgress(view) {
+  if (!view?.run) return { completed: 0, required: DAY_DECISIONS };
+  const day = Number(view.run.currentDay || 1);
+  if (day >= FINAL_DAY) return { completed: 0, required: 0 };
+  const serverProgress = view.dayProgress || view.run.dayProgress;
+  const completed = serverProgress?.completed ?? view.run.decisionsCompletedToday ?? array(view.decisionHistory).filter((item) => Number(item.day) === day).length;
+  const required = serverProgress?.required ?? view.run.decisionsRequiredToday ?? DAY_DECISIONS;
+  return { completed: Math.max(0, number(completed)), required: Math.max(DAY_DECISIONS, number(required)) };
 }
 
-function renderLatestChanges(view) {
-  return `
-    <section class="side-panel">
-      <h2>最新变化</h2>
-      <ul class="change-list">
-        ${view.dashboard.latestChanges.map(([name, delta]) => `<li>${esc(name)} <b class="${delta >= 0 ? "up" : "down"}">${delta >= 0 ? "↑" : "↓"} ${Math.abs(delta)}</b></li>`).join("")}
-      </ul>
-    </section>
-  `;
+export function canAdvance(view) {
+  if (!view?.run || view.activeDecision) return false;
+  const day = Number(view.run.currentDay);
+  const progress = dayProgress(view);
+  return day >= 1
+    && day < FINAL_DAY
+    && view.run.status === "awaiting_day_advance"
+    && Boolean(view.daySummary)
+    && progress.completed === DAY_DECISIONS
+    && progress.required === DAY_DECISIONS;
 }
 
-function renderRisks(view) {
-  return `
-    <section class="side-panel">
-      <h2>潜在风险</h2>
-      <ul class="risk-list">
-        ${view.dashboard.risks.map(([name, level]) => `<li>${esc(name)} <b>（${esc(level)}）</b></li>`).join("")}
-      </ul>
-    </section>
-  `;
+export function canFinalize(view) {
+  if (!view?.run || view.activeDecision) return false;
+  return Number(view.run.currentDay) === FINAL_DAY
+    && view.run.status === "awaiting_finalization"
+    && Number(view.run.totalDecisionsCompleted) === 12;
 }
 
-function bindEvents() {
-  document.querySelectorAll("[data-option]").forEach((node) => {
-    node.addEventListener("click", () => {
-      selectedOption = node.getAttribute("data-option") || "A";
-      state.guard = null;
-      customDecision = document.getElementById("customDecision")?.value || customDecision;
-      render();
-    });
-  });
-  const custom = document.getElementById("customDecision");
-  if (custom) custom.addEventListener("input", (event) => { customDecision = event.target.value; });
-  document.getElementById("submitDecision")?.addEventListener("click", submitDecision);
-  document.getElementById("advanceBtn")?.addEventListener("click", advanceDay);
-  document.getElementById("finalizeBtn")?.addEventListener("click", finalizeRun);
-  document.getElementById("resetBtn")?.addEventListener("click", resetRun);
-  document.getElementById("resetDecisionBtn")?.addEventListener("click", resetRun);
-  document.getElementById("historyBtn")?.addEventListener("click", () => {
-    state.error = `历史事件：${state.view.events.map((item) => item.type).join("、") || "尚无记录"}`;
-    render();
-  });
-}
-
-async function submitDecision() {
-  const decision = state.view.activeDecision;
-  if (!decision) return;
-  state.guard = null;
-  setBusy(true);
-  const payload = { optionKey: selectedOption, customText: customDecision };
-  try {
-    if (state.apiOnline) {
-      const result = await request(`/v4/story-runs/${state.view.run.id}/messages/${decision.messageId}/decisions`, { method: "POST", body: payload });
-      if (result.accepted === false) {
-        state.guard = result;
-      } else {
-        state.view = result;
-        customDecision = "";
-      }
-    } else {
-      const result = localSubmitDecision(state.view, payload);
-      if (result.accepted === false) state.guard = result;
-      else state.view = result;
-    }
-  } catch (error) {
-    state.error = error instanceof Error ? error.message : String(error);
-  }
-  setBusy(false);
-  render();
-}
-
-async function advanceDay() {
-  setBusy(true);
-  try {
-    state.view = state.apiOnline
-      ? await request(`/v4/story-runs/${state.view.run.id}/advance-day`, { method: "POST" })
-      : localAdvanceDay(state.view);
-    selectedOption = state.view.activeDecision?.options?.[0]?.key || "A";
-  } catch (error) {
-    state.error = error instanceof Error ? error.message : String(error);
-  }
-  setBusy(false);
-  render();
-}
-
-async function finalizeRun() {
-  setBusy(true);
-  try {
-    state.view = state.apiOnline
-      ? await request(`/v4/story-runs/${state.view.run.id}/finalize`, { method: "POST" })
-      : localFinalize(state.view);
-  } catch (error) {
-    state.error = error instanceof Error ? error.message : String(error);
-  }
-  setBusy(false);
-  render();
-}
-
-async function resetRun() {
-  localStorage.removeItem(RUN_ID_KEY);
-  fallbackStore.run = null;
-  selectedOption = "A";
-  customDecision = "";
-  await boot();
-}
-
-function localSubmitDecision(view, payload) {
-  const guard = guardDecision(payload.optionKey, payload.customText);
-  if (guard) {
-    view.events.push(event("action_guard_blocked", guard));
-    return { accepted: false, ...guard };
-  }
-  const option = payload.optionKey === "CUSTOM"
-    ? customOption(payload.customText)
-    : view.activeDecision.options.find((item) => item.key === payload.optionKey) || view.activeDecision.options[0];
-  applyDecision(view, option);
-  return view;
-}
-
-function guardDecision(optionKey, text) {
-  if (optionKey !== "CUSTOM") return null;
-  const raw = String(text || "").trim();
-  if (!raw) return { guardStatus: "rewrite_needed", reason: "请先写明你的具体行动。", suggestedRewrite: "例如：另写密奏说明粮价与民心风险，但不拦截巡抚奏疏。" };
-  const hit = ["杀", "处死", "命令皇帝", "直接定罪", "所有人立刻", "跳过"].find((item) => raw.includes(item));
-  if (hit) return { guardStatus: "blocked", reason: "该决策超出浙江总督的权力边界，不能直接控制他人或宣布结局。", suggestedRewrite: "改写为调查、密奏、施压、交易、保护或留后手。" };
+function latestDaySummary(view) {
+  if (view.daySummary) return view.daySummary;
+  const summaries = view.daySummaries;
+  if (Array.isArray(summaries)) return summaries[summaries.length - 1] || null;
+  if (summaries && typeof summaries === "object") return summaries[view.run.currentDay] || Object.values(summaries).at(-1) || null;
   return null;
 }
 
-function customOption(text) {
+function normalizeFinal(view) {
+  const final = record(view.finalJudgement);
+  if (!final) return { valid: false, error: "服务端没有返回 finalJudgement，无法可靠展示本局结局。" };
+  const globalEnding = record(final.globalEnding);
+  const personal = record(final.personalEnding) || record(final.personalOutcome) || record(final.playerOutcome) || record(final.personalStoryCard);
+  if (!globalEnding?.title || !personal) {
+    return { valid: false, error: "finalJudgement 缺少 globalEnding 或 personalEnding。" };
+  }
+  const imperial = record(final.emperorJudgement) || record(final.imperialJudgement);
+  const causal = record(final.causalExplanation);
+  const personalFuture = personal.futureAftermath ?? personal.futureRipple;
+  const finalFuture = final.futureAftermath ?? final.futureRipple ?? final.aftershock;
+  const futureRipple = textItems(personalFuture ?? finalFuture).join("；");
+  const personalStory = personal.narrative || personal.story || personal.summary || derivedPersonalStory(personal, futureRipple);
+  if (!personalStory) {
+    return { valid: false, error: "personalEnding 缺少 narrative、title、archetype 与 futureAftermath，无法形成个人故事卡。" };
+  }
   return {
-    key: "CUSTOM",
-    title: "自定义决策",
-    body: text,
-    gain: "形成非标准计策",
-    risk: "成败取决于权力边界",
-    patch: inferPatch(text)
+    valid: true,
+    title: globalEnding.title,
+    globalOutcome: globalEnding.narrative || globalEnding.summary || "",
+    tier: personal.rank || personal.grade || personal.tier || personal.level || "未评级",
+    personalTitle: personal.title || "",
+    archetype: personal.archetype || "",
+    personalStory,
+    emperorComment: personal.emperorComment || imperial?.comment || imperial?.narrative || imperial?.summary || final.emperorComment || final.imperialComment || "",
+    futureRipple,
+    saved: textItems(final.keyMovesThatSavedYou ?? causal?.keyMovesThatSavedYou ?? final.savedBy),
+    hurt: textItems(final.keyMovesThatHurtYou ?? causal?.keyMovesThatHurtYou ?? final.hurtBy),
+    debt: textItems(final.fateDebts ?? final.fateDebt ?? causal?.fateDebts ?? causal?.fateDebt ?? final.destinyDebt).join("；")
   };
 }
 
-function inferPatch(text) {
-  const patch = { "总督权威": 2, "清算风险": 2 };
-  if (text.includes("密奏")) Object.assign(patch, { "皇帝信任": 5, "皇帝疑心": 3, "内阁疑心": 5 });
-  if (text.includes("商会") || text.includes("粮")) Object.assign(patch, { "粮价": -6, "商会依赖": 8, "民心": 4 });
-  if (text.includes("巡抚")) Object.assign(patch, { "巡抚敌意": 8, "总督权威": 4 });
-  return patch;
+function derivedPersonalStory(personal, futureRipple) {
+  const identity = [personal.title ? `个人定性为「${personal.title}」` : "", personal.archetype ? `命运原型为「${personal.archetype}」` : ""].filter(Boolean).join("，");
+  return [identity, futureRipple ? `其后续余波是：${futureRipple}` : ""].filter(Boolean).join("；");
 }
 
-function applyDecision(view, option) {
-  const resultText = option.title.includes("追加密奏") || option.body.includes("密奏")
-    ? "你没有截留巡抚奏疏，而是连夜起草密奏。奏中写道：浙江可改，然不可躁进。粮价、民心、军饷三事若不并看，十日见银也可能十日见乱。"
-    : `你决定执行「${option.title}」。总督府开始按此计策行事，幕僚将影响写入局势账册。`;
-  view.messages.push({
-    id: uid("result"),
-    day: view.run.currentDay,
-    time: "决策后",
-    type: "decision_result",
-    label: "决策结果",
-    title: option.title,
-    body: `${resultText}\n你的选择已经改变右侧状态，并会转译为其他角色看到的新剧情压力。`
-  });
-  view.messages.push({
-    id: uid("reaction"),
-    day: view.run.currentDay,
-    time: "夜",
-    type: "role_action",
-    label: "他人回响",
-    speaker: option.title.includes("密奏") ? "司礼监" : "浙江巡抚",
-    title: option.title.includes("密奏") ? "两份奏报口径不一" : "巡抚府重新估量总督府",
-    body: option.title.includes("密奏") ? "内廷注意到浙江奏报一明一密，开始追问粮价与民心的真实数字。" : "巡抚府连夜誊写文书，试图判断总督府是否准备压下自己的首功。"
-  });
-  patchDashboard(view, option.patch);
-  view.dashboard.latestChanges = Object.entries(option.patch).slice(0, 4).map(([key, value]) => [key, value]);
-  view.decisionHistory.push({ day: view.run.currentDay, optionKey: option.key, title: option.title, patch: option.patch });
-  view.events.push(event("decision_submitted", { optionKey: option.key, title: option.title, patch: option.patch }));
-  view.run.status = "decision_resolved";
-  view.run.version += 1;
-  view.activeDecision = null;
+function textItems(value) {
+  if (value === undefined || value === null || value === "") return [];
+  const items = Array.isArray(value) ? value : [value];
+  return items.map((item) => {
+    if (typeof item === "string" || typeof item === "number") return String(item);
+    return item?.text || item?.narrative || item?.summary || item?.title || item?.description || "";
+  }).filter(Boolean);
 }
 
-function patchDashboard(view, patch) {
-  for (const [key, delta] of Object.entries(patch || {})) {
-    const world = view.dashboard.worldState.find((item) => item[0] === key);
-    if (world) world[1] = clamp(Number(world[1]) + Number(delta));
-    if (Object.hasOwn(view.dashboard.roleState, key)) view.dashboard.roleState[key] = clamp(Number(view.dashboard.roleState[key]) + Number(delta));
-  }
-  const relationMap = { "巡抚敌意": "浙江巡抚", "商会依赖": "江南商会", "司礼监警惕": "司礼监掌印" };
-  for (const [key, name] of Object.entries(relationMap)) {
-    if (!Object.hasOwn(patch || {}, key)) continue;
-    const rel = view.dashboard.relationships.find((item) => item.name === name);
-    if (rel) {
-      rel.score = clamp(Number(rel.score) + Number(patch[key]));
-      rel.stance = rel.score >= 65 ? (key.includes("敌意") ? "敌对" : "警惕") : rel.stance;
-      rel.tone = rel.score >= 65 ? "bad" : rel.tone;
-    }
-  }
+function record(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
-function localAdvanceDay(view) {
-  view.run.currentDay = Math.min(7, view.run.currentDay + 1);
-  view.run.currentTime = "清晨";
-  view.run.status = "awaiting_decision";
-  view.run.version += 1;
-  view.messages.push({
-    id: uid("day"),
-    day: view.run.currentDay,
-    time: "清晨",
-    type: "system",
-    label: "系统",
-    title: view.run.currentDay === 4 ? "暗账浮出" : "局势继续推进",
-    body: view.run.currentDay === 4 ? "半页田契暗账浮出水面，商会、巡抚与地方胥吏之间的旧约终于有了线索。" : "昨日选择已经扩散成新的压力，杭州城中各方都在等待总督府下一步。"
-  });
-  view.activeDecision = {
-    messageId: view.messages.at(-1).id,
-    title: view.run.currentDay === 4 ? "如何使用暗账" : "如何稳住局势",
-    help: "继续选择一个方向推进。",
-    options: [
-      { key: "A", title: "公开威慑", body: "亮出部分证据压住对方。", gain: "总督权威上升", risk: "对方反扑", patch: { "总督权威": 6, "清算风险": 5 } },
-      { key: "B", title: "暂藏证据", body: "只让亲信记录证据链。", gain: "保留后手", risk: "短期无威慑", patch: { "清算风险": -3, "司礼监警惕": 3 } },
-      { key: "C", title: "借商会平粮", body: "让商会先放粮换取宽限。", gain: "粮价下降", risk: "商会坐大", patch: { "粮价": -8, "商会依赖": 10 } }
-    ]
-  };
-  view.events.push(event("day_advanced", { day: view.run.currentDay }));
-  return view;
+function worldEntries(worldState) {
+  if (Array.isArray(worldState)) return worldState.map((item) => [item?.[0], item?.[1]]).filter(([key]) => key);
+  if (worldState && typeof worldState === "object") return Object.entries(worldState);
+  return [];
 }
 
-function localFinalize(view) {
-  const trust = Number(view.dashboard.worldState.find((item) => item[0] === "皇帝信任")?.[1] || 0);
-  const price = Number(view.dashboard.worldState.find((item) => item[0] === "粮价")?.[1] || 0);
-  const risk = Number(view.dashboard.roleState["清算风险"] || 0);
-  const good = trust >= 48 && price <= 75 && risk <= 55;
-  view.run.currentDay = 7;
-  view.run.currentTime = "御前";
-  view.run.status = "finished";
-  view.activeDecision = null;
-  view.messages.push({
-    id: uid("final"),
-    day: 7,
-    time: "御前",
-    type: "final",
-    label: "最终裁决",
-    title: good ? "国策缓行，清弊得名" : "总督稳局，帝心生疑",
-    body: good
-      ? "你以粮价、民心、军饷三事为据，保住浙江局势，也让皇帝看到浙江不可无你。"
-      : "你保住了总督府的解释权，却让内阁与内廷同时记住了你的自保。升迁仍有机会，疑心也随之留下。"
-  });
-  view.events.push(event("finalized", { good }));
-  return view;
+function publicEchoes(echoes) {
+  return array(echoes).filter((echo) => typeof echo === "string" || isPublicVisibility(echo?.visibility)).map((echo) => typeof echo === "string" ? echo : echo?.text).filter(Boolean);
 }
 
-function setBusy(isBusy) {
-  state.loading = false;
-  const button = document.getElementById("submitDecision");
-  if (button) {
-    button.disabled = isBusy;
-    button.textContent = isBusy ? "推演中..." : "提交决策";
-  }
+function nextOptionLabel(options) {
+  const highest = options.reduce((result, option) => Math.max(result, String(option.key || "A").charCodeAt(0)), "A".charCodeAt(0) - 1);
+  return highest < "Z".charCodeAt(0) ? String.fromCharCode(highest + 1) : "自";
 }
 
-function overallRisk(view) {
-  const price = Number(view.dashboard.worldState.find((item) => item[0] === "粮价")?.[1] || 0);
-  const suspicion = Number(view.dashboard.worldState.find((item) => item[0] === "皇帝信任")?.[1] || 0);
-  const patrol = Number(view.dashboard.relationships.find((item) => item.name === "浙江巡抚")?.score || 0);
-  if (price >= 70 || suspicion <= 35 || patrol >= 65) return "高";
-  if (price >= 58 || suspicion <= 48 || patrol >= 45) return "中";
-  return "低";
+function isPublicMessage(message) {
+  const allowedTypes = new Set(["system", "decision", "decision_prompt", "system_hint", "private_intel", "role_action", "decision_result", "causal_visible", "causal_recall", "day_end", "day_summary", "final"]);
+  return allowedTypes.has(message?.type) && isPublicVisibility(message?.visibility);
+}
+
+function isPublicVisibility(visibility) {
+  return visibility === undefined || visibility === null || visibility === "public" || visibility === "player_visible";
+}
+
+function definition(term, value) {
+  if (value === undefined || value === null || value === "" || (Array.isArray(value) && !value.length)) return "";
+  return `<dt>${esc(term)}</dt><dd>${esc(Array.isArray(value) ? value.join("；") : value)}</dd>`;
+}
+
+function labelForType(type) {
+  return ({ system: "系统", private_intel: "密报", role_action: "角色行动", decision_result: "你的决定", causal_visible: "因果回响", causal_recall: "因果回溯", day_summary: "日终回响", final: "最终裁决" })[type] || "局势";
+}
+
+function errorMessage(error) {
+  if (error instanceof StoryApiError) return error.message;
+  return error instanceof Error ? error.message : String(error || "发生未知错误。");
+}
+
+function isVersionConflict(error) {
+  return error instanceof StoryApiError && error.code === "VERSION_CONFLICT";
+}
+
+function array(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function number(value) {
+  const result = Number(value);
+  return Number.isFinite(result) ? Math.round(result) : 0;
 }
 
 function clamp(value) {
-  return Math.max(0, Math.min(100, Math.round(value)));
+  return Math.max(0, Math.min(100, number(value)));
+}
+
+function className(value) {
+  return String(value || "normal").replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+function lineBreaks(value) {
+  return esc(value).replace(/\n/g, "<br/>");
 }
 
 function esc(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-boot();
+if (typeof window !== "undefined" && typeof document !== "undefined" && !window.__AI_STORY_DISABLE_AUTO_BOOT__) {
+  const root = document.getElementById("app");
+  if (root) createStoryApp({ root, window }).boot();
+}
