@@ -1,5 +1,6 @@
 /* Visual sprite assembled from the approved UI references. */
-.art-hero-sangtian { --atlas-size: 133.333333% 344%; --atlas-pos: 0% 0%; }
+.art-hero-sangtian,
+.art-sangtian-hero { --atlas-size: 133.333333% 344%; --atlas-pos: 0% 0%; }
 .art-story-sangtian { --atlas-size: 400% 764.444444%; --atlas-pos: 0% 34.782609%; }
 .art-story-promotion { --atlas-size: 400% 764.444444%; --atlas-pos: 33.333333% 34.782609%; }
 .art-story-heir { --atlas-size: 400% 764.444444%; --atlas-pos: 66.666667% 34.782609%; }
