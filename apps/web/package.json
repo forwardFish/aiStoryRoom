@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.mjs",
-    "typecheck": "node --check src/server.mjs && node --check public/api-story-storage.js && node --check public/app.js && node --check tests/browser-smoke.test.mjs",
-    "test": "node --test tests/browser-smoke.test.mjs",
-    "test:smoke": "node --test tests/browser-smoke.test.mjs",
-    "build": "node -e \"console.log('web validation cabin is static; no build step required')\""
+    "typecheck": "node --check src/server.mjs && node --check public/api-story-storage.js && node --check public/app.js && node --check public/home.js && node --check public/role-select.js && node --check tests/browser-smoke.test.mjs && node --check tests/lobby-navigation.test.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:smoke": "node --test tests/*.test.mjs",
+    "build": "node -e \"console.log('web MVP is static; validation is performed by typecheck and node:test')\""
   },
   "devDependencies": {
     "jsdom": "24.1.3"

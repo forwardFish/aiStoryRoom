@@ -1,0 +1,50 @@
+/* Visual layer for the production Web MVP. The causal renderer stays data-driven. */
+html, body { background: #0a0907; }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% -8%, rgba(172,119,52,.16), transparent 36%), repeating-linear-gradient(90deg, rgba(255,255,255,.012), rgba(255,255,255,.012) 1px, transparent 1px, transparent 7px); mix-blend-mode: screen; }
+.game-home-link { position: fixed; z-index: 50; left: 28px; top: 25px; color: #e7c781; font: 15px/1.2 "Noto Serif SC", "Songti SC", SimSun, serif; text-decoration: none; }
+.causal-shell { width: min(1510px, 100vw); grid-template-columns: 250px minmax(610px, 1fr) 300px; grid-template-rows: 66px minmax(0, 1fr); gap: 10px; padding: 8px; }
+.causal-topbar { padding-left: 120px; grid-template-columns: minmax(260px, 1fr) 220px 235px 160px; }
+.causal-topbar > div, .causal-topbar button { border-color: rgba(183,135,64,.3); background: linear-gradient(180deg, rgba(33,28,20,.96), rgba(12,12,9,.98)); box-shadow: inset 0 0 20px rgba(0,0,0,.25); }
+.causal-left, .causal-right { gap: 8px; }
+.causal-panel { padding: 15px; border-color: rgba(172,126,58,.28); background: linear-gradient(180deg, rgba(25,24,20,.98), rgba(13,14,12,.99)); }
+.causal-panel h2 { margin-bottom: 11px; font-size: 18px; letter-spacing: .06em; }
+.player { min-height: 224px; padding-left: 112px; }
+.player .portrait { position: absolute; left: 15px; top: 52px; width: 82px; height: 122px; border-radius: 5px; color: transparent; background-image: linear-gradient(180deg, transparent, rgba(7,6,4,.22)), url('/assets/story-atlas.svg'); background-size: cover, 727.272727% 537.5%; background-position: center, 0% 100%; box-shadow: inset 0 0 0 1px rgba(231,191,116,.18); }
+.player h3 { margin-top: 18px; font-size: 22px; }
+.player em { margin: 10px 0; padding: 8px; color: #c57450; border: 0; }
+.causal-center { border-color: rgba(119,81,44,.55); border-radius: 3px; background: radial-gradient(circle at 82% 5%, rgba(255,255,255,.34), transparent 22%), linear-gradient(180deg, #e7d9c4, #d9c4a4); box-shadow: 0 14px 34px rgba(0,0,0,.5), inset 0 0 0 5px rgba(255,255,255,.08); }
+.stream-panel { padding: 16px 16px 0; }
+.stream-head { padding-bottom: 10px; border-bottom: 1px solid rgba(102,74,43,.18); }
+.stream-head h1 { font-size: 23px; }
+.stream-head p { font-size: 13px; }
+.story-card { margin-bottom: 10px; padding: 14px 16px; border-radius: 6px; background: rgba(244,233,213,.85); box-shadow: 0 5px 12px rgba(55,38,20,.08), inset 0 0 18px rgba(255,255,255,.22); }
+.story-card.role_action { background: linear-gradient(180deg, rgba(231,207,186,.92), rgba(218,187,158,.88)); }
+.story-card .meta b { background: #8a6b42; }
+.story-card h3 { margin: 9px 0 6px; font-size: 18px; }
+.story-card p { margin: 0; font-size: 14px; line-height: 1.7; }
+.decision-zone { padding: 16px 18px 15px; border-top-color: rgba(96,66,35,.35); background: linear-gradient(180deg, rgba(234,220,198,.99), rgba(217,196,164,.99)); }
+.decision-zone-head h2 { font-size: 22px; }
+.options { grid-template-columns: 1fr; gap: 8px; }
+.option-card { min-height: 68px; grid-template-columns: 24px minmax(145px, .75fr) 1.2fr minmax(210px, .95fr); align-items: center; gap: 8px; padding: 10px 13px; border-radius: 6px; background: rgba(247,238,221,.74); }
+.option-card b { font-size: 17px; }
+.option-card span, .option-card small { font-size: 12px; }
+.option-card small { color: #705432; }
+.option-card:has(input:checked) { border-color: #a97935; background: #f7ead2; box-shadow: inset 4px 0 #a97935; }
+.decision-zone textarea { min-height: 54px; margin-top: 9px; padding: 12px; border-radius: 5px; }
+.decision-zone .actions button, .day-next button, .final-ready button { min-width: 170px; height: 46px; color: #241708; background: linear-gradient(180deg, #cda963, #a97c37); box-shadow: inset 0 0 0 1px rgba(255,239,190,.36); }
+.bar-row { padding: 6px 0; }
+.bar-row > div { font-size: 13px; }
+.bar-row em { height: 5px; background: #29271f; }
+.bar-row i { background: linear-gradient(90deg, #b0843f, #dfbd69); }
+.causal-right .causal-panel { padding: 14px; }
+.rel { position: relative; min-height: 48px; padding: 8px 0 8px 48px; }
+.rel::before { content: ""; position: absolute; left: 0; top: 7px; width: 36px; height: 36px; border: 1px solid rgba(217,172,91,.45); border-radius: 50%; background-image: url('/assets/story-atlas.svg'); background-size: 1000% 1075%; background-position: 16.666667% 89.743590%; }
+.rel:nth-of-type(3)::before { background-position: 29.166667% 89.743590%; }
+.rel:nth-of-type(4)::before { background-position: 41.666667% 89.743590%; }
+.rel:nth-of-type(5)::before { background-position: 54.166667% 89.743590%; }
+.rel:nth-of-type(6)::before { background-position: 66.666667% 89.743590%; }
+@media (max-width: 1250px) {
+  .causal-shell { grid-template-columns: 220px minmax(560px, 1fr) 270px; }
+  .option-card { grid-template-columns: 22px 150px 1fr; }
+  .option-card small { grid-column: 2 / -1; }
+}
