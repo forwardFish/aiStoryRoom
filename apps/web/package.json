@@ -2,9 +2,15 @@
   "name": "@apps/web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "node src/server.mjs",
-    "typecheck": "node -c src/server.mjs && node -c public/app.js && node -c public/causal-player-v3.js && node -c public/causal-player.js && node -c public/causal-overlay.js",
+    "typecheck": "node --check src/server.mjs && node --check public/api-story-storage.js && node --check public/app.js && node --check tests/browser-smoke.test.mjs",
+    "test": "node --test tests/browser-smoke.test.mjs",
+    "test:smoke": "node --test tests/browser-smoke.test.mjs",
     "build": "node -e \"console.log('web validation cabin is static; no build step required')\""
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
   }
 }

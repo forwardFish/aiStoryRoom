@@ -1,11 +1,10 @@
-import { Body, Controller, Get, Headers, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Inject, Param, Post } from "@nestjs/common";
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
 import { StoryService } from "./story.service";
-import { ensureMvpCausalView } from "./mvp-causal-runtime";
 
 @Controller()
 export class StoryController {
-  constructor(private readonly story: StoryService) {}
+  constructor(@Inject(StoryService) private readonly story: StoryService) {}
 
   @Get()
   index() {
@@ -54,17 +53,17 @@ export class StoryController {
 
   @Post("v4/story-runs")
   createMvpRun(@Body() body: Record<string, unknown>) {
-    return ensureMvpCausalView(this.story.createMvpRun(body), "read");
+    return this.story.createMvpRun(body);
   }
 
   @Get("v4/story-runs/:runId")
   getMvpRun(@Param("runId") runId: string) {
-    return ensureMvpCausalView(this.story.getMvpRun(runId), "read");
+    return this.story.getMvpRun(runId);
   }
 
   @Get("v4/story-runs/:runId/messages")
   getMvpMessages(@Param("runId") runId: string) {
-    return ensureMvpCausalView(this.story.getMvpMessages(runId), "read");
+    return this.story.getMvpMessages(runId);
   }
 
   @Get("v4/story-runs/:runId/dashboard")
@@ -78,17 +77,17 @@ export class StoryController {
     @Param("messageId") messageId: string,
     @Body() body: Record<string, unknown>
   ) {
-    return ensureMvpCausalView(this.story.submitMvpDecision(runId, messageId, body), "decision");
+    return this.story.submitMvpDecision(runId, messageId, body);
   }
 
   @Post("v4/story-runs/:runId/advance-day")
-  advanceMvpDay(@Param("runId") runId: string) {
-    return ensureMvpCausalView(this.story.advanceMvpDay(runId), "advance");
+  advanceMvpDay(@Param("runId") runId: string, @Body() body: Record<string, unknown>) {
+    return this.story.advanceMvpDay(runId, body);
   }
 
   @Post("v4/story-runs/:runId/finalize")
-  finalizeMvpRun(@Param("runId") runId: string) {
-    return ensureMvpCausalView(this.story.finalizeMvpRun(runId), "finalize");
+  finalizeMvpRun(@Param("runId") runId: string, @Body() body: Record<string, unknown>) {
+    return this.story.finalizeMvpRun(runId, body);
   }
 
   @Post("story-runs")

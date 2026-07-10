@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev:api": "pnpm --filter @apps/api dev",
-    "dev:preview-api": "tsx scripts/preview-api.ts",
+    "dev:preview-api": "pnpm dev:api",
+    "dev:legacy-preview-api": "tsx scripts/preview-api.ts",
     "dev:web": "pnpm --filter @apps/web dev",
     "dev:miniprogram": "pnpm --filter @apps/miniprogram dev:weapp",
     "docker:up": "docker compose up -d",
@@ -17,6 +18,8 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force && pnpm db:seed",
     "test:api": "pnpm --filter @apps/api test",
+    "test:causal:web": "pnpm --filter @apps/web test",
+    "test:causal": "pnpm test:api && pnpm test:causal:web",
     "test:story:e2e": "tsx scripts/e2e/story-multirole.ts",
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck"
   },

@@ -37,5 +37,5 @@ export const server = createServer((req, res) => {
   createReadStream(safePath).pipe(res);
 }).listen(port, "0.0.0.0", () => {
   console.log(`AI Story Room Web validation cabin: http://localhost:${port}`);
-  console.log("Default API base: http://localhost:3001/api (run `pnpm dev:preview-api` first)");
+  console.log("Default API base: http://localhost:3001/api (run `pnpm dev:api` first)");
 });
