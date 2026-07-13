@@ -1,3 +1,13 @@
 packages:
   - "apps/*"
   - "packages/*"
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@parcel/watcher'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@swc/core'
+  - '@tarojs/binding'
+  - '@tarojs/cli'
+  - esbuild
+  - prisma

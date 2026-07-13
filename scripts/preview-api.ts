@@ -11,7 +11,7 @@ import {
 } from "../packages/shared/src/index.ts";
 import { getTemplate, midnightStoreTemplate, templates } from "../packages/templates/src/index.ts";
 
-const PORT = Number(process.env.PORT || 3001);
+const PORT = Number(process.env.PREVIEW_API_PORT || process.env.PORT || 3001);
 
 type User = { id: string; openid: string; nickname: string };
 type Template = typeof midnightStoreTemplate;

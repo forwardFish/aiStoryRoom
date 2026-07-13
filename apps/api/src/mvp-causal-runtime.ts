@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { checkMvpAiBudget, createMvpAiBudget, exhaustMvpAiBudget, recordMvpAiBudgetUse } from "./mvp-ai-budget";
 import type { MvpStoryStorage } from "./mvp-storage";
 import type {
   MvpActiveDecision,
@@ -115,14 +116,14 @@ export const SANGTIAN_DAYS: StoryDay[] = [
   },
   {
     day: 3,
-    title: "粮价上涨",
+    title: "粮价三日连涨",
     opening: "粮价上涨，巡抚的急奏已离开杭州，商会则以放粮为条件索要保护。你第一次必须同时争夺奏报口径和粮路。",
     pressure: "暗账浮出",
     decisions: [
       {
         key: "d3_1",
         reactionRoleKey: "xunfu",
-        title: "处理巡抚急奏",
+        title: "巡抚急奏北上",
         sceneTitle: "如何处理巡抚急奏",
         sceneBody: "巡抚奏中只报改桑进度，不提粮价与民怨。若他先定义浙江，你将承担失控责任。",
         options: [
@@ -268,9 +269,11 @@ export class MvpStoryEngine {
   }
 
   async create(input: Record<string, unknown> = {}) {
-    const storyId = String(input.storyId || "sangtian");
+    const storyId = String(input.storyId || input.templateKey || "sangtian");
     if (storyId !== "sangtian") throw new BadRequestException("v4 MVP currently supports storyId=sangtian only");
-    const view = createInitialView();
+    const selectedRoleKey = String(input.selectedRoleKey || input.roleKey || "zhejiang_governor");
+    if (selectedRoleKey !== "zhejiang_governor") throw new BadRequestException("v4 MVP currently supports selectedRoleKey=zhejiang_governor only");
+    const view = createInitialView({ mode: String(input.mode || "single"), selectedRoleKey });
     await this.storage.create(view);
     return projectPublicMvpView(view);
   }
@@ -281,6 +284,9 @@ export class MvpStoryEngine {
 
   async submitDecision(runId: string, messageId: string, input: MvpMutationInput) {
     const stored = await this.storage.load(runId);
+    const requestedOptionKey = String(input.optionKey || "").toUpperCase();
+    const previous = stored.events.find((item) => item.type === "decision_submitted" && item.payload?.messageId === messageId && item.payload?.optionKey === requestedOptionKey);
+    if (previous) return projectPublicMvpView(stored);
     assertVersion(stored, input.version);
     if (stored.run.status !== "awaiting_decision" || !stored.activeDecision || stored.activeDecision.messageId !== messageId) {
       throw new ConflictException("message is not awaiting decision");
@@ -297,7 +303,119 @@ export class MvpStoryEngine {
 
     const expectedVersion = stored.run.version;
     const view = structuredClone(stored);
-    await applyDecision(view, selected, this.narrativeProvider, guardResult);
+    if (stored.activeDecision.promptKind === "critical_response") {
+      applyCriticalResponse(view, selected);
+    } else {
+      await applyDecision(view, selected, this.narrativeProvider, { ...guardResult, idempotencyKey: String(input.idempotencyKey || "") }, async (task) => this.storage.recordAiTask?.(task));
+    }
+    bumpVersion(view, expectedVersion);
+    await this.storage.save(view, expectedVersion);
+    return projectPublicMvpView(view);
+  }
+
+  async startCriticalResponse(runId: string, eventId: string, input: MvpMutationInput) {
+    const stored = await this.storage.load(runId);
+    assertVersion(stored, input.version);
+    const current = stored.criticalEvent || (stored.pendingCriticalEvents || []).find((item: any) => String(item.eventId) === eventId);
+    if (!current || String(current.eventId) !== eventId || !["pending", "deferred"].includes(String(current.status))) {
+      throw new ConflictException({ code: "CRITICAL_EVENT_UNAVAILABLE", message: "关键事件已处理或不存在" });
+    }
+    const expectedVersion = stored.run.version;
+    const view = structuredClone(stored);
+    const critical = structuredClone(current);
+    critical.status = "responding";
+    view.criticalEvent = critical;
+    view.activeDecision = buildCriticalResponseDecision(view, critical);
+    view.messages.push(message(view, "role_action", "关键事件回应", `${critical.summary} 现在请决定你要如何回应。`, "他人影响", { speaker: critical.sourceRole }));
+    view.events.push(event("critical_event_immediate", { eventId, day: view.run.currentDay, sourceRole: critical.sourceRole }));
+    bumpVersion(view, expectedVersion);
+    await this.storage.save(view, expectedVersion);
+    return projectPublicMvpView(view);
+  }
+
+  async deferCriticalEvent(runId: string, eventId: string, input: MvpMutationInput) {
+    const stored = await this.storage.load(runId);
+    const previous = stored.events.find((item) => item.type === "critical_event_deferred" && item.payload?.eventId === eventId);
+    if (previous) return projectPublicMvpView(stored);
+    assertVersion(stored, input.version);
+    const current = stored.criticalEvent;
+    if (!current || String(current.eventId) !== eventId || String(current.status) !== "pending") {
+      throw new ConflictException({ code: "CRITICAL_EVENT_UNAVAILABLE", message: "关键事件已处理或不存在" });
+    }
+    const expectedVersion = stored.run.version;
+    const view = structuredClone(stored);
+    const deferred = structuredClone(current);
+    deferred.status = "deferred";
+    view.criticalEvent = null;
+    view.pendingCriticalEvents = (view.pendingCriticalEvents || []).map((item: any) => item.eventId === eventId ? deferred : item);
+    view.messages.push(message(view, "system_hint", "关键事件已暂缓", "这件事没有消失。你可以在局势记录中重新打开待处理事件。", "事件队列"));
+    view.events.push(event("critical_event_deferred", { eventId, day: view.run.currentDay, status: "deferred" }));
+    bumpVersion(view, expectedVersion);
+    await this.storage.save(view, expectedVersion);
+    return projectPublicMvpView(view);
+  }
+
+  async submitManeuver(runId: string, input: MvpMutationInput) {
+    const stored = await this.storage.load(runId);
+    const idempotencyKey = String(input.idempotencyKey || "").trim();
+    if (idempotencyKey) {
+      const previous = stored.events.find((item) => item.type === "maneuver_submitted" && item.payload?.idempotencyKey === idempotencyKey);
+      if (previous) return projectPublicMvpView(stored);
+    }
+    assertVersion(stored, input.version);
+    if (stored.run.currentDay < 1 || stored.run.currentDay > 6 || !["awaiting_decision", "awaiting_day_advance"].includes(stored.run.status)) {
+      throw new ConflictException({ code: "INVALID_RUN_STATE", message: "当前阶段不能执行主动谋划" });
+    }
+    if (stored.maneuverState.maneuverOpportunitiesRemaining <= 0) {
+      throw new ConflictException({ code: "MANEUVER_LIMIT_REACHED", message: "今日谋划机会已用尽" });
+    }
+    const maneuverType = String(input.maneuverType || "");
+    if (!["contact", "investigate", "leverage", "custom"].includes(maneuverType)) {
+      throw new BadRequestException({ code: "MANEUVER_TYPE_INVALID", message: "不支持的谋划类型" });
+    }
+    const customText = String(input.customText || "").trim();
+    if (maneuverType === "custom" && !customText) {
+      throw new BadRequestException({ code: "MANEUVER_CUSTOM_TEXT_REQUIRED", message: "自拟谋划需要填写内容" });
+    }
+    const blocked = guardManeuver(maneuverType, customText);
+    if (blocked) return blocked;
+
+    const expectedVersion = stored.run.version;
+    const view = structuredClone(stored);
+    const targetRoleKey = String(input.targetRoleKey || "").trim();
+    const intentKey = String(input.intentKey || "").trim();
+    const leverageKey = String(input.leverageKey || "").trim();
+    if (maneuverType === "leverage") {
+      const available = Array.isArray(view.player.leverage) ? view.player.leverage.map(String) : [];
+      const knownKeys = new Set(["land_contract_fragment", "county_letter", "coastal_report", ...available]);
+      if (!leverageKey || !knownKeys.has(leverageKey) || view.maneuverState.usedLeverageKeys.includes(leverageKey)) {
+        throw new ConflictException({ code: "LEVERAGE_NOT_AVAILABLE", message: "筹码不存在、已使用或当前不可用" });
+      }
+    }
+    const result = buildManeuverResult(view, { maneuverType, targetRoleKey, intentKey, leverageKey, customText });
+    const maneuverSeed = buildManeuverFateSeed(result.originEventId, view.run.currentDay, maneuverType, targetRoleKey);
+    patchDashboard(view, result.patch as unknown as Record<string, number>);
+    view.dashboard.latestChanges = result.changes;
+    view.dashboard.traces = Array.from(new Set([...(view.dashboard.traces || []), ...result.traces]));
+    view.causalLedger.fateSeeds.push(maneuverSeed);
+    view.dashboard.activeFateSeeds = view.causalLedger.fateSeeds.filter((seed: any) => seed.status === "dormant").map((seed: any) => ({ id: seed.id, title: seed.title, visibleHint: seed.visibleHint }));
+    view.messages.push(message(view, "maneuver_result", result.title, result.narrative, "主动谋划", { maneuverType, originEventId: result.originEventId }));
+    view.events.push(event("maneuver", { day: view.run.currentDay, maneuverType, targetRoleKey, intentKey, leverageKey, originEventId: result.originEventId }));
+    view.events.push(event("maneuver_submitted", { idempotencyKey, maneuverType, targetRoleKey, intentKey, leverageKey, originEventId: result.originEventId }));
+    view.events.push(event("maneuver_result", { originEventId: result.originEventId, patch: result.patch, changes: result.changes }));
+    view.events.push(event("state_patch", { originEventId: result.originEventId, patch: result.patch }));
+    view.events.push(event("pursuit_updated", { originEventId: result.originEventId, changes: result.changes, traces: result.traces }));
+    view.events.push(event("fate_seed_created", { originEventId: result.originEventId, fateSeedId: maneuverSeed.id, day: view.run.currentDay }));
+    if (maneuverType === "leverage") {
+      view.maneuverState.usedLeverageKeys.push(leverageKey);
+      view.events.push(event("leverage_used", { originEventId: result.originEventId, leverageKey, targetRoleKey }));
+    }
+    view.maneuverState.maneuversUsedToday += 1;
+    view.maneuverState.maneuverOpportunitiesRemaining -= 1;
+    view.maneuverState.totalManeuversUsed += 1;
+    if (maneuverType === "investigate" && !(view.pendingCriticalEvents || []).length) {
+      enqueueCriticalEvent(view, result.originEventId);
+    }
     bumpVersion(view, expectedVersion);
     await this.storage.save(view, expectedVersion);
     return projectPublicMvpView(view);
@@ -313,9 +431,11 @@ export class MvpStoryEngine {
     const expectedVersion = stored.run.version;
     const view = structuredClone(stored);
     view.run.currentDay += 1;
-    view.run.currentTime = "清晨";
+    view.run.currentTime = view.run.currentDay === 3 ? "午后" : "清晨";
     view.run.decisionsCompletedToday = 0;
     view.run.decisionsRequiredToday = view.run.currentDay === 7 ? 0 : 2;
+    view.maneuverState.maneuversUsedToday = 0;
+    view.maneuverState.maneuverOpportunitiesRemaining = view.run.currentDay === 7 ? 0 : view.maneuverState.maneuverOpportunitiesPerDay;
     view.daySummary = null;
     if (view.run.currentDay === 7) {
       view.run.status = "awaiting_finalization";
@@ -323,6 +443,7 @@ export class MvpStoryEngine {
       view.messages.push(message(view, "system", "御前裁决", "各路奏报已经抵达御前。内阁要银，司礼监要银路，地方各自争夺责任解释。皇帝等待浙江总督给出最后答案。", "京师"));
     } else {
       openDay(view, view.run.currentDay);
+      if (view.run.currentDay === 3) view.run.currentTime = "午后";
     }
     triggerConditionalSeeds(view);
     view.events.push(event("day_advanced", { day: view.run.currentDay }));
@@ -376,8 +497,56 @@ export function projectPublicMvpView(view: MvpView) {
   delete result.events;
   delete result.causalLedger;
   delete result.dashboard.roleDecisionModels;
+  // v1.2 public names. Keep the legacy fields for the migration, while the
+  // web client consumes title-only prompts and narrative entries.
+  result.narrativeEntries = result.messages.map((entry: any) => ({
+    eventId: String(entry.id),
+    entryType: entry.type,
+    day: entry.day,
+    time: entry.time,
+    label: entry.label,
+    title: entry.title,
+    body: entry.body,
+    speaker: entry.speaker,
+    visibility: entry.visibility
+  }));
+  result.activePrompt = result.activeDecision
+    ? {
+        eventId: String(result.activeDecision.messageId),
+        promptKind: result.activeDecision.promptKind || "main_decision",
+        prompt: result.activeDecision.title,
+        options: result.activeDecision.options.map((option: any) => ({ optionKey: option.key, title: option.title })),
+        maxLength: 200,
+        submitLabel: "提交决策"
+      }
+    : null;
+  result.criticalEvent = result.criticalEvent || null;
+  if (result.criticalEvent) {
+    const critical = result.criticalEvent;
+    result.criticalEvent = {
+      eventId: String(critical.eventId),
+      title: critical.title,
+      summary: critical.summary,
+      sourceRole: critical.sourceRole,
+      severity: critical.severity,
+      status: critical.status
+    };
+  }
+  result.pendingCriticalEvents = (result.pendingCriticalEvents || []).map((item: any) => ({
+    eventId: String(item.eventId),
+    title: item.title,
+    summary: item.summary,
+    sourceRole: item.sourceRole,
+    severity: item.severity,
+    status: item.status
+  }));
+  result.maneuverPanel = result.maneuverState;
+  result.situationRecord = { label: "局势记录", open: false, entries: result.narrativeEntries };
+  result.situationRecordOpen = false;
+  result.changeSummary = result.messages.find((entry: any) => entry.type === "causal_visible") || null;
   result.decisionHistory = result.decisionHistory.map((item: any) => {
     const { knownByRoles: _knownByRoles, informationVisibility: _informationVisibility, ...publicItem } = item;
+    if (publicItem.optionKey === "CUSTOM") publicItem.body = "自定义决策（内容已通过身份、资源、时代与阶段校验）";
     return publicItem;
   });
   return result;
@@ -390,22 +559,35 @@ export function ensureMvpCausalView(payload: any, _phase?: string) {
   payload.decisionHistory ||= [];
   payload.daySummaries ||= payload.causalLedger?.daySummaries || {};
   payload.daySummary ||= null;
+  payload.criticalEvent ||= null;
+  payload.pendingCriticalEvents ||= [];
   payload.finalJudgement ||= null;
   payload.outcome ||= null;
   payload.dashboard ||= {};
   payload.dashboard.visibleCausalCard ||= null;
   payload.dashboard.causalRecallMessages ||= [];
   payload.dashboard.traces ||= [];
+  payload.maneuverState ||= {
+    maneuverOpportunitiesPerDay: 2,
+    maneuversUsedToday: 0,
+    maneuverOpportunitiesRemaining: payload.run.currentDay <= 6 ? 2 : 0,
+    totalManeuversUsed: 0,
+    usedLeverageKeys: []
+  };
+  payload.maneuverState.usedLeverageKeys ||= [];
   return payload;
 }
 
-function createInitialView(): MvpView {
+function createInitialView(options: { mode: string; selectedRoleKey: string }): MvpView {
   const now = new Date().toISOString();
   const runId = `mvp_${Date.now().toString(36)}_${randomUUID().slice(0, 8)}`;
   const view: MvpView = {
     run: {
       id: runId,
       storyId: "sangtian",
+      templateKey: "sangtian",
+      mode: options.mode,
+      selectedRoleKey: options.selectedRoleKey,
       title: "桑田诏：嘉靖财政危局",
       location: "杭州总督府",
       currentDay: 1,
@@ -422,16 +604,18 @@ function createInitialView(): MvpView {
     },
     player: {
       roleName: "浙江总督",
-      name: "浙江总督",
-      rank: "封疆大吏",
-      office: "总督浙江军政",
+      name: "郝帅彬",
+      rank: "从四品",
+      office: "兵部侍郎衔",
       fateQuestion: "保浙江，还是保自己？",
-      goals: ["稳定浙江局势", "不让巡抚坐大", "避免皇帝认定自己欺瞒"],
+      goals: ["稳定浙江局势", "控制巡抚势力", "避免皇帝生疑"],
       resources: [["银两", "42万两"], ["粮草", "23万石"], ["兵丁", "4/5"], ["幕僚", "4人"], ["密报", "2条"]],
-      leverage: ["总督节制权", "县令密信渠道", "向御前密奏的资格"]
+      leverage: ["田契暗账（半页）", "清流县令密信", "巡抚与商会旧约"]
     },
     messages: [],
     activeDecision: null,
+    criticalEvent: null,
+    pendingCriticalEvents: [],
     dashboard: {
       worldState: [["国库银两", 42, "gold"], ["民心", 55, "green"], ["粮价", 45, "gold"], ["改桑进度", 20, "gold"], ["皇帝信任", 45, "gold"], ["皇帝疑心", 55, "gold"], ["暗账完整度", 10, "gold"], ["海防军心", 60, "green"]],
       relationships: [
@@ -456,7 +640,14 @@ function createInitialView(): MvpView {
     daySummaries: {},
     finalJudgement: null,
     outcome: null,
-    runtime: { schemaVersion: "mvp-causal-v4.1", narrativeProvider: "deterministic-rules", fallbackUsed: true }
+    runtime: { schemaVersion: "mvp-causal-v4.1", narrativeProvider: "deterministic-rules", fallbackUsed: true, aiBudget: createMvpAiBudget() }
+    ,maneuverState: {
+      maneuverOpportunitiesPerDay: 2,
+      maneuversUsedToday: 0,
+      maneuverOpportunitiesRemaining: 2,
+      totalManeuversUsed: 0,
+      usedLeverageKeys: []
+    }
   };
   view.events.push(event("run_created", { storyId: "sangtian" }));
   openDay(view, 1);
@@ -468,36 +659,140 @@ function openDay(view: MvpView, dayNumber: number) {
   view.run.status = "awaiting_decision";
   view.run.currentTime = "清晨";
   view.messages.push(message(view, "system", `第 ${day.day} 天 · ${day.title}`, day.opening, "清晨"));
+  if (dayNumber === 3) {
+    view.messages.push(message(view, "private_intel", "县令密信送达", "巡抚与商会往来愈密，近日顾有密谈。其中国所闻其旧约，但证据不足，尚难定罪。", "午前"));
+    view.messages.push(message(view, "role_action", "商会提出平粮条件", "商会表愿出平粮条件，平抑粮价，但希望在商路减免与税赋照顾上获得优待。", "午时", { speaker: "江南商会会首" }));
+    view.messages.push(message(view, "role_action", "巡抚急奏北上", "巡抚已将改桑进度先行报入京师，奏中未提粮价与民怨。你必须先决定是否补上自己的解释。", "午后", { speaker: "浙江巡抚" }));
+    view.messages.push(message(view, "system_hint", "若不及时应对，内阁可能只听到巡抚一面之词。", "奏报、粮价与暗账继续互相牵连。", "申时"));
+  }
   setActiveDecision(view, day.decisions[0], 0);
 }
 
 function setActiveDecision(view: MvpView, decision: StoryDecision, index: number) {
   const prompt = message(view, "decision", decision.sceneTitle, decision.sceneBody, index === 0 ? "午前" : "午后", { requiresDecision: true, decisionKey: decision.key });
   view.messages.push(prompt);
-  view.activeDecision = { messageId: String(prompt.id), decisionKey: decision.key, day: view.run.currentDay, index, title: decision.title, help: "选择 A/B/C（部分决策含 D），也可以提交 CUSTOM 自定义决策。", reactionRoleKey: decision.reactionRoleKey, options: structuredClone(decision.options) };
+  view.activeDecision = { messageId: String(prompt.id), decisionKey: decision.key, day: view.run.currentDay, index, title: decision.title, help: "选择 A/B/C（部分决策含 D），也可以提交 CUSTOM 自定义决策。", reactionRoleKey: decision.reactionRoleKey, options: structuredClone(decision.options), promptKind: "main_decision" };
 }
 
-async function applyDecision(view: MvpView, selected: MvpDecisionOption, provider?: MvpNarrativeProvider, guardResult?: Record<string, any>) {
+function buildCriticalResponseDecision(view: MvpView, critical: Record<string, any>): MvpActiveDecision {
+  const responseOptions = [
+    option("A", "公开回应并稳住局面", "给出可被各方观察的回应。", "降低误解", "暴露你的判断边界", { "皇帝信任": 3, "民心": 2 }, ["critical_response"]),
+    option("B", "保留证据，先行核查", "不立即承诺，先把关键证据链留在手中。", "保留后手", "局势可能继续升温", { "暗账完整度": 4, "清算风险": -2 }, ["critical_response"])
+  ];
+  const prompt = message(view, "decision", critical.title, critical.summary, "关键回应", { requiresDecision: true, decisionKey: critical.eventId });
+  view.messages.push(prompt);
+  return {
+    messageId: String(critical.eventId),
+    decisionKey: String(critical.eventId),
+    day: view.run.currentDay,
+    index: view.run.decisionsCompletedToday,
+    title: critical.title,
+    help: "关键回应会占用当前主线决策槽位。",
+    reactionRoleKey: String(critical.sourceRole || "xunfu"),
+    options: [...responseOptions, option("C", "制造另一条假线索", "将矛盾引向另一条可核验的线索。", "争取缓冲时间", "新的证词可能反噬", { "清算风险": -1, "皇帝信任": -1 }, ["critical_response"])],
+    promptKind: "critical_response"
+  };
+}
+
+function enqueueCriticalEvent(view: MvpView, originEventId: string) {
+  const critical = {
+    eventId: id("critical"),
+    title: "巡抚对你的怀疑正在加深",
+    summary: "一封密报已经被送入巡抚府，\n其中提到了你曾私下扣留商会账本。",
+    sourceRole: "xunfu",
+    severity: "high",
+    status: "pending",
+    originEventId
+  };
+  view.pendingCriticalEvents = [...(view.pendingCriticalEvents || []), critical];
+  view.criticalEvent = critical;
+  view.messages.push(message(view, "system_hint", critical.title, critical.summary, "关键事件"));
+  view.events.push(event("critical_event_created", { eventId: critical.eventId, day: view.run.currentDay, originEventId, sourceRole: critical.sourceRole }));
+}
+
+function applyCriticalResponse(view: MvpView, selected: MvpDecisionOption) {
+  const active = view.activeDecision!;
+  const critical = view.criticalEvent!;
+  const originEventId = id("evt_critical_response");
+  patchDashboard(view, selected.patch);
+  view.dashboard.latestChanges = Object.entries(selected.patch).map(([key, value]) => [key, value]);
+  view.messages.push(message(view, "decision_result", selected.title, `你对「${critical.title}」作出回应。${selected.body} 这项回应已经进入局势记录，并会改变各方接下来看到的风险。`, "关键回应", { visibleEcho: { personal: selected.gain, world: selected.risk } }));
+  view.messages.push(message(view, "causal_visible", "关键事件留下了因果痕迹", `回应「${selected.title}」已写入责任与证据链。`, "因果落账", { causalCard: { decisionTitle: selected.title, decisionSummary: critical.summary, playerFacingHint: selected.gain, tracesLeft: ["巡抚急奏", "粮道核查记录"] } }));
+  view.decisionHistory.push({ id: id("decision"), day: view.run.currentDay, decisionKey: active.decisionKey, decisionTitle: active.title, optionKey: selected.key, title: selected.title, body: "关键事件回应已落账。", patch: selected.patch, tags: selected.tags || [], originEventId });
+  view.events.push(event("critical_response_submitted", { eventId: critical.eventId, originEventId, day: view.run.currentDay, optionKey: selected.key }));
+  view.events.push(event("state_patch", { originEventId, patch: selected.patch }));
+  view.pendingCriticalEvents = (view.pendingCriticalEvents || []).map((item: any) => item.eventId === critical.eventId ? { ...item, status: "resolved" } : item);
+  view.criticalEvent = null;
+  view.activeDecision = null;
+  view.run.totalDecisionsCompleted += 1;
+  view.run.decisionsCompletedToday += 1;
+  if (view.run.decisionsCompletedToday >= 2) closeDay(view);
+  else {
+    const day = getDay(view.run.currentDay);
+    setActiveDecision(view, day.decisions[view.run.decisionsCompletedToday], view.run.decisionsCompletedToday);
+  }
+}
+
+async function applyDecision(
+  view: MvpView,
+  selected: MvpDecisionOption,
+  provider?: MvpNarrativeProvider,
+  guardResult?: Record<string, any>,
+  recordAiTask?: (task: { runId: string; eventId: string; taskType: string; status: string; provider: string; inputJson: Record<string, unknown>; resultJson: Record<string, unknown>; errorMessage?: string }) => Promise<void> | undefined
+) {
   const active = view.activeDecision!;
   const originEventId = id("evt_decision");
   const fallback = buildRuleDecisionOutput(view, active, selected, originEventId, guardResult);
   let output = fallback;
   let fallbackReason = provider ? "provider_failed_or_invalid" : "provider_not_configured";
-  if (provider) {
+  let providerError = "";
+  const aiContext = { run: view.run, activeDecision: active, selectedOption: selected, dashboard: view.dashboard };
+  const budget = view.runtime.aiBudget || (view.runtime.aiBudget = createMvpAiBudget());
+  const budgetCheck = checkMvpAiBudget(budget, provider?.lastCall?.maxAttempts || 1);
+  let tokenUsage = { attempts: 0, inputTokens: 0, outputTokens: 0, costMinor: 0 };
+  if (provider && budgetCheck.allowed) {
     try {
-      const candidate = await provider.generateDecisionCandidate({ run: view.run, activeDecision: active, selectedOption: selected, dashboard: view.dashboard, causalLedger: view.causalLedger });
+      const candidate = await provider.generateDecisionCandidate({ ...aiContext, causalLedger: view.causalLedger });
+      tokenUsage = recordMvpAiBudgetUse(budget, budgetCheck, provider.lastCall);
       validateNarrativeCandidate(candidate, fallback.roleReactions.map((item: any) => item.roleKey));
       output = normalizeDecisionOutput(candidate, fallback);
       validateDecisionOutput(output);
       view.runtime.narrativeProvider = provider.name;
       view.runtime.fallbackUsed = false;
       fallbackReason = "";
-    } catch {
+    } catch (error) {
+      if (tokenUsage.attempts === 0) tokenUsage = recordMvpAiBudgetUse(budget, budgetCheck, provider.lastCall);
+      providerError = error instanceof Error ? error.message.slice(0, 500) : "provider_failed";
       output = fallback;
       view.runtime.narrativeProvider = "deterministic-rules";
       view.runtime.fallbackUsed = true;
     }
+  } else if (provider && budgetCheck.reason) {
+    fallbackReason = budgetCheck.reason;
+    exhaustMvpAiBudget(budget, fallbackReason);
+    view.runtime.narrativeProvider = "deterministic-rules";
+    view.runtime.fallbackUsed = true;
   }
+  const providerCall = provider?.lastCall || { attempts: provider ? 1 : 0, elapsedMs: 0, maxAttempts: provider ? 2 : 0 };
+  await recordAiTask?.({
+    runId: view.run.id,
+    eventId: originEventId,
+    taskType: "resolve_decision_narrative",
+    status: fallbackReason ? "fallback" : "completed",
+    provider: provider?.name || "deterministic-rules",
+    inputJson: aiContext,
+    resultJson: {
+      fallbackUsed: Boolean(fallbackReason),
+      fallbackReason,
+      narrativeProvider: view.runtime.narrativeProvider,
+      attempts: providerCall.attempts,
+      elapsedMs: providerCall.elapsedMs,
+      maxAttempts: providerCall.maxAttempts,
+      tokenUsage,
+      budget: structuredClone(budget)
+    },
+    errorMessage: providerError || undefined
+  });
   validateDecisionOutput(output);
   patchDashboard(view, output.immediateResult.statePatch);
   view.dashboard.latestChanges = Object.entries(output.immediateResult.statePatch).map(([key, value]) => [key, value]);
@@ -528,7 +823,7 @@ async function applyDecision(view: MvpView, selected: MvpDecisionOption, provide
     informationVisibility: output.decisionInterpretation.publicVisibility,
     originEventId
   });
-  view.events.push(event("decision_submitted", { originEventId, day: view.run.currentDay, decisionKey: active.decisionKey, optionKey: selected.key, normalizedDecision: output.decisionInterpretation }));
+  view.events.push(event("decision_submitted", { originEventId, day: view.run.currentDay, messageId: active.messageId, idempotencyKey: String((guardResult as any)?.idempotencyKey || ""), decisionKey: active.decisionKey, optionKey: selected.key, normalizedDecision: output.decisionInterpretation }));
   if (selected.key === "CUSTOM") view.events.push(event("action_guard_accepted", { originEventId, decisionKey: active.decisionKey, checks: output.guard.checks }));
   view.events.push(event("causal_bundle_applied", { originEventId, fateSeedIds: output.fateSeeds.created.map((item: any) => item.id), roleKeys: output.roleReactions.map((item: any) => item.roleKey) }));
   if (fallbackReason) view.events.push(event("ai_fallback", { originEventId, reason: fallbackReason }));
@@ -539,6 +834,7 @@ async function applyDecision(view: MvpView, selected: MvpDecisionOption, provide
   triggerConditionalSeeds(view);
 
   if (view.run.decisionsCompletedToday === 1) {
+    view.run.currentTime = "午后";
     const day = getDay(view.run.currentDay);
     setActiveDecision(view, day.decisions[1], 1);
   } else {
@@ -548,6 +844,7 @@ async function applyDecision(view: MvpView, selected: MvpDecisionOption, provide
 
 function buildRuleDecisionOutput(view: MvpView, active: MvpActiveDecision, selected: MvpDecisionOption, originEventId: string, guardResult?: Record<string, any>) {
   const tags = selected.tags || [];
+  const visibleAction = selected.key === "CUSTOM" ? "自定义决策（内容已按规则校验）" : selected.body;
   const targetRole = selected.reactionRoleKey || active.reactionRoleKey;
   const information = decisionInformation(active, selected, targetRole);
   const stateChangesText = Object.entries(selected.patch).map(([key, value]) => `${key} ${value >= 0 ? "+" : ""}${value}`);
@@ -578,8 +875,8 @@ function buildRuleDecisionOutput(view: MvpView, active: MvpActiveDecision, selec
   const narrativeFrame = { eventId: originEventId, eventTitle: selected.title, frames: [{ roleKey: "zhejiang_governor", frame: selected.gain, visibility: "private" }, { roleKey: targetRole, frame: selected.risk, visibility: "private" }, { roleKey: "emperor", frame: "能否见银、止乱并说明责任", visibility: "hidden" }], dominantFrame: "尚未形成统一定性" };
   return {
     guard: guardResult || { accepted: true, allowed: true, severity: "ok", reason: "", normalizedDecision: selected.body, rewriteSuggestion: null, checks: [] },
-    decisionInterpretation: { actionType: tags[0] || "governance", surfaceAction: selected.body, strategicIntent: selected.gain, usedResources: inferResources(tags), targetRoles: [targetRole], publicVisibility: information.publicVisibility, knownByRoles: information.knownByRoles, evidenceCreated: traces, riskTags: [selected.risk], benefitTags: [selected.gain], originEventId, originDecisionId: active.decisionKey },
-    immediateResult: { resultMessage: { title: selected.title, narrative: `总督府开始执行「${selected.title}」。${selected.body} 局势数值由系统规则落账，后续叙事只能解释这些变化。`, visibleEcho: { personal, others: roleReaction.messageToPlayer.narrative, world: "相关角色会依其已知信息与利益作出反应。" } }, statePatch: selected.patch, relationshipPatch: [], visibleHints: [selected.gain, selected.risk] },
+    decisionInterpretation: { actionType: tags[0] || "governance", surfaceAction: visibleAction, strategicIntent: selected.gain, usedResources: inferResources(tags), targetRoles: [targetRole], publicVisibility: information.publicVisibility, knownByRoles: information.knownByRoles, evidenceCreated: traces, riskTags: [selected.risk], benefitTags: [selected.gain], originEventId, originDecisionId: active.decisionKey },
+    immediateResult: { resultMessage: { title: selected.title, narrative: `总督府开始执行「${selected.title}」。${visibleAction} 局势数值由系统规则落账，后续叙事只能解释这些变化。`, visibleEcho: { personal, others: roleReaction.messageToPlayer.narrative, world: "相关角色会依其已知信息与利益作出反应。" } }, statePatch: selected.patch, relationshipPatch: [], visibleHints: [selected.gain, selected.risk] },
     visibleCausalCard: card,
     fateSeeds: { created: [seed], updated: [], triggered: [] },
     evidenceLedgerUpdates: evidence,
@@ -967,8 +1264,8 @@ function guardDecision(view: MvpView, active: MvpActiveDecision, optionKey: stri
     availableResources: Object.fromEntries((view.player.resources as any[] || []).map((item: any) => Array.isArray(item) ? [String(item[0]), String(item[1])] : [String(item?.name || item?.key), String(item?.value || "")]))
   };
   const categories: ActionGuardCategory[] = ["identity", "era", "resource", "phase", "agency"];
-  if (!customText || customText.length > 500) {
-    const reason = !customText ? "请先写明具体行动。" : "自定义决策过长，请压缩到 500 字以内。";
+  if (!customText || customText.length > 200) {
+    const reason = !customText ? "请先写明具体行动。" : "自定义决策过长，请压缩到 200 字以内。";
     const checks: ActionGuardCheck[] = [
       { category: "format", allowed: false, status: "blocked", reason, suggestedRewrite: "保留一个主要行动、一个对象和一个目的。" },
       ...categories.map((category) => ({ category, allowed: false, status: "not_evaluated" as const, reason: "格式通过后再判断此项。" }))
@@ -1162,6 +1459,94 @@ function getDay(day: number) {
   return result;
 }
 
+function guardManeuver(maneuverType: string, customText: string) {
+  const text = customText.trim();
+  if (/一百万兵|跳到第\s*7\s*天|直接裁决|命令巡抚立即认罪/.test(text)) {
+    return {
+      accepted: false,
+      code: "ACTION_BLOCKED",
+      reason: "这项谋划超出当前身份、资源或阶段边界，不能直接改写主线责任。",
+      rewriteSuggestion: "可改为：派幕僚暗查驿站登记，确认巡抚急奏的经手人员。"
+    };
+  }
+  if (maneuverType === "custom" && text.length > 200) {
+    return {
+      accepted: false,
+      code: "ACTION_BLOCKED",
+      reason: "自拟谋划最多 200 字，请把意图收束成一项可执行的布局。",
+      rewriteSuggestion: text.slice(0, 200)
+    };
+  }
+  return null;
+}
+
+function buildManeuverResult(view: MvpView, input: { maneuverType: string; targetRoleKey: string; intentKey: string; leverageKey: string; customText: string }) {
+  const originEventId = id("evt_maneuver");
+  const targetNames: Record<string, string> = {
+    county_magistrate: "清流县令",
+    merchant: "江南商会会首",
+    xunfu: "浙江巡抚",
+    sili_jian: "司礼监织造使",
+    cabinet: "内阁财政派"
+  };
+  const target = targetNames[input.targetRoleKey] || "相关人物";
+  if (input.maneuverType === "contact") {
+    return {
+      originEventId,
+      title: `你私下接触了${target}`,
+      narrative: `${target}没有立即表态，只把一条可核验的线索留在你手中。你选择先听、先问，而不是把这次接触写成公开命令。关系与后续证据线已经改变。`,
+      patch: input.targetRoleKey === "county_magistrate" ? { "县令信任": 8, "暗账完整度": 5 } : input.targetRoleKey === "merchant" ? { "商会依赖": 6, "官商交易风险": 3 } : { "总督权威": 3, "巡抚敌意": 2 },
+      changes: [`${target}关系发生变化`, "新的私下线索进入账本"],
+      traces: [`${target}接触记录`, "幕僚问询笔录"]
+    };
+  }
+  if (input.maneuverType === "investigate") {
+    return {
+      originEventId,
+      title: "幕僚开始调查驿站与粮路",
+      narrative: "你没有直接替主线定罪，而是派幕僚核对驿站登记、粮价和经手文书。调查尚未完成，但第一条可以回溯的证据链已经建立。",
+      patch: { "暗账完整度": 9, "清算风险": 2, "粮价": -2 },
+      changes: ["暗账完整度 +9", "粮价压力暂缓", "调查任务 1/3"],
+      traces: ["驿站登记核验", "粮路调查任务"]
+    };
+  }
+  if (input.maneuverType === "leverage") {
+    return {
+      originEventId,
+      title: "你动用了手中的筹码",
+      narrative: `你以「${input.leverageKey || "半页田契暗账"}」为筹码试探${target}。对方暂时退了一步，但这份筹码的来源和使用痕迹也被写进了后续定责。`,
+      patch: { "总督权威": 4, "清算风险": 4, "暗账完整度": 5 },
+      changes: ["总督权威 +4", "暗账完整度 +5", "使用筹码留下痕迹"],
+      traces: ["筹码使用记录", `${target}的回应口径`]
+    };
+  }
+  return {
+    originEventId,
+    title: "自拟谋划已执行",
+    narrative: `你拟定的布局「${input.customText}」被拆成可执行的幕僚任务。它没有替代当前主线决策，却让后续消息多了一条来自你主动布局的因果线。`,
+    patch: { "总督权威": 2, "暗账完整度": 6, "清算风险": 2 },
+    changes: ["主动布局已记入消息流", "暗账完整度 +6", "后续事件将引用此谋划"],
+    traces: ["自拟谋划原文", "幕僚执行回执"]
+  };
+}
+
+function buildManeuverFateSeed(originEventId: string, originDay: number, maneuverType: string, targetRoleKey: string) {
+  return {
+    id: `seed_${originEventId}`,
+    family: maneuverType === "investigate" ? "evidence" : maneuverType === "leverage" ? "merchant" : "governance",
+    originEventId,
+    originDay,
+    title: "主动谋划留下的后续回声",
+    visibleHint: `这次${maneuverType}会在${targetRoleKey || "相关人物"}的后续反应中留下可追溯痕迹。`,
+    hiddenMeaning: "主动布局既可能补足证据，也可能让对手看见你的意图。",
+    helpTriggers: [{ condition: { minDay: originDay + 1, all: [{ stat: "暗账完整度", op: ">=", value: 55 }] }, effect: "主动调查成为后续定责依据" }],
+    backfireTriggers: [{ condition: { minDay: originDay + 1, any: [{ stat: "清算风险", op: ">=", value: 65 }, { stat: "商会清算风险", op: ">=", value: 60 }] }, effect: "主动布局被重新解释为越权施压" }],
+    status: "dormant",
+    relatedRoles: targetRoleKey ? [targetRoleKey] : [],
+    triggeredAtDay: null
+  };
+}
+
 function assertVersion(view: MvpView, version: number) {
   if (!Number.isInteger(version)) {
     throw new ConflictException({
@@ -1186,7 +1571,7 @@ function bumpVersion(view: MvpView, expectedVersion: number) {
 }
 
 function message(view: MvpView, type: string, title: string, body: string, time: string, extra: Record<string, unknown> = {}) {
-  return { id: id("msg"), day: view.run.currentDay, time, type, label: type === "day_end" ? "日终回响" : type === "final" ? "最终裁决" : type === "decision" ? "待决策" : "剧情", title, body, ...extra };
+  return { id: id("msg"), day: view.run.currentDay, time, type, label: type === "day_end" ? "日终回响" : type === "final" ? "最终裁决" : type === "decision" ? "待决策" : type === "maneuver_result" ? "主动谋划" : "剧情", title, body, ...extra };
 }
 
 function event(type: string, payload: Record<string, unknown> = {}): MvpStoryEvent {

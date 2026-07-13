@@ -1,0 +1,6 @@
+node_modules
+**/node_modules
+.runtime
+.git
+docs/auto-execute/screenshots
+scripts/test-reports

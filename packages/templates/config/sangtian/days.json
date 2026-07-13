@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.1",
+  "templateKey": "sangtian",
+  "totalDays": 7,
+  "days": [
+    { "day": 1, "decisionKeys": ["d1_1", "d1_2"], "maneuverKeys": ["contact", "investigate", "leverage", "custom"] },
+    { "day": 2, "decisionKeys": ["d2_1", "d2_2"], "maneuverKeys": ["contact", "investigate", "leverage", "custom"] },
+    { "day": 3, "decisionKeys": ["d3_1", "d3_2"], "maneuverKeys": ["contact", "investigate", "leverage", "custom"] },
+    { "day": 4, "decisionKeys": ["d4_1", "d4_2"], "maneuverKeys": ["contact", "investigate", "leverage", "custom"] },
+    { "day": 5, "decisionKeys": ["d5_1", "d5_2"], "maneuverKeys": ["contact", "investigate", "leverage", "custom"] },
+    { "day": 6, "decisionKeys": ["d6_1", "d6_2"], "maneuverKeys": ["contact", "investigate", "leverage", "custom"] },
+    { "day": 7, "decisionKeys": [], "maneuverKeys": [] }
+  ]
+}

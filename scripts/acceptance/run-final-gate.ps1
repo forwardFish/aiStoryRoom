@@ -5,11 +5,17 @@ Initialize-Layout $ProjectRoot
 Initialize-MachineFiles $ProjectRoot
 Update-MachineSummary $ProjectRoot
 $p = Get-AEPaths $ProjectRoot
-try { $gapList = Get-Content -LiteralPath $p.GapListJson -Raw | ConvertFrom-Json } catch { $gapList = $null }
-try { $summary = Get-Content -LiteralPath $p.MachineSummary -Raw | ConvertFrom-Json } catch { $summary = $null }
-try { $requirementsTarget = Get-Content -LiteralPath $p.RequirementTarget -Raw | ConvertFrom-Json } catch { $requirementsTarget = $null }
-try { $requirementCandidates = Get-Content -LiteralPath $p.RequirementCandidates -Raw | ConvertFrom-Json } catch { $requirementCandidates = $null }
-try { $uiTarget = Get-Content -LiteralPath $p.UiTarget -Raw | ConvertFrom-Json } catch { $uiTarget = $null }
+function Read-JsonFile($Path) {
+  try {
+    $raw = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8).TrimStart([char]0xFEFF)
+    return ($raw | ConvertFrom-Json)
+  } catch { return $null }
+}
+$gapList = Read-JsonFile $p.GapListJson
+$summary = Read-JsonFile $p.MachineSummary
+$requirementsTarget = Read-JsonFile $p.RequirementTarget
+$requirementCandidates = Read-JsonFile $p.RequirementCandidates
+$uiTarget = Read-JsonFile $p.UiTarget
 
 $hardGaps = @()
 if ($null -ne $gapList) {

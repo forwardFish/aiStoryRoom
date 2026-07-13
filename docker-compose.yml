@@ -9,8 +9,15 @@ services:
       POSTGRES_DB: ai_story_run
     ports:
       - "5432:5432"
+    command:
+      - postgres
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=cp %p /var/lib/postgresql/wal-archive/%f
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - postgres_wal_archive:/var/lib/postgresql/wal-archive
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ai_story -d ai_story_run"]
       interval: 5s
@@ -32,6 +39,90 @@ services:
       timeout: 5s
       retries: 10
 
+  backup:
+    image: postgres:16-alpine
+    container_name: ai_story_room_backup
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ai_story
+      PGPASSWORD: ai_story_pwd
+      PGDATABASE: ai_story_run
+      BACKUP_RETENTION_DAYS: 30
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - postgres_backup_data:/backups
+    command:
+      - sh
+      - -c
+      - >-
+        while true; do
+          stamp=$$(date -u +%Y%m%dT%H%M%SZ);
+          pg_dump --format=custom --no-owner --no-privileges > /backups/full-$$stamp.dump;
+          find /backups -type f -name 'full-*.dump' -mtime +$$BACKUP_RETENTION_DAYS -delete;
+          sleep 86400;
+        done
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: ai_story_room_api
+    restart: unless-stopped
+    environment:
+      API_PORT: 3001
+      # Local Compose fallback; production should inject the Supabase URL outside Compose.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://ai_story:ai_story_pwd@postgres:5432/ai_story_run?schema=public}
+      MVP_STORY_STORAGE: prisma
+      MVP_STORY_DATA_DIR: /data/mvp-story-runs
+      AI_CAUSAL_PROVIDER: ${AI_CAUSAL_PROVIDER:-rules}
+      AI_CAUSAL_TIMEOUT_MS: ${AI_CAUSAL_TIMEOUT_MS:-15000}
+      AI_CAUSAL_MAX_ATTEMPTS: ${AI_CAUSAL_MAX_ATTEMPTS:-2}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3105:3001"
+    volumes:
+      - mvp_story_data:/data/mvp-story-runs
+    command: ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && NODE_PATH=/app/apps/api/node_modules node --import tsx prisma/seed.ts && cd apps/api && node --import tsx src/main.ts"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    container_name: ai_story_room_web
+    restart: unless-stopped
+    environment:
+      PORT: 5177
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "5177:5177"
+    command: ["node", "apps/web/src/server.mjs"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5177/game"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
 volumes:
   postgres_data:
+  postgres_wal_archive:
+  postgres_backup_data:
   redis_data:
+  mvp_story_data:

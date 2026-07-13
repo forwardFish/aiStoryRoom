@@ -7,7 +7,13 @@ $p = Get-AEPaths $ProjectRoot
 $round = Get-CurrentConvergenceRound $ProjectRoot
 if ($round -le 1) { Reset-GapList $ProjectRoot $round }
 
-try { $target = Get-Content -LiteralPath $p.RequirementTarget -Raw | ConvertFrom-Json } catch { $target = $null }
+try {
+  $rawTarget = [System.IO.File]::ReadAllText($p.RequirementTarget, [System.Text.Encoding]::UTF8).TrimStart([char]0xFEFF)
+  $target = $rawTarget | ConvertFrom-Json
+} catch {
+  $target = $null
+  Write-Host "requirement-target parse error: $($_.Exception.Message)"
+}
 $gaps = 0
 $hasLimitations = $false
 if ($null -eq $target -or $null -eq $target.requirements) {

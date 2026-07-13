@@ -9,14 +9,20 @@ const API_BASE = "http://api.test/api";
 
 test("正式入口只加载唯一 API 客户端，首屏不会白屏", async () => {
   const index = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
-  assert.match(index, /type="module" src="\.\/app\.js"/);
+  const appSource = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  const gameStyles = await readFile(new URL("../public/main-game.css", import.meta.url), "utf8");
+  assert.match(index, /type="module" src="\.\/app\.js(?:\?[^\"]+)?"/);
   assert.doesNotMatch(index, /causal-player-v3|causal-experience-rules|causal-overlay/);
+  assert.doesNotMatch(appSource, /opening-location|杭州粮局/);
+  assert.match(gameStyles, /\.result-narrative \{[^}]*overflow-y: auto/);
+  assert.match(appSource, /rememberResultScroll\(\).*restoreResultScroll\(\)/s);
 
   const harness = setup();
   await harness.app.boot();
 
   assert.ok(harness.root.querySelector('[data-testid="story-shell"]'));
   assert.ok(harness.root.querySelector('[data-testid="decision-zone"]'));
+  assert.equal(harness.root.querySelector("#customDecision").disabled, false, "custom action input stays enabled with preset choices");
   assert.equal(harness.root.querySelector('[data-testid="fatal-error"]'), null);
   assert.match(harness.root.textContent, /第 1 天/);
   assert.match(harness.root.textContent, /0\s*\/ 2/);
@@ -25,6 +31,63 @@ test("正式入口只加载唯一 API 客户端，首屏不会白屏", async () 
   // Query-string debug must never reveal server-private fields.
   assert.doesNotMatch(harness.root.textContent, /只应留在服务端的含义/);
   assert.doesNotMatch(harness.root.textContent, /privateReasoningSummary|hiddenMeaning|构建诊断/);
+});
+
+test("首屏前情介绍流式完成后保留进入局势入口，再释放第一组决策", async () => {
+  const harness = setup({ opening: true });
+  await harness.app.boot();
+
+  assert.ok(harness.app.getState().openingStream, "opening story should start revealing");
+  assert.equal(harness.root.querySelector('[data-testid="decision-zone"]'), null, "opening choices stay hidden while intro reveals");
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.ok(harness.root.querySelector(".opening-stream-copy").textContent.length > 0);
+
+  const deadline = Date.now() + 30000;
+  while (harness.app.getState().openingStream && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.equal(harness.app.getState().openingStream, null);
+  assert.ok(harness.root.querySelector("#beginStoryBtn"), "intro should keep the enter-story button");
+
+  harness.root.querySelector("#beginStoryBtn").click();
+  assert.ok(harness.root.querySelector('[data-testid="decision-zone"]'));
+  assert.ok(harness.root.querySelector(".opening-decision"), "opening decision should stay on the story surface");
+  assert.equal(harness.root.querySelector(".decision-narrative"), null, "old decision prose should be replaced");
+  assert.ok(harness.root.querySelector("#customDecision"));
+});
+
+test("提交主线决策后先流式展示结果故事，结果完成前不出现下一决策", async () => {
+  const harness = setup();
+  await harness.app.boot();
+
+  const input = harness.root.querySelector('input[value="A"]');
+  input.checked = true;
+  input.dispatchEvent(new harness.dom.window.Event("change", { bubbles: true }));
+  await harness.app.submitDecision();
+
+  assert.ok(harness.app.getState().resultStream, "accepted decision should enter result stream state");
+  assert.ok(harness.root.querySelector('[data-testid="result-narrative"]'));
+  assert.equal(harness.root.querySelector('[data-testid="decision-zone"]'), null, "next decision stays hidden while result story is revealing");
+  assert.ok(harness.root.querySelector(".result-stream-copy").textContent.length > 0, "result story should begin revealing instead of appearing empty");
+  assert.equal(harness.root.querySelector(".result-stream-status"), null, "stream status helper text should stay removed");
+  assert.match(harness.app.getState().resultStream.text, /你的判断/);
+  assert.match(harness.app.getState().resultStream.text, /各方动向/);
+  assert.match(harness.app.getState().resultStream.text, /局势走向/);
+  assert.match(harness.app.getState().resultStream.text, /留下的线索/);
+  assert.match(harness.app.getState().resultStream.text, /人物动向/);
+  assert.match(harness.app.getState().resultStream.text, /巡抚的不满/);
+  assert.doesNotMatch(harness.app.getState().resultStream.text, /个人回响|他人回响|世界回响|局势变化|皇帝信任 \+2/);
+  assert.equal(harness.root.querySelector(".result-changes"), null, "all player-visible consequences belong to the narrative stream");
+
+  await waitForStoryReveal(harness);
+  assert.equal(harness.app.getState().resultStream.done, true, "result story should stay paused after the full text is visible");
+  assert.ok(harness.root.querySelector("#continueStoryBtn"), "continue button should appear after the full story");
+  assert.equal(harness.root.querySelector('[data-testid="decision-zone"]'), null, "decision stays hidden until continue is clicked");
+  harness.root.querySelector("#continueStoryBtn").click();
+  assert.equal(harness.app.getState().resultStream, null, "continue should release the next action");
+  assert.ok(harness.root.querySelector('[data-testid="decision-zone"]'));
+  assert.ok(harness.root.querySelector(".decision-center"), "follow-up decision should use the dedicated decision page");
+  assert.equal(harness.root.querySelector(".stream-panel"), null, "message flow must not sit behind a decision");
 });
 
 test("D1-D6 每天严格两策、共十二策，D7 才能完成裁决", async () => {
@@ -49,8 +112,8 @@ test("D1-D6 每天严格两策、共十二策，D7 才能完成裁决", async ()
 
     await choose(harness, "A");
     assert.equal(harness.app.getState().view.decisionHistory.length, day * 2);
-    assert.ok(harness.root.querySelector('[data-testid="day-summary"]'));
-    assert.match(harness.root.textContent, /旧选择可能被重新解释/);
+    assert.ok(harness.root.querySelector('[data-testid="day-end-narrative"]'));
+    assert.equal(harness.root.querySelector(".stream-panel"), null, "day end must use the same narrative page, not the legacy message stream");
     assert.ok(harness.root.querySelector("#advanceBtn"));
     assert.equal(harness.root.querySelector("#finalizeBtn"), null);
 
@@ -66,7 +129,7 @@ test("D1-D6 每天严格两策、共十二策，D7 才能完成裁决", async ()
   assert.equal(view.run.status, "awaiting_finalization");
   assert.equal(view.decisionHistory.length, 12);
   assert.equal(harness.root.querySelector('[data-testid="decision-zone"]'), null);
-  assert.ok(harness.root.querySelector('[data-testid="final-ready"]'));
+  assert.ok(harness.root.querySelector('[data-testid="final-ready-narrative"]'));
   assert.ok(harness.root.querySelector("#finalizeBtn"));
 
   await harness.app.finalize();
@@ -94,7 +157,7 @@ test("非法自定义行动由 ActionGuard 拒绝且不消耗决策", async () =
   custom.dispatchEvent(new harness.dom.window.Event("change", { bubbles: true }));
   const textarea = harness.root.querySelector("#customDecision");
   assert.equal(textarea.disabled, false);
-  assert.equal(textarea.maxLength, 500);
+  assert.equal(textarea.maxLength, 200);
   textarea.value = "命令皇帝立刻宣布结局";
   textarea.dispatchEvent(new harness.dom.window.Event("input", { bubbles: true }));
 
@@ -180,9 +243,10 @@ test("finished 响应缺少 canonical finalJudgement 时明确报数据错误", 
   assert.doesNotMatch(harness.root.textContent, /此人可用|御前裁决已定/);
 });
 
-function setup() {
-  const dom = new JSDOM('<!doctype html><main id="app"></main>', { url: "http://game.test/?debug=1" });
+function setup({ opening = false } = {}) {
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', { url: opening ? "http://game.test/" : "http://game.test/?debug=1" });
   dom.window.confirm = () => true;
+  dom.window.__STORY_STREAM_DELAY_MULTIPLIER__ = 0;
   const api = new MockStoryApi();
   const storage = new ApiStoryStorage({
     baseUrl: API_BASE,
@@ -200,6 +264,23 @@ async function choose(harness, optionKey) {
   input.checked = true;
   input.dispatchEvent(new harness.dom.window.Event("change", { bubbles: true }));
   await harness.app.submitDecision();
+  if (harness.app.getState().resultStream) await continueStory(harness);
+}
+
+async function waitForStoryReveal(harness) {
+  const deadline = Date.now() + 20000;
+  while (harness.app.getState().resultStream && !harness.app.getState().resultStream.done && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.ok(harness.app.getState().resultStream?.done, "result story should eventually reveal all text");
+}
+
+async function continueStory(harness) {
+  await waitForStoryReveal(harness);
+  const button = harness.root.querySelector("#continueStoryBtn");
+  assert.ok(button, "continue button should release the next action");
+  button.click();
+  assert.equal(harness.app.getState().resultStream, null, "continue should release the next action");
 }
 
 async function playToEnd(harness, optionKey) {
@@ -310,6 +391,16 @@ class MockStoryApi {
       hiddenMeaning: "只应留在服务端的含义",
       triggerConditions: ["不应显示的触发条件"]
     };
+    view.messages.push({
+      id: `reaction_${view.run.currentDay}_${completed}`,
+      day: view.run.currentDay,
+      time: "决策后",
+      type: "role_action",
+      label: "他人回响",
+      speaker: "浙江巡抚",
+      title: "巡抚的不满",
+      body: "巡抚拱手道：‘总督大人谨慎，下官佩服。只是内阁催银甚急，三日之期恐生变数。’语气中带着明显的不快。"
+    });
     view.dashboard.traces.push(`${option.title}文移`);
     view.run.decisionsCompletedToday = completed;
     view.run.totalDecisionsCompleted += 1;

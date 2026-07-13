@@ -281,9 +281,26 @@ function Update-MachineSummary($ProjectRoot) {
   $documentedBlockers = @()
   $manual = @()
   $deferred = @()
+  $aggregateOnlyOrReplacedLanes = @(
+    "final-gate",
+    "run-all",
+    "acceptance-compare",
+    "mvp-browser-smoke",
+    "mvp-desktop-layout",
+    "mvp-mobile-layout",
+    "db-e2e"
+  )
   foreach ($file in Get-ChildItem -LiteralPath $p.Results -Filter *.json -ErrorAction SilentlyContinue) {
     try { $r = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json } catch { continue }
-    if ($r.lane -in @("final-gate","run-all")) { continue }
+    $resultName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+    # Timestamped DB-ops results are immutable evidence snapshots. Their latest
+    # status is represented by the requirement target and gap list; aggregating
+    # every historical snapshot would turn an old transient FAIL into a current
+    # hard gate even after a newer BLOCKED/PASS result exists.
+    # Timestamped local PostgreSQL smoke results are immutable evidence snapshots.
+    # Older debugging snapshots must not turn a newer passing rehearsal into a
+    # current hard gate; the latest result is referenced by the requirement trace.
+    if ($r.lane -in $aggregateOnlyOrReplacedLanes -or $resultName -in $aggregateOnlyOrReplacedLanes -or $resultName -like "db-ops-acceptance-*" -or $resultName -like "local-postgres-ops-*") { continue }
     $status = Normalize-AEVerdict $r.status
     $entry = @{ lane=$r.lane; status=$status; file=(Get-RelativeEvidencePath $ProjectRoot $file.FullName); blockers=@($r.blockers) }
     switch ($status) {

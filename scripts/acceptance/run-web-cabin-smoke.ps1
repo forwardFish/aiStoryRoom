@@ -46,6 +46,9 @@ try {
   $previewErr = Join-Path $p.Logs "web-cabin-preview-api.err.log"
   $webOut = Join-Path $p.Logs "web-cabin-web.out.log"
   $webErr = Join-Path $p.Logs "web-cabin-web.err.log"
+  $env:PREVIEW_API_PORT = ([uri]$ApiBase).Port
+  $env:API_PORT = ([uri]$ApiBase).Port
+  $env:PORT = ([uri]$WebUrl).Port
   $preview = Start-Process -FilePath "pnpm.cmd" -ArgumentList "dev:preview-api" -WorkingDirectory $ProjectRoot -RedirectStandardOutput $previewOut -RedirectStandardError $previewErr -PassThru -WindowStyle Hidden
   $web = Start-Process -FilePath "pnpm.cmd" -ArgumentList "dev:web" -WorkingDirectory $ProjectRoot -RedirectStandardOutput $webOut -RedirectStandardError $webErr -PassThru -WindowStyle Hidden
   Log "Started preview-api PID=$($preview.Id), web PID=$($web.Id)"
@@ -56,9 +59,16 @@ try {
   $webResp.Content | Out-File -Encoding UTF8 $htmlEvidence
   $jsResp.Content | Out-File -Encoding UTF8 $appEvidence
   if ([string]::IsNullOrWhiteSpace($webResp.Content) -or [string]::IsNullOrWhiteSpace($jsResp.Content)) { throw "index.html or app.js returned empty" }
-  if (-not $webResp.Content.Contains("web-cabin-root")) { throw "Web cabin root marker not found in HTML" }
+  if (-not ($webResp.Content.Contains("story-lobby-root") -or $webResp.Content.Contains("web-game-root") -or $webResp.Content.Contains("web-cabin-root"))) {
+    throw "Web cabin root marker not found in HTML"
+  }
 
-  $env:WEB_CABIN_URL = $WebUrl
+  $browserWebUrl = $WebUrl
+  if ($ApiBase -ne "http://localhost:3001/api") {
+    $separator = if ($browserWebUrl.Contains("?")) { "&" } else { "?" }
+    $browserWebUrl = "$browserWebUrl${separator}apiBase=$([uri]::EscapeDataString($ApiBase))"
+  }
+  $env:WEB_CABIN_URL = $browserWebUrl
   $env:PREVIEW_API_BASE = $ApiBase
   $env:WEB_CABIN_OUT_DIR = $p.Docs
   $nodeScript = Join-Path $PSScriptRoot "web-cabin-smoke-cdp.mjs"
@@ -67,7 +77,8 @@ try {
   $code = $LASTEXITCODE
   if ($code -eq 0) {
     try {
-      & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "run-web-cabin-visual-diff.ps1") -ProjectRoot $ProjectRoot -Mode $Mode
+      $visualReference = Join-Path $ProjectRoot "docs\UI\web\主游戏.png"
+      & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "run-web-cabin-visual-diff.ps1") -ProjectRoot $ProjectRoot -Mode $Mode -Reference $visualReference
     } catch {
       Add-Content -Encoding UTF8 $summary "`n- Visual diff invocation: HARD_FAIL - $($_.Exception.Message)`n"
       Add-Blocker $ProjectRoot "web-cabin-visual-diff" "HARD_FAIL" "Visual diff invocation failed: $($_.Exception.Message)"
@@ -95,4 +106,5 @@ try {
 } finally {
   Stop-Tree $web
   Stop-Tree $preview
+  Remove-Item Env:WEB_CABIN_URL,Env:PREVIEW_API_BASE,Env:PREVIEW_API_PORT,Env:API_PORT,Env:PORT -ErrorAction SilentlyContinue
 }

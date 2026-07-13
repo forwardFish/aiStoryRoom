@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Inject, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpException, HttpStatus, Inject, Param, Post } from "@nestjs/common";
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
 import { StoryService } from "./story.service";
 
@@ -78,6 +78,33 @@ export class StoryController {
     @Body() body: Record<string, unknown>
   ) {
     return this.story.submitMvpDecision(runId, messageId, body);
+  }
+
+  @Post("v4/story-runs/:runId/critical-events/:eventId/respond")
+  startMvpCriticalResponse(
+    @Param("runId") runId: string,
+    @Param("eventId") eventId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.story.startMvpCriticalResponse(runId, eventId, body);
+  }
+
+  @Post("v4/story-runs/:runId/messages/:messageId/defer")
+  deferMvpCriticalEvent(
+    @Param("runId") runId: string,
+    @Param("messageId") messageId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.story.deferMvpCriticalEvent(runId, messageId, body);
+  }
+
+  @Post("v4/story-runs/:runId/maneuvers")
+  async submitMvpManeuver(@Param("runId") runId: string, @Body() body: Record<string, unknown>) {
+    const result = await this.story.submitMvpManeuver(runId, body) as any;
+    if (result?.accepted === false && result.code === "ACTION_BLOCKED") {
+      throw new HttpException(result, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+    return result;
   }
 
   @Post("v4/story-runs/:runId/advance-day")

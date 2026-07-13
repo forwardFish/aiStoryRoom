@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.1",
+  "templateKey": "sangtian",
+  "leverage": [
+    { "key": "land_contract_fragment", "title": "田契暗账半页", "singleUse": true },
+    { "key": "county_letter", "title": "清流县令密信", "singleUse": true },
+    { "key": "coastal_report", "title": "海防军报", "singleUse": true }
+  ]
+}

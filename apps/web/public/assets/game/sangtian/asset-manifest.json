@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "storyId": "sangtian",
+  "sourceDirectory": "docs/UI/web/game/嘉靖财政局",
+  "delivery": "The web server maps semantic URLs to the source files; the source PNGs are not duplicated.",
+  "assets": [
+    {"assetKey":"background","source":"ChatGPT Image 2026年7月12日 08_46_39 (1).png","sha256":"de8bc6b6434bf9e10d342b0f648d4a542730614a6b6791f0c42c58f7d5747816","dimensions":"1448x1086","role":"scene background","crop":"cover","alt":"嘉靖财政局水墨山水背景"},
+    {"assetKey":"governor","source":"ChatGPT Image 2026年7月12日 08_46_39 (2).png","sha256":"b9e29141e929f7c0134b013a56ab8740b032fe4b32d58ae5cd1e11e71640da29","dimensions":"1254x1254","role":"player portrait","crop":"cover","alt":"浙江总督角色头像"},
+    {"assetKey":"many-worlds","source":"ChatGPT Image 2026年7月12日 08_46_39 (3).png","sha256":"3da609d8cdc962c914750919ec619deb057b5a4236c5f962232847fc69b2a654","dimensions":"1254x1254","role":"brand icon","crop":"contain","alt":"Many Worlds 标识"},
+    {"assetKey":"palace","source":"ChatGPT Image 2026年7月12日 08_46_40 (4).png","sha256":"3754e580f11f5af214ecf47c1f6e61dd1febb73f1f85a3e4b7f65c4480c76764","dimensions":"1254x1254","role":"location icon","crop":"contain","alt":"官署图标"},
+    {"assetKey":"treasury","source":"ChatGPT Image 2026年7月12日 08_46_40 (5).png","sha256":"69c7e3f5c8df70c5f9b24f9be2c5ca825cfcfff7e03e27da83161867f81f86ac","dimensions":"1254x1254","role":"treasury metric icon","crop":"contain","alt":"国库银两图标"},
+    {"assetKey":"heart","source":"ChatGPT Image 2026年7月12日 08_46_40 (6).png","sha256":"a5edc0d37202b47e8da1f0804a1362357fb4ea92b406495defdc6bd8541629ea","dimensions":"1254x1254","role":"public sentiment icon","crop":"contain","alt":"民心图标"},
+    {"assetKey":"grain","source":"ChatGPT Image 2026年7月12日 08_46_40 (7).png","sha256":"b6e930f10c5e9865700c7364e56958a8df8494670b5b3a12bf0beebfbe10a5ee","dimensions":"1254x1254","role":"grain price icon","crop":"contain","alt":"粮价图标"},
+    {"assetKey":"sprout","source":"ChatGPT Image 2026年7月12日 08_46_41 (8).png","sha256":"f0a4ce6904742c628b7827ad401b960c9f5184be1f48443ac27484e199ce4771","dimensions":"1254x1254","role":"reform metric icon","crop":"contain","alt":"改革进度图标"},
+    {"assetKey":"crown","source":"ChatGPT Image 2026年7月12日 08_46_41 (9).png","sha256":"91d594b50082e5a36a9cad1afd68a0164c3b5aa212179c8d6c50a1994f115de2","dimensions":"1254x1254","role":"emperor trust icon","crop":"contain","alt":"皇帝信任图标"},
+    {"assetKey":"minister","source":"ChatGPT Image 2026年7月12日 08_54_50 (1).png","sha256":"f5926f7d99c59b62c9317cf28cc2ef2306e5416ebb34692482c95497b5dafbb9","dimensions":"1254x1254","role":"contact portrait","crop":"cover","alt":"巡抚人物头像"},
+    {"assetKey":"magistrate","source":"ChatGPT Image 2026年7月12日 08_54_50 (2).png","sha256":"73a78d9b14b9aef58070825efbb6f877ebe85741f8a1659a17d82ed61f90901c","dimensions":"1254x1254","role":"contact portrait","crop":"cover","alt":"县令人物头像"},
+    {"assetKey":"clerk","source":"ChatGPT Image 2026年7月12日 08_54_51 (3).png","sha256":"cc60db47247cf4e4c7f01d47ea3a3db172af06699686b94e4944163a1d013cb2","dimensions":"1254x1254","role":"contact portrait","crop":"cover","alt":"书吏人物头像"},
+    {"assetKey":"merchant","source":"ChatGPT Image 2026年7月12日 08_54_52 (4).png","sha256":"a0c5c8c2d01d0abd59d78bfb03a1b1dec7dfcdd5941b0c853d4fd07f5092328c","dimensions":"1254x1254","role":"contact portrait","crop":"cover","alt":"商会人物头像"},
+    {"assetKey":"spy","source":"ChatGPT Image 2026年7月12日 08_54_52 (5).png","sha256":"e16391194b34d7779a380f31a290f907af64bc5075cf86220fd951b371a4093a","dimensions":"1254x1254","role":"contact portrait","crop":"cover","alt":"内监人物头像"},
+    {"assetKey":"network","source":"ChatGPT Image 2026年7月12日 08_54_53 (6).png","sha256":"8c1c36c687645658a1cdcaeb9eac387192f2a04174011b9c4f5a7e356c50de35","dimensions":"1254x1254","role":"relationship icon","crop":"contain","alt":"关系网络图标"},
+    {"assetKey":"rank","source":"ChatGPT Image 2026年7月12日 08_54_54 (7).png","sha256":"dbb59fd1b391c74bdbdb10a5a962e32523635af15b0ebfe88eb88f86bc481821","dimensions":"1254x1254","role":"rank icon","crop":"contain","alt":"权位图标"},
+    {"assetKey":"shield","source":"ChatGPT Image 2026年7月12日 08_54_55 (8).png","sha256":"636e5acd6a1ab9dc0aafe2a5fb56a77693b9d0d8f935122e5a9e8ae1a66590c1","dimensions":"1254x1254","role":"risk icon","crop":"contain","alt":"风险图标"},
+    {"assetKey":"eye","source":"ChatGPT Image 2026年7月12日 08_54_55 (9).png","sha256":"500c91e54b1ba112904b279d4c7a41a98cdbe7ba4ca82143e495009ab992c827","dimensions":"1254x1254","role":"intel icon","crop":"contain","alt":"情报图标"}
+  ]
+}

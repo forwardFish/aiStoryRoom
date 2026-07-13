@@ -33,7 +33,7 @@ interface MvpStoryCard {
 const STORY_CARDS: MvpStoryCard[] = [
   {
     id: "sangtian",
-    title: "桑田诏：嘉靖财政危局",
+    title: "嘉靖财政危局",
     subtitle: "7天动态权谋故事局",
     category: "权谋历史",
     cover: "/assets/stories/story-sangtian.webp",
@@ -207,8 +207,8 @@ export const SANGTIAN_ROLES: MvpRoleCatalogItem[] = [
 
 const SANGTIAN_DETAIL = {
   id: "sangtian",
-  title: "桑田诏：嘉靖财政危局",
-  displayTitle: "桑田诏：\n嘉靖财政危局",
+  title: "嘉靖财政危局",
+  displayTitle: "嘉靖财政危局",
   description: "你将进入嘉靖朝的财政与权谋危机，在 7 天内做出关键决策。",
   subtitle: "7天动态权谋故事局",
   category: "权谋历史",

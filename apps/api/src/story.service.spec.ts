@@ -17,7 +17,7 @@ import { FileMvpStoryStorage, MemoryMvpStoryStorage } from "./mvp-storage";
 const expectedDecisionTitles = [
   ["准许巡抚推进", "回应商会"],
   ["处理县令密信", "是否公开压巡抚"],
-  ["处理巡抚急奏", "商会控粮"],
+  ["巡抚急奏北上", "商会控粮"],
   ["使用暗账", "是否制止灭证"],
   ["回应内阁", "对待司礼监"],
   ["最终奏报", "最后见谁"]
@@ -156,20 +156,20 @@ async function testContextualActionGuard() {
   const boundaryEngine = new MvpStoryEngine(boundaryStorage);
   let boundaryView: any = await boundaryEngine.create({ storyId: "sangtian" });
   const prefix = "命幕僚核对田亩名册并记录";
-  const fiveHundred = `${prefix}${"核".repeat(500 - prefix.length)}`;
+  const twoHundred = `${prefix}${"核".repeat(200 - prefix.length)}`;
   const tooLong: any = await boundaryEngine.submitDecision(boundaryView.run.id, boundaryView.activeDecision.messageId, {
     version: boundaryView.run.version,
     optionKey: "CUSTOM",
-    customText: `${fiveHundred}核`
+    customText: `${twoHundred}核`
   });
   assert.equal(tooLong.guardStatus, "rewrite_needed");
   assert.equal((await boundaryEngine.get(boundaryView.run.id)).run.version, boundaryView.run.version);
   boundaryView = await boundaryEngine.submitDecision(boundaryView.run.id, boundaryView.activeDecision.messageId, {
     version: boundaryView.run.version,
     optionKey: "CUSTOM",
-    customText: fiveHundred
+    customText: twoHundred
   });
-  assert.equal(boundaryView.run.totalDecisionsCompleted, 1, "500 characters must continue through contextual checks");
+  assert.equal(boundaryView.run.totalDecisionsCompleted, 1, "200 characters must continue through contextual checks");
 
   const phaseStorage = new MemoryMvpStoryStorage();
   const phaseEngine = new MvpStoryEngine(phaseStorage);
@@ -254,6 +254,39 @@ async function testFileStorageSurvivesEngineRestart() {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+async function testManeuverContract() {
+  const storage = new MemoryMvpStoryStorage();
+  const engine = new MvpStoryEngine(storage);
+  let view: any = await engine.create({ storyId: "sangtian" });
+  assert.deepEqual(view.maneuverState, { maneuverOpportunitiesPerDay: 2, maneuversUsedToday: 0, maneuverOpportunitiesRemaining: 2, totalManeuversUsed: 0, usedLeverageKeys: [] });
+
+  const blockedBefore = structuredClone(view);
+  const blocked: any = await engine.submitManeuver(view.run.id, { version: view.run.version, maneuverType: "custom", customText: "命令巡抚立即认罪", idempotencyKey: "blocked-1" });
+  assert.equal(blocked.accepted, false);
+  assert.equal(blocked.code, "ACTION_BLOCKED");
+  assert.deepEqual(await engine.get(view.run.id), blockedBefore, "blocked maneuver must not consume quota or version");
+
+  view = await engine.submitManeuver(view.run.id, { version: view.run.version, maneuverType: "investigate", intentKey: "inspect_courier_registry", idempotencyKey: "ok-1" });
+  assert.equal(view.maneuverState.maneuverOpportunitiesRemaining, 1);
+  assert.equal(view.maneuverState.maneuversUsedToday, 1);
+  assert.equal(view.run.decisionsCompletedToday, 0);
+  assert.ok(view.messages.some((item: any) => item.type === "maneuver_result"));
+  const firstVersion = view.run.version;
+  const idempotent: any = await engine.submitManeuver(view.run.id, { version: view.run.version, maneuverType: "investigate", intentKey: "inspect_courier_registry", idempotencyKey: "ok-1" });
+  assert.equal(idempotent.run.version, firstVersion);
+  assert.equal(idempotent.maneuverState.maneuverOpportunitiesRemaining, 1);
+
+  view = await engine.submitManeuver(view.run.id, { version: view.run.version, maneuverType: "contact", targetRoleKey: "county_magistrate", intentKey: "request_intel", idempotencyKey: "ok-2" });
+  assert.equal(view.maneuverState.maneuverOpportunitiesRemaining, 0);
+  assert.equal(view.run.decisionsCompletedToday, 0);
+  await expectConflict(() => engine.submitManeuver(view.run.id, { version: view.run.version, maneuverType: "investigate", idempotencyKey: "over-limit" }));
+
+  view = await engine.submitDecision(view.run.id, view.activeDecision.messageId, { version: view.run.version, optionKey: "A" });
+  view = await engine.submitDecision(view.run.id, view.activeDecision.messageId, { version: view.run.version, optionKey: "A" });
+  view = await engine.advanceDay(view.run.id, { version: view.run.version });
+  assert.deepEqual(view.maneuverState, { maneuverOpportunitiesPerDay: 2, maneuversUsedToday: 0, maneuverOpportunitiesRemaining: 2, totalManeuversUsed: 2, usedLeverageKeys: [] });
 }
 
 async function testInvalidNarrativeProviderFallsBackToRules() {
@@ -516,17 +549,68 @@ function testSchemaValidationRejectsIncompleteCandidate() {
   assert.throws(() => validateDecisionOutput({ visibleCausalCard: null }), /invalid structured narrative output/);
 }
 
+async function testV12PublicContractAndLengthBoundary() {
+  const storage = new MemoryMvpStoryStorage();
+  const engine = new MvpStoryEngine(storage);
+  const view: any = await engine.create({ storyId: "sangtian", mode: "single", selectedRoleKey: "zhejiang_governor" });
+  assert.equal(view.run.totalDays, 7);
+  assert.equal(view.run.totalDecisionsRequired, 12);
+  assert.equal(view.activePrompt.promptKind, "main_decision");
+  assert.equal(view.activePrompt.maxLength, 200);
+  assert.deepEqual(view.activePrompt.options.map((item: any) => Object.keys(item).sort()), [["optionKey", "title"], ["optionKey", "title"], ["optionKey", "title"]]);
+  assert.equal(Array.isArray(view.narrativeEntries), true);
+  assert.equal(view.criticalEvent, null);
+  assert.equal(view.maneuverPanel.maneuverOpportunitiesRemaining, 2);
+  assert.equal(JSON.stringify(view.activePrompt).includes("gain"), false);
+  assert.equal(JSON.stringify(view.activePrompt).includes("risk"), false);
+}
+
+async function testCriticalEventImmediateAndDeferredFlow() {
+  const storage = new MemoryMvpStoryStorage();
+  const engine = new MvpStoryEngine(storage);
+  let view: any = await engine.create({ storyId: "sangtian" });
+  view = await engine.submitManeuver(view.run.id, {
+    version: view.run.version,
+    maneuverType: "investigate",
+    intentKey: "inspect_courier_registry",
+    idempotencyKey: "critical-flow-1"
+  });
+  assert.equal(view.criticalEvent.status, "pending");
+  assert.equal(view.pendingCriticalEvents.length, 1);
+  const eventId = view.criticalEvent.eventId;
+  view = await engine.deferCriticalEvent(view.run.id, eventId, { version: view.run.version, idempotencyKey: "defer-1" });
+  assert.equal(view.criticalEvent, null);
+  assert.equal(view.pendingCriticalEvents[0].status, "deferred");
+  const deferredVersion = view.run.version;
+  view = await engine.startCriticalResponse(view.run.id, eventId, { version: deferredVersion, idempotencyKey: "respond-1" });
+  assert.equal(view.activePrompt.promptKind, "critical_response");
+  assert.equal(view.activePrompt.eventId, eventId);
+  assert.deepEqual(view.activePrompt.options.map((item: any) => Object.keys(item).sort()), [["optionKey", "title"], ["optionKey", "title"], ["optionKey", "title"]]);
+  view = await engine.submitDecision(view.run.id, eventId, { version: view.run.version, optionKey: "A", idempotencyKey: "critical-answer-1" });
+  assert.equal(view.criticalEvent, null);
+  assert.equal(view.run.totalDecisionsCompleted, 1);
+  assert.equal(view.run.decisionsCompletedToday, 1);
+  assert.equal(view.activePrompt.promptKind, "main_decision");
+  const internal = await storage.load(view.run.id);
+  assert.ok(internal.events.some((item) => item.type === "critical_event_deferred"));
+  assert.ok(internal.events.some((item) => item.type === "critical_event_immediate"));
+  assert.ok(internal.events.some((item) => item.type === "critical_response_submitted"));
+}
+
 async function main() {
   await testStrictProgressionAndVersioning();
   await testContextualActionGuard();
   await testFullRoutesAndCausalContracts();
   await testFileStorageSurvivesEngineRestart();
+  await testManeuverContract();
   await testInvalidNarrativeProviderFallsBackToRules();
   await testRoleKnowledgeIsolation();
   testExplicitReactionRoleRouting();
   await testEveryEndingIsReachable();
   await testEveryPresetFateSeedHasBothFutures();
   testSchemaValidationRejectsIncompleteCandidate();
+  await testV12PublicContractAndLengthBoundary();
+  await testCriticalEventImmediateAndDeferredFlow();
   console.log("v4 causal MVP runtime assertions passed");
 }
 

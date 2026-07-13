@@ -15,6 +15,16 @@ export interface MvpStoryStorage {
   create(view: MvpView): Promise<void>;
   load(runId: string): Promise<MvpView>;
   save(view: MvpView, expectedVersion: number): Promise<void>;
+  recordAiTask?(task: {
+    runId: string;
+    eventId: string;
+    taskType: string;
+    status: string;
+    provider: string;
+    inputJson: Record<string, unknown>;
+    resultJson: Record<string, unknown>;
+    errorMessage?: string;
+  }): Promise<void>;
 }
 
 /**

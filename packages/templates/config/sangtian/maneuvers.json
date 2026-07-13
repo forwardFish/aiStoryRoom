@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.1",
+  "templateKey": "sangtian",
+  "types": ["contact", "investigate", "leverage", "custom"],
+  "opportunitiesPerDay": 2,
+  "maxSuccessfulManeuvers": 12,
+  "doesNotReplaceMainDecision": true,
+  "doesNotCarryOver": true
+}

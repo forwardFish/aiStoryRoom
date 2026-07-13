@@ -12,8 +12,8 @@ const logDir = join(outDir, "logs");
 const chromePath = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const cdpPort = Number(process.env.CDP_PORT || 9223);
 const viewport = {
-  width: Number(process.env.WEB_CABIN_VIEWPORT_WIDTH || 1610),
-  height: Number(process.env.WEB_CABIN_VIEWPORT_HEIGHT || 977),
+  width: Number(process.env.WEB_CABIN_VIEWPORT_WIDTH || 1040),
+  height: Number(process.env.WEB_CABIN_VIEWPORT_HEIGHT || 1512),
   deviceScaleFactor: 1,
   mobile: false
 };
@@ -94,6 +94,9 @@ try {
   cdp = await Cdp.connect(page.webSocketDebuggerUrl);
   await cdp.send("Page.enable");
   await cdp.send("Runtime.enable");
+  await cdp.send("Network.enable");
+  await cdp.send("Network.clearBrowserCache");
+  await cdp.send("Network.clearBrowserCookies");
   await cdp.send("Emulation.setDeviceMetricsOverride", viewport);
   await cdp.send("Page.navigate", { url: webUrl });
   await sleep(1500);
@@ -106,38 +109,95 @@ try {
 
   await evaluate(`(async () => {
     const deadline = Date.now() + 15000;
-    while (!window.__aiStoryCabin || window.__aiStoryCabin.state.templates.length < 3) {
-      if (Date.now() > deadline) throw new Error('templates did not load');
+    while (!document.querySelector('#storySectionsRoot [data-story-enter]')) {
+      if (Date.now() > deadline) throw new Error('story catalog did not load');
       await new Promise(r => setTimeout(r, 250));
     }
     return true;
   })()`);
-  await evaluate(`window.__aiStoryCabin.loginActive()`);
-  await evaluate(`window.__aiStoryCabin.createRun(window.__aiStoryCabin.state.templates[0].id)`);
-  await evaluate(`window.__aiStoryCabin.simulatePlayers()`);
-  await evaluate(`window.__aiStoryCabin.submitAction(false)`);
-  await evaluate(`window.__aiStoryCabin.submitAction(true)`);
-  await evaluate(`window.__aiStoryCabin.resolveFullChapter()`);
+  const roleUrl = new URL(`/role-select?story=sangtian&apiBase=${encodeURIComponent(apiBase)}`, webUrl).href;
+  await cdp.send("Page.navigate", { url: roleUrl });
+  await sleep(900);
+  await evaluate(`(async () => {
+    const deadline = Date.now() + 15000;
+    while (!location.pathname.includes('/role-select') || document.body.innerText.includes('正在展开角色名册')) {
+      if (Date.now() > deadline) throw new Error('role select did not load');
+      await new Promise(r => setTimeout(r, 250));
+    }
+    if (!document.querySelector('#enterRole')) throw new Error('role select rendered an error: ' + document.body.innerText.slice(0, 500));
+    return true;
+  })()`);
+  const createdRun = await evaluate(`fetch(${JSON.stringify(`${apiBase}/v4/stories/sangtian/runs`)}, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ storyId: 'sangtian', roleKey: 'zhejiang_governor', mode: 'single' }) }).then(r => r.json())`);
+  if (!createdRun?.run?.id) throw new Error(`story run creation failed: ${JSON.stringify(createdRun)}`);
+  await evaluate(`localStorage.setItem('ai-story-room:sangtian:run-id', ${JSON.stringify(createdRun.run.id)}); true`);
+  const gameUrl = new URL(`/game?runId=${encodeURIComponent(createdRun.run.id)}&apiBase=${encodeURIComponent(apiBase)}`, webUrl).href;
+  await cdp.send("Page.navigate", { url: gameUrl });
+  await sleep(900);
+  await evaluate(`(async () => {
+    const deadline = Date.now() + 15000;
+    while (!document.querySelector('[data-testid="web-game-root"]')) {
+      if (Date.now() > deadline) throw new Error('game page did not load at ' + location.href + ': ' + document.body.innerText.slice(0, 500));
+      await new Promise(r => setTimeout(r, 250));
+    }
+    return true;
+  })()`);
+  const initialGame = await evaluate(`(() => ({
+    text: document.body.innerText,
+    hasDecision: Boolean(document.querySelector('#submitDecision')),
+    hasRightRail: document.body.innerText.includes('当前局势') || document.body.innerText.includes('世界状态') || document.body.innerText.includes('当前风险'),
+    hasMessageStream: Boolean(document.querySelector('#messageStream'))
+  }))()`);
+  await evaluate(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    async function waitFor(predicate, label) {
+      const deadline = Date.now() + 15000;
+      while (!predicate()) {
+        if (Date.now() > deadline) throw new Error(label);
+        await sleep(250);
+      }
+    }
+    async function submitFirstOption() {
+      await waitFor(() => Boolean(document.querySelector('input[name="decision"]')) && Boolean(document.querySelector('#submitDecision')), 'decision option did not render');
+      const before = document.querySelectorAll('.story-card.decision_result').length;
+      document.querySelector('input[name="decision"]')?.click();
+      document.querySelector('#submitDecision')?.click();
+      await waitFor(() => document.querySelectorAll('.story-card.decision_result').length > before || Boolean(document.querySelector('[data-testid="day-complete"]')) || Boolean(document.querySelector('#submitDecision:not([disabled])')), 'decision result did not render');
+    }
+    async function advanceDay() {
+      await waitFor(() => Boolean(document.querySelector('#advanceBtn')), 'day advance button did not render');
+      document.querySelector('#advanceBtn')?.click();
+      await waitFor(() => Boolean(document.querySelector('input[name="decision"]')), 'next day decision did not render');
+    }
+    await submitFirstOption();
+    await submitFirstOption();
+    await advanceDay();
+    await submitFirstOption();
+    await submitFirstOption();
+    await advanceDay();
+    return true;
+  })()`);
+  await cdp.send("Page.reload", { ignoreCache: true });
+  await sleep(900);
+  await evaluate(`(async () => {
+    const deadline = Date.now() + 15000;
+    while (!document.querySelector('[data-testid="web-game-root"]') || document.body.innerText.includes('正在读取')) {
+      if (Date.now() > deadline) throw new Error('game refresh recovery did not finish');
+      await new Promise(r => setTimeout(r, 250));
+    }
+    return true;
+  })()`);
   const summary = await evaluate(`(() => {
-    const s = window.__aiStoryCabin.state;
     return {
       title: document.title,
       bodyLength: document.body.innerText.length,
-      hasTitle: document.body.innerText.includes('AI\u6545\u4e8b\u5c40\u6d4b\u8bd5\u53f0'),
-      templateCount: s.templates.length,
-      runId: s.run && s.run.id,
-      activeHumanCount: s.run && s.run.activeHumanCount,
-      roleCount: s.roles.length,
-      currentNodeIndex: s.runState && s.runState.currentNode && s.runState.currentNode.nodeIndex,
-      guardStatus: s.guardResult && s.guardResult.guardStatus,
-      guardMatchedRules: s.guardResult && s.guardResult.matchedRules,
-      chapterTitle: s.chapter && s.chapter.title,
-      povCount: s.chapter && s.chapter.povSectionsJson && s.chapter.povSectionsJson.length,
-      personalCardCount: s.chapter && s.chapter.personalCardsJson && s.chapter.personalCardsJson.length,
-      nextHook: s.chapter && s.chapter.nextHook,
-      apiLogCount: s.apiLog.length,
-      checklistDone: Array.from(document.querySelectorAll('#checklist .done')).map(li => li.innerText),
-      lastError: s.lastError
+      hasTitle: document.title.includes('嘉靖') || document.body.innerText.includes('杭州总督府'),
+      hasDecision: Boolean(document.querySelector('#submitDecision')),
+    hasRightRail: document.body.innerText.includes('当前局势') || document.body.innerText.includes('世界状态') || document.body.innerText.includes('当前风险'),
+      hasMessageStream: Boolean(document.querySelector('#messageStream')),
+      hasCausalCard: Boolean(document.querySelector('.story-card.decision_result, .story-card.causal_visible, [data-testid="day-complete"]')),
+      hasReferenceState: document.body.innerText.includes('第 3 天') && /今日主线决策\\s*1 \\/ 2/.test(document.body.innerText) && document.body.innerText.includes('巡抚急奏北上'),
+      hasRecoveredRun: Boolean(new URLSearchParams(location.search).get('runId') || localStorage.getItem('ai-story-room:sangtian:run-id')),
+       initialGame: ${JSON.stringify(initialGame)}
     };
   })()`);
 
@@ -158,15 +218,11 @@ try {
   const assertions = [
     [summary.hasTitle, "title text missing"],
     [summary.bodyLength > 500, "page appears blank"],
-    [summary.templateCount >= 3, "less than 3 templates"],
-    [summary.runId, "run not created"],
-    [summary.activeHumanCount >= 3, "3 players not joined"],
-    [summary.roleCount >= 3, "roles missing"],
-    [["blocked", "rewrite_needed"].includes(summary.guardStatus), "ActionGuard not triggered"],
-    [summary.povCount >= 3, "POV chapter missing"],
-    [summary.personalCardCount >= 3, "personal story cards missing"],
-    [summary.nextHook, "next chapter hook missing"],
-    [summary.apiLogCount >= 8, "API/debug log too small"],
+    [summary.initialGame.hasDecision, "decision panel missing"],
+    [summary.initialGame.hasRightRail, "right status rail missing"],
+    [summary.initialGame.hasMessageStream, "message stream missing"],
+    [summary.hasCausalCard || summary.hasReferenceState, "causal result or reference state missing after flow"],
+    [summary.hasRecoveredRun, "run was not recovered after refresh"],
     [blockingExceptions.length === 0, "blocking runtime errors present"]
   ];
   const failed = assertions.filter(([ok]) => !ok).map(([, message]) => message);

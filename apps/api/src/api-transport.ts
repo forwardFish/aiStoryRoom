@@ -68,7 +68,7 @@ export class V4WriteRateLimitGuard implements CanActivate {
 }
 
 export function configureApiTransport(app: INestApplication) {
-  const allowedOrigins = new Set(String(process.env.CORS_ALLOWED_ORIGINS || "http://127.0.0.1:5200,http://localhost:5200,https://ourmanyworlds.com,https://www.ourmanyworlds.com")
+  const allowedOrigins = new Set(String(process.env.CORS_ALLOWED_ORIGINS || "http://127.0.0.1:5177,http://localhost:5177,http://127.0.0.1:5200,http://localhost:5200,https://ourmanyworlds.com,https://www.ourmanyworlds.com")
     .split(",").map((item) => item.trim()).filter(Boolean));
   app.enableCors({
     origin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) { callback(null, !origin || allowedOrigins.has(origin)); },

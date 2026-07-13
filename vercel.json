@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build:vercel",
+  "outputDirectory": "apps/web/dist-vercel",
+  "rewrites": [
+    { "source": "/", "destination": "/home.html" },
+    { "source": "/home", "destination": "/home.html" },
+    { "source": "/privacy", "destination": "/legal.html" },
+    { "source": "/terms", "destination": "/legal.html" },
+    { "source": "/refund", "destination": "/legal.html" },
+    { "source": "/role-select", "destination": "/role-select.html" },
+    { "source": "/game", "destination": "/index.html" },
+    { "source": "/trio", "destination": "/trio.html" }
+  ]
+}

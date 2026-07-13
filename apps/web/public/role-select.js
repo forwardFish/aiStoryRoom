@@ -48,7 +48,8 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.run?.id) throw new Error(payload?.message || `创建故事局失败（HTTP ${response.status}）`);
       browserWindow.localStorage?.setItem(storyRunStorageKey, payload.run.id);
-      browserWindow.location.href = `/game?runId=${encodeURIComponent(payload.run.id)}`;
+      const override = apiOverride(browserWindow?.location);
+      browserWindow.location.href = `/game?runId=${encodeURIComponent(payload.run.id)}${override ? `&apiBase=${encodeURIComponent(override)}` : ""}`;
     } catch (error) {
       state.error = error instanceof Error ? error.message : String(error);
       state.busy = false;
@@ -96,7 +97,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
 
 function renderHeader() {
   return `<header class="role-header">
-    <a class="role-brand" href="/"><span class="roof-mark" aria-hidden="true">◇</span><strong>AI故事局</strong></a>
+    <a class="role-brand" href="/"><img src="/assets/game/sangtian/many-worlds.png" alt=""/><strong>Many Worlds</strong></a>
     <div class="role-header-actions"><a href="#help">${helpIcon()} 帮助</a><button type="button" aria-label="用户菜单">${userIcon()} ${chevronDownIcon()}</button></div>
   </header>`;
 }
@@ -152,8 +153,21 @@ function selectedRole(state) {
 
 function apiBase(location = globalThis.location) {
   if (!location) return "/api";
-  if (location.port === "5177") return `${location.protocol}//${location.hostname}:3001/api`;
+  try {
+    const override = new URL(location.href).searchParams.get("apiBase");
+    if (override) return override.replace(/\/+$/, "");
+  } catch {
+    // Use the normal local default below.
+  }
+  if (location.port && location.port !== "3001") {
+    const host = location.hostname === "127.0.0.1" ? "localhost" : location.hostname;
+    return `${location.protocol}//${host}:3001/api`;
+  }
   return "/api";
+}
+
+function apiOverride(location = globalThis.location) {
+  try { return new URL(location.href).searchParams.get("apiBase") || ""; } catch { return ""; }
 }
 
 function roleIcon(roleKey) {

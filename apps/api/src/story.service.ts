@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import {
   buildCrossImpacts,
   buildEchoes,
@@ -16,7 +16,27 @@ import { getTemplate, midnightStoreTemplate } from "@ai-story/templates";
 import { PrismaService } from "./prisma.service";
 import { MvpStoryEngine } from "./mvp-causal-runtime";
 import { FileMvpStoryStorage } from "./mvp-storage";
+import { PrismaMvpStoryStorage } from "./prisma-mvp-storage";
 import { createConfiguredMvpNarrativeProvider } from "./mvp-narrative-provider";
+
+const AI_TRIO_EXTENSION_NODES = [
+  {
+    title: "共享线索的裂缝",
+    publicNarration: "三个人把各自找到的线索摊在同一张桌上，线索之间出现了一个不该存在的空缺。",
+    nodeGoal: "判断哪些信息可以公开共享，哪些信息仍需要保留给持有者。",
+    actionOptions: ["公开自己的关键线索", "只分享可验证事实", "保留线索并观察他人"],
+    resolutionSummary: "公开的信息让局势更清楚，也让每个角色的真实动机更容易被其他人重新判断。",
+    nextHook: "最后一轮的选择将决定你们是共同承担后果，还是把责任推给其中一个人。"
+  },
+  {
+    title: "最后的共同选择",
+    publicNarration: "天亮前，异常把三个人带到同一个出口。出口只会对一个明确的共同方案作出回应。",
+    nodeGoal: "在互信、证据和个人目标之间作出最后一次协作判断。",
+    actionOptions: ["共同承担风险", "以证据换取安全", "保留退路再行动"],
+    resolutionSummary: "最后的共同选择留下了可追溯的行动记录，故事的结局取决于你们如何解释彼此的决策。",
+    nextHook: "本轮推演结束，AI 导演将依据七轮行动和跨玩家回响生成章节结算。"
+  }
+] as const;
 
 type JsonValue = Record<string, unknown> | unknown[];
 
@@ -26,7 +46,9 @@ export class StoryService {
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
     this.mvpStory = new MvpStoryEngine(
-      new FileMvpStoryStorage(),
+      process.env.DATABASE_URL && process.env.MVP_STORY_STORAGE !== "file"
+        ? new PrismaMvpStoryStorage(prisma as any)
+        : new FileMvpStoryStorage(),
       createConfiguredMvpNarrativeProvider()
     );
   }
@@ -49,6 +71,18 @@ export class StoryService {
 
   submitMvpDecision(runId: string, messageId: string, input: Record<string, unknown>) {
     return this.mvpStory.submitDecision(runId, messageId, input as any);
+  }
+
+  startMvpCriticalResponse(runId: string, eventId: string, input: Record<string, unknown>) {
+    return this.mvpStory.startCriticalResponse(runId, eventId, input as any);
+  }
+
+  deferMvpCriticalEvent(runId: string, messageId: string, input: Record<string, unknown>) {
+    return this.mvpStory.deferCriticalEvent(runId, messageId, input as any);
+  }
+
+  submitMvpManeuver(runId: string, input: Record<string, unknown>) {
+    return this.mvpStory.submitManeuver(runId, input as any);
   }
 
   advanceMvpDay(runId: string, input: Record<string, unknown>) {
@@ -105,15 +139,16 @@ export class StoryService {
   async createRun(openid: string, input: CreateStoryRunInput) {
     const owner = await this.ensureUser(openid);
     const template = getTemplate(input.templateId);
-    const maxPlayers = Math.max(1, Math.min(5, Number(input.maxPlayers || 3)));
     const mode = input.mode || "invite";
+    const isAiTrio = mode === "ai-trio";
+    const maxPlayers = isAiTrio ? 3 : Math.max(1, Math.min(5, Number(input.maxPlayers || 3)));
     const inviteCode = await this.nextInviteCode();
 
     const run = await this.prisma.storyRun.create({
       data: {
         templateId: template.id,
         ownerUserId: owner.id,
-        title: `${template.name}：没有影子的客人`,
+        title: isAiTrio ? `${template.name}：三人 AI 推演` : `${template.name}：没有影子的客人`,
         hook: template.hook,
         mode,
         status: "playing",
@@ -123,16 +158,17 @@ export class StoryService {
         stateJson: {
           tone: input.tone || "悬疑",
           currentQuestion: "第一章刚刚开始",
-          dangerLevel: 1
+          dangerLevel: 1,
+          simulation: isAiTrio ? { roundCount: 7, decisionOrder: ["player_a", "player_b", "player_c"] } : undefined
         },
         visibility: mode === "single" ? "private" : "link",
         inviteCode
       }
     });
 
-    await this.createInitialRunAssets(run.id, template.id);
+    await this.createInitialRunAssets(run.id, template.id, mode);
 
-    if (input.ownerAsPlayer !== false || mode === "single") {
+    if (input.ownerAsPlayer !== false || mode === "single" || isAiTrio) {
       await this.joinRun(openid, run.id);
     }
 
@@ -326,6 +362,12 @@ export class StoryService {
 
     const role = await this.prisma.storyRole.findFirst({ where: { id: input.roleId, runId: node.runId } });
     if (!role) throw new NotFoundException("role not found");
+    const runPlayer = await this.prisma.storyPlayer.findFirst({
+      where: { runId: node.runId, userId: user.id, roleId: input.roleId, status: "active" }
+    });
+    if (node.runId && !runPlayer) {
+      throw new ForbiddenException("player must claim this role before submitting its action");
+    }
 
     const action = await this.prisma.playerAction.create({
       data: {
@@ -410,7 +452,8 @@ export class StoryService {
     if (actions.length === 0) throw new BadRequestException("no accepted actions to resolve");
 
     const template = getTemplate(node.run.templateId);
-    const templateNode = template.nodes[node.nodeIndex - 1] || midnightStoreTemplate.nodes[node.nodeIndex - 1];
+    const totalNodes = node.run.mode === "ai-trio" ? 7 : 5;
+    const templateNode = this.nodeDefinition(template, node.nodeIndex, node.run.mode);
     const dangerAfter = Math.min(node.run.maxDangerLevel, node.run.dangerLevel + (node.nodeIndex >= 4 ? 1 : 0));
     const directorResult = await resolveNodeWithDirector({
       templateName: template.name,
@@ -467,7 +510,7 @@ export class StoryService {
         dangerBefore: node.run.dangerLevel,
         dangerAfter,
         nextNodeHook: directorResult.nextNodeHook,
-        nextOptionsJson: template.nodes[node.nodeIndex]?.actionOptions || []
+        nextOptionsJson: this.nodeDefinition(template, node.nodeIndex + 1, node.run.mode)?.actionOptions || []
       }
     });
 
@@ -511,8 +554,16 @@ export class StoryService {
       data: { status: "resolved", resolvedAt: new Date(), resolutionId: resolution.id }
     });
 
-    if (node.nodeIndex < 5) {
-      const next = await this.ensureNode(node.runId, node.chapterIndex, node.nodeIndex + 1, node.run.templateId);
+    await this.notifyOtherPlayers({
+      runId: node.runId,
+      nodeId,
+      nodeTitle: node.title,
+      actions,
+      summary: directorResult.summary
+    });
+
+    if (node.nodeIndex < totalNodes) {
+      const next = await this.ensureNode(node.runId, 1, node.nodeIndex + 1, node.run.templateId, node.run.mode);
       await this.prisma.storyRun.update({
         where: { id: node.runId },
         data: {
@@ -560,7 +611,8 @@ export class StoryService {
     const run = await this.prisma.storyRun.findUnique({ where: { id: runId }, include: { roles: true, owner: true } });
     if (!run) throw new NotFoundException("story run not found");
     const segments = await this.segments(runId);
-    if (segments.length < 5) throw new BadRequestException("chapter requires 5 resolved nodes");
+    const requiredNodes = run.mode === "ai-trio" ? 7 : 5;
+    if (segments.length < requiredNodes) throw new BadRequestException(`chapter requires ${requiredNodes} resolved nodes`);
 
     const template = getTemplate(run.templateId);
     const directorResult = await generateChapterWithDirector({
@@ -801,16 +853,16 @@ export class StoryService {
     });
   }
 
-  private async createInitialRunAssets(runId: string, templateId: string) {
+  private async createInitialRunAssets(runId: string, templateId: string, mode: string) {
     const template = getTemplate(templateId);
     await this.prisma.chapterSandbox.create({
       data: {
         runId,
         chapterIndex: 1,
-        title: "第 1 章：没有影子的客人",
+        title: mode === "ai-trio" ? "第 1 章：三人共同推演" : "第 1 章：没有影子的客人",
         mainLocation: template.name,
         chapterGoal: "确认异常的来源，并让所有角色产生第一次协作。",
-        currentQuestion: template.nodes[0]?.nodeGoal || template.hook,
+        currentQuestion: this.nodeDefinition(template, 1, mode)?.nodeGoal || template.hook,
         sandboxJson: template
       }
     });
@@ -836,7 +888,7 @@ export class StoryService {
       });
     }
 
-    const node = await this.ensureNode(runId, 1, 1, templateId);
+    const node = await this.ensureNode(runId, 1, 1, templateId, mode);
     await this.prisma.storyRun.update({ where: { id: runId }, data: { currentNodeId: node.id } });
 
     for (const clue of template.initialClues) {
@@ -863,9 +915,10 @@ export class StoryService {
     });
   }
 
-  private async ensureNode(runId: string, chapterIndex: number, nodeIndex: number, templateId: string) {
+  private async ensureNode(runId: string, chapterIndex: number, nodeIndex: number, templateId: string, mode = "invite") {
     const template = getTemplate(templateId);
-    const templateNode = template.nodes[nodeIndex - 1] || midnightStoreTemplate.nodes[nodeIndex - 1];
+    const templateNode = this.nodeDefinition(template, nodeIndex, mode);
+    if (!templateNode) throw new BadRequestException(`story node ${nodeIndex} is not configured`);
     return this.prisma.sceneNode.upsert({
       where: { runId_chapterIndex_nodeIndex: { runId, chapterIndex, nodeIndex } },
       update: {},
@@ -880,6 +933,50 @@ export class StoryService {
         status: "open_for_actions"
       }
     });
+  }
+
+  private nodeDefinition(template: { nodes: readonly any[] }, nodeIndex: number, mode = "invite") {
+    if (mode === "ai-trio" && nodeIndex > template.nodes.length) {
+      return AI_TRIO_EXTENSION_NODES[nodeIndex - template.nodes.length - 1];
+    }
+    return template.nodes[nodeIndex - 1] || midnightStoreTemplate.nodes[nodeIndex - 1];
+  }
+
+  private async notifyOtherPlayers(input: {
+    runId: string;
+    nodeId: string;
+    nodeTitle: string;
+    actions: Array<{ id: string; userId: string | null; role: { roleName: string }; method: string; intent: string }>;
+    summary: string;
+  }) {
+    const players = await this.prisma.storyPlayer.findMany({
+      where: { runId: input.runId, status: "active", userId: { not: null } },
+      include: { role: true }
+    });
+    const notifications: Array<{
+      userId: string;
+      runId: string;
+      nodeId: string;
+      type: string;
+      title: string;
+      content: string;
+    }> = [];
+    for (const action of input.actions) {
+      if (!action.userId) continue;
+      const decision = `${action.method}${action.intent ? `（意图：${action.intent}）` : ""}`;
+      for (const recipient of players) {
+        if (!recipient.userId || recipient.userId === action.userId) continue;
+        notifications.push({
+          userId: recipient.userId,
+          runId: input.runId,
+          nodeId: input.nodeId,
+          type: "player_decision_shared",
+          title: `${action.role.roleName} 已在「${input.nodeTitle}」作出决策`,
+          content: `其他玩家可见决策：${decision}\nAI 导演回响：${input.summary}`
+        });
+      }
+    }
+    if (notifications.length) await this.prisma.notification.createMany({ data: notifications });
   }
 
   private guardAction(input: SubmitActionInput): { ok: true } | { ok: false; reason: string; guardStatus: "rewrite_needed" | "blocked"; matchedRules: string[] } {

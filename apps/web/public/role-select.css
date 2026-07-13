@@ -64,6 +64,11 @@ svg { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-wi
 .role-card.selected { border-color: #efb646; box-shadow: 0 0 0 3px rgba(248,184,57,.28), 0 0 28px rgba(245,170,35,.48), inset 0 0 0 5px rgba(255,255,255,.5); }
 .role-card.preview { filter: saturate(.85); }
 .role-card .role-art { width: 100%; height: 292px; display: block; background-image: url('/assets/story-atlas.svg'); background-size: var(--atlas-size); background-position: var(--atlas-pos); }
+.role-card .role-art.art-zhejiang-governor { background-image: url('/assets/game/sangtian/governor.png'); background-size: cover; background-position: center 15%; }
+.role-card .role-art.art-zhejiang-xunfu { background-image: url('/assets/game/sangtian/minister.png'); background-size: cover; background-position: center 12%; }
+.role-card .role-art.art-county-magistrate { background-image: url('/assets/game/sangtian/magistrate.png'); background-size: cover; background-position: center 12%; }
+.role-card .role-art.art-jiangnan-merchant { background-image: url('/assets/game/sangtian/merchant.png'); background-size: cover; background-position: center 12%; }
+.role-card .role-art.art-sili-jian { background-image: url('/assets/game/sangtian/spy.png'); background-size: cover; background-position: center 12%; }
 .role-card::after { content: ""; position: absolute; left: 0; right: 0; top: 200px; height: 94px; background: linear-gradient(180deg, transparent, rgba(16,11,7,.86)); pointer-events: none; }
 .role-card-name { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 109px; display: grid; grid-template-rows: 47px 62px; text-align: center; }
 .role-card-name strong { align-self: end; padding-bottom: 7px; font-size: 25px; text-shadow: 0 2px 8px #000; }
@@ -79,6 +84,42 @@ svg { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-wi
 .panel-title span:last-child { background: linear-gradient(90deg, #d9b77d, transparent); }
 .selected-portrait { position: relative; z-index: 1; width: 130px; height: 130px; margin: 18px auto 6px; overflow: hidden; border: 3px solid #e5c17d; border-radius: 50%; box-shadow: 0 0 0 5px rgba(247,222,173,.42); }
 .selected-portrait { background-image: url('/assets/story-atlas.svg'); background-size: var(--atlas-size); background-position: var(--atlas-pos); }
+.selected-portrait.art-zhejiang-governor { background-image: url('/assets/game/sangtian/governor.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-zhejiang-xunfu { background-image: url('/assets/game/sangtian/minister.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-county-magistrate { background-image: url('/assets/game/sangtian/magistrate.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-jiangnan-merchant { background-image: url('/assets/game/sangtian/merchant.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-sili-jian { background-image: url('/assets/game/sangtian/spy.png'); background-size: cover; background-position: center 12%; }
+
+/* Match the reference composition: the five cards and selected-role panel
+   share one aligned row, with the role label living inside the card surface. */
+.role-heading { display: none; }
+.role-layout { align-items: start; margin-top: 10px; }
+.role-card-grid { position: relative; height: 462px; padding: 70px 14px 26px; border: 1px solid #e0e2f5; border-radius: 14px; background: rgba(255,255,255,.54); }
+.role-card-grid::before { content: "♙  请选择你的角色"; position: absolute; top: 22px; left: 23px; color: #252c58; font-family: "Songti SC", STSong, SimSun, serif; font-size: 23px; font-weight: 700; }
+.role-card { height: 366px; }
+.selection-panel { height: 462px; min-height: 462px; }
+.selection-panel > p, .selection-panel dl { display: none; }
+.role-actions { margin-top: 55px; }
+.back-button, .enter-button { height: 70px; }
+.back-button { min-width: 265px; }
+.enter-button { min-width: 405px; }
+.role-card .role-art.art-zhejiang-governor { background-image: url('/assets/game/sangtian/generated/role-governor-scene-v1.png'); background-position: center top; }
+.role-card .role-art.art-zhejiang-xunfu { background-image: url('/assets/game/sangtian/generated/role-xunfu-scene-v1.png'); background-position: center top; }
+.role-card .role-art.art-county-magistrate { background-image: url('/assets/game/sangtian/generated/role-clerk-scene-v1.png'); background-position: center top; }
+.role-card .role-art.art-jiangnan-merchant { background-image: url('/assets/game/sangtian/generated/role-merchant-scene-v1.png'); background-position: center top; }
+.role-card .role-art.art-sili-jian { background-image: url('/assets/game/sangtian/generated/role-spy-scene-v1.png'); background-position: center top; }
+
+/* Final reference-sized overrides.  These stay last intentionally. */
+.role-actions { margin-top: 55px; }
+.back-button, .enter-button { height: 70px; }
+.back-button { min-width: 265px; }
+.enter-button { min-width: 405px; }
+.story-banner-copy h1 { font-size: 0; }
+.story-banner-copy h1::after { content: "嘉靖财政危局"; color: #20264c; font-size: 40px; letter-spacing: .03em; }
+.story-seal { left: 332px; right: auto; }
+.story-banner-copy h1::after { position: relative; top: -18px; }
+.story-seal { transform: translateY(-15px); }
+.selected-portrait.art-zhejiang-governor { background-image: url('/assets/game/sangtian/generated/role-governor-scene-v1.png'); background-position: center top; }
 .selected-name { position: relative; z-index: 1; width: 190px; margin: -9px auto 8px; padding: 9px 15px; color: #ffe9b7; background: linear-gradient(90deg, #a12a1d, #c3432f, #9b241a); clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); font-size: 21px; font-weight: 700; }
 .selection-panel > p { position: relative; z-index: 1; min-height: 37px; margin: 0 10px 11px; color: #765e46; font-size: 13px; line-height: 1.4; }
 .trait-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
@@ -96,6 +137,28 @@ svg { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-wi
 .enter-button:disabled { cursor: not-allowed; filter: grayscale(.6); opacity: .6; }
 .role-alert { width: 620px; margin: 15px auto 0; padding: 10px 14px; border: 1px solid rgba(157,48,35,.25); border-radius: 8px; color: #8d241b; background: #fff0e9; text-align: center; }
 
+/* UI reference calibration: selection is part of the Many Worlds white/lilac
+   surface, while gameplay semantics remain unchanged. */
+:root { --paper: #fbfbff; --ink: #20264c; --gold: #6545f5; --red: #6545f5; --muted: #737995; }
+html, body { background: linear-gradient(180deg, #fff 0%, #fafaff 68%, #f3f1ff 100%); }
+.role-shell { background: radial-gradient(circle at 5% 96%, rgba(197,190,255,.22), transparent 22%), radial-gradient(circle at 96% 94%, rgba(197,190,255,.18), transparent 23%); }
+.role-header { height: 75px; padding: 0 28px; border-bottom-color: #e4e6f5; background: rgba(255,255,255,.9); box-shadow: none; }.role-brand { color: #20264c; font-family: Georgia, "Songti SC", serif; gap: 10px; }.role-brand img { width: 42px; height: 42px; object-fit: contain; }.role-brand strong { font-size: 28px; letter-spacing: 0; }.role-header-actions { color: #29305b; }.role-header-actions a, .role-header-actions button { color: #29305b; }
+.role-steps { height: 116px; width: 840px; }.role-steps div { min-width: 190px; height: 54px; border-color: #e0e1f5; border-radius: 28px; color: #858ba8; background: #fff; clip-path: none; box-shadow: 0 4px 12px rgba(79,68,170,.05); }.role-steps div.active { border: 2px solid #6b48f4; color: #5540db; background: #fbfaff; box-shadow: 0 7px 18px rgba(98,70,240,.18); }.role-steps span { width: 34px; height: 34px; background: #e4e5f4; color: #6e7392; }.role-steps .active span { background: linear-gradient(135deg,#805eff,#5535e8); }.role-steps b { font-size: 18px; }.role-steps i { background: #a090ff; }
+.story-banner { width: min(1352px, calc(100vw - 96px)); height: 202px; margin-bottom: 32px; padding: 0 50px 0 345px; border-color: #e1e2f4; border-radius: 15px; background: linear-gradient(90deg, rgba(255,255,255,.86), rgba(255,255,255,.97)); box-shadow: 0 8px 20px rgba(78,68,163,.06); }.story-banner::before { width: 420px; background-image: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,.95)), url('/assets/game/sangtian/background.png'); background-size: cover; background-position: center; }.story-banner::after { color: rgba(104,76,240,.06); }.story-banner-copy h1 { color: #20264c; font-size: 40px; letter-spacing: .03em; }.story-banner-copy p { color: #4a5278; font-size: 16px; }.story-meta span { min-width: 130px; height: 52px; border-color: #e1e3f5; color: #454d78; background: #fff; font-size: 16px; }.story-meta svg { color: #6848ee; }
+.role-content { width: min(1352px, calc(100vw - 96px)); }.role-heading { justify-items: start; height: 52px; }.role-heading h2 { color: #252c58; font-size: 24px; }.role-heading h2::before, .role-heading h2::after { color: #7556ef; }.role-layout { grid-template-columns: minmax(0,1fr) 290px; gap: 20px; }.role-card-grid { gap: 18px; }.role-card { height: 365px; border-color: #e0e2f5; border-radius: 14px; background: #fff; box-shadow: 0 7px 16px rgba(78,68,163,.07); }.role-card.selected { border: 2px solid #7555f5; box-shadow: 0 0 0 3px rgba(112,82,246,.14), 0 10px 25px rgba(100,70,245,.18); }.role-card .role-art { height: 290px; }.role-card::after { top: 190px; height: 102px; background: linear-gradient(180deg, transparent, rgba(16,18,52,.52)); }.role-card-name { height: 105px; grid-template-rows: 49px 56px; }.role-card-name strong { color: #20264c; text-shadow: none; font-family: "Songti SC", STSong, serif; font-size: 24px; }.role-card-name span { color: #566080; background: #fff; font-size: 15px; }.role-card-name svg { color: #6848ee; }.selected-ribbon { background: linear-gradient(90deg,#835eff,#5a38ec); color: #fff; }.preview-ribbon { color: #7a7395; background: #f5f4fb; }
+.selection-panel { min-height: 365px; border-color: #e0e2f5; border-radius: 14px; background: linear-gradient(180deg,#fff,#fbfbff); box-shadow: 0 7px 16px rgba(78,68,163,.05); }.selection-panel::before { color: rgba(104,76,240,.05); }.panel-title { color: #323963; }.panel-title span { background: linear-gradient(90deg,transparent,#c5bbff); }.panel-title span:last-child { background: linear-gradient(90deg,#c5bbff,transparent); }.selected-portrait { width: 150px; height: 150px; border-color: #d9d1ff; box-shadow: 0 0 0 6px rgba(219,214,255,.4); }.selected-name { color: #fff; background: linear-gradient(90deg,#805eff,#5836ea); }.selection-panel > p { color: #68708d; }.trait-grid span { border-color: #e2e3f5; color: #6047d6; background: #fff; }.trait-grid b { color: #515a82; }.selection-panel dt { color: #7556e8; }.selection-panel dd { color: #69718d; }
+.role-actions { margin-top: 36px; }.back-button, .enter-button { height: 62px; border-radius: 14px; font-size: 23px; }.back-button { border-color: #dfe1f4; color: #46507a; background: #fff; box-shadow: 0 7px 16px rgba(78,68,163,.06); }.enter-button { border: 0; color: #fff; background: linear-gradient(90deg,#5a38ec,#885eff); box-shadow: 0 10px 22px rgba(97,67,235,.22); }
+.role-card .role-art.art-zhejiang-governor { background-image: url('/assets/game/sangtian/governor.png'); background-size: cover; background-position: center 15%; }
+.role-card .role-art.art-zhejiang-xunfu { background-image: url('/assets/game/sangtian/minister.png'); background-size: cover; background-position: center 12%; }
+.role-card .role-art.art-county-magistrate { background-image: url('/assets/game/sangtian/magistrate.png'); background-size: cover; background-position: center 12%; }
+.role-card .role-art.art-jiangnan-merchant { background-image: url('/assets/game/sangtian/merchant.png'); background-size: cover; background-position: center 12%; }
+.role-card .role-art.art-sili-jian { background-image: url('/assets/game/sangtian/spy.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-zhejiang-governor { background-image: url('/assets/game/sangtian/governor.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-zhejiang-xunfu { background-image: url('/assets/game/sangtian/minister.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-county-magistrate { background-image: url('/assets/game/sangtian/magistrate.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-jiangnan-merchant { background-image: url('/assets/game/sangtian/merchant.png'); background-size: cover; background-position: center 12%; }
+.selected-portrait.art-sili-jian { background-image: url('/assets/game/sangtian/spy.png'); background-size: cover; background-position: center 12%; }
+
 @media (max-width: 1380px) {
   .role-card-grid { gap: 13px; }
   .role-card { height: 330px; }
@@ -103,3 +166,28 @@ svg { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-wi
   .story-banner { padding-left: 275px; }
   .story-banner-copy h1 { font-size: 40px; }
 }
+
+/* Keep these reference-calibration rules after every legacy and responsive rule. */
+.role-actions { margin-top: 55px; }
+.back-button, .enter-button { height: 70px; }
+.back-button { min-width: 265px; }
+.enter-button { min-width: 405px; }
+.story-banner-copy h1 { font-size: 0; }
+.story-banner-copy h1::after { content: "嘉靖财政危局"; color: #20264c; font-size: 40px; letter-spacing: .03em; }
+.story-seal { left: 332px; right: auto; }
+
+/* Keep the generated scene-card assets last so they override the legacy
+   transparent-checkerboard source mappings above. */
+.role-card .role-art.art-zhejiang-governor { background-image: url('/assets/game/sangtian/generated/role-governor-scene-v1.png'); background-position: center top; }
+.role-card .role-art.art-zhejiang-xunfu { background-image: url('/assets/game/sangtian/generated/role-xunfu-scene-v1.png'); background-position: center top; }
+.role-card .role-art.art-county-magistrate { background-image: url('/assets/game/sangtian/generated/role-clerk-scene-v1.png'); background-position: center top; }
+.selected-portrait.art-zhejiang-governor { background-image: url('/assets/game/sangtian/generated/role-governor-scene-v1.png'); background-position: center top; }
+.role-card .role-art.art-jiangnan-merchant { background-image: url('/assets/game/sangtian/generated/role-merchant-scene-v1.png'); background-position: center top; }
+.role-card .role-art.art-sili-jian { background-image: url('/assets/game/sangtian/generated/role-spy-scene-v1.png'); background-position: center top; }
+.role-actions { margin-top: 55px; }
+.back-button, .enter-button { height: 70px; }
+.back-button { min-width: 265px; }
+.enter-button { min-width: 405px; }
+.story-banner-copy h1 { font-size: 0; }
+.story-banner-copy h1::after { content: "嘉靖财政危局"; color: #20264c; font-size: 40px; letter-spacing: .03em; }
+.story-seal { left: 332px; right: auto; }

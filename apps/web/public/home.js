@@ -1,239 +1,98 @@
-const CATEGORY_ICONS = {
-  全部: gridIcon(),
-  权谋历史: crownIcon(),
-  都市职场: buildingIcon(),
-  悬疑推理: searchIcon(),
-  科幻未来: chipIcon(),
-  奇幻冒险: compassIcon(),
-  情感沉浸: heartIcon(),
-  成长励志: briefcaseIcon()
-};
+const worlds = [
+  { title: "The Silver Crisis", category: "History & Power", copy: "Navigate a dynasty's financial storm before rebellion tears the empire apart.", image: 2, meta: "4–6 roles · 2–4h" },
+  { title: "The Succession Room", category: "Business & Work", copy: "The founder is stepping down. The board is divided. Everyone has a different future in mind.", image: 1, meta: "5 roles · 60–90 min", featured: true },
+  { title: "The Last Night Shift", category: "Mystery", copy: "Five strangers. One shift. Different truths that never stay buried.", image: 3, meta: "5 roles · 60–90 min" },
+  { title: "Ninety Days Left", category: "Crisis & Survival", copy: "Your company has 90 days to prove it can survive.", image: 4, meta: "4–6 roles · 60–90 min" },
+  { title: "The Inheritance Table", category: "Relationships", copy: "Family. Fortune. One table. Everything changes at the reading.", image: 8, meta: "4–6 roles · 60–90 min" },
+  { title: "Blackout Protocol", category: "Speculative Futures", copy: "A citywide blackout. Resources fade fast. Trust fades faster.", image: 5, meta: "4–6 roles · 60–90 min" },
+  { title: "The Hidden Files", category: "Mystery", copy: "Old files. Cold cases. Secrets that someone still wants hidden.", image: 6, meta: "4–6 roles · 60–90 min" },
+  { title: "Love in Parallel", category: "Relationships", copy: "In another timeline, you made a different choice. What if?", image: 7, meta: "3–4 roles · 60–90 min" }
+];
 
-export function createLobbyApp({ root, window: browserWindow = globalThis.window, fetchImpl = browserWindow?.fetch?.bind(browserWindow) } = {}) {
-  if (!root) throw new TypeError("createLobbyApp requires a root element");
-  if (typeof fetchImpl !== "function") throw new TypeError("createLobbyApp requires fetch");
+const featurePoints = [
+  ["17-user-role", "Different roles, different truths", "Each player sees only what their role would realistically know."],
+  ["18-eye", "Private motives", "Everyone enters with their own goals, pressures, relationships, and limits."],
+  ["11-branching-choice", "Decisions in your own words", "Negotiate, persuade, cooperate, or act, on your own terms."],
+  ["05-users", "One shared world", "All actions have real effects through relationships, resources, secrets, and the wider situation."],
+  ["13-infinity", "No preset ending", "Outcomes emerge from what everyone does."],
+];
 
-  const state = {
-    loading: true,
-    error: "",
-    catalog: null,
-    category: "全部",
-    search: ""
+function asset(group, index) {
+  const normalized = String(index).match(/^\d+/)?.[0] || String(index);
+  return `/assets/${group}/${normalized}.png`;
+}
+function icon(index, label = "") { return `<img class="mw-icon" src="${asset("icon", index)}" alt="${label}" aria-hidden="${label ? "false" : "true"}" />`; }
+
+export function createHomeApp({ root, window: browserWindow = globalThis.window } = {}) {
+  if (!root) throw new TypeError("createHomeApp requires a root element");
+  const gotoSolo = () => {
+    const host = String(browserWindow.location?.hostname || "");
+    const local = /^(127\.0\.0\.1|localhost)$/i.test(host) || browserWindow.location?.port === "5178";
+    const configuredApiBase = new URLSearchParams(String(browserWindow.location?.search || "")).get("apiBase");
+    const apiBase = configuredApiBase || (local ? "http://localhost:3001/api" : "");
+    const api = apiBase ? `&apiBase=${encodeURIComponent(apiBase)}` : "";
+    browserWindow.location.href = `/role-select?story=sangtian${api}`;
   };
-
-  async function boot() {
-    state.loading = true;
-    state.error = "";
-    render();
-    try {
-      const response = await fetchImpl(`${apiBase(browserWindow?.location)}/v4/stories`, { headers: { accept: "application/json" } });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload?.featured || !Array.isArray(payload?.sections)) {
-        throw new Error(payload?.message || `故事局目录加载失败（HTTP ${response.status}）`);
-      }
-      state.catalog = payload;
-    } catch (error) {
-      state.error = error instanceof Error ? error.message : String(error);
-    } finally {
-      state.loading = false;
-      render();
-    }
-  }
-
-  function setCategory(category) {
-    state.category = category;
-    render();
-  }
-
-  function setSearch(value) {
-    state.search = String(value || "").trim();
-    const sectionsRoot = root.querySelector("#storySectionsRoot");
-    if (sectionsRoot && state.catalog) {
-      sectionsRoot.innerHTML = renderSections(state.catalog.sections || [], state.category, state.search);
-    }
-  }
-
-  function render() {
-    if (state.loading) {
-      root.innerHTML = `<section class="page-loading"><div class="brand-orbit" aria-hidden="true"><span></span><span></span></div><p>正在打开故事局大厅……</p></section>`;
-      return;
-    }
-    if (!state.catalog) {
-      root.innerHTML = `<section class="page-loading page-error"><div class="brand-orbit" aria-hidden="true"><span></span><span></span></div><h1>故事局大厅暂不可用</h1><p>${escapeHtml(state.error || "请确认 API 服务已经启动。")}</p><button id="retryCatalog">重新连接</button></section>`;
-      root.querySelector("#retryCatalog")?.addEventListener("click", boot);
-      return;
-    }
-
-    const catalog = state.catalog;
-    root.innerHTML = `
-      <div class="lobby-shell">
-        ${renderHeader(state)}
-        <main class="lobby-main">
-          ${renderHero(catalog.featured)}
-          <section class="announcement" aria-label="平台公告">
-            <span class="announcement-icon">${megaphoneIcon()}</span>
-            <b>公告</b>
-            <p>${escapeHtml(catalog.announcement || "多人 AI 梦想对话已开启，支持跨时区游玩。")}</p>
-            <button type="button" aria-label="查看公告详情">${arrowRightIcon()}</button>
-          </section>
-          ${renderCategories(catalog.categories || [], state.category)}
-          <div id="storySectionsRoot">${renderSections(catalog.sections || [], state.category, state.search)}</div>
-        </main>
-      </div>`;
-    bindEvents();
-  }
-
-  function bindEvents() {
-    root.querySelectorAll("[data-category]").forEach((button) => {
-      button.addEventListener("click", () => setCategory(button.dataset.category));
-    });
-    const input = root.querySelector("#storySearch");
-    input?.addEventListener("input", (event) => setSearch(event.target.value));
-    root.querySelectorAll("[data-story-enter]").forEach((button) => {
-      button.addEventListener("click", () => enterStory(button.dataset.storyEnter));
-    });
-    root.querySelectorAll("[data-story-detail]").forEach((button) => {
-      button.addEventListener("click", () => enterStory(button.dataset.storyDetail));
-    });
-  }
-
-  function enterStory(storyId) {
-    const id = encodeURIComponent(storyId || "sangtian");
-    browserWindow.location.href = `/role-select?story=${id}`;
-  }
-
-  return { boot, render, setCategory, setSearch, getState: () => state };
+  const render = () => {
+    root.innerHTML = renderPage();
+    root.querySelectorAll("[data-start-solo]").forEach((button) => button.addEventListener("click", gotoSolo));
+    root.querySelector("[data-menu]")?.addEventListener("click", () => root.querySelector(".mobile-nav")?.classList.toggle("is-open"));
+  };
+  render();
+  return { render, startSolo: gotoSolo };
 }
 
-function renderHeader(state) {
-  return `<header class="lobby-header">
-    <a class="lobby-brand" href="/" aria-label="AI 故事局首页">
-      <span class="brand-orbit" aria-hidden="true"><span></span><span></span></span>
-      <span><strong>故事局</strong><small>AI 多人局</small></span>
-    </a>
-    <nav aria-label="主导航">
-      <a class="active" href="/">首页</a>
-      <a href="#storySectionsRoot">分类</a>
-      <a href="/role-select?story=sangtian">创建局</a>
-      <a href="#storySectionsRoot">剧本库</a>
-    </nav>
-    <label class="lobby-search">
-      <span>${searchIcon()}</span>
-      <input id="storySearch" value="${escapeHtml(state.search)}" placeholder="搜索故事局 / 剧本 / 角色" aria-label="搜索故事局" />
-      <kbd>⌘ K</kbd>
-    </label>
-    <div class="header-actions">
-      <button class="icon-button" type="button" aria-label="通知">${bellIcon()}<span class="notification-dot">5</span></button>
-      <button class="user-button" type="button"><span class="user-avatar">安</span><b>长安客</b>${chevronDownIcon()}</button>
-    </div>
-  </header>`;
-}
-
-function renderHero(featured) {
-  return `<section class="hero-carousel" aria-label="推荐故事局">
-    <article class="hero-side hero-side-left ${artClass(featured.sideLeft?.cover || '/assets/stories/story-promotion.webp')}">
-      <div><strong>${escapeHtml(featured.sideLeft?.title || "晋升名单公布前")}</strong><span>${escapeHtml(featured.sideLeft?.subtitle || "职场权力博弈故事局")}</span></div>
-      <button type="button" aria-label="上一个故事">${chevronLeftIcon()}</button>
-    </article>
-    <article class="hero-main ${artClass(featured.cover)}">
-      <div class="hero-copy">
-        <span class="hero-eyebrow">本周首发 · AI 动态推演</span>
-        <h1>${escapeHtml(featured.displayTitle || featured.title)}</h1>
-        <p>${escapeHtml(featured.subtitle)}</p>
-        <div class="hero-tags">${(featured.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
-        <div class="hero-actions">
-          <button class="primary-action" type="button" data-story-enter="${escapeAttr(featured.id)}">立即入局 ${arrowRightIcon()}</button>
-          <button class="secondary-action" type="button" data-story-detail="${escapeAttr(featured.id)}">查看详情</button>
+function renderPage() {
+  return `<div class="many-worlds-page">
+    ${renderHeader()}
+    <main>
+      <section class="mw-hero" id="explore">
+        <div class="hero-copy">
+          <span class="eyebrow">AI-POWERED MULTIPLAYER SIMULATIONS</span>
+          <h1>Every situation<br/>looks <em>different</em><br/>from the inside.</h1>
+          <p>Step into complex worlds with other people. Each of you takes a different role, sees a different part of the truth, and makes decisions in your own words. AI simulates how the shared situation unfolds.</p>
+          <div class="hero-actions"><button class="mw-primary" data-start-solo>Explore Worlds ${icon(3)}</button><a class="mw-secondary" href="#how-it-works">${icon(4)} See How It Works</a></div>
+          <div class="hero-proof"><span>${icon(5)} Solo or Multiplayer</span><span>${icon(6)} Different information for every role</span><span>${icon(7)} No fixed storyline</span></div>
         </div>
-      </div>
-      <div class="hero-dots" aria-hidden="true"><i class="active"></i><i></i><i></i><i></i><i></i></div>
-    </article>
-    <article class="hero-side hero-side-right ${artClass(featured.sideRight?.cover || '/assets/stories/story-starship.webp')}">
-      <button type="button" aria-label="下一个故事">${chevronRightIcon()}</button>
-      <div><strong>${escapeHtml(featured.sideRight?.title || "末日救援小队")}</strong><span>${escapeHtml(featured.sideRight?.subtitle || "生存协作故事局")}</span></div>
-    </article>
-  </section>`;
+        <div class="world-carousel" aria-label="Featured worlds">
+          <div class="world-peek left">${renderWorldCard(worlds[0], "peek")}</div>
+          <div class="world-peek">${renderWorldCard(worlds[2], "peek")}</div>
+          <div class="world-featured">${renderWorldCard(worlds[1], "featured")}</div>
+          <div class="world-peek">${renderWorldCard(worlds[3], "peek")}</div>
+          <div class="world-peek right">${renderWorldCard(worlds.find((world) => world.title === "Blackout Protocol"), "peek")}</div>
+          <div class="carousel-controls"><button aria-label="Previous world">${icon(8)}</button><i></i><i></i><i class="active"></i><i></i><button aria-label="Next world">${icon(9)}</button></div>
+        </div>
+      </section>
+
+      <section class="worlds-section mw-panel" id="worlds">
+        <div class="section-head"><div><h2>Worlds worth stepping into</h2><p>History, business, work, relationships and crisis—each world begins with a situation already in motion.</p></div><a href="#worlds">View all worlds ${icon(3)}</a></div>
+        <div class="world-filters"><button class="active">All Worlds</button><button>History &amp; Power</button><button>Business &amp; Work</button><button>Mystery</button><button>Crisis &amp; Survival</button><button>Speculative Futures</button><button>Relationships</button></div>
+        <div class="world-grid">${worlds.map((world) => renderWorldCard(world, "grid")).join("")}</div>
+      </section>
+
+      <section class="principles" id="how-it-works"><h2>Not a story with branches. <span>A situation with people.</span></h2><p>The opening is designed. Everything after that emerges from what everyone does.</p><div class="principle-grid">${featurePoints.map(([i, title, copy]) => `<article>${icon(i)}<b>${title}</b><p>${copy}</p></article>`).join("")}</div></section>
+
+      <section class="entry-grid"><article class="entry-card solo"><div><span class="entry-label">Enter alone.</span><h2>Start Solo</h2><p>Step into any world immediately, AI-controlled characters fill the remaining roles while you own the pace.</p><ul><li>Start instantly</li><li>Explore any role</li><li>Pause and continue later</li><li>Ideal for learning a world</li></ul><button class="mw-primary" data-start-solo>Start Solo</button></div><div class="role-stack"><div class="role-ghost portrait-01"></div><div class="role-ghost portrait-02"></div><div class="role-main portrait-03"><span>${icon(14)}</span></div></div></article><article class="entry-card invite"><div><span class="entry-label">Bring others in</span><h2>Invite Others</h2><p>Invite real people to take the other roles. Everyone receives different information and makes decisions from their own position.</p><ul><li>Private role briefings</li><li>Live or asynchronous sessions</li><li>Independent decisions</li><li>One shared outcome</li></ul><button class="mw-secondary" data-start-solo>Invite Your Group ${icon(3)}</button></div><div class="avatar-orbit">${[1,2,3,4,5,6].map((n) => `<img src="${asset("portrait", n)}" alt=""/>`).join("")}<span>${icon(42)}</span></div></article></section>
+
+      <section class="flow-section mw-panel" id="flow"><div class="section-head"><div><h2>How a world unfolds</h2><p>Every situation develops from the people inside it.</p></div></div><div class="flow-grid">${[[16,"Choose a World","Pick a world that excites you and read its situation."],[17,"Take a Role","Receive your role identity, briefing, relationships, and private information."],[18,"Learn Your Side","Understand what you know, what you don't, and your motivation."],[19,"Make Your Decision","Talk, investigate, negotiate, cooperate, or act, on your own terms."],[20,"Watch the World Respond","AI simulates how every character and event evolves."],[21,"See Where It Leads","Discover the outcome together and review how it all came to be."]].map(([i,t,c],idx)=>`<article><span class="flow-number">${idx+1}</span>${icon(i)}<b>${t}</b><p>${c}</p></article>`).join("")}</div></section>
+
+      <section class="build-world"><div><span class="entry-label">Create your own situation</span><h2>Build a world, not a script.</h2><p>Define the setting, roles, tensions, resources, secrets and rules. Leave the future open.</p><div class="build-tags"><span>${icon(22)} AI-assisted world building</span><span>${icon(23)} Flexible rules &amp; scenarios</span><span>${icon(24)} Share privately or publish</span></div><button class="mw-primary" data-start-solo>Create a World</button><a href="#worlds">View Creator Examples</a></div><div class="overview-card"><h4>World Overview</h4><p>A boardroom at a global company.<br/>Leadership change ahead.<br/>Divided priorities.</p><div class="mini-avatars">${[7,8,9,10,11].map((n) => `<img src="${asset("portrait", n)}" alt=""/>`).join("")}</div></div><div class="overview-card tensions"><h4>World Tensions</h4><p>• Power transition<br/>• Conflicting visions<br/>• Divided priorities<br/>• Limited time</p></div><div class="build-art"></div></section>
+
+      <section class="ending-section mw-panel"><div class="section-head"><div><h2>When the world ends, see what really happened</h2><p>Review the story from all sides and uncover the full picture.</p></div></div><div class="ending-grid"><div class="ending-list">${[[25,"Your decision trail","See what you did and why."],[26,"Major turning points","Key moments that changed everything."],[27,"Hidden information revealed","Discover what others knew and kept secret."],[28,"Relationship changes","Explore alliances and rivalries evolved."],[29,"A shareable world recap","Export a full summary to read or share."]].map(([i,t,c])=>`<article>${icon(i)}<span><b>${t}</b><small>${c}</small></span></article>`).join("")}</div><div class="impact-card"><span>${icon(30)}</span><b>Example impact</b><p>You pushed the investor to delay funding.</p><strong>Two weeks later,<br/>the CFO resigned.</strong><em>Consequence unlocked</em></div><div class="faq"><h3>Frequently asked questions</h3>${["Are the stories prewritten?","Can I enter a world alone?","Do we need to be online at the same time?","What does AI do?","Is Many Worlds only about history?","Do invited participants need to pay?"].map((q) => `<details><summary>${q}${icon(39)}</summary><p>Each world begins with a designed situation. The shared outcome is generated from roles, information and decisions.</p></details>`).join("")}</div></div></section>
+
+      <section class="pricing"><div><h2>One host unlocks the world. Everyone else joins.</h2><p>Choose the way you want to experience Many Worlds.</p></div><div class="price-grid"><article><small>Free</small><h3>Explore for free</h3><p>Play one public world, join a public session or explore one AI session.</p><button class="mw-primary" data-start-solo>Get Started Free</button></article><article class="price-highlight"><small>World Pass</small><h3>$9.99 <span>/ world</span></h3><p>Unlock a world for your group.</p><button class="mw-primary" data-start-solo>Unlock a World</button></article><article><small>Many Worlds Plus</small><h3>$19.99 <span>/ month</span></h3><p>Create, host and save worlds with full replay tools.</p><button class="mw-primary" data-start-solo>Start Plus</button></article><article class="one-time"><b>Prefer one-time adventures?</b><p>Unlock any world without a subscription.</p><button class="mw-secondary" data-start-solo>Unlock a World</button></article></div></section>
+    </main>
+    ${renderLegalFooter()}
+  </div>`;
 }
 
-function renderCategories(categories, selectedCategory) {
-  return `<section class="category-strip" aria-label="故事分类">
-    ${categories.map((category) => `<button type="button" class="${category === selectedCategory ? "active" : ""}" data-category="${escapeAttr(category)}">${CATEGORY_ICONS[category] || gridIcon()}<span>${escapeHtml(category)}</span></button>`).join("")}
-  </section>`;
-}
+function renderHeader() { return `<header class="mw-header"><a class="mw-brand" href="/"><img src="${asset("icon", 1)}" alt=""/><span>Many Worlds<small>AI-powered social simulations</small></span></a><nav><a class="active" href="#explore">Explore Worlds</a><a href="#worlds">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav><div class="header-right"><button class="language">${icon(2)} English⌄</button><a class="login" href="#explore">Log in</a><button class="get-started" data-start-solo>Get started</button></div><button class="menu-button" data-menu aria-label="Open menu">☰</button><div class="mobile-nav"><a href="#explore">Explore Worlds</a><a href="#worlds">Create</a><a href="#how-it-works">How It Works</a></div></header>`; }
+function renderWorldCard(world, variant) { return `<article class="world-card ${variant}" style="--cover:url('${asset("bg", world.image)}')"><span class="world-category">${world.category}</span><div><h3>${world.title}</h3><p>${world.copy}</p>${variant === "featured" ? `<span class="featured-people">${[1,2,3,4,5].map((n) => `<img src="${asset("portrait", n)}" alt=""/>`).join("")}</span>` : ""}<small>${icon(5)} ${world.meta}</small></div></article>`; }
+function renderFooter() { return `<footer class="mw-footer"><div class="footer-brand"><img src="${asset("icon", 1)}" alt=""/><b>Many Worlds</b><p>Complex worlds.<br/>Human choices.<br/>No fixed ending.</p></div><div><b>Product</b><a href="#worlds">Explore Worlds</a><a href="#how-it-works">How It Works</a><a href="#flow">Pricing</a><a href="#worlds">Create</a></div><div><b>Company</b><a href="#explore">About</a><a href="#explore">Contact</a><a href="#explore">Creators</a><a href="#explore">Careers</a></div><div><b>Support</b><a href="#faq">Help Center</a><a href="#faq">Community</a><a href="#faq">Status</a></div><div><b>Legal</b><a href="#explore">Terms of Service</a><a href="#explore">Privacy Policy</a><a href="#explore">Accessibility</a></div><div class="footer-social">${icon(32)} ${icon(33)} ${icon(34)} ${icon(35)} ${icon(36)}<small>© 2024 Many Worlds. All rights reserved.</small></div></footer>`; }
 
-function renderSections(sections, category, search) {
-  const normalizedSearch = search.toLowerCase();
-  const html = sections.map((section) => {
-    const stories = (section.stories || []).filter((story) => {
-      const matchesCategory = category === "全部" || story.category === category;
-      const haystack = [story.title, story.subtitle, story.category, ...(story.tags || [])].join(" ").toLowerCase();
-      return matchesCategory && (!normalizedSearch || haystack.includes(normalizedSearch));
-    });
-    if (!stories.length) return "";
-    return `<section class="story-section">
-      <div class="section-heading"><div><span class="section-icon ${section.tone || "purple"}">${section.icon === "hot" ? flameIcon() : starIcon()}</span><h2>${escapeHtml(section.title)}</h2></div><button type="button">查看全部 ${arrowRightIcon()}</button></div>
-      <div class="story-grid">${stories.map(renderStoryCard).join("")}</div>
-    </section>`;
-  }).join("");
-  return html || `<section class="empty-state"><h2>没有找到匹配的故事局</h2><p>换一个分类或关键词再试试。</p></section>`;
-}
-
-function renderStoryCard(story) {
-  const playable = story.status === "playable";
-  return `<article class="story-card ${playable ? 'is-playable' : ''} ${artClass(story.cover)}">
-    <div class="story-card-top"><span>${escapeHtml(story.category)}</span>${story.badge ? `<em>${escapeHtml(story.badge)}</em>` : ""}</div>
-    <div class="story-card-copy">
-      <h3>${escapeHtml(story.title)}</h3>
-      <p>${escapeHtml(story.subtitle)}</p>
-      <footer><span>${usersIcon()} ${escapeHtml(story.players)}</span><span>${flameIcon()} ${formatHeat(story.heat)}</span></footer>
-    </div>
-    <button type="button" data-story-enter="${escapeAttr(story.id)}" aria-label="进入${escapeAttr(story.title)}"></button>
-  </article>`;
-}
-
-function artClass(path) {
-  const key = String(path || "").split("/").pop().replace(/\.[^.]+$/, "");
-  return `art-${key.replace(/[^a-zA-Z0-9_-]/g, "")}`;
-}
-
-function apiBase(location = globalThis.location) {
-  if (!location) return "/api";
-  if (location.port === "5177") return `${location.protocol}//${location.hostname}:3001/api`;
-  return "/api";
-}
-
-function formatHeat(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? new Intl.NumberFormat("zh-CN").format(number) : "--";
-}
-
-function icon(path, viewBox = "0 0 24 24") {
-  return `<svg viewBox="${viewBox}" aria-hidden="true" focusable="false">${path}</svg>`;
-}
-function gridIcon(){return icon('<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>');}
-function crownIcon(){return icon('<path d="m4 8 4 3 4-6 4 6 4-3-2 10H6L4 8Z"/><path d="M6 21h12"/>');}
-function buildingIcon(){return icon('<path d="M4 21V7l8-4 8 4v14"/><path d="M8 10h2m4 0h2M8 14h2m4 0h2M8 18h8"/>');}
-function searchIcon(){return icon('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>');}
-function chipIcon(){return icon('<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4M10 10h4v4h-4z"/>');}
-function compassIcon(){return icon('<circle cx="12" cy="12" r="9"/><path d="m15 9-2 4-4 2 2-4 4-2Z"/>');}
-function heartIcon(){return icon('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>');}
-function briefcaseIcon(){return icon('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/>');}
-function bellIcon(){return icon('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>');}
-function megaphoneIcon(){return icon('<path d="m3 11 14-5v12L3 13v-2Z"/><path d="M11.6 16 13 21H8l-1-6"/>');}
-function starIcon(){return icon('<path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/>');}
-function flameIcon(){return icon('<path d="M12 22c4.4 0 8-3 8-7.5 0-3.2-1.8-6.2-5.1-8.9.1 2.4-1 4.2-2.3 5.2.1-3.7-2.1-6.8-5.1-8.8.2 4.3-3.5 6.5-3.5 11.2C4 18.5 7.6 22 12 22Z"/>');}
-function usersIcon(){return icon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>');}
-function arrowRightIcon(){return icon('<path d="M5 12h14m-6-6 6 6-6 6"/>');}
-function chevronLeftIcon(){return icon('<path d="m15 18-6-6 6-6"/>');}
-function chevronRightIcon(){return icon('<path d="m9 18 6-6-6-6"/>');}
-function chevronDownIcon(){return icon('<path d="m6 9 6 6 6-6"/>');}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
-}
-function escapeAttr(value) { return escapeHtml(value); }
+function renderLegalFooter() { return `<footer class="mw-footer"><div class="footer-brand"><img src="${asset("icon", 1)}" alt=""/><b>Many Worlds</b><p>Complex worlds.<br/>Human choices.<br/>No fixed ending.</p></div><div><b>Product</b><a href="#worlds">Explore Worlds</a><a href="#how-it-works">How It Works</a><a href="#flow">Pricing</a><a href="#worlds">Create</a></div><div><b>Company</b><a href="#explore">About</a><a href="#explore">Contact</a><a href="#explore">Creators</a><a href="#explore">Careers</a></div><div><b>Support</b><a href="#faq">Help Center</a><a href="#faq">Community</a><a href="#faq">Status</a></div><div><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/refund">Refund Policy</a></div><div class="footer-social">${icon(32)} ${icon(33)} ${icon(34)} ${icon(35)} ${icon(36)}<small>© 2026 Many Worlds. All rights reserved.</small></div></footer>`; }
 
 if (typeof window !== "undefined" && typeof document !== "undefined" && !window.__AI_STORY_DISABLE_AUTO_BOOT__) {
   const root = document.getElementById("homeApp");
-  if (root) createLobbyApp({ root, window }).boot();
+  if (root) createHomeApp({ root, window });
 }

@@ -10,3 +10,5 @@ scripts/test-reports/*.json
 apps/miniprogram/.swc/
 apps/miniprogram/dist/
 apps/miniprogram/project.private.config.json
+
+.vercel

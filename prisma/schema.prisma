@@ -57,11 +57,13 @@ model StoryRun {
   title               String
   hook                String   @db.Text
   mode                String   @default("invite")
-  accessLevel         RunAccessLevel @default(FREE_TRIAL)
-  freeDecisionsUsed   Int      @default(0)
-  paywallReachedAt    DateTime?
-  unlockedAt          DateTime?
+  templateKey         String   @default("sangtian")
+  userId              String?
+  selectedRoleKey     String?
   status              String   @default("waiting_players")
+  currentDay          Int      @default(1)
+  totalDays           Int      @default(7)
+  version             Int      @default(1)
   currentChapter      Int      @default(1)
   currentNodeId       String?
   maxPlayers          Int      @default(5)
@@ -75,6 +77,10 @@ model StoryRun {
   stateJson           Json
   visibility          String   @default("link")
   inviteCode          String   @unique
+  accessLevel         RunAccessLevel @default(FREE_TRIAL)
+  freeDecisionsUsed   Int      @default(0)
+  paywallReachedAt    DateTime?
+  unlockedAt          DateTime?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -94,6 +100,7 @@ model StoryRun {
   notifications       Notification[]
   aiTasks             AiTask[]
   events              EventLog[]
+  storyEvents         StoryEvent[] @relation("StoryRunStoryEvents")
   shareTokens         ShareToken[]
   worldUnlock         WorldUnlock?
 
@@ -101,6 +108,29 @@ model StoryRun {
   @@index([ownerUserId])
   @@index([status, updatedAt])
   @@index([visibility, status])
+  @@index([templateKey, status])
+}
+
+enum RunAccessLevel {
+  FREE_TRIAL
+  UNLOCKED
+}
+
+model StoryEvent {
+  id          String   @id
+  runId       String
+  day         Int
+  type        String
+  messageType String   @default("system")
+  roleKey     String?
+  visibility  String   @default("player_visible")
+  payloadJson Json
+  createdAt   DateTime @default(now())
+
+  run         StoryRun @relation("StoryRunStoryEvents", fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, day, createdAt])
+  @@index([runId, type])
 }
 
 model StoryPlayer {
@@ -397,6 +427,7 @@ model Notification {
 model AiTask {
   id            String   @id @default(cuid())
   runId          String?
+  eventId        String?
   nodeId         String?
   actionId       String?
   chapterId      String?
@@ -406,6 +437,14 @@ model AiTask {
   status         String   @default("pending")
   inputJson      Json?
   resultJson     Json?
+  outputJson     Json?
+  rawResponse    String?  @db.Text
+  normalizedJson Json?
+  provider       String?
+  modelName      String?
+  tokenUsageJson Json?
+  startedAt      DateTime?
+  completedAt    DateTime?
   inputTokens    Int?
   outputTokens   Int?
   cost           Float?
@@ -420,6 +459,7 @@ model AiTask {
 
   @@index([taskType, status])
   @@index([runId])
+  @@index([eventId])
   @@index([nodeId])
   @@index([chapterId])
 }
@@ -477,11 +517,6 @@ model ShareToken {
   @@index([runId])
   @@index([chapterId])
   @@index([shareUserId])
-}
-
-enum RunAccessLevel {
-  FREE_TRIAL
-  UNLOCKED
 }
 
 enum CreditGrantKind {

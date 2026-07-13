@@ -1,0 +1,24 @@
+:root { color: #111936; background: #f8f8ff; font-family: Inter, Arial, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.legal-app { min-height: 100vh; }
+.legal-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px max(24px, calc((100vw - 1120px) / 2)); border-bottom: 1px solid #e8e9f2; background: #fff; }
+.legal-brand { color: #171d3d; font: 700 21px Georgia, serif; }
+.legal-brand span { color: #6748ef; }
+.legal-nav { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
+.legal-nav a { color: #505b7c; text-decoration: none; }
+.legal-nav a[aria-current="page"] { color: #6043ef; font-weight: 700; }
+.legal-content { width: min(920px, calc(100% - 40px)); margin: 42px auto 70px; padding: clamp(24px, 5vw, 52px); border: 1px solid #ececf4; border-radius: 18px; background: #fff; box-shadow: 0 12px 32px rgba(40, 47, 95, .07); color: #313a56; font-size: 16px; line-height: 1.68; }
+.legal-content h1 { margin: 0 0 8px; color: #111936; font-size: clamp(32px, 5vw, 46px); letter-spacing: -.035em; line-height: 1.08; }
+.legal-content h2 { margin: 42px 0 12px; color: #171d3d; font-size: 24px; line-height: 1.25; }
+.legal-content h3 { margin: 28px 0 9px; color: #252d50; font-size: 18px; }
+.legal-content p { margin: 10px 0; }
+.legal-content ul, .legal-content ol { margin: 10px 0 15px; padding-left: 25px; }
+.legal-content a { color: #5f43f2; }
+.legal-content table { width: 100%; margin: 18px 0; border-collapse: collapse; font-size: 14px; }
+.legal-content th, .legal-content td { padding: 10px; border: 1px solid #e5e7f0; text-align: left; vertical-align: top; }
+.legal-content th { background: #f5f2ff; color: #302566; }
+.legal-meta { margin-bottom: 26px; color: #68728d; }
+.legal-error { color: #a52b38; }
+.legal-footer { width: min(920px, calc(100% - 40px)); margin: -38px auto 34px; color: #67718e; font-size: 13px; text-align: center; }
+@media (max-width: 640px) { .legal-header { align-items: flex-start; flex-direction: column; } .legal-content { width: min(100% - 24px, 920px); margin-top: 20px; padding: 24px 20px; } }

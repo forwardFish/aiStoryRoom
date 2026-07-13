@@ -18,15 +18,16 @@ export class StoryApiError extends Error {
  * fallback that can drift away from the server.
  */
 export class ApiStoryStorage {
-  constructor({ baseUrl, fetchImpl = globalThis.fetch, localStorage = globalThis.localStorage } = {}) {
+  constructor({ baseUrl, runId = "", fetchImpl = globalThis.fetch, localStorage = globalThis.localStorage } = {}) {
     if (typeof fetchImpl !== "function") throw new TypeError("ApiStoryStorage requires fetch");
     this.baseUrl = String(baseUrl || "/api").replace(/\/$/, "");
     this.fetchImpl = fetchImpl;
     this.localStorage = localStorage;
+    this.requestedRunId = String(runId || "").trim();
   }
 
   get savedRunId() {
-    return this.localStorage?.getItem(RUN_ID_KEY) || "";
+    return this.requestedRunId || this.localStorage?.getItem(RUN_ID_KEY) || "";
   }
 
   forgetRun() {
@@ -78,12 +79,49 @@ export class ApiStoryStorage {
         body: {
           optionKey,
           customText: optionKey === "CUSTOM" ? customText : "",
-          version: view.run.version
+          version: view.run.version,
+          idempotencyKey: globalThis.crypto?.randomUUID?.() || `decision-${messageId}-${optionKey}`
         }
       }
     );
     // ActionGuard rejections are a valid protocol response, not a broken view.
     if (payload?.accepted === false) return payload;
+    this.assertView(payload);
+    return payload;
+  }
+
+  async submitManeuver(view, input) {
+    this.assertView(view);
+    const payload = await this.request(`/v4/story-runs/${encodeURIComponent(view.run.id)}/maneuvers`, {
+      method: "POST",
+      body: {
+        ...input,
+        customText: input.maneuverType === "custom" ? String(input.customText || "").trim() : "",
+        version: view.run.version,
+        idempotencyKey: input.idempotencyKey || globalThis.crypto?.randomUUID?.() || `maneuver-${Date.now()}`
+      }
+    });
+    if (payload?.accepted === false) return payload;
+    this.assertView(payload);
+    return payload;
+  }
+
+  async startCriticalResponse(view, eventId) {
+    this.assertView(view);
+    const payload = await this.request(`/v4/story-runs/${encodeURIComponent(view.run.id)}/critical-events/${encodeURIComponent(eventId)}/respond`, {
+      method: "POST",
+      body: { version: view.run.version, idempotencyKey: `critical-${eventId}` }
+    });
+    this.assertView(payload);
+    return payload;
+  }
+
+  async deferCriticalEvent(view, eventId) {
+    this.assertView(view);
+    const payload = await this.request(`/v4/story-runs/${encodeURIComponent(view.run.id)}/messages/${encodeURIComponent(eventId)}/defer`, {
+      method: "POST",
+      body: { version: view.run.version, idempotencyKey: `defer-${eventId}` }
+    });
     this.assertView(payload);
     return payload;
   }
@@ -161,8 +199,17 @@ export class ApiStoryStorage {
 
 export function defaultApiBase(location = globalThis.location) {
   if (!location) return "/api";
+  try {
+    const override = new URL(location.href).searchParams.get("apiBase");
+    if (override) return override.replace(/\/+$/, "");
+  } catch {
+    // Fall through to the local defaults when a non-browser location is passed.
+  }
   // Local validation cabin and API intentionally run on separate ports.
-  if (location.port === "5177") return `${location.protocol}//${location.hostname}:3001/api`;
+  if (location.port && location.port !== "3001") {
+    const host = location.hostname === "127.0.0.1" ? "localhost" : location.hostname;
+    return `${location.protocol}//${host}:3001/api`;
+  }
   return "/api";
 }
 

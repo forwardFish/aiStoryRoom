@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.1",
+  "templateKey": "sangtian",
+  "decisions": [
+    { "key": "d1_1", "day": 1 }, { "key": "d1_2", "day": 1 },
+    { "key": "d2_1", "day": 2 }, { "key": "d2_2", "day": 2 },
+    { "key": "d3_1", "day": 3 }, { "key": "d3_2", "day": 3 },
+    { "key": "d4_1", "day": 4 }, { "key": "d4_2", "day": 4 },
+    { "key": "d5_1", "day": 5 }, { "key": "d5_2", "day": 5 },
+    { "key": "d6_1", "day": 6 }, { "key": "d6_2", "day": 6 }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.1",
+  "templateKey": "sangtian",
+  "globalEndings": ["scapegoat", "reform_and_audit", "merchant_control", "progress_without_people", "stable_but_watched"],
+  "personalRanks": ["S", "A", "B", "C", "D", "E"],
+  "ruleFirst": true,
+  "aiOnlyNarrates": true
+}

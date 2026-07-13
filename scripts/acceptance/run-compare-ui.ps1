@@ -13,7 +13,13 @@ function First-NonEmpty($Values) {
   return ""
 }
 
-try { $target = Get-Content -LiteralPath $p.UiTarget -Raw | ConvertFrom-Json } catch { $target = $null }
+try {
+  $rawTarget = [System.IO.File]::ReadAllText($p.UiTarget, [System.Text.Encoding]::UTF8).TrimStart([char]0xFEFF)
+  $target = $rawTarget | ConvertFrom-Json
+} catch {
+  $target = $null
+  Write-Host "ui-target parse error: $($_.Exception.Message)"
+}
 $gaps = 0
 $hasLimitations = $false
 if ($null -eq $target -or $null -eq $target.screens) {
@@ -38,9 +44,9 @@ if ($null -eq $target -or $null -eq $target.screens) {
     $visualStatus = First-NonEmpty @($screen.visualStatus, $screen.visual)
     $pixelPerfectStatus = First-NonEmpty @($screen.pixelPerfectStatus, $screen.pixelPerfect)
     $pixelPerfectRequired = ($target.pixelPerfectRequired -eq $true -or $screen.pixelPerfectRequired -eq $true -or $screen.claim -eq "UI_PIXEL_PERFECT_PASS")
-    if ($screen.status -eq "PASS_WITH_LIMITATION" -or $visualStatus -eq "PASS_WITH_LIMITATION" -or $pixelPerfectStatus -eq "MANUAL_REVIEW_REQUIRED") { $hasLimitations = $true }
+    if ($screen.status -in @("PASS_WITH_LIMITATION", "PASS_NEEDS_MANUAL_UI_REVIEW") -or $visualStatus -in @("PASS_WITH_LIMITATION", "PASS_NEEDS_MANUAL_UI_REVIEW") -or $pixelPerfectStatus -in @("MANUAL_REVIEW_REQUIRED", "PASS_NEEDS_MANUAL_UI_REVIEW")) { $hasLimitations = $true }
 
-    if ($screen.status -ne "PASS" -and $screen.status -ne "PASS_WITH_LIMITATION") {
+    if ($screen.status -notin @("PASS", "PASS_WITH_LIMITATION", "PASS_NEEDS_MANUAL_UI_REVIEW")) {
       Add-Gap $ProjectRoot $round "GAP-$screenId" "ui" "IN_SCOPE_GAP" "UI target $screenId is $($screen.status), not PASS." "Implement/capture/compare UI target $screenId." $reference
       $gaps++
     }
@@ -48,21 +54,21 @@ if ($null -eq $target -or $null -eq $target.screens) {
       Add-Gap $ProjectRoot $round "GAP-$screenId-STRUCTURE" "ui" "IN_SCOPE_GAP" "UI target $screenId structureStatus is $structureStatus, not PASS." "Fix route/component/state structure for UI target $screenId before visual acceptance." $reference
       $gaps++
     }
-    if (![string]::IsNullOrWhiteSpace($visualStatus) -and $visualStatus -notin @("PASS","PASS_WITH_LIMITATION","MANUAL_REVIEW_REQUIRED")) {
-      Add-Gap $ProjectRoot $round "GAP-$screenId-VISUAL-STATUS" "ui" "IN_SCOPE_GAP" "UI target $screenId visualStatus is $visualStatus, not PASS/PASS_WITH_LIMITATION/MANUAL_REVIEW_REQUIRED." "Capture and compare visual evidence for UI target $screenId." $reference
+    if (![string]::IsNullOrWhiteSpace($visualStatus) -and $visualStatus -notin @("PASS","PASS_WITH_LIMITATION","PASS_NEEDS_MANUAL_UI_REVIEW","MANUAL_REVIEW_REQUIRED")) {
+      Add-Gap $ProjectRoot $round "GAP-$screenId-VISUAL-STATUS" "ui" "IN_SCOPE_GAP" "UI target $screenId visualStatus is $visualStatus, not an accepted visual review status." "Capture and compare visual evidence for UI target $screenId." $reference
       $gaps++
     }
-    if ($screen.status -in @("PASS","PASS_WITH_LIMITATION") -and [string]::IsNullOrWhiteSpace($reference)) {
+    if ($screen.status -in @("PASS","PASS_WITH_LIMITATION","PASS_NEEDS_MANUAL_UI_REVIEW") -and [string]::IsNullOrWhiteSpace($reference)) {
       Add-Gap $ProjectRoot $round "GAP-$screenId-REFERENCE" "ui" "HARD_FAIL" "UI target $screenId is $($screen.status) without a reference path." "Attach the source UI reference path before claiming UI alignment." (Get-RelativeEvidencePath $ProjectRoot $p.UiTarget)
       $gaps++
-    } elseif ($screen.status -in @("PASS","PASS_WITH_LIMITATION") -and !(Test-ProjectEvidencePath $ProjectRoot $reference)) {
+    } elseif ($screen.status -in @("PASS","PASS_WITH_LIMITATION","PASS_NEEDS_MANUAL_UI_REVIEW") -and !(Test-ProjectEvidencePath $ProjectRoot $reference)) {
       Add-Gap $ProjectRoot $round "GAP-$screenId-REFERENCE-MISSING" "ui" "HARD_FAIL" "UI target $screenId references a missing UI artifact: $reference." "Fix the reference path or restore the UI reference artifact." $reference
       $gaps++
     }
-    if ($screen.status -in @("PASS","PASS_WITH_LIMITATION") -and [string]::IsNullOrWhiteSpace($actual)) {
+    if ($screen.status -in @("PASS","PASS_WITH_LIMITATION","PASS_NEEDS_MANUAL_UI_REVIEW") -and [string]::IsNullOrWhiteSpace($actual)) {
       Add-Gap $ProjectRoot $round "GAP-$screenId-VISUAL-EVIDENCE" "ui" "HARD_FAIL" "UI target $screenId is $($screen.status) without an actual screenshot or visual evidence path." "Attach an actual screenshot path. Without it, use MANUAL_REVIEW_REQUIRED." $reference
       $gaps++
-    } elseif ($screen.status -in @("PASS","PASS_WITH_LIMITATION") -and !(Test-ProjectEvidencePath $ProjectRoot $actual)) {
+    } elseif ($screen.status -in @("PASS","PASS_WITH_LIMITATION","PASS_NEEDS_MANUAL_UI_REVIEW") -and !(Test-ProjectEvidencePath $ProjectRoot $actual)) {
       Add-Gap $ProjectRoot $round "GAP-$screenId-ACTUAL-MISSING" "ui" "HARD_FAIL" "UI target $screenId visual evidence file is missing: $actual." "Capture or restore the actual screenshot evidence before claiming UI alignment." $actual
       $gaps++
     }
