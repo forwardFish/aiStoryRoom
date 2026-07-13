@@ -21,6 +21,7 @@
     "test:causal:web": "pnpm --filter @apps/web test",
     "test:causal": "pnpm test:api && pnpm test:causal:web",
     "test:story:e2e": "tsx scripts/e2e/story-multirole.ts",
+    "test:world-credits": "tsx scripts/e2e/world-credits-local.ts",
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck"
   },
   "prisma": {

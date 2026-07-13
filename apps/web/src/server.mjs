@@ -1,12 +1,21 @@
 import { createReadStream, existsSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
-import { createServer } from "node:http";
+import { createServer, request as requestUpstream } from "node:http";
 import { fileURLToPath } from "node:url";
 
 const root = normalize(join(fileURLToPath(new URL(".", import.meta.url)), "..", "public"));
 const projectRoot = normalize(join(root, "..", "..", ".."));
 const uiRoot = normalize(join(projectRoot, "docs", "UI", "2"));
 const port = Number(process.env.PORT || 5177);
+const apiPort = Number(process.env.API_PORT || 3102);
+const apiProxyPrefixes = [
+  "/api/health",
+  "/api/v4/auth/",
+  "/api/v4/credits/",
+  "/api/v4/referrals/",
+  "/api/v4/billing/",
+  "/api/v4/webhooks/creem"
+];
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -27,8 +36,36 @@ const pageRoutes = new Map([
   ["/game", "/index.html"]
 ]);
 
+function isAllowedApiProxyPath(pathname) {
+  return apiProxyPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+}
+
+function proxyApiRequest(req, res, url) {
+  const upstream = requestUpstream({
+    hostname: "127.0.0.1",
+    port: apiPort,
+    path: `${url.pathname}${url.search}`,
+    method: req.method,
+    headers: { ...req.headers, host: `127.0.0.1:${apiPort}`, connection: "close" }
+  }, (upstreamResponse) => {
+    const headers = { ...upstreamResponse.headers };
+    delete headers.connection;
+    res.writeHead(upstreamResponse.statusCode || 502, headers);
+    upstreamResponse.pipe(res);
+  });
+  upstream.on("error", (error) => {
+    if (!res.headersSent) res.writeHead(502, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ code: "LOCAL_API_PROXY_FAILED", message: error.message }));
+  });
+  req.pipe(upstream);
+}
+
 export const server = createServer((req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  if (isAllowedApiProxyPath(url.pathname)) {
+    proxyApiRequest(req, res, url);
+    return;
+  }
   const requested = pageRoutes.get(url.pathname.replace(/\/$/, "") || "/") || url.pathname;
   if (requested.startsWith("/ui/2/")) {
     const uiPath = normalize(join(uiRoot, decodeURIComponent(requested.replace("/ui/2/", ""))));

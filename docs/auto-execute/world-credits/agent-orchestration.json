@@ -1,0 +1,24 @@
+{
+  "mode": "serial-fallback",
+  "runtime_surface": "codex-app",
+  "orchestrator": "current Codex execution task",
+  "agents": [
+    {
+      "id": "planner-1",
+      "role": "Planner",
+      "assigned_tasks": ["TOTAL-WC-001"],
+      "allowed_paths": [".omx/plans/", "docs/auto-execute/world-credits/"],
+      "evidence": [".omx/plans/2026-07-12-world-credits-creem-local-test-plan.md", "docs/auto-execute/world-credits/verification-results.md"]
+    },
+    {
+      "id": "builder-test-acceptance-serial",
+      "role": "Builder/Test/Acceptance lanes executed serially",
+      "assigned_tasks": ["WC-AUTH", "WC-LEDGER", "WC-REFERRAL", "WC-CREEM", "WC-UNLOCK", "WC-WEB", "WC-VERIFY"],
+      "allowed_paths": ["apps/api/", "apps/web/", "prisma/", "scripts/e2e/", "docs/auto-execute/world-credits/"],
+      "evidence": ["docs/auto-execute/world-credits/results/local-flow.json", "docs/auto-execute/world-credits/verification-results.md"]
+    }
+  ],
+  "handoff_paths": ["docs/auto-execute/world-credits/latest/HANDOFF.md"],
+  "verification_paths": ["docs/auto-execute/world-credits/results/", "docs/auto-execute/world-credits/11-final-acceptance-report.md"],
+  "fallback_reason": "Codex App outside tmux; execution continued serially. No multi-agent execution is claimed."
+}

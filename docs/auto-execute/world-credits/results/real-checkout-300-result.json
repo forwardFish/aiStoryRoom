@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "mode": "test",
+  "pack": "credits_300",
+  "credits": 300,
+  "purchaseId": "cmrhyp0a00001vc0sd9damywb",
+  "checkoutId": "ch_3zhLfIyKunAO8dEyaSeked",
+  "orderId": "ord_3BxBamf7ON8awSj0e9Tk1s",
+  "transactionId": "tran_34DnP6ASpGB69KjCjuuytj",
+  "amountCents": 799,
+  "currency": "USD",
+  "creemCheckoutStatus": "completed",
+  "localPurchaseStatus": "PAID",
+  "localPaidAmountCents": 799,
+  "webhook": {
+    "eventId": "evt_2G2UGZtxk77pCdC7dZB0SD",
+    "eventType": "checkout.completed",
+    "status": "PROCESSED"
+  },
+  "ledger": {
+    "reason": "PURCHASE",
+    "purchasedDelta": 300,
+    "idempotencyKey": "creem-purchase:cmrhyp0a00001vc0sd9damywb"
+  },
+  "wallet": {
+    "purchased": 300,
+    "bonus": 0,
+    "debt": 0,
+    "available": 300
+  }
+}

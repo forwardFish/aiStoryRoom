@@ -1,0 +1,195 @@
+{
+  "status": "PASS",
+  "runTag": "1783864688672_8aa3j",
+  "apiBase": "http://127.0.0.1:3102/api",
+  "accountFlow": {
+    "inviterSignupBonus": true,
+    "repeatedSignupBonus": false,
+    "referralCode": "55MWG4WQ",
+    "shareCreditsGranted": 0,
+    "afterReferrals": {
+      "purchased": 0,
+      "bonus": 100,
+      "debt": 0,
+      "available": 100
+    },
+    "referralRows": [
+      {
+        "status": "REWARDED",
+        "rejectionReason": null
+      },
+      {
+        "status": "REWARDED",
+        "rejectionReason": null
+      },
+      {
+        "status": "QUALIFIED_NO_REWARD",
+        "rejectionReason": "MVP_REWARD_LIMIT_REACHED"
+      }
+    ]
+  },
+  "payments": {
+    "checkout300": {
+      "purchaseId": "cmrhuz8zy007yvc74ymyf4hs1",
+      "checkoutId": "mock_checkout_many-worlds-cmrhuz8zy007yvc74ymyf4hs1"
+    },
+    "payment300": {
+      "event": {
+        "id": "evt_1783864688672_8aa3j_300",
+        "eventType": "checkout.completed",
+        "object": {
+          "id": "mock_checkout_many-worlds-cmrhuz8zy007yvc74ymyf4hs1",
+          "status": "completed",
+          "metadata": {
+            "userId": "cmrhuz7jc004nvc74y6tpyao2",
+            "purchaseId": "cmrhuz8zy007yvc74ymyf4hs1",
+            "source": "web-local-test"
+          },
+          "product": {
+            "id": "prod_xkzSkuNeiQuP1QVNV6NbL"
+          },
+          "order": {
+            "id": "ord_1783864688672_8aa3j_300",
+            "transaction": "tx_1783864688672_8aa3j_300",
+            "amount": 799,
+            "currency": "USD",
+            "status": "paid"
+          },
+          "customer": {
+            "id": "cust_1783864688672_8aa3j",
+            "email": "customer@example.test"
+          }
+        }
+      },
+      "first": {
+        "processed": true,
+        "eventId": "evt_1783864688672_8aa3j_300",
+        "purchaseId": "cmrhuz8zy007yvc74ymyf4hs1",
+        "ledgerId": "cmrhuz9140081vc74a7my16b0",
+        "credits": 300
+      },
+      "replay": {
+        "processed": false,
+        "duplicate": true,
+        "eventId": "evt_1783864688672_8aa3j_300"
+      }
+    },
+    "after300": {
+      "purchased": 300,
+      "bonus": 100,
+      "debt": 0,
+      "available": 400
+    },
+    "checkout650": {
+      "purchaseId": "cmrhuz9200083vc74duxl61xs",
+      "checkoutId": "mock_checkout_many-worlds-cmrhuz9200083vc74duxl61xs"
+    },
+    "payment650": {
+      "event": {
+        "id": "evt_1783864688672_8aa3j_650",
+        "eventType": "checkout.completed",
+        "object": {
+          "id": "mock_checkout_many-worlds-cmrhuz9200083vc74duxl61xs",
+          "status": "completed",
+          "metadata": {
+            "userId": "cmrhuz7jc004nvc74y6tpyao2",
+            "purchaseId": "cmrhuz9200083vc74duxl61xs",
+            "source": "web-local-test"
+          },
+          "product": {
+            "id": "prod_43UaxI9MUzfbPcGZtBbvQD"
+          },
+          "order": {
+            "id": "ord_1783864688672_8aa3j_650",
+            "transaction": "tx_1783864688672_8aa3j_650",
+            "amount": 1499,
+            "currency": "USD",
+            "status": "paid"
+          },
+          "customer": {
+            "id": "cust_1783864688672_8aa3j",
+            "email": "customer@example.test"
+          }
+        }
+      },
+      "first": {
+        "processed": true,
+        "eventId": "evt_1783864688672_8aa3j_650",
+        "purchaseId": "cmrhuz9200083vc74duxl61xs",
+        "ledgerId": "cmrhuz92x0086vc741x2r4bbw",
+        "credits": 650
+      },
+      "replay": {
+        "processed": false,
+        "duplicate": true,
+        "eventId": "evt_1783864688672_8aa3j_650"
+      }
+    },
+    "after650": {
+      "purchased": 950,
+      "bonus": 100,
+      "debt": 0,
+      "available": 1050
+    },
+    "refund": {
+      "processed": true,
+      "eventId": "evt_refund_1783864688672_8aa3j",
+      "purchaseId": "cmrhuz8zy007yvc74ymyf4hs1",
+      "ledgerId": "cmrhuz98m0096vc74sgpn3hin",
+      "removable": 151,
+      "debt": 0
+    },
+    "dispute": {
+      "processed": true,
+      "eventId": "evt_dispute_1783864688672_8aa3j",
+      "purchaseId": "cmrhuz9200083vc74duxl61xs",
+      "ledgerId": "cmrhuz99g0098vc74mmf49s6a",
+      "removable": 650,
+      "debt": 0
+    }
+  },
+  "unlock": {
+    "unlock": {
+      "unlocked": true,
+      "alreadyUnlocked": false,
+      "runId": "cmrhuz93x008avc74rq5l6eq8",
+      "creditsCharged": 100,
+      "paidByUserId": "cmrhuz7jc004nvc74y6tpyao2",
+      "unlockId": "cmrhuz9740092vc74kthttgbm",
+      "balance": {
+        "purchased": 950,
+        "bonus": 0,
+        "debt": 0,
+        "available": 950
+      }
+    },
+    "unlockAgain": {
+      "unlocked": true,
+      "alreadyUnlocked": true,
+      "runId": "cmrhuz93x008avc74rq5l6eq8",
+      "creditsCharged": 0,
+      "balance": {
+        "purchased": 950,
+        "bonus": 0,
+        "debt": 0,
+        "available": 950
+      }
+    },
+    "unlockRows": 1
+  },
+  "security": {
+    "invalidSignatureStatus": 401,
+    "finalBalance": {
+      "purchased": 149,
+      "bonus": 0,
+      "debt": 0,
+      "available": 149
+    }
+  },
+  "database": {
+    "inviterUserId": "cmrhuz7jc004nvc74y6tpyao2",
+    "ledgerRows": 8,
+    "paidPurchaseRows": 0,
+    "checkoutCompletedEventRows": 8
+  }
+}

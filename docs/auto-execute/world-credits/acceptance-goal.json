@@ -1,0 +1,27 @@
+{
+  "goal": {
+    "id": "TOTAL-WC-001",
+    "statement": "在 aiStoryRoom 本地一次性验证注册、邀请、获得 World Credits、Creem Test Mode 动态支付、Webhook 入账、房间解锁和幂等，并在 Creem Test Dashboard 留下可核对的支付记录。",
+    "source": "user_goal_mode",
+    "project_root": "D:\\lyh\\agent\\agent-frame\\aiStoryRoom",
+    "status": "active",
+    "success_criteria": [
+      "verified signup grants exactly 50 Bonus Credits once",
+      "two qualified referrals grant 25 each and the third grants none",
+      "dynamic 300 and 650 Creem Test checkouts grant Purchased Credits through signed webhooks",
+      "at least one real dynamic Test payment is visible in Creem Dashboard and reconciles to local records",
+      "invalid signatures, replayed events, failed cards, and forged success URLs do not grant credits",
+      "100 Credits unlocks one StoryRun exactly once"
+    ],
+    "out_of_scope": ["subscriptions", "per-action charging", "credit transfer", "cash withdrawal", "affiliate or creator revenue share", "live production payments"],
+    "final_verdict": null
+  },
+  "total_task": {
+    "id": "TOTAL-WC-001",
+    "plan_path": ".omx/plans/2026-07-12-world-credits-creem-local-test-plan.md",
+    "goal_path": "docs/auto-execute/world-credits/00-goal.md",
+    "decomposition_path": "docs/auto-execute/world-credits/00-total-task.md",
+    "results_path": "docs/auto-execute/world-credits/results/",
+    "final_report_path": "docs/auto-execute/world-credits/11-final-acceptance-report.md"
+  }
+}

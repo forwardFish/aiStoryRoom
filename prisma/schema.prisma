@@ -11,6 +11,10 @@ model User {
   id             String    @id @default(cuid())
   openid         String    @unique
   unionid        String?
+  email          String?   @unique
+  passwordHash   String?
+  emailVerifiedAt DateTime?
+  verificationTokenHash String?
   nickname       String?
   avatarUrl      String?
   status         String    @default("active")
@@ -53,6 +57,10 @@ model StoryRun {
   title               String
   hook                String   @db.Text
   mode                String   @default("invite")
+  accessLevel         RunAccessLevel @default(FREE_TRIAL)
+  freeDecisionsUsed   Int      @default(0)
+  paywallReachedAt    DateTime?
+  unlockedAt          DateTime?
   status              String   @default("waiting_players")
   currentChapter      Int      @default(1)
   currentNodeId       String?
@@ -87,6 +95,7 @@ model StoryRun {
   aiTasks             AiTask[]
   events              EventLog[]
   shareTokens         ShareToken[]
+  worldUnlock         WorldUnlock?
 
   @@index([templateId])
   @@index([ownerUserId])
@@ -468,4 +477,224 @@ model ShareToken {
   @@index([runId])
   @@index([chapterId])
   @@index([shareUserId])
+}
+
+enum RunAccessLevel {
+  FREE_TRIAL
+  UNLOCKED
+}
+
+enum CreditGrantKind {
+  PURCHASED
+  BONUS
+}
+
+enum CreditGrantSource {
+  SIGNUP
+  REFERRAL
+  PURCHASE
+  SYSTEM_REFUND
+  ADMIN
+}
+
+enum CreditLedgerReason {
+  SIGNUP_BONUS
+  REFERRAL_REWARD
+  PURCHASE
+  WORLD_UNLOCK
+  SYSTEM_REFUND
+  BONUS_EXPIRED
+  PURCHASE_REFUND
+  DISPUTE
+  ADMIN_ADJUSTMENT
+}
+
+enum CreemPurchaseStatus {
+  PENDING
+  PAID
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
+  FAILED
+}
+
+enum WebhookProcessStatus {
+  PROCESSED
+  IGNORED
+}
+
+enum ReferralStatus {
+  REGISTERED
+  QUALIFIED
+  REWARDED
+  QUALIFIED_NO_REWARD
+}
+
+enum ReferralChannel {
+  UNKNOWN
+  LINK
+  X
+  FACEBOOK
+  NATIVE
+}
+
+enum WorldUnlockStatus {
+  COMMITTED
+  REFUNDED
+}
+
+model CreditWallet {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  purchasedBalance Int      @default(0)
+  bonusBalance    Int      @default(0)
+  debtBalance     Int      @default(0)
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CreditGrant {
+  id              String           @id @default(cuid())
+  userId          String
+  kind            CreditGrantKind
+  source          CreditGrantSource
+  originalAmount  Int
+  remainingAmount Int
+  expiresAt       DateTime?
+  idempotencyKey  String           @unique
+  externalRef     String?
+  metadataJson    Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  allocations CreditSpendAllocation[]
+
+  @@index([userId, kind, expiresAt])
+  @@index([externalRef])
+}
+
+model CreditLedger {
+  id             String             @id @default(cuid())
+  userId         String
+  reason         CreditLedgerReason
+  purchasedDelta Int                @default(0)
+  bonusDelta     Int                @default(0)
+  debtDelta      Int                @default(0)
+  idempotencyKey String             @unique
+  externalRef    String?
+  metadataJson   Json?
+  createdAt      DateTime           @default(now())
+
+  allocations CreditSpendAllocation[]
+
+  @@index([userId, createdAt])
+  @@index([externalRef])
+}
+
+model CreditSpendAllocation {
+  id        String       @id @default(cuid())
+  ledgerId  String
+  grantId   String
+  amount    Int
+  createdAt DateTime     @default(now())
+
+  ledger CreditLedger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+  grant  CreditGrant  @relation(fields: [grantId], references: [id], onDelete: Restrict)
+
+  @@unique([ledgerId, grantId])
+  @@index([grantId])
+}
+
+model CreemPurchase {
+  id                  String              @id @default(cuid())
+  userId              String
+  packKey             String
+  creemProductId      String
+  credits             Int
+  expectedAmountCents Int
+  expectedCurrency    String              @default("USD")
+  status              CreemPurchaseStatus @default(PENDING)
+  checkoutId          String?             @unique
+  orderId             String?             @unique
+  transactionId       String?             @unique
+  customerId          String?
+  customerEmail       String?
+  paidAmountCents     Int?
+  paidCurrency        String?
+  rawJson             Json?
+  createdAt           DateTime            @default(now())
+  paidAt              DateTime?
+  refundedAt          DateTime?
+  updatedAt           DateTime            @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([creemProductId])
+}
+
+model PaymentWebhookEvent {
+  eventId     String               @id
+  eventType   String
+  status      WebhookProcessStatus
+  payloadJson Json
+  createdAt   DateTime             @default(now())
+  processedAt DateTime             @default(now())
+}
+
+model ReferralCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  referrals Referral[]
+}
+
+model Referral {
+  id              String          @id @default(cuid())
+  referralCodeId  String
+  inviterUserId   String
+  referredUserId  String          @unique
+  channel         ReferralChannel @default(UNKNOWN)
+  status          ReferralStatus  @default(REGISTERED)
+  qualifiedRunId  String?
+  rewardLedgerId  String?
+  rejectionReason String?
+  registeredAt    DateTime        @default(now())
+  qualifiedAt     DateTime?
+  rewardedAt      DateTime?
+  updatedAt       DateTime        @updatedAt
+
+  referralCode ReferralCode @relation(fields: [referralCodeId], references: [id], onDelete: Restrict)
+
+  @@index([inviterUserId, status])
+  @@index([referralCodeId])
+}
+
+model ReferralShareEvent {
+  id        String          @id @default(cuid())
+  userId    String
+  channel   ReferralChannel
+  runId     String?
+  createdAt DateTime        @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model WorldUnlock {
+  id             String           @id @default(cuid())
+  runId          String           @unique
+  templateKey    String
+  paidByUserId   String
+  creditsCharged Int
+  debitLedgerId  String           @unique
+  status         WorldUnlockStatus @default(COMMITTED)
+  createdAt      DateTime         @default(now())
+  refundedAt     DateTime?
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([paidByUserId, createdAt])
 }
