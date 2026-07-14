@@ -2,14 +2,22 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
+import { createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 const root = resolve(".");
 const webBase = (process.env.MANY_WORLDS_WEB_BASE || "http://127.0.0.1:5178").replace(/\/$/, "");
+const apiBase = (process.env.API_BASE || "http://127.0.0.1:3102/api").replace(/\/$/, "");
 const chromePath = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const resultDir = join(root, "docs", "auto-execute", "evidence", "many-worlds-v13", "browser-three-player-seven-round");
 if (!existsSync(chromePath)) throw new Error(`Chrome not found: ${chromePath}`);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const envSecret = (() => {
+  try { return readFileSync(join(root, ".env"), "utf8").split(/\r?\n/).find((line) => line.startsWith("CREEM_WEBHOOK_SECRET="))?.slice("CREEM_WEBHOOK_SECRET=".length).trim(); }
+  catch { return undefined; }
+})();
+const webhookSecret = process.env.CREEM_WEBHOOK_SECRET || envSecret || "local_world_credits_secret";
 async function waitForJson(url) { for (let attempt = 0; attempt < 120; attempt += 1) { try { const response = await fetch(url); if (response.ok) return response.json(); } catch {} await sleep(150); } throw new Error(`CDP not ready: ${url}`); }
 class Cdp {
   constructor(socket) { this.socket = socket; this.id = 0; this.pending = new Map(); this.exceptions = []; }
@@ -20,7 +28,7 @@ class Cdp {
 class Player {
   constructor(name, port) { this.name = name; this.port = port; this.chrome = null; this.cdp = null; }
   async start() {
-    this.chrome = spawn(chromePath, [`--remote-debugging-port=${this.port}`, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", `--user-data-dir=${join(root, ".runtime", `chrome-many-worlds-v13-${this.name}`)}`, "about:blank"], { stdio: "ignore" });
+    this.chrome = spawn(chromePath, [`--remote-debugging-port=${this.port}`, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", `--user-data-dir=${join(root, ".runtime", `chrome-many-worlds-v13-${this.name}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)}`, "about:blank"], { stdio: "ignore" });
     await waitForJson(`http://127.0.0.1:${this.port}/json/version`);
     let page = (await waitForJson(`http://127.0.0.1:${this.port}/json/list`)).find((item) => item.type === "page");
     if (!page?.webSocketDebuggerUrl) page = await fetch(`http://127.0.0.1:${this.port}/json/new?about:blank`, { method: "PUT" }).then((response) => response.json());
@@ -33,19 +41,16 @@ class Player {
   async click(selector, label) { const clicked = await this.evaluate(`(() => { const node = document.querySelector(${JSON.stringify(selector)}); if (!node || node.disabled) return false; node.click(); return true; })()`); if (!clicked) throw new Error(`${this.name}: unable to click ${label}`); }
   async navigate(path) { await this.cdp.send("Page.navigate", { url: `${webBase}${path}` }); }
   async reload() { await this.cdp.send("Page.reload", { ignoreCache: true }); }
-  async signup(index, stamp) {
+  async signup(index, stamp, returnTo = "/rooms?worldId=sangtian", fromCurrentPage = false) {
     const email = `mw-browser-${stamp}-p${index}@example.test`;
-    await this.navigate(`/auth?returnTo=${encodeURIComponent("/rooms?worldId=sangtian")}`);
+    if (!fromCurrentPage) await this.navigate(`/auth?returnTo=${encodeURIComponent(returnTo)}`);
     await this.wait("Boolean(document.querySelector('[data-auth-form]'))", "auth page");
     await this.click('[data-auth-tab="signup"]', "signup tab");
     await this.evaluate(`(() => { const set = (name, value) => { const field = document.querySelector('[name=' + name + ']'); field.value = value; field.dispatchEvent(new Event('input', { bubbles:true })); }; set('email', ${JSON.stringify(email)}); set('password', 'MvpBrowser2026!'); set('nickname', ${JSON.stringify(`Browser player ${index}`)}); document.querySelector('[data-auth-form]').requestSubmit(); return true; })()`);
-    await this.wait("location.pathname === '/rooms' && Boolean(localStorage.getItem('many-worlds-token'))", "registration, verification, login and return to rooms");
+    const returnPath = new URL(returnTo, webBase).pathname;
+    const returned = returnPath === "/join" ? "/^\\/rooms\\//.test(location.pathname)" : `location.pathname === ${JSON.stringify(returnPath)}`;
+    await this.wait(`(${returned}) && Boolean(localStorage.getItem('many-worlds-token'))`, "registration, verification, login and requested return route", 60000);
     return email;
-  }
-  async grantTestCredit(runId, amount = 100) {
-    const result = await this.evaluate(`(async () => { const response = await fetch('/api/v4/credits/test-grant', { method:'POST', headers:{ 'content-type':'application/json', authorization:'Bearer ' + localStorage.getItem('many-worlds-token') }, body:JSON.stringify({ runId:${JSON.stringify(runId)}, amount:${Number(amount)} }) }); return { status:response.status, body:await response.json().catch(() => ({})) }; })()`);
-    if (result?.status !== 201) throw new Error(`${this.name}: controlled test credit grant failed: ${JSON.stringify(result)}`);
-    return result.body;
   }
   async submit(round) {
     try { await this.wait("Boolean(document.querySelector('[data-action-form]'))", `round ${round} action form`); }
@@ -56,29 +61,60 @@ class Player {
   async stop() { this.cdp?.close(); this.chrome?.kill(); }
 }
 
+async function completeMockCheckout(player, stamp) {
+  const checkout = await player.evaluate(`(async () => { const purchaseId = new URLSearchParams(location.search).get('purchase_id'); const token = localStorage.getItem('many-worlds-token'); const response = await fetch('/api/v4/auth/me', { headers:{ authorization:'Bearer ' + token } }); return { purchaseId, user: await response.json() }; })()`);
+  if (!checkout?.purchaseId || !checkout?.user?.id) throw new Error(`host: payment status has no usable checkout identity: ${JSON.stringify(checkout)}`);
+  const event = {
+    id: `evt_browser_checkout_${stamp}`,
+    eventType: "checkout.completed",
+    object: {
+      id: `mock_checkout_many-worlds-${checkout.purchaseId}`,
+      status: "completed",
+      metadata: { userId: checkout.user.id, purchaseId: checkout.purchaseId, source: "browser-p0-closure" },
+      product: { id: "prod_xkzSkuNeiQuP1QVNV6NbL" },
+      order: { id: `ord_browser_checkout_${stamp}`, transaction: `tx_browser_checkout_${stamp}`, amount: 799, currency: "USD", status: "paid" },
+      customer: { id: `cust_browser_${stamp}`, email: checkout.user.email || "browser@example.test" }
+    }
+  };
+  const raw = JSON.stringify(event);
+  const response = await fetch(`${apiBase}/v4/webhooks/creem`, { method:"POST", headers:{ "content-type":"application/json", "creem-signature":createHmac("sha256", webhookSecret).update(raw).digest("hex") }, body:raw });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.processed) throw new Error(`mock payment notification failed: ${response.status} ${JSON.stringify(payload)}`);
+  return { purchaseId: checkout.purchaseId, webhook: payload };
+}
+
 const stamp = Date.now();
 const players = [new Player("host", 9341), new Player("player2", 9342), new Player("player3", 9343)];
 const rounds = [];
 try {
   await mkdir(resultDir, { recursive: true });
   await Promise.all(players.map((player) => player.start()));
-  const emails = await Promise.all(players.map((player, index) => player.signup(index + 1, stamp)));
   const [host, player2, player3] = players;
-  // The protected grant endpoint additionally proves the run marker belongs
-  // to this @example.test account; the timestamp is present in its email.
-  const controlledCredit = await host.grantTestCredit(String(stamp));
+  const emails = [await host.signup(1, stamp)];
   await host.wait("(() => { const node = document.querySelector('[data-action=create-room]'); return Boolean(node && typeof node.onclick === 'function'); })()", "create-room handler binding");
   await host.click('[data-action="create-room"]', "create Sangtian room");
-  await host.wait("/^\\/rooms\\/c/.test(location.pathname)", "created room route");
+  await host.wait("/^\\/rooms\\/c/.test(location.pathname)", "created room route", 60000);
   await host.wait("Boolean(document.querySelector('[data-role-id]'))", "host role list");
   const room = await host.evaluate("(() => ({ id: location.pathname.split('/').pop(), code: document.querySelector('.invite strong')?.textContent?.trim() }))()");
   if (!room?.code) throw new Error("host: room invite code was not rendered");
   await host.click('[data-role-id]', "host role selection and lock");
   await host.wait("Boolean(document.querySelector('.select-role.selected'))", "host role lock");
-  for (const player of [player2, player3]) {
-    await player.wait("(() => { const node = document.querySelector('[data-action=join-code]'); return Boolean(node && typeof node.onclick === 'function'); })()", "join-code handler binding");
-    await player.evaluate(`window.prompt = () => ${JSON.stringify(room.code)}`);
-    await player.click('[data-action="join-code"]', "join with invite code");
+  // The host selects a real social channel. We capture the outgoing social
+  // message only to deliver it to a fresh browser, as a recipient would.
+  await host.evaluate("window.__manyWorldsShareTarget = ''; window.open = (url) => { window.__manyWorldsShareTarget = String(url); return null; };");
+  await host.click('[data-action="share-invite"]', "open social invite");
+  await host.wait("Boolean(document.querySelector('.share-dialog[open] [data-poster-qr][src^=\"blob:\"]'))", "generated invitation QR");
+  await host.click('[data-share-channel="WHATSAPP"]', "send WhatsApp invitation");
+  await host.wait("Boolean(window.__manyWorldsShareTarget)", "social application handoff");
+  const socialTarget = await host.evaluate("window.__manyWorldsShareTarget");
+  const socialMessage = new URL(socialTarget).searchParams.get("text") || "";
+  const inviteUrl = socialMessage.match(/https?:\/\/\S+/)?.[0];
+  if (!inviteUrl || !inviteUrl.includes("channel=WHATSAPP")) throw new Error(`host: social target did not contain WhatsApp invitation URL: ${socialTarget}`);
+  await host.click('[data-close-share]', "close social invite");
+  for (const [index, player] of [player2, player3].entries()) {
+    await player.navigate(new URL(inviteUrl, webBase).pathname + new URL(inviteUrl, webBase).search);
+    await player.wait("location.pathname === '/auth'", "invite recipient authentication redirect");
+    emails.push(await player.signup(index + 2, stamp, new URL(inviteUrl, webBase).pathname + new URL(inviteUrl, webBase).search, true));
     await player.wait(`location.pathname === ${JSON.stringify(`/rooms/${room.id}`)}`, "joined room route");
     await player.wait("Boolean(document.querySelector('[data-role-id]:not([disabled])'))", "available role");
     await player.click('[data-role-id]:not([disabled])', "player role selection");
@@ -109,12 +145,22 @@ try {
   }
   for (let round = 1; round <= 7; round += 1) {
     if (round === 4) {
-      await host.wait("Boolean(document.querySelector('[data-unlock-room]'))", "shared-room unlock gate");
+      await host.wait("Boolean(document.querySelector('.room-unlock-modal[open] a[href^=\"/credits?intent=WORLD_UNLOCK\"]'))", "shared-room insufficient-credit unlock gate");
       const gate = await host.evaluate("(() => ({ text:document.querySelector('[data-unlock-gate]')?.innerText || '', available:document.body.innerText.includes('Your available balance') }))()");
       if (!gate.available) throw new Error(`host: unlock gate lacks balance disclosure: ${JSON.stringify(gate)}`);
-      await host.click('[data-unlock-room]', "unlock shared room once");
+      await host.click('.room-unlock-modal a[href^="/credits?intent=WORLD_UNLOCK"]', "open contextual World Credits page");
+      await host.wait("location.pathname === '/credits' && Boolean(document.querySelector('[data-pack=credits_300]'))", "payment pack page");
+      await host.click('[data-pack="credits_300"]', "choose 300 credit pack");
+      await host.wait("Boolean(document.querySelector('[data-purchase-dialog][open]'))", "purchase confirmation");
+      await host.click('[data-confirm-purchase]', "confirm purchase and redirect to checkout");
+      await host.wait("location.pathname === '/credits/status' && Boolean(new URLSearchParams(location.search).get('purchase_id'))", "payment processing return page");
+      const payment = await completeMockCheckout(host, stamp);
+      await host.wait("document.body.innerText.includes('Your room is unlocked')", "paid status auto-unlocks room", 30000);
+      await host.click('[data-status-actions] a[href^="/room-game?runId="]', "return to unlocked room");
+      await host.wait("location.pathname === '/room-game' && Boolean(document.querySelector('[data-action-form]'))", "unlocked action form");
       await host.wait("Boolean(document.querySelector('[data-action-form]'))", "unlocked action form");
       await Promise.all([player2, player3].map(async (player) => { await player.reload(); await player.wait("Boolean(document.querySelector('[data-action-form]'))", "shared unlocked action form", 30000); }));
+      rounds.push({ payment, freeRounds: 3, unlockedAtRound: 4, chargedOnce: 100 });
     }
     await Promise.all(players.map((player) => player.submit(round)));
     await host.wait("Boolean(document.querySelector('[data-resolve]:not([disabled])'))", `round ${round} resolve enabled`);
@@ -135,7 +181,8 @@ try {
   const state = await host.evaluate("(() => ({ path: location.pathname, title: document.querySelector('.result-title')?.textContent?.trim(), text: document.body.innerText.slice(0, 1800) }))()");
   const exceptions = Object.fromEntries(players.map((player) => [player.name, player.cdp.exceptions]));
   if (Object.values(exceptions).some((items) => items.length)) throw new Error(`runtime exceptions: ${JSON.stringify(exceptions)}`);
-  const result = { status: "PASS", story: "sangtian", roomId: room.id, players: emails.map((email, index) => ({ browser: players[index].name, email })), unlock: { controlledCredit, freeRounds: 3, unlockedAtRound: 4, chargedOnce: 100 }, rounds, finalState: state, runtimeExceptions: exceptions, screenshot: "host-result.png", completedAt: new Date().toISOString() };
+  const paymentEvidence = rounds.find((item) => item.payment)?.payment;
+  const result = { status: "PASS", story: "sangtian", roomId: room.id, players: emails.map((email, index) => ({ browser: players[index].name, email })), invitation: { channel: "WHATSAPP", roomCode: room.code, deliveredToNewUsers: 2 }, unlock: { paymentEvidence, freeRounds: 3, unlockedAtRound: 4, chargedOnce: 100 }, rounds: rounds.filter((item) => item.round), finalState: state, runtimeExceptions: exceptions, screenshot: "host-result.png", completedAt: new Date().toISOString() };
   await writeFile(join(resultDir, "result.json"), `${JSON.stringify(result, null, 2)}\n`);
   console.log(JSON.stringify({ status: result.status, roomId: room.id, rounds: result.rounds.length, report: "docs/auto-execute/evidence/many-worlds-v13/browser-three-player-seven-round/result.json" }));
 } finally {
