@@ -17,6 +17,7 @@ function message(text, kind = "info") { const node = by("[data-message]"); node.
 function urlFor(pack = "") { const next = new URLSearchParams(); if (intent === "WORLD_UNLOCK") next.set("intent", intent); if (runId) next.set("runId", runId); if (returnTo !== "/credits") next.set("returnTo", returnTo); if (pack) next.set("confirm", pack); const text = next.toString(); return `/credits${text ? `?${text}` : ""}`; }
 function setContext() {
   by("[data-return-link]").href = returnTo; by("[data-return-link]").textContent = runId ? "Back to room" : "Back to rooms";
+  by("[data-return-bottom]").href = returnTo; by("[data-return-bottom]").textContent = runId ? "Back to room" : "Back to rooms";
   by("[data-auth-link]").href = `/auth?returnTo=${encodeURIComponent(location.pathname + location.search)}`;
   const active = intent === "WORLD_UNLOCK";
   by("[data-unlock-context]").hidden = !active;

@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="/platform.css"><link rel="stylesheet" href="/credits.css">
   </head>
   <body>
-    <header class="mw-header credits-header"><a class="brand" href="/"><img src="/assets/brand/many-worlds-logo.png" alt="Many Worlds"><span><b>Many Worlds</b><small>AI-powered social simulations</small></span></a><nav class="mw-nav"><a href="/worlds/caesar"><i class="nav-explore"></i>Explore Worlds</a><a href="/rooms"><i class="nav-rooms"></i>Rooms</a><a class="active" href="/credits"><i class="nav-credits"></i>World Credits</a></nav><div class="header-right"><a href="/#faq"><i class="nav-help"></i>Help</a><a href="/auth" aria-label="Account" class="profile-icon"></a></div></header>
+    <header class="mw-header credits-header"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span class="brand-copy"><b>Many Worlds</b><small>AI-powered social simulations</small></span></a><nav class="mw-nav"><a href="/worlds/caesar"><i class="nav-explore"></i>Explore Worlds</a><a href="/rooms"><i class="nav-rooms"></i>Rooms</a><a class="active" href="/credits"><i class="nav-credits"></i>World Credits</a></nav><div class="header-right"><a href="/#faq"><i class="nav-help"></i>Help</a><a href="#language"><i class="nav-language"></i>English⌄</a><a href="/auth" aria-label="Account" class="profile-icon"></a></div></header>
     <main class="credits-page" data-credits-app>
       <a class="back-link" data-return-link href="/rooms">Back to room</a>
       <header class="credits-heading"><h1 data-wallet-title>World Credits</h1><p class="muted" data-context-copy>Add credits, then return to your shared story.</p></header>
@@ -18,6 +18,7 @@
       </section>
       <section class="credits-confirm" data-confirm-state hidden><h1>Confirm your purchase</h1><p class="muted">You will be redirected to our secure checkout.</p><article class="confirm-card"><span class="confirm-icon">◎</span><h2><strong data-confirm-credits>300</strong> World Credits</h2><b data-confirm-price>$7.99</b><hr><p>Your current balance <strong data-confirm-current>— Credits</strong></p><p>Balance after payment <strong class="positive" data-confirm-after>— Credits</strong></p><section class="confirm-context" data-confirm-context hidden><span>⌂</span><div><strong data-confirm-room>You are unlocking your shared room</strong><small data-confirm-round>Return to this room</small></div></section><p class="confirm-safe">◈ Credits are added only after payment confirmation.</p><button class="btn primary" data-confirm-purchase>Continue to secure payment</button><button class="btn confirm-back" data-back-wallet>Back to World Credits</button></article><p class="confirm-footnote">You will complete payment on a secure Creem checkout page.</p></section>
       <section class="credits-trust"><span>◈ Secure checkout</span><span>✓ Credits added after confirmation</span><span>↻ Return to your room</span></section>
+      <a class="credits-bottom-return" data-return-bottom href="/rooms">Back to room</a>
       <section class="credit-account" data-signed-out hidden><h2>Sign in to purchase</h2><p class="muted">Credits belong to your account, so we need you to sign in first.</p><a class="btn primary" data-auth-link href="/auth">Sign in or create account</a></section>
     </main>
     <script type="module" src="/js/credits.js"></script>
