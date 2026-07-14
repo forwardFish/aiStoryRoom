@@ -1,6 +1,5 @@
 import { forwardRef, Module } from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
-import { PrismaService } from "../prisma.service";
 import { ReferralsModule } from "../referrals/referrals.module";
 import { CreditsController } from "./credits.controller";
 import { CreditsService } from "./credits.service";
@@ -8,7 +7,7 @@ import { CreditsService } from "./credits.service";
 @Module({
   imports: [forwardRef(() => ReferralsModule)],
   controllers: [CreditsController],
-  providers: [CreditsService, PrismaService, AuthGuard],
+  providers: [CreditsService, AuthGuard],
   exports: [CreditsService]
 })
 export class CreditsModule {}

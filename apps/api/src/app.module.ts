@@ -6,7 +6,7 @@ import { MvpCatalogController } from "./mvp-catalog.controller";
 import { ReferralsModule } from "./referrals/referrals.module";
 import { StoryAccessModule } from "./story-access/story-access.module";
 import { StoryController } from "./story.controller";
-import { PrismaService } from "./prisma.service";
+import { PrismaModule } from "./prisma.module";
 import { StoryService } from "./story.service";
 import { RoomsController } from "./rooms.controller";
 import { RoomsService } from "./rooms.service";
@@ -15,8 +15,8 @@ import { StoryTaskOutboxController } from "./story-task-outbox.controller";
 import { StoryTaskOutboxService } from "./story-task-outbox.service";
 
 @Module({
-  imports: [AuthModule, CreditsModule, ReferralsModule, BillingModule, StoryAccessModule],
+  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, StoryAccessModule],
   controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController],
-  providers: [PrismaService, StoryService, StoryTaskOutboxService, RoomsService]
+  providers: [StoryService, StoryTaskOutboxService, RoomsService]
 })
 export class AppModule {}

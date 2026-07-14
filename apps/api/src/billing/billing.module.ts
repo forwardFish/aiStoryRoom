@@ -1,6 +1,5 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
-import { PrismaService } from "../prisma.service";
 import { CreditsModule } from "../credits/credits.module";
 import { BillingController } from "./billing.controller";
 import { BillingService } from "./billing.service";
@@ -11,7 +10,7 @@ import { CreemWebhookService } from "./creem-webhook.service";
 @Module({
   imports: [forwardRef(() => CreditsModule)],
   controllers: [BillingController, CreemWebhookController],
-  providers: [BillingService, CreemClient, CreemWebhookService, PrismaService, AuthGuard],
+  providers: [BillingService, CreemClient, CreemWebhookService, AuthGuard],
   exports: [BillingService, CreemWebhookService]
 })
 export class BillingModule {}

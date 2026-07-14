@@ -6,14 +6,14 @@ import path from "node:path";
 const root = path.resolve("public");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-test("World Credits pages expose registration, verification, invitation and purchase states", () => {
+test("World Credits page exposes signed-out, contextual purchase and secure checkout states", () => {
   const credits = read("credits.html");
-  assert.match(credits, /Create local test account/);
-  assert.match(credits, /Claim 50 Bonus Credits/);
-  assert.match(credits, /300 World Credits/);
-  assert.match(credits, /650 World Credits/);
-  assert.match(credits, /data-invite/);
-  assert.match(credits, /Sharing alone does not grant credits/);
+  assert.match(credits, /Sign in or create account/);
+  assert.match(credits, /data-unlock-context/);
+  assert.match(credits, /data-pack="credits_300"/);
+  assert.match(credits, /data-pack="credits_650"/);
+  assert.match(credits, /data-confirm-purchase/);
+  assert.match(credits, /secure Creem checkout/);
 });
 
 test("success page delegates credit authority to checkout status polling", () => {
