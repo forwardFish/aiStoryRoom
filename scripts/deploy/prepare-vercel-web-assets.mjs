@@ -24,12 +24,27 @@ async function copyIndexed(sourceDirectory, names, targetDirectory) {
   await Promise.all(names.map((name, index) => cp(join(sourceDirectory, name), join(targetDirectory, `${index + 1}.png`))));
 }
 
+async function copyNamed(sourceDirectory, sourceName, targetDirectory, targetName) {
+  if (!sourceName) throw new Error(`missing required supplied asset: ${targetName}`);
+  await mkdir(targetDirectory, { recursive: true });
+  await cp(join(sourceDirectory, sourceName), join(targetDirectory, targetName));
+}
+
 const picDirectory = join(webUi, "pic");
 const pictures = await pngFiles(picDirectory);
 const backgrounds = pictures.filter((name) => name.includes("22_46_") || name.includes("22_54_44") || name.includes("22_54_45"));
 const portraits = pictures.filter((name) => name.includes("22_49_") || (name.includes("22_54_4") && !name.includes("22_54_44") && !name.includes("22_54_45")));
 await copyIndexed(picDirectory, backgrounds, join(destination, "bg"));
 await copyIndexed(picDirectory, portraits, join(destination, "portrait"));
+
+// Payment and invitation surfaces deliberately use the user's latest
+// purpose-made transparent assets rather than substituting generic emojis.
+await copyNamed(picDirectory, pictures.find((name) => name.includes("21_59_15 (4)")), join(destination, "payment"), "credits-stack.png");
+await copyNamed(picDirectory, pictures.find((name) => name.includes("21_59_13 (2)")), join(destination, "social"), "telegram.png");
+await copyNamed(picDirectory, pictures.find((name) => name.includes("21_59_16 (5)")), join(destination, "social"), "qr.png");
+// This supplied composition contains the pale floating castle on its right,
+// matching the payment unlock context while the poster keeps its full scene.
+await copyNamed(picDirectory, pictures.find((name) => name.includes("20_10_29")), join(destination, "payment"), "unlock-world.png");
 
 // The invite poster has a dedicated blank composition. Keep it separate from
 // room backgrounds so the generated QR and room data can remain dynamic.

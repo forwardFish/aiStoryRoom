@@ -30,26 +30,38 @@ export class StoryAccessService {
    * existing idempotent world-unlock transaction is required.
    */
   async ensureRoomRoundAccess(user: AuthenticatedUser, runId: string, currentRound: number) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      const run = await tx.storyRun.findUnique({ where: { id: runId } });
-      if (!run) throw new NotFoundException({ code: "STORY_RUN_NOT_FOUND", message: "Story run not found" });
-      const participant = run.ownerUserId === user.id || Boolean(await tx.storyPlayer.findFirst({ where: { runId, userId: user.id, status: "active" } }));
-      if (!participant) throw new ForbiddenException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only participants can play this run" });
-      const access = this.roomAccessState(run, currentRound);
-      if (access.unlocked) return { completedFreeRound: false, access };
-      if (access.requiresUnlock) {
-        throw new HttpException({ code: "WORLD_UNLOCK_REQUIRED", message: "Unlock this shared world to continue", details: { ...access, runId } }, HttpStatus.PAYMENT_REQUIRED);
+    // All three browsers submit at nearly the same instant.  On Postgres
+    // serializable transactions, the one which records a newly opened free
+    // round can transiently conflict with the other two read/update paths.
+    // The update is idempotent, so retrying the whole transaction is safe.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const result = await this.prisma.$transaction(async (tx) => {
+          const run = await tx.storyRun.findUnique({ where: { id: runId } });
+          if (!run) throw new NotFoundException({ code: "STORY_RUN_NOT_FOUND", message: "Story run not found" });
+          const participant = run.ownerUserId === user.id || Boolean(await tx.storyPlayer.findFirst({ where: { runId, userId: user.id, status: "active" } }));
+          if (!participant) throw new ForbiddenException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only participants can play this run" });
+          const access = this.roomAccessState(run, currentRound);
+          if (access.unlocked) return { completedFreeRound: false, access };
+          if (access.requiresUnlock) {
+            throw new HttpException({ code: "WORLD_UNLOCK_REQUIRED", message: "Unlock this shared world to continue", details: { ...access, runId } }, HttpStatus.PAYMENT_REQUIRED);
+          }
+          if (run.freeDecisionsUsed >= currentRound) return { completedFreeRound: false, access };
+          const advanced = await tx.storyRun.updateMany({
+            where: { id: runId, freeDecisionsUsed: { lt: currentRound } },
+            data: { freeDecisionsUsed: currentRound, paywallReachedAt: currentRound >= access.freeRounds ? new Date() : undefined }
+          });
+          if (advanced.count) await tx.eventLog.create({ data: { userId: user.id, runId, eventName: "free_room_round_started", source: "story-access", payload: { currentRound, freeRounds: access.freeRounds } } });
+          return { completedFreeRound: Boolean(advanced.count), access: { ...access, freeRoundsUsed: currentRound } };
+        });
+        if (result.completedFreeRound && currentRound >= 2) await this.referrals.qualifyReferral(user.id, runId);
+        return result.access;
+      } catch (error: any) {
+        if (error?.code !== "P2034" || attempt === 2) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
       }
-      if (run.freeDecisionsUsed >= currentRound) return { completedFreeRound: false, access };
-      const advanced = await tx.storyRun.updateMany({
-        where: { id: runId, freeDecisionsUsed: { lt: currentRound } },
-        data: { freeDecisionsUsed: currentRound, paywallReachedAt: currentRound >= access.freeRounds ? new Date() : undefined }
-      });
-      if (advanced.count) await tx.eventLog.create({ data: { userId: user.id, runId, eventName: "free_room_round_started", source: "story-access", payload: { currentRound, freeRounds: access.freeRounds } } });
-      return { completedFreeRound: Boolean(advanced.count), access: { ...access, freeRoundsUsed: currentRound } };
-    });
-    if (result.completedFreeRound && currentRound >= 2) await this.referrals.qualifyReferral(user.id, runId);
-    return result.access;
+    }
+    throw new Error("unreachable serialization retry state");
   }
 
   async freeDecision(user: AuthenticatedUser, runId: string) {
