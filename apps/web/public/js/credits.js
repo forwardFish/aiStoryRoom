@@ -31,6 +31,7 @@ function setContext() {
 }
 function render() {
   const isConfirm = Boolean(selectedPack);
+  root.dataset.view = isConfirm ? "confirm" : "wallet";
   by("[data-wallet-state]").hidden = isConfirm; by("[data-confirm-state]").hidden = !isConfirm;
   by("[data-wallet-title]").hidden = isConfirm;
   by("[data-unlock-context]").hidden = isConfirm || intent !== "WORLD_UNLOCK";
