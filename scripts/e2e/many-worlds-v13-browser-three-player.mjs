@@ -13,12 +13,18 @@ const resultDir = join(root, "docs", "auto-execute", "evidence", "many-worlds-v1
 if (!existsSync(chromePath)) throw new Error(`Chrome not found: ${chromePath}`);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60_000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try { return await fetch(url, { ...options, signal: controller.signal }); }
+  finally { clearTimeout(timer); }
+}
 const envSecret = (() => {
   try { return readFileSync(join(root, ".env"), "utf8").split(/\r?\n/).find((line) => line.startsWith("CREEM_WEBHOOK_SECRET="))?.slice("CREEM_WEBHOOK_SECRET=".length).trim(); }
   catch { return undefined; }
 })();
 const webhookSecret = process.env.CREEM_WEBHOOK_SECRET || envSecret || "local_world_credits_secret";
-async function waitForJson(url) { for (let attempt = 0; attempt < 120; attempt += 1) { try { const response = await fetch(url); if (response.ok) return response.json(); } catch {} await sleep(150); } throw new Error(`CDP not ready: ${url}`); }
+async function waitForJson(url) { for (let attempt = 0; attempt < 120; attempt += 1) { try { const response = await fetchWithTimeout(url, {}, 5_000); if (response.ok) return response.json(); } catch {} await sleep(150); } throw new Error(`CDP not ready: ${url}`); }
 class Cdp {
   constructor(socket) { this.socket = socket; this.id = 0; this.pending = new Map(); this.exceptions = []; }
   static async connect(url) { const socket = new WebSocket(url); const cdp = new Cdp(socket); await new Promise((resolve, reject) => { socket.addEventListener("open", resolve, { once: true }); socket.addEventListener("error", reject, { once: true }); }); socket.addEventListener("message", (event) => { const data = JSON.parse(event.data.toString()); if (data.method === "Runtime.exceptionThrown") cdp.exceptions.push(data.params.exceptionDetails.text || "runtime exception"); const pending = cdp.pending.get(data.id); if (!pending) return; cdp.pending.delete(data.id); data.error ? pending.reject(new Error(JSON.stringify(data.error))) : pending.resolve(data.result); }); return cdp; }
@@ -55,14 +61,51 @@ class Player {
   async submit(round) {
     try { await this.wait("Boolean(document.querySelector('[data-action-form]'))", `round ${round} action form`); }
     catch (error) { const page = await this.evaluate("document.body.innerText.slice(0, 1800)").catch(() => "unable to read page"); const diagnostic = await this.evaluate(`(async () => { const id = new URLSearchParams(location.search).get('runId'); const token = localStorage.getItem('many-worlds-token'); const response = await fetch('/api/v4/rooms/' + encodeURIComponent(id || '') + '/game', { headers: { authorization: 'Bearer ' + token } }); return { href: location.href, runId: id, status: response.status, body: (await response.text()).slice(0, 800) }; })()`).catch(() => null); throw new Error(`${error.message}\n${this.name} page text: ${page}\n${JSON.stringify(diagnostic)}`); }
-    await this.evaluate(`(() => { const form = document.querySelector('[data-action-form]'); const method = form.querySelector('[name=method]'); const intent = form.querySelector('[name=intent]'); method.value = ${JSON.stringify(`Browser ${this.name} verifies concrete evidence in round ${round}.`)}; intent.value = ${JSON.stringify(`Browser ${this.name} makes a shared choice that influences the other players in round ${round}.`)}; method.dispatchEvent(new Event('input', {bubbles:true})); intent.dispatchEvent(new Event('input', {bubbles:true})); form.requestSubmit(); return true; })()`);
-    await this.wait("Boolean(document.querySelector('[data-action-form] button[disabled]'))", `round ${round} submitted state`);
+    await this.evaluate(`(() => {
+      const form = document.querySelector('[data-action-form]');
+      const method = form.querySelector('[name=method]');
+      const intent = form.querySelector('[name=intent]');
+      window.__manyWorldsSubmitEvents = [];
+      if (!window.__manyWorldsOriginalFetch) {
+        window.__manyWorldsOriginalFetch = window.fetch.bind(window);
+        window.fetch = async (...args) => {
+          const response = await window.__manyWorldsOriginalFetch(...args);
+          if (String(args[0]).includes('/game/action')) window.__manyWorldsSubmitEvents.push({ url:String(args[0]), status:response.status, body:await response.clone().text() });
+          return response;
+        };
+      }
+      form.addEventListener('submit', () => window.__manyWorldsSubmitEvents.push({ type:'submit-event' }), { once:true });
+      method.value = ${JSON.stringify(`Browser ${this.name} verifies concrete evidence in round ${round}.`)};
+      intent.value = ${JSON.stringify(`Browser ${this.name} makes a shared choice that influences the other players in round ${round}.`)};
+      method.dispatchEvent(new Event('input', {bubbles:true})); intent.dispatchEvent(new Event('input', {bubbles:true}));
+      const valid = form.checkValidity();
+      form.requestSubmit();
+      return { valid, method:method.value, intent:intent.value };
+    })()`);
+    try { await this.wait("Boolean(document.querySelector('[data-action-form] button[disabled]'))", `round ${round} submitted state`); }
+    catch (error) {
+      const diagnostic = await this.evaluate(`(async () => {
+        const id = new URLSearchParams(location.search).get('runId');
+        const token = localStorage.getItem('many-worlds-token');
+        const response = await fetch('/api/v4/rooms/' + encodeURIComponent(id || '') + '/game', { headers: { authorization: 'Bearer ' + token } });
+        return {
+          href: location.href,
+          page: document.body.innerText.slice(0, 1400),
+          buttonDisabled: document.querySelector('[data-action-form] button')?.disabled ?? null,
+          submitEvents: window.__manyWorldsSubmitEvents || [],
+          gameStatus: response.status,
+          game: (await response.text()).slice(0, 1200)
+        };
+      })()`).catch(() => null);
+      throw new Error(`${error.message}\n${this.name} submit diagnostic: ${JSON.stringify(diagnostic)}`);
+    }
+    await this.wait("!document.querySelector('[data-action-form][data-submit-pending]') && Boolean(document.querySelector('[data-action-form] button[disabled]'))", `round ${round} server acknowledgement`, 75_000);
   }
   async stop() { this.cdp?.close(); this.chrome?.kill(); }
 }
 
 async function completeMockCheckout(player, stamp) {
-  const checkout = await player.evaluate(`(async () => { const purchaseId = new URLSearchParams(location.search).get('purchase_id'); const token = localStorage.getItem('many-worlds-token'); const response = await fetch('/api/v4/auth/me', { headers:{ authorization:'Bearer ' + token } }); return { purchaseId, user: await response.json() }; })()`);
+  const checkout = await player.evaluate(`(async () => { const purchaseId = new URLSearchParams(location.search).get('purchase_id'); const token = localStorage.getItem('many-worlds-token'); const response = await fetch('/api/v4/auth/me', { headers:{ authorization:'Bearer ' + token }, signal:AbortSignal.timeout(60000) }); return { purchaseId, user: await response.json() }; })()`);
   if (!checkout?.purchaseId || !checkout?.user?.id) throw new Error(`host: payment status has no usable checkout identity: ${JSON.stringify(checkout)}`);
   const event = {
     id: `evt_browser_checkout_${stamp}`,
@@ -77,7 +120,7 @@ async function completeMockCheckout(player, stamp) {
     }
   };
   const raw = JSON.stringify(event);
-  const response = await fetch(`${apiBase}/v4/webhooks/creem`, { method:"POST", headers:{ "content-type":"application/json", "creem-signature":createHmac("sha256", webhookSecret).update(raw).digest("hex") }, body:raw });
+  const response = await fetchWithTimeout(`${apiBase}/v4/webhooks/creem`, { method:"POST", headers:{ "content-type":"application/json", "creem-signature":createHmac("sha256", webhookSecret).update(raw).digest("hex") }, body:raw });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload.processed) throw new Error(`mock payment notification failed: ${response.status} ${JSON.stringify(payload)}`);
   return { purchaseId: checkout.purchaseId, webhook: payload };
@@ -113,7 +156,11 @@ try {
   await host.click('[data-close-share]', "close social invite");
   for (const [index, player] of [player2, player3].entries()) {
     await player.navigate(new URL(inviteUrl, webBase).pathname + new URL(inviteUrl, webBase).search);
-    await player.wait("location.pathname === '/auth'", "invite recipient authentication redirect");
+    try { await player.wait("location.pathname === '/auth'", "invite recipient authentication redirect"); }
+    catch (error) {
+      const diagnostic = await player.evaluate("(() => ({ href:location.href, token:Boolean(localStorage.getItem('many-worlds-token')), text:document.body.innerText.slice(0,1400), html:document.documentElement.outerHTML.slice(0,1800) }))()").catch(() => null);
+      throw new Error(`${error.message}\n${player.name} invite redirect diagnostic: ${JSON.stringify(diagnostic)}`);
+    }
     emails.push(await player.signup(index + 2, stamp, new URL(inviteUrl, webBase).pathname + new URL(inviteUrl, webBase).search, true));
     await player.wait(`location.pathname === ${JSON.stringify(`/rooms/${room.id}`)}`, "joined room route");
     await player.wait("Boolean(document.querySelector('[data-role-id]:not([disabled])'))", "available role");
@@ -144,6 +191,7 @@ try {
     await player.wait("location.pathname === '/room-game'", "player game route");
   }
   for (let round = 1; round <= 7; round += 1) {
+    console.log(`three-player acceptance: entering round ${round}`);
     if (round === 4) {
       await host.wait("Boolean(document.querySelector('.room-unlock-modal[open] a[href^=\"/credits?intent=WORLD_UNLOCK\"]'))", "shared-room insufficient-credit unlock gate");
       const gate = await host.evaluate("(() => ({ text:document.querySelector('[data-unlock-gate]')?.innerText || '', available:document.body.innerText.includes('Your available balance') }))()");
@@ -151,7 +199,12 @@ try {
       await host.click('.room-unlock-modal a[href^="/credits?intent=WORLD_UNLOCK"]', "open contextual World Credits page");
       await host.wait("location.pathname === '/credits' && Boolean(document.querySelector('[data-pack=credits_300]'))", "payment pack page");
       await host.click('[data-pack="credits_300"]', "choose 300 credit pack");
-      await host.wait("Boolean(document.querySelector('[data-confirm-state]:not([hidden])'))", "same-page purchase confirmation");
+      try {
+        await host.wait("Boolean(document.querySelector('[data-confirm-state]:not([hidden])'))", "same-page purchase confirmation");
+      } catch (error) {
+        const diagnostic = await host.evaluate(`(() => ({ href:location.href, walletHidden:document.querySelector('[data-wallet-state]')?.hidden, confirmHidden:document.querySelector('[data-confirm-state]')?.hidden, selectedPack:new URLSearchParams(location.search).get('confirm'), text:document.body.innerText.slice(0,1200) }))()`);
+        throw new Error(`${error.message}\nPAY-03 diagnostic: ${JSON.stringify(diagnostic)}`);
+      }
       await host.click('[data-confirm-purchase]', "confirm purchase and redirect to checkout");
       await host.wait("location.pathname === '/credits/status' && Boolean(new URLSearchParams(location.search).get('purchase_id'))", "payment processing return page");
       const payment = await completeMockCheckout(host, stamp);
@@ -163,11 +216,26 @@ try {
       rounds.push({ payment, freeRounds: 3, unlockedAtRound: 4, chargedOnce: 100 });
     }
     await Promise.all(players.map((player) => player.submit(round)));
+    console.log(`three-player acceptance: actions acknowledged for round ${round}`);
     await host.wait("Boolean(document.querySelector('[data-resolve]:not([disabled])'))", `round ${round} resolve enabled`);
     await host.click('[data-resolve]', `resolve round ${round}`);
+    console.log(`three-player acceptance: resolution requested for round ${round}`);
     if (round < 7) {
       await host.wait(`document.body.innerText.includes('Round ${round + 1} of 7')`, `round ${round + 1} host state`, 180000);
-      await Promise.all([player2, player3].map(async (player) => { await player.reload(); await player.wait(`document.body.innerText.includes('Round ${round + 1} of 7')`, `round ${round + 1} reload`, 30000); }));
+      console.log(`three-player acceptance: round ${round + 1} host state reached`);
+      await Promise.all([player2, player3].map(async (player) => {
+        await player.reload();
+        try { await player.wait(`document.body.innerText.includes('Round ${round + 1} of 7')`, `round ${round + 1} reload`, 75_000); }
+        catch (error) {
+          const diagnostic = await player.evaluate(`(async () => {
+            const id = new URLSearchParams(location.search).get('runId');
+            const token = localStorage.getItem('many-worlds-token');
+            const response = await fetch('/api/v4/rooms/' + encodeURIComponent(id || '') + '/game', { headers: { authorization: 'Bearer ' + token } });
+            return { href:location.href, text:document.body.innerText.slice(0,1400), gameStatus:response.status, game:(await response.text()).slice(0,1200) };
+          })()`).catch(() => null);
+          throw new Error(`${error.message}\\n${player.name} reload diagnostic: ${JSON.stringify(diagnostic)}`);
+        }
+      }));
     } else {
       await host.wait("document.body.innerText.includes('Session complete')", "completed session", 180000);
     }

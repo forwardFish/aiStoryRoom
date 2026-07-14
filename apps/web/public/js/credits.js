@@ -56,7 +56,13 @@ async function loadRoomContext() {
     roomContext = { title: game.room?.title, round: game.currentNode?.nodeIndex, requiredCredits: game.access?.requiredCredits || 100 };
   } catch { roomContext = { title:"your shared room", round:4, requiredCredits:100 }; }
 }
-function openConfirmation(key) { if (!getToken()) { by("[data-signed-out]").hidden = false; message("Please sign in before purchasing credits.", "error"); return; } location.assign(urlFor(key)); }
+function openConfirmation(key) {
+  if (!getToken()) { by("[data-signed-out]").hidden = false; message("Please sign in before purchasing credits.", "error"); return; }
+  selectedPack = key;
+  history.pushState({}, "", urlFor(key));
+  setContext();
+  render();
+}
 async function startCheckout() {
   if (!selectedPack) return;
   const button = by("[data-confirm-purchase]"); if (button.disabled) return;
@@ -66,6 +72,16 @@ async function startCheckout() {
 }
 
 by("[data-confirm-purchase]").addEventListener("click", startCheckout);
-by("[data-back-wallet]").addEventListener("click", () => location.assign(urlFor()));
-root.querySelectorAll("[data-pack]").forEach((button) => button.addEventListener("click", () => openConfirmation(button.dataset.pack)));
+by("[data-back-wallet]").addEventListener("click", () => {
+  selectedPack = "";
+  history.pushState({}, "", urlFor());
+  setContext();
+  render();
+});
+window.addEventListener("popstate", () => {
+  const next = new URLSearchParams(location.search).get("confirm");
+  selectedPack = next in packs ? next : "";
+  setContext();
+  render();
+});
 await Promise.all([loadAccount(), loadRoomContext()]); setContext(); render();

@@ -7,10 +7,11 @@ import { configureApiTransport } from "./api-transport";
 // This keeps ordinary local startup aligned with the configured test environment.
 if (process.env.SUPABASE_DATABASE_URL) {
   const databaseUrl = new URL(process.env.SUPABASE_DATABASE_URL);
-  // Supabase session-pool connections are deliberately small.  A local API
-  // process must not reserve Prisma's default pool and starve a second local
-  // preview or the three-player acceptance runner.
-  if (!databaseUrl.searchParams.has("connection_limit")) databaseUrl.searchParams.set("connection_limit", "1");
+  // Keep the Supabase session-pool footprint small, while reserving one
+  // connection for the leased story worker and one for an interactive request.
+  // A single connection lets the 250ms worker poll starve resolve-async
+  // transactions during a multi-player room.
+  if (!databaseUrl.searchParams.has("connection_limit")) databaseUrl.searchParams.set("connection_limit", "2");
   process.env.DATABASE_URL = databaseUrl.toString();
 }
 
