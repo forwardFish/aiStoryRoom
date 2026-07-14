@@ -22,6 +22,16 @@ export class AuthController {
     return this.auth.login(body);
   }
 
+  @Post("password-reset/request")
+  requestPasswordReset(@Body() body: { email?: string }) {
+    return this.auth.requestPasswordReset(body);
+  }
+
+  @Post("password-reset/confirm")
+  resetPassword(@Body() body: { email?: string; resetToken?: string; password?: string }) {
+    return this.auth.resetPassword(body);
+  }
+
   @UseGuards(AuthGuard)
   @Get("me")
   me(@CurrentUser() user: AuthenticatedUser) {

@@ -4,9 +4,16 @@ import { PrismaClient } from "@prisma/client";
 
 const base = (process.env.API_BASE || "http://127.0.0.1:3102/api").replace(/\/$/, "");
 const webhookSecret = process.env.CREEM_WEBHOOK_SECRET || "local_world_credits_secret";
-if (!process.env.DATABASE_URL) {
-  const databaseLine = readFileSync(".env", "utf8").split(/\r?\n/).find((line) => line.startsWith("DATABASE_URL="));
-  if (databaseLine) process.env.DATABASE_URL = databaseLine.slice("DATABASE_URL=".length).trim().replace(/^"|"$/g, "");
+const dotenv = readFileSync(".env", "utf8").split(/\r?\n/);
+const envValue = (key: string) => dotenv.find((line) => line.startsWith(`${key}=`))?.slice(`${key}=`.length).trim().replace(/^"|"$/g, "");
+// Acceptance runs use Supabase.  The checked-in local DATABASE_URL points to
+// an optional retired Docker service, so this direct readback client must use
+// the same pooled database as the API process.
+const acceptanceDatabaseUrl = process.env.SUPABASE_DATABASE_URL || envValue("SUPABASE_DATABASE_URL") || process.env.DATABASE_URL || envValue("DATABASE_URL");
+if (acceptanceDatabaseUrl) {
+  const url = new URL(acceptanceDatabaseUrl);
+  if (url.hostname.includes("supabase.com") && !url.searchParams.has("connection_limit")) url.searchParams.set("connection_limit", "1");
+  process.env.DATABASE_URL = url.toString();
 }
 const runTag = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 const prisma = new PrismaClient();

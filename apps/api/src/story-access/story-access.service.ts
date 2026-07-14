@@ -9,6 +9,49 @@ import { ReferralsService } from "../referrals/referrals.service";
 export class StoryAccessService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService, @Inject(CreditsService) private readonly credits: CreditsService, @Inject(ReferralsService) private readonly referrals: ReferralsService) {}
 
+  roomAccessState(run: { accessLevel: string; freeDecisionsUsed: number }, currentRound: number) {
+    const freeRounds = Number(process.env.CREDIT_FREE_DECISION_LIMIT || 3);
+    const requiredCredits = Number(process.env.CREDIT_STANDARD_WORLD_COST || 100);
+    const unlocked = run.accessLevel === "UNLOCKED";
+    return {
+      unlocked,
+      freeRounds,
+      freeRoundsUsed: Math.min(freeRounds, Number(run.freeDecisionsUsed || 0)),
+      currentRound,
+      requiredCredits,
+      requiresUnlock: !unlocked && currentRound > freeRounds
+    };
+  }
+
+  /**
+   * Shared rooms consume their free opening once per round, never once per
+   * participant action. The first action of a free round records that round;
+   * later actions observe the same state. From the next round onward the
+   * existing idempotent world-unlock transaction is required.
+   */
+  async ensureRoomRoundAccess(user: AuthenticatedUser, runId: string, currentRound: number) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const run = await tx.storyRun.findUnique({ where: { id: runId } });
+      if (!run) throw new NotFoundException({ code: "STORY_RUN_NOT_FOUND", message: "Story run not found" });
+      const participant = run.ownerUserId === user.id || Boolean(await tx.storyPlayer.findFirst({ where: { runId, userId: user.id, status: "active" } }));
+      if (!participant) throw new ForbiddenException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only participants can play this run" });
+      const access = this.roomAccessState(run, currentRound);
+      if (access.unlocked) return { completedFreeRound: false, access };
+      if (access.requiresUnlock) {
+        throw new HttpException({ code: "WORLD_UNLOCK_REQUIRED", message: "Unlock this shared world to continue", details: { ...access, runId } }, HttpStatus.PAYMENT_REQUIRED);
+      }
+      if (run.freeDecisionsUsed >= currentRound) return { completedFreeRound: false, access };
+      const advanced = await tx.storyRun.updateMany({
+        where: { id: runId, freeDecisionsUsed: { lt: currentRound } },
+        data: { freeDecisionsUsed: currentRound, paywallReachedAt: currentRound >= access.freeRounds ? new Date() : undefined }
+      });
+      if (advanced.count) await tx.eventLog.create({ data: { userId: user.id, runId, eventName: "free_room_round_started", source: "story-access", payload: { currentRound, freeRounds: access.freeRounds } } });
+      return { completedFreeRound: Boolean(advanced.count), access: { ...access, freeRoundsUsed: currentRound } };
+    });
+    if (result.completedFreeRound && currentRound >= 2) await this.referrals.qualifyReferral(user.id, runId);
+    return result.access;
+  }
+
   async freeDecision(user: AuthenticatedUser, runId: string) {
     const result = await this.prisma.$transaction(async (tx) => {
       const run = await tx.storyRun.findUnique({ where: { id: runId } });

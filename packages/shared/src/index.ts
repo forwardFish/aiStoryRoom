@@ -1,4 +1,4 @@
-export type RunMode = "single" | "invite" | "public_later" | "ai-trio";
+export type RunMode = "single" | "invite" | "public_later" | "ai-trio" | "room";
 export type RiskLevel = "safe" | "normal" | "risky";
 export type ActionType =
   | "observe"

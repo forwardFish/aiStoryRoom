@@ -3,8 +3,9 @@
 body { margin: 0; }
 .legal-app { min-height: 100vh; }
 .legal-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px max(24px, calc((100vw - 1120px) / 2)); border-bottom: 1px solid #e8e9f2; background: #fff; }
-.legal-brand { color: #171d3d; font: 700 21px Georgia, serif; }
-.legal-brand span { color: #6748ef; }
+.legal-brand { color: #171d3d; font: 700 21px Georgia, serif; display: inline-flex; align-items: center; gap: 9px; text-decoration: none; }
+.legal-brand img { width: 44px; height: 44px; object-fit: contain; }
+.legal-brand span { color: #171d3d; }
 .legal-nav { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
 .legal-nav a { color: #505b7c; text-decoration: none; }
 .legal-nav a[aria-current="page"] { color: #6043ef; font-weight: 700; }

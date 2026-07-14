@@ -23,7 +23,7 @@ button:disabled, textarea:disabled, select:disabled { cursor: not-allowed; opaci
 .location-title, .top-day, .top-countdown { height: 52px; display: flex; align-items: center; gap: 9px; }
 .location-title { font-size: 24px; letter-spacing: .02em; }
 .location-title .seal-mark { margin-right: 24px; }
-.seal-mark { width: 35px; height: 35px; display: grid; place-items: center; color: transparent; font-size: 0; opacity: .82; background: url('/assets/icon/1.png') center / contain no-repeat; }
+.seal-mark { width: 40px; height: 40px; display: grid; place-items: center; color: transparent; font-size: 0; opacity: .82; background: url('/assets/brand/many-worlds-logo.png') center / contain no-repeat; }
 .chevron { font-size: 24px; color: #513e29; }
 .top-day { justify-content: center; padding: 0 22px; border: 1px solid #cdb795; border-radius: 5px; background: linear-gradient(180deg, #fbf6ee, #eee2cf); font-size: 19px; white-space: nowrap; }
 .top-countdown { justify-content: center; color: #4c3a26; font-size: 16px; white-space: nowrap; }
@@ -139,7 +139,7 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .causal-topbar { grid-template-columns: 240px minmax(300px, 1.25fr) 216px minmax(190px, 1fr) 210px 225px 250px; gap: 0; border-bottom: 1px solid var(--paper-line); }
 .location-title { height: 36px; display: flex; align-items: center; padding: 0 20px; border-left: 1px solid #e5e7f5; font-size: 20px; letter-spacing: 0; color: #1d244a; white-space: nowrap; }
 .mw-brand { height: 36px; display: inline-flex; align-items: center; padding-left: 15px; white-space: nowrap; }
-.mw-brand::before { content: ""; width: 26px; height: 26px; margin-right: 7px; background: url('/assets/game/sangtian/many-worlds.png') center / contain no-repeat; filter: saturate(1.35); }
+.mw-brand::before { content: ""; width: 36px; height: 36px; margin-right: 9px; background: url('/assets/brand/many-worlds-logo.png') center / contain no-repeat; filter: saturate(1.35); }
 .mw-brand-mark { color: #1d244a; font-family: Inter, Arial, sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -.04em; }
 .location-title .seal-mark { width: 25px; height: 25px; margin-right: 8px; }
 .seal-mark { background-image: url('/assets/game/sangtian/palace.png'); filter: saturate(1.25); }

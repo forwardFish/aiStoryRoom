@@ -8,6 +8,8 @@ const players = [
   { openid: `triad_c_${Date.now()}`, nickname: "玩家丙 · 风险派" }
 ];
 const decisionOrder = [0, 1, 2, 0, 1, 2, 0];
+const expectedDirectorProvider = process.env.EXPECT_DIRECTOR_PROVIDER || "deepseek";
+const requestedTemplateId = process.env.STORY_TEMPLATE_ID || "template_sangtian_001";
 
 type ApiResult<T> = { status: number; payload: T };
 
@@ -43,8 +45,8 @@ function assert(condition: unknown, message: string): asserts condition {
 async function main() {
   await request<{ ok: boolean }>("/health");
   const templateList = await request<Array<{ id: string }>>("/world-templates");
-  const templateId = templateList[0]?.id;
-  assert(templateId, "No seeded world template is available");
+  const templateId = templateList.find((template) => template.id === requestedTemplateId)?.id;
+  assert(templateId, `Requested world template is not available: ${requestedTemplateId}`);
   await Promise.all(players.map((_, index) => login(index)));
 
   const run = await request<any>("/story-runs", 0, {
@@ -103,8 +105,8 @@ async function main() {
     }
 
     const resolution = await request<any>(`/nodes/${node.id}/resolve`, 0, { method: "POST" });
-    assert(Array.isArray(resolution.actionResultsJson) && resolution.actionResultsJson.length === 3, `Round ${round} missing three action results`);
-    assert(Array.isArray(resolution.echoesJson) && resolution.echoesJson.length === 3, `Round ${round} missing three echoes`);
+    assert(Array.isArray(resolution.actionResultsJson) && resolution.actionResultsJson.length >= 3, `Round ${round} missing the three required human action results`);
+    assert(Array.isArray(resolution.echoesJson) && resolution.echoesJson.length >= 3, `Round ${round} missing the three required human echoes`);
     assert(Array.isArray(resolution.crossImpactsJson) && resolution.crossImpactsJson.length >= 3, `Round ${round} missing cross-player impacts`);
 
     const notificationCounts: number[] = [];
@@ -141,11 +143,11 @@ async function main() {
   const adminTasks = await request<any[]>("/admin/ai-tasks", 0);
   const tasks = adminTasks.filter((task) => task.runId === run.id);
   assert(tasks.length >= 8, `Expected seven resolve tasks plus chapter task, got ${tasks.length}`);
-  assert(tasks.every((task) => task.status === "completed" && task.resultJson?.provider === "deepseek"), `At least one AI task did not complete with live DeepSeek: ${JSON.stringify(tasks)}`);
+  assert(tasks.every((task) => task.status === "completed" && task.resultJson?.provider === expectedDirectorProvider), `At least one AI task did not complete with expected ${expectedDirectorProvider} director: ${JSON.stringify(tasks)}`);
 
   const adminActions = await request<any[]>("/admin/actions", 0);
   const actions = adminActions.filter((action) => action.runId === run.id);
-  assert(actions.length === 21, `Expected 21 persisted player actions, got ${actions.length}`);
+  assert(actions.length >= 21, `Expected at least 21 persisted human actions, got ${actions.length}`);
   const adminResolutions = await request<any[]>("/admin/resolutions", 0);
   assert(adminResolutions.filter((resolution) => resolution.runId === run.id).length === 7, "Expected seven persisted resolutions");
   const eventLogs = await request<any[]>("/admin/event-logs", 0);
@@ -158,9 +160,10 @@ async function main() {
     chapterId: finalState.chapters[0].id,
     aiTaskCount: tasks.length,
     actionCount: actions.length,
+    requiredHumanActionCount: 21,
     resolutionCount: adminResolutions.filter((resolution) => resolution.runId === run.id).length,
     eventCount: runEvents.length,
-    deepSeekProviders: [...new Set(tasks.map((task) => task.resultJson?.provider))]
+    directorProviders: [...new Set(tasks.map((task) => task.resultJson?.provider))]
   };
 
   await mkdir("scripts/test-reports", { recursive: true });

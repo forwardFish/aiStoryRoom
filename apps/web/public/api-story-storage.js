@@ -205,11 +205,8 @@ export function defaultApiBase(location = globalThis.location) {
   } catch {
     // Fall through to the local defaults when a non-browser location is passed.
   }
-  // Local validation cabin and API intentionally run on separate ports.
-  if (location.port && location.port !== "3001") {
-    const host = location.hostname === "127.0.0.1" ? "localhost" : location.hostname;
-    return `${location.protocol}//${host}:3001/api`;
-  }
+  // The local Web server owns the API proxy.  Falling back to a hard-coded
+  // 3001 endpoint can silently attach the frozen main game to a stale API.
   return "/api";
 }
 

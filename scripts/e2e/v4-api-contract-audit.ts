@@ -40,10 +40,15 @@ function syntheticEnvelope(status: number) {
 
 async function main() {
   const dataDir = await mkdtemp(join(tmpdir(), "ai-story-room-contract-"));
-  const original = { DATABASE_URL: process.env.DATABASE_URL, MVP_STORY_DATA_DIR: process.env.MVP_STORY_DATA_DIR, MVP_STORY_STORAGE: process.env.MVP_STORY_STORAGE, AI_CAUSAL_PROVIDER: process.env.AI_CAUSAL_PROVIDER, API_WRITE_RATE_LIMIT_PER_MINUTE: process.env.API_WRITE_RATE_LIMIT_PER_MINUTE };
+  const original = { DATABASE_URL: process.env.DATABASE_URL, DISABLE_PRISMA: process.env.DISABLE_PRISMA, MVP_STORY_DATA_DIR: process.env.MVP_STORY_DATA_DIR, MVP_STORY_STORAGE: process.env.MVP_STORY_STORAGE, AI_CAUSAL_PROVIDER: process.env.AI_CAUSAL_PROVIDER, API_WRITE_RATE_LIMIT_PER_MINUTE: process.env.API_WRITE_RATE_LIMIT_PER_MINUTE };
   let app: any;
   try {
     delete process.env.DATABASE_URL;
+    // This v4 contract suite deliberately exercises its isolated file-store
+    // transport. Prisma can still load a stale local dotenv value at client
+    // construction, so explicitly disable it rather than requiring a retired
+    // localhost Postgres service or touching Supabase acceptance data.
+    process.env.DISABLE_PRISMA = "true";
     process.env.MVP_STORY_DATA_DIR = dataDir;
     process.env.MVP_STORY_STORAGE = "file";
     process.env.AI_CAUSAL_PROVIDER = "rules";

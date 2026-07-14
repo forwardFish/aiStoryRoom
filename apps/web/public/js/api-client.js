@@ -1,5 +1,5 @@
 const params = new URLSearchParams(window.location.search);
-const apiBase = (params.get("apiBase") || localStorage.getItem("many-worlds-api-base") || (location.hostname === "localhost" || location.hostname === "127.0.0.1" ? "http://localhost:3001/api" : "")).replace(/\/$/, "");
+const apiBase = (params.get("apiBase") || localStorage.getItem("many-worlds-api-base") || (location.hostname === "localhost" || location.hostname === "127.0.0.1" ? "/api" : "")).replace(/\/$/, "");
 localStorage.setItem("many-worlds-api-base", apiBase);
 
 export function getToken() { return localStorage.getItem("many-worlds-token") || ""; }

@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import type { AuthenticatedUser } from "./current-user.decorator";
+import { verifyAccessToken } from "./auth.service";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -12,8 +13,10 @@ export class AuthGuard implements CanActivate {
     const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
     if (!token) throw new UnauthorizedException({ code: "AUTHENTICATION_REQUIRED", message: "Bearer token required" });
 
-    const user = await this.prisma.user.findUnique({ where: { openid: token } });
-    if (!user || user.status !== "active") {
+    const claims = verifyAccessToken(token);
+    if (!claims) throw new UnauthorizedException({ code: "INVALID_TOKEN", message: "Invalid, expired, or malformed access token" });
+    const user = await this.prisma.user.findUnique({ where: { id: claims.sub } });
+    if (!user || user.openid !== claims.openid || user.status !== "active") {
       throw new UnauthorizedException({ code: "INVALID_TOKEN", message: "Invalid or inactive token" });
     }
 

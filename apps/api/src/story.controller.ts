@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Headers, HttpException, HttpStatus, Inject, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpException, HttpStatus, Inject, Param, Post, ServiceUnavailableException } from "@nestjs/common";
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
+import { verifyAccessToken } from "./auth/auth.service";
+import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 
 @Controller()
 export class StoryController {
-  constructor(@Inject(StoryService) private readonly story: StoryService) {}
+  constructor(@Inject(StoryService) private readonly story: StoryService, @Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   @Get()
   index() {
@@ -24,6 +26,16 @@ export class StoryController {
   @Get("health")
   health() {
     return { ok: true, service: "ai-story-room-api" };
+  }
+
+  @Get("health/live")
+  live() { return { ok: true, service: "ai-story-room-api", status: "live" }; }
+
+  @Get("health/ready")
+  async ready() {
+    const readiness = await this.prisma.readiness();
+    if (!readiness.ready) throw new ServiceUnavailableException({ code: "DEPENDENCY_NOT_READY", ...readiness });
+    return { ok: true, service: "ai-story-room-api", status: "ready", ...readiness };
   }
 
   @Post("auth/wechat-login")
@@ -302,6 +314,7 @@ export class StoryController {
 
   private openid(headers: Record<string, string | undefined>) {
     const auth = headers.authorization || "";
-    return headers["x-mock-openid"] || auth.replace(/^Bearer\s+/i, "") || "mock_openid_owner_001";
+    const token = auth.replace(/^Bearer\s+/i, "");
+    return headers["x-mock-openid"] || verifyAccessToken(token)?.openid || token || "mock_openid_owner_001";
   }
 }

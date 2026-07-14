@@ -6,8 +6,11 @@ import { spawn } from "node:child_process";
 const root = resolve(".");
 const chromePath = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const webBase = (process.env.SIM_WEB_BASE || "http://127.0.0.1:5200").replace(/\/$/, "");
-const apiBase = (process.env.SIM_API_BASE || "http://127.0.0.1:3102/api").replace(/\/$/, "");
+// The Web server owns the /api proxy in local acceptance.  Keeping this
+// same-origin avoids coupling browser coverage to a particular dev port.
+const apiBase = (process.env.SIM_API_BASE || "/api").replace(/\/$/, "");
 const cdpPort = Number(process.env.SIM_CDP_PORT || 9331);
+const firstUnderstandingPlayers = Math.max(1, Number(process.env.SIM_FIRST_UNDERSTANDING_PLAYERS || 5));
 const screenshots = join(root, "docs", "auto-execute", "screenshots", "simulated-player");
 const profile = join(root, ".runtime", "chrome-simulated-player");
 
@@ -63,22 +66,37 @@ async function click(selector, description) {
 async function clearPlayerState() { await evaluate(`(() => { try { localStorage.clear(); sessionStorage.clear(); } catch {} return true; })()`); }
 async function openThroughUi(viewport) {
   await setViewport(viewport.width, viewport.height);
-  await navigate(`${webBase}/?apiBase=${encodeURIComponent(apiBase)}&simulated=1`);
-  await waitUntil("Boolean(document.querySelector('[data-start-solo]'))", "homepage entry");
-  await click("[data-start-solo]", "homepage start button");
+  await navigate(`${webBase}/worlds/sangtian?apiBase=${encodeURIComponent(apiBase)}&simulated=1`);
+  await waitUntil("Boolean(document.querySelector('[data-action=sangtian-solo]'))", "嘉靖财政危局 solo entry");
+  await click("[data-action=sangtian-solo]", "嘉靖财政危局 solo button");
   await waitUntil("location.pathname === '/role-select'", "role selection route");
   await waitUntil("Boolean(document.querySelector('#enterRole'))", "role confirmation");
   await click("#enterRole", "role confirmation");
-  await waitUntil("location.pathname === '/game' && Boolean(document.querySelector('[data-testid=story-shell]'))", "game route");
+  try {
+    await waitUntil("location.pathname === '/game' && Boolean(document.querySelector('[data-testid=story-shell]'))", "game route");
+  } catch (error) {
+    const diagnostic = await evaluate("(() => ({ path:location.pathname + location.search, text:document.body.innerText.slice(0, 1200), alert:document.querySelector('[role=alert]')?.textContent || '' }))()");
+    throw new Error(`${error instanceof Error ? error.message : String(error)}; diagnostic=${JSON.stringify(diagnostic)}`);
+  }
   await waitUntil("Boolean(document.querySelector('#beginStoryBtn'))", "opening narrative");
 }
 async function snapshot(label) {
   return await evaluate(`(() => ({ label: ${JSON.stringify(label)}, path: location.pathname, title: document.title, width: innerWidth, scrollWidth: document.documentElement.scrollWidth, hasOpening: Boolean(document.querySelector('#beginStoryBtn')), hasDecision: Boolean(document.querySelector('#submitDecision')), hasCritical: Boolean(document.querySelector('#criticalRespondBtn')), hasHistory: Boolean(document.querySelector('#historyBtn')), visibleText: document.body.innerText.slice(0, 1800) }))()`);
 }
 async function submitDecision() {
-  await waitUntil("Boolean(document.querySelector('input[name=decision]')) && Boolean(document.querySelector('#submitDecision'))", "decision controls");
+  // The frozen 嘉靖 game deliberately streams the opening before exposing the
+  // first actionable choice; a normal 20-second UI polling window is too
+  // short when the narrative provider is warm-starting.
+  try {
+    await waitUntil("Boolean(document.querySelector('input[name=decision]')) && Boolean(document.querySelector('#submitDecision'))", "decision controls", 90_000);
+  } catch (error) {
+    const diagnostic = await evaluate("(() => ({ path:location.pathname + location.search, runId:new URL(location.href).searchParams.get('runId'), text:document.body.innerText.slice(0, 1800), hasBegin:Boolean(document.querySelector('#beginStoryBtn')), hasAdvance:Boolean(document.querySelector('#advanceBtn, #maneuverAdvanceBtn')), hasError:Boolean(document.querySelector('.error, [role=alert]')) }))()");
+    throw new Error(`${error instanceof Error ? error.message : String(error)}; diagnostic=${JSON.stringify(diagnostic)}`);
+  }
   await evaluate(`(() => { const option = document.querySelector('input[name=decision]'); const submit = document.querySelector('#submitDecision'); option.click(); submit.click(); return true; })()`);
-  await sleep(3_700);
+  await waitUntil("Boolean(document.querySelector('#continueStoryBtn:not([disabled])'))", "decision result continuation", 90_000);
+  await click("#continueStoryBtn", "decision result continuation");
+  await sleep(200);
 }
 async function advanceDay() {
   await waitUntil("Boolean(document.querySelector('#advanceBtn:not([disabled]), #maneuverAdvanceBtn:not([disabled])'))", "advance-day control", 20_000);
@@ -89,7 +107,7 @@ async function resolveTwoPrompts() { await submitDecision(); await submitDecisio
 
 async function firstUnderstandingRound() {
   const records = [];
-  for (let index = 1; index <= 5; index += 1) {
+  for (let index = 1; index <= firstUnderstandingPlayers; index += 1) {
     await clearPlayerState();
     await openThroughUi({ width: 1366, height: 768 });
     const state = await snapshot(`SP-R1-${index}`);
@@ -101,7 +119,7 @@ async function firstUnderstandingRound() {
       decisionAreaAvailable: Boolean(state.hasOpening)
     };
     if (!Object.values(understood).every(Boolean)) throw new Error(`first understanding failed for simulated player ${index}`);
-    records.push({ playerId: `SIM-R1-${index}`, scenarioIds: ["SP-001", "SP-002", "SP-003", "SP-004"], clicks: ["homepage start", "confirm playable role"], pausesMs: [350, 350], understood, viewport: "1366x768" });
+    records.push({ playerId: `SIM-R1-${index}`, scenarioIds: ["SP-001", "SP-002", "SP-003", "SP-004"], clicks: ["嘉靖财政危局 solo", "confirm playable role"], pausesMs: [350, 350], understood, viewport: "1366x768" });
   }
   return records;
 }
@@ -109,13 +127,22 @@ async function firstUnderstandingRound() {
 async function completeFlowRound() {
   await clearPlayerState();
   await openThroughUi({ width: 1672, height: 941 });
-  const clicks = ["homepage start", "confirm playable role", "begin opening narrative"];
+  const clicks = ["嘉靖财政危局 solo", "confirm playable role", "begin opening narrative"];
   await click("#beginStoryBtn", "begin story");
   await resolveTwoPrompts(); await advanceDay();
   await resolveTwoPrompts(); await advanceDay();
-  // Day three: a player-visible investigation triggers the critical-event path.
-  await evaluate(`(() => { const select = document.querySelector('#maneuverType'); if (!select) return false; select.value = 'investigate'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
-  await click("#maneuverSubmit", "investigate maneuver");
+  // Day three: select the visible investigation workbench, then choose one
+  // concrete investigation card.  These cards submit directly in the frozen
+  // main-game UI; there is no hidden select or generic submit control.
+  try {
+    await waitUntil("Boolean(document.querySelector('[data-maneuver-type=investigate]:not([disabled])'))", "available investigation workbench", 30_000);
+  } catch (error) {
+    const diagnostic = await evaluate("(() => ({ path:location.pathname + location.search, text:document.body.innerText.slice(0, 1800), currentDay:document.body.innerText.match(/第\\s*(\\d+)\\s*天/)?.[1] || '', hasAdvance:Boolean(document.querySelector('#advanceBtn, #maneuverAdvanceBtn')), hasContinue:Boolean(document.querySelector('#continueStoryBtn')), investigationDisabled:document.querySelector('[data-maneuver-type=investigate]')?.disabled ?? null }))()");
+    throw new Error(`${error instanceof Error ? error.message : String(error)}; diagnostic=${JSON.stringify(diagnostic)}`);
+  }
+  await click('[data-maneuver-type="investigate"]', "investigation workbench");
+  await waitUntil("Boolean(document.querySelector('[data-maneuver-investigation]'))", "investigation choices");
+  await click('[data-maneuver-investigation="inspect_courier_registry"]', "investigate maneuver");
   await waitUntil("Boolean(document.querySelector('#criticalDeferBtn'))", "critical event modal");
   clicks.push("investigate maneuver", "defer critical event");
   await click("#criticalDeferBtn", "defer critical event");
@@ -148,7 +175,7 @@ async function compatibilityRound() {
     await waitUntil("Boolean(document.querySelector('[data-testid=story-shell]'))", "game recovery after refresh");
     const afterReload = await snapshot(`SP-R3-${index}-after-refresh`);
     if (beforeReload.scrollWidth > beforeReload.width || afterReload.scrollWidth > afterReload.width) throw new Error(`horizontal overflow at ${viewport.width}x${viewport.height}`);
-    records.push({ playerId: `SIM-R3-${index}`, scenarioIds: ["SP-028", "SP-029", "SP-030", "SP-031", "SP-034", "SP-035"], clicks: ["homepage start", "role confirm", "begin story", "submit visible decision", "refresh"], viewport: `${viewport.width}x${viewport.height}`, beforeReload, afterReload, screenshot: await screenshot(`round-3-${viewport.width}x${viewport.height}.png`) });
+    records.push({ playerId: `SIM-R3-${index}`, scenarioIds: ["SP-028", "SP-029", "SP-030", "SP-031", "SP-034", "SP-035"], clicks: ["嘉靖财政危局 solo", "role confirm", "begin story", "submit visible decision", "refresh"], viewport: `${viewport.width}x${viewport.height}`, beforeReload, afterReload, screenshot: await screenshot(`round-3-${viewport.width}x${viewport.height}.png`) });
   }
   return records;
 }

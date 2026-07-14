@@ -1,56 +1,75 @@
-﻿project:
+project:
   name: aiStoryRoom
   root: D:\lyh\agent\agent-frame\aiStoryRoom
 
 docs:
   requirements:
-    - "D:\lyh\agent\agent-frame\aiStoryRoom\docs\AI多人故事局_PRD_阶段化工程完整增强版_v5.md"
+    - docs/AIStoryRoom_v1.2_开发步骤与验收步骤.md
+    - docs/AIStoryRoom_v1.2_功能测试与模拟玩家测试.md
+    - docs/00_持续叙事流_UI系统_修订说明_v1.2.md
+    - docs/01_AI多人局_MVP唯一工程基线_v1.2.md
+    - docs/02_AI多人局_StoryRun状态机与API契约_v1.2.md
+    - docs/03_桑田诏_剧本配置Schema_v1.2.md
+    - docs/04_AI多人局_MVP自动化验收矩阵_v1.2.md
+    - docs/05_AI多人局_部署日志与AI成本规范_v1.2.md
+    - docs/06_AI多人局_MVP用户试玩与数据验证方案_v1.2.md
+    - docs/07_AI多人局_Web_MVP_产品需求文档_v4.3_持续叙事流修订版.md
+    - docs/08_AI多人局_数据库与存储架构设计文档_v2.3_持续叙事流修订版.md
+    - docs/09_AI多人局_游戏玩法说明文档_v2.3_持续叙事流修订版.md
+    - docs/10_桑田诏_完整故事局剧本_v1.3_持续叙事流修订版.md
+    - docs/11_AI多人剧情推演_MVP主游戏页_UI交互设计_v1.1.md
   ui:
-    - "D:\lyh\agent\agent-frame\aiStoryRoom\docs\UI\2\模拟页面.png"
+    - docs/UI/web/首页.png
+    - docs/UI/web/选择角色.png
+    - docs/UI/web/UI01_角色专属开场.png
+    - docs/UI/web/UI02_主线故事与决策.png
+    - docs/UI/web/UI03_AI正在推演.png
+    - docs/UI/web/UI04_推演结果故事与变化.png
+    - docs/UI/web/UI05_局势记录展开.png
+    - docs/UI/web/UI06_关键事件弹窗.png
+    - docs/UI/web/UI07_他人影响故事与回应.png
+    - docs/UI/web/UI08_主动谋划.png
+
+goal: TOTAL-005
 lanes:
-  intake:
-    enabled: true
-  requirements:
-    enabled: true
-  frontend:
-    enabled: true
-  backend:
-    enabled: true
-  contract:
-    enabled: true
-  visual:
-    enabled: true
-  integration:
-    enabled: true
-  reportIntegrity:
-    enabled: true
-  secretGuard:
-    enabled: true
+  intake: { enabled: true }
+  requirements: { enabled: true }
+  stories: { enabled: true }
+  frontend: { enabled: true }
+  backend: { enabled: true }
+  contract: { enabled: true }
+  visual: { enabled: true }
+  integration: { enabled: true }
+  reportIntegrity: { enabled: true }
+  secretGuard: { enabled: true }
 
 commands:
-  install: "pnpm install --frozen-lockfile"
-  lint: ""
-  typecheck: "pnpm --filter @apps/web typecheck; pnpm typecheck"
-  test: "pnpm --filter @apps/api test; pnpm test:story:e2e"
-  build: "pnpm --filter @apps/miniprogram build:weapp"
-  smoke: "powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-api-smoke.ps1 -ProjectRoot \"D:\\lyh\\agent\\agent-frame\\aiStoryRoom\" -Mode full; powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-web-cabin-smoke.ps1 -ProjectRoot \"D:\\lyh\\agent\\agent-frame\\aiStoryRoom\" -Mode full"
-  acceptance: "powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-convergence.ps1 -ProjectRoot \"D:\\lyh\\agent\\agent-frame\\aiStoryRoom\" -Mode full -MaxRounds 5 -Strict"
-  uiBaseUrl: "http://localhost:5177"
+  install: pnpm install --frozen-lockfile
+  lint: pnpm lint:config
+  typecheck: pnpm typecheck
+  test: pnpm test:acceptance
+  build: pnpm --filter @apps/web build
+  smoke: pnpm test:story:v4-db; pnpm test:story:three-four
+  e2e: pnpm test:story:triad
+  acceptance: pnpm test:acceptance
+  uiBaseUrl: http://127.0.0.1:5177
 
 uiMapping:
-  - id: WEB-CABIN-DESKTOP
-    reference: "docs/UI/2/模拟页面.png"
-    route: "/"
-    viewport: "1610x977"
-    required: true
-    pixelPerfectRequired: true
+  - { id: HOME, reference: docs/UI/web/首页.png, route: /, viewport: 910x1729, required: true, pixelPerfectRequired: true }
+  - { id: ROLE_SELECT, reference: docs/UI/web/选择角色.png, route: /role-select?story=sangtian, viewport: 1448x1086, required: true, pixelPerfectRequired: true }
+  - { id: UI01_OPENING, reference: docs/UI/web/UI01_角色专属开场.png, route: /game, viewport: 1672x941, state: opening, required: true, pixelPerfectRequired: true }
+  - { id: UI02_DECISION, reference: docs/UI/web/UI02_主线故事与决策.png, route: /game, viewport: 1672x941, state: decision, required: true, pixelPerfectRequired: true }
+  - { id: UI03_SIMULATING, reference: docs/UI/web/UI03_AI正在推演.png, route: /game, viewport: 1672x941, state: simulating, required: true, pixelPerfectRequired: true }
+  - { id: UI04_RESULT, reference: docs/UI/web/UI04_推演结果故事与变化.png, route: /game, viewport: 1672x941, state: result, required: true, pixelPerfectRequired: true }
+  - { id: UI05_LEDGER, reference: docs/UI/web/UI05_局势记录展开.png, route: /game, viewport: 1672x941, state: ledger, required: true, pixelPerfectRequired: true }
+  - { id: UI06_CRITICAL, reference: docs/UI/web/UI06_关键事件弹窗.png, route: /game, viewport: 1672x941, state: critical, required: true, pixelPerfectRequired: true }
+  - { id: UI07_OTHER_IMPACT, reference: docs/UI/web/UI07_他人影响故事与回应.png, route: /game, viewport: 1672x941, state: other-impact, required: true, pixelPerfectRequired: true }
+  - { id: UI08_MANEUVER, reference: docs/UI/web/UI08_主动谋划.png, route: /game, viewport: 1672x941, state: maneuver, required: true, pixelPerfectRequired: true }
 
 visual:
-  diffThreshold: 0.185
-  viewport: "1610x977"
-  requiredScreenshot: "docs/auto-execute/screenshots/web-cabin-smoke.png"
-  requiredDiffJson: "docs/auto-execute/results/web-cabin-visual-diff.json"
-  requiredDiffPng: "docs/auto-execute/screenshots/web-cabin-diff.png"
+  diffThreshold: 0.10
+  requiredScreenshotDirectory: docs/auto-execute/screenshots/current
+  antiCheat: page must not request or render a reference image; compare source is file-only
 
 convergence:
   maxRepairRounds: 5
@@ -59,10 +78,7 @@ verifierDependencies:
   allowInstallDevDependencies: false
   allowEphemeralNpx: true
   installPlaywrightBrowsers: false
-  packages:
-    - playwright
-    - pixelmatch
-    - pngjs
+  packages: [playwright, pixelmatch, pngjs]
 
 safety:
   allowCommit: false
@@ -71,9 +87,7 @@ safety:
   allowProductionDb: false
   allowPayment: false
   policy:
-    - "do not run git reset or git clean"
-    - "do not use git add -A"
-    - "do not force push"
-    - "do not delete PRD/UI/test/history reports"
-    - "do not weaken tests or fabricate evidence"
-    - "do not access production services, real payment, or production data"
+    - do not reset or clean git
+    - do not delete requirements, UI, tests, or evidence
+    - do not weaken tests or fabricate evidence
+    - do not access production services or data

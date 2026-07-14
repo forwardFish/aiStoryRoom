@@ -220,6 +220,27 @@ const SANGTIAN_DETAIL = {
   roles: SANGTIAN_ROLES
 };
 
+const CAESAR_ROLES: MvpRoleCatalogItem[] = [
+  ["brutus", "Brutus", "A senator torn between friendship and the Republic.", "I serve Rome, not any man.", "Prevent an unrestrained dictatorship."],
+  ["caesar", "Caesar", "Victor of Rome and the center of every alliance.", "I came, I saw, I changed Rome.", "Preserve Rome without becoming its master."],
+  ["cassius", "Cassius", "A senator who calls fear by its true name.", "Liberty isn't given. It's taken.", "Keep the Republic from submission."],
+  ["mark_antony", "Mark Antony", "Caesar's ally and Rome's most dangerous speaker.", "I speak for Rome. And I remember.", "Keep Rome from civil war."],
+  ["decimus", "Decimus", "A commander trusted by both camps.", "I watch. I learn. I will decide.", "Avoid a point of no return."],
+  ["cicero", "Cicero", "An orator whose words can still change the vote.", "Words are my sharpest weapon.", "Keep institutions alive."]
+].map(([key, name, identity, tagline, goal], index) => ({
+  key, name, identity, tagline, portrait: `/assets/portrait/${index + 1}.png`, playable: key === "brutus", publicGoal: goal,
+  fateQuestion: "What must Rome become after this choice?", rank: "Roman Republic", office: "Rome, 44 BC", goals: [goal],
+  resources: [["Influence", "Senate"], ["Time", "Seven scenes"]], leverage: ["Public argument", "Private alliance"],
+  traits: [{ icon: "strategy", label: "Political judgment" }, { icon: "risk", label: "High stakes" }]
+}));
+
+const CAESAR_DETAIL = {
+  id: "caesar", title: "Caesar: The Last Spring of the Republic", displayTitle: "Caesar: The Last Spring of the Republic",
+  description: "In the final days of the Republic, every alliance and restraint writes a different Rome.", subtitle: "Seven scenes of power, loyalty, and public consequence",
+  category: "Historical · Alternate History", heroCover: "/assets/bg/1.png", totalDays: 7, modeLabel: "Solo / Multiplayer", durationLabel: "40–60 Minutes",
+  tags: ["History", "Power", "Alternate History"], roles: CAESAR_ROLES
+};
+
 export function listMvpStories() {
   return {
     productName: "AI 故事局",
@@ -236,13 +257,14 @@ export function listMvpStories() {
       }
     },
     sections: [
-      { title: "官方精选", icon: "star", tone: "purple", stories: STORY_CARDS.slice(0, 4) },
+      { title: "官方精选", icon: "star", tone: "purple", stories: [{ id: "caesar", title: CAESAR_DETAIL.title, subtitle: CAESAR_DETAIL.subtitle, category: CAESAR_DETAIL.category, cover: CAESAR_DETAIL.heroCover, players: "1-6", heat: 0, tags: CAESAR_DETAIL.tags, status: "playable" }, ...STORY_CARDS.slice(0, 4)] },
       { title: "热门故事局", icon: "hot", tone: "red", stories: STORY_CARDS.slice(4) }
     ]
   };
 }
 
 export function getMvpStory(storyId: string) {
+  if (storyId === CAESAR_DETAIL.id) return CAESAR_DETAIL;
   if (storyId !== SANGTIAN_DETAIL.id) {
     const preview = STORY_CARDS.find((item) => item.id === storyId);
     if (preview) {

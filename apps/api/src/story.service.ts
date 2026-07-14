@@ -139,9 +139,15 @@ export class StoryService {
   async createRun(openid: string, input: CreateStoryRunInput) {
     const owner = await this.ensureUser(openid);
     const template = getTemplate(input.templateId);
+    await this.prisma.worldTemplate.upsert({
+      where: { id: template.id },
+      update: { name: template.name, genre: template.genre, hook: template.hook, worldBase: template.worldBase, status: "online", configJson: template as any },
+      create: { id: template.id, name: template.name, genre: template.genre, hook: template.hook, worldBase: template.worldBase, status: "online", configJson: template as any }
+    });
     const mode = input.mode || "invite";
     const isAiTrio = mode === "ai-trio";
-    const maxPlayers = isAiTrio ? 3 : Math.max(1, Math.min(5, Number(input.maxPlayers || 3)));
+    const isRoom = mode === "room";
+    const maxPlayers = isAiTrio ? 3 : Math.max(1, Math.min(isRoom ? 6 : 5, Number(input.maxPlayers || 3)));
     const inviteCode = await this.nextInviteCode();
 
     const run = await this.prisma.storyRun.create({
@@ -368,6 +374,32 @@ export class StoryService {
     if (node.runId && !runPlayer) {
       throw new ForbiddenException("player must claim this role before submitting its action");
     }
+    const knowledgeViolation = await this.guardKnowledgeBoundary(node.runId, input.roleId, input);
+    if (knowledgeViolation) {
+      await this.prisma.auditLog.create({
+        data: {
+          targetType: "PlayerActionDraft",
+          content: [input.method, input.intent, input.freeText].filter(Boolean).join("\n"),
+          result: "blocked",
+          riskType: "knowledge_boundary"
+        }
+      });
+      await this.logEvent("action_knowledge_blocked", user.id, node.runId, nodeId, undefined, {
+        roleId: input.roleId,
+        factKey: knowledgeViolation.factKey
+      });
+      return {
+        status: "rejected",
+        accepted: false,
+        rejected: true,
+        guardStatus: "blocked",
+        matchedRules: ["unknown_private_fact"],
+        suggestedRewrite: this.rewriteSuggestion(input),
+        reason: "ActionGuard blocked: the role cannot use another role's private fact.",
+        message: "ActionGuard blocked: the role cannot use another role's private fact.",
+        rewriteSuggestion: this.rewriteSuggestion(input)
+      };
+    }
 
     const action = await this.prisma.playerAction.create({
       data: {
@@ -452,7 +484,7 @@ export class StoryService {
     if (actions.length === 0) throw new BadRequestException("no accepted actions to resolve");
 
     const template = getTemplate(node.run.templateId);
-    const totalNodes = node.run.mode === "ai-trio" ? 7 : 5;
+    const totalNodes = node.run.mode === "ai-trio" || node.run.mode === "room" ? 7 : 5;
     const templateNode = this.nodeDefinition(template, node.nodeIndex, node.run.mode);
     const dangerAfter = Math.min(node.run.maxDangerLevel, node.run.dangerLevel + (node.nodeIndex >= 4 ? 1 : 0));
     const directorResult = await resolveNodeWithDirector({
@@ -522,6 +554,94 @@ export class StoryService {
         chapterIndex: node.chapterIndex,
         content: `【${node.title}】${directorResult.summary} ${actions.map((action) => action.role.roleName).join("、")}的选择让局面继续推进。`,
         contributorJson: actions.map((action) => ({ roleId: action.roleId, roleName: action.role.roleName }))
+      }
+    });
+
+    const allRoles = await this.prisma.storyRole.findMany({
+      where: { runId: node.runId },
+      orderBy: { createdAt: "asc" }
+    });
+    const publicFactKey = ["node", node.nodeIndex, "resolved"].join("_");
+    await this.prisma.canonFact.upsert({
+      where: { runId_factKey: { runId: node.runId, factKey: publicFactKey } },
+      update: {
+        content: directorResult.summary,
+        sourceActionIdsJson: actions.map((action) => action.id),
+        knownByRoleIdsJson: allRoles.map((role) => role.id)
+      },
+      create: {
+        runId: node.runId,
+        sourceNodeId: node.id,
+        factKey: publicFactKey,
+        content: directorResult.summary,
+        status: "confirmed",
+        visibility: "public",
+        sourceEventIdsJson: [],
+        sourceActionIdsJson: actions.map((action) => action.id),
+        knownByRoleIdsJson: allRoles.map((role) => role.id)
+      }
+    });
+    await this.prisma.storyThread.upsert({
+      where: { runId_threadKey: { runId: node.runId, threadKey: "main_pressure" } },
+      update: {
+        tension: Math.max(1, Math.min(5, node.nodeIndex)),
+        status: node.nodeIndex >= totalNodes ? "resolved" : "active",
+        stateJson: { lastNodeId: node.id, lastFactKey: publicFactKey, nextHook: directorResult.nextNodeHook }
+      },
+      create: {
+        runId: node.runId,
+        threadKey: "main_pressure",
+        title: "主线压力",
+        status: node.nodeIndex >= totalNodes ? "resolved" : "active",
+        tension: Math.max(1, Math.min(5, node.nodeIndex)),
+        deadlineNodeIndex: totalNodes,
+        sourceFactKeysJson: [publicFactKey],
+        stateJson: { lastNodeId: node.id, lastFactKey: publicFactKey, nextHook: directorResult.nextNodeHook }
+      }
+    });
+    const minds = await this.prisma.characterMind.findMany({ where: { runId: node.runId } });
+    await Promise.all(minds.map((mind) => {
+      const confirmed = this.stringList(mind.confirmedFactKeysJson);
+      return this.prisma.characterMind.update({
+        where: { id: mind.id },
+        data: {
+          confirmedFactKeysJson: [...new Set([...confirmed, publicFactKey])],
+          lastNodeId: node.id
+        }
+      });
+    }));
+    await this.prisma.sceneSnapshot.create({
+      data: {
+        runId: node.runId,
+        nodeId: node.id,
+        scope: "public",
+        stateJson: { dangerLevel: dangerAfter, latestResolution: resolution.summary, nodeIndex: node.nodeIndex },
+        knownFactKeysJson: [publicFactKey],
+        activeThreadKeysJson: ["main_pressure"]
+      }
+    });
+    await Promise.all(allRoles.map((role) => this.prisma.sceneSnapshot.create({
+      data: {
+        runId: node.runId,
+        nodeId: node.id,
+        roleId: role.id,
+        scope: "role_private",
+        stateJson: { nodeIndex: node.nodeIndex, roleKey: role.roleKey, dangerLevel: dangerAfter },
+        knownFactKeysJson: [...new Set([...this.stringList(minds.find((mind) => mind.roleId === role.id)?.confirmedFactKeysJson), publicFactKey])],
+        activeThreadKeysJson: ["main_pressure"]
+      }
+    })));
+    await this.prisma.narrativeEntry.create({
+      data: {
+        runId: node.runId,
+        nodeId: node.id,
+        resolutionId: resolution.id,
+        entryType: "resolution",
+        visibility: "public",
+        content: segment.content,
+        factKeysJson: [publicFactKey],
+        threadKeysJson: ["main_pressure"],
+        sourceEventIdsJson: []
       }
     });
 
@@ -610,15 +730,20 @@ export class StoryService {
     if (existing) return existing;
     const run = await this.prisma.storyRun.findUnique({ where: { id: runId }, include: { roles: true, owner: true } });
     if (!run) throw new NotFoundException("story run not found");
+    const entries = await this.prisma.narrativeEntry.findMany({
+      where: { runId, entryType: "resolution", visibility: "public" },
+      orderBy: { createdAt: "asc" }
+    });
     const segments = await this.segments(runId);
-    const requiredNodes = run.mode === "ai-trio" ? 7 : 5;
-    if (segments.length < requiredNodes) throw new BadRequestException(`chapter requires ${requiredNodes} resolved nodes`);
+    const requiredNodes = run.mode === "ai-trio" || run.mode === "room" ? 7 : 5;
+    if (entries.length < requiredNodes && segments.length < requiredNodes) throw new BadRequestException(`chapter requires ${requiredNodes} resolved nodes`);
+    const chapterEntries = entries.length >= requiredNodes ? entries : segments;
 
     const template = getTemplate(run.templateId);
     const directorResult = await generateChapterWithDirector({
       templateName: template.name,
       title: "没有影子的客人",
-      segments: segments.map((segment) => segment.content),
+      segments: chapterEntries.map((segment) => segment.content),
       roles: run.roles.map((role) => ({ id: role.id, roleName: role.roleName, personalGoal: role.personalGoal })),
       fallbackNextHook: "第 2 章《第五个人》：北巷 24 号的门牌在雨后亮了起来。"
     });
@@ -643,8 +768,8 @@ export class StoryService {
         taskType: "generate_chapter",
         modelType: directorResult.model,
         status: directorResult.status === "completed" ? "completed" : "failed",
-        inputJson: { segmentCount: segments.length, roleCount: run.roles.length, provider: directorResult.provider },
-        resultJson: { ...directorTaskMeta(directorResult), title: chapter.title, segmentCount: segments.length }
+        inputJson: { segmentCount: chapterEntries.length, roleCount: run.roles.length, provider: directorResult.provider },
+        resultJson: { ...directorTaskMeta(directorResult), title: chapter.title, segmentCount: chapterEntries.length }
       }
     });
 
@@ -913,6 +1038,140 @@ export class StoryService {
         factsJson: { publicFacts: [template.hook] }
       }
     });
+
+    const createdRoles = await this.prisma.storyRole.findMany({
+      where: { runId },
+      orderBy: { createdAt: "asc" }
+    });
+    const publicFactKeys = ["world_hook", ...template.initialClues.map((clue) => ["clue", clue.clueKey].join("_"))];
+    await this.prisma.canonFact.upsert({
+      where: { runId_factKey: { runId, factKey: "world_hook" } },
+      update: {},
+      create: {
+        runId,
+        sourceNodeId: node.id,
+        factKey: "world_hook",
+        content: template.hook,
+        status: "confirmed",
+        visibility: "public",
+        sourceEventIdsJson: [],
+        sourceActionIdsJson: [],
+        knownByRoleIdsJson: createdRoles.map((role) => role.id)
+      }
+    });
+    await Promise.all(template.initialClues.map((clue) => this.prisma.canonFact.upsert({
+      where: { runId_factKey: { runId, factKey: ["clue", clue.clueKey].join("_") } },
+      update: {},
+      create: {
+        runId,
+        sourceNodeId: node.id,
+        factKey: ["clue", clue.clueKey].join("_"),
+        content: clue.description,
+        status: "confirmed",
+        visibility: "public",
+        sourceEventIdsJson: [],
+        sourceActionIdsJson: [],
+        knownByRoleIdsJson: createdRoles.map((role) => role.id)
+      }
+    })));
+    await this.prisma.storyThread.upsert({
+      where: { runId_threadKey: { runId, threadKey: "main_pressure" } },
+      update: {},
+      create: {
+        runId,
+        threadKey: "main_pressure",
+        title: "主线压力",
+        status: "active",
+        tension: 1,
+        deadlineNodeIndex: mode === "room" || mode === "ai-trio" ? 7 : 5,
+        sourceFactKeysJson: publicFactKeys,
+        stateJson: { currentNodeId: node.id, currentQuestion: node.nodeGoal }
+      }
+    });
+    await Promise.all(createdRoles.map(async (role) => {
+      const roleFactKeys = this.stringList(role.knownInfoJson).map((_, index) => ["role", role.roleKey, "known", index + 1].join("_"));
+      const secretKey = ["role", role.roleKey, "secret"].join("_");
+      const knownInfo = this.stringList(role.knownInfoJson);
+      await Promise.all(knownInfo.map((content, index) => this.prisma.canonFact.upsert({
+        where: { runId_factKey: { runId, factKey: roleFactKeys[index] } },
+        update: {},
+        create: {
+          runId,
+          sourceNodeId: node.id,
+          factKey: roleFactKeys[index],
+          content,
+          status: "confirmed",
+          visibility: "role_private",
+          sourceEventIdsJson: [],
+          sourceActionIdsJson: [],
+          knownByRoleIdsJson: [role.id]
+        }
+      })));
+      if (role.hiddenSecret) {
+        await this.prisma.canonFact.upsert({
+          where: { runId_factKey: { runId, factKey: secretKey } },
+          update: {},
+          create: {
+            runId,
+            sourceNodeId: node.id,
+            factKey: secretKey,
+            content: role.hiddenSecret,
+            status: "confirmed",
+            visibility: "role_private",
+            sourceEventIdsJson: [],
+            sourceActionIdsJson: [],
+            knownByRoleIdsJson: [role.id]
+          }
+        });
+      }
+      const confirmedFactKeys = [...publicFactKeys, ...roleFactKeys, ...(role.hiddenSecret ? [secretKey] : [])];
+      await this.prisma.characterMind.upsert({
+        where: { roleId: role.id },
+        update: {},
+        create: {
+          runId,
+          roleId: role.id,
+          confirmedFactKeysJson: confirmedFactKeys,
+          believedFactKeysJson: [],
+          activeGoalsJson: [role.personalGoal],
+          knowledgeBoundaryJson: { cannotDo: this.stringList(role.cannotDoJson), roleKey: role.roleKey },
+          lastNodeId: node.id
+        }
+      });
+      await this.prisma.sceneSnapshot.create({
+        data: {
+          runId,
+          nodeId: node.id,
+          roleId: role.id,
+          scope: "role_private",
+          stateJson: { dangerLevel: 1, currentNode: node.title, roleKey: role.roleKey },
+          knownFactKeysJson: confirmedFactKeys,
+          activeThreadKeysJson: ["main_pressure"]
+        }
+      });
+    }));
+    await this.prisma.sceneSnapshot.create({
+      data: {
+        runId,
+        nodeId: node.id,
+        scope: "public",
+        stateJson: { dangerLevel: 1, currentNode: node.title },
+        knownFactKeysJson: publicFactKeys,
+        activeThreadKeysJson: ["main_pressure"]
+      }
+    });
+    await this.prisma.narrativeEntry.create({
+      data: {
+        runId,
+        nodeId: node.id,
+        entryType: "scene_open",
+        visibility: "public",
+        content: node.publicNarration,
+        factKeysJson: publicFactKeys,
+        threadKeysJson: ["main_pressure"],
+        sourceEventIdsJson: []
+      }
+    });
   }
 
   private async ensureNode(runId: string, chapterIndex: number, nodeIndex: number, templateId: string, mode = "invite") {
@@ -977,6 +1236,27 @@ export class StoryService {
       }
     }
     if (notifications.length) await this.prisma.notification.createMany({ data: notifications });
+  }
+
+  private stringList(value: unknown): string[] {
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  }
+
+  private async guardKnowledgeBoundary(runId: string, roleId: string, input: SubmitActionInput) {
+    const text = [input.method, input.intent, input.freeText].filter((item): item is string => typeof item === "string").join("\n");
+    if (!text.trim()) return null;
+    const canonFact = (this.prisma as any).canonFact;
+    // Isolated legacy unit fixtures intentionally expose only their relevant
+    // delegates. Production Prisma always has this delegate after migration.
+    if (!canonFact?.findMany) return null;
+    const privateFacts = await canonFact.findMany({
+      where: { runId, visibility: "role_private" },
+      select: { factKey: true, content: true, knownByRoleIdsJson: true }
+    });
+    return privateFacts.find((fact: { factKey: string; content: string; knownByRoleIdsJson: unknown }) => {
+      const ownerRoleIds = this.stringList(fact.knownByRoleIdsJson);
+      return !ownerRoleIds.includes(roleId) && fact.content.length >= 4 && text.includes(fact.content);
+    }) || null;
   }
 
   private guardAction(input: SubmitActionInput): { ok: true } | { ok: false; reason: string; guardStatus: "rewrite_needed" | "blocked"; matchedRules: string[] } {

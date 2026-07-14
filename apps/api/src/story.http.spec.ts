@@ -12,7 +12,9 @@ async function main() {
 const dataDir = await mkdtemp(join(tmpdir(), "ai-story-room-http-"));
 process.env.MVP_STORY_DATA_DIR = dataDir;
 process.env.AI_CAUSAL_PROVIDER = "rules";
+process.env.MVP_STORY_STORAGE = "file";
 delete process.env.DATABASE_URL;
+process.env.DISABLE_PRISMA = "true";
 
 async function startApi() {
   const app = await NestFactory.create(AppModule, { logger: false });
@@ -40,7 +42,7 @@ let secondApi: Awaited<ReturnType<typeof startApi>> | undefined;
 try {
   firstApi = await startApi();
   let response = await request(firstApi.baseUrl, "/v4/story-runs", "POST", { storyId: "sangtian" });
-  assert.equal(response.status, 201);
+  assert.equal(response.status, 201, JSON.stringify(response.payload));
   let view = response.payload as StoryView;
   const runId = view.run.id;
   assert.equal(view.run.currentDay, 1);
@@ -126,6 +128,8 @@ try {
   await firstApi?.app.close();
   await secondApi?.app.close();
   await rm(dataDir, { recursive: true, force: true });
+  delete process.env.DISABLE_PRISMA;
+  delete process.env.MVP_STORY_STORAGE;
 }
 }
 

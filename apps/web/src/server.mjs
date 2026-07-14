@@ -13,11 +13,7 @@ const port = Number(process.env.PORT || 5177);
 const apiPort = Number(process.env.API_PORT || 3102);
 const apiProxyPrefixes = [
   "/api/health",
-  "/api/v4/auth/",
-  "/api/v4/credits/",
-  "/api/v4/referrals/",
-  "/api/v4/billing/",
-  "/api/v4/webhooks/creem"
+  "/api/v4/"
 ];
 
 const types = {
@@ -40,7 +36,14 @@ const pageRoutes = new Map([
   ["/refund", "/legal.html"],
   ["/role-select", "/role-select.html"],
   ["/trio", "/trio.html"],
-  ["/game", "/index.html"]
+  ["/game", "/index.html"],
+  ["/room-game", "/room-game.html"],
+  ["/auth", "/platform.html"],
+  ["/worlds/sangtian", "/platform.html"],
+  ["/worlds/caesar", "/platform.html"],
+  ["/rooms", "/platform.html"],
+  ["/rooms/fixture-caesar-waiting", "/platform.html"],
+  ["/game/result", "/platform.html"]
 ]);
 
 const pngFiles = (relativeRoot) => readdirSync(relativeRoot, { withFileTypes: true })
@@ -134,7 +137,11 @@ export const server = createServer((req, res) => {
       return;
     }
   }
-  const requested = pageRoutes.get(url.pathname.replace(/\/$/, "") || "/") || url.pathname;
+  const normalizedPathname = url.pathname.replace(/\/$/, "") || "/";
+  let requested = pageRoutes.get(normalizedPathname) || url.pathname;
+  if (/^\/worlds\/[^/]+$/.test(normalizedPathname) || /^\/rooms\/[^/]+$/.test(normalizedPathname) || normalizedPathname === "/game/result") {
+    requested = "/platform.html";
+  }
   if (requested.startsWith("/ui/2/")) {
     const uiPath = normalize(join(uiRoot, decodeURIComponent(requested.replace("/ui/2/", ""))));
     if (uiPath.startsWith(uiRoot) && existsSync(uiPath)) {
@@ -159,5 +166,5 @@ export const server = createServer((req, res) => {
   console.log(`Role selection: http://localhost:${port}/role-select?story=sangtian`);
   console.log(`Three-player AI simulation: http://localhost:${port}/trio`);
   console.log(`Game: http://localhost:${port}/game`);
-  console.log("Default API base: http://localhost:3001/api (run `pnpm dev:api` first)");
+  console.log(`Default API base: http://localhost:${apiPort}/api (or the local /api proxy)`);
 });

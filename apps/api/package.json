@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx --env-file-if-exists=../../.env src/main.ts",
+    "worker": "tsx --env-file-if-exists=../../.env src/worker.ts",
     "build": "pnpm --filter @ai-story/shared build && pnpm --filter @ai-story/templates build && tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",

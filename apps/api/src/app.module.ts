@@ -8,10 +8,15 @@ import { StoryAccessModule } from "./story-access/story-access.module";
 import { StoryController } from "./story.controller";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
+import { RoomsController } from "./rooms.controller";
+import { RoomsService } from "./rooms.service";
+import { WorldsController } from "./worlds.controller";
+import { StoryTaskOutboxController } from "./story-task-outbox.controller";
+import { StoryTaskOutboxService } from "./story-task-outbox.service";
 
 @Module({
   imports: [AuthModule, CreditsModule, ReferralsModule, BillingModule, StoryAccessModule],
-  controllers: [MvpCatalogController, StoryController],
-  providers: [PrismaService, StoryService]
+  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController],
+  providers: [PrismaService, StoryService, StoryTaskOutboxService, RoomsService]
 })
 export class AppModule {}

@@ -255,7 +255,59 @@ export const wildVillageTemplate: StoryTemplate = {
   initialClues: [{ clueKey: "genealogy_names", title: "族谱新名", description: "荒村族谱末页新增了玩家姓名，墨迹未干。" }]
 };
 
-export const templates = [midnightStoreTemplate, qingyunSectTemplate, wildVillageTemplate];
+const sangtianRoles: StoryTemplateRole[] = [
+  {
+    roleKey: "zhejiang_governor", roleName: "浙江总督", identity: "统筹浙江军政的封疆大吏", publicInfo: "你必须在皇权、财政、民心与海防之间稳住全局。", hiddenSecret: "你掌握一条尚未公开的田契暗账线索。", personalGoal: "稳住浙江并避免皇帝认定你欺瞒。", currentState: "粮价不稳，巡抚越级，京师催报。", abilityText: "可调度总督衙门、密奏与赈济资源。", arcText: "从维持局势到承担裁决。", knownInfo: ["改桑时限", "县令密信渠道"], cannotDo: ["越过朝廷直接改写国策"], isAiControlled: false
+  },
+  {
+    roleKey: "xunfu", roleName: "浙江巡抚", identity: "督办改桑新政的地方大员", publicInfo: "你要尽快交出政绩，但也不能让暗账反噬。", hiddenSecret: "你的幕僚与商会有一笔未入册的往来。", personalGoal: "推进新政并抢在总督之前坐实功劳。", currentState: "改桑阻力上升，地方催缴失控。", abilityText: "可调动执行官吏与上报渠道。", arcText: "从争功到面对代价。", knownInfo: ["改桑名册", "内阁财政派联络"], cannotDo: ["替县令销毁证据"], isAiControlled: false
+  },
+  {
+    roleKey: "county_magistrate", roleName: "清流县令", identity: "直接面对百姓的地方官", publicInfo: "你既不能抗旨，也不能坐视民田和粮田被吞没。", hiddenSecret: "你留有半页田契副本，足以牵动多人。", personalGoal: "保护民田并补全暗账证据。", currentState: "乡里恐慌，征收与粮价同时压来。", abilityText: "可收集民情、田契与县衙文书。", arcText: "从自保到公开证据。", knownInfo: ["民田风险清单", "田契副本"], cannotDo: ["强迫百姓承担国策代价"], isAiControlled: false
+  },
+  {
+    roleKey: "merchant", roleName: "江南商会", identity: "掌握粮仓、丝路和垫银能力的商会", publicInfo: "谁能保护商路，商会就向谁下注。", hiddenSecret: "商会账簿记录了与官员的往来。", personalGoal: "维持商路并避免成为替罪羊。", currentState: "粮价和银路都在失控边缘。", abilityText: "可平粮、筹银与交换消息。", arcText: "从观望到选边。", knownInfo: ["商路库存"], cannotDo: ["决定官员任免"], isAiControlled: true
+  }
+];
+
+const sangtianNodes: StoryTemplateNode[] = [
+  ["改桑急令", "改桑期限压下，巡抚与县令的执行方案正面冲突。", "确认执行边界并留存复核证据。", "田契与限期将同时约束三方。"],
+  ["县令密信", "一封县令密信指向地方催收与田契副本。", "决定证据由谁保管、如何核验。", "密信牵出粮价与商会。"],
+  ["粮价失控", "杭州粮价上涨，商会被怀疑囤积居奇。", "平粮、追责或公开数据。", "暗账原件浮出水面。"],
+  ["暗账浮出", "暗账副本与原件的去向成为新的冲突。", "建立可追溯的证据链。", "弹劾和灭证风险逼近。"],
+  ["相互弹劾", "三份互相矛盾的奏报送往京师。", "以事实或指控争取先机。", "京师要求最终奏报。"],
+  ["京师回批", "御前要求在限定时间内呈交可核验的结果。", "整合粮价、田契和执行证据。", "御前裁决开始。"],
+  ["御前裁决", "每个人都必须为七日选择承担后果。", "提交最终陈述。", "全局结局与个人结局被写入史册。"]
+].map(([title, narration, goal, hook]) => ({ title, publicNarration: narration, nodeGoal: goal, actionOptions: ["保留证据并交叉核验", "推进本职方案并说明代价", "协调另一位角色的资源"], resolutionSummary: `${title}后的选择改变了三方的信任、资源与下一轮压力。`, nextHook: hook }));
+
+export const sangtianTemplate: StoryTemplate = {
+  id: "template_sangtian_001", name: "桑田诏：嘉靖财政危局", genre: "历史权谋", hook: "嘉靖朝财政危局中，七日内的每一次选择都会改写浙江与三位官员的命运。", worldBase: "嘉靖年间的浙江，改桑、粮价、田契、暗账与京师裁决同时迫近。", tags: ["历史", "权谋", "多人"], recommendedPlayers: "1-3 人", nodeCount: 7, roles: sangtianRoles, nodes: sangtianNodes, initialClues: [{ clueKey: "sangtian_edict", title: "改桑急令", description: "朝廷限期催办改桑，地方执行已出现裂缝。" }]
+};
+
+const caesarRoles: StoryTemplateRole[] = [
+  ["brutus", "Brutus", "A senator torn between friendship and the Republic.", "You serve Rome, not any man.", "You have seen Caesar's private pledge.", "Prevent an unrestrained dictatorship.", "The Senate is divided.", "Build coalitions and set boundaries.", "From restraint to authorship.", ["Senate votes", "Caesar's trust"], ["Command the legions"], false],
+  ["caesar", "Caesar", "Victor of Rome and the center of every alliance.", "I came, I saw, I changed Rome.", "Your enemies know your calendar.", "Preserve Rome without becoming its master.", "Triumph has made every promise costly.", "Call allies and make public commitments.", "From power to limits.", ["Legion loyalty", "popular support"], ["Know conspirators' private plans"], false],
+  ["cassius", "Cassius", "A senator who calls fear by its true name.", "Liberty isn't given. It's taken.", "Your strongest ally doubts violence.", "Keep the Republic from submission.", "The conspiracy lacks a public mandate.", "Expose danger and recruit support.", "From anger to consequence.", ["Senate anxiety"], ["Force another player to betray"], false],
+  ["mark_antony", "Mark Antony", "Caesar's ally and Rome's most dangerous speaker.", "I speak for Rome. And I remember.", "You can calm crowds or inflame them.", "Keep Rome from civil war.", "The Forum is waiting.", "Mobilize popular support.", "From loyalty to responsibility.", ["Forum mood"], ["Read sealed Senate letters"], true],
+  ["decimus", "Decimus", "A commander trusted by both camps.", "I watch. I learn. I will decide.", "You know the roads to the Capitol.", "Avoid a point of no return.", "Every route can become a trap.", "Control timing and access.", "From observer to decision maker.", ["Capitol routes"], ["Guarantee any outcome"], true],
+  ["cicero", "Cicero", "An orator whose words can still change the vote.", "Words are my sharpest weapon.", "You hold drafts of a compromise.", "Keep institutions alive.", "The Senate needs language for restraint.", "Draft terms and rally senators.", "From witness to architect.", ["Compromise draft"], ["Command soldiers"], true]
+].map(([roleKey, roleName, identity, publicInfo, hiddenSecret, personalGoal, currentState, abilityText, arcText, knownInfo, cannotDo, isAiControlled]): StoryTemplateRole => ({ roleKey: String(roleKey), roleName: String(roleName), identity: String(identity), publicInfo: String(publicInfo), hiddenSecret: String(hiddenSecret), personalGoal: String(personalGoal), currentState: String(currentState), abilityText: String(abilityText), arcText: String(arcText), knownInfo: knownInfo as string[], cannotDo: cannotDo as string[], isAiControlled: Boolean(isAiControlled) }));
+
+const caesarNodes: StoryTemplateNode[] = [
+  ["The Crown Refused", "Rome waits to see whether Caesar's victory becomes a crown.", "Set the first boundary on power.", "The Senate calls an emergency session."],
+  ["A Senate Divided", "Every ally asks what the new order will cost.", "Build a coalition without forcing submission.", "A private warning reaches the Forum."],
+  ["The Ides Approach", "Rumors multiply and every invitation becomes evidence.", "Separate fear from proof.", "The roads to the Capitol close."],
+  ["Terms of Restraint", "A compromise can preserve both dignity and law.", "Negotiate terms that can survive public scrutiny.", "The crowd gathers outside the Senate."],
+  ["The Forum Speaks", "A single speech may prevent panic or trigger it.", "Keep the Forum from violence.", "A final vote is called."],
+  ["The Final Vote", "The Republic must choose its limits in public.", "Secure a legitimate decision.", "Rome awaits its verdict."],
+  ["A Republic Without a Master", "The surviving terms will define Rome's next spring.", "Accept the consequences of every alliance.", "The session's final history is written."]
+].map(([title, narration, goal, hook]) => ({ title, publicNarration: narration, nodeGoal: goal, actionOptions: ["Seek a public compromise", "Protect a private ally", "Make a principled appeal"], resolutionSummary: `${title} changes the balance between power, liberty, and public trust.`, nextHook: hook }));
+
+export const caesarTemplate: StoryTemplate = {
+  id: "template_caesar_001", name: "Caesar: The Last Spring of the Republic", genre: "Alternate History", hook: "In the final days of the Republic, every alliance and restraint writes a different Rome.", worldBase: "Rome, 44 BC: Caesar, the Senate, and the Forum approach a decision no one can escape.", tags: ["History", "Power", "Alternate History"], recommendedPlayers: "1-6 players", nodeCount: 7, roles: caesarRoles, nodes: caesarNodes, initialClues: [{ clueKey: "caesar_crown", title: "The refused crown", description: "A public gesture has not ended private fear." }]
+};
+
+export const templates = [midnightStoreTemplate, qingyunSectTemplate, wildVillageTemplate, sangtianTemplate, caesarTemplate];
 
 export function getTemplate(templateId: string): StoryTemplate {
   const template = templates.find((item) => item.id === templateId);

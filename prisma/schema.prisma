@@ -8,26 +8,26 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  openid         String    @unique
-  unionid        String?
-  email          String?   @unique
-  passwordHash   String?
-  emailVerifiedAt DateTime?
+  id                    String    @id @default(cuid())
+  openid                String    @unique
+  unionid               String?
+  email                 String?   @unique
+  passwordHash          String?
+  emailVerifiedAt       DateTime?
   verificationTokenHash String?
-  nickname       String?
-  avatarUrl      String?
-  status         String    @default("active")
-  policyAgreedAt DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  nickname              String?
+  avatarUrl             String?
+  status                String    @default("active")
+  policyAgreedAt        DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  ownedRuns      StoryRun[]     @relation("StoryRunOwner")
-  players        StoryPlayer[]
-  actions        PlayerAction[]
-  notifications  Notification[]
-  eventLogs      EventLog[]
-  shareTokens    ShareToken[]
+  ownedRuns     StoryRun[]     @relation("StoryRunOwner")
+  players       StoryPlayer[]
+  actions       PlayerAction[]
+  notifications Notification[]
+  eventLogs     EventLog[]
+  shareTokens   ShareToken[]
 
   @@index([status])
   @@index([createdAt])
@@ -44,65 +44,71 @@ model WorldTemplate {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  storyRuns  StoryRun[]
+  storyRuns StoryRun[]
 
   @@index([status])
   @@index([genre])
 }
 
 model StoryRun {
-  id                 String   @id @default(cuid())
-  templateId          String
-  ownerUserId         String
-  title               String
-  hook                String   @db.Text
-  mode                String   @default("invite")
-  templateKey         String   @default("sangtian")
-  userId              String?
-  selectedRoleKey     String?
-  status              String   @default("waiting_players")
-  currentDay          Int      @default(1)
-  totalDays           Int      @default(7)
-  version             Int      @default(1)
-  currentChapter      Int      @default(1)
-  currentNodeId       String?
-  maxPlayers          Int      @default(5)
-  activeHumanCount    Int      @default(1)
-  aiPlayerCount       Int      @default(0)
-  dangerLevel         Int      @default(1)
-  maxDangerLevel      Int      @default(5)
-  chapterCount        Int      @default(0)
-  completedNodeCount  Int      @default(0)
-  summary             String?  @db.Text
-  stateJson           Json
-  visibility          String   @default("link")
-  inviteCode          String   @unique
-  accessLevel         RunAccessLevel @default(FREE_TRIAL)
-  freeDecisionsUsed   Int      @default(0)
-  paywallReachedAt    DateTime?
-  unlockedAt          DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String         @id @default(cuid())
+  templateId         String
+  ownerUserId        String
+  title              String
+  hook               String         @db.Text
+  mode               String         @default("invite")
+  templateKey        String         @default("sangtian")
+  userId             String?
+  selectedRoleKey    String?
+  status             String         @default("waiting_players")
+  currentDay         Int            @default(1)
+  totalDays          Int            @default(7)
+  version            Int            @default(1)
+  currentChapter     Int            @default(1)
+  currentNodeId      String?
+  maxPlayers         Int            @default(5)
+  activeHumanCount   Int            @default(1)
+  aiPlayerCount      Int            @default(0)
+  dangerLevel        Int            @default(1)
+  maxDangerLevel     Int            @default(5)
+  chapterCount       Int            @default(0)
+  completedNodeCount Int            @default(0)
+  summary            String?        @db.Text
+  stateJson          Json
+  visibility         String         @default("link")
+  inviteCode         String         @unique
+  accessLevel        RunAccessLevel @default(FREE_TRIAL)
+  freeDecisionsUsed  Int            @default(0)
+  paywallReachedAt   DateTime?
+  unlockedAt         DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
-  template            WorldTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
-  owner               User          @relation("StoryRunOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  players             StoryPlayer[]
-  roles               StoryRole[]
-  relations           RoleRelation[]
-  sandboxes           ChapterSandbox[]
-  nodes               SceneNode[]
-  actions             PlayerAction[]
-  resolutions         DirectorResolution[]
-  narrativeSegments   NarrativeSegment[]
-  clues               Clue[]
-  snapshots           WorldStateSnapshot[]
-  chapters            Chapter[]
-  notifications       Notification[]
-  aiTasks             AiTask[]
-  events              EventLog[]
-  storyEvents         StoryEvent[] @relation("StoryRunStoryEvents")
-  shareTokens         ShareToken[]
-  worldUnlock         WorldUnlock?
+  template          WorldTemplate        @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  owner             User                 @relation("StoryRunOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  players           StoryPlayer[]
+  roles             StoryRole[]
+  relations         RoleRelation[]
+  sandboxes         ChapterSandbox[]
+  nodes             SceneNode[]
+  actions           PlayerAction[]
+  resolutions       DirectorResolution[]
+  narrativeSegments NarrativeSegment[]
+  clues             Clue[]
+  snapshots         WorldStateSnapshot[]
+  chapters          Chapter[]
+  notifications     Notification[]
+  aiTasks           AiTask[]
+  outboxTasks       StoryTaskOutbox[]
+  events            EventLog[]
+  storyEvents       StoryEvent[]         @relation("StoryRunStoryEvents")
+  shareTokens       ShareToken[]
+  worldUnlock       WorldUnlock?
+  canonFacts        CanonFact[]
+  characterMinds    CharacterMind[]
+  storyThreads      StoryThread[]
+  sceneSnapshots    SceneSnapshot[]
+  narrativeEntries  NarrativeEntry[]
 
   @@index([templateId])
   @@index([ownerUserId])
@@ -127,7 +133,7 @@ model StoryEvent {
   payloadJson Json
   createdAt   DateTime @default(now())
 
-  run         StoryRun @relation("StoryRunStoryEvents", fields: [runId], references: [id], onDelete: Cascade)
+  run StoryRun @relation("StoryRunStoryEvents", fields: [runId], references: [id], onDelete: Cascade)
 
   @@index([runId, day, createdAt])
   @@index([runId, type])
@@ -143,9 +149,9 @@ model StoryPlayer {
   joinedAt     DateTime  @default(now())
   lastActiveAt DateTime?
 
-  run          StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
-  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  role         StoryRole? @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  run  StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  user User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role StoryRole? @relation(fields: [roleId], references: [id], onDelete: SetNull)
 
   @@unique([runId, userId])
   @@unique([runId, roleId])
@@ -172,12 +178,15 @@ model StoryRole {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  run            StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  players        StoryPlayer[]
-  actions        PlayerAction[]
-  ownedClues     Clue[]
-  fromRelations  RoleRelation[] @relation("RelationFromRole")
-  toRelations    RoleRelation[] @relation("RelationToRole")
+  run              StoryRun         @relation(fields: [runId], references: [id], onDelete: Cascade)
+  players          StoryPlayer[]
+  actions          PlayerAction[]
+  ownedClues       Clue[]
+  fromRelations    RoleRelation[]   @relation("RelationFromRole")
+  toRelations      RoleRelation[]   @relation("RelationToRole")
+  characterMind    CharacterMind?
+  sceneSnapshots   SceneSnapshot[]
+  narrativeEntries NarrativeEntry[]
 
   @@unique([runId, roleKey])
   @@index([runId, status])
@@ -197,9 +206,9 @@ model RoleRelation {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  run             StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
-  fromRole        StoryRole @relation("RelationFromRole", fields: [fromRoleId], references: [id], onDelete: Cascade)
-  toRole          StoryRole @relation("RelationToRole", fields: [toRoleId], references: [id], onDelete: Cascade)
+  run      StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  fromRole StoryRole @relation("RelationFromRole", fields: [fromRoleId], references: [id], onDelete: Cascade)
+  toRole   StoryRole @relation("RelationToRole", fields: [toRoleId], references: [id], onDelete: Cascade)
 
   @@unique([runId, fromRoleId, toRoleId, relationType])
   @@index([runId])
@@ -220,36 +229,40 @@ model ChapterSandbox {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  run             StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
 
   @@unique([runId, chapterIndex])
   @@index([runId, status])
 }
 
 model SceneNode {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   runId             String
   chapterIndex      Int
   nodeIndex         Int
   title             String
-  publicNarration   String   @db.Text
-  nodeGoal          String   @db.Text
-  status            String   @default("open_for_actions")
+  publicNarration   String    @db.Text
+  nodeGoal          String    @db.Text
+  status            String    @default("open_for_actions")
   actionOptionsJson Json
   resolutionId      String?
-  openedAt          DateTime @default(now())
+  openedAt          DateTime  @default(now())
   resolvedAt        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  run               StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  run               StoryRun             @relation(fields: [runId], references: [id], onDelete: Cascade)
   actions           PlayerAction[]
   resolution        DirectorResolution?
   narrativeSegments NarrativeSegment[]
   snapshots         WorldStateSnapshot[]
   aiTasks           AiTask[]
+  outboxTasks       StoryTaskOutbox[]
   events            EventLog[]
   notifications     Notification[]
+  canonFacts        CanonFact[]          @relation("CanonFactSourceNode")
+  sceneSnapshots    SceneSnapshot[]
+  narrativeEntries  NarrativeEntry[]
 
   @@unique([runId, chapterIndex, nodeIndex])
   @@index([runId, status])
@@ -280,12 +293,12 @@ model PlayerAction {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  run            StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node           SceneNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
-  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  role           StoryRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  aiTasks        AiTask[]
-  events         EventLog[]
+  run     StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node    SceneNode  @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user    User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role    StoryRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  aiTasks AiTask[]
+  events  EventLog[]
 
   @@unique([nodeId, roleId])
   @@index([runId, nodeId])
@@ -313,9 +326,10 @@ model DirectorResolution {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  run                 StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node                SceneNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
-  narrativeSegments   NarrativeSegment[]
+  run               StoryRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node              SceneNode          @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  narrativeSegments NarrativeSegment[]
+  narrativeEntries  NarrativeEntry[]
 
   @@index([runId, chapterIndex])
   @@index([auditStatus])
@@ -332,30 +346,145 @@ model NarrativeSegment {
   auditStatus     String   @default("ok")
   createdAt       DateTime @default(now())
 
-  run             StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node            SceneNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
-  resolution      DirectorResolution @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
+  run        StoryRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node       SceneNode          @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  resolution DirectorResolution @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
 
   @@index([runId, chapterIndex])
   @@index([nodeId])
   @@index([auditStatus])
 }
 
+/// Append-only canonical facts are the authoritative causal memory of a run.
+/// A fact is either confirmed public state or a role-scoped belief; the
+/// visibility field is always consulted before material is projected to users.
+model CanonFact {
+  id                  String   @id @default(cuid())
+  runId               String
+  sourceNodeId        String?
+  factKey             String
+  content             String   @db.Text
+  status              String   @default("confirmed")
+  visibility          String   @default("public")
+  sourceEventIdsJson  Json
+  sourceActionIdsJson Json
+  knownByRoleIdsJson  Json
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  run        StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  sourceNode SceneNode? @relation("CanonFactSourceNode", fields: [sourceNodeId], references: [id], onDelete: SetNull)
+
+  @@unique([runId, factKey])
+  @@index([runId, visibility, status])
+  @@index([sourceNodeId])
+}
+
+/// Per-role epistemic state.  confirmedFactKeys and believedFactKeys are kept
+/// separate so an inference never becomes a confirmed public fact by accident.
+model CharacterMind {
+  id                    String   @id @default(cuid())
+  runId                 String
+  roleId                String   @unique
+  confirmedFactKeysJson Json
+  believedFactKeysJson  Json
+  activeGoalsJson       Json
+  knowledgeBoundaryJson Json
+  lastNodeId            String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  run  StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  role StoryRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([runId, updatedAt])
+  @@index([roleId])
+}
+
+/// A tracked pressure line that must be progressed, resolved, or explicitly
+/// deferred on each relevant node.
+model StoryThread {
+  id                 String   @id @default(cuid())
+  runId              String
+  threadKey          String
+  title              String
+  status             String   @default("active")
+  tension            Int      @default(1)
+  deadlineNodeIndex  Int?
+  sourceFactKeysJson Json
+  stateJson          Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, threadKey])
+  @@index([runId, status])
+}
+
+/// A snapshot is a read-model of one scene for one visibility scope.  Public
+/// and role-private snapshots deliberately occupy separate rows.
+model SceneSnapshot {
+  id                   String   @id @default(cuid())
+  runId                String
+  nodeId               String?
+  roleId               String?
+  scope                String   @default("public")
+  stateJson            Json
+  knownFactKeysJson    Json
+  activeThreadKeysJson Json
+  createdAt            DateTime @default(now())
+
+  run  StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  role StoryRole? @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@index([runId, scope, createdAt])
+  @@index([nodeId])
+  @@index([roleId])
+}
+
+/// Unified narrative stream used by the chapter composer.  It supersedes
+/// NarrativeSegment for new entries while preserving historic rows.
+model NarrativeEntry {
+  id                 String   @id @default(cuid())
+  runId              String
+  nodeId             String?
+  resolutionId       String?
+  roleId             String?
+  entryType          String
+  visibility         String   @default("public")
+  content            String   @db.Text
+  factKeysJson       Json
+  threadKeysJson     Json
+  sourceEventIdsJson Json
+  createdAt          DateTime @default(now())
+
+  run        StoryRun            @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node       SceneNode?          @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  resolution DirectorResolution? @relation(fields: [resolutionId], references: [id], onDelete: SetNull)
+  role       StoryRole?          @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@index([runId, visibility, createdAt])
+  @@index([nodeId])
+  @@index([roleId])
+}
+
 model Clue {
   id               String   @id @default(cuid())
-  runId             String
-  clueKey           String
-  title             String
-  description       String   @db.Text
-  visibility        String   @default("public")
-  ownerRoleId       String?
-  discoveredNodeId  String?
-  status            String   @default("active")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  runId            String
+  clueKey          String
+  title            String
+  description      String   @db.Text
+  visibility       String   @default("public")
+  ownerRoleId      String?
+  discoveredNodeId String?
+  status           String   @default("active")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  run               StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  ownerRole         StoryRole? @relation(fields: [ownerRoleId], references: [id], onDelete: SetNull)
+  run       StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  ownerRole StoryRole? @relation(fields: [ownerRoleId], references: [id], onDelete: SetNull)
 
   @@unique([runId, clueKey])
   @@index([runId, visibility, status])
@@ -371,8 +500,8 @@ model WorldStateSnapshot {
   factsJson    Json
   createdAt    DateTime @default(now())
 
-  run          StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node         SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  run  StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
 
   @@index([runId, createdAt])
   @@index([nodeId])
@@ -380,23 +509,23 @@ model WorldStateSnapshot {
 
 model Chapter {
   id              String   @id @default(cuid())
-  runId            String
-  chapterIndex     Int
-  title            String
-  content          String   @db.Text
-  highlightsJson   Json
-  keyChoicesJson   Json
-  contributorJson  Json
-  nextHook         String?  @db.Text
-  auditStatus      String   @default("ok")
-  status           String   @default("generated")
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  runId           String
+  chapterIndex    Int
+  title           String
+  content         String   @db.Text
+  highlightsJson  Json
+  keyChoicesJson  Json
+  contributorJson Json
+  nextHook        String?  @db.Text
+  auditStatus     String   @default("ok")
+  status          String   @default("generated")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  run              StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  notifications    Notification[]
-  aiTasks          AiTask[]
-  shareTokens      ShareToken[]
+  run           StoryRun       @relation(fields: [runId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+  aiTasks       AiTask[]
+  shareTokens   ShareToken[]
 
   @@unique([runId, chapterIndex])
   @@index([runId, status])
@@ -415,17 +544,17 @@ model Notification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  run       StoryRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node      SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
-  chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  run     StoryRun?  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node    SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  chapter Chapter?   @relation(fields: [chapterId], references: [id], onDelete: SetNull)
 
   @@index([userId, isRead, createdAt])
   @@index([runId])
 }
 
 model AiTask {
-  id            String   @id @default(cuid())
+  id             String    @id @default(cuid())
   runId          String?
   eventId        String?
   nodeId         String?
@@ -434,11 +563,11 @@ model AiTask {
   taskType       String
   modelType      String
   promptVersion  String?
-  status         String   @default("pending")
+  status         String    @default("pending")
   inputJson      Json?
   resultJson     Json?
   outputJson     Json?
-  rawResponse    String?  @db.Text
+  rawResponse    String?   @db.Text
   normalizedJson Json?
   provider       String?
   modelName      String?
@@ -448,20 +577,49 @@ model AiTask {
   inputTokens    Int?
   outputTokens   Int?
   cost           Float?
-  errorMessage   String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  errorMessage   String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  run            StoryRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node           SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
-  action         PlayerAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
-  chapter        Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  run     StoryRun?     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node    SceneNode?    @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  action  PlayerAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+  chapter Chapter?      @relation(fields: [chapterId], references: [id], onDelete: SetNull)
 
   @@index([taskType, status])
   @@index([runId])
   @@index([eventId])
   @@index([nodeId])
   @@index([chapterId])
+}
+
+/// Durable command queue for story resolution.  The unique node relation makes
+/// command retries idempotent while a worker lease prevents concurrent consumers
+/// from applying the same resolution twice.
+model StoryTaskOutbox {
+  id             String    @id @default(cuid())
+  runId          String
+  nodeId         String    @unique
+  taskType       String
+  status         String    @default("pending")
+  attempt        Int       @default(0)
+  maxAttempts    Int       @default(3)
+  nextRetryAt    DateTime  @default(now())
+  leaseOwner     String?
+  leaseExpiresAt DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  resultJson     Json?
+  lastError      String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  run  StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node SceneNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextRetryAt])
+  @@index([runId, createdAt])
+  @@index([leaseExpiresAt])
 }
 
 model AuditLog {
@@ -490,10 +648,10 @@ model EventLog {
   payload    Json?
   createdAt  DateTime @default(now())
 
-  user       User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-  run        StoryRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node       SceneNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
-  action     PlayerAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+  user   User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  run    StoryRun?     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node   SceneNode?    @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  action PlayerAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
 
   @@index([eventName, createdAt])
   @@index([userId])
@@ -510,9 +668,9 @@ model ShareToken {
   channel     String
   createdAt   DateTime @default(now())
 
-  run         StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  chapter     Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
-  shareUser   User @relation(fields: [shareUserId], references: [id], onDelete: Cascade)
+  run       StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  shareUser User     @relation(fields: [shareUserId], references: [id], onDelete: Cascade)
 
   @@index([runId])
   @@index([chapterId])
@@ -579,31 +737,31 @@ enum WorldUnlockStatus {
 }
 
 model CreditWallet {
-  id              String   @id @default(cuid())
-  userId          String   @unique
+  id               String   @id @default(cuid())
+  userId           String   @unique
   purchasedBalance Int      @default(0)
-  bonusBalance    Int      @default(0)
-  debtBalance     Int      @default(0)
-  version         Int      @default(1)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  bonusBalance     Int      @default(0)
+  debtBalance      Int      @default(0)
+  version          Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([userId])
 }
 
 model CreditGrant {
-  id              String           @id @default(cuid())
+  id              String            @id @default(cuid())
   userId          String
   kind            CreditGrantKind
   source          CreditGrantSource
   originalAmount  Int
   remainingAmount Int
   expiresAt       DateTime?
-  idempotencyKey  String           @unique
+  idempotencyKey  String            @unique
   externalRef     String?
   metadataJson    Json?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   allocations CreditSpendAllocation[]
 
@@ -630,11 +788,11 @@ model CreditLedger {
 }
 
 model CreditSpendAllocation {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   ledgerId  String
   grantId   String
   amount    Int
-  createdAt DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   ledger CreditLedger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
   grant  CreditGrant  @relation(fields: [grantId], references: [id], onDelete: Restrict)
@@ -719,14 +877,14 @@ model ReferralShareEvent {
 }
 
 model WorldUnlock {
-  id             String           @id @default(cuid())
-  runId          String           @unique
+  id             String            @id @default(cuid())
+  runId          String            @unique
   templateKey    String
   paidByUserId   String
   creditsCharged Int
-  debitLedgerId  String           @unique
+  debitLedgerId  String            @unique
   status         WorldUnlockStatus @default(COMMITTED)
-  createdAt      DateTime         @default(now())
+  createdAt      DateTime          @default(now())
   refundedAt     DateTime?
 
   run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)

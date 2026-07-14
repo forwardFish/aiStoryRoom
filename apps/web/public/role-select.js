@@ -40,16 +40,19 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
     state.error = "";
     render();
     try {
-      const response = await fetchImpl(`${apiBase(browserWindow?.location)}/v4/stories/${encodeURIComponent(state.story.id)}/runs`, {
+      const isPlatformSolo = state.story.id === "caesar";
+      const response = await fetchImpl(isPlatformSolo ? `${apiBase(browserWindow?.location)}/v4/rooms/solo` : `${apiBase(browserWindow?.location)}/v4/stories/${encodeURIComponent(state.story.id)}/runs`, {
         method: "POST",
-        headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ storyId: state.story.id, roleKey: role.key, mode: "single" })
+        headers: { accept: "application/json", "content-type": "application/json", ...(isPlatformSolo && sessionToken(browserWindow) ? { authorization: `Bearer ${sessionToken(browserWindow)}` } : {}) },
+        body: JSON.stringify(isPlatformSolo ? { worldId: state.story.id, roleKey: role.key } : { storyId: state.story.id, roleKey: role.key, mode: "single" })
       });
       const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload?.run?.id) throw new Error(payload?.message || `创建故事局失败（HTTP ${response.status}）`);
-      browserWindow.localStorage?.setItem(storyRunStorageKey, payload.run.id);
+      if (!response.ok || !(isPlatformSolo ? payload?.id : payload?.run?.id)) throw new Error(payload?.message || `创建故事局失败（HTTP ${response.status}）`);
+      const runId = isPlatformSolo ? payload?.id : payload?.run?.id;
+      if (!runId) throw new Error("Story run was not created");
+      browserWindow.localStorage?.setItem(storyRunStorageKey, runId);
       const override = apiOverride(browserWindow?.location);
-      browserWindow.location.href = `/game?runId=${encodeURIComponent(payload.run.id)}${override ? `&apiBase=${encodeURIComponent(override)}` : ""}`;
+      browserWindow.location.href = isPlatformSolo ? `/room-game?runId=${encodeURIComponent(runId)}` : `/game?runId=${encodeURIComponent(runId)}${override ? `&apiBase=${encodeURIComponent(override)}` : ""}`;
     } catch (error) {
       state.error = error instanceof Error ? error.message : String(error);
       state.busy = false;
@@ -97,7 +100,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
 
 function renderHeader() {
   return `<header class="role-header">
-    <a class="role-brand" href="/"><img src="/assets/game/sangtian/many-worlds.png" alt=""/><strong>Many Worlds</strong></a>
+    <a class="role-brand" href="/"><img src="/assets/brand/many-worlds-logo.png" alt="Many Worlds logo"/><strong>Many Worlds</strong></a>
     <div class="role-header-actions"><a href="#help">${helpIcon()} 帮助</a><button type="button" aria-label="用户菜单">${userIcon()} ${chevronDownIcon()}</button></div>
   </header>`;
 }
@@ -151,6 +154,10 @@ function selectedRole(state) {
   return state.story?.roles?.find((role) => role.key === state.selectedRoleKey) || null;
 }
 
+function sessionToken(browserWindow) {
+  return browserWindow?.localStorage?.getItem("many-worlds-token") || "";
+}
+
 function apiBase(location = globalThis.location) {
   if (!location) return "/api";
   try {
@@ -159,10 +166,9 @@ function apiBase(location = globalThis.location) {
   } catch {
     // Use the normal local default below.
   }
-  if (location.port && location.port !== "3001") {
-    const host = location.hostname === "127.0.0.1" ? "localhost" : location.hostname;
-    return `${location.protocol}//${host}:3001/api`;
-  }
+  // The local web server proxies `/api` to the API started for this workspace.
+  // Keeping this relative avoids accidentally talking to a stale port 3001
+  // process when the platform pages run on 5178.
   return "/api";
 }
 

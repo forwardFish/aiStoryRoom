@@ -73,6 +73,11 @@ function configuredModel(provider: DirectorProviderName) {
   return "mock-director-v1";
 }
 
+function configuredTimeoutMs() {
+  const requested = Number(env("AI_DIRECTOR_TIMEOUT_MS") || 15_000);
+  return Math.max(1_000, Math.min(60_000, Number.isFinite(requested) ? requested : 15_000));
+}
+
 function sanitizeError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return message
@@ -104,6 +109,10 @@ async function callDeepSeekJson(system: string, user: Record<string, unknown>) {
       "content-type": "application/json",
       authorization: `Bearer ${apiKey}`
     },
+    // External narration must never hold an API request indefinitely.  The
+    // caller already has a deterministic mock fallback, so timing out is a
+    // recoverable narration degradation rather than a blocked game round.
+    signal: AbortSignal.timeout(configuredTimeoutMs()),
     body: JSON.stringify({
       model,
       messages: [

@@ -1,0 +1,1112 @@
+{
+  "source": "icon.png",
+  "icon_count": 46,
+  "primary_color": "#7B51FF",
+  "transparent_background": true,
+  "icons": [
+    {
+      "order": 1,
+      "name": "logo-mark",
+      "filename": "01-logo-mark.png",
+      "grid": {
+        "row": 1,
+        "column": 1
+      },
+      "source_card": {
+        "x": 8,
+        "y": 8,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 92,
+        "height": 70
+      },
+      "outputs": {
+        "tight": "png-tight/01-logo-mark.png",
+        "128": "png-128/01-logo-mark.png",
+        "256": "png-256/01-logo-mark.png"
+      }
+    },
+    {
+      "order": 2,
+      "name": "globe-language",
+      "filename": "02-globe-language.png",
+      "grid": {
+        "row": 1,
+        "column": 2
+      },
+      "source_card": {
+        "x": 218,
+        "y": 8,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 87,
+        "height": 77
+      },
+      "outputs": {
+        "tight": "png-tight/02-globe-language.png",
+        "128": "png-128/02-globe-language.png",
+        "256": "png-256/02-globe-language.png"
+      }
+    },
+    {
+      "order": 3,
+      "name": "arrow-right",
+      "filename": "03-arrow-right.png",
+      "grid": {
+        "row": 1,
+        "column": 3
+      },
+      "source_card": {
+        "x": 428,
+        "y": 8,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 80,
+        "height": 56
+      },
+      "outputs": {
+        "tight": "png-tight/03-arrow-right.png",
+        "128": "png-128/03-arrow-right.png",
+        "256": "png-256/03-arrow-right.png"
+      }
+    },
+    {
+      "order": 4,
+      "name": "play",
+      "filename": "04-play.png",
+      "grid": {
+        "row": 1,
+        "column": 4
+      },
+      "source_card": {
+        "x": 638,
+        "y": 8,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 52,
+        "height": 62
+      },
+      "outputs": {
+        "tight": "png-tight/04-play.png",
+        "128": "png-128/04-play.png",
+        "256": "png-256/04-play.png"
+      }
+    },
+    {
+      "order": 5,
+      "name": "users",
+      "filename": "05-users.png",
+      "grid": {
+        "row": 1,
+        "column": 5
+      },
+      "source_card": {
+        "x": 848,
+        "y": 8,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 86,
+        "height": 72
+      },
+      "outputs": {
+        "tight": "png-tight/05-users.png",
+        "128": "png-128/05-users.png",
+        "256": "png-256/05-users.png"
+      }
+    },
+    {
+      "order": 6,
+      "name": "clock",
+      "filename": "06-clock.png",
+      "grid": {
+        "row": 1,
+        "column": 6
+      },
+      "source_card": {
+        "x": 1058,
+        "y": 8,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 84,
+        "height": 84
+      },
+      "outputs": {
+        "tight": "png-tight/06-clock.png",
+        "128": "png-128/06-clock.png",
+        "256": "png-256/06-clock.png"
+      }
+    },
+    {
+      "order": 7,
+      "name": "world-nodes",
+      "filename": "07-world-nodes.png",
+      "grid": {
+        "row": 2,
+        "column": 1
+      },
+      "source_card": {
+        "x": 8,
+        "y": 213,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 66,
+        "height": 70
+      },
+      "outputs": {
+        "tight": "png-tight/07-world-nodes.png",
+        "128": "png-128/07-world-nodes.png",
+        "256": "png-256/07-world-nodes.png"
+      }
+    },
+    {
+      "order": 8,
+      "name": "chevron-left",
+      "filename": "08-chevron-left.png",
+      "grid": {
+        "row": 2,
+        "column": 2
+      },
+      "source_card": {
+        "x": 218,
+        "y": 213,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 42,
+        "height": 70
+      },
+      "outputs": {
+        "tight": "png-tight/08-chevron-left.png",
+        "128": "png-128/08-chevron-left.png",
+        "256": "png-256/08-chevron-left.png"
+      }
+    },
+    {
+      "order": 9,
+      "name": "chevron-right",
+      "filename": "09-chevron-right.png",
+      "grid": {
+        "row": 2,
+        "column": 3
+      },
+      "source_card": {
+        "x": 428,
+        "y": 213,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 42,
+        "height": 70
+      },
+      "outputs": {
+        "tight": "png-tight/09-chevron-right.png",
+        "128": "png-128/09-chevron-right.png",
+        "256": "png-256/09-chevron-right.png"
+      }
+    },
+    {
+      "order": 10,
+      "name": "target",
+      "filename": "10-target.png",
+      "grid": {
+        "row": 2,
+        "column": 4
+      },
+      "source_card": {
+        "x": 638,
+        "y": 213,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 82,
+        "height": 82
+      },
+      "outputs": {
+        "tight": "png-tight/10-target.png",
+        "128": "png-128/10-target.png",
+        "256": "png-256/10-target.png"
+      }
+    },
+    {
+      "order": 11,
+      "name": "branching-choice",
+      "filename": "11-branching-choice.png",
+      "grid": {
+        "row": 2,
+        "column": 5
+      },
+      "source_card": {
+        "x": 848,
+        "y": 213,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 77,
+        "height": 80
+      },
+      "outputs": {
+        "tight": "png-tight/11-branching-choice.png",
+        "128": "png-128/11-branching-choice.png",
+        "256": "png-256/11-branching-choice.png"
+      }
+    },
+    {
+      "order": 12,
+      "name": "globe",
+      "filename": "12-globe.png",
+      "grid": {
+        "row": 2,
+        "column": 6
+      },
+      "source_card": {
+        "x": 1058,
+        "y": 213,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 84,
+        "height": 84
+      },
+      "outputs": {
+        "tight": "png-tight/12-globe.png",
+        "128": "png-128/12-globe.png",
+        "256": "png-256/12-globe.png"
+      }
+    },
+    {
+      "order": 13,
+      "name": "infinity",
+      "filename": "13-infinity.png",
+      "grid": {
+        "row": 3,
+        "column": 1
+      },
+      "source_card": {
+        "x": 8,
+        "y": 418,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 87,
+        "height": 56
+      },
+      "outputs": {
+        "tight": "png-tight/13-infinity.png",
+        "128": "png-128/13-infinity.png",
+        "256": "png-256/13-infinity.png"
+      }
+    },
+    {
+      "order": 14,
+      "name": "lock",
+      "filename": "14-lock.png",
+      "grid": {
+        "row": 3,
+        "column": 2
+      },
+      "source_card": {
+        "x": 218,
+        "y": 418,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 66,
+        "height": 84
+      },
+      "outputs": {
+        "tight": "png-tight/14-lock.png",
+        "128": "png-128/14-lock.png",
+        "256": "png-256/14-lock.png"
+      }
+    },
+    {
+      "order": 15,
+      "name": "check",
+      "filename": "15-check.png",
+      "grid": {
+        "row": 3,
+        "column": 3
+      },
+      "source_card": {
+        "x": 428,
+        "y": 418,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 75,
+        "height": 58
+      },
+      "outputs": {
+        "tight": "png-tight/15-check.png",
+        "128": "png-128/15-check.png",
+        "256": "png-256/15-check.png"
+      }
+    },
+    {
+      "order": 16,
+      "name": "book-open",
+      "filename": "16-book-open.png",
+      "grid": {
+        "row": 3,
+        "column": 4
+      },
+      "source_card": {
+        "x": 638,
+        "y": 418,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 90,
+        "height": 76
+      },
+      "outputs": {
+        "tight": "png-tight/16-book-open.png",
+        "128": "png-128/16-book-open.png",
+        "256": "png-256/16-book-open.png"
+      }
+    },
+    {
+      "order": 17,
+      "name": "user-role",
+      "filename": "17-user-role.png",
+      "grid": {
+        "row": 3,
+        "column": 5
+      },
+      "source_card": {
+        "x": 848,
+        "y": 418,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 76,
+        "height": 80
+      },
+      "outputs": {
+        "tight": "png-tight/17-user-role.png",
+        "128": "png-128/17-user-role.png",
+        "256": "png-256/17-user-role.png"
+      }
+    },
+    {
+      "order": 18,
+      "name": "eye",
+      "filename": "18-eye.png",
+      "grid": {
+        "row": 3,
+        "column": 6
+      },
+      "source_card": {
+        "x": 1058,
+        "y": 418,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 98,
+        "height": 66
+      },
+      "outputs": {
+        "tight": "png-tight/18-eye.png",
+        "128": "png-128/18-eye.png",
+        "256": "png-256/18-eye.png"
+      }
+    },
+    {
+      "order": 19,
+      "name": "chat-bubbles",
+      "filename": "19-chat-bubbles.png",
+      "grid": {
+        "row": 4,
+        "column": 1
+      },
+      "source_card": {
+        "x": 8,
+        "y": 623,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 108,
+        "height": 82
+      },
+      "outputs": {
+        "tight": "png-tight/19-chat-bubbles.png",
+        "128": "png-128/19-chat-bubbles.png",
+        "256": "png-256/19-chat-bubbles.png"
+      }
+    },
+    {
+      "order": 20,
+      "name": "world-response",
+      "filename": "20-world-response.png",
+      "grid": {
+        "row": 4,
+        "column": 2
+      },
+      "source_card": {
+        "x": 218,
+        "y": 623,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 98,
+        "height": 98
+      },
+      "outputs": {
+        "tight": "png-tight/20-world-response.png",
+        "128": "png-128/20-world-response.png",
+        "256": "png-256/20-world-response.png"
+      }
+    },
+    {
+      "order": 21,
+      "name": "flag",
+      "filename": "21-flag.png",
+      "grid": {
+        "row": 4,
+        "column": 3
+      },
+      "source_card": {
+        "x": 428,
+        "y": 623,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 66,
+        "height": 89
+      },
+      "outputs": {
+        "tight": "png-tight/21-flag.png",
+        "128": "png-128/21-flag.png",
+        "256": "png-256/21-flag.png"
+      }
+    },
+    {
+      "order": 22,
+      "name": "ai-sparkles",
+      "filename": "22-ai-sparkles.png",
+      "grid": {
+        "row": 4,
+        "column": 4
+      },
+      "source_card": {
+        "x": 638,
+        "y": 623,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 88,
+        "height": 98
+      },
+      "outputs": {
+        "tight": "png-tight/22-ai-sparkles.png",
+        "128": "png-128/22-ai-sparkles.png",
+        "256": "png-256/22-ai-sparkles.png"
+      }
+    },
+    {
+      "order": 23,
+      "name": "sliders",
+      "filename": "23-sliders.png",
+      "grid": {
+        "row": 4,
+        "column": 5
+      },
+      "source_card": {
+        "x": 848,
+        "y": 623,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 84,
+        "height": 80
+      },
+      "outputs": {
+        "tight": "png-tight/23-sliders.png",
+        "128": "png-128/23-sliders.png",
+        "256": "png-256/23-sliders.png"
+      }
+    },
+    {
+      "order": 24,
+      "name": "share",
+      "filename": "24-share.png",
+      "grid": {
+        "row": 4,
+        "column": 6
+      },
+      "source_card": {
+        "x": 1058,
+        "y": 623,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 80,
+        "height": 80
+      },
+      "outputs": {
+        "tight": "png-tight/24-share.png",
+        "128": "png-128/24-share.png",
+        "256": "png-256/24-share.png"
+      }
+    },
+    {
+      "order": 25,
+      "name": "decision-trail",
+      "filename": "25-decision-trail.png",
+      "grid": {
+        "row": 5,
+        "column": 1
+      },
+      "source_card": {
+        "x": 8,
+        "y": 828,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 91,
+        "height": 75
+      },
+      "outputs": {
+        "tight": "png-tight/25-decision-trail.png",
+        "128": "png-128/25-decision-trail.png",
+        "256": "png-256/25-decision-trail.png"
+      }
+    },
+    {
+      "order": 26,
+      "name": "turning-point",
+      "filename": "26-turning-point.png",
+      "grid": {
+        "row": 5,
+        "column": 2
+      },
+      "source_card": {
+        "x": 218,
+        "y": 828,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 84,
+        "height": 75
+      },
+      "outputs": {
+        "tight": "png-tight/26-turning-point.png",
+        "128": "png-128/26-turning-point.png",
+        "256": "png-256/26-turning-point.png"
+      }
+    },
+    {
+      "order": 27,
+      "name": "hidden-info",
+      "filename": "27-hidden-info.png",
+      "grid": {
+        "row": 5,
+        "column": 3
+      },
+      "source_card": {
+        "x": 428,
+        "y": 828,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 88,
+        "height": 80
+      },
+      "outputs": {
+        "tight": "png-tight/27-hidden-info.png",
+        "128": "png-128/27-hidden-info.png",
+        "256": "png-256/27-hidden-info.png"
+      }
+    },
+    {
+      "order": 28,
+      "name": "relationship-change",
+      "filename": "28-relationship-change.png",
+      "grid": {
+        "row": 5,
+        "column": 4
+      },
+      "source_card": {
+        "x": 638,
+        "y": 828,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 94,
+        "height": 70
+      },
+      "outputs": {
+        "tight": "png-tight/28-relationship-change.png",
+        "128": "png-128/28-relationship-change.png",
+        "256": "png-256/28-relationship-change.png"
+      }
+    },
+    {
+      "order": 29,
+      "name": "world-recap",
+      "filename": "29-world-recap.png",
+      "grid": {
+        "row": 5,
+        "column": 5
+      },
+      "source_card": {
+        "x": 848,
+        "y": 828,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 75,
+        "height": 90
+      },
+      "outputs": {
+        "tight": "png-tight/29-world-recap.png",
+        "128": "png-128/29-world-recap.png",
+        "256": "png-256/29-world-recap.png"
+      }
+    },
+    {
+      "order": 30,
+      "name": "unlock-pass",
+      "filename": "30-unlock-pass.png",
+      "grid": {
+        "row": 5,
+        "column": 6
+      },
+      "source_card": {
+        "x": 1058,
+        "y": 828,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 84,
+        "height": 84
+      },
+      "outputs": {
+        "tight": "png-tight/30-unlock-pass.png",
+        "128": "png-128/30-unlock-pass.png",
+        "256": "png-256/30-unlock-pass.png"
+      }
+    },
+    {
+      "order": 31,
+      "name": "sparkle",
+      "filename": "31-sparkle.png",
+      "grid": {
+        "row": 6,
+        "column": 1
+      },
+      "source_card": {
+        "x": 8,
+        "y": 1033,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 91,
+        "height": 101
+      },
+      "outputs": {
+        "tight": "png-tight/31-sparkle.png",
+        "128": "png-128/31-sparkle.png",
+        "256": "png-256/31-sparkle.png"
+      }
+    },
+    {
+      "order": 32,
+      "name": "x-twitter",
+      "filename": "32-x-twitter.png",
+      "grid": {
+        "row": 6,
+        "column": 2
+      },
+      "source_card": {
+        "x": 218,
+        "y": 1033,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 70,
+        "height": 76
+      },
+      "outputs": {
+        "tight": "png-tight/32-x-twitter.png",
+        "128": "png-128/32-x-twitter.png",
+        "256": "png-256/32-x-twitter.png"
+      }
+    },
+    {
+      "order": 33,
+      "name": "instagram",
+      "filename": "33-instagram.png",
+      "grid": {
+        "row": 6,
+        "column": 3
+      },
+      "source_card": {
+        "x": 428,
+        "y": 1033,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 84,
+        "height": 84
+      },
+      "outputs": {
+        "tight": "png-tight/33-instagram.png",
+        "128": "png-128/33-instagram.png",
+        "256": "png-256/33-instagram.png"
+      }
+    },
+    {
+      "order": 34,
+      "name": "tiktok",
+      "filename": "34-tiktok.png",
+      "grid": {
+        "row": 6,
+        "column": 4
+      },
+      "source_card": {
+        "x": 638,
+        "y": 1033,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 77,
+        "height": 78
+      },
+      "outputs": {
+        "tight": "png-tight/34-tiktok.png",
+        "128": "png-128/34-tiktok.png",
+        "256": "png-256/34-tiktok.png"
+      }
+    },
+    {
+      "order": 35,
+      "name": "discord",
+      "filename": "35-discord.png",
+      "grid": {
+        "row": 6,
+        "column": 5
+      },
+      "source_card": {
+        "x": 848,
+        "y": 1033,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 84,
+        "height": 75
+      },
+      "outputs": {
+        "tight": "png-tight/35-discord.png",
+        "128": "png-128/35-discord.png",
+        "256": "png-256/35-discord.png"
+      }
+    },
+    {
+      "order": 36,
+      "name": "youtube",
+      "filename": "36-youtube.png",
+      "grid": {
+        "row": 6,
+        "column": 6
+      },
+      "source_card": {
+        "x": 1058,
+        "y": 1033,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 94,
+        "height": 66
+      },
+      "outputs": {
+        "tight": "png-tight/36-youtube.png",
+        "128": "png-128/36-youtube.png",
+        "256": "png-256/36-youtube.png"
+      }
+    },
+    {
+      "order": 37,
+      "name": "plus",
+      "filename": "37-plus.png",
+      "grid": {
+        "row": 7,
+        "column": 1
+      },
+      "source_card": {
+        "x": 8,
+        "y": 1238,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 76,
+        "height": 76
+      },
+      "outputs": {
+        "tight": "png-tight/37-plus.png",
+        "128": "png-128/37-plus.png",
+        "256": "png-256/37-plus.png"
+      }
+    },
+    {
+      "order": 38,
+      "name": "minus",
+      "filename": "38-minus.png",
+      "grid": {
+        "row": 7,
+        "column": 2
+      },
+      "source_card": {
+        "x": 218,
+        "y": 1238,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 76,
+        "height": 14
+      },
+      "outputs": {
+        "tight": "png-tight/38-minus.png",
+        "128": "png-128/38-minus.png",
+        "256": "png-256/38-minus.png"
+      }
+    },
+    {
+      "order": 39,
+      "name": "accordion-chevron",
+      "filename": "39-accordion-chevron.png",
+      "grid": {
+        "row": 7,
+        "column": 3
+      },
+      "source_card": {
+        "x": 428,
+        "y": 1238,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 62,
+        "height": 38
+      },
+      "outputs": {
+        "tight": "png-tight/39-accordion-chevron.png",
+        "128": "png-128/39-accordion-chevron.png",
+        "256": "png-256/39-accordion-chevron.png"
+      }
+    },
+    {
+      "order": 40,
+      "name": "external-link",
+      "filename": "40-external-link.png",
+      "grid": {
+        "row": 7,
+        "column": 4
+      },
+      "source_card": {
+        "x": 638,
+        "y": 1238,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 90,
+        "height": 90
+      },
+      "outputs": {
+        "tight": "png-tight/40-external-link.png",
+        "128": "png-128/40-external-link.png",
+        "256": "png-256/40-external-link.png"
+      }
+    },
+    {
+      "order": 41,
+      "name": "link",
+      "filename": "41-link.png",
+      "grid": {
+        "row": 7,
+        "column": 5
+      },
+      "source_card": {
+        "x": 848,
+        "y": 1238,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 108,
+        "height": 62
+      },
+      "outputs": {
+        "tight": "png-tight/41-link.png",
+        "128": "png-128/41-link.png",
+        "256": "png-256/41-link.png"
+      }
+    },
+    {
+      "order": 42,
+      "name": "people-network",
+      "filename": "42-people-network.png",
+      "grid": {
+        "row": 7,
+        "column": 6
+      },
+      "source_card": {
+        "x": 1058,
+        "y": 1238,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 104,
+        "height": 103
+      },
+      "outputs": {
+        "tight": "png-tight/42-people-network.png",
+        "128": "png-128/42-people-network.png",
+        "256": "png-256/42-people-network.png"
+      }
+    },
+    {
+      "order": 43,
+      "name": "info",
+      "filename": "43-info.png",
+      "grid": {
+        "row": 8,
+        "column": 1
+      },
+      "source_card": {
+        "x": 8,
+        "y": 1443,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 84,
+        "height": 84
+      },
+      "outputs": {
+        "tight": "png-tight/43-info.png",
+        "128": "png-128/43-info.png",
+        "256": "png-256/43-info.png"
+      }
+    },
+    {
+      "order": 44,
+      "name": "private-eye",
+      "filename": "44-private-eye.png",
+      "grid": {
+        "row": 8,
+        "column": 2
+      },
+      "source_card": {
+        "x": 218,
+        "y": 1443,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 98,
+        "height": 87
+      },
+      "outputs": {
+        "tight": "png-tight/44-private-eye.png",
+        "128": "png-128/44-private-eye.png",
+        "256": "png-256/44-private-eye.png"
+      }
+    },
+    {
+      "order": 45,
+      "name": "key",
+      "filename": "45-key.png",
+      "grid": {
+        "row": 8,
+        "column": 3
+      },
+      "source_card": {
+        "x": 428,
+        "y": 1443,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 86,
+        "height": 49
+      },
+      "outputs": {
+        "tight": "png-tight/45-key.png",
+        "128": "png-128/45-key.png",
+        "256": "png-256/45-key.png"
+      }
+    },
+    {
+      "order": 46,
+      "name": "card",
+      "filename": "46-card.png",
+      "grid": {
+        "row": 8,
+        "column": 4
+      },
+      "source_card": {
+        "x": 638,
+        "y": 1443,
+        "width": 195,
+        "height": 190
+      },
+      "tight_size": {
+        "width": 90,
+        "height": 70
+      },
+      "outputs": {
+        "tight": "png-tight/46-card.png",
+        "128": "png-128/46-card.png",
+        "256": "png-256/46-card.png"
+      }
+    }
+  ]
+}

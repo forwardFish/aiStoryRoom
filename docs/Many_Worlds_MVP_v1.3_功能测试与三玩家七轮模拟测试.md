@@ -97,7 +97,7 @@ Supabase 迁移 / 事务 / 对象隔离 / 独立读回
 | `pnpm lint:config` | PASS；7 天、12 决策、4 类谋划、5 全局结局、6 个人档位 | 单人《嘉靖财政危局》配置基线 |
 | Web tests | 17 项中 16 PASS、1 FAIL | 版本冲突刷新提示需修复并回归 |
 | API 纯规则断言 | PASS | 不能替代 HTTP/DB 测试 |
-| API HTTP/DB 测试 | 一次旧命令因可选本地 `127.0.0.1:55434` 未启动而停止 | 不作为当前 blocker；本轮直接连接现有 Supabase 重跑 HTTP/持久化/读回 |
+| API HTTP/持久化测试 | PASS：`story.http.spec.ts` 使用隔离 file storage 完整跑完 7 天、12 决策、重启恢复 | 测试不再依赖不存在的本地 `127.0.0.1:55434`；真实房间/Supabase 读回另有正式七轮证据 |
 | 历史三玩家七轮 | 有 3×7×21、DeepSeek 证据 | 只作历史参考，不继承为新流程 PASS |
 | Supabase 数据库 | 用户确认已经存在；仓库已支持 `DATABASE_URL`/`SUPABASE_DATABASE_URL` | 作为权威数据库验证，不再列为待建设项 |
 | 支付 | 用户已实际测试通过 | 不重复真实支付；只跑签名、幂等、账本和解锁回归 |
@@ -422,11 +422,11 @@ metadata.grantedBy=codex-test-harness
 
 | Visual ID | Reference | Route/State | Viewport | 核心检查 |
 |---|---|---|---|---|
-| VT-NEW-001 | `...22_31_44 (1).png` | `/auth` login | 1600×1000 | Header、居中卡片、tabs、表单、条款、return context |
-| VT-NEW-002 | `...22_31_44 (2).png` | `/worlds/sangtian` | 1600×1000 | Hero、角色预览、Solo/Multiplayer、meta |
-| VT-NEW-003 | `...22_31_47 (3).png` | `/rooms?worldId=sangtian` | 1600×1000 | tabs、filter、列表、My Rooms、两个按钮 |
-| VT-NEW-004 | `...22_31_49 (4).png` | `/rooms/:roomId` | 1600×1000 | 玩家列表、角色状态、invite、Ready/Start |
-| VT-NEW-005 | `...22_31_50 (5).png` | `/game/result?runId=...` | 1600×1000 | Ending、Role、Key Decisions、Goals、三操作 |
+| VT-NEW-001 | `...22_31_44 (1).png` | `/auth` login | 1586×992 | Header、居中卡片、tabs、表单、条款、return context |
+| VT-NEW-002 | `...22_31_44 (2).png` | `/worlds/caesar` | 1586×992 | Hero、角色预览、Solo/Multiplayer、meta |
+| VT-NEW-003 | `...22_31_47 (3).png` | `/rooms?worldId=caesar` | 1586×992 | tabs、filter、列表、My Rooms、两个按钮 |
+| VT-NEW-004 | `...22_31_49 (4).png` | `/rooms/:roomId` | 1586×992 | 玩家列表、角色状态、invite、Ready/Start |
+| VT-NEW-005 | `...22_31_50 (5).png` | `/game/result?runId=...` | 1586×992 | Ending、Role、Key Decisions、Goals、三操作 |
 
 每页每轮输出：
 
@@ -447,6 +447,55 @@ interaction-trace.json
 - 视觉比较时，素材内容差异可以标记为 `USER_APPROVED_TEMP_ASSET`，但容器尺寸、裁切、圆角、明暗、布局和不变形仍必须通过。
 - 临时素材不能解释文本遮挡、错位、低对比、加载失败或错误人物复用。
 - 每个临时素材都要有 assetKey 和 replacementStatus，便于用户后续统一替换。
+
+### 7.2.1 新增五页一比一复刻硬门槛（2026-07-13 补充）
+
+以下五张图不是“风格参考”，而是新增产品页在桌面端的唯一视觉真源。实现必须使用真实 HTML/CSS/JS、真实 API 数据和真实控件；不得把参考图作为背景、覆盖层、canvas 截图、透明热区或产品运行时网络资源。
+
+| Visual ID | 固定 route 与 fixture 状态 | 唯一参考图 |
+|---|---|---|
+| VT-NEW-001 | `/auth?returnTo=/worlds/caesar`，登录 tab、未填写状态 | `docs/UI/web/MW-10_AUTH_登录注册.png` |
+| VT-NEW-002 | `/worlds/caesar`，已登录、世界详情、6 个角色预览 | `docs/UI/web/MW-20_WORLD_世界详情_凯撒.png` |
+| VT-NEW-003 | `/rooms?worldId=caesar`，Open Rooms tab、固定房间 fixture | `docs/UI/web/MW-30_ROOMS_房间列表.png` |
+| VT-NEW-004 | `/rooms/fixture-caesar-waiting`，3/6 玩家、Host 已锁角、等待状态 | `docs/UI/web/MW-40_ROOM_等候房与选角.png` |
+| VT-NEW-005 | `/game/result?runId=fixture-caesar-finished`，已完成结果状态 | `docs/UI/web/MW-70_RESULT_游戏结局.png` |
+
+每页必须在 **1586×992 CSS px（五张参考图的原始像素尺寸）、DPR=1、缩放 100%、动画关闭、Inter 字体加载完成** 的同一条件下生成实际截图。所谓“一比一”在本项目中定义为：
+
+1. 公共 Header、页面外框、主卡片、分栏、表格、角色卡、按钮、badge、输入框和底部操作区的边界坐标偏差均不超过 **2 CSS px**；不得把不同布局以“视觉接近”判定通过。
+2. 参考图中的文本层级、字体粗细、字号、行高、颜色、圆角、边框、阴影和紫色交互态必须逐项映射；无可见文本、错误状态、加载残留、裁切变形或重叠即失败。
+3. 视觉 diff 以去除用户已授权临时图片内容区域后的页面区域计算：SSIM 必须 `>= 0.985`、差异像素占比必须 `<= 1.5%`。任何超阈值页为 `REPAIR_REQUIRED`，不得用平均分掩盖单页失败。
+4. 每个截图状态仍须完成至少一次真实交互：登录/注册 tab 切换与校验、Solo/Multiplayer 跳转、创建/邀请码加入、选角/Ready/Start、Play Again/换角色/返回世界。可点击但无真实数据或导航的页面直接 `HARD_FAIL`。
+5. 每轮必须输出 `reference.png`、`actual.png`、`diff.png`、`metrics.json`、DOM geometry JSON、浏览器 console/network 摘要和结论；存于 `docs/auto-execute/evidence/many-worlds-v13/visual/<visual-id>/`。结论只允许 `PASS`、`REPAIR_REQUIRED`、`HARD_FAIL`，不允许 `PASS_WITH_LIMITATION`。
+
+临时素材仅可排除图片内容像素，不能排除图片容器本身；容器的尺寸、裁切、圆角、位置、明暗遮罩和加载成功状态仍须严格参与一比一判定。
+
+### 7.2.2 五页复刻执行记录（2026-07-13）
+
+- 已实现并以真实 DOM/CSS/JS 路由运行五页：`/auth`、`/worlds/caesar`、`/rooms`、`/rooms/:roomId`、`/game/result`；运行时未读取参考 PNG。
+- 已落地可重复采集与比较脚本：`scripts/acceptance/capture-many-worlds-v13-visual.mjs`、`scripts/acceptance/compare-many-worlds-v13-visual.py`。每页的 reference/actual/diff/metrics/geometry/browser 证据已输出到规定目录。
+- 已执行真实浏览器链路：注册、非生产验证、登录、returnTo 大厅、创建嘉靖财政危局房间、主持人选角并锁角、Ready；结果在 `docs/auto-execute/evidence/many-worlds-v13/browser-room-flow/result.json`，状态 `PASS`。
+- 2026-07-14 已执行三名隔离真实浏览器玩家的完整嘉靖财政危局验收：三账号注册/验证/登录、同房间、三角色、全员 Ready、主持人开局；每轮均由三名玩家在游戏 UI 提交行动、主持人在 UI 结算，连续完成 7 轮并等待动态嘉靖结果页替换夹具。证据为 `docs/auto-execute/evidence/many-worlds-v13/browser-three-player-seven-round/result.json` 与同目录 `host-result.png`：RunId `cmrjl3j7300fnvcmks33zdgml`、`7` rounds、`3` browsers、运行时异常 `0`、结果路径 `/game/result`、世界名 `嘉靖财政危局`、章节标题 `没有影子的客人`。
+- 2026-07-14 已在当前代码与当前 Supabase 上重复该完整真实浏览器回归：RunId `cmrk34rqp01ykvcu4x36chn2j`，三名隔离账号完成 7×3 次可见 UI 行动、主持人完成 7 次可见 UI 结算，最终进入动态嘉靖结果页 `没有影子的客人`；三浏览器运行时异常均为空。验收脚本现会先等待大厅按钮事件绑定，避免 DOM 已渲染但模块尚未绑定时的自动化误点击。
+- 2026-07-14 再次以当前构建完成真实三浏览器嘉靖全链路：RunId `cmrkdcncf00advce4upjp7cj2`，3 个隔离账号分别在 7 轮中提交共 21 次可见 UI 行动，主持人完成 7 次 UI 结算，最终落到动态 `/game/result`（`没有影子的客人`）；host/player2/player3 的运行时异常均为 0。证据：`docs/auto-execute/evidence/many-worlds-v13/browser-three-player-seven-round/result.json` 与同目录 `host-result.png`。
+- 2026-07-14 已把 Credits 接到正式多人游戏闭环，而非仅保留独立 Unlock API：共享房间第 1—3 回合免费；进入第 4 回合时三位玩家在真实 `/room-game` 页面看到同一解锁门槛，主持人使用受控 100 BONUS 点数点击 `Unlock shared room`，其余两位玩家刷新后继续同一房间并完成第 4—7 回合。当前浏览器 RunId `cmrkeb69z000cvcc840ncm4k4` 完成 21 次 UI 行动、7 次 UI 结算与动态结果页，运行时异常为 0；浏览器证据含 `unlockedAtRound: 4`。API 与 Supabase 独立读回确认仅有 1 笔 `WORLD_UNLOCK`、恰好扣 100 点、`accessLevel=UNLOCKED`、`freeDecisionsUsed=3`、最终 `chapter_generated`：`docs/auto-execute/evidence/many-worlds-v13/room-unlock-audit.json`。
+- 2026-07-14 当前工作区自动回归：`pnpm test:causal` 通过（API 运行时、HTTP 全流程/重启持久化、世界目录，以及 Web 17 项 UI/行动/导航/支付状态断言均通过）；随后 `pnpm typecheck` 对 web、shared、templates、api、miniprogram 全部通过。根目录未定义通用 `pnpm test`，因此该命令不是本项目的验收入口。
+- 2026-07-14 已重跑完整 `pnpm test:acceptance` 且通过：配置、API/Web、13 项 API transport 合同、四种行动、结局路径、投影安全、并发幂等、AI fallback/retry/budget、20 次连续运行、存储故障恢复及备份/WAL 运维合同均为 PASS。其间修复了 v4 文件存储合同审计错误加载退役 localhost Prisma 连接的问题；该审计现在显式隔离 Prisma，不访问 Supabase 测试数据。
+- 2026-07-14 已重跑 `pnpm test:world-credits` 并通过当前 Supabase 独立读回：注册/验证、首次点数、邀请奖励上限、300/650 两档测试支付、Webhook 重放幂等、退款/争议、世界解锁幂等和错误签名 401 均成立；证据为 `docs/auto-execute/world-credits/results/local-flow.json`。脚本已改为优先使用 `SUPABASE_DATABASE_URL` 并将直接 Prisma 读回池限制为 1，不再依赖退役 localhost 数据库。
+- 2026-07-14 已执行 World Registry 与测试点数 Supabase 回归，证据为 `docs/auto-execute/evidence/many-worlds-v13/world-registry-and-test-credit.json`：`GET /api/v4/worlds` 仅返回 `sangtian` 与 `caesar_last_spring`，凯撒详情含 6 角色且未知世界为 404；同一测试加点幂等重试只保留 1 条 ledger，累计上限、普通账号、关闭开关均被拒绝；两个并发 600 点请求得到恰好一个 201 和一个 400，且仅写入一条账本。
+- 2026-07-14 已按固定 viewport 重跑五页逐图比较，仍为 `REPAIR_REQUIRED`，不得作为验收通过：VT-NEW-001 至 005 的 SSIM 分别为 `0.902272/0.831242/0.839890/0.800338/0.786578`，changed-pixel ratio 分别为 `4.2311%/8.8584%/7.0185%/10.0311%/11.6719%`，均未达到 `SSIM ≥ 0.985` 且 changed pixels `≤ 1.5%`。本轮世界详情页通过逐页 Header、标题和主图基线校准由 `0.813754` 提升至 `0.831242`；等候页和结果页的反向优化已回退。运行时未读取参考 PNG；后续必须继续真实 CSS/素材/排版修复并重跑，五页全 PASS 前不得关闭本视觉验收项。
+
+### 7.2.3 五页复刻执行更新（2026-07-14）
+
+- 五页控件真实交互补证（2026-07-14）：`node scripts/e2e/many-worlds-v13-page-interactions.mjs` 已通过认证页注册 tab、凯撒 Solo 与 Multiplayer 跳转、Rooms 固定行进入等待房间、结果页 Play Again/换角色/返回世界三操作，运行时异常为 0；证据为 `docs/auto-execute/evidence/many-worlds-v13/page-interactions/result.json`。真实房间的选角、Ready、Start 和七轮结算由三浏览器嘉靖验收覆盖。
+- 已按固定 1586×992、DPR=1、动画关闭条件重新执行五页真实浏览器采集和离线差异比较；运行页面未加载任何 reference PNG。
+- 本轮修复了 VT-NEW-004 等候页的房间顶部四栏固定轨道、主双栏宽度和角色标题基线，并修正 VT-NEW-001 认证页的表单垂直节奏与主按钮色值；VT-NEW-002 的世界标题与模式标题改为参考图对应的 600 字重。随后按参考图的分页面 Header 高度重新校准认证、等候和结果页，并保持其内容卡片 y 坐标不变。等候页 SSIM 由 0.800338 提升至 0.814367，认证页由 0.904700 提升至 0.938450，世界详情由 0.831242 提升至 0.836654。
+- 当前逐页结果仍全部为 REPAIR_REQUIRED：SSIM 为 0.944472 / 0.836031 / 0.840872 / 0.814603 / 0.811253；changed-pixel ratio 为 3.2994% / 8.6255% / 6.8644% / 9.3181% / 9.4558%。任何一页未达到 SSIM >= 0.985 且 changed-pixel ratio <= 1.5% 时，严禁将五页复刻门禁标为 PASS。
+- 最新一次固定视口复跑仍为 `REPAIR_REQUIRED`，数值为 0.944472 / 0.836031 / 0.840872 / 0.814603 / 0.811253 与 3.2994% / 8.6255% / 6.8644% / 9.3181% / 9.4558%。本轮将 VT-NEW-005 结果标题校准为参考图的 47px/600 字重，SSIM 从 0.798872 提升至 0.811253；认证页的卡片宽度和标题字距校准后从 0.938893 提升至 0.944472，并改用透明自绘品牌标识清除临时 raster 方底。其余三页维持同一浏览器采集结果。本轮同时修复了首次 Supabase 持久化写入超过普通浏览器等待窗时的错误失败判定：创建按钮会显示 `Creating room…` 并禁用重复点击，浏览器注册→建房→选角/锁角→Ready 回归在 RunId `cmrkd8tv4008avce4dq8oc1be` 重新通过，网络返回均为 2xx、运行时异常为 0；证据：`docs/auto-execute/evidence/many-worlds-v13/browser-room-flow/result.json`。
+- 本轮证据覆盖 reference.png、actual.png、diff.png、metrics.json、geometry.json、浏览器 console/network 摘要，目录固定为 docs/auto-execute/evidence/many-worlds-v13/visual/。临时头像和背景仍仅按已审查清单遮蔽图片内容，容器边框、圆角、位置和尺寸继续参与比较。
+- 2026-07-14 全量回归：`pnpm test:acceptance`、`pnpm typecheck`、五页真实交互脚本、`pnpm test:world-credits` 和 `pnpm build` 均 PASS。点数回归再次确认支付回调重放、退款/争议、100 点世界解锁和重复解锁零扣费；构建后本地 3102 API 已以 `ALLOW_TEST_CREDIT_GRANT=false` 恢复，健康检查为 `ready:true/database:connected`。视觉指标仍以本节的 `REPAIR_REQUIRED` 结果为准，不能由上述功能绿灯替代。
+- 2026-07-14 凯撒单人七轮：`pnpm test:caesar-solo-seven` 在显式受控加点环境下 PASS（312 秒），覆盖注册/验证/登录、Brutus 单人房、7 个真实异步任务、第 4 轮付费墙、恰好一次 100 点解锁、结果读回与 My Rooms 恢复。证据为 `docs/auto-execute/evidence/many-worlds-v13/caesar-solo-seven-round.json`；完成后 3102 API 已恢复为 `ALLOW_TEST_CREDIT_GRANT=false`。
+- 2026-07-14 嘉靖模拟玩家：修复冻结主游戏在 5178 将 API 错误回退到 `localhost:3001/api` 的问题，统一走同源 `/api` 代理，并补充 5178 的 API CORS 白名单。`pnpm test:simulated-player` 以真实浏览器从嘉靖 World Details 的 Solo 控件出发，通过 5 名首轮理解玩家、1 名完整 7 天行为玩家（结果流继续、调查、关键事件、刷新、结局）和 2 名刷新/兼容玩家，812 秒 `PASS`；证据为 `docs/auto-execute/results/simulated-player-browser.json`。该脚本不直接调用业务 API 或数据库替代页面操作；随后 `pnpm typecheck` 通过。
 
 ### 7.3 Anti-cheat
 
@@ -784,3 +833,16 @@ NarrativeWriter = 21 logical tasks（每轮每角色 1 个隔离 Writer）
 15. 当前 RunId 的失败数、阻塞数、limitation 数、未覆盖 P0/P1 数全部为 0。
 
 任一条件不满足，执行状态回到 `REPAIR_REQUIRED` 并继续修复、重测；只有真正的外部 blocker 可以暂停，但不算完成。最终交付状态只允许纯 `PASS`，不能以 `PASS_WITH_LIMITATION`、“基本完成”或“等待后续开发”代替。
+
+## 15. 2026-07-14 当前执行记录
+
+- 《嘉靖财政危局》三玩家七轮异步房间实跑：PASS。
+- 《凯撒：共和国最后的春天》正式 Solo 七节点、结果页和 My Rooms 恢复入口实跑：PASS；证据为 docs/auto-execute/evidence/many-worlds-v13/caesar-solo-seven-async.json。
+- 《凯撒：共和国最后的春天》多人房间首轮复用实跑：PASS；3 名玩家选角、Ready、Start、第一轮结算并进入下一轮 playing；证据为 docs/auto-execute/evidence/many-worlds-v13/caesar-multiplayer-first-round-async.json。
+- 真实房间状态为 chapter_generated；3 名人类玩家已选不同角色并 Ready，7 个节点与 7 个 Outbox 任务均只完成一次。
+- Supabase 独立读回确认：21 次人类 action、7 次 AI 补位 action、7 个唯一 DirectorResolution；每轮均有 4 角色私有投影和跨角色影响字段。
+- 成员增量事件和私有 SSE 均已由同一次房间流程打开验证；第 7 轮完成态的任务轮询已回归。
+- 证据：docs/auto-execute/evidence/many-worlds-v13/three-player-seven-round-async.json。该记录仅覆盖三玩家七轮链路，不能替代五个新增页面的一比一视觉门禁、第二世界闭环、故障注入或完整模拟玩家浏览器验收。
+- 连续性模型真实读回（2026-07-14）：同一类嘉靖三玩家七轮正式房间已额外校验 CanonFact、CharacterMind、StoryThread、SceneSnapshot 与 NarrativeEntry。Supabase 结果为规范事实 20、角色心智 4、主线线程 1、场景快照 40、统一叙事条目 8、真人行动 21、唯一结算 7，且最终章节从公开 NarrativeEntry 流生成；证据为 docs/auto-execute/evidence/many-worlds-v13/three-player-seven-round-continuity.json。
+- 私有知识边界回归（2026-07-14）：三玩家正式房间启动后，主持人逐字引用另一角色的 role_private CanonFact，服务端以 unknown_private_fact 拒绝，且没有写入 PlayerAction；随后同一轮三名玩家正常行动并完成异步结算。读回 14 条事实、4 个心智、1 条线程、10 个快照、2 条叙事条目、3 次真人行动与 1 次结算；证据为 docs/auto-execute/evidence/many-worlds-v13/continuity-knowledge-boundary-one-round.json。
+- 私有知识边界完整七轮回归（2026-07-14）：同一越界拒绝规则已与完整嘉靖三玩家七轮链路联合执行。越界行动未落库，正常行动继续完成 7 轮并进入 chapter_generated；Supabase 读回规范事实 20、角色心智 4、线程 1、快照 40、叙事条目 8、真人行动 21、唯一结算 7，knowledgeBoundary=true。证据为 docs/auto-execute/evidence/many-worlds-v13/three-player-seven-round-continuity-knowledge.json。
