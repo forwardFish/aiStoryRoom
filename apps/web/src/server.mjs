@@ -133,6 +133,14 @@ export const server = createServer((req, res) => {
     createReadStream(homeReference).pipe(res);
     return;
   }
+  if (url.pathname === "/assets/poster/invite-background.png") {
+    const posterPath = join(webUiRoot, "pic", "ChatGPT Image 2026年7月14日 20_10_29.png");
+    if (existsSync(posterPath)) {
+      res.writeHead(200, { "content-type": "image/png", "cache-control": "public, max-age=3600" });
+      createReadStream(posterPath).pipe(res);
+      return;
+    }
+  }
   const assetMatch = url.pathname.match(/^\/assets\/(bg|portrait|icon)\/(\d+)\.png$/);
   if (assetMatch) {
     const assetPath = assetFile(assetMatch[1], assetMatch[2]);

@@ -31,6 +31,13 @@ const portraits = pictures.filter((name) => name.includes("22_49_") || (name.inc
 await copyIndexed(picDirectory, backgrounds, join(destination, "bg"));
 await copyIndexed(picDirectory, portraits, join(destination, "portrait"));
 
+// The invite poster has a dedicated blank composition. Keep it separate from
+// room backgrounds so the generated QR and room data can remain dynamic.
+const invitePosterBackground = "ChatGPT Image 2026年7月14日 20_10_29.png";
+const posterDestination = join(destination, "poster");
+await resetDirectory(posterDestination);
+await cp(join(picDirectory, invitePosterBackground), join(posterDestination, "invite-background.png"));
+
 const iconDirectory = join(webUi, "icon", "many-worlds-icons-clean", "png-tight");
 await copyIndexed(iconDirectory, await pngFiles(iconDirectory), join(destination, "icon"));
 
