@@ -58,7 +58,7 @@ try {
   await click('[data-action="ready"]', "ready");
   await waitUntil("document.body.innerText.includes('Ready')", "ready state persistence");
   await click('[data-action="share-invite"]', "share invite");
-  await waitUntil("Boolean(document.querySelector('.share-dialog[open] [data-poster-qr][src^=\"blob:\"]'))", "invite dialog and generated QR");
+  await waitUntil("Boolean(document.querySelector('.share-dialog[open] [data-poster-preview][src^=\"blob:\"]'))", "invite dialog and generated poster preview");
   const inviteScreenshot = await cdp.send("Page.captureScreenshot", { format: "png", fromSurface: true });
   await writeFile(join(resultDir, "invite-modal-real-qr.png"), Buffer.from(inviteScreenshot.data, "base64"));
   await click('[data-share-channel="WHATSAPP"]', "WhatsApp share event");

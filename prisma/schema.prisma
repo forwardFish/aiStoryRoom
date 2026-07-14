@@ -812,6 +812,7 @@ model CreemPurchase {
   credits             Int
   expectedAmountCents Int
   expectedCurrency    String              @default("USD")
+  orderDisplayCode    String              @unique
   status              CreemPurchaseStatus @default(PENDING)
   checkoutId          String?             @unique
   orderId             String?             @unique

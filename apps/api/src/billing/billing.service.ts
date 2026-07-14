@@ -15,6 +15,9 @@ interface CheckoutContext {
   intent: "WALLET" | "WORLD_UNLOCK";
   runId: string | null;
   returnTo: string;
+  roomTitle?: string;
+  round?: number;
+  totalRounds?: number;
 }
 
 @Injectable()
@@ -28,12 +31,25 @@ export class BillingService {
       throw new BadRequestException({ code: "RUN_ID_REQUIRED", message: "A room is required to resume this unlock" });
     }
     if (runId) {
-      const run = await this.prisma.storyRun.findUnique({ where: { id: runId }, select: { ownerUserId: true } });
+      const run = await this.prisma.storyRun.findUnique({ where: { id: runId }, select: { ownerUserId: true, title: true, currentDay: true, totalDays: true, currentNodeId: true } });
       if (!run) throw new NotFoundException({ code: "STORY_RUN_NOT_FOUND", message: "Story run not found" });
       const participant = run.ownerUserId === userId || Boolean(await this.prisma.storyPlayer.findFirst({ where: { runId, userId, status: "active" }, select: { id: true } }));
       if (!participant) throw new UnauthorizedException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only room participants can resume this unlock" });
+      const node = run.currentNodeId ? await this.prisma.sceneNode.findUnique({ where: { id: run.currentNodeId }, select: { nodeIndex: true } }) : null;
+      const roomContext = { roomTitle: run.title, round: node?.nodeIndex || run.currentDay, totalRounds: run.totalDays };
+      const fallback = `/room-game?runId=${encodeURIComponent(runId)}`;
+      const candidate = String(input.returnTo || "").trim();
+      try {
+        const parsed = new URL(candidate, "https://manyworlds.invalid");
+        if (parsed.origin === "https://manyworlds.invalid" && parsed.pathname === "/room-game" && parsed.searchParams.get("runId") === runId) {
+          return { intent, runId, returnTo: `${parsed.pathname}${parsed.search}`, ...roomContext };
+        }
+      } catch {
+        // Use the canonical in-product destination below.
+      }
+      return { intent, runId, returnTo: fallback, ...roomContext };
     }
-    const fallback = runId ? `/room-game?runId=${encodeURIComponent(runId)}` : "/credits";
+    const fallback = "/credits";
     const candidate = String(input.returnTo || "").trim();
     if (!candidate) return { intent, runId, returnTo: fallback };
     try {
@@ -63,6 +79,7 @@ export class BillingService {
         credits: pack.credits,
         expectedAmountCents: pack.expectedAmountCents,
         expectedCurrency: pack.currency,
+        orderDisplayCode: `MW-${crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`,
         checkoutContext: checkoutContext as unknown as Prisma.InputJsonValue
       }
     });
@@ -88,6 +105,14 @@ export class BillingService {
     if (!purchaseId && !checkoutId) throw new BadRequestException({ code: "CHECKOUT_LOOKUP_REQUIRED", message: "Checkout lookup is required" });
     const purchase = await this.prisma.creemPurchase.findFirst({ where: { userId, ...(purchaseId ? { id: purchaseId } : { checkoutId }) } });
     if (!purchase) throw new NotFoundException({ code: "CHECKOUT_NOT_FOUND", message: "Checkout not found" });
-    return { purchaseId: purchase.id, checkoutId: purchase.checkoutId, status: purchase.status, credits: purchase.credits, context: purchase.checkoutContext, balance: await this.credits.getBalance(userId) };
+    return {
+      purchaseId: purchase.id,
+      checkoutId: purchase.checkoutId,
+      orderDisplayCode: purchase.orderDisplayCode,
+      status: purchase.status,
+      credits: purchase.credits,
+      context: purchase.checkoutContext,
+      balance: await this.credits.getBalance(userId)
+    };
   }
 }

@@ -103,7 +103,7 @@ try {
   // message only to deliver it to a fresh browser, as a recipient would.
   await host.evaluate("window.__manyWorldsShareTarget = ''; window.open = (url) => { window.__manyWorldsShareTarget = String(url); return null; };");
   await host.click('[data-action="share-invite"]', "open social invite");
-  await host.wait("Boolean(document.querySelector('.share-dialog[open] [data-poster-qr][src^=\"blob:\"]'))", "generated invitation QR");
+  await host.wait("Boolean(document.querySelector('.share-dialog[open] [data-poster-preview][src^=\"blob:\"]'))", "generated invitation poster with real QR");
   await host.click('[data-share-channel="WHATSAPP"]', "send WhatsApp invitation");
   await host.wait("Boolean(window.__manyWorldsShareTarget)", "social application handoff");
   const socialTarget = await host.evaluate("window.__manyWorldsShareTarget");
@@ -151,7 +151,7 @@ try {
       await host.click('.room-unlock-modal a[href^="/credits?intent=WORLD_UNLOCK"]', "open contextual World Credits page");
       await host.wait("location.pathname === '/credits' && Boolean(document.querySelector('[data-pack=credits_300]'))", "payment pack page");
       await host.click('[data-pack="credits_300"]', "choose 300 credit pack");
-      await host.wait("Boolean(document.querySelector('[data-purchase-dialog][open]'))", "purchase confirmation");
+      await host.wait("Boolean(document.querySelector('[data-confirm-state]:not([hidden])'))", "same-page purchase confirmation");
       await host.click('[data-confirm-purchase]', "confirm purchase and redirect to checkout");
       await host.wait("location.pathname === '/credits/status' && Boolean(new URLSearchParams(location.search).get('purchase_id'))", "payment processing return page");
       const payment = await completeMockCheckout(host, stamp);

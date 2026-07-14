@@ -1,5 +1,29 @@
 <!doctype html>
 <html lang="en">
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Payment status · Many Worlds</title><link rel="stylesheet" href="/platform.css"><link rel="stylesheet" href="/credits.css"></head>
-  <body><header class="mw-header"><a class="brand" href="/home"><span class="brand-mark">Many Worlds</span>Many Worlds</a><nav class="mw-nav"><a href="/worlds/caesar">Explore Worlds</a><a href="/rooms">Rooms</a><a class="active" href="/credits">World Credits</a></nav></header><main class="status-page" data-payment-status><section class="status-card"><div class="status-icon" data-status-icon>…</div><p class="eyebrow" data-status-eyebrow>PAYMENT STATUS</p><h1 data-status-title>Confirming your payment</h1><p class="muted" data-status-copy>We are waiting for the secure payment confirmation. This usually takes just a few seconds.</p><div class="status-summary" data-status-summary hidden><span>World Credits added</span><strong data-status-credits>0</strong></div><div class="status-actions" data-status-actions><a class="btn" href="/credits">Back to World Credits</a></div></section></main><script type="module" src="/js/credits-status.js"></script></body>
+  <head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Payment status · Many Worlds</title>
+    <link rel="stylesheet" href="/platform.css"><link rel="stylesheet" href="/credits.css">
+  </head>
+  <body>
+    <header class="mw-header credits-header"><a class="brand" href="/"><img src="/assets/brand/many-worlds-logo.png" alt="Many Worlds"><span><b>Many Worlds</b><small>AI-powered social simulations</small></span></a><nav class="mw-nav"><a href="/worlds/caesar"><i class="nav-explore"></i>Explore Worlds</a><a href="/rooms"><i class="nav-rooms"></i>Rooms</a><a class="active" href="/credits"><i class="nav-credits"></i>World Credits</a></nav><div class="header-right"><a href="/#faq"><i class="nav-help"></i>Help</a><a href="/auth" aria-label="Account" class="profile-icon"></a></div></header>
+    <main class="status-page" data-payment-status>
+      <section class="status-card">
+        <div class="status-icon" data-status-icon><span></span></div>
+        <p class="eyebrow" data-status-eyebrow>PAYMENT STATUS</p>
+        <h1 data-status-title>Confirming your payment</h1>
+        <p class="muted" data-status-copy>We are waiting for the secure payment confirmation. This usually takes just a few seconds.</p>
+        <dl class="status-details" data-status-details>
+          <div><dt>Package</dt><dd data-status-package>World Credits</dd></div>
+          <div><dt>Order</dt><dd data-status-order>—</dd></div>
+          <div><dt>Status</dt><dd><span class="status-pill" data-status-pill>Processing</span></dd></div>
+          <div><dt>Return context</dt><dd data-status-context>World Credits</dd></div>
+        </dl>
+        <div class="status-summary" data-status-summary hidden><span>World Credits added</span><strong data-status-credits>0</strong></div>
+        <div class="status-actions" data-status-actions><a class="btn" href="/credits">Back to World Credits</a></div>
+        <p class="status-safe">Credits are added only after payment confirmation.</p>
+      </section>
+    </main>
+    <script type="module" src="/js/credits-status.js"></script>
+  </body>
 </html>

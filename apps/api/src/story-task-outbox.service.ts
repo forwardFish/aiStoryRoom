@@ -11,6 +11,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
   private readonly workerId = `api-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
   private timer?: ReturnType<typeof setInterval>;
   private draining = false;
+  private pollFailures = 0;
+  private retryAfterMs = 0;
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -25,9 +27,15 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
     // A transient pool/network error must not become an unhandled rejection
     // that terminates the API process. The next poll retries naturally.
     this.timer = setInterval(() => {
-      void this.drainOne().catch((error) => {
-        this.logger.warn("Story task poll failed and will retry: " + String(error));
-      });
+      if (Date.now() < this.retryAfterMs) return;
+      void this.drainOne()
+        .then(() => { this.pollFailures = 0; this.retryAfterMs = 0; })
+        .catch((error) => {
+          this.pollFailures = Math.min(this.pollFailures + 1, 6);
+          const delayMs = Math.min(15_000, 500 * 2 ** this.pollFailures);
+          this.retryAfterMs = Date.now() + delayMs;
+          this.logger.warn(`Story task poll failed; retrying in ${delayMs}ms: ${String(error)}`);
+        });
     }, POLL_MS);
     this.timer.unref?.();
   }
