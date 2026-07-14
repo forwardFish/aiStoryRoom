@@ -1,5 +1,9 @@
 const params = new URLSearchParams(window.location.search);
-const apiBase = (params.get("apiBase") || localStorage.getItem("many-worlds-api-base") || (location.hostname === "localhost" || location.hostname === "127.0.0.1" ? "/api" : "")).replace(/\/$/, "");
+const isLocalRuntime = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+// Vercel serves static pages and has no API proxy in production.  Keep the
+// local same-origin proxy for development, while every deployed page uses the
+// documented API origin unless an explicit preview/test override is supplied.
+const apiBase = (params.get("apiBase") || localStorage.getItem("many-worlds-api-base") || (isLocalRuntime ? "/api" : "https://api.ourmanyworlds.com/api")).replace(/\/$/, "");
 localStorage.setItem("many-worlds-api-base", apiBase);
 
 export function getToken() { return localStorage.getItem("many-worlds-token") || ""; }
