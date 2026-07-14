@@ -8,6 +8,13 @@ function generateReferralCode() {
   return randomBytes(8).toString("base64url").replace(/[-_]/g, "").slice(0, 8).toUpperCase();
 }
 
+const referralChannels = ["LINK", "X", "FACEBOOK", "WHATSAPP", "TELEGRAM", "DISCORD", "NATIVE"] as const;
+type ReferralChannelInput = (typeof referralChannels)[number];
+function normalizeChannel(value: unknown): ReferralChannelInput | "UNKNOWN" {
+  const channel = String(value || "").trim().toUpperCase();
+  return (referralChannels as readonly string[]).includes(channel) ? channel as ReferralChannelInput : "UNKNOWN";
+}
+
 @Injectable()
 export class ReferralsService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService, @Inject(CreditsService) private readonly credits: CreditsService) {}
@@ -31,7 +38,7 @@ export class ReferralsService {
     const maxRewardedInvites = Number(process.env.CREDIT_REFERRAL_MAX_REWARDS || 2);
     return {
       code: code.code,
-      inviteUrl: `${process.env.REFERRAL_BASE_URL || `${process.env.PUBLIC_WEB_URL || "http://localhost:3000"}/join.html`}?ref=${encodeURIComponent(code.code)}`,
+      inviteUrl: `${process.env.REFERRAL_BASE_URL || `${process.env.PUBLIC_WEB_URL || "http://localhost:3000"}/join`}?ref=${encodeURIComponent(code.code)}`,
       rewardPerQualifiedInvite: Number(process.env.CREDIT_REFERRAL_REWARD || 25),
       maxRewardedInvites,
       rewardedCount,
@@ -45,9 +52,7 @@ export class ReferralsService {
     if (code.userId === params.referredUserId) return { bound: false, reason: "SELF_REFERRAL" };
     const existing = await this.prisma.referral.findUnique({ where: { referredUserId: params.referredUserId } });
     if (existing) return { bound: false, reason: "ALREADY_BOUND" };
-    const channel = ["LINK", "X", "FACEBOOK", "NATIVE"].includes(String(params.channel || "").toUpperCase())
-      ? String(params.channel).toUpperCase() as "LINK" | "X" | "FACEBOOK" | "NATIVE"
-      : "UNKNOWN";
+    const channel = normalizeChannel(params.channel);
     const referral = await this.prisma.referral.create({
       data: { referralCodeId: code.id, inviterUserId: code.userId, referredUserId: params.referredUserId, channel }
     });
@@ -55,9 +60,7 @@ export class ReferralsService {
   }
 
   async recordShareEvent(userId: string, body: { channel?: string; runId?: string }) {
-    const channel = ["LINK", "X", "FACEBOOK", "NATIVE"].includes(String(body.channel || "").toUpperCase())
-      ? String(body.channel).toUpperCase() as "LINK" | "X" | "FACEBOOK" | "NATIVE"
-      : "UNKNOWN";
+    const channel = normalizeChannel(body.channel);
     const event = await this.prisma.referralShareEvent.create({ data: { userId, channel, runId: body.runId } });
     return { recorded: true, creditsGranted: 0, eventId: event.id };
   }

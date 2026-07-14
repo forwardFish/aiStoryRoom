@@ -68,6 +68,10 @@ body:has(.room-top) .mw-nav a.active { border-bottom-color:transparent; color:va
 body:has(.auth-frame) .mw-header { height:87px; }
 body:has(.auth-frame) .auth-frame { margin-top:33px; }
 
+/* P0 social invite: the same room page opens this panel instead of sending
+   players to a separate landing page. */
+.share-dialog { width:min(720px,calc(100% - 32px)); border:0; border-radius:19px; padding:35px; color:var(--ink); box-shadow:0 25px 70px rgba(24,24,55,.28); }.share-dialog::backdrop { background:rgba(24,22,49,.42); backdrop-filter:blur(3px); }.share-dialog h2 { margin:7px 0 12px; font-size:31px; }.share-dialog .muted { line-height:1.55; }.share-link-label { display:grid; gap:8px; margin:23px 0 15px; color:var(--muted); font-size:14px; }.share-link-label input { height:50px; border:1px solid #d9ddeb; border-radius:9px; padding:0 13px; color:var(--ink); }.share-network-row { display:flex; flex-wrap:wrap; gap:10px; }.share-network-row button { min-height:42px; padding:0 13px; border:1px solid #ded5f5; border-radius:8px; background:#faf8ff; color:#5c34c7; font-weight:600; }.poster-preview { display:flex; justify-content:space-between; gap:20px; align-items:center; margin-top:24px; padding:20px; border-radius:12px; color:#fff; background:linear-gradient(130deg,#32136f,#7950de); }.poster-preview span,.poster-preview small,.poster-preview strong { display:block; }.poster-preview strong { margin:5px 0; font-size:21px; }.poster-preview small { color:#eee7ff; }.poster-preview .btn { flex:0 0 auto; color:#fff; border-color:#fff; background:rgba(255,255,255,.08); }.join-frame { max-width:720px; margin:80px auto; text-align:center; }.join-frame h1 { margin:9px 0 12px; font-size:36px; }
+
 /* world detail */
 .back-link { display:inline-flex; align-items:center; gap:14px; color:var(--purple); text-decoration:none; font-size:16px; margin-bottom:19px; }
 .back-link::before { content:"←"; font-size:28px; line-height:12px; }

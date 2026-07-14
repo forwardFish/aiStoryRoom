@@ -1,61 +1,45 @@
-import { apiFetch, setToken } from "./api-client.js";
+import { apiFetch, getToken } from "./api-client.js";
 
 const root = document.querySelector("[data-credits-app]");
-const message = (text, kind = "info") => { const node = root.querySelector("[data-message]"); node.textContent = text; node.dataset.kind = kind; };
-const renderBalance = (balance) => { root.querySelector("[data-balance]").textContent = `${balance.available} available · ${balance.bonus} bonus · ${balance.purchased} purchased`; };
+const query = new URLSearchParams(location.search);
+const intent = query.get("intent") === "WORLD_UNLOCK" ? "WORLD_UNLOCK" : "WALLET";
+const runId = query.get("runId") || "";
+const canonicalReturn = runId ? `/room-game?runId=${encodeURIComponent(runId)}` : "/credits";
+const requestedReturn = query.get("returnTo") || canonicalReturn;
+const returnTo = requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") ? requestedReturn : canonicalReturn;
+const packs = { credits_300: { credits: 300, price: "$7.99" }, credits_650: { credits: 650, price: "$14.99" } };
+let selectedPack = null;
 
-async function loadAccount() {
-  try {
-    const [me, balance, referral] = await Promise.all([apiFetch("/v4/auth/me"), apiFetch("/v4/credits/balance"), apiFetch("/v4/referrals/me")]);
-    root.querySelector("[data-account]").textContent = `${me.email || me.nickname} · verified`;
-    renderBalance(balance);
-    root.querySelector("[data-invite]").value = referral.inviteUrl;
-    root.querySelector("[data-reward-slots]").textContent = `${referral.remainingRewardSlots} reward slots remaining`;
-  } catch (error) {
-    root.querySelector("[data-account]").textContent = "Not signed in";
-    if (error.status !== 401) message(error.message, "error");
-  }
+function message(text, kind = "info") { const node = root.querySelector("[data-message]"); node.textContent = text; node.dataset.kind = kind; }
+function updateContext() {
+  root.querySelector("[data-return-link]").href = returnTo;
+  root.querySelector("[data-return-link]").textContent = runId ? "Back to room" : "Back to rooms";
+  if (intent === "WORLD_UNLOCK") root.querySelector("[data-context-copy]").textContent = "Add credits, then we will take you straight back to this room to unlock the next shared round.";
+  root.querySelector("[data-auth-link]").href = `/auth?returnTo=${encodeURIComponent(location.pathname + location.search)}`;
 }
-
-root.querySelector("[data-register]").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const data = Object.fromEntries(new FormData(event.currentTarget));
+async function loadAccount() {
+  if (!getToken()) { root.querySelector("[data-signed-out]").hidden = false; return; }
+  try { root.querySelector("[data-balance]").textContent = (await apiFetch("/v4/credits/balance")).available; }
+  catch (error) { root.querySelector("[data-signed-out]").hidden = false; message(error.message || "We could not load your credit balance.", "error"); }
+}
+function openConfirmation(key) {
+  if (!getToken()) { root.querySelector("[data-signed-out]").hidden = false; message("Please sign in before purchasing credits.", "error"); return; }
+  selectedPack = key;
+  const pack = packs[key];
+  root.querySelector("[data-confirm-title]").textContent = `${pack.credits} World Credits`;
+  root.querySelector("[data-confirm-price]").textContent = pack.price;
+  root.querySelector("[data-purchase-dialog]").showModal();
+}
+async function startCheckout() {
+  if (!selectedPack) return;
+  const button = root.querySelector("[data-confirm-purchase]");
+  button.disabled = true; button.textContent = "Opening secure checkout…";
   try {
-    const result = await apiFetch("/v4/auth/register", { method: "POST", body: JSON.stringify(data) });
-    setToken(result.token);
-    root.querySelector("[data-verification-token]").value = result.verificationToken || "";
-    message("Account created. Verify with the local token shown below.", "success");
-    await loadAccount();
-  } catch (error) { message(error.message, "error"); }
-});
-
-root.querySelector("[data-verify]").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  try {
-    const data = Object.fromEntries(new FormData(event.currentTarget));
-    await apiFetch("/v4/auth/verify", { method: "POST", body: JSON.stringify(data) });
-    message("Email verified. You can now claim your signup credits.", "success");
-    await loadAccount();
-  } catch (error) { message(error.message, "error"); }
-});
-
-root.querySelector("[data-login]").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  try {
-    const result = await apiFetch("/v4/auth/login", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) });
-    setToken(result.token);
-    message("Signed in.", "success");
-    await loadAccount();
-  } catch (error) { message(error.message, "error"); }
-});
-
-root.querySelector("[data-onboarding]").addEventListener("click", async () => {
-  try { const result = await apiFetch("/v4/credits/onboarding", { method: "POST", body: JSON.stringify({}) }); renderBalance(result.balance); message(result.bonusGranted ? "50 Bonus Credits added." : "Signup bonus already claimed.", "success"); } catch (error) { message(error.message, "error"); }
-});
-
-root.querySelectorAll("[data-pack]").forEach((button) => button.addEventListener("click", async () => {
-  try { const result = await apiFetch("/v4/billing/checkouts", { method: "POST", body: JSON.stringify({ packKey: button.dataset.pack }) }); window.location.assign(result.checkoutUrl); } catch (error) { message(error.message, "error"); }
-}));
-
-root.querySelector("[data-copy]").addEventListener("click", async () => { await navigator.clipboard.writeText(root.querySelector("[data-invite]").value); message("Invite link copied. Sharing alone does not grant credits.", "success"); });
-loadAccount();
+    const result = await apiFetch("/v4/billing/checkouts", { method: "POST", body: JSON.stringify({ packKey: selectedPack, intent, runId: runId || undefined, returnTo }) });
+    location.assign(result.checkoutUrl);
+  } catch (error) { button.disabled = false; button.textContent = "Continue to secure checkout"; message(error.message || "We could not start secure checkout. Please try again.", "error"); }
+}
+root.querySelectorAll("[data-pack]").forEach((button) => button.addEventListener("click", () => openConfirmation(button.dataset.pack)));
+root.querySelector("[data-confirm-purchase]").addEventListener("click", startCheckout);
+root.querySelector("[data-close-dialog]").addEventListener("click", () => root.querySelector("[data-purchase-dialog]").close());
+updateContext(); loadAccount();

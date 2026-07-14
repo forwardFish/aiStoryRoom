@@ -728,6 +728,9 @@ enum ReferralChannel {
   LINK
   X
   FACEBOOK
+  WHATSAPP
+  TELEGRAM
+  DISCORD
   NATIVE
 }
 
@@ -817,6 +820,7 @@ model CreemPurchase {
   customerEmail       String?
   paidAmountCents     Int?
   paidCurrency        String?
+  checkoutContext     Json?
   rawJson             Json?
   createdAt           DateTime            @default(now())
   paidAt              DateTime?

@@ -13,7 +13,9 @@ export class CreemClient {
 
   async createCheckout(input: CreemCheckoutInput) {
     if (process.env.CREEM_MOCK_MODE === "true") {
-      return { id: `mock_checkout_${input.requestId}`, checkoutUrl: `${input.successUrl}?checkout_id=mock_${input.requestId}` };
+      const mockUrl = new URL(input.successUrl);
+      mockUrl.searchParams.set("checkout_id", `mock_checkout_${input.requestId}`);
+      return { id: `mock_checkout_${input.requestId}`, checkoutUrl: mockUrl.toString() };
     }
     const apiKey = process.env.CREEM_API_KEY;
     if (!apiKey) throw new ServiceUnavailableException({ code: "CREEM_API_KEY_REQUIRED", message: "CREEM_API_KEY is required for dynamic checkout" });

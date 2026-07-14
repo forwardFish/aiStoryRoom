@@ -11,6 +11,17 @@
     { "source": "/refund", "destination": "/legal.html" },
     { "source": "/role-select", "destination": "/role-select.html" },
     { "source": "/game", "destination": "/index.html" },
-    { "source": "/trio", "destination": "/trio.html" }
+    { "source": "/trio", "destination": "/trio.html" },
+    { "source": "/auth", "destination": "/platform.html" },
+    { "source": "/join", "destination": "/platform.html" },
+    { "source": "/worlds/:path*", "destination": "/platform.html" },
+    { "source": "/rooms", "destination": "/platform.html" },
+    { "source": "/rooms/:path*", "destination": "/platform.html" },
+    { "source": "/room-game", "destination": "/room-game.html" },
+    { "source": "/game/result", "destination": "/platform.html" },
+    { "source": "/credits", "destination": "/credits.html" },
+    { "source": "/credits/status", "destination": "/credits-status.html" },
+    { "source": "/credits/cancel", "destination": "/credits-status.html" },
+    { "source": "/credits/failed", "destination": "/credits-status.html" }
   ]
 }

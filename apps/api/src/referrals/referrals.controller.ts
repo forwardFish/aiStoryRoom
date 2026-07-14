@@ -17,4 +17,9 @@ export class ReferralsController {
   share(@CurrentUser() user: AuthenticatedUser, @Body() body: { channel?: string; runId?: string }) {
     return this.referrals.recordShareEvent(user.id, body);
   }
+
+  @Post("bind")
+  bind(@CurrentUser() user: AuthenticatedUser, @Body() body: { referralCode?: string; channel?: string }) {
+    return this.referrals.bindReferral({ referredUserId: user.id, referralCode: String(body.referralCode || ""), channel: body.channel });
+  }
 }
