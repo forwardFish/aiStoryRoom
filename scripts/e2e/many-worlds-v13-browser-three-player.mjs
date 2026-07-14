@@ -247,10 +247,12 @@ try {
   const screenshot = await host.cdp.send("Page.captureScreenshot", { format: "png", fromSurface: true });
   await writeFile(join(resultDir, "host-result.png"), Buffer.from(screenshot.data, "base64"));
   const state = await host.evaluate("(() => ({ path: location.pathname, title: document.querySelector('.result-title')?.textContent?.trim(), text: document.body.innerText.slice(0, 1800) }))()");
+  const referral = await host.evaluate("(async () => { const token = localStorage.getItem('many-worlds-token'); const response = await fetch('/api/v4/referrals/me', { headers: { authorization: 'Bearer ' + token } }); return { status: response.status, body: await response.json() }; })()");
+  if (referral.status !== 200 || referral.body.rewardedCount !== 2 || referral.body.remainingRewardSlots !== 0) throw new Error(`Expected two qualified invitation rewards after the shared opening: ${JSON.stringify(referral)}`);
   const exceptions = Object.fromEntries(players.map((player) => [player.name, player.cdp.exceptions]));
   if (Object.values(exceptions).some((items) => items.length)) throw new Error(`runtime exceptions: ${JSON.stringify(exceptions)}`);
   const paymentEvidence = rounds.find((item) => item.payment)?.payment;
-  const result = { status: "PASS", story: "sangtian", roomId: room.id, players: emails.map((email, index) => ({ browser: players[index].name, email })), invitation: { channel: "WHATSAPP", roomCode: room.code, deliveredToNewUsers: 2 }, unlock: { paymentEvidence, freeRounds: 3, unlockedAtRound: 4, chargedOnce: 100 }, rounds: rounds.filter((item) => item.round), finalState: state, runtimeExceptions: exceptions, screenshot: "host-result.png", completedAt: new Date().toISOString() };
+  const result = { status: "PASS", story: "sangtian", roomId: room.id, players: emails.map((email, index) => ({ browser: players[index].name, email })), invitation: { channel: "WHATSAPP", roomCode: room.code, deliveredToNewUsers: 2, rewards: { rewardedCount: referral.body.rewardedCount, remainingRewardSlots: referral.body.remainingRewardSlots } }, unlock: { paymentEvidence, freeRounds: 3, unlockedAtRound: 4, chargedOnce: 100 }, rounds: rounds.filter((item) => item.round), finalState: state, runtimeExceptions: exceptions, screenshot: "host-result.png", completedAt: new Date().toISOString() };
   await writeFile(join(resultDir, "result.json"), `${JSON.stringify(result, null, 2)}\n`);
   console.log(JSON.stringify({ status: result.status, roomId: room.id, rounds: result.rounds.length, report: "docs/auto-execute/evidence/many-worlds-v13/browser-three-player-seven-round/result.json" }));
 } finally {

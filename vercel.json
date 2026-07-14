@@ -3,6 +3,12 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build:vercel",
   "outputDirectory": "apps/web/dist-vercel",
+  "redirects": [
+    { "source": "/home", "destination": "/", "permanent": false },
+    { "source": "/credits.html", "destination": "/credits", "permanent": false },
+    { "source": "/credits-success.html", "destination": "/credits/status", "permanent": false },
+    { "source": "/join.html", "destination": "/join", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/", "destination": "/home.html" },
     { "source": "/home", "destination": "/home.html" },

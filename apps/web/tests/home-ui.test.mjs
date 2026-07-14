@@ -27,7 +27,9 @@ test("Many Worlds 首页包含真实资源、完整内容分区和单人入口",
   assert.match(script, /300.*Credits.*\$7\.99/);
   assert.match(script, /650 Credits.*\$14\.99/);
   assert.match(script, /25.*Bonus Credits/);
-  assert.match(script, /credits\.html/);
+  assert.match(script, /href="\/credits"/);
+  assert.match(script, /href="\/credits#invite"/);
+  assert.doesNotMatch(script, /credits\.html|#flow|#explore/);
   assert.doesNotMatch(script, /Many Worlds Plus/);
   assert.doesNotMatch(script, /\/ month/);
   assert.match(script, /class="faq-section mw-panel"/);

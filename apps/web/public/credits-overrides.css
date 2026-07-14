@@ -1,0 +1,42 @@
+.language-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #17224a;
+  font-size: 16px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.credits-header .language-label .nav-language {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.credit-invite-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 1000px;
+  margin: 18px auto 0;
+  padding: 15px 18px;
+  border: 1px solid #e1dbfb;
+  border-radius: 12px;
+  background: #fbfaff;
+  color: #586785;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.credit-invite-rule strong {
+  flex: 0 0 auto;
+  color: #4b35ad;
+}
+
+@media (max-width: 720px) {
+  .credit-invite-rule {
+    flex-direction: column;
+    gap: 5px;
+    margin-inline: 16px;
+  }
+}

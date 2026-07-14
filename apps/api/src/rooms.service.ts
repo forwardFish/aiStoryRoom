@@ -4,6 +4,7 @@ import { StoryService } from "./story.service";
 import { StoryTaskOutboxService } from "./story-task-outbox.service";
 import { StoryAccessService } from "./story-access/story-access.service";
 import { CreditsService } from "./credits/credits.service";
+import { ReferralsService } from "./referrals/referrals.service";
 import type { AuthenticatedUser } from "./auth/current-user.decorator";
 import { Observable } from "rxjs";
 
@@ -17,7 +18,7 @@ function roomState(value: unknown): RoomState { return value && typeof value ===
 
 @Injectable()
 export class RoomsService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService, @Inject(StoryService) private readonly story: StoryService, @Inject(StoryTaskOutboxService) private readonly outbox: StoryTaskOutboxService, @Inject(StoryAccessService) private readonly access: StoryAccessService, @Inject(CreditsService) private readonly credits: CreditsService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService, @Inject(StoryService) private readonly story: StoryService, @Inject(StoryTaskOutboxService) private readonly outbox: StoryTaskOutboxService, @Inject(StoryAccessService) private readonly access: StoryAccessService, @Inject(CreditsService) private readonly credits: CreditsService, @Inject(ReferralsService) private readonly referrals: ReferralsService) {}
 
   async list(worldId?: string, user?: AuthenticatedUser) {
     if (worldId && !WORLD_TEMPLATES[worldId]) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "Unknown world" });
@@ -229,6 +230,7 @@ export class RoomsService {
       intent: String(input.intent || "Advance the shared investigation without taking another role's decision.").slice(0, 600),
       riskLevel: riskLevel as any
     });
+    await this.referrals.qualifyFromExperience(user.id, roomId);
     return { result, ...(await this.game(user, roomId)) };
   }
 

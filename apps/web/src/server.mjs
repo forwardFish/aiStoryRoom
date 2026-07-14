@@ -109,6 +109,18 @@ function proxyApiRequest(req, res, url) {
 
 export const server = createServer((req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const legacyRedirects = new Map([
+    ["/home", "/"],
+    ["/credits.html", "/credits"],
+    ["/credits-success.html", "/credits/status"],
+    ["/join.html", "/join"]
+  ]);
+  const canonical = legacyRedirects.get(url.pathname);
+  if (canonical) {
+    res.writeHead(302, { location: `${canonical}${url.search}` });
+    res.end();
+    return;
+  }
   if (isAllowedApiProxyPath(url.pathname)) {
     proxyApiRequest(req, res, url);
     return;

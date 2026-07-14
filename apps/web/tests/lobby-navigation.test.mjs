@@ -23,4 +23,18 @@ test("大厅、选角和游戏页形成完整 Web 导航链路", async () => {
   assert.match(server, /role-select\.html/);
   assert.match(server, /index\.html/);
   assert.match(server, /trio\.html/);
+  assert.match(server, /legacyRedirects/);
+  assert.match(server, /credits-success\.html/);
+});
+
+test("room rendering only retains real API rooms", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const start = source.indexOf("function renderRooms()");
+  const end = source.indexOf("function renderRoom()", start);
+  const roomPage = source.slice(start, end);
+
+  assert.match(roomPage, /data-live-rooms/);
+  assert.match(roomPage, /Loading available rooms/);
+  assert.match(roomPage, /Loading your rooms/);
+  assert.doesNotMatch(roomPage, /Night Council|After Hours|Board Vote|fixture-caesar-waiting/);
 });

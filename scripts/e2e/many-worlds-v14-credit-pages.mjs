@@ -59,6 +59,9 @@ async function shot(name) {
   const png = await cdp.send("Page.captureScreenshot", { format:"png", fromSurface:true });
   await writeFile(join(resultDir, name), Buffer.from(png.data, "base64"));
 }
+async function viewport(width) {
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width, height:1058, deviceScaleFactor:1, mobile:false });
+}
 async function completeMockCheckout(stamp) {
   const checkout = await evaluate(`(async () => { const purchaseId = new URLSearchParams(location.search).get('purchase_id'); const token = localStorage.getItem('many-worlds-token'); const response = await fetch('/api/v4/auth/me', { headers:{ authorization:'Bearer ' + token } }); return { purchaseId, user: await response.json() }; })()`);
   if (!checkout?.purchaseId || !checkout?.user?.id) throw new Error("Payment status did not expose a usable purchase identity");
@@ -78,7 +81,7 @@ try {
   let page = (await json(`http://127.0.0.1:${port}/json/list`)).find((item) => item.type === "page");
   if (!page?.webSocketDebuggerUrl) page = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method:"PUT" }).then((response) => response.json());
   cdp = await Cdp.connect(page.webSocketDebuggerUrl); await cdp.send("Page.enable"); await cdp.send("Runtime.enable");
-  await cdp.send("Emulation.setDeviceMetricsOverride", { width:1487, height:1058, deviceScaleFactor:1, mobile:false });
+  await viewport(1487);
   const email = `mw-credit-page-${stamp}@example.test`;
   await cdp.send("Page.navigate", { url:`${webBase}/auth?returnTo=${encodeURIComponent("/rooms?worldId=sangtian")}` });
   await wait("Boolean(document.querySelector('[data-auth-form]'))", "auth"); await click('[data-auth-tab="signup"]', "signup tab");
@@ -94,7 +97,7 @@ try {
   await wait("Boolean(document.querySelector('[data-wallet-state]:not([hidden])')) && document.querySelector('[data-balance]')?.textContent?.trim() !== '—'", "loaded wallet state"); await shot("pay-02-wallet.png");
   await click('[data-pack="credits_300"]', "choose 300 credits"); await wait("Boolean(document.querySelector('[data-confirm-state]:not([hidden])'))", "confirm state");
   if (await evaluate("Boolean(document.querySelector('[data-purchase-dialog]'))")) throw new Error("PAY-03 must be the documented same-container state, not a legacy dialog");
-  await shot("pay-03-confirm.png"); await click('[data-confirm-purchase]', "continue to secure checkout");
+  await viewport(1486); await shot("pay-03-confirm.png"); await viewport(1487); await click('[data-confirm-purchase]', "continue to secure checkout");
   await wait("location.pathname === '/credits/status' && document.body.innerText.includes('Payment received. Adding your Credits.') && document.querySelector('[data-status-order]')?.textContent?.trim().startsWith('MW-')", "server-backed processing status"); await shot("pay-04-processing.png");
   await completeMockCheckout(stamp); await wait("document.body.innerText.includes('Your room is unlocked')", "paid status and idempotent unlock", 30000); await shot("pay-05-paid.png");
   await cdp.send("Page.navigate", { url:`${webBase}/credits/cancel?intent=WORLD_UNLOCK&runId=${encodeURIComponent(roomId)}&returnTo=${encodeURIComponent(returnTo)}` });
