@@ -57,11 +57,19 @@ try {
   await waitUntil("Boolean(document.querySelector('.select-role.selected'))", "host role selection persistence");
   await click('[data-action="ready"]', "ready");
   await waitUntil("document.body.innerText.includes('Ready')", "ready state persistence");
+  await click('[data-action="share-invite"]', "share invite");
+  await waitUntil("Boolean(document.querySelector('.share-dialog[open] [data-poster-qr][src^=\"blob:\"]'))", "invite dialog and generated QR");
+  const inviteScreenshot = await cdp.send("Page.captureScreenshot", { format: "png", fromSurface: true });
+  await writeFile(join(resultDir, "invite-modal-real-qr.png"), Buffer.from(inviteScreenshot.data, "base64"));
+  await click('[data-share-channel="WHATSAPP"]', "WhatsApp share event");
+  await waitUntil("Boolean(document.querySelector('.share-dialog[open]'))", "invite dialog remains open after social share");
+  await click('[data-close-share]', "close invite dialog");
+  await waitUntil("!document.querySelector('.share-dialog')", "invite dialog cleanup");
   const screenshot = await cdp.send("Page.captureScreenshot", { format: "png", fromSurface: true });
   await writeFile(join(resultDir, "host-created-room.png"), Buffer.from(screenshot.data, "base64"));
   const state = await evaluate("(() => ({ path: location.pathname, text: document.body.innerText.slice(0, 1200), roomId: location.pathname.split('/').pop() }))()");
   if (cdp.exceptions.length) throw new Error(`Runtime exceptions: ${cdp.exceptions.join(" | ")}`);
-  const result = { status: "PASS", flow: ["register", "local verification", "login", "redirect to rooms", "create sangtian room", "host role selection and lock", "host ready"], state, runtimeExceptions: cdp.exceptions, networkFailures: cdp.networkFailures, roomRequests: cdp.requests, roomResponses: cdp.responses, screenshot: "host-created-room.png", completedAt: new Date().toISOString() };
+  const result = { status: "PASS", flow: ["register", "local verification", "login", "redirect to rooms", "create sangtian room", "host role selection and lock", "host ready", "open social invite", "real QR loaded", "WhatsApp share event", "close invite dialog"], state, runtimeExceptions: cdp.exceptions, networkFailures: cdp.networkFailures, roomRequests: cdp.requests, roomResponses: cdp.responses, screenshots: ["host-created-room.png", "invite-modal-real-qr.png"], completedAt: new Date().toISOString() };
   await writeFile(join(resultDir, "result.json"), `${JSON.stringify(result, null, 2)}\n`);
   console.log(JSON.stringify({ status: result.status, roomId: state.roomId, report: "docs/auto-execute/evidence/many-worlds-v13/browser-room-flow/result.json" }));
 } catch (error) {

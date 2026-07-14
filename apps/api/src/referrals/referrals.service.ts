@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { randomBytes } from "node:crypto";
 import { PrismaService } from "../prisma.service";
 import { CreditsService } from "../credits/credits.service";
+import QRCode from "qrcode";
 
 function generateReferralCode() {
   return randomBytes(8).toString("base64url").replace(/[-_]/g, "").slice(0, 8).toUpperCase();
@@ -63,6 +64,20 @@ export class ReferralsService {
     const channel = normalizeChannel(body.channel);
     const event = await this.prisma.referralShareEvent.create({ data: { userId, channel, runId: body.runId } });
     return { recorded: true, creditsGranted: 0, eventId: event.id };
+  }
+
+  async getInviteQr(userId: string, roomCode: string) {
+    const inviteCode = String(roomCode || "").trim().toUpperCase();
+    if (!/^[A-Z0-9-]{4,40}$/.test(inviteCode)) throw new BadRequestException({ code: "INVALID_ROOM_CODE", message: "Invalid room invitation code" });
+    const run = await this.prisma.storyRun.findUnique({ where: { inviteCode }, select: { id: true, ownerUserId: true } });
+    if (!run) throw new BadRequestException({ code: "ROOM_INVITATION_NOT_FOUND", message: "Room invitation not found" });
+    const participant = run.ownerUserId === userId || Boolean(await this.prisma.storyPlayer.findFirst({ where: { runId: run.id, userId, status: "active" }, select: { id: true } }));
+    if (!participant) throw new BadRequestException({ code: "ROOM_PARTICIPANT_REQUIRED", message: "Only room participants can generate an invitation poster" });
+    const referral = await this.getOrCreateCode(userId);
+    const origin = String(process.env.PUBLIC_WEB_URL || "http://localhost:3000").replace(/\/$/, "");
+    const combinedInviteUrl = `${origin}/join?room=${encodeURIComponent(inviteCode)}&ref=${encodeURIComponent(referral.code)}&channel=LINK`;
+    const png = await QRCode.toBuffer(combinedInviteUrl, { type: "png", width: 360, margin: 1, errorCorrectionLevel: "M" });
+    return { combinedInviteUrl, png };
   }
 
   async qualifyReferral(referredUserId: string, qualifiedRunId: string) {

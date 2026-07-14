@@ -34,7 +34,7 @@ function appShell(content, active = "") {
 function bind() {
   root.querySelectorAll("[data-action]").forEach((element) => { element.onclick = (event) => actions[element.dataset.action]?.(event, element); });
 }
-function notice(message) { const target = root.querySelector("[data-notice]"); if (target) { target.textContent = message; target.hidden = false; } }
+function notice(message) { let target = root.querySelector("[data-notice]"); if (!target) { target = document.createElement("p"); target.dataset.notice = ""; target.className = "notice"; root.querySelector(".page-frame")?.prepend(target); } if (target) { target.textContent = message; target.hidden = false; } }
 
 function renderAuth() {
   const returnTo = safeReturnTo(params.get("returnTo"));
@@ -50,12 +50,13 @@ function renderAuth() {
 function renderJoin() {
   const roomCode = String(params.get("room") || "").trim().toUpperCase();
   const ref = String(params.get("ref") || "").trim().toUpperCase();
+  const channel = String(params.get("channel") || "LINK").trim().toUpperCase();
   if (!roomCode) { location.assign("/rooms"); return; }
   if (!sessionToken()) { location.assign(`/auth?returnTo=${encodeURIComponent(path + location.search)}`); return; }
   appShell(`<section class="page-frame join-frame"><p class="eyebrow">ROOM INVITATION</p><h1>Joining your shared world…</h1><p class="muted">We are verifying the invitation and taking you to the room.</p><p data-notice class="notice" hidden></p></section>`, "rooms");
   void (async () => {
     try {
-      if (ref) await request("/api/v4/referrals/bind", { method:"POST", body:JSON.stringify({ referralCode:ref, channel:"LINK" }) });
+      if (ref) await request("/api/v4/referrals/bind", { method:"POST", body:JSON.stringify({ referralCode:ref, channel }) });
       const room = await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code:roomCode }) });
       location.assign(`/rooms/${encodeURIComponent(room.id)}`);
     } catch (error) { notice(error.message || "This invitation is no longer available. Ask the host for a new link."); }
@@ -105,6 +106,8 @@ function visualIcon(id, label, extra = "") {
 function renderResult() {
   const fixture = params.get("runId") === "fixture-caesar-finished";
   appShell(`<section class="page-frame"><a class="back-link" href="/worlds/caesar">Back to worlds</a><div class="result-run"><img src="/assets/bg/1.png" alt="Rome"><div><h1>Caesar: The Last Spring of the Republic</h1><span class="session-complete">${visualIcon(15, "", "session-icon")}Session Complete</span></div></div><h1 class="result-title">A Republic Without a Master</h1><p class="result-lead">Caesar survived, but accepted limits on his authority.<br>Rome avoided civil war—for now.</p><div class="summary-grid"><article class="summary-card"><span class="mode-icon">${visualIcon(17, "")}</span><div><h2>Your Role</h2><img class="portrait" src="/assets/portrait/1.png" alt="Brutus"><strong>Brutus</strong></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(31, "")}</span><div><h2>Your Ending</h2><strong>The Reluctant Architect</strong><p>You chose restraint over power, building guardrails that may hold—if others keep faith.</p></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(12, "")}</span><div><h2>World State</h2><strong>Fragile Stability</strong><p>Rome stands together, but old rivalries smolder and the future is uncertain.</p></div></article></div><div class="lower-grid"><section class="lower-card"><h2>${visualIcon(25, "", "section-icon")}Key Decisions</h2><div class="decision-item"><span class="number-dot">1</span><span>You opposed the dictatorship and pushed for limits on power.</span></div><div class="decision-item"><span class="number-dot">2</span><span>You brokered a compromise between the Senate and Caesar.</span></div><div class="decision-item"><span class="number-dot">3</span><span>You secured support from key allies to pass reforms.</span></div></section><section class="lower-card"><h2>${visualIcon(10, "", "section-icon")}Goals Completed <span class="badge progress">2 / 3</span></h2><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Prevent Caesar from becoming an unrestrained dictator.</span></div><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Avoid a civil war.</span></div><div class="goal-item"><span class="open-check">◯</span><span>Pass meaningful reforms to strengthen the Republic.</span></div></section></div><div class="result-actions"><button class="btn primary" data-action="play-again">${visualIcon(4, "", "button-icon inverted")}Play Again</button><button class="btn" data-action="other-role">${visualIcon(5, "", "button-icon")}Try Another Role</button><button class="btn" data-action="back-worlds">${visualIcon(8, "", "button-icon")}Back to Worlds</button></div></section>`, "worlds");
+  root.querySelector(".result-actions")?.insertAdjacentHTML("afterend", '<button class="result-share-recap" data-action="share-recap">Share Recap</button>');
+  bind();
   if (!fixture) hydrateResult(params.get("runId"));
 }
 
@@ -135,30 +138,40 @@ async function openInviteShare() {
   if (!activeRoom || !requireSession()) return;
   try {
     const referral = await request("/api/v4/referrals/me");
-    const inviteUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}`;
+    const inviteUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}&channel=LINK`;
     const shareText = `Join my Many Worlds room: ${activeRoom.title}. Complete the opening together and we can earn ${referral.rewardPerQualifiedInvite} bonus credits.`;
     const dialog = document.createElement("dialog");
     dialog.className = "share-dialog";
-    dialog.innerHTML = `<button class="dialog-close" data-close-share aria-label="Close">×</button><p class="eyebrow">INVITE FRIENDS</p><h2>Share a room, earn together.</h2><p class="muted">When a new friend joins and completes the opening, you earn <strong>${referral.rewardPerQualifiedInvite} Bonus Credits</strong>. ${referral.remainingRewardSlots} reward slot${referral.remainingRewardSlots === 1 ? "" : "s"} remaining. Sharing alone never grants credits.</p><label class="share-link-label">Your room link<input readonly value="${esc(inviteUrl)}"></label><div class="share-network-row"><button data-share-channel="WHATSAPP">WhatsApp</button><button data-share-channel="TELEGRAM">Telegram</button><button data-share-channel="DISCORD">Discord</button><button data-share-channel="FACEBOOK">Facebook</button><button data-share-channel="X">X</button><button data-copy-invite>Copy link</button></div><section class="poster-preview"><div><span>Many Worlds</span><strong>${esc(activeRoom.title)}</strong><small>Scan or open the invitation to join this shared story.</small></div><button class="btn" data-download-poster>Download invitation poster</button></section>`;
+    dialog.innerHTML = `<button class="dialog-close" data-close-share aria-label="Close">×</button><p class="eyebrow">INVITE FRIENDS</p><h2>Share a room, earn together.</h2><p class="muted">When a new friend joins and completes the opening, you earn <strong>${referral.rewardPerQualifiedInvite} Bonus Credits</strong>. ${referral.remainingRewardSlots} reward slot${referral.remainingRewardSlots === 1 ? "" : "s"} remaining. Sharing alone never grants credits.</p><label class="share-link-label">Your room link<input readonly value="${esc(inviteUrl)}"></label><div class="share-network-row"><button data-share-channel="WHATSAPP">WhatsApp</button><button data-share-channel="TELEGRAM">Telegram</button><button data-share-channel="DISCORD">Discord</button><button data-share-channel="FACEBOOK">Facebook</button><button data-share-channel="X">X</button><button data-copy-invite>Copy link</button></div><section class="poster-preview"><img data-poster-qr alt="Invitation QR code"><div><span>Many Worlds</span><strong>${esc(activeRoom.title)}</strong><small>Scan or open the invitation to join this shared story.</small></div><button class="btn" data-download-poster>Download invitation poster</button></section>`;
     document.body.append(dialog); dialog.showModal();
     const close = () => { dialog.close(); dialog.remove(); };
     dialog.querySelector("[data-close-share]").addEventListener("click", close);
+    const qr = await fetchInviteQr(activeRoom.code);
+    dialog.querySelector("[data-poster-qr]").src = qr.objectUrl;
     dialog.querySelector("[data-copy-invite]").addEventListener("click", async () => { await navigator.clipboard.writeText(inviteUrl); notice("Invite link copied. Share it with a friend to start their journey."); });
     dialog.querySelectorAll("[data-share-channel]").forEach((button) => button.addEventListener("click", async () => {
       const channel = button.dataset.shareChannel;
       await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel, runId:activeRoom.id }) });
-      const encodedUrl = encodeURIComponent(inviteUrl); const encodedText = encodeURIComponent(shareText);
+      const channelUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}&channel=${encodeURIComponent(channel)}`; const encodedUrl = encodeURIComponent(channelUrl); const encodedText = encodeURIComponent(shareText);
       const links = { WHATSAPP:`https://wa.me/?text=${encodedText}%20${encodedUrl}`, TELEGRAM:`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, DISCORD:"https://discord.com/channels/@me", FACEBOOK:`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, X:`https://x.com/intent/post?text=${encodedText}%20${encodedUrl}` };
       window.open(links[channel] || inviteUrl, "_blank", "noopener,noreferrer");
     }));
-    dialog.querySelector("[data-download-poster]").addEventListener("click", () => downloadInvitePoster({ title:activeRoom.title, inviteUrl, code:activeRoom.code }));
+    dialog.querySelector("[data-download-poster]").addEventListener("click", async () => { try { await downloadInvitePoster({ title:activeRoom.title, inviteUrl, code:activeRoom.code, qr }); } catch (error) { notice(error.message || "Unable to create the invitation poster. Please try again."); } });
+    dialog.addEventListener("close", () => URL.revokeObjectURL(qr.objectUrl), { once:true });
   } catch (error) { notice(error.message || "Unable to prepare the invitation link."); }
 }
-function downloadInvitePoster({ title, inviteUrl, code }) {
+async function fetchInviteQr(roomCode) {
+  const response = await fetch(`/api/v4/referrals/qr?room=${encodeURIComponent(roomCode)}`, { headers: { authorization:`Bearer ${sessionToken()}` } });
+  if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error.message || "Unable to generate invitation QR code"); }
+  const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob); const image = new Image(); image.src = objectUrl;
+  await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error("Invitation QR code could not be loaded")); });
+  return { objectUrl, image };
+}
+async function downloadInvitePoster({ title, inviteUrl, code, qr }) {
   const canvas = document.createElement("canvas"); canvas.width = 1080; canvas.height = 1350;
-  const ctx = canvas.getContext("2d"); const gradient = ctx.createLinearGradient(0, 0, 1080, 1350); gradient.addColorStop(0, "#241050"); gradient.addColorStop(1, "#7540dd"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1080, 1350);
+  await document.fonts?.ready; const ctx = canvas.getContext("2d"); const background = new Image(); background.src = "/assets/bg/1.png"; await new Promise((resolve, reject) => { background.onload = resolve; background.onerror = () => reject(new Error("Invitation poster background could not be loaded")); }); ctx.drawImage(background, 0, 0, canvas.width, canvas.height); const gradient = ctx.createLinearGradient(0, 0, 1080, 1350); gradient.addColorStop(0, "rgba(36,16,80,.88)"); gradient.addColorStop(1, "rgba(117,64,221,.78)"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1080, 1350);
   ctx.fillStyle = "#fff"; ctx.font = "600 64px Arial"; ctx.fillText("Many Worlds", 90, 150); ctx.font = "700 78px Arial"; wrapPosterText(ctx, title, 90, 340, 900, 94); ctx.font = "400 36px Arial"; ctx.fillStyle = "#e9ddff"; ctx.fillText("Join my shared story", 90, 610); ctx.fillStyle = "#fff"; ctx.font = "600 42px Arial"; ctx.fillText(`Room code: ${code}`, 90, 710);
-  const size = 360, left = 630, top = 850, cells = 21, cell = size / cells; ctx.fillStyle = "#fff"; ctx.fillRect(left - 24, top - 24, size + 48, size + 48); for (let y = 0; y < cells; y += 1) for (let x = 0; x < cells; x += 1) { const char = inviteUrl.charCodeAt((x * 7 + y * 13) % inviteUrl.length); if ((char + x * 3 + y * 5) % 3 === 0) { ctx.fillStyle = "#241050"; ctx.fillRect(left + x * cell, top + y * cell, cell + 1, cell + 1); } }
+  const size = 360, left = 630, top = 850; ctx.fillStyle = "#fff"; ctx.fillRect(left - 24, top - 24, size + 48, size + 48); ctx.drawImage(qr.image, left, top, size, size);
   ctx.fillStyle = "#e9ddff"; ctx.font = "400 28px Arial"; ctx.fillText("Open the invitation link to join", 90, 1210); const link = document.createElement("a"); link.download = `many-worlds-${code}-invite.png`; link.href = canvas.toDataURL("image/png"); link.click();
 }
 function wrapPosterText(ctx, text, x, y, maxWidth, lineHeight) { const words = String(text).split(/\s+/); let line = "", offset = 0; words.forEach((word) => { const next = `${line}${line ? " " : ""}${word}`; if (ctx.measureText(next).width > maxWidth && line) { ctx.fillText(line, x, y + offset); line = word; offset += lineHeight; } else line = next; }); if (line) ctx.fillText(line, x, y + offset); }
@@ -182,6 +195,6 @@ const actions = {
   "share-invite": () => { void openInviteShare(); },
   "select-role": async (_event, element) => { if (!activeRoom || !requireSession()) return; try { await request(`/api/v4/rooms/${activeRoom.id}/role`, { method:"POST", body:JSON.stringify({ roleId: element.dataset.roleId }) }); if (activeRoom.isHost && !activeRoom.hostRoleLocked) await request(`/api/v4/rooms/${activeRoom.id}/role/lock`, { method:"POST", body:"{}" }); await hydrateRoom(activeRoom.id); } catch (error) { notice(error.message || "Unable to select that role."); } },
   ready: async () => { if (!activeRoom || !requireSession()) return; try { await request(`/api/v4/rooms/${activeRoom.id}/ready`, { method:"POST", body:JSON.stringify({ ready:true }) }); await hydrateRoom(activeRoom.id); } catch (error) { notice(error.message || "Unable to mark ready."); } }, "start-game": async () => { if (!activeRoom || !requireSession()) return; try { const started = await request(`/api/v4/rooms/${activeRoom.id}/start`, { method:"POST", body:"{}" }); location.assign(`/room-game?runId=${encodeURIComponent(started.id)}`); } catch (error) { notice(error.message || "Room is not ready to start."); } },
-  "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds/caesar"), "open-tab": () => {}, "my-tab": () => root.querySelector(".my-rooms")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds/caesar"), "share-recap": () => notice("Sharing recap is coming next."), "open-tab": () => {}, "my-tab": () => root.querySelector(".my-rooms")?.scrollIntoView({ behavior: "smooth", block: "start" })
 };
 if (path === "/auth") renderAuth(); else if (path === "/join") renderJoin(); else if (path.startsWith("/worlds/")) renderWorld(); else if (path === "/rooms") renderRooms(); else if (path.startsWith("/rooms/")) renderRoom(); else if (path === "/game/result") renderResult(); else location.assign("/home");

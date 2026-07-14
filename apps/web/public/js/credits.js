@@ -9,6 +9,7 @@ const requestedReturn = query.get("returnTo") || canonicalReturn;
 const returnTo = requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") ? requestedReturn : canonicalReturn;
 const packs = { credits_300: { credits: 300, price: "$7.99" }, credits_650: { credits: 650, price: "$14.99" } };
 let selectedPack = null;
+let currentBalance = null;
 
 function message(text, kind = "info") { const node = root.querySelector("[data-message]"); node.textContent = text; node.dataset.kind = kind; }
 function updateContext() {
@@ -19,7 +20,7 @@ function updateContext() {
 }
 async function loadAccount() {
   if (!getToken()) { root.querySelector("[data-signed-out]").hidden = false; return; }
-  try { root.querySelector("[data-balance]").textContent = (await apiFetch("/v4/credits/balance")).available; }
+  try { currentBalance = await apiFetch("/v4/credits/balance"); root.querySelector("[data-balance]").textContent = currentBalance.available; root.querySelector("[data-balance-details]").textContent = `${currentBalance.purchased} purchased · ${currentBalance.bonus} bonus`; }
   catch (error) { root.querySelector("[data-signed-out]").hidden = false; message(error.message || "We could not load your credit balance.", "error"); }
 }
 function openConfirmation(key) {
@@ -28,6 +29,7 @@ function openConfirmation(key) {
   const pack = packs[key];
   root.querySelector("[data-confirm-title]").textContent = `${pack.credits} World Credits`;
   root.querySelector("[data-confirm-price]").textContent = pack.price;
+  root.querySelector("[data-confirm-balance]").textContent = currentBalance ? `Current: ${currentBalance.available} · After payment: ${currentBalance.available + pack.credits}` : "Your balance will update after payment confirmation.";
   root.querySelector("[data-purchase-dialog]").showModal();
 }
 async function startCheckout() {

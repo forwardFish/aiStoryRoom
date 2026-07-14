@@ -42,6 +42,7 @@ try {
   for (const [action, expected] of [["play-again", "/role-select"], ["other-role", "/role-select"], ["back-worlds", "/worlds/caesar"]]) {
     await navigate("/game/result?runId=fixture-caesar-finished"); await wait(`Boolean(document.querySelector('[data-action=${action}]'))`, `${action} action`); await click(`[data-action="${action}"]`, action); await wait(`location.pathname === ${JSON.stringify(expected)}`, `${action} route`); steps.push(`result ${action}`);
   }
+  await navigate("/game/result?runId=fixture-caesar-finished"); await wait("Boolean(document.querySelector('[data-action=share-recap]'))", "share recap entry"); await click('[data-action="share-recap"]', "share recap entry"); await wait("document.body.innerText.includes('Sharing recap is coming next.')", "share recap notice"); steps.push("result share recap display-only entry");
   if (cdp.exceptions.length) throw new Error(`Runtime exceptions: ${cdp.exceptions.join(" | ")}`);
   const result = { status:"PASS", steps, runtimeExceptions:cdp.exceptions, completedAt:new Date().toISOString() };
   await writeFile(join(resultDir, "result.json"), `${JSON.stringify(result, null, 2)}\n`);
