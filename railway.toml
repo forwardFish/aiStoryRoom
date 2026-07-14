@@ -7,7 +7,9 @@ buildCommand = "pnpm build:api"
 # makes a failed database connection or pending schema change fail the deploy
 # instead of leaving an apparently successful service behind a 502 gateway.
 preDeployCommand = ["pnpm db:migrate:deploy"]
-startCommand = "pnpm --filter @apps/api start"
+# The Railway public domain is configured to proxy port 3001.  Keep both
+# variables aligned even if a development API_PORT value exists in the service.
+startCommand = "PORT=3001 API_PORT=3001 pnpm --filter @apps/api start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
