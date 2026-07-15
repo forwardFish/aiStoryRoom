@@ -63,6 +63,9 @@ body:has(.room-top) .mw-nav a.active { border-bottom-color:transparent; color:va
 .auth-card .btn.primary { background:linear-gradient(90deg,#5b34c2 0%,#6036be 55%,#4d2abc 100%); }
 .auth-divider { display:flex; align-items:center; gap:15px; color:#71788e; margin:29px 0 18px; font-size:14px; }
 .auth-divider::before,.auth-divider::after { content:""; height:1px; flex:1; background:#dfe2e8; }
+.google-divider { margin:20px 0 14px; }
+.google-signin { display:flex; min-height:40px; justify-content:center; }
+.google-unavailable { margin:8px 0 0; text-align:center; color:#69728a; font-size:13px; }
 .auth-legal { text-align:center; color:#69728a; font-size:14px; margin-top:27px; }
 /* The source captures use a taller auth masthead while keeping the card's
    absolute baseline fixed. */

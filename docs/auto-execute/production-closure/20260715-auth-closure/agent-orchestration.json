@@ -1,0 +1,17 @@
+{
+  "mode": "serial-fallback",
+  "runtime_surface": "codex-app",
+  "orchestrator": "root",
+  "agents": [
+    {
+      "id": "root",
+      "role": "orchestrator-builder-tester",
+      "assigned_tasks": ["AUTH-IMPL-001", "AUTH-IMPL-002", "AUTH-IMPL-003"],
+      "allowed_paths": ["apps/api/src/auth/", "apps/api/src/email/", "apps/web/public/", "apps/web/tests/", "prisma/", "docs/auto-execute/production-closure/20260715-auth-closure/"],
+      "evidence": []
+    }
+  ],
+  "handoff_paths": ["docs/auto-execute/production-closure/20260715-auth-closure/latest/HANDOFF.md"],
+  "verification_paths": ["docs/auto-execute/production-closure/20260715-auth-closure/verification-results.md"],
+  "fallback_reason": "No attached tmux OMX runtime; serial work avoids conflicts with the existing dirty worktree."
+}

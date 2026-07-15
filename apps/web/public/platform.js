@@ -17,13 +17,14 @@ const roles = [
 ];
 
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]); }
-function safeReturnTo(value) { return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") ? value : "/"; }
-function apiUrl(url) { return url.startsWith("/api/") ? `${platformApiBase}${url.slice(4)}` : url; }
-function header(active = "") {
-  const profile = `<a class="profile-icon" aria-label="Account" href="/auth?returnTo=${encodeURIComponent(path + location.search)}"></a>`;
-  const utility = `<div class="header-right"><a href="/#faq">Help</a><span class="divider"></span><span class="language-label" aria-label="Language">English⌄</span>${profile}</div>`;
-  if (active === "auth") return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>Many Worlds</span></a>${utility}</header>`;
-  return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>Many Worlds</span></a><nav class="mw-nav"><a class="${active === "worlds" ? "active" : ""}" href="/worlds/caesar">Explore Worlds</a><a class="${active === "rooms" ? "active" : ""}" href="/rooms">Rooms</a><a href="/credits">World Credits</a></nav>${utility}</header>`;
+function safeReturnTo(value) {
+  if (typeof value !== "string" || value.includes("\\") || value.startsWith("//")) return "/";
+  try {
+    const url = new URL(value, "https://manyworlds.invalid");
+    const allowed = new Set(["/", "/join", "/rooms", "/game", "/game/result", "/credits", "/credits/status", "/credits/cancel", "/credits/failed", "/role-select", "/trio"]);
+    if (url.origin !== "https://manyworlds.invalid" || !(allowed.has(url.pathname) || /^\/rooms\/[A-Za-z0-9_-]+$/.test(url.pathname) || /^\/worlds\/[A-Za-z0-9_-]+$/.test(url.pathname))) return "/";
+    return `${url.pathname}${url.search}`;
+  } catch { return "/"; }
 }
 function appShell(content, active = "") {
   if (roomRefreshTimer) { clearInterval(roomRefreshTimer); roomRefreshTimer = null; }
@@ -42,16 +43,82 @@ function bind() {
 }
 function notice(message) { let target = root.querySelector("[data-notice]"); if (!target) { target = document.createElement("p"); target.dataset.notice = ""; target.className = "notice"; root.querySelector(".page-frame")?.prepend(target); } if (target) { target.textContent = message; target.hidden = false; } }
 
+let googleIdentityLibraryPromise = null;
+function googleWebClientId() { return String(globalThis.__MANY_WORLDS_RUNTIME__?.googleWebClientId || "").trim(); }
+function loadGoogleIdentityLibrary() {
+  if (globalThis.google?.accounts?.id) return Promise.resolve(globalThis.google);
+  if (googleIdentityLibraryPromise) return googleIdentityLibraryPromise;
+  googleIdentityLibraryPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => globalThis.google?.accounts?.id ? resolve(globalThis.google) : reject(new Error("Google sign-in did not load."));
+    script.onerror = () => reject(new Error("Google sign-in could not be loaded."));
+    document.head.append(script);
+  });
+  return googleIdentityLibraryPromise;
+}
+async function mountGoogleSignIn(returnTo) {
+  const target = root.querySelector("[data-google-signin]");
+  const unavailable = root.querySelector("[data-google-unavailable]");
+  const clientId = googleWebClientId();
+  if (!target || !clientId) {
+    if (unavailable) unavailable.hidden = false;
+    return;
+  }
+  try {
+    const challenge = await request("/api/v4/auth/google/challenge", { method: "POST", headers: { "x-requested-with": "many-worlds-web" }, body: "{}" });
+    const google = await loadGoogleIdentityLibrary();
+    google.accounts.id.initialize({
+      client_id: clientId,
+      nonce: challenge.nonce,
+      auto_select: false,
+      ux_mode: "popup",
+      callback: async (credentialResponse) => {
+        try {
+          const session = await request("/api/v4/auth/google", {
+            method: "POST",
+            headers: { "x-requested-with": "many-worlds-web" },
+            body: JSON.stringify({ credential: credentialResponse.credential, challengeId: challenge.challengeId, returnTo })
+          });
+          localStorage.setItem("many-worlds-token", session.accessToken || session.token);
+          location.assign(safeReturnTo(session.returnTo || returnTo));
+        } catch (error) {
+          notice(error.message || "Google sign-in could not be completed.");
+        }
+      }
+    });
+    target.hidden = false;
+    google.accounts.id.renderButton(target, { theme: "outline", size: "large", text: "continue_with", shape: "rectangular", width: 360 });
+  } catch (error) {
+    if (unavailable) unavailable.hidden = false;
+    notice(error.message || "Google sign-in is temporarily unavailable. You can still use email.");
+  }
+}
+
+
 function renderAuth() {
   const returnTo = safeReturnTo(params.get("returnTo"));
-  appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to Many Worlds</h1><p class="auth-subtitle">Log in or create an account to continue.</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password">Show</button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><button type="button" class="text-link" data-action="forgot">Forgot password?</button></div><button class="btn primary" type="submit">Log in</button><div class="auth-divider login-only">New here?</div><button class="btn login-only" type="button" data-action="show-signup">Create account</button><section class="reset-form" data-reset-form hidden><p>Enter the one-time reset token sent to your verified email.</p><label class="field"><span>Reset token</span><input name="resetToken" autocomplete="one-time-code"></label><label class="field"><span>New password</span><input name="newPassword" type="password" minlength="8" autocomplete="new-password"></label><button class="btn primary" type="button" data-action="confirm-reset">Set new password</button></section><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
+  appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to Many Worlds</h1><p class="auth-subtitle">Log in or create an account to continue.</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password">Show</button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><div class="auth-divider login-only">New here?</div><button class="btn login-only" type="button" data-action="show-signup">Create account</button><button class="btn login-only" type="button" data-action="sign-out" data-sign-out hidden>Sign out</button><section class="reset-form" data-reset-form hidden><p>Choose a new password for your account.</p><input name="resetToken" type="hidden" autocomplete="one-time-code"><label class="field"><span>New password</span><input name="newPassword" type="password" minlength="8" autocomplete="new-password"></label><button class="btn primary" type="button" data-action="confirm-reset">Set new password</button></section><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
   let mode = "login";
   const form = root.querySelector("[data-auth-form]");
+  const signOut = root.querySelector("[data-sign-out]");
+  if (signOut) signOut.hidden = !sessionToken();
   const applyMode = (next) => { mode = next; root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.authTab === next)); root.querySelectorAll(".signup-only").forEach((node) => node.hidden = next !== "signup"); root.querySelectorAll(".login-only").forEach((node) => node.hidden = next !== "login"); form.querySelector("button[type=submit]").textContent = next === "login" ? "Log in" : "Create account"; form.querySelector("input[name=password]").autocomplete = next === "login" ? "current-password" : "new-password"; };
   root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.addEventListener("click", () => applyMode(tab.dataset.authTab)));
+  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; const response = await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } localStorage.setItem("many-worlds-token", response.accessToken || response.token); location.assign(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
   const resetForm = root.querySelector("[data-reset-form]");
-  resetForm.addEventListener("submit", async (event) => { event.preventDefault(); const values = Object.fromEntries(new FormData(resetForm)); try { await request("/api/v4/auth/password-reset/confirm", { method:"POST", body:JSON.stringify({ email: form.elements.email.value, resetToken:values.resetToken, password:values.newPassword }) }); resetForm.hidden = true; notice("Password updated. You can now log in."); } catch (error) { notice(error.message || "Unable to reset password."); } });
-  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; const response = await request(endpoint, { method:"POST", body: JSON.stringify({ email, password, nickname: data.nickname }) }); if (mode === "signup" && !response.verificationToken) { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } if (mode === "signup") await request("/api/v4/auth/verify", { method:"POST", body:JSON.stringify({ email, verificationToken: response.verificationToken }) }); const session = mode === "signup" ? await request("/api/v4/auth/login", { method:"POST", body:JSON.stringify({ email, password }) }) : response; localStorage.setItem("many-worlds-token", session.accessToken || session.token); location.assign(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
+  const resetToken = String(params.get("token") || "").trim();
+  if (params.get("mode") === "reset" && resetToken) { resetForm.hidden = false; resetForm.querySelector('input[name="resetToken"]').value = resetToken; notice("Choose a new password to finish the reset."); }
+  if (params.get("mode") === "verify" && resetToken) {
+    notice("Verifying your email…");
+    void request("/api/v4/auth/verify", { method: "POST", body: JSON.stringify({ token: resetToken }) }).then((session) => {
+      localStorage.setItem("many-worlds-token", session.accessToken || session.token);
+      location.assign(returnTo);
+    }).catch((error) => notice(error.message || "This verification link is invalid or expired."));
+  }
+  void mountGoogleSignIn(returnTo);
 }
 function renderJoin() {
   const roomCode = String(params.get("room") || "").trim().toUpperCase();
@@ -220,8 +287,10 @@ async function hydrateRoom(roomId) { try { const room = await request(`/api/v4/r
 const actions = {
   "show-signup": () => root.querySelector('[data-auth-tab="signup"]')?.click(),
   "toggle-password": (_event, element) => { const input = root.querySelector('input[name="password"]'); if (!input) return; const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; element.textContent = reveal ? "Hide" : "Show"; element.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); },
-  forgot: async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter your verified email address first."); try { const response = await request("/api/v4/auth/password-reset/request", { method:"POST", body:JSON.stringify({ email }) }); const panel = root.querySelector("[data-reset-form]"); if (panel) { panel.hidden = false; const tokenInput = panel.querySelector('input[name="resetToken"]'); if (tokenInput && response.resetToken) tokenInput.value = response.resetToken; } notice(response.resetToken ? "Sandbox verification completed. Enter a new password." : "If this verified account exists, a one-time reset token has been sent."); } catch (error) { notice(error.message || "Unable to request a password reset."); } },
-  "confirm-reset": async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); const panel = root.querySelector("[data-reset-form]"); const resetToken = panel?.querySelector('input[name="resetToken"]')?.value; const password = panel?.querySelector('input[name="newPassword"]')?.value; try { await request("/api/v4/auth/password-reset/confirm", { method:"POST", body:JSON.stringify({ email, resetToken, password }) }); if (panel) panel.hidden = true; notice("Password updated. You can now log in."); } catch (error) { notice(error.message || "Unable to reset password."); } },
+  forgot: async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter your verified email address first."); try { await request("/api/v4/auth/password-reset/request", { method:"POST", body:JSON.stringify({ email }) }); notice("If this verified account exists, a password-reset email has been sent."); } catch (error) { notice(error.message || "Unable to request a password reset."); } },
+  "resend-verification": async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter the email address that needs verification first."); try { await request("/api/v4/auth/verification/resend", { method:"POST", body:JSON.stringify({ email, returnTo: safeReturnTo(params.get("returnTo")) }) }); notice("If this account still needs verification, a new email has been sent."); } catch (error) { notice(error.message || "Unable to resend the verification email."); } },
+  "sign-out": () => { clearLocalSession(); location.assign("/"); },
+  "confirm-reset": async () => { const panel = root.querySelector("[data-reset-form]"); const token = panel?.querySelector('input[name="resetToken"]')?.value; const password = panel?.querySelector('input[name="newPassword"]')?.value; if (!token || !password || password.length < 8) return notice("Use the reset link from your email and choose a password of at least 8 characters."); try { await request("/api/v4/auth/password-reset/confirm", { method:"POST", body:JSON.stringify({ token, password }) }); if (panel) panel.hidden = true; notice("Password updated. You can now log in."); } catch (error) { notice(error.message || "Unable to reset password."); } },
   solo: () => location.assign("/role-select?story=caesar"), rooms: () => location.assign("/rooms?worldId=caesar"),
   "sangtian-solo": () => location.assign("/role-select?story=sangtian"), "sangtian-rooms": () => location.assign("/rooms?worldId=sangtian"),
   "join-code": async () => { if (!requireSession()) return; const code = prompt("Enter an invite code"); if (!code) return; try { const room = await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: code.trim().toUpperCase() }) }); location.assign(`/rooms/${room.id}`); } catch (error) { notice(error.message || "Unable to join this room."); } },

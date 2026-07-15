@@ -52,7 +52,7 @@ export class CreditsController {
 
   @Post("onboarding")
   async onboarding(@CurrentUser() user: AuthenticatedUser, @Body() body: { referralCode?: string; channel?: string }) {
-    if (!user.emailVerifiedAt) {
+    if (!user.emailVerifiedAt && user.authMethod !== "GOOGLE") {
       return { bonusGranted: false, reason: "EMAIL_VERIFICATION_REQUIRED", balance: await this.credits.getBalance(user.id) };
     }
     const existing = await this.credits.getBalance(user.id);

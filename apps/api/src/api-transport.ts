@@ -74,7 +74,7 @@ export function configureApiTransport(app: INestApplication) {
     origin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) { callback(null, !origin || allowedOrigins.has(origin)); },
     credentials: true,
     methods: ["GET", "HEAD", "POST", "OPTIONS"],
-    allowedHeaders: ["content-type", "authorization", "x-mock-openid"]
+    allowedHeaders: ["content-type", "authorization", "x-mock-openid", "x-requested-with"]
   });
   app.useGlobalFilters(new ApiContractExceptionFilter());
   app.useGlobalGuards(new V4WriteRateLimitGuard());

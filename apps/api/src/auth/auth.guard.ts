@@ -19,13 +19,24 @@ export class AuthGuard implements CanActivate {
     if (!user || user.openid !== claims.openid || user.status !== "active") {
       throw new UnauthorizedException({ code: "INVALID_TOKEN", message: "Invalid or inactive token" });
     }
+    if (claims.authMethod === "PASSWORD" && !user.emailVerifiedAt) {
+      throw new UnauthorizedException({ code: "EMAIL_VERIFICATION_REQUIRED", message: "Verify your email before accessing this resource" });
+    }
+    if (claims.authMethod === "GOOGLE") {
+      const identity = await this.prisma.authIdentity.findUnique({ where: { id: claims.authIdentityId } });
+      if (!identity || identity.userId !== user.id || identity.provider !== "GOOGLE") {
+        throw new UnauthorizedException({ code: "INVALID_TOKEN", message: "Invalid or inactive token" });
+      }
+    }
 
     request.user = {
       id: user.id,
       openid: user.openid,
       email: user.email,
       emailVerifiedAt: user.emailVerifiedAt,
-      nickname: user.nickname
+      nickname: user.nickname,
+      authMethod: claims.authMethod,
+      authIdentityId: claims.authIdentityId || null
     } satisfies AuthenticatedUser;
     return true;
   }

@@ -6,6 +6,8 @@ export interface AuthenticatedUser {
   email: string | null;
   emailVerifiedAt: Date | null;
   nickname: string | null;
+  authMethod: "PASSWORD" | "GOOGLE";
+  authIdentityId: string | null;
 }
 
 export const CurrentUser = createParamDecorator(

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Headers, HttpException, HttpStatus, Inject, Param, Post, ServiceUnavailableException } from "@nestjs/common";
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
 import { verifyAccessToken } from "./auth/auth.service";
+import { EmailService } from "./email/email.service";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 
@@ -8,7 +9,7 @@ const deploymentVersion = () => process.env.RAILWAY_GIT_COMMIT_SHA || process.en
 
 @Controller()
 export class StoryController {
-  constructor(@Inject(StoryService) private readonly story: StoryService, @Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(@Inject(StoryService) private readonly story: StoryService, @Inject(PrismaService) private readonly prisma: PrismaService, @Inject(EmailService) private readonly email: EmailService) {}
 
   @Get()
   index() {
@@ -35,9 +36,9 @@ export class StoryController {
 
   @Get("health/ready")
   async ready() {
-    const readiness = await this.prisma.readiness();
-    if (!readiness.ready) throw new ServiceUnavailableException({ code: "DEPENDENCY_NOT_READY", ...readiness });
-    return { ok: true, service: "ai-story-room-api", status: "ready", version: deploymentVersion(), ...readiness };
+    const [database, email] = await Promise.all([this.prisma.readiness(), Promise.resolve(this.email.readiness())]);
+    if (!database.ready || !email.ready) throw new ServiceUnavailableException({ code: "DEPENDENCY_NOT_READY", database, email });
+    return { ok: true, service: "ai-story-room-api", status: "ready", version: deploymentVersion(), database, email };
   }
 
   @Post("auth/wechat-login")

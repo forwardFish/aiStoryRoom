@@ -125,6 +125,12 @@ export const server = createServer((req, res) => {
     proxyApiRequest(req, res, url);
     return;
   }
+  if (url.pathname === "/runtime-config.js") {
+    const googleWebClientId = String(process.env.PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.GOOGLE_WEB_CLIENT_ID || "").trim();
+    res.writeHead(200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "no-store" });
+    res.end(`window.__MANY_WORLDS_RUNTIME__ = { googleWebClientId: ${JSON.stringify(googleWebClientId)} };\n`);
+    return;
+  }
   const gameAssetMatch = url.pathname.match(/^\/assets\/game\/sangtian\/([a-z-]+)\.png$/);
   if (gameAssetMatch) {
     const assetName = gameAssetByKey.get(gameAssetMatch[1]);

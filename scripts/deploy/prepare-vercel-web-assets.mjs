@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, rm } from "node:fs/promises";
+import { cp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -75,6 +75,10 @@ await Promise.all(gameKeys.map((key, index) => cp(join(gameDirectory, gameFiles[
 await resetDirectory(vercelOutput);
 await cp(webPublic, vercelOutput, { recursive: true });
 await cp(join(vercelOutput, "home.html"), join(vercelOutput, "index.html"));
+await writeFile(
+  join(vercelOutput, "runtime-config.js"),
+  `window.__MANY_WORLDS_RUNTIME__ = { googleWebClientId: ${JSON.stringify(String(process.env.PUBLIC_GOOGLE_WEB_CLIENT_ID || "").trim())} };\n`
+);
 
 console.log(JSON.stringify({
   status: "PASS",

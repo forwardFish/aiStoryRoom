@@ -28,9 +28,67 @@ model User {
   notifications Notification[]
   eventLogs     EventLog[]
   shareTokens   ShareToken[]
+  authTokens    AuthOneTimeToken[]
+  authIdentities AuthIdentity[]
 
   @@index([status])
   @@index([createdAt])
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum AuthProvider {
+  GOOGLE
+}
+
+model AuthOneTimeToken {
+  id                 String           @id @default(cuid())
+  userId             String
+  purpose            AuthTokenPurpose
+  tokenHash          String           @unique
+  expiresAt          DateTime
+  consumedAt         DateTime?
+  invalidatedAt      DateTime?
+  failedAttempts     Int              @default(0)
+  sentAt             DateTime?
+  deliveryProvider   String?
+  deliveryProviderId String?
+  createdAt          DateTime         @default(now())
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, expiresAt])
+}
+
+model AuthIdentity {
+  id                      String       @id @default(cuid())
+  userId                  String
+  provider                AuthProvider
+  providerSubject         String
+  providerEmail           String?
+  providerEmailVerifiedAt DateTime?
+  hostedDomain            String?
+  profileJson             Json?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  user                    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@index([userId])
+  @@index([provider, providerEmail])
+}
+
+model AuthLoginChallenge {
+  id         String       @id @default(cuid())
+  provider   AuthProvider
+  nonceHash  String       @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([provider, expiresAt, consumedAt])
 }
 
 model WorldTemplate {

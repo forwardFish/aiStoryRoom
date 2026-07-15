@@ -66,8 +66,8 @@ export class BillingService {
     return { intent, runId, returnTo: fallback };
   }
 
-  async createCheckout(user: { id: string; email: string | null; emailVerifiedAt: Date | null }, packKey: string, input: CheckoutContextInput = {}) {
-    if (!user.emailVerifiedAt) throw new UnauthorizedException({ code: "EMAIL_VERIFICATION_REQUIRED", message: "Verify your email before purchasing" });
+  async createCheckout(user: { id: string; email: string | null; emailVerifiedAt: Date | null; authMethod?: "PASSWORD" | "GOOGLE" }, packKey: string, input: CheckoutContextInput = {}) {
+    if (!user.emailVerifiedAt && user.authMethod !== "GOOGLE") throw new UnauthorizedException({ code: "EMAIL_VERIFICATION_REQUIRED", message: "Verify your email before purchasing" });
     const pack = getCreditPacks()[packKey as CreditPackKey];
     if (!pack) throw new BadRequestException({ code: "UNKNOWN_CREDIT_PACK", message: "Unknown credit pack" });
     const checkoutContext = await this.normalizeContext(user.id, input);

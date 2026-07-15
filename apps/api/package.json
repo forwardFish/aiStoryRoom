@@ -8,7 +8,7 @@
     "build": "pnpm --filter @ai-story/shared build && pnpm --filter @ai-story/templates build && tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx src/auth/auth.service.spec.ts && node --import tsx src/story.service.spec.ts && node --import tsx src/story.http.spec.ts && node --import tsx src/mvp-catalog.spec.ts",
+    "test": "node --import tsx src/auth/auth-return-to.spec.ts && node --import tsx src/auth/auth.service.spec.ts && node --import tsx src/email/email.service.spec.ts && node --import tsx src/auth/auth.guard.spec.ts && node --import tsx src/auth/google-auth.service.spec.ts && node --import tsx src/story.service.spec.ts && node --import tsx src/story.http.spec.ts && node --import tsx src/mvp-catalog.spec.ts",
     "test:world-credits": "tsx ../../scripts/e2e/world-credits-local.ts"
   },
   "dependencies": {
@@ -18,6 +18,7 @@
     "@nestjs/core": "^11.1.9",
     "@nestjs/platform-express": "^11.1.9",
     "@prisma/client": "^6.19.0",
+    "google-auth-library": "^10.9.0",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"

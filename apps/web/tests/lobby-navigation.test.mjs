@@ -46,8 +46,10 @@ test("deployed platform authentication targets the Railway API instead of Vercel
   assert.match(source, /fetch\(apiUrl\(url\)/);
   assert.match(source, /fetch\(apiUrl\(`\/api\/v4\/referrals\/qr/);
   assert.doesNotMatch(source, /fetch\(`\/api\/v4\/referrals\/qr/);
-  assert.match(source, /response\.verificationToken/);
-  assert.match(source, /response\.resetToken/);
+  assert.doesNotMatch(source, /response\.verificationToken/);
+  assert.doesNotMatch(source, /response\.resetToken/);
+  assert.match(source, /\/api\/v4\/auth\/verification\/resend/);
+  assert.match(source, /\/api\/v4\/auth\/google\/challenge/);
   assert.match(source, /Account created\. Check your email to verify it/);
 });
 
@@ -61,8 +63,10 @@ test("login, signup and password reset surfaces stay account-only", async () => 
   assert.match(authPage, /Log in or create an account to continue/);
   assert.match(authPage, /Enter your display name/);
   assert.match(authPage, /Set new password/);
+  assert.match(authPage, /data-google-signin/);
   assert.doesNotMatch(authPage, /Caesar|story|world title|room|Continue to/i);
-  assert.match(source, /\? value : "\/"/);
+  assert.match(source, /manyworlds\.invalid/);
+  assert.match(source, /\/join", "\/rooms", "\/game"/);
 });
 
 test("legacy invite registration cannot authenticate before email verification", async () => {

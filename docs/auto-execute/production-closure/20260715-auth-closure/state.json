@@ -1,0 +1,18 @@
+{
+  "goalId": "TOTAL-AUTH-20260715",
+  "status": "active",
+  "phase": "A1-authentication-code-and-local-verification-complete",
+  "orchestrationMode": "serial-fallback",
+  "runtimeSurface": "codex-app",
+  "currentModule": "authentication",
+  "currentTask": "AUTH-DEPLOY-001",
+  "baseline": {
+    "dbGenerate": "BLOCKED_BY_ENVIRONMENT: normal Windows query-engine replacement is locked by a user-running local API; PRISMA_GENERATE_NO_ENGINE=1 passed",
+    "typecheck": "PASS: api and web",
+    "apiTests": "PASS: production email auth, Google challenge/replay/linking, story/http/catalog",
+    "webTests": "PASS: 33/33 including auth runtime config and Google button contract",
+    "vercelBuild": "PASS: generated runtime-config.js includes only PUBLIC_GOOGLE_WEB_CLIENT_ID"
+  },
+  "externalBlockers": ["EXT-EMAIL-001", "EXT-GOOGLE-001", "ENV-PRISMA-001"],
+  "finalVerdict": null
+}
