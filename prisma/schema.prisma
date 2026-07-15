@@ -812,7 +812,10 @@ model CreemPurchase {
   credits             Int
   expectedAmountCents Int
   expectedCurrency    String              @default("USD")
-  orderDisplayCode    String              @unique
+  // The database default keeps rolling deploys compatible with API instances
+  // from before this field was introduced. Current code still supplies a
+  // human-friendly value explicitly.
+  orderDisplayCode    String              @unique @default(dbgenerated("'MW-' || upper(left(replace(gen_random_uuid()::text, '-', ''), 12))"))
   status              CreemPurchaseStatus @default(PENDING)
   checkoutId          String?             @unique
   orderId             String?             @unique
