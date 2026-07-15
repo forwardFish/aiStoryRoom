@@ -62,7 +62,7 @@ test("login, signup and password reset surfaces stay account-only", async () => 
   assert.match(authPage, /Welcome to Many Worlds/);
   assert.match(authPage, /Log in or create an account to continue/);
   assert.match(authPage, /Enter your display name/);
-  assert.match(authPage, /Set new password/);
+  assert.doesNotMatch(authPage, /Set new password|data-reset-form|data-sign-out|data-action="show-signup"/);
   assert.match(authPage, /data-google-signin/);
   assert.doesNotMatch(authPage, /Caesar|story|world title|room|Continue to/i);
   assert.match(source, /manyworlds\.invalid/);

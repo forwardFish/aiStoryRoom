@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { JSDOM } from "jsdom";
 
 test("auth page loads the public runtime configuration before its Google button", async () => {
   const [html, runtimeConfig, server, deploy] = await Promise.all([
@@ -30,6 +31,49 @@ test("Google browser sign-in is challenge-bound and leaves email authentication 
   assert.match(google, /x-requested-with": "many-worlds-web/);
   assert.match(google, /google\.accounts\.id\.renderButton/);
   assert.doesNotMatch(google, /client_secret/i);
-  assert.match(source, /function clearLocalSession\(\) \{ localStorage\.removeItem\("many-worlds-token"\); globalThis\.google\?\.accounts\?\.id\?\.disableAutoSelect\?\.\(\); \}/);
-  assert.match(source, /"sign-out": \(\) => \{ clearLocalSession\(\); location\.assign\("\/"\); \}/);
+  assert.match(source, /function apiUrl\(url\)/);
+});
+
+test("production Google sign-in reaches the Railway challenge endpoint without runtime errors", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const requests = [];
+  let initialized = null;
+  let rendered = false;
+  const dom = new JSDOM('<!doctype html><main id="platform-app"></main>', {
+    url: "https://ourmanyworlds.com/auth",
+    runScripts: "outside-only"
+  });
+  dom.window.__MANY_WORLDS_RUNTIME__ = { googleWebClientId: "test-client.apps.googleusercontent.com" };
+  dom.window.google = {
+    accounts: {
+      id: {
+        initialize(options) { initialized = options; },
+        renderButton() { rendered = true; },
+        disableAutoSelect() {}
+      }
+    }
+  };
+  dom.window.fetch = async (url) => {
+    requests.push(String(url));
+    return new Response(JSON.stringify({ challengeId: "challenge-1", nonce: "nonce-1" }), {
+      status: 201,
+      headers: { "content-type": "application/json" }
+    });
+  };
+
+  dom.window.eval(source);
+  const deadline = Date.now() + 2_000;
+  while (!rendered && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assert.equal(requests[0], "https://appsapi-test.up.railway.app/api/v4/auth/google/challenge");
+  assert.equal(initialized?.client_id, "test-client.apps.googleusercontent.com");
+  assert.equal(initialized?.nonce, "nonce-1");
+  assert.equal(rendered, true);
+  const auth = dom.window.document.querySelector("[data-auth-form]");
+  assert.ok(auth);
+  assert.equal(auth.querySelector('[data-action="show-signup"]'), null);
+  assert.equal(auth.querySelector('[data-sign-out]'), null);
+  assert.equal(auth.querySelector('[data-reset-form]'), null);
+  assert.equal(auth.querySelectorAll("[data-auth-tab]").length, 2);
+  dom.window.close();
 });
