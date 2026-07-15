@@ -43,7 +43,9 @@ export function sessionTokenFromRequest(request: { headers?: Record<string, stri
   const source = Array.isArray(header) ? header.join(";") : String(header || "");
   for (const item of source.split(";")) {
     const [name, ...value] = item.trim().split("=");
-    if (name === AUTH_SESSION_COOKIE) return decodeURIComponent(value.join("="));
+    if (name === AUTH_SESSION_COOKIE) {
+      try { return decodeURIComponent(value.join("=")); } catch { return ""; }
+    }
   }
   return "";
 }
