@@ -3,16 +3,19 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("browser authentication uses a same-origin HttpOnly cookie session", async () => {
-  const [platform, apiClient, apiStoryStorage, roleSelect, roomGame, vercel] = await Promise.all([
+  const [platform, apiClient, apiStoryStorage, roleSelect, roomGame, vercel, apiProxy] = await Promise.all([
     readFile(new URL("../public/platform.js", import.meta.url), "utf8"),
     readFile(new URL("../public/js/api-client.js", import.meta.url), "utf8"),
     readFile(new URL("../public/api-story-storage.js", import.meta.url), "utf8"),
     readFile(new URL("../public/role-select.js", import.meta.url), "utf8"),
     readFile(new URL("../public/room-game.js", import.meta.url), "utf8"),
-    readFile(new URL("../../../vercel.json", import.meta.url), "utf8")
+    readFile(new URL("../../../vercel.json", import.meta.url), "utf8"),
+    readFile(new URL("../../../api/[...path].js", import.meta.url), "utf8")
   ]);
 
-  assert.match(vercel, /"source": "\/api\/:path\*", "destination": "https:\/\/appsapi-test\.up\.railway\.app\/api\/:path\*"/);
+  assert.doesNotMatch(vercel, /appsapi-test\.up\.railway\.app/);
+  assert.match(apiProxy, /appsapi-test\.up\.railway\.app/);
+  assert.match(apiProxy, /set-cookie/);
   assert.match(platform, /const deployedApiBase = "\/api"/);
   assert.match(platform, /credentials: "include"/);
   assert.match(platform, /many_worlds_session_hint=1/);
