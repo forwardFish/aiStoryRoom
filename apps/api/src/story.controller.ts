@@ -4,6 +4,8 @@ import { verifyAccessToken } from "./auth/auth.service";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 
+const deploymentVersion = () => process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "local";
+
 @Controller()
 export class StoryController {
   constructor(@Inject(StoryService) private readonly story: StoryService, @Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -25,17 +27,17 @@ export class StoryController {
 
   @Get("health")
   health() {
-    return { ok: true, service: "ai-story-room-api" };
+    return { ok: true, service: "ai-story-room-api", version: deploymentVersion() };
   }
 
   @Get("health/live")
-  live() { return { ok: true, service: "ai-story-room-api", status: "live" }; }
+  live() { return { ok: true, service: "ai-story-room-api", status: "live", version: deploymentVersion() }; }
 
   @Get("health/ready")
   async ready() {
     const readiness = await this.prisma.readiness();
     if (!readiness.ready) throw new ServiceUnavailableException({ code: "DEPENDENCY_NOT_READY", ...readiness });
-    return { ok: true, service: "ai-story-room-api", status: "ready", ...readiness };
+    return { ok: true, service: "ai-story-room-api", status: "ready", version: deploymentVersion(), ...readiness };
   }
 
   @Post("auth/wechat-login")
