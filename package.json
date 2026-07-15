@@ -48,6 +48,7 @@
     "test:ai-live-v4": "tsx scripts/e2e/v4-deepseek-live-smoke.ts",
     "test:simulated-player": "node scripts/e2e/simulated-player-browser.mjs",
     "test:ops-contract": "node scripts/ops/ops-contract.mjs",
+    "test:deploy-config": "node scripts/deploy/railway-config.test.mjs",
     "test:db-ops": "powershell -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-db-ops-acceptance.ps1",
     "test:db-ops-local": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-local-postgres-ops.ps1",
     "test:acceptance": "pnpm test:config && pnpm test:causal && pnpm test:api-contract && pnpm test:maneuver && pnpm test:paths && pnpm test:security-projection && pnpm test:concurrency && pnpm test:ai-failure && pnpm test:provider-retry && pnpm test:ai-budget && pnpm test:continuous && pnpm test:storage-recovery && pnpm test:ops-contract",
