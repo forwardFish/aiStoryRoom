@@ -151,6 +151,7 @@ export class ApiStoryStorage {
     try {
       response = await this.fetchImpl(`${this.baseUrl}${path}`, {
         method,
+        credentials: "include",
         headers: {
           accept: "application/json",
           ...(body === undefined ? {} : { "content-type": "application/json" })

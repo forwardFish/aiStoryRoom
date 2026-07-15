@@ -43,7 +43,8 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
       const isPlatformSolo = state.story.id === "caesar";
       const response = await fetchImpl(isPlatformSolo ? `${apiBase(browserWindow?.location)}/v4/rooms/solo` : `${apiBase(browserWindow?.location)}/v4/stories/${encodeURIComponent(state.story.id)}/runs`, {
         method: "POST",
-        headers: { accept: "application/json", "content-type": "application/json", ...(isPlatformSolo && sessionToken(browserWindow) ? { authorization: `Bearer ${sessionToken(browserWindow)}` } : {}) },
+        credentials: "include",
+        headers: { accept: "application/json", "content-type": "application/json" },
         body: JSON.stringify(isPlatformSolo ? { worldId: state.story.id, roleKey: role.key } : { storyId: state.story.id, roleKey: role.key, mode: "single" })
       });
       const payload = await response.json().catch(() => null);
@@ -75,7 +76,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
     const role = selectedRole(state);
     root.innerHTML = `
       <div class="role-shell">
-        ${renderHeader()}
+        <!-- Global role-selection header is temporarily disabled. The renderHeader() function is retained for later use. -->
         ${renderSteps()}
         ${renderStoryBanner(story)}
         <section class="role-content">
@@ -154,9 +155,6 @@ function selectedRole(state) {
   return state.story?.roles?.find((role) => role.key === state.selectedRoleKey) || null;
 }
 
-function sessionToken(browserWindow) {
-  return browserWindow?.localStorage?.getItem("many-worlds-token") || "";
-}
 
 function apiBase(location = globalThis.location) {
   if (!location) return "/api";

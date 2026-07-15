@@ -1,8 +1,9 @@
-import { BadRequestException, Body, Controller, Delete, Get, Headers, Inject, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Headers, Inject, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "./auth.guard";
 import { AuthService } from "./auth.service";
 import { CurrentUser, type AuthenticatedUser } from "./current-user.decorator";
 import { GoogleAuthService } from "./google-auth.service";
+import { clearSessionCookies, issueSessionCookie } from "./auth-cookie";
 
 @Controller("v4/auth")
 export class AuthController {
@@ -14,8 +15,8 @@ export class AuthController {
   }
 
   @Post("verify")
-  verify(@Body() body: { token?: string; verificationToken?: string }, @Req() request: any) {
-    return this.auth.verify({ ...body, clientIp: request.ip || request.socket?.remoteAddress });
+  async verify(@Body() body: { token?: string; verificationToken?: string }, @Req() request: any, @Res({ passthrough: true }) response: any) {
+    return this.writeBrowserSession(response, await this.auth.verify({ ...body, clientIp: request.ip || request.socket?.remoteAddress }));
   }
 
   @Post("verification/resend")
@@ -24,8 +25,8 @@ export class AuthController {
   }
 
   @Post("login")
-  login(@Body() body: { email?: string; password?: string }, @Req() request: any) {
-    return this.auth.login({ ...body, clientIp: request.ip || request.socket?.remoteAddress });
+  async login(@Body() body: { email?: string; password?: string }, @Req() request: any, @Res({ passthrough: true }) response: any) {
+    return this.writeBrowserSession(response, await this.auth.login({ ...body, clientIp: request.ip || request.socket?.remoteAddress }));
   }
 
   @Post("password-reset/request")
@@ -45,9 +46,9 @@ export class AuthController {
   }
 
   @Post("google")
-  googleLogin(@Body() body: { credential?: string; challengeId?: string; returnTo?: string }, @Headers("x-requested-with") requestedWith: string | undefined, @Req() request: any) {
+  async googleLogin(@Body() body: { credential?: string; challengeId?: string; returnTo?: string }, @Headers("x-requested-with") requestedWith: string | undefined, @Req() request: any, @Res({ passthrough: true }) response: any) {
     assertGoogleBrowserRequest(requestedWith);
-    return this.google.login({ ...body, clientIp: request.ip || request.socket?.remoteAddress });
+    return this.writeBrowserSession(response, await this.google.login({ ...body, clientIp: request.ip || request.socket?.remoteAddress }));
   }
 
   @UseGuards(AuthGuard)
@@ -67,6 +68,29 @@ export class AuthController {
   @Get("me")
   me(@CurrentUser() user: AuthenticatedUser) {
     return this.auth.me(user.id);
+  }
+
+  // One-time bridge for existing browsers that still hold a pre-cookie token.
+  // AuthGuard validates the bearer token and writes the new HttpOnly cookie;
+  // the browser deletes the legacy localStorage value immediately afterwards.
+  @UseGuards(AuthGuard)
+  @Post("session/upgrade")
+  upgradeSession() {
+    return { upgraded: true };
+  }
+
+  @Post("logout")
+  logout(@Res({ passthrough: true }) response: any) {
+    clearSessionCookies(response);
+    return { loggedOut: true };
+  }
+
+  private writeBrowserSession(response: any, session: Record<string, unknown>) {
+    const token = String(session.accessToken || session.token || "");
+    if (!token) throw new BadRequestException({ code: "AUTH_SESSION_MISSING", message: "Authentication session could not be created" });
+    issueSessionCookie(response, token);
+    const { token: _token, accessToken: _accessToken, ...safe } = session;
+    return safe;
   }
 }
 

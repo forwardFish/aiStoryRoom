@@ -12,6 +12,7 @@ import { createHash, createHmac, randomBytes, randomUUID, scryptSync, timingSafe
 import { EmailService } from "../email/email.service";
 import { PrismaService } from "../prisma.service";
 import { safeAuthReturnTo } from "./auth-return-to";
+import { authSessionTtlSeconds } from "./auth-session-options";
 
 export type AuthMethod = "PASSWORD" | "GOOGLE";
 
@@ -66,7 +67,7 @@ export function issueAccessToken(user: { id: string; openid: string }, options: 
     aud: "many-worlds-v4",
     authMethod: options.authMethod || "PASSWORD",
     ...(options.authIdentityId ? { authIdentityId: options.authIdentityId } : {}),
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24
+    exp: Math.floor(Date.now() / 1000) + authSessionTtlSeconds()
   })).toString("base64url");
   const signature = createHmac("sha256", accessTokenSecret()).update(payload).digest("base64url");
   return `${payload}.${signature}`;

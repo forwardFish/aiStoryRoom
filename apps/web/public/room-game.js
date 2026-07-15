@@ -9,10 +9,10 @@ let refreshTimer = null;
 let modelVersion = 0;
 let submittingAction = false;
 
-function token() { return localStorage.getItem("many-worlds-token") || ""; }
+function hasSession() { return document.cookie.split(";").some((item) => item.trim() === "many_worlds_session_hint=1"); }
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" })[char]); }
 async function request(path, options = {}) {
-  const response = await fetch(path, { ...options, headers: { "content-type":"application/json", authorization:`Bearer ${token()}`, ...(options.headers || {}) } });
+  const response = await fetch(path, { ...options, credentials: "include", headers: { "content-type":"application/json", ...(options.headers || {}) } });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(data.message || data.code || `Request failed: ${response.status}`);
@@ -114,5 +114,5 @@ async function pollResolutionTask(taskId) {
   }
   render("The resolution is still running. Refreshing this page will safely resume task status.");
 }
-if (!roomId || !token()) location.assign(`/auth?returnTo=${encodeURIComponent(`/room-game?runId=${roomId}`)}`); else load().catch((error) => { root.innerHTML = `<p class="room-game-status error">${esc(error.message)}</p>`; });
+if (!roomId || !hasSession()) location.assign(`/auth?returnTo=${encodeURIComponent(`/room-game?runId=${roomId}`)}`); else load().catch((error) => { root.innerHTML = `<p class="room-game-status error">${esc(error.message)}</p>`; });
 window.addEventListener("pagehide", () => clearInterval(refreshTimer), { once:true });

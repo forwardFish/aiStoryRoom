@@ -34,7 +34,7 @@ test("Google browser sign-in is challenge-bound and leaves email authentication 
   assert.match(source, /function apiUrl\(url\)/);
 });
 
-test("production Google sign-in reaches the Railway challenge endpoint without runtime errors", async () => {
+test("production Google sign-in reaches the same-origin cookie session endpoint without runtime errors", async () => {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   const requests = [];
   let initialized = null;
@@ -53,8 +53,8 @@ test("production Google sign-in reaches the Railway challenge endpoint without r
       }
     }
   };
-  dom.window.fetch = async (url) => {
-    requests.push(String(url));
+  dom.window.fetch = async (url, options = {}) => {
+    requests.push({ url: String(url), credentials: options.credentials });
     return new Response(JSON.stringify({ challengeId: "challenge-1", nonce: "nonce-1" }), {
       status: 201,
       headers: { "content-type": "application/json" }
@@ -65,7 +65,7 @@ test("production Google sign-in reaches the Railway challenge endpoint without r
   const deadline = Date.now() + 2_000;
   while (!rendered && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10));
 
-  assert.equal(requests[0], "https://appsapi-test.up.railway.app/api/v4/auth/google/challenge");
+  assert.deepEqual(requests[0], { url: "/api/v4/auth/google/challenge", credentials: "include" });
   assert.equal(initialized?.client_id, "test-client.apps.googleusercontent.com");
   assert.equal(initialized?.nonce, "nonce-1");
   assert.equal(rendered, true);

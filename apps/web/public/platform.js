@@ -2,7 +2,7 @@ const root = document.querySelector("#platform-app");
 const path = location.pathname.replace(/\/$/, "") || "/";
 const params = new URLSearchParams(location.search);
 const isLocalRuntime = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-const deployedApiBase = "https://appsapi-test.up.railway.app/api";
+const deployedApiBase = "/api";
 const platformApiBase = (params.get("apiBase") || (isLocalRuntime ? "/api" : deployedApiBase)).replace(/\/$/, "");
 const purple = "#6434d7";
 let activeRoom = null;
@@ -27,6 +27,23 @@ function safeReturnTo(value) {
   } catch { return "/"; }
 }
 function apiUrl(url) { return url.startsWith("/api/") ? `${platformApiBase}${url.slice(4)}` : url; }
+function hasSessionCookie() { return document.cookie.split(";").some((item) => item.trim() === "many_worlds_session_hint=1"); }
+function clearSessionHint() { document.cookie = "many_worlds_session_hint=; Path=/; Max-Age=0; SameSite=Lax"; localStorage.removeItem("many-worlds-token"); }
+async function migrateLegacySession() {
+  if (hasSessionCookie()) { localStorage.removeItem("many-worlds-token"); return; }
+  const legacyToken = localStorage.getItem("many-worlds-token");
+  if (!legacyToken) return;
+  try {
+    const response = await fetch(apiUrl("/api/v4/auth/session/upgrade"), {
+      method: "POST",
+      credentials: "include",
+      headers: { authorization: `Bearer ${legacyToken}` }
+    });
+    if (response.ok) localStorage.removeItem("many-worlds-token");
+  } catch {
+    // Keep the old token until a later visit can safely migrate it.
+  }
+}
 function header(active = "") {
   const profile = `<a class="profile-icon" aria-label="Account" href="/auth?returnTo=${encodeURIComponent(path + location.search)}"></a>`;
   const utility = `<div class="header-right"><a href="/#faq">Help</a><span class="divider"></span><span class="language-label" aria-label="Language">English⌄</span>${profile}</div>`;
@@ -35,7 +52,10 @@ function header(active = "") {
 }
 function appShell(content, active = "") {
   if (roomRefreshTimer) { clearInterval(roomRefreshTimer); roomRefreshTimer = null; }
-  root.innerHTML = `${header(active || (path === "/auth" ? "auth" : ""))}${content}`;
+  // Global platform header is temporarily disabled on every platform page.
+  // Keep `header()` above intact so the navigation can be restored later.
+  // root.innerHTML = `${header(active || (path === "/auth" ? "auth" : ""))}${content}`;
+  root.innerHTML = content;
   if (path !== "/auth" && path !== "/rooms") root.querySelector(".page-frame")?.classList.add("visual-tight");
   bind();
   if (path === "/rooms" && sessionToken()) void hydrateRooms();
@@ -89,7 +109,6 @@ async function mountGoogleSignIn(returnTo) {
             headers: { "x-requested-with": "many-worlds-web" },
             body: JSON.stringify({ credential: credentialResponse.credential, challengeId: challenge.challengeId, returnTo })
           });
-          localStorage.setItem("many-worlds-token", session.accessToken || session.token);
           location.assign(safeReturnTo(session.returnTo || returnTo));
         } catch (error) {
           notice(error.message || "Google sign-in could not be completed.");
@@ -112,17 +131,21 @@ function renderAuth() {
     location.replace(`/reset-password?token=${encodeURIComponent(legacyResetToken)}`);
     return;
   }
+  if (hasSessionCookie()) {
+    appShell(`<section class="page-frame auth-frame"><p class="muted">Restoring your signed-in session…</p></section>`);
+    void request("/api/v4/auth/me").then(() => location.replace(returnTo)).catch(() => { clearSessionHint(); renderAuth(); });
+    return;
+  }
   appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to Many Worlds</h1><p class="auth-subtitle">Log in or create an account to continue.</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password">Show</button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
   let mode = "login";
   const form = root.querySelector("[data-auth-form]");
   const applyMode = (next) => { mode = next; root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.authTab === next)); root.querySelectorAll(".signup-only").forEach((node) => node.hidden = next !== "signup"); root.querySelectorAll(".login-only").forEach((node) => node.hidden = next !== "login"); form.querySelector("button[type=submit]").textContent = next === "login" ? "Log in" : "Create account"; form.querySelector("input[name=password]").autocomplete = next === "login" ? "current-password" : "new-password"; };
   root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.addEventListener("click", () => applyMode(tab.dataset.authTab)));
-  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; const response = await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } localStorage.setItem("many-worlds-token", response.accessToken || response.token); location.assign(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
+  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; const response = await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } location.assign(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
   const resetToken = String(params.get("token") || "").trim();
   if (params.get("mode") === "verify" && resetToken) {
     notice("Verifying your email…");
     void request("/api/v4/auth/verify", { method: "POST", body: JSON.stringify({ token: resetToken }) }).then((session) => {
-      localStorage.setItem("many-worlds-token", session.accessToken || session.token);
       location.assign(returnTo);
     }).catch((error) => notice(error.message || "This verification link is invalid or expired."));
   }
@@ -242,7 +265,7 @@ async function openInviteShareLegacy() {
   } catch (error) { notice(error.message || "Unable to prepare the invitation link."); }
 }
 async function fetchInviteQr(roomCode) {
-  const response = await fetch(apiUrl(`/api/v4/referrals/qr?room=${encodeURIComponent(roomCode)}`), { headers: { authorization:`Bearer ${sessionToken()}` } });
+  const response = await fetch(apiUrl(`/api/v4/referrals/qr?room=${encodeURIComponent(roomCode)}`), { credentials: "include" });
   if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error.message || "Unable to generate invitation QR code"); }
   const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob); const image = new Image(); image.src = objectUrl;
   await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error("Invitation QR code could not be loaded")); });
@@ -284,9 +307,9 @@ async function openInviteShare() {
     dialog.addEventListener("close", () => { URL.revokeObjectURL(qr.objectUrl); URL.revokeObjectURL(posterUrl); dialog.remove(); opener?.focus?.(); }, { once:true });
   } catch (error) { notice(error.message || "Unable to prepare the invitation link."); }
 }
-function sessionToken() { return localStorage.getItem("many-worlds-token") || ""; }
+function sessionToken() { return hasSessionCookie() ? "cookie-session" : ""; }
 function requireSession() { if (sessionToken()) return true; location.assign(`/auth?returnTo=${encodeURIComponent(path + location.search)}`); return false; }
-async function request(url, options = {}) { const authorization = url.startsWith("/api/v4/") && sessionToken() ? { authorization: `Bearer ${sessionToken()}` } : {}; const response = await fetch(apiUrl(url), { ...options, headers: { "content-type":"application/json", ...authorization, ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || data.code || `Request failed: ${response.status}`); return data; }
+async function request(url, options = {}) { const response = await fetch(apiUrl(url), { ...options, credentials: "include", headers: { "content-type":"application/json", ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (response.status === 401) clearSessionHint(); if (!response.ok) throw new Error(data.message || data.code || `Request failed: ${response.status}`); return data; }
 function roomRows(rooms) { return rooms.map((room, index) => `<div class="room-table room-row"><div class="world-cell"><img class="thumb" src="/assets/bg/${(index % 5) + 1}.png" alt=""><strong>${esc(room.worldId === "sangtian" ? "嘉靖财政危局" : "Caesar")}</strong></div><span>${esc(room.title)}</span><span>${room.players.length} of ${room.maxPlayers}</span><span class="badge">Open</span><button class="btn small" data-open-room="${esc(room.id)}" data-join-code="${esc(room.code || "")}">Join</button></div>`).join("") || `<p class="refresh-note">No open rooms yet. Create the first room.</p>`; }
 function myRoomRows(rooms) { return rooms.map((room, index) => { const action = room.nextAction === "continue" ? "Continue" : room.nextAction === "view_result" ? "View Result" : "Open"; return `<div class="my-room"><img src="/assets/bg/${(index % 5) + 1}.png" alt=""><div><strong>${esc(room.title)}</strong><span>${esc(room.worldId === "sangtian" ? "嘉靖财政危局" : "Caesar")}</span></div><button class="btn small" data-my-room="${esc(room.id)}" data-next-action="${esc(room.nextAction || "open")}">${action}</button></div>`; }).join("") || `<p class="refresh-note">No rooms yet.</p>`; }
 function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { try { if (button.dataset.joinCode) await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode }) }); location.assign(`/rooms/${button.dataset.openRoom}`); } catch (error) { notice(error.message || "Unable to join this room."); } })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/room-game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
@@ -305,4 +328,8 @@ const actions = {
   ready: async () => { if (!activeRoom || !requireSession()) return; try { await request(`/api/v4/rooms/${activeRoom.id}/ready`, { method:"POST", body:JSON.stringify({ ready:true }) }); await hydrateRoom(activeRoom.id); } catch (error) { notice(error.message || "Unable to mark ready."); } }, "start-game": async () => { if (!activeRoom || !requireSession()) return; try { const started = await request(`/api/v4/rooms/${activeRoom.id}/start`, { method:"POST", body:"{}" }); location.assign(`/room-game?runId=${encodeURIComponent(started.id)}`); } catch (error) { notice(error.message || "Room is not ready to start."); } },
   "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds/caesar"), "share-recap": () => notice("Sharing recap is coming next."), "open-tab": () => {}, "my-tab": () => root.querySelector(".my-rooms")?.scrollIntoView({ behavior: "smooth", block: "start" })
 };
-if (path === "/auth") renderAuth(); else if (path === "/join") renderJoin(); else if (path.startsWith("/worlds/")) renderWorld(); else if (path === "/rooms") renderRooms(); else if (path.startsWith("/rooms/")) renderRoom(); else if (path === "/game/result") renderResult(); else location.assign("/");
+async function initializePlatform() {
+  await migrateLegacySession();
+  if (path === "/auth") renderAuth(); else if (path === "/join") renderJoin(); else if (path.startsWith("/worlds/")) renderWorld(); else if (path === "/rooms") renderRooms(); else if (path.startsWith("/rooms/")) renderRoom(); else if (path === "/game/result") renderResult(); else location.assign("/");
+}
+void initializePlatform();

@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedExceptio
 import { PrismaService } from "../prisma.service";
 import type { AuthenticatedUser } from "./current-user.decorator";
 import { verifyAccessToken } from "./auth.service";
+import { renewSessionCookie, sessionTokenFromRequest } from "./auth-cookie";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -10,8 +11,9 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
     const authorization = String(request.headers.authorization || "");
-    const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
-    if (!token) throw new UnauthorizedException({ code: "AUTHENTICATION_REQUIRED", message: "Bearer token required" });
+    const bearerToken = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
+    const token = sessionTokenFromRequest(request) || bearerToken;
+    if (!token) throw new UnauthorizedException({ code: "AUTHENTICATION_REQUIRED", message: "Login required" });
 
     const claims = verifyAccessToken(token);
     if (!claims) throw new UnauthorizedException({ code: "INVALID_TOKEN", message: "Invalid, expired, or malformed access token" });
@@ -38,6 +40,8 @@ export class AuthGuard implements CanActivate {
       authMethod: claims.authMethod,
       authIdentityId: claims.authIdentityId || null
     } satisfies AuthenticatedUser;
+    const response = context.switchToHttp().getResponse?.();
+    renewSessionCookie(response, user, claims);
     return true;
   }
 }
