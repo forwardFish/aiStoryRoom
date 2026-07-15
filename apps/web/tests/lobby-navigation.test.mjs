@@ -51,6 +51,20 @@ test("deployed platform authentication targets the Railway API instead of Vercel
   assert.match(source, /Account created\. Check your email to verify it/);
 });
 
+test("login, signup and password reset surfaces stay account-only", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const start = source.indexOf("function renderAuth()");
+  const end = source.indexOf("function renderJoin()", start);
+  const authPage = source.slice(start, end);
+
+  assert.match(authPage, /Welcome to Many Worlds/);
+  assert.match(authPage, /Log in or create an account to continue/);
+  assert.match(authPage, /Enter your display name/);
+  assert.match(authPage, /Set new password/);
+  assert.doesNotMatch(authPage, /Caesar|story|world title|room|Continue to/i);
+  assert.match(source, /\? value : "\/"/);
+});
+
 test("legacy invite registration cannot authenticate before email verification", async () => {
   const source = await readFile(new URL("../public/join.html", import.meta.url), "utf8");
 
@@ -59,4 +73,5 @@ test("legacy invite registration cannot authenticate before email verification",
   assert.match(source, /\/v4\/auth\/login/);
   assert.doesNotMatch(source, /setToken\(result\.token\)/);
   assert.match(source, /setToken\(session\.accessToken\|\|session\.token\)/);
+  assert.doesNotMatch(source, /opening|story|room|Caesar/i);
 });

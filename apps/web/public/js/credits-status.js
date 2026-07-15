@@ -39,7 +39,7 @@ function render(kind, title, copy, result) {
   const wallet = context.intent === "WORLD_UNLOCK" ? `/credits?intent=WORLD_UNLOCK&runId=${encodeURIComponent(context.runId || "")}&returnTo=${encodeURIComponent(continueTo)}` : "/credits";
   const actions = el("actions");
   if (isPaid && context.intent === "WORLD_UNLOCK") {
-    actions.innerHTML = `<a class="btn primary" href="${continueTo}">Return to unlocked room</a><a class="btn" href="${wallet}">View World Credits</a>`;
+    actions.innerHTML = `<a class="btn primary" href="${continueTo}">Return to your room</a><a class="btn" href="${wallet}">View World Credits</a>`;
   } else if (isProcessing) {
     actions.innerHTML = `<button class="btn primary" type="button" data-continue-waiting>Continue waiting</button><a class="btn" href="${continueTo}">Return to room</a>`;
     actions.querySelector("[data-continue-waiting]").addEventListener("click", () => poll({ immediate: true }));
@@ -70,9 +70,9 @@ async function poll(options = {}) {
         if (result.context?.intent === "WORLD_UNLOCK" && result.context?.runId) {
           try {
             await apiFetch(`/v4/story-runs/${encodeURIComponent(result.context.runId)}/unlock`, { method: "POST", body: "{}" });
-            render("paid", "Your room is unlocked", "Your credits were confirmed and this shared world is now unlocked for every participant.", result);
+            render("paid", "Payment confirmed", "Your World Credits have been added. You can now return to your shared story.", result);
           } catch (error) {
-            render("paid", "Your World Credits are ready", `Your balance has been updated. Return to the room to finish unlocking it: ${error.message || "please try again"}.`, result);
+            render("paid", "Your World Credits are ready", `Your balance has been updated. Return to your room to continue: ${error.message || "please try again"}.`, result);
           }
         } else {
           render("paid", "Your World Credits are ready", "Your balance has been updated. Continue your story whenever you are ready.", result);
