@@ -11,7 +11,7 @@ function readRequestBody(request) {
 
 export default async function handler(request, response) {
   try {
-    const url = new URL(request.url || "/api-proxy", "https://ourmanyworlds.com");
+    const url = new URL(request.url || "/api/proxy", "https://ourmanyworlds.com");
     const path = String(url.searchParams.get("path") || "").replace(/^\/+/, "");
     if (!path || path.includes("..")) {
       response.statusCode = 400;
