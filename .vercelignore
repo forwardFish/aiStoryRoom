@@ -1,0 +1,27 @@
+# Runtime, generated proof, and historic design archives are local-only.
+.runtime/
+.codex-runs/
+node_modules/
+apps/web/dist-vercel/
+docs/auto-execute/
+docs/backup/
+docs/UI/1/
+docs/UI/2/
+docs/UI/小程序/
+docs/*.md
+docs/UI/web/*.png
+docs/UI/web/*.md
+
+# The deployment build copies these user-supplied production assets into the
+# static web output.  Keep exactly these inputs available to the build.
+!docs/
+!docs/UI/
+!docs/UI/web/
+!docs/UI/web/pic/
+!docs/UI/web/pic/**
+!docs/UI/web/icon/
+!docs/UI/web/icon/many-worlds-icons-clean/
+!docs/UI/web/icon/many-worlds-icons-clean/png-tight/
+!docs/UI/web/icon/many-worlds-icons-clean/png-tight/**
+!docs/UI/web/game/
+!docs/UI/web/game/**
