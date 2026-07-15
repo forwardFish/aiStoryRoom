@@ -8,7 +8,7 @@
     "build": "pnpm --filter @ai-story/shared build && pnpm --filter @ai-story/templates build && tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx src/story.service.spec.ts && node --import tsx src/story.http.spec.ts && node --import tsx src/mvp-catalog.spec.ts",
+    "test": "node --import tsx src/auth/auth.service.spec.ts && node --import tsx src/story.service.spec.ts && node --import tsx src/story.http.spec.ts && node --import tsx src/mvp-catalog.spec.ts",
     "test:world-credits": "tsx ../../scripts/e2e/world-credits-local.ts"
   },
   "dependencies": {

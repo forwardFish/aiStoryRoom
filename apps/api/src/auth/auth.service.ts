@@ -41,6 +41,17 @@ const accessTokenSecret = () => {
   return "many-worlds-local-development-token-secret";
 };
 
+/**
+ * Browser-delivered auth tokens are only for local and hosted sandbox
+ * acceptance. A real production environment must deliver these tokens by
+ * email instead of exposing them in an API response.
+ */
+export function allowsBrowserAuthTokens() {
+  const override = process.env.AUTH_ALLOW_BROWSER_VERIFICATION;
+  if (override !== undefined) return override === "true";
+  return process.env.NODE_ENV !== "production" || process.env.CREEM_MODE === "test";
+}
+
 export function issueAccessToken(user: { id: string; openid: string }) {
   const payload = Buffer.from(JSON.stringify({ sub: user.id, openid: user.openid, aud: "many-worlds-v4", exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 })).toString("base64url");
   const signature = createHmac("sha256", accessTokenSecret()).update(payload).digest("base64url");
@@ -84,7 +95,7 @@ export class AuthService {
       return {
         user: this.safeUser(user),
         token: issueAccessToken(user),
-        verificationToken: process.env.NODE_ENV === "production" ? undefined : token,
+        verificationToken: allowsBrowserAuthTokens() ? token : undefined,
         referralCode: input.referralCode?.trim().toUpperCase() || null
       };
     } catch (error: any) {
@@ -134,9 +145,10 @@ export class AuthService {
     if (mailSink) await appendFile(mailSink, `${JSON.stringify({ type: "password_reset", email, token, expiresAt, createdAt: new Date().toISOString() })}\n`, "utf8");
     return {
       accepted: true,
-      // A test-only mail sink enables the local acceptance harness without
-      // exposing reset credentials from a production endpoint.
-      ...(process.env.NODE_ENV !== "production" && process.env.ALLOW_TEST_RESET_TOKEN === "true" ? { resetToken: token } : {})
+      // Local and hosted Creem-test acceptance can complete the reset flow
+      // without a transactional-mail provider. Production never receives the
+      // token unless an operator explicitly enables the sandbox override.
+      ...(allowsBrowserAuthTokens() && process.env.ALLOW_TEST_RESET_TOKEN !== "false" ? { resetToken: token } : {})
     };
   }
 

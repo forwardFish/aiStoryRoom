@@ -46,4 +46,7 @@ test("deployed platform authentication targets the Railway API instead of Vercel
   assert.match(source, /fetch\(apiUrl\(url\)/);
   assert.match(source, /fetch\(apiUrl\(`\/api\/v4\/referrals\/qr/);
   assert.doesNotMatch(source, /fetch\(`\/api\/v4\/referrals\/qr/);
+  assert.match(source, /response\.verificationToken/);
+  assert.match(source, /response\.resetToken/);
+  assert.match(source, /Account created\. Check your email to verify it/);
 });
