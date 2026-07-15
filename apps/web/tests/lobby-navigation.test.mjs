@@ -50,3 +50,13 @@ test("deployed platform authentication targets the Railway API instead of Vercel
   assert.match(source, /response\.resetToken/);
   assert.match(source, /Account created\. Check your email to verify it/);
 });
+
+test("legacy invite registration cannot authenticate before email verification", async () => {
+  const source = await readFile(new URL("../public/join.html", import.meta.url), "utf8");
+
+  assert.match(source, /minlength="8"/);
+  assert.match(source, /\/v4\/auth\/verify/);
+  assert.match(source, /\/v4\/auth\/login/);
+  assert.doesNotMatch(source, /setToken\(result\.token\)/);
+  assert.match(source, /setToken\(session\.accessToken\|\|session\.token\)/);
+});

@@ -94,7 +94,6 @@ export class AuthService {
       });
       return {
         user: this.safeUser(user),
-        token: issueAccessToken(user),
         verificationToken: allowsBrowserAuthTokens() ? token : undefined,
         referralCode: input.referralCode?.trim().toUpperCase() || null
       };
@@ -148,7 +147,7 @@ export class AuthService {
       // Local and hosted Creem-test acceptance can complete the reset flow
       // without a transactional-mail provider. Production never receives the
       // token unless an operator explicitly enables the sandbox override.
-      ...(allowsBrowserAuthTokens() && process.env.ALLOW_TEST_RESET_TOKEN !== "false" ? { resetToken: token } : {})
+      ...(allowsBrowserAuthTokens() ? { resetToken: token } : {})
     };
   }
 
