@@ -19,6 +19,10 @@ test("browser authentication uses a same-origin HttpOnly cookie session", async 
   assert.match(platform, /const deployedApiBase = "\/api"/);
   assert.match(platform, /credentials: "include"/);
   assert.match(platform, /many_worlds_session_hint=1/);
+  assert.match(platform, /restoreBrowserSession/);
+  assert.match(platform, /AbortController/);
+  assert.match(platform, /Your session expired\. Please sign in again\./);
+  assert.match(platform, /skipRestore/);
   assert.match(platform, /auth\/session\/upgrade/);
   assert.match(platform, /localStorage\.removeItem\("many-worlds-token"\)/);
   assert.doesNotMatch(platform, /localStorage\.setItem\("many-worlds-token"/);

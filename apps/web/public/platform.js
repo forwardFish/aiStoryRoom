@@ -28,7 +28,14 @@ function safeReturnTo(value) {
 }
 function apiUrl(url) { return url.startsWith("/api/") ? `${platformApiBase}${url.slice(4)}` : url; }
 function hasSessionCookie() { return document.cookie.split(";").some((item) => item.trim() === "many_worlds_session_hint=1"); }
-function clearSessionHint() { document.cookie = "many_worlds_session_hint=; Path=/; Max-Age=0; SameSite=Lax"; localStorage.removeItem("many-worlds-token"); }
+function clearSessionHint() {
+  try { document.cookie = "many_worlds_session_hint=; Path=/; Max-Age=0; SameSite=Lax"; } catch {
+    // Cookie access can be blocked by browser privacy settings.
+  }
+  try { localStorage.removeItem("many-worlds-token"); } catch {
+    // A stale local token must never prevent the login form from rendering.
+  }
+}
 async function migrateLegacySession() {
   if (hasSessionCookie()) { localStorage.removeItem("many-worlds-token"); return; }
   const legacyToken = localStorage.getItem("many-worlds-token");
@@ -123,25 +130,45 @@ async function mountGoogleSignIn(returnTo) {
   }
 }
 
+function restoreBrowserSession(returnTo) {
+  appShell(`<section class="page-frame auth-frame"><p class="muted">Restoring your signed-in session...</p></section>`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  void request("/api/v4/auth/me", { signal: controller.signal })
+    .then(() => { clearTimeout(timeout); location.replace(returnTo); })
+    .catch(() => {
+      clearTimeout(timeout);
+      clearSessionHint();
+      authSkipRestore = true;
+      authRestoreError = "Your session expired. Please sign in again.";
+      renderAuth();
+    });
+}
 
+let authSkipRestore = false;
+let authRestoreError = "";
 function renderAuth() {
+  const skipRestore = authSkipRestore;
+  const restoreError = authRestoreError;
+  authSkipRestore = false;
+  authRestoreError = "";
   const returnTo = safeReturnTo(params.get("returnTo"));
   const legacyResetToken = String(params.get("token") || "").trim();
   if (params.get("mode") === "reset" && legacyResetToken) {
     location.replace(`/reset-password?token=${encodeURIComponent(legacyResetToken)}`);
     return;
   }
-  if (hasSessionCookie()) {
-    appShell(`<section class="page-frame auth-frame"><p class="muted">Restoring your signed-in session…</p></section>`);
-    void request("/api/v4/auth/me").then(() => location.replace(returnTo)).catch(() => { clearSessionHint(); renderAuth(); });
+  if (!skipRestore && hasSessionCookie()) {
+    restoreBrowserSession(returnTo);
     return;
   }
   appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to Many Worlds</h1><p class="auth-subtitle">Log in or create an account to continue.</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password">Show</button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
+  if (restoreError) notice(restoreError);
   let mode = "login";
   const form = root.querySelector("[data-auth-form]");
   const applyMode = (next) => { mode = next; root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.authTab === next)); root.querySelectorAll(".signup-only").forEach((node) => node.hidden = next !== "signup"); root.querySelectorAll(".login-only").forEach((node) => node.hidden = next !== "login"); form.querySelector("button[type=submit]").textContent = next === "login" ? "Log in" : "Create account"; form.querySelector("input[name=password]").autocomplete = next === "login" ? "current-password" : "new-password"; };
   root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.addEventListener("click", () => applyMode(tab.dataset.authTab)));
-  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; const response = await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } location.assign(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
+  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } location.assign(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
   const resetToken = String(params.get("token") || "").trim();
   if (params.get("mode") === "verify" && resetToken) {
     notice("Verifying your email…");
