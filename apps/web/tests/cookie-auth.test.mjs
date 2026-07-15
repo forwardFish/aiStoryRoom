@@ -10,10 +10,10 @@ test("browser authentication uses a same-origin HttpOnly cookie session", async 
     readFile(new URL("../public/role-select.js", import.meta.url), "utf8"),
     readFile(new URL("../public/room-game.js", import.meta.url), "utf8"),
     readFile(new URL("../../../vercel.json", import.meta.url), "utf8"),
-    readFile(new URL("../../../api/[...path].js", import.meta.url), "utf8")
+    readFile(new URL("../../../api-proxy.js", import.meta.url), "utf8")
   ]);
 
-  assert.doesNotMatch(vercel, /appsapi-test\.up\.railway\.app/);
+  assert.match(vercel, /"source": "\/api\/:path\*", "destination": "\/api-proxy\?path=:path\*"/);
   assert.match(apiProxy, /appsapi-test\.up\.railway\.app/);
   assert.match(apiProxy, /set-cookie/);
   assert.match(platform, /const deployedApiBase = "\/api"/);
