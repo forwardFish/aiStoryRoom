@@ -26,12 +26,12 @@ export class EmailService {
   }
 
   async sendVerification(input: { email: string; token: string; returnTo?: string; idempotencyKey: string }) {
-    const url = authUrl("verify", input.token, input.returnTo);
+    const url = verificationUrl(input.token, input.returnTo);
     return this.send(input.email, verifyEmailTemplate(url), input.idempotencyKey);
   }
 
   async sendPasswordReset(input: { email: string; token: string; idempotencyKey: string }) {
-    const url = authUrl("reset", input.token);
+    const url = passwordResetUrl(input.token);
     return this.send(input.email, resetPasswordTemplate(url), input.idempotencyKey);
   }
 
@@ -42,11 +42,18 @@ export class EmailService {
   }
 }
 
-function authUrl(mode: "verify" | "reset", token: string, returnTo?: string) {
+function verificationUrl(token: string, returnTo?: string) {
   const base = String(process.env.PUBLIC_WEB_URL || "http://localhost:5177").replace(/\/$/, "");
   const url = new URL(`${base}/auth`);
-  url.searchParams.set("mode", mode);
+  url.searchParams.set("mode", "verify");
   url.searchParams.set("token", token);
-  if (mode === "verify" && returnTo) url.searchParams.set("returnTo", safeAuthReturnTo(returnTo));
+  if (returnTo) url.searchParams.set("returnTo", safeAuthReturnTo(returnTo));
+  return url.toString();
+}
+
+function passwordResetUrl(token: string) {
+  const base = String(process.env.PUBLIC_WEB_URL || "http://localhost:5177").replace(/\/$/, "");
+  const url = new URL(`${base}/reset-password`);
+  url.searchParams.set("token", token);
   return url.toString();
 }

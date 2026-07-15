@@ -25,6 +25,10 @@ async function run() {
     const sink = await readFile(process.env.AUTH_MAIL_SINK_FILE, "utf8");
     assert.match(sink, /mode=verify/);
     assert.match(sink, /returnTo=%2Fjoin%3Froom%3DROOM1%26ref%3DREF1%26channel%3DLINK/);
+    await development.sendPasswordReset({ email: "reader@example.test", token: "reset-token", idempotencyKey: "email-test-reset" });
+    const resetSink = await readFile(process.env.AUTH_MAIL_SINK_FILE, "utf8");
+    assert.match(resetSink, /\/reset-password\?token=reset-token/);
+    assert.doesNotMatch(resetSink, /\/auth\?mode=reset/);
 
     process.env.NODE_ENV = "production";
     process.env.EMAIL_PROVIDER = "resend";
