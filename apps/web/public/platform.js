@@ -26,6 +26,12 @@ function safeReturnTo(value) {
     return `${url.pathname}${url.search}`;
   } catch { return "/"; }
 }
+function header(active = "") {
+  const profile = `<a class="profile-icon" aria-label="Account" href="/auth?returnTo=${encodeURIComponent(path + location.search)}"></a>`;
+  const utility = `<div class="header-right"><a href="/#faq">Help</a><span class="divider"></span><span class="language-label" aria-label="Language">English⌄</span>${profile}</div>`;
+  if (active === "auth") return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>Many Worlds</span></a>${utility}</header>`;
+  return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>Many Worlds</span></a><nav class="mw-nav"><a class="${active === "worlds" ? "active" : ""}" href="/worlds/caesar">Explore Worlds</a><a class="${active === "rooms" ? "active" : ""}" href="/rooms">Rooms</a><a href="/credits">World Credits</a></nav>${utility}</header>`;
+}
 function appShell(content, active = "") {
   if (roomRefreshTimer) { clearInterval(roomRefreshTimer); roomRefreshTimer = null; }
   root.innerHTML = `${header(active || (path === "/auth" ? "auth" : ""))}${content}`;
