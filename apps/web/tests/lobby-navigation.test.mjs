@@ -38,3 +38,12 @@ test("room rendering only retains real API rooms", async () => {
   assert.match(roomPage, /Loading your rooms/);
   assert.doesNotMatch(roomPage, /Night Council|After Hours|Board Vote|fixture-caesar-waiting/);
 });
+
+test("deployed platform authentication targets the Railway API instead of Vercel", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+
+  assert.match(source, /const deployedApiBase = "https:\/\/appsapi-test\.up\.railway\.app\/api"/);
+  assert.match(source, /fetch\(apiUrl\(url\)/);
+  assert.match(source, /fetch\(apiUrl\(`\/api\/v4\/referrals\/qr/);
+  assert.doesNotMatch(source, /fetch\(`\/api\/v4\/referrals\/qr/);
+});

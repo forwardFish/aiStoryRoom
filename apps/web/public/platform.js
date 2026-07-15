@@ -1,6 +1,9 @@
 const root = document.querySelector("#platform-app");
 const path = location.pathname.replace(/\/$/, "") || "/";
 const params = new URLSearchParams(location.search);
+const isLocalRuntime = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+const deployedApiBase = "https://appsapi-test.up.railway.app/api";
+const platformApiBase = (params.get("apiBase") || (isLocalRuntime ? "/api" : deployedApiBase)).replace(/\/$/, "");
 const purple = "#6434d7";
 let activeRoom = null;
 let roomRefreshTimer = null;
@@ -15,6 +18,7 @@ const roles = [
 
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]); }
 function safeReturnTo(value) { return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") ? value : "/worlds/caesar"; }
+function apiUrl(url) { return url.startsWith("/api/") ? `${platformApiBase}${url.slice(4)}` : url; }
 function header(active = "") {
   const profile = `<a class="profile-icon" aria-label="Account" href="/auth?returnTo=${encodeURIComponent(path + location.search)}"></a>`;
   const utility = `<div class="header-right"><a href="/#faq">Help</a><span class="divider"></span><span class="language-label" aria-label="Language">English⌄</span>${profile}</div>`;
@@ -163,7 +167,7 @@ async function openInviteShareLegacy() {
   } catch (error) { notice(error.message || "Unable to prepare the invitation link."); }
 }
 async function fetchInviteQr(roomCode) {
-  const response = await fetch(`/api/v4/referrals/qr?room=${encodeURIComponent(roomCode)}`, { headers: { authorization:`Bearer ${sessionToken()}` } });
+  const response = await fetch(apiUrl(`/api/v4/referrals/qr?room=${encodeURIComponent(roomCode)}`), { headers: { authorization:`Bearer ${sessionToken()}` } });
   if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error.message || "Unable to generate invitation QR code"); }
   const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob); const image = new Image(); image.src = objectUrl;
   await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error("Invitation QR code could not be loaded")); });
@@ -207,7 +211,7 @@ async function openInviteShare() {
 }
 function sessionToken() { return localStorage.getItem("many-worlds-token") || ""; }
 function requireSession() { if (sessionToken()) return true; location.assign(`/auth?returnTo=${encodeURIComponent(path + location.search)}`); return false; }
-async function request(url, options = {}) { const authorization = url.startsWith("/api/v4/") && sessionToken() ? { authorization: `Bearer ${sessionToken()}` } : {}; const response = await fetch(url, { ...options, headers: { "content-type":"application/json", ...authorization, ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || data.code || `Request failed: ${response.status}`); return data; }
+async function request(url, options = {}) { const authorization = url.startsWith("/api/v4/") && sessionToken() ? { authorization: `Bearer ${sessionToken()}` } : {}; const response = await fetch(apiUrl(url), { ...options, headers: { "content-type":"application/json", ...authorization, ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || data.code || `Request failed: ${response.status}`); return data; }
 function roomRows(rooms) { return rooms.map((room, index) => `<div class="room-table room-row"><div class="world-cell"><img class="thumb" src="/assets/bg/${(index % 5) + 1}.png" alt=""><strong>${esc(room.worldId === "sangtian" ? "嘉靖财政危局" : "Caesar")}</strong></div><span>${esc(room.title)}</span><span>${room.players.length} of ${room.maxPlayers}</span><span class="badge">Open</span><button class="btn small" data-open-room="${esc(room.id)}" data-join-code="${esc(room.code || "")}">Join</button></div>`).join("") || `<p class="refresh-note">No open rooms yet. Create the first room.</p>`; }
 function myRoomRows(rooms) { return rooms.map((room, index) => { const action = room.nextAction === "continue" ? "Continue" : room.nextAction === "view_result" ? "View Result" : "Open"; return `<div class="my-room"><img src="/assets/bg/${(index % 5) + 1}.png" alt=""><div><strong>${esc(room.title)}</strong><span>${esc(room.worldId === "sangtian" ? "嘉靖财政危局" : "Caesar")}</span></div><button class="btn small" data-my-room="${esc(room.id)}" data-next-action="${esc(room.nextAction || "open")}">${action}</button></div>`; }).join("") || `<p class="refresh-note">No rooms yet.</p>`; }
 function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { try { if (button.dataset.joinCode) await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode }) }); location.assign(`/rooms/${button.dataset.openRoom}`); } catch (error) { notice(error.message || "Unable to join this room."); } })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/room-game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
