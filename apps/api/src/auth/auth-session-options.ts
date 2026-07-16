@@ -5,8 +5,12 @@ export function authSessionTtlSeconds() {
 }
 
 export function authCookieSecure() {
-  // Local development is normally plain HTTP. Production always uses HTTPS
-  // behind Railway/Vercel, where Secure prevents the browser from exposing a
-  // session cookie over an insecure connection.
-  return process.env.NODE_ENV === "production";
+  const configured = String(process.env.AUTH_COOKIE_SECURE || "").trim().toLowerCase();
+  if (configured === "true") return true;
+  if (configured === "false") return false;
+  // Railway can run a production deployment without exporting NODE_ENV. The
+  // public HTTPS origin is therefore also authoritative for the cookie flag.
+  if (process.env.NODE_ENV === "production") return true;
+  try { return new URL(String(process.env.PUBLIC_WEB_URL || "")).protocol === "https:"; }
+  catch { return false; }
 }
