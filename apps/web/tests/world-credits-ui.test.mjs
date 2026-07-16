@@ -57,3 +57,22 @@ test("success page delegates credit authority to checkout status polling", () =>
   assert.match(script, /status === \"PAID\"/);
   assert.doesNotMatch(script, /POST.*credits|grantCredits/);
 });
+
+test("payment status page hides the global header and renders centered success actions", () => {
+  const page = read("credits-status.html");
+  const script = read("js/credits-status.js");
+  const styles = read("payment-status.css");
+  const visibleMarkup = page.replace(/<!--[\s\S]*?-->/g, "");
+  const paidBranch = script.slice(script.indexOf("if (isPaid)"), script.indexOf("} else if (isProcessing)"));
+
+  assert.match(page, /Global payment-status header temporarily disabled/);
+  assert.doesNotMatch(visibleMarkup, /<header\b/);
+  assert.match(page, /payment-status\.css\?v=/);
+  assert.match(paidBranch, /View World Credits/);
+  assert.match(paidBranch, /Back to home/);
+  assert.doesNotMatch(paidBranch, /Try again/);
+  assert.match(styles, /display:\s*inline-flex\s*!important/);
+  assert.match(styles, /align-items:\s*center/);
+  assert.match(styles, /justify-content:\s*center/);
+  assert.match(styles, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(220px,\s*1fr\)\)/);
+});

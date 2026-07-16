@@ -38,15 +38,17 @@ function render(kind, title, copy, result) {
   const continueTo = destination(context);
   const wallet = context.intent === "WORLD_UNLOCK" ? `/credits?intent=WORLD_UNLOCK&runId=${encodeURIComponent(context.runId || "")}&returnTo=${encodeURIComponent(continueTo)}` : "/credits";
   const actions = el("actions");
-  if (isPaid && context.intent === "WORLD_UNLOCK") {
-    actions.innerHTML = `<a class="btn primary" href="${continueTo}">Return to your room</a><a class="btn" href="${wallet}">View World Credits</a>`;
+  if (isPaid) {
+    actions.innerHTML = context.intent === "WORLD_UNLOCK"
+      ? `<a class="btn primary" href="${continueTo}">Return to your room</a><a class="btn" href="${wallet}">View World Credits</a>`
+      : `<a class="btn primary" href="/credits">View World Credits</a><a class="btn" href="/">Back to home</a>`;
   } else if (isProcessing) {
-    actions.innerHTML = `<button class="btn primary" type="button" data-continue-waiting>Continue waiting</button><a class="btn" href="${continueTo}">Return to room</a>`;
+    actions.innerHTML = `<button class="btn primary" type="button" data-continue-waiting>Continue waiting</button><a class="btn" href="${context.intent === "WORLD_UNLOCK" ? continueTo : "/credits"}">${context.intent === "WORLD_UNLOCK" ? "Return to room" : "Back to World Credits"}</a>`;
     actions.querySelector("[data-continue-waiting]").addEventListener("click", () => poll({ immediate: true }));
   } else if (isCancelled) {
-    actions.innerHTML = `<a class="btn primary" href="${wallet}">Choose another pack</a><a class="btn" href="${continueTo}">Return to room</a>`;
+    actions.innerHTML = `<a class="btn primary" href="${wallet}">Choose another pack</a><a class="btn" href="${context.intent === "WORLD_UNLOCK" ? continueTo : "/"}">${context.intent === "WORLD_UNLOCK" ? "Return to room" : "Back to home"}</a>`;
   } else {
-    actions.innerHTML = `<a class="btn primary" href="${wallet}">Try again</a><a class="btn" href="${continueTo}">Return to room</a>`;
+    actions.innerHTML = `<a class="btn primary" href="${wallet}">Try again</a><a class="btn" href="${context.intent === "WORLD_UNLOCK" ? continueTo : "/"}">${context.intent === "WORLD_UNLOCK" ? "Return to room" : "Back to home"}</a>`;
   }
 }
 
