@@ -30,6 +30,9 @@ test("result sharing is expiring, revocable, poster-enabled and publicly routed"
   assert.match(source, /expiresInDays/);
   assert.match(source, /method:"DELETE"/);
   assert.match(source, /buildResultPoster/);
+  assert.match(source, /Loading recap…/);
+  assert.match(source, /hydrateResult\(params\.get\("runId"\)\)\.then\(\(loaded\)/);
+  assert.match(source, /shareButton\.disabled = false/);
   assert.match(source, /private goals, hidden intent, clues, raw actions and reasoning traces/i);
   assert.match(source, /https:\/\/wa\.me/);
   assert.match(source, /https:\/\/t\.me\/share\/url/);

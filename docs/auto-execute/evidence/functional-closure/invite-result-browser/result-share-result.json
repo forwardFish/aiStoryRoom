@@ -1,0 +1,203 @@
+{
+  "status": "PASS",
+  "roomId": "cmrnp0j8r000avc0sia8jqiyv",
+  "creator": "mw-closure-1784217456282-p1@example.test",
+  "startedAt": "2026-07-16T16:43:36.235Z",
+  "socialTargets": {
+    "external": [
+      "https://wa.me/?text=Read%20my%20Many%20Worlds%20recap%3A%20%E6%B2%A1%E6%9C%89%E5%BD%B1%E5%AD%90%E7%9A%84%E5%AE%A2%E4%BA%BA%20http%3A%2F%2F127.0.0.1%3A5278%2Fshared%2Fresult%3Ftoken%3D[redacted]",
+      "https://t.me/share/url?url=http%3A%2F%2F127.0.0.1%3A5278%2Fshared%2Fresult%3Ftoken%3D[redacted]&text=Read%20my%20Many%20Worlds%20recap%3A%20%E6%B2%A1%E6%9C%89%E5%BD%B1%E5%AD%90%E7%9A%84%E5%AE%A2%E4%BA%BA",
+      "https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2F127.0.0.1%3A5278%2Fshared%2Fresult%3Ftoken%3D[redacted]",
+      "https://x.com/intent/post?text=Read%20my%20Many%20Worlds%20recap%3A%20%E6%B2%A1%E6%9C%89%E5%BD%B1%E5%AD%90%E7%9A%84%E5%AE%A2%E4%BA%BA%20http%3A%2F%2F127.0.0.1%3A5278%2Fshared%2Fresult%3Ftoken%3D[redacted]"
+    ],
+    "native": {
+      "title": "没有影子的客人",
+      "text": "A Many Worlds story recap",
+      "url": "http://127.0.0.1:5278/shared/result?token=[redacted]"
+    }
+  },
+  "poster": true,
+  "publicView": {
+    "url": "http://127.0.0.1:5278/shared/result?token=[redacted]",
+    "rendered": true,
+    "leakedEmail": false,
+    "leakedPrivateGoal": false
+  },
+  "revoked": true,
+  "expired": true,
+  "invitation": {
+    "inviteUrl": "http://127.0.0.1:5278/join?room=WHD5QP&ref=NDRJT6DM&channel=LINK",
+    "qrPoster": true,
+    "platformHandoffs": {
+      "targets": [
+        "https://wa.me/?text=Join%20my%20Many%20Worlds%20room%3A%20%E6%A1%91%E7%94%B0%E8%AF%8F%EF%BC%9A%E5%98%89%E9%9D%96%E8%B4%A2%E6%94%BF%E5%8D%B1%E5%B1%80%EF%BC%9A%E6%B2%A1%E6%9C%89%E5%BD%B1%E5%AD%90%E7%9A%84%E5%AE%A2%E4%BA%BA.%20Complete%20the%20opening%20together%20and%20we%20can%20earn%2025%20bonus%20credits.%20http%3A%2F%2F127.0.0.1%3A5278%2Fjoin%3Froom%3DWHD5QP%26ref%3DNDRJT6DM%26channel%3DWHATSAPP",
+        "https://t.me/share/url?url=http%3A%2F%2F127.0.0.1%3A5278%2Fjoin%3Froom%3DWHD5QP%26ref%3DNDRJT6DM%26channel%3DTELEGRAM&text=Join%20my%20Many%20Worlds%20room%3A%20%E6%A1%91%E7%94%B0%E8%AF%8F%EF%BC%9A%E5%98%89%E9%9D%96%E8%B4%A2%E6%94%BF%E5%8D%B1%E5%B1%80%EF%BC%9A%E6%B2%A1%E6%9C%89%E5%BD%B1%E5%AD%90%E7%9A%84%E5%AE%A2%E4%BA%BA.%20Complete%20the%20opening%20together%20and%20we%20can%20earn%2025%20bonus%20credits.",
+        "https://discord.com/channels/@me",
+        "https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2F127.0.0.1%3A5278%2Fjoin%3Froom%3DWHD5QP%26ref%3DNDRJT6DM%26channel%3DFACEBOOK",
+        "https://x.com/intent/post?text=Join%20my%20Many%20Worlds%20room%3A%20%E6%A1%91%E7%94%B0%E8%AF%8F%EF%BC%9A%E5%98%89%E9%9D%96%E8%B4%A2%E6%94%BF%E5%8D%B1%E5%B1%80%EF%BC%9A%E6%B2%A1%E6%9C%89%E5%BD%B1%E5%AD%90%E7%9A%84%E5%AE%A2%E4%BA%BA.%20Complete%20the%20opening%20together%20and%20we%20can%20earn%2025%20bonus%20credits.%20http%3A%2F%2F127.0.0.1%3A5278%2Fjoin%3Froom%3DWHD5QP%26ref%3DNDRJT6DM%26channel%3DX"
+      ],
+      "native": [
+        {
+          "title": "Many Worlds",
+          "text": "Join my Many Worlds room: 桑田诏：嘉靖财政危局：没有影子的客人. Complete the opening together and we can earn 25 bonus credits.",
+          "url": "http://127.0.0.1:5278/join?room=WHD5QP&ref=NDRJT6DM&channel=LINK"
+        }
+      ]
+    },
+    "rewards": {
+      "code": "NDRJT6DM",
+      "inviteUrl": "http://127.0.0.1:5278/join?ref=NDRJT6DM",
+      "rewardPerQualifiedInvite": 25,
+      "maxRewardedInvites": 2,
+      "rewardedCount": 2,
+      "remainingRewardSlots": 0
+    }
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "actionSubmitters": 3,
+      "resolvedBy": "host"
+    },
+    {
+      "round": 2,
+      "actionSubmitters": 3,
+      "resolvedBy": "host"
+    },
+    {
+      "round": 3,
+      "actionSubmitters": 3,
+      "resolvedBy": "host"
+    },
+    {
+      "round": 4,
+      "actionSubmitters": 3,
+      "resolvedBy": "host"
+    },
+    {
+      "round": 5,
+      "actionSubmitters": 3,
+      "resolvedBy": "host"
+    },
+    {
+      "round": 6,
+      "actionSubmitters": 3,
+      "resolvedBy": "host"
+    },
+    {
+      "round": 7,
+      "actionSubmitters": 3,
+      "resolvedBy": "host"
+    }
+  ],
+  "players": [
+    "mw-closure-1784217456282-p1@example.test",
+    "mw-closure-1784217456282-p2@example.test",
+    "mw-closure-1784217456282-p3@example.test"
+  ],
+  "database": {
+    "secureShares": [
+      {
+        "id": "cmrnpgial00alvc0s0nb65xa6",
+        "token": null,
+        "tokenHash": "af0b481c8ddb9b4285fd83d4f1365c6c541da21d0293ad663a2866c680cf275d",
+        "revokedAt": null,
+        "expiresAt": "2026-07-23T16:10:15.836Z"
+      },
+      {
+        "id": "cmrnpww2k00anvc0swvimgmvb",
+        "token": null,
+        "tokenHash": "135fe5a8b67ad959ceca35a156cae947fa696748aa3f8e51dfbc39fe4483e504",
+        "revokedAt": null,
+        "expiresAt": "2026-07-23T16:23:00.186Z"
+      },
+      {
+        "id": "cmrnq3bgt00apvc0spr5zty84",
+        "token": null,
+        "tokenHash": "6b07a04807fb5a72b456bcd4a89d8d1dbff406fa2c26b043561459538b23c184",
+        "revokedAt": "2026-07-16T16:28:03.190Z",
+        "expiresAt": "2026-07-23T16:28:00.075Z"
+      },
+      {
+        "id": "cmrnq3g3u00arvc0sijy5qcib",
+        "token": null,
+        "tokenHash": "edf1db5f9cbf96d45fc397cebf09a3669d358ce622921adbbaf35a4a5ac1b1f8",
+        "revokedAt": null,
+        "expiresAt": "2026-07-16T16:27:06.430Z"
+      },
+      {
+        "id": "cmrnqnp4w00b7vc0su4a9fn2c",
+        "token": null,
+        "tokenHash": "d24cfddc647b5b4da3b4f5cf27f3fc837b305bca44fdc375cb2b631c5cf065a7",
+        "revokedAt": null,
+        "expiresAt": "2026-07-16T16:42:51.543Z"
+      },
+      {
+        "id": "cmrnq4iho00atvc0sbi3gj7hs",
+        "token": null,
+        "tokenHash": "2f0e0c0db4c23e75d189b2d7e3f9ae04b1ad7fb131b8078032bc9db106be892a",
+        "revokedAt": "2026-07-16T16:28:58.548Z",
+        "expiresAt": "2026-07-23T16:28:55.834Z"
+      },
+      {
+        "id": "cmrnq4m0t00avvc0sp0mif3he",
+        "token": null,
+        "tokenHash": "c1584393b3bd8a9bd8b49ba881a9d445ea1563f48d36a20dd893543f86d148b2",
+        "revokedAt": null,
+        "expiresAt": "2026-07-16T16:28:00.773Z"
+      },
+      {
+        "id": "cmrnqbpmh00b1vc0s22v287zx",
+        "token": null,
+        "tokenHash": "dc8469a1baf246ecd90f8f1116b1d369d633088217e144b2a7e313bf0bbb8ffe",
+        "revokedAt": "2026-07-16T16:34:35.249Z",
+        "expiresAt": "2026-07-23T16:34:31.672Z"
+      },
+      {
+        "id": "cmrnq9svp00axvc0s096wa2gc",
+        "token": null,
+        "tokenHash": "17d0df1414fa08a97703b62a46e21cbddc3e73ef9830b9c26e98a6f73ee30be4",
+        "revokedAt": "2026-07-16T16:33:04.988Z",
+        "expiresAt": "2026-07-23T16:33:02.579Z"
+      },
+      {
+        "id": "cmrnq9ztp00azvc0sk0h6pekh",
+        "token": null,
+        "tokenHash": "71b8d125c618d8df82fe47291128ab7c30230f4917ef012358b59e65e0d4d51a",
+        "revokedAt": null,
+        "expiresAt": "2026-07-16T16:32:11.997Z"
+      },
+      {
+        "id": "cmrnqbxew00b3vc0sqq0m5jdo",
+        "token": null,
+        "tokenHash": "2ee9a669710ecd17e3a1949ddc34d5c538fb5c1400dbd940e09e19197ab07f62",
+        "revokedAt": null,
+        "expiresAt": "2026-07-16T16:33:42.022Z"
+      },
+      {
+        "id": "cmrnqnjh200b5vc0sq3mo13rj",
+        "token": null,
+        "tokenHash": "4781ca182325ddf41e55b3ef814f6f713b9abe825716ea88bf5ac5de2b03fbbd",
+        "revokedAt": "2026-07-16T16:43:45.996Z",
+        "expiresAt": "2026-07-23T16:43:43.572Z"
+      }
+    ],
+    "referrals": [
+      {
+        "status": "REWARDED",
+        "rewardedAt": "2026-07-16T15:59:56.789Z",
+        "referredUserId": "cmrnp177e002fvc0s91rrf18v"
+      },
+      {
+        "status": "REWARDED",
+        "rewardedAt": "2026-07-16T16:00:53.466Z",
+        "referredUserId": "cmrnp1jlm002uvc0sht6rp9e2"
+      }
+    ]
+  },
+  "runtimeExceptions": {
+    "host": [],
+    "viewer": []
+  },
+  "completedAt": "2026-07-16T16:43:55.112Z"
+}

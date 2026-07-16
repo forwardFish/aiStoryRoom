@@ -368,9 +368,14 @@ function visualIcon(id, label, extra = "") {
 function renderResult() {
   const fixture = params.get("runId") === "fixture-caesar-finished";
   appShell(`<section class="page-frame"><a class="back-link" href="/worlds/caesar">Back to worlds</a><div class="result-run"><img src="/assets/bg/1.png" alt="Rome"><div><h1>Caesar: The Last Spring of the Republic</h1><span class="session-complete">${visualIcon(15, "", "session-icon")}Session Complete</span></div></div><h1 class="result-title">A Republic Without a Master</h1><p class="result-lead">Caesar survived, but accepted limits on his authority.<br>Rome avoided civil war—for now.</p><div class="summary-grid"><article class="summary-card"><span class="mode-icon">${visualIcon(17, "")}</span><div><h2>Your Role</h2><img class="portrait" src="/assets/portrait/1.png" alt="Brutus"><strong>Brutus</strong></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(31, "")}</span><div><h2>Your Ending</h2><strong>The Reluctant Architect</strong><p>You chose restraint over power, building guardrails that may hold—if others keep faith.</p></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(12, "")}</span><div><h2>World State</h2><strong>Fragile Stability</strong><p>Rome stands together, but old rivalries smolder and the future is uncertain.</p></div></article></div><div class="lower-grid"><section class="lower-card"><h2>${visualIcon(25, "", "section-icon")}Key Decisions</h2><div class="decision-item"><span class="number-dot">1</span><span>You opposed the dictatorship and pushed for limits on power.</span></div><div class="decision-item"><span class="number-dot">2</span><span>You brokered a compromise between the Senate and Caesar.</span></div><div class="decision-item"><span class="number-dot">3</span><span>You secured support from key allies to pass reforms.</span></div></section><section class="lower-card"><h2>${visualIcon(10, "", "section-icon")}Goals Completed <span class="badge progress">2 / 3</span></h2><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Prevent Caesar from becoming an unrestrained dictator.</span></div><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Avoid a civil war.</span></div><div class="goal-item"><span class="open-check">◯</span><span>Pass meaningful reforms to strengthen the Republic.</span></div></section></div><div class="result-actions"><button class="btn primary" data-action="play-again">${visualIcon(4, "", "button-icon inverted")}Play Again</button><button class="btn" data-action="other-role">${visualIcon(5, "", "button-icon")}Try Another Role</button><button class="btn" data-action="back-worlds">${visualIcon(8, "", "button-icon")}Back to Worlds</button></div></section>`, "worlds");
-  root.querySelector(".result-actions")?.insertAdjacentHTML("afterend", '<button class="result-share-recap" data-action="share-recap">Share Recap</button>');
+  root.querySelector(".result-actions")?.insertAdjacentHTML("afterend", `<button class="result-share-recap" data-action="share-recap" ${fixture ? "" : "disabled"}>${fixture ? "Share Recap" : "Loading recap…"}</button>`);
   bind();
-  if (!fixture) hydrateResult(params.get("runId"));
+  if (!fixture) void hydrateResult(params.get("runId")).then((loaded) => {
+    const shareButton = root.querySelector('[data-action="share-recap"]');
+    if (!loaded || !shareButton) return;
+    shareButton.disabled = false;
+    shareButton.textContent = "Share Recap";
+  });
 }
 
 async function hydrateResult(runId) {
@@ -394,7 +399,8 @@ async function hydrateResult(runId) {
     cards[2].querySelector("p").textContent = `${result.completedNodes || 7} shared rounds were resolved by the room.`;
     const decisionItems = shell.querySelector(".lower-card");
     decisionItems.innerHTML = `<h2>♎　 Key Decisions</h2>${highlights.length ? highlights.map((item, index) => `<div class="decision-item"><span class="number-dot">${index + 1}</span><span>${esc(typeof item === "string" ? item : item?.text || item?.title || "Shared decision")}</span></div>`).join("") : `<div class="decision-item"><span class="number-dot">1</span><span>All room actions have been recorded in the completed chapter.</span></div>`}`;
-  } catch (error) { notice(error.message || "Unable to load this result."); }
+    return true;
+  } catch (error) { notice(error.message || "Unable to load this result."); return false; }
 }
 
 async function loadImageSource(source) {
