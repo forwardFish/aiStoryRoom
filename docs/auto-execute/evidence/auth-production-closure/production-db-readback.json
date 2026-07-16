@@ -1,0 +1,37 @@
+{
+  "status": "MANUAL_ACCEPTANCE_REQUIRED",
+  "scope": "Redacted production authentication aggregate readback",
+  "google": {
+    "identityCount": 1,
+    "distinctUserCount": 1,
+    "linkedEventCount": 1,
+    "consumedChallengeCount": 0,
+    "unconsumedLiveChallengeCount": 0,
+    "successfulLoginEventCount": 0,
+    "firstLoginEventCount": 0,
+    "repeatLoginEventCount": 0,
+    "invitationLoginEventCount": 0,
+    "latestSuccessfulLoginAt": null
+  },
+  "email": {
+    "verificationSentCount": 3,
+    "verificationConsumedCount": 3,
+    "latestVerificationConsumedAt": "2026-07-16T06:46:36.279Z",
+    "resetSentCount": 8,
+    "resetConsumedCount": 3,
+    "latestResetConsumedAt": "2026-07-16T06:47:42.725Z",
+    "activeVerifiedPasswordUserCount": 402
+  },
+  "acceptance": {
+    "emailVerificationObserved": true,
+    "passwordResetObserved": true,
+    "currentGoogleChallengeLoginObserved": false,
+    "secondGoogleIdentityObserved": false,
+    "repeatGoogleLoginObserved": false,
+    "invitationGoogleLoginObserved": false,
+    "cookiePersistence": "MANUAL_BROWSER_REQUIRED"
+  },
+  "piiRecorded": false,
+  "secretsRecorded": false,
+  "checkedAt": "2026-07-16T11:50:31.780Z"
+}

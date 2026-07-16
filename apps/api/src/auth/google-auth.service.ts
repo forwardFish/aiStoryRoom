@@ -30,20 +30,20 @@ export class GoogleAuthService {
     this.enforceRateLimit("login", input.clientIp, 10, 15 * 60_000);
     const identity = await this.verifier.verify(String(input.credential || ""));
     const challengeId = String(input.challengeId || "");
+    const returnTo = safeAuthReturnTo(input.returnTo);
     let userAndIdentity: Awaited<ReturnType<GoogleAuthService["consumeAndResolve"]>>;
     try {
-      userAndIdentity = await this.consumeAndResolve(identity, challengeId);
+      userAndIdentity = await this.consumeAndResolve(identity, challengeId, returnTo);
     } catch (error) {
       if (!isPrismaUniqueConstraintError(error)) throw error;
       // Two first-time logins for the same Google subject can race between the
       // initial lookup and the unique AuthIdentity insert. The losing database
       // transaction rolls back its challenge consumption, so consume it once
       // more and resolve the identity committed by the winner.
-      userAndIdentity = await this.resolveConcurrentIdentity(identity, challengeId, error);
+      userAndIdentity = await this.resolveConcurrentIdentity(identity, challengeId, returnTo, error);
     }
-    if (userAndIdentity.user.status !== "active") throw new UnauthorizedException({ code: "INVALID_GOOGLE_CREDENTIAL", message: "Google sign-in is unavailable for this account" });
     const token = issueAccessToken(userAndIdentity.user, { authMethod: "GOOGLE", authIdentityId: userAndIdentity.identity.id });
-    return { token, accessToken: token, user: safeUser(userAndIdentity.user), returnTo: safeAuthReturnTo(input.returnTo) };
+    return { token, accessToken: token, user: safeUser(userAndIdentity.user), returnTo };
   }
 
   async link(user: AuthenticatedUser, input: { credential?: string; challengeId?: string; clientIp?: string }) {
@@ -80,14 +80,18 @@ export class GoogleAuthService {
     return { unlinked: true };
   }
 
-  private async consumeAndResolve(candidate: VerifiedGoogleIdentity, challengeId: string) {
+  private async consumeAndResolve(candidate: VerifiedGoogleIdentity, challengeId: string, returnTo: string) {
     return this.prisma.$transaction(async (tx) => {
       await consumeChallenge(tx, challengeId, candidate.nonce);
       const existing = await tx.authIdentity.findUnique({
         where: { provider_providerSubject: { provider: AuthProvider.GOOGLE, providerSubject: candidate.subject } },
         include: { user: true }
       });
-      if (existing) return { user: existing.user, identity: existing };
+      if (existing) {
+        assertActiveGoogleUser(existing.user);
+        await recordGoogleLogin(tx, existing.user.id, existing.id, "repeat", returnTo);
+        return { user: existing.user, identity: existing };
+      }
 
       const emailMatch = await tx.user.findUnique({ where: { email: candidate.email } });
       if (emailMatch) {
@@ -97,6 +101,7 @@ export class GoogleAuthService {
         }
         const identity = await tx.authIdentity.create({ data: identityData(emailMatch.id, candidate) });
         await tx.eventLog.create({ data: { userId: emailMatch.id, eventName: "google_identity_linked", source: "auth-google", payload: { identityId: identity.id, method: "authoritative-email" } } });
+        await recordGoogleLogin(tx, emailMatch.id, identity.id, "first", returnTo);
         return { user: emailMatch, identity };
       }
 
@@ -113,11 +118,12 @@ export class GoogleAuthService {
       });
       const identity = await tx.authIdentity.create({ data: identityData(user.id, candidate) });
       await tx.eventLog.create({ data: { userId: user.id, eventName: "google_identity_linked", source: "auth-google", payload: { identityId: identity.id, method: "new-account" } } });
+      await recordGoogleLogin(tx, user.id, identity.id, "first", returnTo);
       return { user, identity };
     });
   }
 
-  private async resolveConcurrentIdentity(candidate: VerifiedGoogleIdentity, challengeId: string, originalError: unknown) {
+  private async resolveConcurrentIdentity(candidate: VerifiedGoogleIdentity, challengeId: string, returnTo: string, originalError: unknown) {
     return this.prisma.$transaction(async (tx) => {
       await consumeChallenge(tx, challengeId, candidate.nonce);
       const existing = await tx.authIdentity.findUnique({
@@ -125,6 +131,8 @@ export class GoogleAuthService {
         include: { user: true }
       });
       if (!existing?.user) throw originalError;
+      assertActiveGoogleUser(existing.user);
+      await recordGoogleLogin(tx, existing.user.id, existing.id, "repeat", returnTo);
       return { user: existing.user, identity: existing };
     });
   }
@@ -177,6 +185,48 @@ function safeUser(user: { id: string; email: string | null; emailVerifiedAt: Dat
 
 function publicIdentity(identity: { id: string; provider: AuthProvider; providerEmail: string | null }) {
   return { id: identity.id, provider: identity.provider, email: identity.providerEmail };
+}
+
+function assertActiveGoogleUser(user: { status: string }) {
+  if (user.status !== "active") throw new UnauthorizedException({ code: "INVALID_GOOGLE_CREDENTIAL", message: "Google sign-in is unavailable for this account" });
+}
+
+async function recordGoogleLogin(tx: any, userId: string, identityId: string, loginKind: "first" | "repeat", returnTo: string) {
+  await tx.eventLog.create({
+    data: {
+      userId,
+      eventName: "google_login_succeeded",
+      source: "auth-google",
+      payload: { identityId, loginKind, ...auditReturnDestination(returnTo) }
+    }
+  });
+}
+
+function auditReturnDestination(returnTo: string) {
+  const url = new URL(returnTo, "https://manyworlds.invalid");
+  if (url.pathname === "/join") {
+    return {
+      destination: "ROOM_INVITE",
+      hasRoom: Boolean(url.searchParams.get("room")),
+      hasReferral: Boolean(url.searchParams.get("ref")),
+      hasChannel: Boolean(url.searchParams.get("channel"))
+    };
+  }
+  if (/^\/rooms\/[A-Za-z0-9_-]+$/.test(url.pathname)) return { destination: "ROOM" };
+  if (/^\/worlds\/[A-Za-z0-9_-]+$/.test(url.pathname)) return { destination: "WORLD" };
+  const fixedDestinations: Record<string, string> = {
+    "/": "HOME",
+    "/rooms": "ROOMS",
+    "/game": "GAME",
+    "/game/result": "GAME_RESULT",
+    "/credits": "CREDITS",
+    "/credits/status": "CREDITS_STATUS",
+    "/credits/cancel": "CREDITS_CANCEL",
+    "/credits/failed": "CREDITS_FAILED",
+    "/role-select": "ROLE_SELECT",
+    "/trio": "TRIO"
+  };
+  return { destination: fixedDestinations[url.pathname] || "HOME" };
 }
 
 function challengeTtlMilliseconds() {

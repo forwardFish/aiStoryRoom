@@ -35,7 +35,17 @@ class MemoryGooglePrisma {
   eventLog = {
     create: async ({ data }: any) => { const event = { userId: data.userId || null, eventName: data.eventName, source: data.source || null, payload: data.payload || null }; this.events.push(event); return event; }
   };
-  async $transaction<T>(work: (transaction: this) => Promise<T>) { return work(this); }
+  async $transaction<T>(work: (transaction: this) => Promise<T>) {
+    const snapshot = structuredClone({ users: this.users, challenges: this.challenges, identities: this.identities, events: this.events });
+    try { return await work(this); }
+    catch (error) {
+      this.users = snapshot.users;
+      this.challenges = snapshot.challenges;
+      this.identities = snapshot.identities;
+      this.events = snapshot.events;
+      throw error;
+    }
+  }
 }
 
 class FakeVerifier {
@@ -62,6 +72,7 @@ test("Google sign-in verifies a nonce-bound one-time challenge and does not dupl
     assert.equal(prisma.users.length, 1);
     assert.equal(prisma.identities.length, 1);
     assert.deepEqual(prisma.events[0], { userId: first.user.id, eventName: "google_identity_linked", source: "auth-google", payload: { identityId: prisma.identities[0].id, method: "new-account" } });
+    assert.deepEqual(prisma.events[1], { userId: first.user.id, eventName: "google_login_succeeded", source: "auth-google", payload: { identityId: prisma.identities[0].id, loginKind: "first", destination: "ROOM" } });
     assert.equal(first.returnTo, "/rooms/room-1");
     const claims = verifyAccessToken(first.accessToken);
     assert.ok(claims);
@@ -70,10 +81,18 @@ test("Google sign-in verifies a nonce-bound one-time challenge and does not dupl
     await assert.rejects(() => service.login({ credential: "google-id-token", challengeId: challenge.challengeId, clientIp: "127.0.0.1" }), (error: any) => error?.getResponse?.()?.code === "INVALID_GOOGLE_CHALLENGE");
     const nextChallenge = await service.createChallenge({ clientIp: "127.0.0.1" });
     verifier.candidate = googleIdentity({ nonce: nextChallenge.nonce });
-    const second = await service.login({ credential: "google-id-token", challengeId: nextChallenge.challengeId, clientIp: "127.0.0.1" });
+    const inviteReturnTo = "/join?room=ROOM1&ref=REF1&channel=LINK";
+    const second = await service.login({ credential: "google-id-token", challengeId: nextChallenge.challengeId, returnTo: inviteReturnTo, clientIp: "127.0.0.1" });
     assert.equal(second.user.id, first.user.id);
+    assert.equal(second.returnTo, inviteReturnTo);
     assert.equal(prisma.users.length, 1);
     assert.equal(prisma.identities.length, 1);
+    assert.deepEqual(prisma.events.at(-1), {
+      userId: first.user.id,
+      eventName: "google_login_succeeded",
+      source: "auth-google",
+      payload: { identityId: prisma.identities[0].id, loginKind: "repeat", destination: "ROOM_INVITE", hasRoom: true, hasReferral: true, hasChannel: true }
+    });
   } finally {
     if (priorEnabled === undefined) delete process.env.GOOGLE_AUTH_ENABLED; else process.env.GOOGLE_AUTH_ENABLED = priorEnabled;
     if (priorClientId === undefined) delete process.env.GOOGLE_WEB_CLIENT_ID; else process.env.GOOGLE_WEB_CLIENT_ID = priorClientId;
@@ -154,6 +173,8 @@ test("Google rejects inactive users and preserves the existing identity mapping"
     await assert.rejects(() => service.login({ credential: "credential", challengeId: challenge.challengeId, clientIp: "127.0.3.2" }), hasCode("INVALID_GOOGLE_CREDENTIAL"));
     assert.equal(prisma.users.length, 1);
     assert.equal(prisma.identities.length, 1);
+    assert.equal(prisma.challenges[0].consumedAt, null);
+    assert.equal(prisma.events.length, 0);
   });
 });
 
@@ -197,6 +218,7 @@ test("a unique-constraint race resolves to the identity committed by the concurr
     const winner = { id: "winner-user", openid: "google_winner", email: "race@gmail.com", emailVerifiedAt: new Date(), passwordHash: null, nickname: "Winner", avatarUrl: null, policyAgreedAt: new Date(), status: "active" };
     const identity = { id: "winner-identity", userId: winner.id, provider: AuthProvider.GOOGLE, providerSubject: "race-subject", providerEmail: winner.email, providerEmailVerifiedAt: new Date(), hostedDomain: null, profileJson: {}, user: winner };
     let identityLookup = 0;
+    const raceEvents: any[] = [];
     const prisma: any = {
       authLoginChallenge: {
         deleteMany: async () => ({ count: 0 }),
@@ -211,7 +233,7 @@ test("a unique-constraint race resolves to the identity committed by the concurr
         findUnique: async () => null,
         create: async () => ({ ...winner, id: "rolled-back-user" })
       },
-      eventLog: { create: async () => ({}) },
+      eventLog: { create: async ({ data }: any) => { raceEvents.push(data); return data; } },
       $transaction: async (work: (tx: any) => Promise<any>) => work(prisma)
     };
     const verifier = new FakeVerifier();
@@ -221,6 +243,7 @@ test("a unique-constraint race resolves to the identity committed by the concurr
     const session = await service.login({ credential: "credential", challengeId: challenge.challengeId, clientIp: "127.0.6.2" });
     assert.equal(session.user.id, winner.id);
     assert.equal(verifyAccessToken(session.accessToken)?.authIdentityId, identity.id);
+    assert.deepEqual(raceEvents, [{ userId: winner.id, eventName: "google_login_succeeded", source: "auth-google", payload: { identityId: identity.id, loginKind: "repeat", destination: "HOME" } }]);
   });
 });
 

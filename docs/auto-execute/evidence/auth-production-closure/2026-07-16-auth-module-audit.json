@@ -14,6 +14,7 @@
     "webSuite": "PASS (50 tests)",
     "googleTokenVerifier": "PASS (2 tests)",
     "googleIdentityChallengeLinkConcurrency": "PASS (8 tests)",
+    "googleLoginAuditAndInviteClassification": "PASS (first/repeat/invite events are atomic with challenge consumption; raw room and referral values are not logged)",
     "protectedBusinessBoundaries": "PASS",
     "transactionalEmailTemplates": "PASS (3 tests)",
     "prismaGenerate": "ENVIRONMENT_BLOCKED: Windows EPERM on an already loaded query_engine-windows.dll.node; the existing generated client completed API build and tests"
@@ -39,6 +40,19 @@
         "missing-account password-reset non-enumeration without using a real mailbox"
       ],
       "sensitiveValuesRecorded": false
+    },
+    "redactedDatabaseReadback": {
+      "status": "MANUAL_ACCEPTANCE_REQUIRED",
+      "script": "scripts/e2e/auth-production-db-readback.mjs",
+      "evidence": "docs/auto-execute/evidence/auth-production-closure/production-db-readback.json",
+      "emailVerificationConsumedCount": 3,
+      "passwordResetConsumedCount": 3,
+      "googleIdentityCount": 1,
+      "currentGoogleLoginAuditCount": 0,
+      "secondGoogleIdentityObserved": false,
+      "repeatGoogleLoginObserved": false,
+      "invitationGoogleLoginObserved": false,
+      "piiOrSecretsRecorded": false
     },
     "anonymousMe": "401 AUTHENTICATION_REQUIRED",
     "googleChallenge": {
