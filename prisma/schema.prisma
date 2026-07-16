@@ -30,6 +30,8 @@ model User {
   shareTokens   ShareToken[]
   authTokens    AuthOneTimeToken[]
   authIdentities AuthIdentity[]
+  refundRequests RefundRequest[] @relation("RefundRequester")
+  reviewedRefundRequests RefundRequest[] @relation("RefundReviewer")
 
   @@index([status])
   @@index([createdAt])
@@ -717,14 +719,23 @@ model EventLog {
 }
 
 model ShareToken {
-  id          String   @id @default(cuid())
-  token       String   @unique
-  runId       String
-  chapterId   String?
-  shareUserId String
-  scene       String
-  channel     String
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  /// Legacy plaintext column. New code never writes it; the migration revokes
+  /// and clears every existing value before secure public sharing is enabled.
+  token           String?  @unique
+  tokenHash       String?  @unique
+  tokenPrefix     String?
+  runId           String
+  chapterId       String?
+  shareUserId     String
+  scene           String   @default("result")
+  channel         String   @default("LINK")
+  includeRoleName Boolean  @default(false)
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  lastAccessedAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   run       StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
   chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
@@ -733,6 +744,7 @@ model ShareToken {
   @@index([runId])
   @@index([chapterId])
   @@index([shareUserId])
+  @@index([tokenHash, expiresAt, revokedAt])
 }
 
 enum CreditGrantKind {
@@ -766,6 +778,16 @@ enum CreemPurchaseStatus {
   REFUNDED
   PARTIALLY_REFUNDED
   DISPUTED
+  FAILED
+}
+
+enum RefundRequestStatus {
+  PENDING
+  APPROVED
+  PROVIDER_ACTION_REQUIRED
+  SUBMITTED
+  COMPLETED
+  REJECTED
   FAILED
 }
 
@@ -889,8 +911,40 @@ model CreemPurchase {
   refundedAt          DateTime?
   updatedAt           DateTime            @updatedAt
 
+  refundRequest RefundRequest?
+
   @@index([userId, createdAt])
   @@index([creemProductId])
+}
+
+model RefundRequest {
+  id                   String              @id @default(cuid())
+  purchaseId           String              @unique
+  userId               String
+  status               RefundRequestStatus @default(PENDING)
+  reason               String
+  message              String?             @db.Text
+  requestedAmountCents Int
+  reviewerUserId       String?
+  adminNote            String?             @db.Text
+  providerRefundId     String?
+  providerStatus       String?
+  providerResponseJson Json?
+  failureCode          String?
+  failureMessage       String?             @db.Text
+  requestedAt          DateTime            @default(now())
+  reviewedAt           DateTime?
+  submittedAt          DateTime?
+  completedAt          DateTime?
+  updatedAt            DateTime            @updatedAt
+
+  purchase  CreemPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  requester User          @relation("RefundRequester", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer  User?         @relation("RefundReviewer", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, requestedAt])
+  @@index([status, requestedAt])
+  @@index([reviewerUserId])
 }
 
 model PaymentWebhookEvent {

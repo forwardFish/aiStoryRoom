@@ -21,7 +21,7 @@ function safeReturnTo(value) {
   if (typeof value !== "string" || value.includes("\\") || value.startsWith("//")) return "/";
   try {
     const url = new URL(value, "https://manyworlds.invalid");
-    const allowed = new Set(["/", "/account", "/join", "/rooms", "/game", "/game/result", "/credits", "/credits/status", "/credits/cancel", "/credits/failed", "/role-select", "/trio"]);
+    const allowed = new Set(["/", "/account", "/admin/refunds", "/join", "/rooms", "/game", "/game/result", "/credits", "/credits/status", "/credits/cancel", "/credits/failed", "/role-select", "/trio"]);
     if (url.origin !== "https://manyworlds.invalid" || !(allowed.has(url.pathname) || /^\/rooms\/[A-Za-z0-9_-]+$/.test(url.pathname) || /^\/worlds\/[A-Za-z0-9_-]+$/.test(url.pathname))) return "/";
     return `${url.pathname}${url.search}`;
   } catch { return "/"; }
@@ -225,7 +225,7 @@ function renderAccount() {
     location.assign("/auth?returnTo=%2Faccount");
     return;
   }
-  appShell(`<section class="page-frame account-frame"><a class="back-link" href="/">Back to home</a><div class="account-card"><p class="eyebrow">ACCOUNT SECURITY</p><h1>My Account</h1><p class="muted">Review your account and choose how you sign in.</p><div data-notice class="notice" hidden></div><section class="account-summary" data-account-summary><p>Loading your account…</p></section><section class="login-methods" data-login-methods></section><div class="account-actions"><a class="btn" href="/credits">World Credits</a><button class="btn danger" type="button" data-action="account-logout">Log out</button></div></div></section>`);
+  appShell(`<section class="page-frame account-frame"><a class="back-link" href="/">Back to home</a><div class="account-card"><p class="eyebrow">ACCOUNT SECURITY</p><h1>My Account</h1><p class="muted">Review your account and choose how you sign in.</p><div data-notice class="notice" hidden></div><section class="account-summary" data-account-summary><p>Loading your account…</p></section><section class="login-methods" data-login-methods></section><section class="account-purchases"><div class="account-section-heading"><div><h2>Purchases and refunds</h2><p>Request a refund for an eligible confirmed payment. Approval never removes Credits until Creem confirms the refund.</p></div><a class="btn small" href="/credits">Add Credits</a></div><div data-purchase-records><p class="muted">Loading purchase records…</p></div></section><a class="admin-refund-link" data-admin-refunds href="/admin/refunds" hidden>Review refund requests</a><div class="account-actions"><a class="btn" href="/credits">World Credits</a><button class="btn danger" type="button" data-action="account-logout">Log out</button></div></div></section>`);
   void hydrateAccount();
 }
 
@@ -241,10 +241,72 @@ async function hydrateAccount() {
     methods.innerHTML = `<h2>Sign-in methods</h2><article class="login-method"><div><strong>Email and password</strong><p>${hasPassword ? "Available for this account." : "No verified password is configured."}</p></div><span class="method-state ${hasPassword ? "connected" : ""}">${hasPassword ? "Connected" : "Unavailable"}</span></article><article class="login-method"><div><strong>Google</strong><p>${googleIdentity ? `Linked to ${esc(googleIdentity.email || "your Google account")}.` : "Link Google for a faster sign-in option."}</p></div>${googleIdentity ? `<button class="btn small" type="button" data-action="unlink-google" ${hasPassword ? "" : "disabled"}>Unlink</button>` : `<div class="google-link-button" data-google-link hidden></div>`}</article>${googleIdentity && !hasPassword ? `<p class="method-warning">Add and verify a password before unlinking your only sign-in method.</p>` : ""}<p class="google-unavailable" data-google-link-unavailable hidden>Google account linking is unavailable here.</p>`;
     bind();
     if (!googleIdentity) void mountGoogleLink();
+    await hydratePurchases();
+    void revealAdminRefundLink();
   } catch (error) {
     if (error.status === 401) location.assign("/auth?returnTo=%2Faccount");
     else notice(error.message || "Unable to load your account.");
   }
+}
+
+async function hydratePurchases() {
+  const target = root.querySelector("[data-purchase-records]");
+  if (!target) return;
+  try {
+    const data = await request("/api/v4/billing/purchases");
+    const purchases = Array.isArray(data.purchases) ? data.purchases : [];
+    target.innerHTML = purchases.length ? purchases.map((purchase) => {
+      const refund = purchase.refund;
+      const canRequest = purchase.status === "PAID" && !refund;
+      const amount = new Intl.NumberFormat("en-US", { style:"currency", currency:purchase.currency || "USD" }).format(Number(purchase.amountCents || 0) / 100);
+      return `<article class="purchase-row"><div><strong>${esc(purchase.orderDisplayCode)}</strong><span>${esc(String(purchase.credits))} World Credits · ${esc(amount)}</span><small>${esc(purchase.paidAt ? new Date(purchase.paidAt).toLocaleDateString() : "Payment pending")}</small></div><div class="purchase-refund-state"><span class="method-state ${purchase.status === "PAID" ? "connected" : ""}">${esc(purchase.status)}</span>${refund ? `<b>${esc(refund.status.replaceAll("_", " "))}</b>` : canRequest ? `<button class="btn small" data-action="request-refund" data-purchase-id="${esc(purchase.id)}">Request refund</button>` : ""}</div></article>`;
+    }).join("") : '<p class="muted">No purchases yet.</p>';
+    bind();
+  } catch (error) { target.innerHTML = `<p class="notice">${esc(error.message || "Unable to load purchases.")}</p>`; }
+}
+
+async function revealAdminRefundLink() {
+  try {
+    await request("/api/v4/admin/refunds?status=PENDING");
+    const link = root.querySelector("[data-admin-refunds]");
+    if (link) link.hidden = false;
+  } catch {}
+}
+
+function openRefundRequest(purchaseId) {
+  const dialog = document.createElement("dialog");
+  dialog.className = "refund-dialog";
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close">×</button><p class="eyebrow">REFUND REQUEST</p><h2>Tell us what happened</h2><p class="muted">Your request will be reviewed by an administrator. Credits are changed only after Creem confirms a successful refund.</p><form><label>Reason<select name="reason" required><option value="">Select a reason</option><option value="ACCIDENTAL_PURCHASE">Accidental purchase</option><option value="DUPLICATE">Duplicate payment</option><option value="TECHNICAL_ISSUE">Technical issue</option><option value="REQUESTED_BY_CUSTOMER">No longer needed</option><option value="OTHER">Other</option></select></label><label>Details (optional)<textarea name="message" maxlength="1000" placeholder="Add anything that will help us review the request."></textarea></label><button class="btn primary" type="submit">Submit request</button></form>`;
+  document.body.append(dialog); dialog.showModal();
+  dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.querySelector("form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector("button[type=submit]");
+    const data = Object.fromEntries(new FormData(event.currentTarget));
+    button.disabled = true;
+    try {
+      await request("/api/v4/billing/refund-requests", { method:"POST", body:JSON.stringify({ purchaseId, reason:data.reason, message:data.message }) });
+      dialog.close(); notice("Refund request submitted for review."); await hydratePurchases();
+    } catch (error) { button.disabled = false; notice(error.message || "Unable to submit the refund request."); }
+  });
+}
+
+function renderAdminRefunds() {
+  if (!sessionToken()) { location.assign("/auth?returnTo=%2Fadmin%2Frefunds"); return; }
+  appShell(`<section class="page-frame admin-refund-frame"><a class="back-link" href="/account">Back to My Account</a><p class="eyebrow">PAYMENT OPERATIONS</p><h1>Refund requests</h1><p class="muted">Approval submits the refund through the configured Creem provider adapter. Credit reversal waits for the signed refund webhook.</p><div data-notice class="notice" hidden></div><div class="refund-filter"><button class="btn small" data-refund-filter="PENDING">Pending</button><button class="btn small" data-refund-filter="">All</button></div><section data-admin-refund-list><p>Loading requests…</p></section></section>`);
+  root.querySelectorAll("[data-refund-filter]").forEach((button) => button.addEventListener("click", () => hydrateAdminRefunds(button.dataset.refundFilter)));
+  void hydrateAdminRefunds("PENDING");
+}
+
+async function hydrateAdminRefunds(status = "PENDING") {
+  const target = root.querySelector("[data-admin-refund-list]");
+  try {
+    const data = await request(`/api/v4/admin/refunds${status ? `?status=${encodeURIComponent(status)}` : ""}`);
+    target.innerHTML = data.requests?.length ? data.requests.map((item) => `<article class="admin-refund-card"><div><span>${esc(item.status.replaceAll("_", " "))}</span><h2>${esc(item.purchase.orderDisplayCode)}</h2><p>${esc(item.requester.email || "No email")} · ${esc(String(item.purchase.credits))} Credits</p><small>${esc(item.reason.replaceAll("_", " "))} · ${esc(new Date(item.requestedAt).toLocaleString())}</small>${item.message ? `<blockquote>${esc(item.message)}</blockquote>` : ""}${item.failureMessage ? `<p class="refund-failure">${esc(item.failureMessage)}</p>` : ""}</div>${item.status === "PENDING" || item.status === "FAILED" || item.status === "PROVIDER_ACTION_REQUIRED" ? `<div class="admin-refund-actions"><button class="btn primary" data-admin-approve="${esc(item.id)}">Approve & submit</button><button class="btn" data-admin-reject="${esc(item.id)}">Reject</button></div>` : ""}</article>`).join("") : '<p class="muted">No refund requests in this view.</p>';
+    target.querySelectorAll("[data-admin-approve]").forEach((button) => button.addEventListener("click", async () => { const note = prompt("Optional internal note") || ""; button.disabled = true; try { const result = await request(`/api/v4/admin/refunds/${encodeURIComponent(button.dataset.adminApprove)}/approve`, { method:"POST", body:JSON.stringify({ note }) }); notice(result.submitted ? "Refund submitted to Creem. Waiting for webhook confirmation." : result.providerActionRequired ? "Approved. Creem refund API access is still required." : "Request updated."); await hydrateAdminRefunds(status); } catch (error) { button.disabled = false; notice(error.message || "Unable to approve this request."); } }));
+    target.querySelectorAll("[data-admin-reject]").forEach((button) => button.addEventListener("click", async () => { const note = prompt("Reason shown to the customer"); if (!note) return; button.disabled = true; try { await request(`/api/v4/admin/refunds/${encodeURIComponent(button.dataset.adminReject)}/reject`, { method:"POST", body:JSON.stringify({ note }) }); notice("Refund request rejected."); await hydrateAdminRefunds(status); } catch (error) { button.disabled = false; notice(error.message || "Unable to reject this request."); } }));
+  } catch (error) { target.innerHTML = `<p class="notice">${esc(error.message || "Unable to load refund requests.")}</p>`; }
 }
 
 function renderJoin() {
@@ -333,6 +395,60 @@ async function hydrateResult(runId) {
     const decisionItems = shell.querySelector(".lower-card");
     decisionItems.innerHTML = `<h2>♎　 Key Decisions</h2>${highlights.length ? highlights.map((item, index) => `<div class="decision-item"><span class="number-dot">${index + 1}</span><span>${esc(typeof item === "string" ? item : item?.text || item?.title || "Shared decision")}</span></div>`).join("") : `<div class="decision-item"><span class="number-dot">1</span><span>All room actions have been recorded in the completed chapter.</span></div>`}`;
   } catch (error) { notice(error.message || "Unable to load this result."); }
+}
+
+async function loadImageSource(source) {
+  const image = new Image(); image.src = source;
+  await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error("Image could not be loaded")); });
+  return image;
+}
+
+async function buildResultPoster(title, qrDataUrl) {
+  const canvas = document.createElement("canvas"); canvas.width = 1080; canvas.height = 1350;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, 1080, 1350); gradient.addColorStop(0, "#24105d"); gradient.addColorStop(.55, "#5e35d9"); gradient.addColorStop(1, "#9b78f0");
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(255,255,255,.10)"; ctx.beginPath(); ctx.arc(930, 180, 280, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(130, 1180, 330, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = "600 56px Arial"; ctx.fillText("Many Worlds", 80, 120); ctx.font = "700 72px Arial"; wrapPosterText(ctx, title, 80, 300, 900, 88);
+  ctx.font = "400 34px Arial"; ctx.fillStyle = "#eee8ff"; ctx.fillText("A seven-round shared story recap", 80, 565);
+  const qr = await loadImageSource(qrDataUrl); ctx.fillStyle = "#fff"; ctx.fillRect(610, 755, 390, 390); ctx.drawImage(qr, 630, 775, 350, 350);
+  ctx.fillStyle = "#fff"; ctx.font = "600 36px Arial"; ctx.fillText("Scan to read the public recap", 80, 1115); ctx.font = "400 27px Arial"; ctx.fillStyle = "#e7ddff"; ctx.fillText("Private goals, actions and player identities are not included.", 80, 1170);
+  return canvas.toDataURL("image/png");
+}
+
+async function openResultShare() {
+  const runId = String(params.get("runId") || "").trim();
+  if (!runId || !requireSession()) return;
+  const dialog = document.createElement("dialog"); dialog.className = "share-dialog result-share-dialog";
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close">×</button><p class="eyebrow">SAFE RESULT SHARE</p><h2>Create a public recap</h2><p class="muted">The public page excludes player identities, private goals, hidden intent, clues, raw actions and reasoning traces.</p><form data-result-share-form class="result-share-form"><label>Link expires<select name="expiresInDays"><option value="1">In 24 hours</option><option value="7" selected>In 7 days</option><option value="30">In 30 days</option></select></label><label class="share-role-option"><input type="checkbox" name="includeRoleName"> Include my role name (never the private goal)</label><button class="btn primary" type="submit">Create secure link</button></form><section data-result-share-output hidden></section>`;
+  document.body.append(dialog); dialog.showModal(); dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close()); dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.querySelector("[data-result-share-form]").addEventListener("submit", async (event) => {
+    event.preventDefault(); const form = event.currentTarget; const button = form.querySelector("button"); button.disabled = true;
+    const data = new FormData(form);
+    try {
+      const share = await request(`/api/v4/rooms/${encodeURIComponent(runId)}/result/shares`, { method:"POST", body:JSON.stringify({ expiresInDays:Number(data.get("expiresInDays")), includeRoleName:data.get("includeRoleName") === "on", channel:"LINK" }) });
+      const title = root.querySelector(".result-title")?.textContent?.trim() || "A Many Worlds story recap";
+      const poster = await buildResultPoster(title, share.qrDataUrl);
+      const output = dialog.querySelector("[data-result-share-output]"); form.hidden = true; output.hidden = false;
+      output.innerHTML = `<div class="secure-share-status"><strong>Secure link ready</strong><span>Expires ${esc(new Date(share.expiresAt).toLocaleString())}</span></div><label class="share-link-label"><span>↗</span><input readonly value="${esc(share.url)}"><button type="button" data-copy-result>Copy link</button></label><div class="share-network-row result-network-row"><button data-result-channel="WHATSAPP"><b>◉</b>WhatsApp</button><button data-result-channel="TELEGRAM"><b>➤</b>Telegram</button><button data-result-channel="FACEBOOK"><b>f</b>Facebook</button><button data-result-channel="X"><b>𝕏</b>X</button><button data-result-native><b>↗</b>Share</button></div><div class="result-poster"><img src="${poster}" alt="Result share poster"><button class="btn" type="button" data-download-result>Download poster</button></div><button class="btn danger revoke-share" type="button" data-revoke-result>Revoke this link</button>`;
+      const copy = async () => { try { await navigator.clipboard.writeText(share.url); notice("Secure result link copied."); } catch { const input = output.querySelector("input"); input.focus(); input.select(); notice("Copy was blocked. The link is selected."); } };
+      output.querySelector("[data-copy-result]").addEventListener("click", copy);
+      output.querySelectorAll("[data-result-channel]").forEach((channelButton) => channelButton.addEventListener("click", () => { const channel = channelButton.dataset.resultChannel; const url = encodeURIComponent(share.url); const text = encodeURIComponent(`Read my Many Worlds recap: ${title}`); const links = { WHATSAPP:`https://wa.me/?text=${text}%20${url}`, TELEGRAM:`https://t.me/share/url?url=${url}&text=${text}`, FACEBOOK:`https://www.facebook.com/sharer/sharer.php?u=${url}`, X:`https://x.com/intent/post?text=${text}%20${url}` }; window.open(links[channel], "_blank", "noopener,noreferrer"); }));
+      output.querySelector("[data-result-native]").addEventListener("click", async () => { if (navigator.share) { try { await navigator.share({ title, text:"A Many Worlds story recap", url:share.url }); } catch {} } else await copy(); });
+      output.querySelector("[data-download-result]").addEventListener("click", () => { const link = document.createElement("a"); link.download = `many-worlds-result-${runId.slice(-8)}.png`; link.href = poster; link.click(); });
+      output.querySelector("[data-revoke-result]").addEventListener("click", async (clickEvent) => { if (!confirm("Revoke this public link now? Anyone using it will immediately lose access.")) return; clickEvent.currentTarget.disabled = true; try { await request(`/api/v4/rooms/${encodeURIComponent(runId)}/result/shares/${encodeURIComponent(share.id)}`, { method:"DELETE" }); notice("Result link revoked."); dialog.close(); } catch (error) { clickEvent.currentTarget.disabled = false; notice(error.message || "Unable to revoke this link."); } });
+    } catch (error) { button.disabled = false; notice(error.message || "Unable to create a secure result link."); }
+  });
+}
+
+function renderSharedResult() {
+  const token = String(params.get("token") || "").trim();
+  appShell(`<section class="page-frame public-result-frame"><div class="public-result-brand"><img src="/assets/brand/many-worlds-logo.png" alt=""><strong>Many Worlds</strong></div><div data-public-result><p class="muted">Loading the shared recap…</p></div></section>`);
+  if (!token) { root.querySelector("[data-public-result]").innerHTML = '<div class="public-result-error"><h1>Link not found</h1><p>This result link is incomplete.</p><a class="btn primary" href="/">Explore Many Worlds</a></div>'; return; }
+  void request(`/api/v4/public/results/${encodeURIComponent(token)}`).then((result) => {
+    const highlights = Array.isArray(result.recap?.highlights) ? result.recap.highlights : [];
+    root.querySelector("[data-public-result]").innerHTML = `<p class="eyebrow">SHARED STORY RECAP</p><h1>${esc(result.recap?.title || result.room?.title || "A completed story")}</h1><p class="public-result-meta">${esc(result.room?.title || "Many Worlds")} · ${esc(String(result.room?.completedNodes || 7))} rounds completed</p>${result.recap?.roleName ? `<p class="public-role">Shared from the perspective of <strong>${esc(result.recap.roleName)}</strong></p>` : ""}<section class="public-highlights"><h2>Turning points</h2>${highlights.length ? highlights.map((item, index) => `<article><span>${index + 1}</span><p>${esc(item)}</p></article>`).join("") : '<p>This public recap contains no private story details.</p>'}</section><aside class="privacy-note"><strong>Privacy protected</strong><p>Player identities, private goals, hidden intent, clues, raw actions and reasoning traces were removed from this public view.</p><small>This link expires ${esc(new Date(result.share.expiresAt).toLocaleString())}.</small></aside><a class="btn primary public-result-cta" href="/">Create your own world</a>`;
+  }).catch((error) => { root.querySelector("[data-public-result]").innerHTML = `<div class="public-result-error"><h1>This link is unavailable</h1><p>${esc(error.message || "It may have expired or been revoked.")}</p><a class="btn primary" href="/">Explore Many Worlds</a></div>`; });
 }
 async function openInviteShareLegacy() {
   if (!activeRoom || !requireSession()) return;
@@ -424,10 +540,11 @@ const actions = {
   "share-invite": () => { void openInviteShare(); },
   "select-role": async (_event, element) => { if (!activeRoom || !requireSession()) return; try { await request(`/api/v4/rooms/${activeRoom.id}/role`, { method:"POST", body:JSON.stringify({ roleId: element.dataset.roleId }) }); if (activeRoom.isHost && !activeRoom.hostRoleLocked) await request(`/api/v4/rooms/${activeRoom.id}/role/lock`, { method:"POST", body:"{}" }); await hydrateRoom(activeRoom.id); } catch (error) { notice(error.message || "Unable to select that role."); } },
   ready: async () => { if (!activeRoom || !requireSession()) return; try { await request(`/api/v4/rooms/${activeRoom.id}/ready`, { method:"POST", body:JSON.stringify({ ready:true }) }); await hydrateRoom(activeRoom.id); } catch (error) { notice(error.message || "Unable to mark ready."); } }, "start-game": async () => { if (!activeRoom || !requireSession()) return; try { const started = await request(`/api/v4/rooms/${activeRoom.id}/start`, { method:"POST", body:"{}" }); location.assign(`/room-game?runId=${encodeURIComponent(started.id)}`); } catch (error) { notice(error.message || "Room is not ready to start."); } },
-  "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds/caesar"), "share-recap": () => notice("Sharing recap is coming next."), "open-tab": () => {}, "my-tab": () => root.querySelector(".my-rooms")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  "request-refund": (_event, element) => openRefundRequest(element.dataset.purchaseId),
+  "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds/caesar"), "share-recap": () => { void openResultShare(); }, "open-tab": () => {}, "my-tab": () => root.querySelector(".my-rooms")?.scrollIntoView({ behavior: "smooth", block: "start" })
 };
 async function initializePlatform() {
   await migrateLegacySession();
-  if (path === "/auth") renderAuth(); else if (path === "/account") renderAccount(); else if (path === "/join") renderJoin(); else if (path.startsWith("/worlds/")) renderWorld(); else if (path === "/rooms") renderRooms(); else if (path.startsWith("/rooms/")) renderRoom(); else if (path === "/game/result") renderResult(); else location.assign("/");
+  if (path === "/auth") renderAuth(); else if (path === "/account") renderAccount(); else if (path === "/admin/refunds") renderAdminRefunds(); else if (path === "/shared/result") renderSharedResult(); else if (path === "/join") renderJoin(); else if (path.startsWith("/worlds/")) renderWorld(); else if (path === "/rooms") renderRooms(); else if (path.startsWith("/rooms/")) renderRoom(); else if (path === "/game/result") renderResult(); else location.assign("/");
 }
 void initializePlatform();

@@ -157,6 +157,17 @@ export class CreemWebhookService {
       await tx.creditWallet.update({ where: { userId: purchase.userId }, data: { purchasedBalance: { decrement: removable }, debtBalance: { increment: debt }, version: { increment: 1 } } });
       const ledger = await tx.creditLedger.create({ data: { userId: purchase.userId, reason, purchasedDelta: -removable, debtDelta: debt, idempotencyKey: `creem-${reason.toLowerCase()}:${event.id}`, externalRef: purchase.id, metadataJson: { requested, removable, debt } } });
       await tx.creemPurchase.update({ where: { id: purchase.id }, data: { status, refundedAt: new Date(), rawJson: event } });
+      if (reason === "PURCHASE_REFUND") {
+        await tx.refundRequest.updateMany({
+          where: { purchaseId: purchase.id, status: { in: ["APPROVED", "PROVIDER_ACTION_REQUIRED", "SUBMITTED", "FAILED"] } },
+          data: {
+            status: status === "REFUNDED" ? "COMPLETED" : "SUBMITTED",
+            providerRefundId: providerId(object),
+            providerStatus: String(object.status || "succeeded"),
+            completedAt: status === "REFUNDED" ? new Date() : null
+          }
+        });
+      }
       await tx.paymentWebhookEvent.create({ data: { eventId: event.id, eventType, status: "PROCESSED", payloadJson: event } });
       return { processed: true, eventId: event.id, purchaseId: purchase.id, ledgerId: ledger.id, removable, debt };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

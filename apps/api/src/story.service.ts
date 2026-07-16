@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import {
   buildCrossImpacts,
   buildEchoes,
@@ -778,7 +778,6 @@ export class StoryService {
       data: { status: "chapter_generated", chapterCount: 1 }
     });
 
-    await this.shareChapter(run.owner.openid, chapter.id);
     return this.enrichChapter(chapter, run.roles);
   }
 
@@ -793,20 +792,12 @@ export class StoryService {
   }
 
   async shareChapter(openid: string, chapterId: string) {
-    const user = await this.ensureUser(openid);
+    await this.ensureUser(openid);
     const chapter = await this.prisma.chapter.findUnique({ where: { id: chapterId } });
     if (!chapter) throw new NotFoundException("chapter not found");
-    return this.prisma.shareToken.upsert({
-      where: { token: `share_${chapter.id.slice(-8)}_${user.id.slice(-4)}` },
-      update: {},
-      create: {
-        token: `share_${chapter.id.slice(-8)}_${user.id.slice(-4)}`,
-        runId: chapter.runId,
-        chapterId: chapter.id,
-        shareUserId: user.id,
-        scene: "chapter",
-        channel: "mock"
-      }
+    throw new ConflictException({
+      code: "SECURE_RESULT_SHARE_REQUIRED",
+      message: "Create a revocable, expiring result share from the result page"
     });
   }
 

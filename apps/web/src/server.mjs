@@ -44,6 +44,8 @@ const pageRoutes = new Map([
   ["/credits/failed", "/credits-status.html"],
   ["/auth", "/platform.html"],
   ["/account", "/platform.html"],
+  ["/admin/refunds", "/platform.html"],
+  ["/shared/result", "/platform.html"],
   ["/reset-password", "/reset-password.html"],
   ["/join", "/platform.html"],
   ["/worlds/sangtian", "/platform.html"],

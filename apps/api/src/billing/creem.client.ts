@@ -7,10 +7,40 @@ export interface CreemCheckoutInput {
   metadata: Record<string, string>;
 }
 
+export interface CreemRefundInput {
+  transactionId: string;
+  amountCents: number;
+  reason: string;
+  requestId: string;
+}
+
 @Injectable()
 export class CreemClient {
   private readonly baseUrl = process.env.CREEM_MODE === "test" ? "https://test-api.creem.io/v1" : "https://api.creem.io/v1";
   private readonly logger = new Logger(CreemClient.name);
+
+  private apiKey() {
+    const apiKey = process.env.CREEM_API_KEY;
+    if (!apiKey) throw new ServiceUnavailableException({ code: "CREEM_API_KEY_REQUIRED", message: "CREEM_API_KEY is required for payment operations" });
+    return apiKey;
+  }
+
+  private async providerRequest(url: string, init: RequestInit, operation: string) {
+    let response: Response;
+    try {
+      response = await fetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Creem ${operation} request could not reach ${this.baseUrl}: ${reason}`);
+      throw new ServiceUnavailableException({ code: "CREEM_CONNECTION_FAILED", message: "Unable to contact the payment provider. Please try again shortly." });
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      this.logger.error(`Creem ${operation} failed with HTTP ${response.status}`);
+      throw new ServiceUnavailableException({ code: `CREEM_${operation.toUpperCase()}_FAILED`, message: `Creem ${operation} failed`, details: { status: response.status } });
+    }
+    return payload;
+  }
 
   async createCheckout(input: CreemCheckoutInput) {
     if (process.env.CREEM_MOCK_MODE === "true") {
@@ -18,11 +48,8 @@ export class CreemClient {
       mockUrl.searchParams.set("checkout_id", `mock_checkout_${input.requestId}`);
       return { id: `mock_checkout_${input.requestId}`, checkoutUrl: mockUrl.toString() };
     }
-    const apiKey = process.env.CREEM_API_KEY;
-    if (!apiKey) throw new ServiceUnavailableException({ code: "CREEM_API_KEY_REQUIRED", message: "CREEM_API_KEY is required for dynamic checkout" });
-    let response: Response;
-    try {
-      response = await fetch(`${this.baseUrl}/checkouts`, {
+    const apiKey = this.apiKey();
+    const payload = await this.providerRequest(`${this.baseUrl}/checkouts`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": apiKey },
         body: JSON.stringify({
@@ -31,18 +58,44 @@ export class CreemClient {
           request_id: input.requestId,
           metadata: input.metadata
         })
-      });
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      // Keep provider/network diagnostics in Railway logs; never return keys or
-      // lower-level transport data to the browser.
-      this.logger.error(`Creem checkout request could not reach ${this.baseUrl}: ${reason}`);
-      throw new ServiceUnavailableException({ code: "CREEM_CONNECTION_FAILED", message: "Unable to contact the payment provider. Please try again shortly." });
-    }
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new ServiceUnavailableException({ code: "CREEM_CHECKOUT_FAILED", message: "Creem checkout creation failed", details: { status: response.status, payload } });
+      }, "checkout");
     const checkoutUrl = payload.checkout_url || payload.checkoutUrl;
     if (!payload.id || !checkoutUrl) throw new ServiceUnavailableException({ code: "CREEM_CHECKOUT_MALFORMED", message: "Creem returned an invalid checkout response" });
     return { id: payload.id, checkoutUrl };
+  }
+
+  async getTransaction(transactionId: string) {
+    const url = new URL(`${this.baseUrl}/transactions`);
+    url.searchParams.set("transaction_id", transactionId);
+    return this.providerRequest(url.toString(), { headers: { "x-api-key": this.apiKey() } }, "transaction_lookup");
+  }
+
+  /**
+   * Creem's public REST reference and official SDK do not currently publish a
+   * create-refund operation. This adapter therefore stays disabled unless
+   * Creem support supplies an account-approved relative endpoint contract.
+   * It deliberately cannot call an arbitrary host.
+   */
+  async createRefund(input: CreemRefundInput) {
+    const template = String(process.env.CREEM_REFUND_API_PATH || "").trim();
+    if (!template) {
+      throw new ServiceUnavailableException({
+        code: "CREEM_REFUND_API_NOT_AVAILABLE",
+        message: "Creem has not provided a public refund API contract for this account"
+      });
+    }
+    if (!template.startsWith("/v1/") || !template.includes("{transactionId}") || template.includes("?") || template.includes("#")) {
+      throw new ServiceUnavailableException({ code: "CREEM_REFUND_API_PATH_INVALID", message: "The approved Creem refund API path is invalid" });
+    }
+    const path = template.replace("{transactionId}", encodeURIComponent(input.transactionId));
+    const payload = await this.providerRequest(`${this.baseUrl.replace(/\/v1$/, "")}${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": this.apiKey(), "idempotency-key": input.requestId },
+      body: JSON.stringify({ transaction_id: input.transactionId, amount: input.amountCents, reason: input.reason, request_id: input.requestId })
+    }, "refund");
+    const id = String(payload.id || payload.refund_id || "");
+    const status = String(payload.status || "submitted");
+    if (!id) throw new ServiceUnavailableException({ code: "CREEM_REFUND_MALFORMED", message: "Creem returned an invalid refund response" });
+    return { id, status, payload };
   }
 }

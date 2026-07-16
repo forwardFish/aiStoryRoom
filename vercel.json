@@ -32,6 +32,8 @@
     { "source": "/trio", "destination": "/trio.html" },
     { "source": "/auth", "destination": "/platform.html" },
     { "source": "/account", "destination": "/platform.html" },
+    { "source": "/admin/refunds", "destination": "/platform.html" },
+    { "source": "/shared/result", "destination": "/platform.html" },
     { "source": "/reset-password", "destination": "/reset-password.html" },
     { "source": "/join", "destination": "/platform.html" },
     { "source": "/worlds/:path*", "destination": "/platform.html" },

@@ -13,9 +13,10 @@ import { RoomsService } from "./rooms.service";
 import { WorldsController } from "./worlds.controller";
 import { StoryTaskOutboxController } from "./story-task-outbox.controller";
 import { StoryTaskOutboxService } from "./story-task-outbox.service";
+import { ResultSharingModule } from "./result-sharing/result-sharing.module";
 
 @Module({
-  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, StoryAccessModule],
+  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, StoryAccessModule, ResultSharingModule],
   controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController],
   providers: [StoryService, StoryTaskOutboxService, RoomsService]
 })

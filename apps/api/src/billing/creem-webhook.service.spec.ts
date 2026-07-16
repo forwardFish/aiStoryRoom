@@ -70,7 +70,8 @@ function createHarness(purchaseOverrides: Record<string, unknown> = {}) {
     grants: [] as any[],
     purchaseUpdates: [] as any[],
     ledgerCreates: [] as any[],
-    walletUpdates: [] as any[]
+    walletUpdates: [] as any[],
+    refundRequestUpdates: [] as any[]
   };
   const purchase: any = {
     id: "purchase_300",
@@ -134,6 +135,9 @@ function createHarness(purchaseOverrides: Record<string, unknown> = {}) {
         calls.ledgerCreates.push(data);
         return { id: `ledger_${calls.ledgerCreates.length}`, ...data };
       }
+    },
+    refundRequest: {
+      updateMany: async ({ data }: any) => { calls.refundRequestUpdates.push(data); return { count: 1 }; }
     }
   };
   const prisma: any = {
@@ -242,6 +246,8 @@ test("reverses matching refund credits once and rejects an amount above the paid
   assert.equal(valid.purchase.status, "REFUNDED");
   assert.equal(valid.grant.remainingAmount, 0);
   assert.equal(valid.calls.ledgerCreates[0].purchasedDelta, -300);
+  assert.equal(valid.calls.refundRequestUpdates[0].status, "COMPLETED");
+  assert.equal(valid.calls.refundRequestUpdates[0].providerRefundId, "ref_test_300");
 
   const secondEvent = refundEvent({ refund_amount: 100 });
   secondEvent.id = "evt_refund_300_second";
