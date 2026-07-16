@@ -254,3 +254,20 @@ test("reverses matching refund credits once and rejects an amount above the paid
   await assert.rejects(excessive.service.process(refundEvent({ refund_amount: 900 })), /exceeds the paid amount/);
   assert.equal(excessive.calls.ledgerCreates.length, 0);
 });
+
+test("accepts Creem's documented refund shape when checkout omits product", async () => {
+  const valid = createHarness({ status: "PAID", orderId: "ord_test_300", transactionId: "tran_test_300", paidAmountCents: 899, paidCurrency: "USD" });
+  const event = refundEvent({
+    checkout: { id: "ch_test_300", request_id: "many-worlds-purchase_300", status: "completed", mode: "test" },
+    transaction: { id: "tran_test_300", order: "ord_test_300", amount: 799, amount_paid: 899, currency: "USD", status: "refunded", mode: "test" },
+    order: { id: "ord_test_300", product: "prod_test_300", amount: 799, currency: "USD", status: "paid", mode: "test" }
+  });
+
+  const result: any = await valid.service.process(event);
+
+  assert.equal(result.processed, true);
+  assert.equal(result.removable, 300);
+  assert.equal(valid.purchase.status, "REFUNDED");
+  assert.equal(valid.grant.remainingAmount, 0);
+  assert.equal(valid.calls.ledgerCreates[0].purchasedDelta, -300);
+});
