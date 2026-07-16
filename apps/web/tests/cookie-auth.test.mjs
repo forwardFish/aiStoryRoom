@@ -3,14 +3,15 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("browser authentication uses a same-origin HttpOnly cookie session", async () => {
-  const [platform, apiClient, apiStoryStorage, roleSelect, roomGame, vercel, apiProxy] = await Promise.all([
+  const [platform, apiClient, apiStoryStorage, roleSelect, roomGame, vercel, apiProxy, authController] = await Promise.all([
     readFile(new URL("../public/platform.js", import.meta.url), "utf8"),
     readFile(new URL("../public/js/api-client.js", import.meta.url), "utf8"),
     readFile(new URL("../public/api-story-storage.js", import.meta.url), "utf8"),
     readFile(new URL("../public/role-select.js", import.meta.url), "utf8"),
     readFile(new URL("../public/room-game.js", import.meta.url), "utf8"),
     readFile(new URL("../../../vercel.json", import.meta.url), "utf8"),
-    readFile(new URL("../../../api/proxy.js", import.meta.url), "utf8")
+    readFile(new URL("../../../api/proxy.js", import.meta.url), "utf8"),
+    readFile(new URL("../../api/src/auth/auth.controller.ts", import.meta.url), "utf8")
   ]);
 
   assert.match(vercel, /"source": "\/api\/:path\*", "destination": "\/api\/proxy\?path=:path\*"/);
@@ -23,6 +24,9 @@ test("browser authentication uses a same-origin HttpOnly cookie session", async 
   assert.match(platform, /AbortController/);
   assert.match(platform, /Your session expired\. Please sign in again\./);
   assert.match(platform, /skipRestore/);
+  assert.match(platform, /params\.get\("reauth"\) === "1"/);
+  assert.match(platform, /!reauthenticate && hasSessionCookie\(\)/);
+  assert.match(authController, /password-reset\/confirm[\s\S]*clearSessionCookies\(response\)/);
   assert.match(platform, /auth\/session\/upgrade/);
   assert.match(platform, /localStorage\.removeItem\("many-worlds-token"\)/);
   assert.doesNotMatch(platform, /localStorage\.setItem\("many-worlds-token"/);

@@ -19,7 +19,10 @@ test("password reset has a dedicated page and does not render inside the login f
   assert.match(resetSource, /\/api\/v4\/auth\/password-reset\/confirm/);
   assert.match(resetSource, /JSON\.stringify\(\{ token, password \}\)/);
   assert.match(resetSource, /The two passwords do not match/);
-  assert.match(resetSource, /Your password has been reset/);
+  assert.match(resetSource, /Your account is secure again/);
+  assert.match(html, /href="\/auth\?mode=login&amp;reauth=1"/);
+  assert.match(resetSource, /href="\/auth\?mode=login&amp;reauth=1"/);
+  assert.match(platformSource, /!reauthenticate && hasSessionCookie\(\)/);
 
   const renderAuthStart = platformSource.indexOf("function renderAuth()");
   const firstAppShell = platformSource.indexOf("appShell(", renderAuthStart);

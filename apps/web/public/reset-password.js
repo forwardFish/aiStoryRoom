@@ -42,7 +42,7 @@ form?.addEventListener("submit", async (event) => {
       method: "POST",
       body: JSON.stringify({ token, password })
     });
-    root.querySelector(".reset-password-card").innerHTML = `<div class="reset-password-success"><p class="eyebrow">PASSWORD UPDATED</p><h2>Your password has been reset</h2><p>You can now sign in with your new password.</p><a class="btn primary" href="/auth">Continue to login</a></div>`;
+    root.querySelector(".reset-password-card").innerHTML = `<div class="reset-password-success"><div class="success-mark" aria-hidden="true"><span>✓</span></div><p class="eyebrow">PASSWORD UPDATED</p><h1>Your account is secure again</h1><p class="success-copy">Your password has been changed successfully. Sign in with your new password to continue exploring your worlds.</p><div class="success-detail"><span class="success-detail-icon" aria-hidden="true">✓</span><span><strong>Password changed</strong><small>Your previous password can no longer be used.</small></span></div><a class="btn primary" href="/auth?mode=login&amp;reauth=1">Continue to login <span aria-hidden="true">→</span></a><a class="success-home" href="/">Return to home</a></div>`;
   } catch (error) {
     if (button) { button.disabled = false; button.textContent = "Set new password"; }
     showNotice(error.message || "Unable to reset your password. Request a new link and try again.");

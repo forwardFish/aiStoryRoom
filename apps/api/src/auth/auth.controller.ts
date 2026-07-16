@@ -35,8 +35,10 @@ export class AuthController {
   }
 
   @Post("password-reset/confirm")
-  resetPassword(@Body() body: { email?: string; token?: string; resetToken?: string; password?: string }, @Req() request: any) {
-    return this.auth.resetPassword({ ...body, clientIp: request.ip || request.socket?.remoteAddress });
+  async resetPassword(@Body() body: { email?: string; token?: string; resetToken?: string; password?: string }, @Req() request: any, @Res({ passthrough: true }) response: any) {
+    const result = await this.auth.resetPassword({ ...body, clientIp: request.ip || request.socket?.remoteAddress });
+    clearSessionCookies(response);
+    return result;
   }
 
   @Post("google/challenge")

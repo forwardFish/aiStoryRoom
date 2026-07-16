@@ -153,12 +153,13 @@ function renderAuth() {
   authSkipRestore = false;
   authRestoreError = "";
   const returnTo = safeReturnTo(params.get("returnTo"));
+  const reauthenticate = params.get("reauth") === "1";
   const legacyResetToken = String(params.get("token") || "").trim();
   if (params.get("mode") === "reset" && legacyResetToken) {
     location.replace(`/reset-password?token=${encodeURIComponent(legacyResetToken)}`);
     return;
   }
-  if (!skipRestore && hasSessionCookie()) {
+  if (!skipRestore && !reauthenticate && hasSessionCookie()) {
     restoreBrowserSession(returnTo);
     return;
   }
