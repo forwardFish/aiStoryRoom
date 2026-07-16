@@ -1,0 +1,76 @@
+{
+  "status": "MANUAL_ACCEPTANCE_REQUIRED",
+  "scope": "Production email/password authentication and Google direct sign-in",
+  "executedAt": "2026-07-16T19:26:35+08:00",
+  "commits": {
+    "authHardening": "b5cadb1d20a89b48b1efe36374f89829ba53783b",
+    "productionPostProxyFix": "b5e6c9d1d8ea0f784432947bd9af4fc4d7c46b5a",
+    "headEqualsOriginMain": true
+  },
+  "automatedChecks": {
+    "apiBuild": "PASS",
+    "workspaceTypecheck": "PASS",
+    "apiSuite": "PASS",
+    "webSuite": "PASS (50 tests)",
+    "googleTokenVerifier": "PASS (2 tests)",
+    "googleIdentityChallengeLinkConcurrency": "PASS (8 tests)",
+    "protectedBusinessBoundaries": "PASS",
+    "transactionalEmailTemplates": "PASS (3 tests)",
+    "prismaGenerate": "ENVIRONMENT_BLOCKED: Windows EPERM on an already loaded query_engine-windows.dll.node; the existing generated client completed API build and tests"
+  },
+  "productionChecks": {
+    "railwayReady": true,
+    "railwayVersion": "b5cadb1d20a89b48b1efe36374f89829ba53783b",
+    "database": "connected",
+    "emailProvider": "resend",
+    "vercelDeployment": "Ready",
+    "vercelCommit": "b5e6c9d",
+    "contentSecurityPolicy": true,
+    "crossOriginOpenerPolicy": "same-origin-allow-popups",
+    "repeatableProductionSmoke": {
+      "status": "PASS",
+      "script": "scripts/e2e/auth-production-smoke.mjs",
+      "evidence": "docs/auto-execute/evidence/auth-production-closure/production-smoke.json",
+      "checks": [
+        "auth surface and Google CSP/COOP headers",
+        "public Google runtime configuration without private credentials",
+        "anonymous session rejection",
+        "nonce-bound Google challenge without recorded challenge values",
+        "missing-account password-reset non-enumeration without using a real mailbox"
+      ],
+      "sensitiveValuesRecorded": false
+    },
+    "anonymousMe": "401 AUTHENTICATION_REQUIRED",
+    "googleChallenge": {
+      "status": 201,
+      "challengeIdPresent": true,
+      "nonceLength": 43,
+      "expiresAtPresent": true,
+      "tokenOrCredentialLeaked": false
+    },
+    "passwordResetNonEnumeration": {
+      "missingAccountResponse": {
+        "status": 201,
+        "body": { "accepted": true }
+      },
+      "existingAccountResponse": {
+        "status": 201,
+        "body": { "accepted": true }
+      }
+    },
+    "latestResetEmail": {
+      "recipient": "user-provided QQ test mailbox (redacted)",
+      "requestedAt": "2026-07-16T19:26:35+08:00",
+      "apiAccepted": true,
+      "mailboxArrival": "PENDING_USER_CONFIRMATION"
+    }
+  },
+  "manualAcceptanceStillRequired": [
+    "Confirm the latest reset email arrived and matches the official template",
+    "Open the latest reset link, set a private password, prove the old password fails and the new password logs in, then prove the same reset link cannot be replayed",
+    "Complete a production Google login after the CSP deployment, refresh and reopen the site, then log out",
+    "Complete first and repeat login with a second real Google test account",
+    "Complete Google login from a real room invitation and prove room/ref/channel return context is preserved"
+  ],
+  "secretHandling": "No password, cookie, access token, Google credential, challenge nonce, email action token, API key, or full Google subject is stored in this artifact."
+}

@@ -1,0 +1,67 @@
+{
+  "status": "PASS",
+  "scope": "Production authentication public configuration, security headers, anonymous boundary, Google challenge, and password-reset non-enumeration",
+  "baseUrl": "https://ourmanyworlds.com",
+  "checks": [
+    {
+      "name": "auth_surface_and_headers",
+      "status": "PASS",
+      "evidence": {
+        "status": 200,
+        "googleCsp": true,
+        "popupCoop": true
+      }
+    },
+    {
+      "name": "public_google_configuration",
+      "status": "PASS",
+      "evidence": {
+        "status": 200,
+        "clientIdConfigured": true,
+        "privateCredentialExposed": false
+      }
+    },
+    {
+      "name": "anonymous_session_rejected",
+      "status": "PASS",
+      "evidence": {
+        "status": 401,
+        "code": "AUTHENTICATION_REQUIRED",
+        "sessionCookieIssued": false
+      }
+    },
+    {
+      "name": "google_challenge",
+      "status": "PASS",
+      "evidence": {
+        "status": 201,
+        "challengeIdPresent": true,
+        "noncePresent": true,
+        "expiryPresent": true,
+        "credentialFieldExposed": false,
+        "valuesRecorded": false
+      }
+    },
+    {
+      "name": "password_reset_non_enumeration",
+      "status": "PASS",
+      "evidence": {
+        "status": 201,
+        "accepted": true,
+        "responseShape": [
+          "accepted"
+        ],
+        "realMailboxUsed": false,
+        "sessionCookieIssued": false
+      }
+    }
+  ],
+  "manualAcceptanceStillRequired": [
+    "Real inbox verification and password-reset replay rejection",
+    "Google first and repeat login with two real accounts",
+    "Cookie persistence and logout in a real browser",
+    "Google login from a real room invitation with return context preserved"
+  ],
+  "sensitiveValuesRecorded": false,
+  "completedAt": "2026-07-16T11:39:17.519Z"
+}
