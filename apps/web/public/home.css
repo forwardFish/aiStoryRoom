@@ -23,11 +23,17 @@ button, a { font: inherit; } button { cursor: pointer; } a { color: inherit; tex
 .mw-header nav a.active::after { content: ""; position: absolute; right: 0; bottom: 13px; left: 0; height: 3px; border-radius: 5px; background: var(--purple); }
 .header-right { display: flex; align-items: center; gap: 7px; font-size: 12px; white-space: nowrap; }
 .login { border: 1px solid #e1e4ef; border-radius: 8px; padding: 8px; color: #2d3656; background: transparent; }
-.account-link { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 10px 5px 6px; border: 1px solid #e1e4ef; border-radius: 10px; color: #273154; background: #fff; }
-.account-avatar { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 9px; color: #fff; background: linear-gradient(135deg, #6041ee, #8a56f5); font-weight: 800; }
-.account-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
-.account-online { position: absolute; bottom: 5px; left: 28px; width: 8px; height: 8px; border: 2px solid #fff; border-radius: 50%; background: #27b36a; }
-.mobile-account { color: var(--muted); font-size: 11px; }
+.account-control { position: relative; }
+.account-trigger { display: grid; width: 46px; height: 46px; place-items: center; padding: 0; border: 1px solid #dfe3ef; border-radius: 50%; background: #fff; box-shadow: 0 6px 16px rgba(42,53,112,.08); }
+.account-trigger:hover, .account-trigger:focus-visible, .account-trigger[aria-expanded="true"] { border-color: #7551f2; background: #f7f4ff; outline: none; }
+.account-trigger img { width: 25px; height: 25px; object-fit: contain; }
+.account-menu { position: absolute; z-index: 20; top: calc(100% + 10px); right: 0; width: 168px; overflow: hidden; border: 1px solid #e1e4ef; border-radius: 12px; background: #fff; box-shadow: 0 16px 36px rgba(30,38,70,.18); }
+.account-menu[hidden] { display: none; }
+.account-menu a, .account-menu button { display: flex; width: 100%; min-height: 52px; align-items: center; justify-content: center; padding: 12px 18px; border: 0; background: #fff; color: #18213f; font-weight: 700; text-align: center; }
+.account-menu a:hover, .account-menu a:focus-visible { background: #f5f2ff; outline: none; }
+.account-menu button { background: #ef5a66; color: #fff; }
+.account-menu button:hover, .account-menu button:focus-visible { background: #df4653; outline: none; }
+.account-menu button:disabled { opacity: .65; cursor: wait; }
 .get-started, .mw-primary { border: 0; border-radius: 10px; padding: 10px 17px; color: #fff; background: linear-gradient(110deg, #6041ee, #854bf5); box-shadow: 0 9px 18px rgba(100,69,238,.25); font-weight: 700; }
 .menu-button, .mobile-nav { display: none; }
 .mw-icon { width: 19px; height: 19px; object-fit: contain; vertical-align: middle; }
@@ -1284,4 +1290,5 @@ button, a { font: inherit; } button { cursor: pointer; } a { color: inherit; tex
   .wallet-rewards { grid-column: auto; grid-template-columns: 1fr; }
   .wallet-rewards > div { padding: 23px; }
   .wallet-rewards > div + div { border-top: 1px solid #e4e2ec; border-left: 0; }
+  .mobile-nav button { padding: 0; border: 0; background: transparent; color: #df4653; font-weight: 700; text-align: left; }
 }

@@ -1,0 +1,34 @@
+{
+  "runDate": "2026-07-16",
+  "origin": "http://localhost:3000",
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "avatar_only_authenticated_header",
+      "status": "PASS",
+      "evidence": "The authenticated header rendered only /assets/icon/17.png; no account name or My rooms control was present."
+    },
+    {
+      "name": "account_menu",
+      "status": "PASS",
+      "evidence": "Clicking the avatar exposed exactly My Account and Logout."
+    },
+    {
+      "name": "logout",
+      "status": "PASS",
+      "evidence": "Logout completed through POST /api/v4/auth/logout and the header returned to Log in and Get started."
+    },
+    {
+      "name": "browser_console",
+      "status": "PASS",
+      "evidence": "No browser console errors were recorded during the menu and logout flow."
+    },
+    {
+      "name": "web_regression_suite",
+      "status": "PASS",
+      "evidence": "pnpm --filter @apps/web test: 48 passed, 0 failed."
+    }
+  ],
+  "screenshot": "home-account-menu.png",
+  "secretHandling": "No session cookie, Google credential, email address, access token, or API secret is stored in this artifact."
+}

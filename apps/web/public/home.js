@@ -43,7 +43,7 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
   if (!root) throw new TypeError("createHomeApp requires a root element");
   let carouselIndex = 2;
   let carouselTimer = null;
-  let account = hasSessionHint(browserWindow) ? { nickname: "Account" } : null;
+  let account = hasSessionHint(browserWindow) ? {} : null;
   const gotoSolo = () => {
     const host = String(browserWindow.location?.hostname || "");
     const local = /^(127\.0\.0\.1|localhost)$/i.test(host) || browserWindow.location?.port === "5178";
@@ -91,6 +91,35 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
       renderCarousel();
     }, 4800);
   };
+  const signOut = async (button) => {
+    button.disabled = true;
+    try {
+      const response = await browserWindow.fetch("/api/v4/auth/logout", { method: "POST", credentials: "include", headers: { accept: "application/json" } });
+      if (!response.ok) throw new Error("Logout failed");
+      clearSessionHint(browserWindow);
+      account = null;
+      render();
+    } catch {
+      button.disabled = false;
+      button.textContent = "Try logout again";
+    }
+  };
+  const bindAccountMenu = () => {
+    const control = root.querySelector("[data-account-control]");
+    const trigger = root.querySelector("[data-account-trigger]");
+    const menu = root.querySelector("[data-account-menu]");
+    if (control && trigger && menu) {
+      const close = () => { menu.hidden = true; trigger.setAttribute("aria-expanded", "false"); };
+      trigger.addEventListener("click", () => {
+        const open = menu.hidden;
+        menu.hidden = !open;
+        trigger.setAttribute("aria-expanded", String(open));
+      });
+      control.addEventListener("focusout", (event) => { if (!control.contains(event.relatedTarget)) close(); });
+      control.addEventListener("keydown", (event) => { if (event.key === "Escape") { close(); trigger.focus(); } });
+    }
+    root.querySelectorAll("[data-account-logout]").forEach((button) => button.addEventListener("click", () => void signOut(button)));
+  };
   const render = () => {
     pauseCarousel();
     root.innerHTML = renderPage(carouselIndex, account);
@@ -98,6 +127,7 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
     root.querySelectorAll("[data-open-world]").forEach((button) => button.addEventListener("click", gotoWorld));
     root.querySelectorAll("[data-open-rooms]").forEach((button) => button.addEventListener("click", gotoRooms));
     root.querySelector("[data-menu]")?.addEventListener("click", () => root.querySelector(".mobile-nav")?.classList.toggle("is-open"));
+    bindAccountMenu();
     bindCarousel();
     startCarousel();
   };
@@ -130,14 +160,6 @@ async function loadAccount(browserWindow) {
     clearSessionHint(browserWindow);
     return null;
   }
-}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
-}
-
-function accountDisplayName(account) {
-  return String(account?.nickname || account?.email || "Account").trim().slice(0, 40) || "Account";
 }
 
 function renderPage(activeIndex = 2, account = null) {
@@ -191,14 +213,11 @@ function renderHeroCarousel(activeIndex) {
   </div>`;
 }
 function renderHeader(account = null) {
-  const name = accountDisplayName(account);
-  const safeName = escapeHtml(name);
-  const initial = escapeHtml(name.slice(0, 1).toUpperCase() || "A");
   const desktopAccount = account
-    ? `<a class="account-link" href="/rooms" aria-label="Signed in as ${safeName}"><span class="account-avatar" aria-hidden="true">${initial}</span><span class="account-name">${safeName}</span><span class="account-online" aria-hidden="true"></span></a><button class="get-started" data-open-rooms>My rooms</button>`
+    ? `<div class="account-control" data-account-control><button class="account-trigger" type="button" data-account-trigger aria-label="Open account menu" aria-haspopup="menu" aria-expanded="false"><img src="/assets/icon/17.png" alt="" aria-hidden="true"></button><div class="account-menu" data-account-menu role="menu" hidden><a href="/credits" role="menuitem">My Account</a><button type="button" data-account-logout role="menuitem">Logout</button></div></div>`
     : `<a class="login" href="/auth?returnTo=%2F">Log in</a><button class="get-started" data-open-world>Get started</button>`;
   const mobileAccount = account
-    ? `<a href="/rooms">My rooms</a><a href="/credits">Credits wallet</a><span class="mobile-account">Signed in as ${safeName}</span>`
+    ? `<a href="/credits">My Account</a><button type="button" data-account-logout>Logout</button>`
     : `<a href="/auth?returnTo=%2F">Log in</a>`;
   return `<header class="mw-header"><a class="mw-brand" href="/"><img src="${LOGO_ASSET}" alt="Many Worlds logo"/><span>Many Worlds<small>AI-powered story rooms</small></span></a><nav><a class="active" href="#worlds">Explore Worlds</a><a href="#create">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav><div class="header-right">${desktopAccount}</div><button class="menu-button" data-menu aria-label="Open menu">☰</button><div class="mobile-nav"><a href="#worlds">Explore Worlds</a><a href="#create">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>${mobileAccount}</div></header>`;
 }
