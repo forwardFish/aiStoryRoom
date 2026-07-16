@@ -1,0 +1,40 @@
+{
+  "runDate": "2026-07-16",
+  "scope": "Google sign-in and first-party cookie session on the local Web origin",
+  "origin": "http://localhost:3000",
+  "apiTarget": "deployed Railway API through the local same-origin proxy",
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "google_authorized_origin",
+      "status": "PASS",
+      "evidence": "Google popup completed after http://localhost:3000 was added to the OAuth client's authorized JavaScript origins."
+    },
+    {
+      "name": "google_challenge",
+      "status": "PASS",
+      "evidence": "POST /api/v4/auth/google/challenge returned HTTP 201 through the local Web proxy."
+    },
+    {
+      "name": "google_callback",
+      "status": "PASS",
+      "evidence": "The Google credential callback completed and returned the browser to the home page."
+    },
+    {
+      "name": "signed_in_home_header",
+      "status": "PASS",
+      "evidence": "The home header removed the anonymous Log in control and rendered the authenticated account control plus My rooms."
+    },
+    {
+      "name": "cookie_session_refresh",
+      "status": "PASS",
+      "evidence": "After a full reload, GET /api/v4/auth/me rehydrated the authenticated home header from the first-party cookie session."
+    },
+    {
+      "name": "web_regression_suite",
+      "status": "PASS",
+      "evidence": "pnpm --filter @apps/web test: 43 passed, 0 failed."
+    }
+  ],
+  "secretHandling": "No Google credential, session cookie, email address, access token, challenge nonce, or API secret is stored in this artifact."
+}

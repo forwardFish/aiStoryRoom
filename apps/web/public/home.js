@@ -43,6 +43,7 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
   if (!root) throw new TypeError("createHomeApp requires a root element");
   let carouselIndex = 2;
   let carouselTimer = null;
+  let account = hasSessionHint(browserWindow) ? { nickname: "Account" } : null;
   const gotoSolo = () => {
     const host = String(browserWindow.location?.hostname || "");
     const local = /^(127\.0\.0\.1|localhost)$/i.test(host) || browserWindow.location?.port === "5178";
@@ -92,7 +93,7 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
   };
   const render = () => {
     pauseCarousel();
-    root.innerHTML = renderPage(carouselIndex);
+    root.innerHTML = renderPage(carouselIndex, account);
     root.querySelectorAll("[data-start-solo]").forEach((button) => button.addEventListener("click", gotoSolo));
     root.querySelectorAll("[data-open-world]").forEach((button) => button.addEventListener("click", gotoWorld));
     root.querySelectorAll("[data-open-rooms]").forEach((button) => button.addEventListener("click", gotoRooms));
@@ -101,12 +102,47 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
     startCarousel();
   };
   render();
+  if (account) void loadAccount(browserWindow).then((currentAccount) => {
+    account = currentAccount;
+    render();
+  });
   return { render, startSolo: gotoSolo };
 }
 
-function renderPage(activeIndex = 2) {
+function hasSessionHint(browserWindow) {
+  return String(browserWindow?.document?.cookie || "").split(";").some((item) => item.trim() === "many_worlds_session_hint=1");
+}
+
+function clearSessionHint(browserWindow) {
+  try { browserWindow.document.cookie = "many_worlds_session_hint=; Path=/; Max-Age=0; SameSite=Lax"; } catch {
+    // A failed UI hint cleanup does not grant or revoke the HttpOnly session.
+  }
+}
+
+async function loadAccount(browserWindow) {
+  try {
+    const response = await browserWindow.fetch("/api/v4/auth/me", { credentials: "include", headers: { accept: "application/json" } });
+    if (!response.ok) throw new Error("Session unavailable");
+    const user = await response.json();
+    if (!user?.id) throw new Error("Session unavailable");
+    return user;
+  } catch {
+    clearSessionHint(browserWindow);
+    return null;
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+}
+
+function accountDisplayName(account) {
+  return String(account?.nickname || account?.email || "Account").trim().slice(0, 40) || "Account";
+}
+
+function renderPage(activeIndex = 2, account = null) {
   return `<div class="many-worlds-page">
-    ${renderHeader()}
+    ${renderHeader(account)}
     <main>
       <section class="mw-hero" id="explore">
         <div class="hero-copy">
@@ -154,7 +190,18 @@ function renderHeroCarousel(activeIndex) {
     <div class="carousel-controls"><button type="button" data-carousel-prev aria-label="Previous world">${icon(8)}</button>${carouselWorlds.map((world, index) => `<i class="${index === activeIndex ? "active" : ""}" aria-label="${world.title}"></i>`).join("")}<button type="button" data-carousel-next aria-label="Next world">${icon(9)}</button></div>
   </div>`;
 }
-function renderHeader() { return `<header class="mw-header"><a class="mw-brand" href="/"><img src="${LOGO_ASSET}" alt="Many Worlds logo"/><span>Many Worlds<small>AI-powered story rooms</small></span></a><nav><a class="active" href="#worlds">Explore Worlds</a><a href="#create">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav><div class="header-right"><a class="login" href="/auth?returnTo=%2F">Log in</a><button class="get-started" data-open-world>Get started</button></div><button class="menu-button" data-menu aria-label="Open menu">☰</button><div class="mobile-nav"><a href="#worlds">Explore Worlds</a><a href="#create">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="/auth?returnTo=%2F">Log in</a></div></header>`; }
+function renderHeader(account = null) {
+  const name = accountDisplayName(account);
+  const safeName = escapeHtml(name);
+  const initial = escapeHtml(name.slice(0, 1).toUpperCase() || "A");
+  const desktopAccount = account
+    ? `<a class="account-link" href="/rooms" aria-label="Signed in as ${safeName}"><span class="account-avatar" aria-hidden="true">${initial}</span><span class="account-name">${safeName}</span><span class="account-online" aria-hidden="true"></span></a><button class="get-started" data-open-rooms>My rooms</button>`
+    : `<a class="login" href="/auth?returnTo=%2F">Log in</a><button class="get-started" data-open-world>Get started</button>`;
+  const mobileAccount = account
+    ? `<a href="/rooms">My rooms</a><a href="/credits">Credits wallet</a><span class="mobile-account">Signed in as ${safeName}</span>`
+    : `<a href="/auth?returnTo=%2F">Log in</a>`;
+  return `<header class="mw-header"><a class="mw-brand" href="/"><img src="${LOGO_ASSET}" alt="Many Worlds logo"/><span>Many Worlds<small>AI-powered story rooms</small></span></a><nav><a class="active" href="#worlds">Explore Worlds</a><a href="#create">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav><div class="header-right">${desktopAccount}</div><button class="menu-button" data-menu aria-label="Open menu">☰</button><div class="mobile-nav"><a href="#worlds">Explore Worlds</a><a href="#create">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>${mobileAccount}</div></header>`;
+}
 function renderWorldCard(world, variant, clean = false) { return `<article class="world-card ${variant}${clean ? " hero-card" : ""}" style="--cover:url('${asset("bg", world.image)}')">${clean ? "" : `<span class="world-category">${world.category}</span>`}<div><h3>${world.title}</h3>${clean ? "" : `<p>${world.copy}</p>${variant === "featured" ? `<span class="featured-people">${[1,2,3,4,5].map((n) => `<img src="${asset("portrait", n)}" alt=""/>`).join("")}</span>` : ""}<small>${icon(5)} ${world.meta}</small>`}</div></article>`; }
 function renderFooter() { return `<footer class="mw-footer"><div class="footer-brand"><img src="${LOGO_ASSET}" alt="Many Worlds logo"/><b>Many Worlds</b><p>Complex worlds.<br/>Human choices.<br/>No fixed ending.</p></div><div><b>Product</b><a href="#worlds">Explore Worlds</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#create">Create</a></div><div><b>Support</b><a href="#faq">Help Center</a><a href="/credits#rewards">Account rewards</a></div><div><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/refund">Refund Policy</a></div><div class="footer-social"><small>© 2026 Many Worlds. All rights reserved.</small></div></footer>`; }
 

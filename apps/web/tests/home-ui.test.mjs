@@ -51,6 +51,11 @@ test("Many Worlds 首页包含真实资源、完整内容分区和单人入口",
   assert.doesNotMatch(script, /Bonus Credits expire/i);
   assert.doesNotMatch(script, /two reward slots/i);
   assert.match(script, /data-start-solo/);
+  assert.match(script, /many_worlds_session_hint=1/);
+  assert.match(script, /fetch\("\/api\/v4\/auth\/me"/);
+  assert.match(script, /credentials: "include"/);
+  assert.match(script, /Signed in as/);
+  assert.match(script, /My rooms/);
   assert.equal((script.match(/title:/g) || []).length >= 8, true);
   assert.match(script, /function asset\(group, index\)/);
   assert.match(script, /worlds\.slice\(0, 6\)/);
@@ -61,6 +66,8 @@ test("Many Worlds 首页包含真实资源、完整内容分区和单人入口",
   assert.match(script, /asset\("portrait"/);
   assert.match(script, /asset\("icon"/);
   assert.match(css, /\.mw-hero/);
+  assert.match(css, /\.account-link/);
+  assert.match(css, /\.account-online/);
   assert.match(css, /\.world-carousel/);
   assert.match(css, /\.faq-layout/);
   assert.match(css, /\.faq-content/);
