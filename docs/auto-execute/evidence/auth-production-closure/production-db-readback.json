@@ -6,7 +6,7 @@
     "distinctUserCount": 1,
     "linkedEventCount": 1,
     "consumedChallengeCount": 0,
-    "unconsumedLiveChallengeCount": 0,
+    "unconsumedLiveChallengeCount": 1,
     "successfulLoginEventCount": 0,
     "firstLoginEventCount": 0,
     "repeatLoginEventCount": 0,
@@ -33,5 +33,5 @@
   },
   "piiRecorded": false,
   "secretsRecorded": false,
-  "checkedAt": "2026-07-16T11:50:31.780Z"
+  "checkedAt": "2026-07-16T11:56:58.836Z"
 }

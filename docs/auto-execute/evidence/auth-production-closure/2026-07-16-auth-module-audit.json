@@ -5,6 +5,8 @@
   "commits": {
     "authHardening": "b5cadb1d20a89b48b1efe36374f89829ba53783b",
     "productionPostProxyFix": "b5e6c9d1d8ea0f784432947bd9af4fc4d7c46b5a",
+    "productionSmokeEvidence": "8a5c27a6fa618db99267c49374a92cc7be14dac8",
+    "googleLoginAudit": "5de878848e0d965e5eb4cd62b98ecb6b99e3d96d",
     "headEqualsOriginMain": true
   },
   "automatedChecks": {
@@ -21,7 +23,8 @@
   },
   "productionChecks": {
     "railwayReady": true,
-    "railwayVersion": "b5cadb1d20a89b48b1efe36374f89829ba53783b",
+    "railwayVersion": "5de878848e0d965e5eb4cd62b98ecb6b99e3d96d",
+    "railwayDeploymentVerifiedAt": "2026-07-16T19:57:18+08:00",
     "database": "connected",
     "emailProvider": "resend",
     "vercelDeployment": "Ready",
