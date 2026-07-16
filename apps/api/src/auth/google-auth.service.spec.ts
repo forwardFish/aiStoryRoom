@@ -99,3 +99,147 @@ test("Google will not silently link an untrusted third-party email to an existin
     if (priorClientId === undefined) delete process.env.GOOGLE_WEB_CLIENT_ID; else process.env.GOOGLE_WEB_CLIENT_ID = priorClientId;
   }
 });
+
+test("Google safely auto-links authoritative Gmail and Workspace identities", async () => {
+  await withGoogleEnabled(async () => {
+    for (const candidate of [
+      googleIdentity({ email: "person@gmail.com", hostedDomain: null }),
+      googleIdentity({ email: "person@workspace.example", hostedDomain: "workspace.example" })
+    ]) {
+      const prisma = new MemoryGooglePrisma();
+      const local = await prisma.user.create({ data: { openid: "password_local", email: candidate.email, emailVerifiedAt: new Date(), passwordHash: "hash", nickname: "Local account" } });
+      const verifier = new FakeVerifier();
+      const service = new GoogleAuthService(prisma as any, verifier as any);
+      const challenge = await service.createChallenge({ clientIp: `127.0.1.${prisma.users.length}` });
+      verifier.candidate = { ...candidate, nonce: challenge.nonce };
+      const session = await service.login({ credential: "credential", challengeId: challenge.challengeId, clientIp: "127.0.1.20" });
+      assert.equal(session.user.id, local.id);
+      assert.equal(prisma.users.length, 1);
+      assert.equal(prisma.identities.length, 1);
+      assert.equal((prisma.events[0].payload as any).method, "authoritative-email");
+    }
+  });
+});
+
+test("Google rejects wrong, expired, and replayed challenges without creating an account", async () => {
+  await withGoogleEnabled(async () => {
+    const prisma = new MemoryGooglePrisma();
+    const verifier = new FakeVerifier();
+    const service = new GoogleAuthService(prisma as any, verifier as any);
+    const wrong = await service.createChallenge({ clientIp: "127.0.2.1" });
+    verifier.candidate = googleIdentity({ nonce: "different-nonce" });
+    await assert.rejects(() => service.login({ credential: "credential", challengeId: wrong.challengeId, clientIp: "127.0.2.2" }), hasCode("INVALID_GOOGLE_CHALLENGE"));
+    assert.equal(prisma.users.length, 0);
+    assert.equal(prisma.identities.length, 0);
+    assert.equal(prisma.challenges[0].consumedAt, null);
+
+    const expired = await service.createChallenge({ clientIp: "127.0.2.3" });
+    prisma.challenges.find((item) => item.id === expired.challengeId)!.expiresAt = new Date(Date.now() - 1_000);
+    verifier.candidate = googleIdentity({ nonce: expired.nonce });
+    await assert.rejects(() => service.login({ credential: "credential", challengeId: expired.challengeId, clientIp: "127.0.2.4" }), hasCode("INVALID_GOOGLE_CHALLENGE"));
+    assert.equal(prisma.users.length, 0);
+    assert.equal(prisma.identities.length, 0);
+  });
+});
+
+test("Google rejects inactive users and preserves the existing identity mapping", async () => {
+  await withGoogleEnabled(async () => {
+    const prisma = new MemoryGooglePrisma();
+    const user = await prisma.user.create({ data: { openid: "disabled", email: "disabled@gmail.com", emailVerifiedAt: new Date(), status: "disabled" } });
+    await prisma.authIdentity.create({ data: { userId: user.id, provider: AuthProvider.GOOGLE, providerSubject: "disabled-subject", providerEmail: user.email, providerEmailVerifiedAt: new Date(), hostedDomain: null, profileJson: {} } });
+    const verifier = new FakeVerifier();
+    const service = new GoogleAuthService(prisma as any, verifier as any);
+    const challenge = await service.createChallenge({ clientIp: "127.0.3.1" });
+    verifier.candidate = googleIdentity({ subject: "disabled-subject", email: user.email!, nonce: challenge.nonce });
+    await assert.rejects(() => service.login({ credential: "credential", challengeId: challenge.challengeId, clientIp: "127.0.3.2" }), hasCode("INVALID_GOOGLE_CREDENTIAL"));
+    assert.equal(prisma.users.length, 1);
+    assert.equal(prisma.identities.length, 1);
+  });
+});
+
+test("explicit Google linking is audited, rejects email ownership conflicts, and cannot remove the last login method", async () => {
+  await withGoogleEnabled(async () => {
+    const prisma = new MemoryGooglePrisma();
+    const local = await prisma.user.create({ data: { openid: "password_local", email: "local@example.test", emailVerifiedAt: new Date(), passwordHash: "hash", nickname: "Local" } });
+    const verifier = new FakeVerifier();
+    const service = new GoogleAuthService(prisma as any, verifier as any);
+    let challenge = await service.createChallenge({ clientIp: "127.0.4.1" });
+    verifier.candidate = googleIdentity({ email: "google@gmail.com", nonce: challenge.nonce });
+    const linked = await service.link(authenticated(local), { credential: "credential", challengeId: challenge.challengeId, clientIp: "127.0.4.2" });
+    assert.equal(linked.linked, true);
+    assert.equal(prisma.identities.length, 1);
+    assert.equal((prisma.events[0].payload as any).method, "explicit");
+    assert.deepEqual(await service.unlink(authenticated(local)), { unlinked: true });
+    assert.equal(prisma.identities.length, 0);
+    assert.equal(prisma.events.at(-1)?.eventName, "google_identity_unlinked");
+
+    const other = await prisma.user.create({ data: { openid: "other", email: "owned@gmail.com", emailVerifiedAt: new Date(), passwordHash: "hash" } });
+    challenge = await service.createChallenge({ clientIp: "127.0.4.3" });
+    verifier.candidate = googleIdentity({ subject: "owned-subject", email: other.email!, nonce: challenge.nonce });
+    await assert.rejects(() => service.link(authenticated(local), { credential: "credential", challengeId: challenge.challengeId, clientIp: "127.0.4.4" }), hasCode("GOOGLE_EMAIL_ALREADY_IN_USE"));
+
+    const googleOnly = await prisma.user.create({ data: { openid: "google_only", email: "only@gmail.com", emailVerifiedAt: new Date(), passwordHash: null } });
+    await prisma.authIdentity.create({ data: { userId: googleOnly.id, provider: AuthProvider.GOOGLE, providerSubject: "only-subject", providerEmail: googleOnly.email, providerEmailVerifiedAt: new Date(), hostedDomain: null, profileJson: {} } });
+    await assert.rejects(() => service.unlink(authenticated(googleOnly)), hasCode("LAST_LOGIN_METHOD"));
+  });
+});
+
+test("Google challenge creation is rate limited per IP", async () => {
+  await withGoogleEnabled(async () => {
+    const service = new GoogleAuthService(new MemoryGooglePrisma() as any, new FakeVerifier() as any);
+    for (let index = 0; index < 20; index += 1) await service.createChallenge({ clientIp: "127.0.5.1" });
+    await assert.rejects(() => service.createChallenge({ clientIp: "127.0.5.1" }), hasCode("AUTH_RATE_LIMITED"));
+  });
+});
+
+test("a unique-constraint race resolves to the identity committed by the concurrent winner", async () => {
+  await withGoogleEnabled(async () => {
+    const winner = { id: "winner-user", openid: "google_winner", email: "race@gmail.com", emailVerifiedAt: new Date(), passwordHash: null, nickname: "Winner", avatarUrl: null, policyAgreedAt: new Date(), status: "active" };
+    const identity = { id: "winner-identity", userId: winner.id, provider: AuthProvider.GOOGLE, providerSubject: "race-subject", providerEmail: winner.email, providerEmailVerifiedAt: new Date(), hostedDomain: null, profileJson: {}, user: winner };
+    let identityLookup = 0;
+    const prisma: any = {
+      authLoginChallenge: {
+        deleteMany: async () => ({ count: 0 }),
+        create: async ({ data }: any) => ({ id: "race-challenge", consumedAt: null, ...data }),
+        updateMany: async () => ({ count: 1 })
+      },
+      authIdentity: {
+        findUnique: async () => (++identityLookup === 1 ? null : identity),
+        create: async () => { throw Object.assign(new Error("unique conflict"), { code: "P2002" }); }
+      },
+      user: {
+        findUnique: async () => null,
+        create: async () => ({ ...winner, id: "rolled-back-user" })
+      },
+      eventLog: { create: async () => ({}) },
+      $transaction: async (work: (tx: any) => Promise<any>) => work(prisma)
+    };
+    const verifier = new FakeVerifier();
+    const service = new GoogleAuthService(prisma, verifier as any);
+    const challenge = await service.createChallenge({ clientIp: "127.0.6.1" });
+    verifier.candidate = googleIdentity({ subject: "race-subject", email: winner.email!, nonce: challenge.nonce });
+    const session = await service.login({ credential: "credential", challengeId: challenge.challengeId, clientIp: "127.0.6.2" });
+    assert.equal(session.user.id, winner.id);
+    assert.equal(verifyAccessToken(session.accessToken)?.authIdentityId, identity.id);
+  });
+});
+
+async function withGoogleEnabled(run: () => Promise<void>) {
+  const priorEnabled = process.env.GOOGLE_AUTH_ENABLED;
+  const priorClientId = process.env.GOOGLE_WEB_CLIENT_ID;
+  process.env.GOOGLE_AUTH_ENABLED = "true";
+  process.env.GOOGLE_WEB_CLIENT_ID = "google-client-id.test";
+  try { await run(); }
+  finally {
+    if (priorEnabled === undefined) delete process.env.GOOGLE_AUTH_ENABLED; else process.env.GOOGLE_AUTH_ENABLED = priorEnabled;
+    if (priorClientId === undefined) delete process.env.GOOGLE_WEB_CLIENT_ID; else process.env.GOOGLE_WEB_CLIENT_ID = priorClientId;
+  }
+}
+
+function authenticated(user: UserRecord) {
+  return { id: user.id, openid: user.openid, email: user.email, emailVerifiedAt: user.emailVerifiedAt, nickname: user.nickname, authMethod: "PASSWORD" as const, authIdentityId: null };
+}
+
+function hasCode(code: string) {
+  return (error: any) => error?.getResponse?.()?.code === code;
+}

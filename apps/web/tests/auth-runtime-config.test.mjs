@@ -4,11 +4,12 @@ import test from "node:test";
 import { JSDOM } from "jsdom";
 
 test("auth page loads the public runtime configuration before its Google button", async () => {
-  const [html, runtimeConfig, server, deploy] = await Promise.all([
+  const [html, runtimeConfig, server, deploy, vercelSource] = await Promise.all([
     readFile(new URL("../public/platform.html", import.meta.url), "utf8"),
     readFile(new URL("../public/runtime-config.js", import.meta.url), "utf8"),
     readFile(new URL("../src/server.mjs", import.meta.url), "utf8"),
-    readFile(new URL("../../../scripts/deploy/prepare-vercel-web-assets.mjs", import.meta.url), "utf8")
+    readFile(new URL("../../../scripts/deploy/prepare-vercel-web-assets.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../../../vercel.json", import.meta.url), "utf8")
   ]);
 
   assert.match(html, /<script src="\/runtime-config\.js"><\/script>\s*<script type="module" src="\/platform\.js">/);
@@ -17,6 +18,12 @@ test("auth page loads the public runtime configuration before its Google button"
   assert.match(server, /cache-control": "no-store/);
   assert.match(deploy, /writeFile/);
   assert.match(deploy, /PUBLIC_GOOGLE_WEB_CLIENT_ID/);
+  const vercel = JSON.parse(vercelSource);
+  const headers = vercel.headers?.flatMap((entry) => entry.headers || []) || [];
+  const value = (key) => headers.find((entry) => entry.key === key)?.value || "";
+  assert.match(value("Content-Security-Policy"), /script-src[^;]*https:\/\/accounts\.google\.com\/gsi\/client/);
+  assert.match(value("Content-Security-Policy"), /frame-src[^;]*https:\/\/accounts\.google\.com/);
+  assert.equal(value("Cross-Origin-Opener-Policy"), "same-origin-allow-popups");
 });
 
 test("Google browser sign-in is challenge-bound and leaves email authentication available", async () => {

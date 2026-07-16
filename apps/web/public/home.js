@@ -96,6 +96,10 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
     try {
       const response = await browserWindow.fetch("/api/v4/auth/logout", { method: "POST", credentials: "include", headers: { accept: "application/json" } });
       if (!response.ok) throw new Error("Logout failed");
+      try { browserWindow.google?.accounts?.id?.disableAutoSelect?.(); } catch {
+        // Google Identity Services may be blocked or absent; local logout must
+        // still clear the Many Worlds session.
+      }
       clearSessionHint(browserWindow);
       account = null;
       render();

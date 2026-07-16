@@ -58,6 +58,7 @@ test("Many Worlds 首页包含真实资源、完整内容分区和单人入口",
   assert.match(script, /My Account/);
   assert.match(script, /Logout/);
   assert.match(script, /\/api\/v4\/auth\/logout/);
+  assert.match(script, /disableAutoSelect/);
   assert.doesNotMatch(script, /account-name|>My rooms</);
   assert.equal((script.match(/title:/g) || []).length >= 8, true);
   assert.match(script, /function asset\(group, index\)/);

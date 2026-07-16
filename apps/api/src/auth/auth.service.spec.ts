@@ -57,6 +57,37 @@ async function run() {
   for (let index = 0; index < 5; index += 1) await rateLimited.register({ email: "limited@example.test", password: "password-123", clientIp: `127.0.1.${index}` });
   await assert.rejects(() => rateLimited.register({ email: "limited@example.test", password: "password-123", clientIp: "127.0.1.9" }), hasCode("AUTH_RATE_LIMITED"));
 
+  const loginPrisma = new MemoryPrisma();
+  const loginLimited = new AuthService(loginPrisma as any, mailer as any);
+  await loginLimited.register({ email: "login-limited@example.test", password: "password-123", clientIp: "127.0.3.1" });
+  await loginLimited.verify({ token: emails.at(-1)!.token, clientIp: "127.0.3.2" });
+  for (let index = 0; index < 10; index += 1) {
+    await assert.rejects(() => loginLimited.login({ email: "login-limited@example.test", password: "wrong-password", clientIp: "127.0.3.3" }), hasCode("INVALID_CREDENTIALS"));
+  }
+  await assert.rejects(() => loginLimited.login({ email: "login-limited@example.test", password: "wrong-password", clientIp: "127.0.3.3" }), hasCode("AUTH_RATE_LIMITED"));
+
+  const resendLimited = new AuthService(new MemoryPrisma() as any, mailer as any);
+  await resendLimited.register({ email: "resend-limited@example.test", password: "password-123", clientIp: "127.0.4.1" });
+  for (let index = 0; index < 3; index += 1) {
+    assert.deepEqual(await resendLimited.resendVerification({ email: "resend-limited@example.test", clientIp: "127.0.4.2" }), { accepted: true });
+  }
+  await assert.rejects(() => resendLimited.resendVerification({ email: "resend-limited@example.test", clientIp: "127.0.4.2" }), hasCode("AUTH_RATE_LIMITED"));
+
+  const resetPrisma = new MemoryPrisma();
+  const resetLimited = new AuthService(resetPrisma as any, mailer as any);
+  await resetLimited.register({ email: "reset-limited@example.test", password: "password-123", clientIp: "127.0.5.1" });
+  await resetLimited.verify({ token: emails.at(-1)!.token, clientIp: "127.0.5.2" });
+  for (let index = 0; index < 3; index += 1) {
+    assert.deepEqual(await resetLimited.requestPasswordReset({ email: "reset-limited@example.test", clientIp: "127.0.5.3" }), { accepted: true });
+  }
+  await assert.rejects(() => resetLimited.requestPasswordReset({ email: "reset-limited@example.test", clientIp: "127.0.5.3" }), hasCode("AUTH_RATE_LIMITED"));
+
+  const confirmLimited = new AuthService(new MemoryPrisma() as any, mailer as any);
+  for (let index = 0; index < 10; index += 1) {
+    await assert.rejects(() => confirmLimited.resetPassword({ token: `invalid-${index}`, password: "password-123", clientIp: "127.0.6.1" }), hasCode("INVALID_RESET_TOKEN"));
+  }
+  await assert.rejects(() => confirmLimited.resetPassword({ token: "invalid-final", password: "password-123", clientIp: "127.0.6.1" }), hasCode("AUTH_RATE_LIMITED"));
+
   const expiredPrisma = new MemoryPrisma();
   const expiring = new AuthService(expiredPrisma as any, mailer as any);
   await expiring.register({ email: "expired@example.test", password: "password-123", clientIp: "127.0.2.1" });

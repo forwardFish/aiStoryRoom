@@ -29,7 +29,18 @@ export class GoogleAuthService {
     this.assertEnabled();
     this.enforceRateLimit("login", input.clientIp, 10, 15 * 60_000);
     const identity = await this.verifier.verify(String(input.credential || ""));
-    const userAndIdentity = await this.consumeAndResolve(identity, String(input.challengeId || ""));
+    const challengeId = String(input.challengeId || "");
+    let userAndIdentity: Awaited<ReturnType<GoogleAuthService["consumeAndResolve"]>>;
+    try {
+      userAndIdentity = await this.consumeAndResolve(identity, challengeId);
+    } catch (error) {
+      if (!isPrismaUniqueConstraintError(error)) throw error;
+      // Two first-time logins for the same Google subject can race between the
+      // initial lookup and the unique AuthIdentity insert. The losing database
+      // transaction rolls back its challenge consumption, so consume it once
+      // more and resolve the identity committed by the winner.
+      userAndIdentity = await this.resolveConcurrentIdentity(identity, challengeId, error);
+    }
     if (userAndIdentity.user.status !== "active") throw new UnauthorizedException({ code: "INVALID_GOOGLE_CREDENTIAL", message: "Google sign-in is unavailable for this account" });
     const token = issueAccessToken(userAndIdentity.user, { authMethod: "GOOGLE", authIdentityId: userAndIdentity.identity.id });
     return { token, accessToken: token, user: safeUser(userAndIdentity.user), returnTo: safeAuthReturnTo(input.returnTo) };
@@ -46,6 +57,10 @@ export class GoogleAuthService {
       const existing = await tx.authIdentity.findUnique({ where: { provider_providerSubject: { provider: AuthProvider.GOOGLE, providerSubject: candidate.subject } } });
       if (existing && existing.userId !== user.id) throw new ConflictException({ code: "GOOGLE_IDENTITY_ALREADY_LINKED", message: "This Google account is already linked to another user" });
       if (existing) return existing;
+      const emailOwner = await tx.user.findUnique({ where: { email: candidate.email } });
+      if (emailOwner && emailOwner.id !== user.id) {
+        throw new ConflictException({ code: "GOOGLE_EMAIL_ALREADY_IN_USE", message: "This Google email belongs to another account" });
+      }
       const identity = await tx.authIdentity.create({ data: identityData(user.id, candidate) });
       await tx.eventLog.create({ data: { userId: user.id, eventName: "google_identity_linked", source: "auth-google", payload: { identityId: identity.id, method: "explicit" } } });
       return identity;
@@ -102,6 +117,18 @@ export class GoogleAuthService {
     });
   }
 
+  private async resolveConcurrentIdentity(candidate: VerifiedGoogleIdentity, challengeId: string, originalError: unknown) {
+    return this.prisma.$transaction(async (tx) => {
+      await consumeChallenge(tx, challengeId, candidate.nonce);
+      const existing = await tx.authIdentity.findUnique({
+        where: { provider_providerSubject: { provider: AuthProvider.GOOGLE, providerSubject: candidate.subject } },
+        include: { user: true }
+      });
+      if (!existing?.user) throw originalError;
+      return { user: existing.user, identity: existing };
+    });
+  }
+
   private assertEnabled() {
     if (process.env.GOOGLE_AUTH_ENABLED === "false" || !String(process.env.GOOGLE_WEB_CLIENT_ID || "").trim()) {
       throw new HttpException({ code: "GOOGLE_AUTH_NOT_READY", message: "Google sign-in is not configured" }, HttpStatus.SERVICE_UNAVAILABLE);
@@ -155,4 +182,8 @@ function publicIdentity(identity: { id: string; provider: AuthProvider; provider
 function challengeTtlMilliseconds() {
   const seconds = Number(process.env.GOOGLE_LOGIN_CHALLENGE_TTL_SECONDS || 300);
   return Math.max(60, Math.min(900, Number.isFinite(seconds) ? Math.floor(seconds) : 300)) * 1_000;
+}
+
+function isPrismaUniqueConstraintError(error: unknown) {
+  return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: unknown }).code === "P2002");
 }
