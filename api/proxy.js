@@ -20,8 +20,9 @@ export default async function handler(request, response) {
     }
     url.searchParams.delete("path");
     const headers = {};
+    const hopByHopHeaders = new Set(["connection", "content-length", "expect", "host", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade"]);
     for (const [name, value] of Object.entries(request.headers || {})) {
-      if (["host", "content-length", "connection"].includes(name.toLowerCase())) continue;
+      if (hopByHopHeaders.has(name.toLowerCase())) continue;
       headers[name] = Array.isArray(value) ? value.join(", ") : value;
     }
     const method = String(request.method || "GET").toUpperCase();
