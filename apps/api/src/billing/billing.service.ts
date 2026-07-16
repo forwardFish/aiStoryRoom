@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma.service";
 import { CreditsService } from "../credits/credits.service";
@@ -18,6 +18,23 @@ interface CheckoutContext {
   roomTitle?: string;
   round?: number;
   totalRounds?: number;
+}
+
+export function getPaymentReturnOrigin(environment: NodeJS.ProcessEnv = process.env) {
+  const configured = String(environment.PAYMENT_RETURN_ORIGIN || environment.PUBLIC_WEB_URL || "").trim();
+  const candidate = configured || (environment.NODE_ENV === "production" ? "" : "http://localhost:3000");
+  if (!candidate) {
+    throw new ServiceUnavailableException({ code: "PAYMENT_RETURN_ORIGIN_REQUIRED", message: "Payment return URL is not configured" });
+  }
+  try {
+    const url = new URL(candidate);
+    const hasUnexpectedParts = Boolean(url.username || url.password || url.search || url.hash || (url.pathname && url.pathname !== "/"));
+    const invalidProtocol = !["http:", "https:"].includes(url.protocol) || (environment.NODE_ENV === "production" && url.protocol !== "https:");
+    if (hasUnexpectedParts || invalidProtocol) throw new Error("invalid origin");
+    return url.origin;
+  } catch {
+    throw new ServiceUnavailableException({ code: "PAYMENT_RETURN_ORIGIN_INVALID", message: "Payment return URL must be a valid web origin" });
+  }
 }
 
 @Injectable()
@@ -85,9 +102,10 @@ export class BillingService {
     });
     const requestId = `many-worlds-${purchase.id}`;
     try {
+      const paymentReturnOrigin = getPaymentReturnOrigin();
       const checkout = await this.creem.createCheckout({
         productId: pack.productId,
-        successUrl: `${process.env.PUBLIC_WEB_URL || "http://localhost:3000"}/credits/status?purchase_id=${encodeURIComponent(purchase.id)}`,
+        successUrl: `${paymentReturnOrigin}/credits/status?purchase_id=${encodeURIComponent(purchase.id)}`,
         requestId,
         metadata: { userId: user.id, purchaseId: purchase.id, intent: checkoutContext.intent, runId: checkoutContext.runId || "", source: "web" }
       });
