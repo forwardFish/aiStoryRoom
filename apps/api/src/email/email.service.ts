@@ -27,12 +27,12 @@ export class EmailService {
 
   async sendVerification(input: { email: string; token: string; returnTo?: string; idempotencyKey: string }) {
     const url = verificationUrl(input.token, input.returnTo);
-    return this.send(input.email, verifyEmailTemplate(url), input.idempotencyKey);
+    return this.send(input.email, verifyEmailTemplate(url, positiveInteger(process.env.EMAIL_VERIFY_TTL_MINUTES, 30), supportEmail()), input.idempotencyKey);
   }
 
   async sendPasswordReset(input: { email: string; token: string; idempotencyKey: string }) {
     const url = passwordResetUrl(input.token);
-    return this.send(input.email, resetPasswordTemplate(url), input.idempotencyKey);
+    return this.send(input.email, resetPasswordTemplate(url, positiveInteger(process.env.PASSWORD_RESET_TTL_MINUTES, 15), supportEmail()), input.idempotencyKey);
   }
 
   private async send(to: string, template: { subject: string; text: string; html: string }, idempotencyKey: string): Promise<EmailDelivery> {
@@ -56,4 +56,13 @@ function passwordResetUrl(token: string) {
   const url = new URL(`${base}/reset-password`);
   url.searchParams.set("token", token);
   return url.toString();
+}
+
+function supportEmail() {
+  return String(process.env.EMAIL_REPLY_TO || "support@ourmanyworlds.com").trim();
+}
+
+function positiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
