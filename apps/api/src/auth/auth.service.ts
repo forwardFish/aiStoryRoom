@@ -198,8 +198,23 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    return this.safeUser(user);
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      include: {
+        authIdentities: {
+          select: { id: true, provider: true, providerEmail: true, createdAt: true }
+        }
+      }
+    });
+    return {
+      ...this.safeUser(user),
+      loginMethods: {
+        password: Boolean(user.passwordHash && user.emailVerifiedAt),
+        google: user.authIdentities
+          .filter((identity) => identity.provider === "GOOGLE")
+          .map((identity) => ({ id: identity.id, provider: identity.provider, email: identity.providerEmail, linkedAt: identity.createdAt }))
+      }
+    };
   }
 
   private async createOneTimeToken(userId: string, purpose: AuthTokenPurpose): Promise<OneTimeToken> {

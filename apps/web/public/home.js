@@ -218,10 +218,10 @@ function renderHeroCarousel(activeIndex) {
 }
 function renderHeader(account = null) {
   const desktopAccount = account
-    ? `<div class="account-control" data-account-control><button class="account-trigger" type="button" data-account-trigger aria-label="Open account menu" aria-haspopup="menu" aria-expanded="false"><img src="/assets/icon/17.png" alt="" aria-hidden="true"></button><div class="account-menu" data-account-menu role="menu" hidden><a href="/credits" role="menuitem">My Account</a><button type="button" data-account-logout role="menuitem">Logout</button></div></div>`
+    ? `<div class="account-control" data-account-control><button class="account-trigger" type="button" data-account-trigger aria-label="Open account menu" aria-haspopup="menu" aria-expanded="false"><img src="/assets/icon/17.png" alt="" aria-hidden="true"></button><div class="account-menu" data-account-menu role="menu" hidden><a href="/account" role="menuitem">My Account</a><button type="button" data-account-logout role="menuitem">Logout</button></div></div>`
     : `<a class="login" href="/auth?returnTo=%2F">Log in</a><button class="get-started" data-open-world>Get started</button>`;
   const mobileAccount = account
-    ? `<a href="/credits">My Account</a><button type="button" data-account-logout>Logout</button>`
+    ? `<a href="/account">My Account</a><button type="button" data-account-logout>Logout</button>`
     : `<a href="/auth?returnTo=%2F">Log in</a>`;
   return `<header class="mw-header"><a class="mw-brand" href="/"><img src="${LOGO_ASSET}" alt="Many Worlds logo"/><span>Many Worlds<small>AI-powered story rooms</small></span></a><nav><a class="active" href="#worlds">Explore Worlds</a><a href="#create">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav><div class="header-right">${desktopAccount}</div><button class="menu-button" data-menu aria-label="Open menu">☰</button><div class="mobile-nav"><a href="#worlds">Explore Worlds</a><a href="#create">Create</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>${mobileAccount}</div></header>`;
 }

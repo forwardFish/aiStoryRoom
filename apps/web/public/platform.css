@@ -66,6 +66,26 @@ body:has(.room-top) .mw-nav a.active { border-bottom-color:transparent; color:va
 .google-divider { margin:20px 0 14px; }
 .google-signin { display:flex; min-height:40px; justify-content:center; }
 .google-unavailable { margin:8px 0 0; text-align:center; color:#69728a; font-size:13px; }
+
+/* account security */
+.account-frame { display:grid; min-height:calc(100vh - 64px); place-items:center; padding:36px 20px; }
+.account-card { width:min(720px,100%); padding:36px; border:1px solid #e1e4ec; border-radius:18px; background:#fff; box-shadow:0 12px 34px rgba(43,49,83,.08); }
+.account-card h1 { margin:7px 0 8px; font-size:36px; }
+.account-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:28px 0; }
+.account-summary > div { padding:16px; border:1px solid #e5e7ef; border-radius:12px; background:#fafaff; }
+.account-summary span,.account-summary strong { display:block; overflow-wrap:anywhere; }
+.account-summary span { margin-bottom:7px; color:#727b94; font-size:13px; }
+.login-methods { display:grid; gap:12px; }
+.login-methods h2 { margin:0 0 4px; font-size:21px; }
+.login-method { display:flex; min-height:84px; align-items:center; justify-content:space-between; gap:18px; padding:16px 18px; border:1px solid #e2e5ed; border-radius:12px; }
+.login-method p { margin:6px 0 0; color:#6b748d; font-size:14px; }
+.method-state { padding:7px 11px; border-radius:999px; background:#f1f2f6; color:#6b7285; font-size:13px; }
+.method-state.connected { background:#e9f8ed; color:#218443; }
+.google-link-button { min-width:320px; min-height:44px; }
+.method-warning { margin:0; padding:10px 13px; border-radius:9px; background:#fff8e8; color:#8b6418; font-size:13px; }
+.account-actions { display:flex; justify-content:space-between; gap:12px; margin-top:28px; }
+.btn.danger { border-color:#efc7cb; color:#c43847; }
+@media (max-width:700px) { .account-frame { padding:18px 12px; }.account-card { padding:24px 18px; }.account-summary { grid-template-columns:1fr; }.login-method { align-items:flex-start; flex-direction:column; }.google-link-button { width:100%; min-width:0; }.account-actions { flex-direction:column; } }
 .auth-legal { text-align:center; color:#69728a; font-size:14px; margin-top:27px; }
 /* The source captures use a taller auth masthead while keeping the card's
    absolute baseline fixed. */

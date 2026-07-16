@@ -35,6 +35,17 @@ async function run() {
 
   const session = await auth.login({ email: "alice@example.test", password: "password-123", clientIp: "127.0.0.7" });
   assert.ok(session.accessToken);
+  prisma.authIdentities.push({ id: "identity_1", userId: prisma.users[0].id, provider: "GOOGLE", providerEmail: "alice@gmail.com", createdAt: new Date("2026-07-16T00:00:00.000Z") });
+  assert.deepEqual(await auth.me(prisma.users[0].id), {
+    id: prisma.users[0].id,
+    email: "alice@example.test",
+    emailVerified: true,
+    nickname: "Alice",
+    loginMethods: {
+      password: true,
+      google: [{ id: "identity_1", provider: "GOOGLE", email: "alice@gmail.com", linkedAt: new Date("2026-07-16T00:00:00.000Z") }]
+    }
+  });
   const missingResetRequest = await auth.requestPasswordReset({ email: "missing@example.test", clientIp: "127.0.0.8" });
   assert.deepEqual(missingResetRequest, { accepted: true });
   const resetRequest = await auth.requestPasswordReset({ email: "alice@example.test", clientIp: "127.0.0.9" });
@@ -109,6 +120,7 @@ function hasCode(code: string) {
 class MemoryPrisma {
   users: any[] = [];
   tokens: any[] = [];
+  authIdentities: any[] = [];
   private nextUser = 0;
   private nextToken = 0;
 
@@ -119,10 +131,12 @@ class MemoryPrisma {
       return structuredClone(user);
     },
     findUnique: async ({ where }: any) => this.copyUser(this.users.find((user) => where.id ? user.id === where.id : user.email === where.email)),
-    findUniqueOrThrow: async ({ where }: any) => {
+    findUniqueOrThrow: async ({ where, include }: any) => {
       const user = this.users.find((item) => item.id === where.id);
       if (!user) throw new Error("not found");
-      return structuredClone(user);
+      const copy = structuredClone(user);
+      if (include?.authIdentities) copy.authIdentities = structuredClone(this.authIdentities.filter((identity) => identity.userId === user.id));
+      return copy;
     },
     update: async ({ where, data }: any) => {
       const user = this.users.find((item) => item.id === where.id);

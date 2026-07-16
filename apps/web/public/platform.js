@@ -21,7 +21,7 @@ function safeReturnTo(value) {
   if (typeof value !== "string" || value.includes("\\") || value.startsWith("//")) return "/";
   try {
     const url = new URL(value, "https://manyworlds.invalid");
-    const allowed = new Set(["/", "/join", "/rooms", "/game", "/game/result", "/credits", "/credits/status", "/credits/cancel", "/credits/failed", "/role-select", "/trio"]);
+    const allowed = new Set(["/", "/account", "/join", "/rooms", "/game", "/game/result", "/credits", "/credits/status", "/credits/cancel", "/credits/failed", "/role-select", "/trio"]);
     if (url.origin !== "https://manyworlds.invalid" || !(allowed.has(url.pathname) || /^\/rooms\/[A-Za-z0-9_-]+$/.test(url.pathname) || /^\/worlds\/[A-Za-z0-9_-]+$/.test(url.pathname))) return "/";
     return `${url.pathname}${url.search}`;
   } catch { return "/"; }
@@ -118,7 +118,9 @@ async function mountGoogleSignIn(returnTo) {
           });
           location.assign(safeReturnTo(session.returnTo || returnTo));
         } catch (error) {
-          notice(error.message || "Google sign-in could not be completed.");
+          notice(error.code === "ACCOUNT_LINK_REQUIRED"
+            ? "This email already has a Many Worlds account. Log in with your password, then open My Account to link Google."
+            : error.message || "Google sign-in could not be completed.");
         }
       }
     });
@@ -127,6 +129,44 @@ async function mountGoogleSignIn(returnTo) {
   } catch (error) {
     if (unavailable) unavailable.hidden = false;
     notice(error.message || "Google sign-in is temporarily unavailable. You can still use email.");
+  }
+}
+
+async function mountGoogleLink() {
+  const target = root.querySelector("[data-google-link]");
+  const unavailable = root.querySelector("[data-google-link-unavailable]");
+  const clientId = googleWebClientId();
+  if (!target || !clientId) {
+    if (unavailable) unavailable.hidden = false;
+    return;
+  }
+  try {
+    const challenge = await request("/api/v4/auth/google/challenge", { method: "POST", headers: { "x-requested-with": "many-worlds-web" }, body: "{}" });
+    const google = await loadGoogleIdentityLibrary();
+    google.accounts.id.initialize({
+      client_id: clientId,
+      nonce: challenge.nonce,
+      auto_select: false,
+      ux_mode: "popup",
+      callback: async (credentialResponse) => {
+        try {
+          await request("/api/v4/auth/google/link", {
+            method: "POST",
+            headers: { "x-requested-with": "many-worlds-web" },
+            body: JSON.stringify({ credential: credentialResponse.credential, challengeId: challenge.challengeId })
+          });
+          notice("Google account linked successfully.");
+          await hydrateAccount();
+        } catch (error) {
+          notice(error.message || "Google account could not be linked.");
+        }
+      }
+    });
+    target.hidden = false;
+    google.accounts.id.renderButton(target, { theme: "outline", size: "large", text: "continue_with", shape: "rectangular", width: 320 });
+  } catch (error) {
+    if (unavailable) unavailable.hidden = false;
+    notice(error.message || "Google account linking is temporarily unavailable.");
   }
 }
 
@@ -179,6 +219,34 @@ function renderAuth() {
   }
   void mountGoogleSignIn(returnTo);
 }
+
+function renderAccount() {
+  if (!sessionToken()) {
+    location.assign("/auth?returnTo=%2Faccount");
+    return;
+  }
+  appShell(`<section class="page-frame account-frame"><a class="back-link" href="/">Back to home</a><div class="account-card"><p class="eyebrow">ACCOUNT SECURITY</p><h1>My Account</h1><p class="muted">Review your account and choose how you sign in.</p><div data-notice class="notice" hidden></div><section class="account-summary" data-account-summary><p>Loading your account…</p></section><section class="login-methods" data-login-methods></section><div class="account-actions"><a class="btn" href="/credits">World Credits</a><button class="btn danger" type="button" data-action="account-logout">Log out</button></div></div></section>`);
+  void hydrateAccount();
+}
+
+async function hydrateAccount() {
+  try {
+    const account = await request("/api/v4/auth/me");
+    const summary = root.querySelector("[data-account-summary]");
+    const methods = root.querySelector("[data-login-methods]");
+    if (!summary || !methods) return;
+    const googleIdentity = account.loginMethods?.google?.[0] || null;
+    const hasPassword = Boolean(account.loginMethods?.password);
+    summary.innerHTML = `<div><span>Email</span><strong>${esc(account.email || "Not available")}</strong></div><div><span>Display name</span><strong>${esc(account.nickname || "Many Worlds player")}</strong></div><div><span>Email status</span><strong>${account.emailVerified ? "Verified" : "Not verified"}</strong></div>`;
+    methods.innerHTML = `<h2>Sign-in methods</h2><article class="login-method"><div><strong>Email and password</strong><p>${hasPassword ? "Available for this account." : "No verified password is configured."}</p></div><span class="method-state ${hasPassword ? "connected" : ""}">${hasPassword ? "Connected" : "Unavailable"}</span></article><article class="login-method"><div><strong>Google</strong><p>${googleIdentity ? `Linked to ${esc(googleIdentity.email || "your Google account")}.` : "Link Google for a faster sign-in option."}</p></div>${googleIdentity ? `<button class="btn small" type="button" data-action="unlink-google" ${hasPassword ? "" : "disabled"}>Unlink</button>` : `<div class="google-link-button" data-google-link hidden></div>`}</article>${googleIdentity && !hasPassword ? `<p class="method-warning">Add and verify a password before unlinking your only sign-in method.</p>` : ""}<p class="google-unavailable" data-google-link-unavailable hidden>Google account linking is unavailable here.</p>`;
+    bind();
+    if (!googleIdentity) void mountGoogleLink();
+  } catch (error) {
+    if (error.status === 401) location.assign("/auth?returnTo=%2Faccount");
+    else notice(error.message || "Unable to load your account.");
+  }
+}
+
 function renderJoin() {
   const roomCode = String(params.get("room") || "").trim().toUpperCase();
   const ref = String(params.get("ref") || "").trim().toUpperCase();
@@ -337,7 +405,7 @@ async function openInviteShare() {
 }
 function sessionToken() { return hasSessionCookie() ? "cookie-session" : ""; }
 function requireSession() { if (sessionToken()) return true; location.assign(`/auth?returnTo=${encodeURIComponent(path + location.search)}`); return false; }
-async function request(url, options = {}) { const response = await fetch(apiUrl(url), { ...options, credentials: "include", headers: { "content-type":"application/json", ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (response.status === 401) clearSessionHint(); if (!response.ok) throw new Error(data.message || data.code || `Request failed: ${response.status}`); return data; }
+async function request(url, options = {}) { const response = await fetch(apiUrl(url), { ...options, credentials: "include", headers: { "content-type":"application/json", ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (response.status === 401) clearSessionHint(); if (!response.ok) { const error = new Error(data.message || data.code || `Request failed: ${response.status}`); error.code = data.code || null; error.status = response.status; throw error; } return data; }
 function roomRows(rooms) { return rooms.map((room, index) => `<div class="room-table room-row"><div class="world-cell"><img class="thumb" src="/assets/bg/${(index % 5) + 1}.png" alt=""><strong>${esc(room.worldId === "sangtian" ? "嘉靖财政危局" : "Caesar")}</strong></div><span>${esc(room.title)}</span><span>${room.players.length} of ${room.maxPlayers}</span><span class="badge">Open</span><button class="btn small" data-open-room="${esc(room.id)}" data-join-code="${esc(room.code || "")}">Join</button></div>`).join("") || `<p class="refresh-note">No open rooms yet. Create the first room.</p>`; }
 function myRoomRows(rooms) { return rooms.map((room, index) => { const action = room.nextAction === "continue" ? "Continue" : room.nextAction === "view_result" ? "View Result" : "Open"; return `<div class="my-room"><img src="/assets/bg/${(index % 5) + 1}.png" alt=""><div><strong>${esc(room.title)}</strong><span>${esc(room.worldId === "sangtian" ? "嘉靖财政危局" : "Caesar")}</span></div><button class="btn small" data-my-room="${esc(room.id)}" data-next-action="${esc(room.nextAction || "open")}">${action}</button></div>`; }).join("") || `<p class="refresh-note">No rooms yet.</p>`; }
 function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { try { if (button.dataset.joinCode) await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode }) }); location.assign(`/rooms/${button.dataset.openRoom}`); } catch (error) { notice(error.message || "Unable to join this room."); } })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/room-game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
@@ -347,6 +415,8 @@ const actions = {
   "toggle-password": (_event, element) => { const input = root.querySelector('input[name="password"]'); if (!input) return; const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; element.textContent = reveal ? "Hide" : "Show"; element.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); },
   forgot: async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter your verified email address first."); try { await request("/api/v4/auth/password-reset/request", { method:"POST", body:JSON.stringify({ email }) }); notice("If this verified account exists, a password-reset email has been sent."); } catch (error) { notice(error.message || "Unable to request a password reset."); } },
   "resend-verification": async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter the email address that needs verification first."); try { await request("/api/v4/auth/verification/resend", { method:"POST", body:JSON.stringify({ email, returnTo: safeReturnTo(params.get("returnTo")) }) }); notice("If this account still needs verification, a new email has been sent."); } catch (error) { notice(error.message || "Unable to resend the verification email."); } },
+  "unlink-google": async (_event, element) => { if (element?.disabled) return; element.disabled = true; try { await request("/api/v4/auth/google/link", { method:"DELETE" }); notice("Google account unlinked."); await hydrateAccount(); } catch (error) { element.disabled = false; notice(error.message || "Google account could not be unlinked."); } },
+  "account-logout": async (_event, element) => { if (element?.disabled) return; element.disabled = true; try { await request("/api/v4/auth/logout", { method:"POST", body:"{}" }); try { globalThis.google?.accounts?.id?.disableAutoSelect?.(); } catch {} clearSessionHint(); location.assign("/"); } catch (error) { element.disabled = false; notice(error.message || "Unable to log out."); } },
   solo: () => location.assign("/role-select?story=caesar"), rooms: () => location.assign("/rooms?worldId=caesar"),
   "sangtian-solo": () => location.assign("/role-select?story=sangtian"), "sangtian-rooms": () => location.assign("/rooms?worldId=sangtian"),
   "join-code": async () => { if (!requireSession()) return; const code = prompt("Enter an invite code"); if (!code) return; try { const room = await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: code.trim().toUpperCase() }) }); location.assign(`/rooms/${room.id}`); } catch (error) { notice(error.message || "Unable to join this room."); } },
@@ -358,6 +428,6 @@ const actions = {
 };
 async function initializePlatform() {
   await migrateLegacySession();
-  if (path === "/auth") renderAuth(); else if (path === "/join") renderJoin(); else if (path.startsWith("/worlds/")) renderWorld(); else if (path === "/rooms") renderRooms(); else if (path.startsWith("/rooms/")) renderRoom(); else if (path === "/game/result") renderResult(); else location.assign("/");
+  if (path === "/auth") renderAuth(); else if (path === "/account") renderAccount(); else if (path === "/join") renderJoin(); else if (path.startsWith("/worlds/")) renderWorld(); else if (path === "/rooms") renderRooms(); else if (path.startsWith("/rooms/")) renderRoom(); else if (path === "/game/result") renderResult(); else location.assign("/");
 }
 void initializePlatform();

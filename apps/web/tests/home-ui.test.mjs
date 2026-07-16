@@ -56,6 +56,7 @@ test("Many Worlds 首页包含真实资源、完整内容分区和单人入口",
   assert.match(script, /credentials: "include"/);
   assert.match(script, /\/assets\/icon\/17\.png/);
   assert.match(script, /My Account/);
+  assert.match(script, /href="\/account"/);
   assert.match(script, /Logout/);
   assert.match(script, /\/api\/v4\/auth\/logout/);
   assert.match(script, /disableAutoSelect/);
