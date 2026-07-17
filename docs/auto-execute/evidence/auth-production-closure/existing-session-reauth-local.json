@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "scope": "Existing Many Worlds Cookie session takes priority over legacy reauth login URLs",
+  "route": "http://127.0.0.1:5281/auth?mode=login&reauth=1&returnTo=%2Faccount",
+  "accountType": "disposable example.test acceptance account",
+  "fixtureOnly": false,
+  "pageState": {
+    "path": "/account",
+    "hasAuthForm": false,
+    "hasGoogleButton": false,
+    "hasAccountProfile": true,
+    "cookie": "many_worlds_session_hint=1"
+  },
+  "authRequests": [
+    "/api/v4/auth/me",
+    "/api/v4/auth/me"
+  ],
+  "checks": {
+    "loginCreatedCookieHint": true,
+    "legacyReauthUrlLeavesLoginPage": true,
+    "loginFormIsNotRendered": true,
+    "googleButtonIsNotRendered": true,
+    "accountPageIsRendered": true,
+    "existingSessionWasValidated": true,
+    "googleChallengeWasNotRequested": true,
+    "noRuntimeExceptions": true
+  },
+  "runtimeExceptions": [],
+  "screenshot": "D:\\tmp\\aistory-auth-account-20260716\\docs\\auto-execute\\evidence\\auth-production-closure\\existing-session-reauth-local.png",
+  "completedAt": "2026-07-17T04:32:40.003Z"
+}

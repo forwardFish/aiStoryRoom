@@ -33,9 +33,11 @@ test("password reset has a dedicated page and shares the login visual contract",
   assert.match(resetSource, /JSON\.stringify\(\{ token, password \}\)/);
   assert.match(resetSource, /The two passwords do not match/);
   assert.match(resetSource, /Your password has been updated/);
-  assert.match(html, /href="\/auth\?mode=login&amp;reauth=1"/);
-  assert.match(resetSource, /href="\/auth\?mode=login&amp;reauth=1"/);
-  assert.match(platformSource, /!reauthenticate && hasSessionCookie\(\)/);
+  assert.match(html, /href="\/auth\?mode=login"/);
+  assert.match(resetSource, /href="\/auth\?mode=login"/);
+  assert.doesNotMatch(html, /reauth=1/);
+  assert.doesNotMatch(resetSource, /reauth=1/);
+  assert.match(platformSource, /!skipRestore && hasSessionCookie\(\)/);
 
   const renderAuthStart = platformSource.indexOf("function renderAuth()");
   const firstAppShell = platformSource.indexOf("appShell(", renderAuthStart);

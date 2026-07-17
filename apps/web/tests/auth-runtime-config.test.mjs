@@ -85,6 +85,41 @@ test("production Google sign-in reaches the same-origin cookie session endpoint 
   dom.window.close();
 });
 
+test("an existing cookie session takes priority over legacy reauth login URLs", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const requests = [];
+  let googleInitialized = false;
+  const dom = new JSDOM('<!doctype html><main id="platform-app"></main>', {
+    url: "https://ourmanyworlds.com/auth?mode=login&reauth=1&returnTo=%2Faccount",
+    runScripts: "outside-only"
+  });
+  dom.window.document.cookie = "many_worlds_session_hint=1; Path=/; Secure; SameSite=Lax";
+  dom.window.__MANY_WORLDS_RUNTIME__ = { googleWebClientId: "test-client.apps.googleusercontent.com" };
+  dom.window.google = {
+    accounts: {
+      id: {
+        initialize() { googleInitialized = true; },
+        renderButton() {},
+        disableAutoSelect() {}
+      }
+    }
+  };
+  dom.window.fetch = async (url, options = {}) => {
+    requests.push({ url: String(url), credentials: options.credentials });
+    return new Promise(() => {});
+  };
+
+  dom.window.eval(source);
+  const deadline = Date.now() + 2_000;
+  while (!requests.length && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assert.deepEqual(requests[0], { url: "/api/v4/auth/me", credentials: "include" });
+  assert.equal(dom.window.document.querySelector("[data-auth-form]"), null);
+  assert.equal(googleInitialized, false);
+  assert.match(dom.window.document.body.textContent, /Restoring your signed-in session/);
+  dom.window.close();
+});
+
 test("account page exposes the approved profile and purchase-history experience", async () => {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   assert.match(source, /function renderAccount\(\)/);
