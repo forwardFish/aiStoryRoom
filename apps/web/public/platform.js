@@ -159,14 +159,15 @@ function renderAuth() {
   authRestoreError = "";
   const returnTo = safeReturnTo(params.get("returnTo"));
   const legacyResetToken = String(params.get("token") || "").trim();
+  const isVerificationLink = params.get("mode") === "verify" && Boolean(legacyResetToken);
   if (params.get("mode") === "reset" && legacyResetToken) {
     location.replace(`/reset-password?token=${encodeURIComponent(legacyResetToken)}`);
     return;
   }
-  // An existing Many Worlds session always wins over a stale or bookmarked
-  // login URL. Account switching is handled by an explicit logout so that a
-  // signed-in user never sees Google and email login states at the same time.
-  if (!skipRestore && hasSessionCookie()) {
+  // An existing Many Worlds session wins over a stale or bookmarked login URL,
+  // but verification links must consume their token before session restore.
+  // Account switching is handled by an explicit logout.
+  if (!isVerificationLink && !skipRestore && hasSessionCookie()) {
     restoreBrowserSession(returnTo);
     return;
   }
@@ -177,10 +178,9 @@ function renderAuth() {
   const applyMode = (next) => { mode = next; root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.authTab === next)); root.querySelectorAll(".signup-only").forEach((node) => node.hidden = next !== "signup"); root.querySelectorAll(".login-only").forEach((node) => node.hidden = next !== "login"); form.querySelector("button[type=submit]").textContent = next === "login" ? "Log in" : "Create account"; form.querySelector("input[name=password]").autocomplete = next === "login" ? "current-password" : "new-password"; };
   root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.addEventListener("click", () => applyMode(tab.dataset.authTab)));
   form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } location.assign(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
-  const resetToken = String(params.get("token") || "").trim();
-  if (params.get("mode") === "verify" && resetToken) {
+  if (isVerificationLink) {
     notice("Verifying your email…");
-    void request("/api/v4/auth/verify", { method: "POST", body: JSON.stringify({ token: resetToken }) }).then((session) => {
+    void request("/api/v4/auth/verify", { method: "POST", body: JSON.stringify({ token: legacyResetToken }) }).then((session) => {
       location.assign(returnTo);
     }).catch((error) => notice(error.message || "This verification link is invalid or expired."));
   }

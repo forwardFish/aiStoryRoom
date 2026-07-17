@@ -24,7 +24,7 @@ test("browser authentication uses a same-origin HttpOnly cookie session", async 
   assert.match(platform, /AbortController/);
   assert.match(platform, /Your session expired\. Please sign in again\./);
   assert.match(platform, /skipRestore/);
-  assert.match(platform, /!skipRestore && hasSessionCookie\(\)/);
+  assert.match(platform, /!isVerificationLink && !skipRestore && hasSessionCookie\(\)/);
   assert.doesNotMatch(platform, /!reauthenticate && hasSessionCookie\(\)/);
   assert.match(authController, /password-reset\/confirm[\s\S]*clearSessionCookies\(response\)/);
   assert.match(platform, /auth\/session\/upgrade/);

@@ -120,6 +120,39 @@ test("an existing cookie session takes priority over legacy reauth login URLs", 
   dom.window.close();
 });
 
+test("an email verification link takes priority over an existing cookie session", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const requests = [];
+  const dom = new JSDOM('<!doctype html><main id="platform-app"></main>', {
+    url: "https://ourmanyworlds.com/auth?mode=verify&token=new-account-token&returnTo=%2F",
+    runScripts: "outside-only"
+  });
+  dom.window.document.cookie = "many_worlds_session_hint=1; Path=/; Secure; SameSite=Lax";
+  dom.window.__MANY_WORLDS_RUNTIME__ = { googleWebClientId: "" };
+  dom.window.fetch = async (url, options = {}) => {
+    requests.push({
+      url: String(url),
+      method: options.method || "GET",
+      body: options.body || null,
+      credentials: options.credentials
+    });
+    return new Promise(() => {});
+  };
+
+  dom.window.eval(source);
+  const deadline = Date.now() + 2_000;
+  while (!requests.length && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assert.deepEqual(requests[0], {
+    url: "/api/v4/auth/verify",
+    method: "POST",
+    body: JSON.stringify({ token: "new-account-token" }),
+    credentials: "include"
+  });
+  assert.equal(requests.some((request) => request.url === "/api/v4/auth/me"), false);
+  dom.window.close();
+});
+
 test("account page exposes the approved profile and purchase-history experience", async () => {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   assert.match(source, /function renderAccount\(\)/);

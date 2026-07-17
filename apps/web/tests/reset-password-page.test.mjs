@@ -37,7 +37,7 @@ test("password reset has a dedicated page and shares the login visual contract",
   assert.match(resetSource, /href="\/auth\?mode=login"/);
   assert.doesNotMatch(html, /reauth=1/);
   assert.doesNotMatch(resetSource, /reauth=1/);
-  assert.match(platformSource, /!skipRestore && hasSessionCookie\(\)/);
+  assert.match(platformSource, /!isVerificationLink && !skipRestore && hasSessionCookie\(\)/);
 
   const renderAuthStart = platformSource.indexOf("function renderAuth()");
   const firstAppShell = platformSource.indexOf("appShell(", renderAuthStart);
