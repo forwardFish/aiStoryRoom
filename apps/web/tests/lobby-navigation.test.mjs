@@ -16,8 +16,9 @@ test("大厅、选角和游戏页形成完整 Web 导航链路", async () => {
   assert.match(home, /story-lobby-root/);
   assert.match(roles, /role-select\.js/);
   assert.match(roles, /role-select-root/);
-  assert.match(game, /game-bootstrap\.js/);
-  assert.doesNotMatch(game, /room-main-game\.css/);
+  assert.match(game, /app\.js/);
+  assert.match(game, /main-game\.css/);
+  assert.doesNotMatch(game, /game-bootstrap\.js|room-main-game\.css/);
   assert.match(game, /web-game-root/);
   assert.match(trio, /trio\.js/);
   assert.match(trio, /trio-root/);
@@ -153,11 +154,19 @@ async function renderRoomLobby(room) {
     runScripts: "outside-only"
   });
   dom.window.document.cookie = "many_worlds_session_hint=1; Path=/";
+  // Polling belongs to the long-lived browser page, not this one-shot DOM
+  // rendering test. Disabling it prevents a failed assertion from retaining
+  // an interval and hanging the entire web test process.
+  dom.window.setInterval = () => 0;
+  dom.window.clearInterval = () => {};
   dom.window.fetch = async () => new Response(JSON.stringify(room), { status: 200, headers: { "content-type": "application/json" } });
   dom.window.eval(source);
   const deadline = Date.now() + 2_000;
-  while (!dom.window.document.querySelector(".room-footer")?.textContent.includes(room.isHost && room.players.every((player) => player.ready) ? "All players are ready" : room.isHost ? "You are ready" : "Confirm that")) {
-    if (Date.now() >= deadline) throw new Error("Timed out waiting for live room controls");
+  while (dom.window.document.querySelector(".invite strong")?.textContent !== room.code) {
+    if (Date.now() >= deadline) {
+      dom.window.close();
+      throw new Error("Timed out waiting for live room controls");
+    }
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
   return dom.window.document.querySelector("#platform-app");
