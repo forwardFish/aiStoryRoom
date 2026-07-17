@@ -4,15 +4,19 @@ import { CreemWebhookService } from "./creem-webhook.service";
 
 const originalEnvironment = {
   mode: process.env.CREEM_MODE,
+  nodeEnv: process.env.NODE_ENV,
   product300: process.env.CREEM_PRODUCT_300_ID
 };
 
 before(() => {
+  process.env.NODE_ENV = "test";
   process.env.CREEM_MODE = "test";
   process.env.CREEM_PRODUCT_300_ID = "prod_test_300";
 });
 
 after(() => {
+  if (originalEnvironment.nodeEnv === undefined) delete process.env.NODE_ENV;
+  else process.env.NODE_ENV = originalEnvironment.nodeEnv;
   if (originalEnvironment.mode === undefined) delete process.env.CREEM_MODE;
   else process.env.CREEM_MODE = originalEnvironment.mode;
   if (originalEnvironment.product300 === undefined) delete process.env.CREEM_PRODUCT_300_ID;
@@ -161,6 +165,20 @@ test("rejects a signed checkout from the wrong Creem environment before opening 
   const event = checkoutEvent({ mode: "live", product: { id: "prod_test_300", mode: "live" }, order: { ...(checkoutEvent().object.order as object), mode: "live" } });
   await assert.rejects(service.process(event), /mode does not match CREEM_MODE/);
   assert.equal(calls.transactions, 0);
+});
+
+test("rejects Test webhook processing when NODE_ENV is production or missing", async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  try {
+    for (const nodeEnv of ["production", ""]) {
+      process.env.NODE_ENV = nodeEnv;
+      const { service, calls } = createHarness();
+      await assert.rejects(service.process(checkoutEvent()), /must be live, or Test mode must run/);
+      assert.equal(calls.transactions, 0);
+    }
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+  }
 });
 
 test("recognizes Creem's prod mode as live", async () => {

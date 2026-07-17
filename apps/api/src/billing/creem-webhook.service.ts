@@ -3,8 +3,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma.service";
 import { CreditsService } from "../credits/credits.service";
 import { findPackByProductId } from "./credit-pack.config";
-
-type CreemEnvironment = "test" | "live";
+import { creemRuntimeMode, normalizeCreemMode, type CreemEnvironment } from "./creem.client";
 
 function providerId(value: unknown): string {
   if (typeof value === "string") return value;
@@ -13,19 +12,11 @@ function providerId(value: unknown): string {
 }
 
 function configuredEnvironment(): CreemEnvironment {
-  const configured = String(process.env.CREEM_MODE || "").trim().toLowerCase();
-  if (configured === "test" || configured === "live") return configured;
-  throw new Error("CREEM_MODE must be explicitly set to test or live");
+  const configured = creemRuntimeMode(process.env);
+  if (configured) return configured;
+  throw new Error("CREEM_MODE must be live, or Test mode must run with explicit NODE_ENV=test/development");
 }
 
-function normalizeProviderEnvironment(value: unknown): CreemEnvironment | null {
-  const mode = String(value || "").trim().toLowerCase();
-  // Creem documentation currently uses test and sandbox interchangeably in
-  // webhook examples; older signed examples use local for the test sandbox.
-  if (mode === "test" || mode === "sandbox" || mode === "local") return "test";
-  if (mode === "live" || mode === "production" || mode === "prod") return "live";
-  return null;
-}
 
 function assertProviderEnvironment(object: any, label: string) {
   const rawModes = [object?.mode, object?.order?.mode, object?.checkout?.mode, object?.product?.mode, object?.customer?.mode, object?.transaction?.mode].filter(
@@ -33,7 +24,7 @@ function assertProviderEnvironment(object: any, label: string) {
   );
   if (rawModes.length === 0) throw new Error(`${label} event is missing Creem mode`);
   const expected = configuredEnvironment();
-  const actual = rawModes.map(normalizeProviderEnvironment);
+  const actual = rawModes.map((mode) => normalizeCreemMode(mode, "provider"));
   if (actual.some((mode) => mode === null) || actual.some((mode) => mode !== expected)) {
     throw new Error(`${label} event mode does not match CREEM_MODE`);
   }

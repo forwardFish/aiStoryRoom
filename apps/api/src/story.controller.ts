@@ -2,6 +2,7 @@ import { Body, Controller, Get, Headers, HttpException, HttpStatus, Inject, Para
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
 import { verifyAccessToken } from "./auth/auth.service";
 import { EmailService } from "./email/email.service";
+import { creemConfigurationReadiness } from "./billing/creem.client";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 
@@ -37,8 +38,9 @@ export class StoryController {
   @Get("health/ready")
   async ready() {
     const [database, email] = await Promise.all([this.prisma.readiness(), Promise.resolve(this.email.readiness())]);
-    if (!database.ready || !email.ready) throw new ServiceUnavailableException({ code: "DEPENDENCY_NOT_READY", database, email });
-    return { ok: true, service: "ai-story-room-api", status: "ready", version: deploymentVersion(), database, email };
+    const billing = creemConfigurationReadiness();
+    if (!database.ready || !email.ready || !billing.ready) throw new ServiceUnavailableException({ code: "DEPENDENCY_NOT_READY", database, email, billing });
+    return { ok: true, service: "ai-story-room-api", status: "ready", version: deploymentVersion(), database, email, billing };
   }
 
   @Post("auth/wechat-login")
