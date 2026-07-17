@@ -36,15 +36,21 @@ form?.addEventListener("submit", async (event) => {
   if (password !== confirmPassword) return showNotice("The two passwords do not match.");
 
   const button = form.querySelector('button[type="submit"]');
-  if (button) { button.disabled = true; button.textContent = "Updating…"; }
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Updating...";
+  }
   try {
     await request("/api/v4/auth/password-reset/confirm", {
       method: "POST",
       body: JSON.stringify({ token, password })
     });
-    root.querySelector(".reset-password-card").innerHTML = `<div class="reset-password-success"><div class="success-mark" aria-hidden="true"><span>✓</span></div><p class="eyebrow">PASSWORD UPDATED</p><h1>Your account is secure again</h1><p class="success-copy">Your password has been changed successfully. Sign in with your new password to continue exploring your worlds.</p><div class="success-detail"><span class="success-detail-icon" aria-hidden="true">✓</span><span><strong>Password changed</strong><small>Your previous password can no longer be used.</small></span></div><a class="btn primary" href="/auth?mode=login&amp;reauth=1">Continue to login <span aria-hidden="true">→</span></a><a class="success-home" href="/">Return to home</a></div>`;
+    root.querySelector(".reset-password-card").innerHTML = `<div class="reset-password-success"><div class="success-mark" aria-hidden="true"><span>&#10003;</span></div><p class="eyebrow">PASSWORD UPDATED</p><h1>Your account is secure again</h1><p class="success-copy">Your password has been changed successfully. Sign in with your new password to continue exploring your worlds.</p><div class="success-detail"><span class="success-detail-icon" aria-hidden="true">&#10003;</span><span><strong>Password changed</strong><small>Your previous password can no longer be used.</small></span></div><a class="btn primary" href="/auth?mode=login&amp;reauth=1">Continue to login <span class="button-arrow" aria-hidden="true">&rarr;</span></a><a class="success-home" href="/">Return to home</a></div>`;
   } catch (error) {
-    if (button) { button.disabled = false; button.textContent = "Set new password"; }
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Update password";
+    }
     showNotice(error.message || "Unable to reset your password. Request a new link and try again.");
   }
 });
