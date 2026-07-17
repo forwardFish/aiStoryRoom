@@ -17,21 +17,22 @@ test("password reset has a dedicated page and shares the login visual contract",
   assert.match(html, /data-reset-password-form/);
   assert.match(html, /Confirm new password/);
   assert.doesNotMatch(html, /data-auth-form|data-google-signin|Create account|Remember me/);
-  assert.match(html, /class="reset-password-topbar"/);
-  assert.match(html, /class="reset-password-brand"/);
-  assert.match(html, /Secure account recovery/);
-  assert.doesNotMatch(html, /reset-password-aside|security-visual|many-worlds-logo\.png/);
+  assert.match(html, /class="page-frame auth-frame reset-password-frame"/);
+  assert.match(html, /class="auth-card reset-password-card"/);
+  assert.match(html, /class="auth-title"/);
+  assert.match(html, /class="auth-subtitle"/);
+  assert.doesNotMatch(html, /reset-password-topbar|reset-password-brand|reset-password-aside|security-visual|many-worlds-logo\.png/);
 
   assert.match(html, /href="\/auth-shared\.css"/);
   assert.match(platformHtml, /href="\/auth-shared\.css"/);
-  assert.match(sharedCss, /\.auth-card,\s*\.reset-password-shell/);
-  assert.match(sharedCss, /\.auth-card \.field input,\s*\.reset-password-card \.field input/);
-  assert.match(sharedCss, /\.auth-card \.btn\.primary,\s*\.reset-password-card \.btn\.primary/);
+  assert.match(sharedCss, /\.auth-card \{/);
+  assert.match(sharedCss, /\.auth-card \.field input \{/);
+  assert.match(sharedCss, /\.auth-card \.btn\.primary \{/);
 
   assert.match(resetSource, /\/api\/v4\/auth\/password-reset\/confirm/);
   assert.match(resetSource, /JSON\.stringify\(\{ token, password \}\)/);
   assert.match(resetSource, /The two passwords do not match/);
-  assert.match(resetSource, /Your account is secure again/);
+  assert.match(resetSource, /Your password has been updated/);
   assert.match(html, /href="\/auth\?mode=login&amp;reauth=1"/);
   assert.match(resetSource, /href="\/auth\?mode=login&amp;reauth=1"/);
   assert.match(platformSource, /!reauthenticate && hasSessionCookie\(\)/);

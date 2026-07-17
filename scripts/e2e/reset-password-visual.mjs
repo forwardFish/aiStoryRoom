@@ -100,18 +100,22 @@ try {
     await sleep(900);
     await evaluate("document.fonts?.ready || Promise.resolve()");
     const layout = await evaluate(`(() => {
-      const shell = document.querySelector('.reset-password-shell')?.getBoundingClientRect();
+      const frame = document.querySelector('.auth-frame')?.getBoundingClientRect();
+      const card = document.querySelector('.auth-card')?.getBoundingClientRect();
       const input = document.querySelector('input')?.getBoundingClientRect();
       return {
         title: document.title,
         viewport: { width: innerWidth, height: innerHeight },
         documentWidth: document.documentElement.scrollWidth,
         horizontalOverflow: document.documentElement.scrollWidth > innerWidth,
-        shell: shell && { x: shell.x, y: shell.y, width: shell.width, height: shell.height },
+        frame: frame && { x: frame.x, y: frame.y, width: frame.width, height: frame.height },
+        card: card && { x: card.x, y: card.y, width: card.width, height: card.height },
         input: input && { x: input.x, width: input.width, right: input.right },
         hasGlobalHeader: Boolean(document.querySelector('.mw-header')),
         hasLegacyAside: Boolean(document.querySelector('.reset-password-aside')),
         hasRasterLogo: Boolean(document.querySelector('img[src*="many-worlds-logo"]')),
+        usesLoginFrame: Boolean(document.querySelector('.page-frame.auth-frame')),
+        usesLoginCard: Boolean(document.querySelector('.auth-card.reset-password-card')),
         sharedStylesheetLoaded: [...document.styleSheets].some((sheet) => sheet.href?.includes('/auth-shared.css')),
         backHref: document.querySelector('.reset-password-back')?.getAttribute('href') || null
       };
@@ -146,8 +150,9 @@ try {
     .map((event) => ({ url: event.params?.requestId, errorText: event.params?.errorText }));
 
   const checks = {
-    desktopFits: !desktop.horizontalOverflow && desktop.shell?.width <= desktop.viewport.width,
-    mobileFits: !mobile.horizontalOverflow && mobile.shell?.width <= mobile.viewport.width && mobile.input?.right <= mobile.viewport.width,
+    desktopFits: !desktop.horizontalOverflow && desktop.frame?.width <= desktop.viewport.width && desktop.card?.width <= desktop.viewport.width,
+    mobileFits: !mobile.horizontalOverflow && mobile.frame?.width <= mobile.viewport.width && mobile.card?.width <= mobile.viewport.width && mobile.input?.right <= mobile.viewport.width,
+    usesLoginVisualPrimitives: desktop.usesLoginFrame && desktop.usesLoginCard && mobile.usesLoginFrame && mobile.usesLoginCard,
     noGlobalHeader: !desktop.hasGlobalHeader && !mobile.hasGlobalHeader,
     noLegacyAsideOrRasterLogo: !desktop.hasLegacyAside && !desktop.hasRasterLogo,
     sharedAuthStylesLoaded: desktop.sharedStylesheetLoaded && mobile.sharedStylesheetLoaded,
