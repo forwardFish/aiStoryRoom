@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "scope": "Local functional email authentication closure using a disposable example.test account",
+  "apiBase": "http://127.0.0.1:5281/api",
+  "emailProvider": "file-sink",
+  "checks": {
+    "registrationAccepted": true,
+    "verificationEmailWritten": true,
+    "emailVerificationAccepted": true,
+    "verifiedPasswordLoginAccepted": true,
+    "loginSetsHttpOnlyCookie": true,
+    "passwordResetEmailWritten": true,
+    "passwordResetAccepted": true,
+    "oldPasswordRejected": true,
+    "newPasswordLoginAccepted": true,
+    "cookieAuthenticatesProtectedAccount": true,
+    "resetTokenReplayRejected": true,
+    "logoutClearsBrowserCookies": true
+  },
+  "piiRecorded": false,
+  "secretsRecorded": false,
+  "completedAt": "2026-07-17T03:01:40.457Z"
+}
