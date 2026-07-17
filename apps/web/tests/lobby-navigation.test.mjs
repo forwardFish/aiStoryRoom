@@ -38,8 +38,26 @@ test("room rendering only retains real API rooms", async () => {
 
   assert.match(roomPage, /data-live-rooms/);
   assert.match(roomPage, /Loading available rooms/);
-  assert.match(roomPage, /Loading your rooms/);
+  assert.match(roomPage, /rooms-table-card/);
+  assert.match(roomPage, /data-action="open-tab"/);
+  assert.match(roomPage, /data-action="my-tab"/);
+  assert.doesNotMatch(roomPage, /<aside class="my-rooms"/);
   assert.doesNotMatch(roomPage, /Night Council|After Hours|Board Vote|fixture-caesar-waiting/);
+});
+
+test("Open Rooms and My Rooms share one table while keeping their own actions", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const start = source.indexOf("function roomAction(");
+  const end = source.indexOf("function roomWorldTitle(", start);
+  const roomDataFlow = source.slice(start, end);
+
+  assert.match(roomDataFlow, /view === "open"/);
+  assert.match(roomDataFlow, /label: "Join"/);
+  assert.match(roomDataFlow, /: "Start"/);
+  assert.match(roomDataFlow, /roomRows\(activeRooms, roomsView\.activeTab\)/);
+  assert.match(roomDataFlow, /roomsView\.openRooms = Array\.isArray\(data\.rooms\)/);
+  assert.match(roomDataFlow, /roomsView\.myRooms = Array\.isArray\(data\.myRooms\)/);
+  assert.doesNotMatch(roomDataFlow, /Night Council|After Hours|Board Vote/);
 });
 
 test("deployed platform authentication uses Vercel's same-origin API proxy", async () => {
@@ -62,8 +80,8 @@ test("login, signup and password reset surfaces stay account-only", async () => 
   const end = source.indexOf("function renderAccount()", start);
   const authPage = source.slice(start, end);
 
-  assert.match(authPage, /Welcome to Many Worlds/);
-  assert.match(authPage, /Log in or create an account to continue/);
+  assert.match(authPage, /Welcome to \$\{BRAND_NAME\}/);
+  assert.match(authPage, /textContent = BRAND_TAGLINE/);
   assert.match(authPage, /Enter your display name/);
   assert.doesNotMatch(authPage, /Set new password|data-reset-form|data-sign-out|data-action="show-signup"/);
   assert.match(authPage, /data-google-signin/);
@@ -79,7 +97,7 @@ test("legacy invite registration cannot authenticate before email verification",
   assert.match(source, /\/v4\/auth\/verify/);
   assert.match(source, /\/v4\/auth\/login/);
   assert.doesNotMatch(source, /setToken\(result\.token\)/);
-  assert.match(source, /setToken\(session\.accessToken\|\|session\.token\)/);
+  assert.match(source, /setToken\(session\.accessToken\s*\|\|\s*session\.token\)/);
   assert.doesNotMatch(source, /opening|story|room|Caesar/i);
 });
 
@@ -170,4 +188,65 @@ async function renderRoomLobby(room) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
   return dom.window.document.querySelector("#platform-app");
+}
+
+test("rooms disclose automatic refresh only when live polling is active", async () => {
+  const signedOut = await renderRoomsPage(false);
+  assert.equal(signedOut.document.querySelector("[data-room-refresh-note]")?.hidden, true);
+  assert.match(signedOut.document.querySelector("[data-live-rooms]")?.textContent || "", /Log in to view live rooms/);
+  assert.equal(signedOut.fetchCalls.length, 0);
+  assert.deepEqual(signedOut.intervals, []);
+  signedOut.window.close();
+
+  const signedIn = await renderRoomsPage(true);
+  assert.equal(signedIn.document.querySelector("[data-room-refresh-note]")?.hidden, false);
+  assert.equal(signedIn.fetchCalls.length, 1);
+  assert.deepEqual(signedIn.intervals, [5000]);
+  signedIn.window.close();
+});
+
+test("the live invitation dialog uses the exact product brand", async () => {
+  const room = {
+    id: "room-brand", title: "Brand Room", worldId: "caesar", status: "waiting_players", code: "BRAND1",
+    maxPlayers: 3, minPlayers: 3, isHost: true, hostRoleLocked: true,
+    players: [{ userId: "host", nickname: "Host", roleId: "role-1", roleName: "Brutus", ready: true }],
+    roles: [{ id: "role-1", roleName: "Brutus", status: "claimed", claimedByCurrentUser: true }]
+  };
+  const rendered = await renderRoomLobby(room);
+  const window = rendered.ownerDocument.defaultView;
+  window.HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
+  window.HTMLDialogElement.prototype.close = function close() { this.open = false; };
+  rendered.querySelector('[data-action="share-invite"]')?.click();
+  const deadline = Date.now() + 2_000;
+  while (!window.document.querySelector(".share-dialog")) {
+    if (Date.now() >= deadline) throw new Error("Timed out waiting for the invitation dialog");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  const copy = window.document.querySelector(".share-channels p")?.textContent || "";
+  assert.equal(copy, "Invite friends to join your shared room on Our Many Worlds.");
+  window.close();
+});
+
+async function renderRoomsPage(signedIn) {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const dom = new JSDOM('<!doctype html><main id="platform-app"></main>', {
+    url: "http://127.0.0.1:5200/rooms",
+    runScripts: "outside-only"
+  });
+  if (signedIn) dom.window.document.cookie = "many_worlds_session_hint=1; Path=/";
+  const fetchCalls = [];
+  const intervals = [];
+  dom.window.setInterval = (_callback, milliseconds) => { intervals.push(milliseconds); return intervals.length; };
+  dom.window.clearInterval = () => {};
+  dom.window.fetch = async (url) => {
+    fetchCalls.push(String(url));
+    return new Response(JSON.stringify({ rooms: [], myRooms: [] }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  dom.window.eval(source);
+  const deadline = Date.now() + 2_000;
+  while (!dom.window.document.querySelector(".rooms-page") || (signedIn && fetchCalls.length === 0)) {
+    if (Date.now() >= deadline) throw new Error("Timed out waiting for the rooms page");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  return { window: dom.window, document: dom.window.document, fetchCalls, intervals };
 }

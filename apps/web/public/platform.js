@@ -1,3 +1,4 @@
+const worldCatalog = globalThis.MANY_WORLDS_CATALOG || [];
 const root = document.querySelector("#platform-app");
 const path = location.pathname.replace(/\/$/, "") || "/";
 const params = new URLSearchParams(location.search);
@@ -5,18 +6,16 @@ const isLocalRuntime = location.hostname === "localhost" || location.hostname ==
 const deployedApiBase = "/api";
 const platformApiBase = (params.get("apiBase") || (isLocalRuntime ? "/api" : deployedApiBase)).replace(/\/$/, "");
 const purple = "#6434d7";
+const BRAND_NAME = "Our Many Worlds";
+const BRAND_TAGLINE = "Real players. Living worlds.";
 let activeRoom = null;
 let roomRefreshTimer = null;
+let roomsView = { activeTab: "open", openRooms: [], myRooms: [] };
 let currentAccount = null;
 let accountPurchaseCache = new Map();
-const roles = [
-  ["Brutus", "I serve Rome, not any man.", "/assets/portrait/1.png"],
-  ["Caesar", "I came, I saw, I changed Rome.", "/assets/portrait/2.png"],
-  ["Cassius", "Liberty isn't given. It's taken.", "/assets/portrait/3.png"],
-  ["Mark Antony", "I speak for Rome. And I remember.", "/assets/portrait/4.png"],
-  ["Decimus", "I watch. I learn. I will decide.", "/assets/portrait/5.png"],
-  ["Cicero", "Words are my sharpest weapon.", "/assets/portrait/6.png"]
-];
+const fallbackRoles = Array.from({ length: 6 }, (_, index) => ({ name: `Role ${index + 1}`, copy: "A role in this world.", portrait: `/assets/portrait/${index + 1}.png` }));
+const caesarRoles = worldCatalog.find((world) => world.id === "caesar")?.rolePreview || fallbackRoles;
+const roles = caesarRoles.map(({ name, copy, portrait }) => [name, copy, portrait]);
 
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]); }
 function emailInitial(value) { return String(value || "M").trim().charAt(0).toUpperCase() || "M"; }
@@ -57,8 +56,8 @@ async function migrateLegacySession() {
 function header(active = "") {
   const profile = `<a class="profile-icon" aria-label="Account" href="/auth?returnTo=${encodeURIComponent(path + location.search)}"></a>`;
   const utility = `<div class="header-right"><a href="/#faq">Help</a><span class="divider"></span><span class="language-label" aria-label="Language">English⌄</span>${profile}</div>`;
-  if (active === "auth") return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>Many Worlds</span></a>${utility}</header>`;
-  return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>Many Worlds</span></a><nav class="mw-nav"><a class="${active === "worlds" ? "active" : ""}" href="/worlds/caesar">Explore Worlds</a><a class="${active === "rooms" ? "active" : ""}" href="/rooms">Rooms</a><a href="/credits">World Credits</a></nav>${utility}</header>`;
+  if (active === "auth") return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>${BRAND_NAME}</span></a>${utility}</header>`;
+  return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>${BRAND_NAME}</span></a><nav class="mw-nav"><a class="${active === "worlds" ? "active" : ""}" href="/worlds">Explore Worlds</a><a class="${active === "rooms" ? "active" : ""}" href="/rooms">Rooms</a><a href="/credits">World Credits</a></nav>${utility}</header>`;
 }
 function appShell(content, active = "") {
   if (roomRefreshTimer) { clearInterval(roomRefreshTimer); roomRefreshTimer = null; }
@@ -68,7 +67,13 @@ function appShell(content, active = "") {
   root.innerHTML = content;
   if (path !== "/auth" && path !== "/rooms") root.querySelector(".page-frame")?.classList.add("visual-tight");
   bind();
-  if (path === "/rooms" && sessionToken()) void hydrateRooms();
+  if (path === "/rooms") {
+    if (sessionToken()) {
+      void hydrateRooms();
+      roomRefreshTimer = setInterval(() => { if (location.pathname === path) void hydrateRooms(); }, 5000);
+    }
+    else renderRoomsView();
+  }
   const roomMatch = path.match(/^\/rooms\/([^/]+)$/);
   if (roomMatch && !roomMatch[1].startsWith("fixture-") && sessionToken()) {
     void hydrateRoom(roomMatch[1]);
@@ -122,7 +127,7 @@ async function mountGoogleSignIn(returnTo) {
           location.assign(safeReturnTo(session.returnTo || returnTo));
         } catch (error) {
           notice(error.code === "ACCOUNT_LINK_REQUIRED"
-            ? "This email already has a Many Worlds account. Log in with your password, then open My Account to link Google."
+            ? "This email is already registered with Our Many Worlds. Log in with your password, then open My Account to link Google."
             : error.message || "Google sign-in could not be completed.");
         }
       }
@@ -164,14 +169,16 @@ function renderAuth() {
     location.replace(`/reset-password?token=${encodeURIComponent(legacyResetToken)}`);
     return;
   }
-  // An existing Many Worlds session wins over a stale or bookmarked login URL,
+  // An existing branded session wins over a stale or bookmarked login URL,
   // but verification links must consume their token before session restore.
   // Account switching is handled by an explicit logout.
   if (!isVerificationLink && !skipRestore && hasSessionCookie()) {
     restoreBrowserSession(returnTo);
     return;
   }
-  appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to Many Worlds</h1><p class="auth-subtitle">Log in or create an account to continue.</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password">Show</button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
+  appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to ${BRAND_NAME}</h1><p class="auth-subtitle">${BRAND_TAGLINE}</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password">Show</button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
+  root.querySelector(".auth-title").textContent = `Welcome to ${BRAND_NAME}`;
+  root.querySelector(".auth-subtitle").textContent = BRAND_TAGLINE;
   if (restoreError) notice(restoreError);
   let mode = "login";
   const form = root.querySelector("[data-auth-form]");
@@ -212,7 +219,7 @@ async function hydrateAccount() {
 function renderAccountProfile(account) {
   const summary = root.querySelector("[data-account-summary]");
   if (!summary) return;
-  const name = account.nickname || "Many Worlds player";
+  const name = account.nickname || `${BRAND_NAME} player`;
   summary.innerHTML = `<div class="account-avatar" aria-hidden="true"><span>${esc(emailInitial(account.email))}</span></div><div class="account-profile-copy"><h2>${esc(name)}</h2><p>${esc(account.email || "Email not available")}</p></div><button class="account-edit-profile" type="button" data-action="edit-profile"><span aria-hidden="true">✎</span>Edit profile</button>`;
 }
 
@@ -360,8 +367,20 @@ async function hydrateWorldRegistry(worldId) {
     hero.dataset.worldId = world.id;
     const title = hero.querySelector("h1");
     if (title && world.title) title.textContent = world.title;
-    root.querySelectorAll(".role-card strong").forEach((element, index) => {
-      if (world.roles?.[index]?.name) element.textContent = world.roles[index].name;
+    const lead = hero.querySelector(".world-lead");
+    if (lead && world.description) lead.textContent = world.description;
+    const image = hero.querySelector(".world-image");
+    if (image && world.heroCover) image.style.backgroundImage = `url('${world.heroCover}')`;
+    const meta = hero.querySelectorAll(".meta");
+    if (meta[0] && world.minPlayers && world.maxPlayers) meta[0].textContent = `${world.minPlayers}-${world.maxPlayers} Roles`;
+    if (meta[1] && world.totalDays) meta[1].textContent = `${world.totalDays} stages`;
+    root.querySelectorAll(".role-card").forEach((card, index) => {
+      const role = world.roles?.[index];
+      if (!role) return;
+      const name = card.querySelector("strong");
+      const portrait = card.querySelector("img");
+      if (name && role.name) name.textContent = role.name;
+      if (portrait && role.portrait) portrait.src = role.portrait;
     });
   } catch {
     // A static first render remains usable during a transient catalog outage.
@@ -369,19 +388,20 @@ async function hydrateWorldRegistry(worldId) {
 }
 
 function renderWorld() {
-  if (path === "/worlds/sangtian") { renderSangtianWorld(); void hydrateWorldRegistry("sangtian"); return; }
-  const roleCards = roles.map(([name, copy, portrait]) => `<article class="role-card"><img class="portrait" src="${portrait}" alt="${name}"><div><strong>${name}</strong><p>${copy}</p></div></article>`).join("");
-  appShell(`<section class="page-frame"><a class="back-link" href="/">Back to worlds</a><div class="world-hero"><div><div class="eyebrow">Historical · Alternate History</div><h1>Caesar: The Last Spring of the Republic</h1><p class="world-lead">Caesar trusts you. The conspirators need you.<br>Rome will judge whatever survives.</p><p class="world-copy">The Republic teeters on a knife’s edge. Ambition clashes with loyalty, and every choice writes a different history. Navigate alliances, secrets, and betrayal in the final days before everything changes.</p><div class="meta-row"><span class="meta">♧ &nbsp; 1–6 Roles</span><span class="meta">◷ &nbsp; 40–60 Minutes</span><span class="meta">♜ &nbsp; History &amp; Power</span><span class="meta">♙ &nbsp; Private Objectives</span></div></div><div class="world-image" role="img" aria-label="Rome at sunset"></div></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards}</div><div class="mode-grid"><article class="mode-card"><span class="mode-icon">♙</span><div><h2>Play Solo</h2><p>Choose one role and AI controls the rest of the world.</p></div><button class="btn primary" data-action="solo">Choose a Role</button></article><article class="mode-card"><span class="mode-icon">♧</span><div><h2>Play Multiplayer</h2><p>Join or create a room and each player takes a different role.</p></div><button class="btn primary" data-action="rooms">Find a Room</button></article></div><p class="world-cost">Starts from 20 World Credits</p></section>`, "worlds");
-  void hydrateWorldRegistry("caesar");
+  const worldId = path.slice("/worlds/".length);
+  const world = worldCatalog.find((entry) => entry.id === worldId && entry.playable);
+  if (!world) { location.assign("/worlds"); return; }
+  const roleCards = world.rolePreview.map((role) => `<article class="role-card"><img class="portrait" src="${esc(role.portrait)}" alt="${esc(role.name)}"><div><strong>${esc(role.name)}</strong><p>${esc(role.copy)}</p></div></article>`).join("");
+  const soloAction = world.id === "sangtian" ? "sangtian-solo" : "solo";
+  const roomsAction = world.id === "sangtian" ? "sangtian-rooms" : "rooms";
+  appShell(`<section class="page-frame"><a class="back-link" href="/worlds">Back to worlds</a><div class="world-hero" data-world-id="${esc(world.id)}"><div><div class="eyebrow">${esc(world.category)}</div><h1>${esc(world.title)}</h1><p class="world-lead">${esc(world.copy)}</p><p class="world-copy">${esc(world.detail)}</p><div class="meta-row"><span class="meta">${esc(world.roles)} Roles</span><span class="meta">${esc(world.duration)}</span><span class="meta">${esc(world.category)}</span><span class="meta">Private Objectives</span></div></div><div class="world-image" style="background-image:url('/assets/bg/${world.image}.png')" role="img" aria-label="${esc(world.title)}"></div></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards}</div><div class="mode-grid"><article class="mode-card"><div><h2>Play Solo</h2><p>Choose one role and AI controls the rest of the world.</p></div><button class="btn primary" data-action="${soloAction}">Choose a Role</button></article><article class="mode-card"><div><h2>Play Multiplayer</h2><p>Create or join a shared room for this world.</p></div><button class="btn primary" data-action="${roomsAction}">Find a Room</button></article></div><p class="world-cost">Starts from 20 World Credits</p></section>`, "worlds");
+  void hydrateWorldRegistry(world.id);
 }
-function renderSangtianWorld() {
-  const sangtianRoles = [["浙江总督", "Hold the whole province together.", 1], ["浙江巡抚", "Reform cannot outrun the evidence.", 2], ["清流县令", "Protect the people and preserve the records.", 3], ["江南商会", "Grain and silver have their own politics.", 4], ["司礼监织造使", "The court watches every silver road.", 5]];
-  const roleCards = sangtianRoles.map(([name, copy, portrait]) => `<article class="role-card"><img class="portrait" src="/assets/portrait/${portrait}.png" alt="${name}"><div><strong>${name}</strong><p>${copy}</p></div></article>`).join("");
-  appShell(`<section class="page-frame"><a class="back-link" href="/">Back to worlds</a><div class="world-hero"><div><div class="eyebrow">Historical · Political Strategy</div><h1>嘉靖财政危局</h1><p class="world-lead">银路将断，粮价已起。<br>七日之内，所有人都要为自己的证词负责。</p><p class="world-copy">在嘉靖朝的财政危机中，浙江总督、巡抚与县令必须在改革、民生、证据与朝廷压力之间协作或角力。每一轮行动都会改变其他人的下一次选择。</p><div class="meta-row"><span class="meta">♧ &nbsp; 1–3 Roles</span><span class="meta">◷ &nbsp; 40–60 Minutes</span><span class="meta">♜ &nbsp; History &amp; Power</span><span class="meta">♙ &nbsp; Private Objectives</span></div></div><div class="world-image" role="img" aria-label="Jiajing fiscal crisis"></div></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards}</div><div class="mode-grid"><article class="mode-card"><span class="mode-icon">♙</span><div><h2>Play Solo</h2><p>Play the existing 嘉靖财政危局 single-player experience.</p></div><button class="btn primary" data-action="sangtian-solo">Choose a Role</button></article><article class="mode-card"><span class="mode-icon">♧</span><div><h2>Play Multiplayer</h2><p>Create a room for three human roles and AI-supported world roles.</p></div><button class="btn primary" data-action="sangtian-rooms">Find a Room</button></article></div><p class="world-cost">Starts from 20 World Credits</p></section>`, "worlds");
-}
-function roomRow(world, room, players, status, tone, disabled = false) { return `<div class="room-table room-row ${room === "Board Vote" ? "last" : ""}"><div class="world-cell"><img class="thumb" src="/assets/bg/${tone}.png" alt=""><strong>${world}</strong></div><span>${room}</span><span>${players}</span><span class="badge ${status === "Open" ? "" : status === "Waiting" ? "wait" : status === "In Progress" ? "progress" : "full"}">● &nbsp;${status}</span><button class="btn small" ${disabled ? "disabled" : ""} data-action="join-room">${disabled ? "Full" : "Join"}</button></div>`; }
 function renderRooms() {
-  appShell(`<section class="page-frame"><div class="page-heading"><div><h1>Rooms</h1><p>Join an open room, create your own, or continue a room you already joined.</p></div><div class="action-row"><button class="btn" data-action="join-code">Join with Code</button><button class="btn primary" data-action="create-room">Create Room</button></div></div><div class="tab-strip"><button class="active" data-action="open-tab">Open Rooms</button><button data-action="my-tab">My Rooms</button></div><div data-notice class="notice" hidden></div><div class="rooms-layout"><section><div class="filters"><button class="select-box" type="button">All Worlds</button></div><div class="room-table head"><span>World</span><span>Room</span><span>Players</span><span>Status</span><span>Action</span></div><div data-live-rooms><p class="refresh-note">Loading available rooms…</p></div><p class="refresh-note">Rooms refresh automatically.</p></section><aside class="my-rooms"><h2>My Rooms</h2><p class="refresh-note">Loading your rooms…</p></aside></div></section>`, "rooms");
+  roomsView = { activeTab: "open", openRooms: [], myRooms: [] };
+  const worldFilter = params.get("worldId");
+  const signedIn = Boolean(sessionToken());
+  appShell(`<section class="page-frame rooms-page"><div class="rooms-heading"><div><h1>Rooms</h1><p>Join an open room, create your own, or continue a room you already joined.</p></div><div class="action-row"><button class="btn rooms-join-code" data-action="join-code"><span aria-hidden="true">⌗</span>Join with Code</button><button class="btn primary rooms-create" data-action="create-room"><span aria-hidden="true">＋</span>Create Room</button></div></div><div class="tab-strip rooms-tabs" role="tablist" aria-label="Room lists"><button class="active" role="tab" aria-selected="true" data-action="open-tab">Open Rooms</button><button role="tab" aria-selected="false" data-action="my-tab">My Rooms</button></div><div data-notice class="notice" hidden></div><div class="rooms-layout"><div class="filters"><button class="select-box" type="button"><span aria-hidden="true">◎</span>All Worlds<span class="select-chevron" aria-hidden="true">⌄</span></button>${worldFilter ? `<span class="filter-chip">${esc(worldFilter === "sangtian" ? "Sangtian" : "Caesar")}<button type="button" data-action="clear-world-filter" aria-label="Clear world filter">×</button></span>` : ""}</div><section class="rooms-table-card" aria-live="polite"><div class="room-table head"><span>World</span><span>Room</span><span>Players</span><span>Status</span><span>Action</span></div><div data-live-rooms><p class="rooms-empty-state">Loading available rooms…</p></div></section><p class="refresh-note" data-room-refresh-note ${signedIn ? "" : "hidden"}><span aria-hidden="true">❧</span>Rooms refresh automatically.<span aria-hidden="true">❧</span></p></div></section>`, "rooms");
 }
 function renderRoom() {
   const playerRows = [["Alex Morgan","Host · Brutus","/assets/portrait/1.png",true],["Jordan Lee","Caesar","/assets/portrait/2.png",true],["Taylor Kim","No role selected","/assets/portrait/7.png",false]];
@@ -394,9 +414,10 @@ function visualIcon(id, label, extra = "") {
 }
 function renderResult() {
   const fixture = params.get("runId") === "fixture-caesar-finished";
-  appShell(`<section class="page-frame"><a class="back-link" href="/worlds/caesar">Back to worlds</a><div class="result-run"><img src="/assets/bg/1.png" alt="Rome"><div><h1>Caesar: The Last Spring of the Republic</h1><span class="session-complete">${visualIcon(15, "", "session-icon")}Session Complete</span></div></div><h1 class="result-title">A Republic Without a Master</h1><p class="result-lead">Caesar survived, but accepted limits on his authority.<br>Rome avoided civil war—for now.</p><div class="summary-grid"><article class="summary-card"><span class="mode-icon">${visualIcon(17, "")}</span><div><h2>Your Role</h2><img class="portrait" src="/assets/portrait/1.png" alt="Brutus"><strong>Brutus</strong></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(31, "")}</span><div><h2>Your Ending</h2><strong>The Reluctant Architect</strong><p>You chose restraint over power, building guardrails that may hold—if others keep faith.</p></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(12, "")}</span><div><h2>World State</h2><strong>Fragile Stability</strong><p>Rome stands together, but old rivalries smolder and the future is uncertain.</p></div></article></div><div class="lower-grid"><section class="lower-card"><h2>${visualIcon(25, "", "section-icon")}Key Decisions</h2><div class="decision-item"><span class="number-dot">1</span><span>You opposed the dictatorship and pushed for limits on power.</span></div><div class="decision-item"><span class="number-dot">2</span><span>You brokered a compromise between the Senate and Caesar.</span></div><div class="decision-item"><span class="number-dot">3</span><span>You secured support from key allies to pass reforms.</span></div></section><section class="lower-card"><h2>${visualIcon(10, "", "section-icon")}Goals Completed <span class="badge progress">2 / 3</span></h2><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Prevent Caesar from becoming an unrestrained dictator.</span></div><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Avoid a civil war.</span></div><div class="goal-item"><span class="open-check">◯</span><span>Pass meaningful reforms to strengthen the Republic.</span></div></section></div><div class="result-actions"><button class="btn primary" data-action="play-again">${visualIcon(4, "", "button-icon inverted")}Play Again</button><button class="btn" data-action="other-role">${visualIcon(5, "", "button-icon")}Try Another Role</button><button class="btn" data-action="back-worlds">${visualIcon(8, "", "button-icon")}Back to Worlds</button></div></section>`, "worlds");
+  appShell(`<section class="page-frame"><a class="back-link" href="/worlds">Back to worlds</a><div class="result-run"><img src="/assets/bg/1.png" alt="Rome"><div><h1>Caesar: The Last Spring of the Republic</h1><span class="session-complete">${visualIcon(15, "", "session-icon")}Session Complete</span></div></div><h1 class="result-title">A Republic Without a Master</h1><p class="result-lead">Caesar survived, but accepted limits on his authority.<br>Rome avoided civil war—for now.</p><div class="summary-grid"><article class="summary-card"><span class="mode-icon">${visualIcon(17, "")}</span><div><h2>Your Role</h2><img class="portrait" src="/assets/portrait/1.png" alt="Brutus"><strong>Brutus</strong></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(31, "")}</span><div><h2>Your Ending</h2><strong>The Reluctant Architect</strong><p>You chose restraint over power, building guardrails that may hold—if others keep faith.</p></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(12, "")}</span><div><h2>World State</h2><strong>Fragile Stability</strong><p>Rome stands together, but old rivalries smolder and the future is uncertain.</p></div></article></div><div class="lower-grid"><section class="lower-card"><h2>${visualIcon(25, "", "section-icon")}Key Decisions</h2><div class="decision-item"><span class="number-dot">1</span><span>You opposed the dictatorship and pushed for limits on power.</span></div><div class="decision-item"><span class="number-dot">2</span><span>You brokered a compromise between the Senate and Caesar.</span></div><div class="decision-item"><span class="number-dot">3</span><span>You secured support from key allies to pass reforms.</span></div></section><section class="lower-card"><h2>${visualIcon(10, "", "section-icon")}Goals Completed <span class="badge progress">2 / 3</span></h2><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Prevent Caesar from becoming an unrestrained dictator.</span></div><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Avoid a civil war.</span></div><div class="goal-item"><span class="open-check">◯</span><span>Pass meaningful reforms to strengthen the Republic.</span></div></section></div><div class="result-actions"><button class="btn primary" data-action="play-again">${visualIcon(4, "", "button-icon inverted")}Play Again</button><button class="btn" data-action="other-role">${visualIcon(5, "", "button-icon")}Try Another Role</button><button class="btn" data-action="back-worlds">${visualIcon(8, "", "button-icon")}Back to Worlds</button></div></section>`, "worlds");
   root.querySelector(".result-actions")?.insertAdjacentHTML("afterend", `<button class="result-share-recap" data-action="share-recap" ${fixture ? "" : "disabled"}>${fixture ? "Share Recap" : "Loading recap…"}</button>`);
   bind();
+  root.querySelector("a.back-link")?.setAttribute("href", "/worlds");
   if (!fixture) void hydrateResult(params.get("runId")).then((loaded) => {
     const shareButton = root.querySelector('[data-action="share-recap"]');
     if (!loaded || !shareButton) return;
@@ -413,7 +434,7 @@ async function hydrateResult(runId) {
     const chapter = result.chapter || {};
     const highlights = Array.isArray(chapter.highlights) ? chapter.highlights : [];
     const shell = root.querySelector(".page-frame");
-    shell.querySelector(".back-link").href = result.room.worldId === "sangtian" ? "/worlds/sangtian" : "/worlds/caesar";
+    shell.querySelector(".back-link").href = "/worlds";
     shell.querySelector(".result-run h1").textContent = title;
     shell.querySelector(".result-run img").alt = title;
     shell.querySelector(".result-title").textContent = chapter.title || `${title} — Session Complete`;
@@ -442,7 +463,7 @@ async function buildResultPoster(title, qrDataUrl) {
   const gradient = ctx.createLinearGradient(0, 0, 1080, 1350); gradient.addColorStop(0, "#24105d"); gradient.addColorStop(.55, "#5e35d9"); gradient.addColorStop(1, "#9b78f0");
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgba(255,255,255,.10)"; ctx.beginPath(); ctx.arc(930, 180, 280, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(130, 1180, 330, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#fff"; ctx.font = "600 56px Arial"; ctx.fillText("Many Worlds", 80, 120); ctx.font = "700 72px Arial"; wrapPosterText(ctx, title, 80, 300, 900, 88);
+  ctx.fillStyle = "#fff"; ctx.font = "600 56px Arial"; ctx.fillText(BRAND_NAME, 80, 120); ctx.font = "700 72px Arial"; wrapPosterText(ctx, title, 80, 300, 900, 88);
   ctx.font = "400 34px Arial"; ctx.fillStyle = "#eee8ff"; ctx.fillText("A seven-round shared story recap", 80, 565);
   const qr = await loadImageSource(qrDataUrl); ctx.fillStyle = "#fff"; ctx.fillRect(610, 755, 390, 390); ctx.drawImage(qr, 630, 775, 350, 350);
   ctx.fillStyle = "#fff"; ctx.font = "600 36px Arial"; ctx.fillText("Scan to read the public recap", 80, 1115); ctx.font = "400 27px Arial"; ctx.fillStyle = "#e7ddff"; ctx.fillText("Private goals, actions and player identities are not included.", 80, 1170);
@@ -460,14 +481,14 @@ async function openResultShare() {
     const data = new FormData(form);
     try {
       const share = await request(`/api/v4/rooms/${encodeURIComponent(runId)}/result/shares`, { method:"POST", body:JSON.stringify({ expiresInDays:Number(data.get("expiresInDays")), includeRoleName:data.get("includeRoleName") === "on", channel:"LINK" }) });
-      const title = root.querySelector(".result-title")?.textContent?.trim() || "A Many Worlds story recap";
+      const title = root.querySelector(".result-title")?.textContent?.trim() || `An ${BRAND_NAME} story recap`;
       const poster = await buildResultPoster(title, share.qrDataUrl);
       const output = dialog.querySelector("[data-result-share-output]"); form.hidden = true; output.hidden = false;
       output.innerHTML = `<div class="secure-share-status"><strong>Secure link ready</strong><span>Expires ${esc(new Date(share.expiresAt).toLocaleString())}</span></div><label class="share-link-label"><span>↗</span><input readonly value="${esc(share.url)}"><button type="button" data-copy-result>Copy link</button></label><div class="share-network-row result-network-row"><button data-result-channel="WHATSAPP"><b>◉</b>WhatsApp</button><button data-result-channel="TELEGRAM"><b>➤</b>Telegram</button><button data-result-channel="FACEBOOK"><b>f</b>Facebook</button><button data-result-channel="X"><b>𝕏</b>X</button><button data-result-native><b>↗</b>Share</button></div><div class="result-poster"><img src="${poster}" alt="Result share poster"><button class="btn" type="button" data-download-result>Download poster</button></div><button class="btn danger revoke-share" type="button" data-revoke-result>Revoke this link</button>`;
       const copy = async () => { try { await navigator.clipboard.writeText(share.url); notice("Secure result link copied."); } catch { const input = output.querySelector("input"); input.focus(); input.select(); notice("Copy was blocked. The link is selected."); } };
       output.querySelector("[data-copy-result]").addEventListener("click", copy);
-      output.querySelectorAll("[data-result-channel]").forEach((channelButton) => channelButton.addEventListener("click", () => { const channel = channelButton.dataset.resultChannel; const url = encodeURIComponent(share.url); const text = encodeURIComponent(`Read my Many Worlds recap: ${title}`); const links = { WHATSAPP:`https://wa.me/?text=${text}%20${url}`, TELEGRAM:`https://t.me/share/url?url=${url}&text=${text}`, FACEBOOK:`https://www.facebook.com/sharer/sharer.php?u=${url}`, X:`https://x.com/intent/post?text=${text}%20${url}` }; window.open(links[channel], "_blank", "noopener,noreferrer"); }));
-      output.querySelector("[data-result-native]").addEventListener("click", async () => { if (navigator.share) { try { await navigator.share({ title, text:"A Many Worlds story recap", url:share.url }); } catch {} } else await copy(); });
+      output.querySelectorAll("[data-result-channel]").forEach((channelButton) => channelButton.addEventListener("click", () => { const channel = channelButton.dataset.resultChannel; const url = encodeURIComponent(share.url); const text = encodeURIComponent(`Read my ${BRAND_NAME} recap: ${title}`); const links = { WHATSAPP:`https://wa.me/?text=${text}%20${url}`, TELEGRAM:`https://t.me/share/url?url=${url}&text=${text}`, FACEBOOK:`https://www.facebook.com/sharer/sharer.php?u=${url}`, X:`https://x.com/intent/post?text=${text}%20${url}` }; window.open(links[channel], "_blank", "noopener,noreferrer"); }));
+      output.querySelector("[data-result-native]").addEventListener("click", async () => { if (navigator.share) { try { await navigator.share({ title, text:`An ${BRAND_NAME} story recap`, url:share.url }); } catch {} } else await copy(); });
       output.querySelector("[data-download-result]").addEventListener("click", () => { const link = document.createElement("a"); link.download = `many-worlds-result-${runId.slice(-8)}.png`; link.href = poster; link.click(); });
       output.querySelector("[data-revoke-result]").addEventListener("click", async (clickEvent) => { if (!confirm("Revoke this public link now? Anyone using it will immediately lose access.")) return; clickEvent.currentTarget.disabled = true; try { await request(`/api/v4/rooms/${encodeURIComponent(runId)}/result/shares/${encodeURIComponent(share.id)}`, { method:"DELETE" }); notice("Result link revoked."); dialog.close(); } catch (error) { clickEvent.currentTarget.disabled = false; notice(error.message || "Unable to revoke this link."); } });
     } catch (error) { button.disabled = false; notice(error.message || "Unable to create a secure result link."); }
@@ -476,38 +497,12 @@ async function openResultShare() {
 
 function renderSharedResult() {
   const token = String(params.get("token") || "").trim();
-  appShell(`<section class="page-frame public-result-frame"><div class="public-result-brand"><img src="/assets/brand/many-worlds-logo.png" alt=""><strong>Many Worlds</strong></div><div data-public-result><p class="muted">Loading the shared recap…</p></div></section>`);
-  if (!token) { root.querySelector("[data-public-result]").innerHTML = '<div class="public-result-error"><h1>Link not found</h1><p>This result link is incomplete.</p><a class="btn primary" href="/">Explore Many Worlds</a></div>'; return; }
+  appShell(`<section class="page-frame public-result-frame"><div class="public-result-brand"><img src="/assets/brand/many-worlds-logo.png" alt=""><strong>${BRAND_NAME}</strong></div><div data-public-result><p class="muted">Loading the shared recap…</p></div></section>`);
+  if (!token) { root.querySelector("[data-public-result]").innerHTML = '<div class="public-result-error"><h1>Link not found</h1><p>This result link is incomplete.</p><a class="btn primary" href="/">Explore Our Many Worlds</a></div>'; return; }
   void request(`/api/v4/public/results/${encodeURIComponent(token)}`).then((result) => {
     const highlights = Array.isArray(result.recap?.highlights) ? result.recap.highlights : [];
-    root.querySelector("[data-public-result]").innerHTML = `<p class="eyebrow">SHARED STORY RECAP</p><h1>${esc(result.recap?.title || result.room?.title || "A completed story")}</h1><p class="public-result-meta">${esc(result.room?.title || "Many Worlds")} · ${esc(String(result.room?.completedNodes || 7))} rounds completed</p>${result.recap?.roleName ? `<p class="public-role">Shared from the perspective of <strong>${esc(result.recap.roleName)}</strong></p>` : ""}<section class="public-highlights"><h2>Turning points</h2>${highlights.length ? highlights.map((item, index) => `<article><span>${index + 1}</span><p>${esc(item)}</p></article>`).join("") : '<p>This public recap contains no private story details.</p>'}</section><aside class="privacy-note"><strong>Privacy protected</strong><p>Player identities, private goals, hidden intent, clues, raw actions and reasoning traces were removed from this public view.</p><small>This link expires ${esc(new Date(result.share.expiresAt).toLocaleString())}.</small></aside><a class="btn primary public-result-cta" href="/">Create your own world</a>`;
-  }).catch((error) => { root.querySelector("[data-public-result]").innerHTML = `<div class="public-result-error"><h1>This link is unavailable</h1><p>${esc(error.message || "It may have expired or been revoked.")}</p><a class="btn primary" href="/">Explore Many Worlds</a></div>`; });
-}
-async function openInviteShareLegacy() {
-  if (!activeRoom || !requireSession()) return;
-  try {
-    const referral = await request("/api/v4/referrals/me");
-    const inviteUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}&channel=LINK`;
-    const shareText = `Join my Many Worlds room: ${activeRoom.title}. Complete the opening together and we can earn ${referral.rewardPerQualifiedInvite} bonus credits.`;
-    const dialog = document.createElement("dialog");
-    dialog.className = "share-dialog";
-    dialog.innerHTML = `<button class="dialog-close" data-close-share aria-label="Close">×</button><p class="eyebrow">INVITE FRIENDS</p><h2>Share a room, earn together.</h2><p class="muted">When a new friend joins and completes the opening, you earn <strong>${referral.rewardPerQualifiedInvite} Bonus Credits</strong>. ${referral.remainingRewardSlots} reward slot${referral.remainingRewardSlots === 1 ? "" : "s"} remaining. Sharing alone never grants credits.</p><label class="share-link-label">Your room link<input readonly value="${esc(inviteUrl)}"></label><div class="share-network-row"><button data-share-channel="WHATSAPP">WhatsApp</button><button data-share-channel="TELEGRAM">Telegram</button><button data-share-channel="DISCORD">Discord</button><button data-share-channel="FACEBOOK">Facebook</button><button data-share-channel="X">X</button><button data-copy-invite>Copy link</button></div><section class="poster-preview"><img data-poster-qr alt="Invitation QR code"><div><span>Many Worlds</span><strong>${esc(activeRoom.title)}</strong><small>Scan or open the invitation to join this shared story.</small></div><button class="btn" data-download-poster>Download invitation poster</button></section>`;
-    document.body.append(dialog); dialog.showModal();
-    const close = () => { dialog.close(); dialog.remove(); };
-    dialog.querySelector("[data-close-share]").addEventListener("click", close);
-    const qr = await fetchInviteQr(activeRoom.code);
-    dialog.querySelector("[data-poster-qr]").src = qr.objectUrl;
-    dialog.querySelector("[data-copy-invite]").addEventListener("click", async () => { await navigator.clipboard.writeText(inviteUrl); notice("Invite link copied. Share it with a friend to start their journey."); });
-    dialog.querySelectorAll("[data-share-channel]").forEach((button) => button.addEventListener("click", async () => {
-      const channel = button.dataset.shareChannel;
-      await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel, runId:activeRoom.id }) });
-      const channelUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}&channel=${encodeURIComponent(channel)}`; const encodedUrl = encodeURIComponent(channelUrl); const encodedText = encodeURIComponent(shareText);
-      const links = { WHATSAPP:`https://wa.me/?text=${encodedText}%20${encodedUrl}`, TELEGRAM:`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, DISCORD:"https://discord.com/channels/@me", FACEBOOK:`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, X:`https://x.com/intent/post?text=${encodedText}%20${encodedUrl}` };
-      window.open(links[channel] || inviteUrl, "_blank", "noopener,noreferrer");
-    }));
-    dialog.querySelector("[data-download-poster]").addEventListener("click", async () => { try { await downloadInvitePoster({ title:activeRoom.title, inviteUrl, code:activeRoom.code, qr }); } catch (error) { notice(error.message || "Unable to create the invitation poster. Please try again."); } });
-    dialog.addEventListener("close", () => URL.revokeObjectURL(qr.objectUrl), { once:true });
-  } catch (error) { notice(error.message || "Unable to prepare the invitation link."); }
+    root.querySelector("[data-public-result]").innerHTML = `<p class="eyebrow">SHARED STORY RECAP</p><h1>${esc(result.recap?.title || result.room?.title || "A completed story")}</h1><p class="public-result-meta">${esc(result.room?.title || BRAND_NAME)} · ${esc(String(result.room?.completedNodes || 7))} rounds completed</p>${result.recap?.roleName ? `<p class="public-role">Shared from the perspective of <strong>${esc(result.recap.roleName)}</strong></p>` : ""}<section class="public-highlights"><h2>Turning points</h2>${highlights.length ? highlights.map((item, index) => `<article><span>${index + 1}</span><p>${esc(item)}</p></article>`).join("") : '<p>This public recap contains no private story details.</p>'}</section><aside class="privacy-note"><strong>Privacy protected</strong><p>Player identities, private goals, hidden intent, clues, raw actions and reasoning traces were removed from this public view.</p><small>This link expires ${esc(new Date(result.share.expiresAt).toLocaleString())}.</small></aside><a class="btn primary public-result-cta" href="/">Create your own world</a>`;
+  }).catch((error) => { root.querySelector("[data-public-result]").innerHTML = `<div class="public-result-error"><h1>This link is unavailable</h1><p>${esc(error.message || "It may have expired or been revoked.")}</p><a class="btn primary" href="/">Explore Our Many Worlds</a></div>`; });
 }
 async function fetchInviteQr(roomCode) {
   const response = await fetch(apiUrl(`/api/v4/referrals/qr?room=${encodeURIComponent(roomCode)}`), { credentials: "include" });
@@ -519,7 +514,7 @@ async function fetchInviteQr(roomCode) {
 async function downloadInvitePoster({ title, inviteUrl, code, qr }) {
   const canvas = document.createElement("canvas"); canvas.width = 1080; canvas.height = 1350;
   await document.fonts?.ready; const ctx = canvas.getContext("2d"); const background = new Image(); background.src = "/assets/poster/invite-background.png"; await new Promise((resolve, reject) => { background.onload = resolve; background.onerror = () => reject(new Error("Invitation poster background could not be loaded")); }); ctx.drawImage(background, 0, 0, canvas.width, canvas.height); const gradient = ctx.createLinearGradient(0, 0, 1080, 1350); gradient.addColorStop(0, "rgba(83,56,174,.20)"); gradient.addColorStop(1, "rgba(207,190,255,.14)"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1080, 1350);
-  ctx.fillStyle = "#fff"; ctx.font = "600 64px Arial"; ctx.fillText("Many Worlds", 90, 150); ctx.font = "700 78px Arial"; wrapPosterText(ctx, title, 90, 340, 900, 94); ctx.font = "400 36px Arial"; ctx.fillStyle = "#e9ddff"; ctx.fillText("Join my shared story", 90, 610); ctx.fillStyle = "#fff"; ctx.font = "600 42px Arial"; ctx.fillText(`Room code: ${code}`, 90, 710);
+  ctx.fillStyle = "#fff"; ctx.font = "600 64px Arial"; ctx.fillText(BRAND_NAME, 90, 150); ctx.font = "700 78px Arial"; wrapPosterText(ctx, title, 90, 340, 900, 94); ctx.font = "400 36px Arial"; ctx.fillStyle = "#e9ddff"; ctx.fillText(BRAND_TAGLINE, 90, 610); ctx.fillStyle = "#fff"; ctx.font = "600 42px Arial"; ctx.fillText(`Room code: ${code}`, 90, 710);
   const size = 360, left = 630, top = 850; ctx.fillStyle = "#fff"; ctx.fillRect(left - 24, top - 24, size + 48, size + 48); ctx.drawImage(qr.image, left, top, size, size);
   ctx.fillStyle = "#e9ddff"; ctx.font = "400 28px Arial"; ctx.fillText("Open the invitation link to join", 90, 1210); const link = document.createElement("a"); link.download = `many-worlds-${code}-invite.png`; link.href = canvas.toDataURL("image/png"); link.click();
 }
@@ -529,7 +524,7 @@ async function buildInvitePoster({ title, code, qr }) {
   await document.fonts?.ready; const ctx = canvas.getContext("2d"); const background = new Image(); background.src = "/assets/poster/invite-background.png";
   await new Promise((resolve, reject) => { background.onload = resolve; background.onerror = () => reject(new Error("Invitation poster background could not be loaded")); });
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height); const gradient = ctx.createLinearGradient(0, 0, 1080, 1350); gradient.addColorStop(0, "rgba(83,56,174,.20)"); gradient.addColorStop(1, "rgba(207,190,255,.14)"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#fff"; ctx.font = "600 64px Arial"; ctx.fillText("Many Worlds", 90, 150); ctx.font = "700 70px Arial"; wrapPosterText(ctx, title, 90, 350, 900, 84); ctx.font = "400 36px Arial"; ctx.fillStyle = "#e9ddff"; ctx.fillText("Play AI-powered story worlds on the web", 90, 620); ctx.fillStyle = "#fff"; ctx.font = "600 42px Arial"; ctx.fillText("Join a shared room with friends", 90, 706);
+  ctx.fillStyle = "#fff"; ctx.font = "600 64px Arial"; ctx.fillText(BRAND_NAME, 90, 150); ctx.font = "700 70px Arial"; wrapPosterText(ctx, title, 90, 350, 900, 84); ctx.font = "400 36px Arial"; ctx.fillStyle = "#e9ddff"; ctx.fillText(BRAND_TAGLINE, 90, 620); ctx.fillStyle = "#fff"; ctx.font = "600 42px Arial"; ctx.fillText("Join a shared room with friends", 90, 706);
   const size = 360, left = 630, top = 850; ctx.fillStyle = "#fff"; ctx.fillRect(left - 24, top - 24, size + 48, size + 48); ctx.drawImage(qr.image, left, top, size, size); ctx.fillStyle = "#e9ddff"; ctx.font = "400 28px Arial"; ctx.fillText(`Room code: ${code}`, 90, 1200); ctx.fillText("Scan to join the story", 90, 1248);
   return await new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(URL.createObjectURL(blob)) : reject(new Error("Invitation poster could not be encoded")), "image/png"));
 }
@@ -539,15 +534,15 @@ async function openInviteShare() {
   try {
     const opener = document.activeElement; const referral = await request("/api/v4/referrals/me");
     const inviteUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}&channel=LINK`;
-    const shareText = `Join my Many Worlds room: ${activeRoom.title}. Complete the opening together and we can earn ${referral.rewardPerQualifiedInvite} bonus credits.`;
+    const shareText = `Join my ${BRAND_NAME} room: ${activeRoom.title}. Complete the opening together and we can earn ${referral.rewardPerQualifiedInvite} bonus credits.`;
     const rewarded = Math.max(0, Number(referral.maxRewardedInvites || 2) - Number(referral.remainingRewardSlots || 0));
     const dialog = document.createElement("dialog"); dialog.className = "share-dialog";
-    dialog.innerHTML = `<button class="dialog-close" data-close-share aria-label="Close">×</button><section class="share-room-head"><img src="/assets/bg/1.png" alt=""><div><h2>Shared Story Room</h2><p>${esc(activeRoom.title)}</p><span>◷ Waiting　♧ ${activeRoom.players?.length || 1} / ${activeRoom.maxPlayers || 3} players</span></div></section><section class="share-reward-card"><p>Invite friends & earn rewards</p><strong>Earn up to ${referral.maxRewardedInvites * referral.rewardPerQualifiedInvite} Bonus Credits</strong><span>Get ${referral.rewardPerQualifiedInvite} Bonus Credits for each new friend who joins and completes the opening.</span><div class="reward-progress"><i style="width:${(rewarded / referral.maxRewardedInvites) * 100}%"></i></div><small>${rewarded} of ${referral.maxRewardedInvites} rewards unlocked · Sharing alone does not grant Credits.</small></section><div class="share-modal-grid"><section class="share-channels"><h3>Share your invitation</h3><p>Invite friends to join your shared room on Many Worlds.</p><div class="share-network-row"><button data-share-channel="WHATSAPP"><b>◉</b>WhatsApp</button><button data-share-channel="TELEGRAM"><b>➤</b>Telegram</button><button data-share-channel="DISCORD"><b>♣</b>Discord</button><button data-share-channel="FACEBOOK"><b>f</b>Facebook</button><button data-share-channel="X"><b>𝕏</b>X</button><button data-copy-invite><b>▣</b>Copy link</button></div><button class="btn primary share-native" data-native-share>↗　Share invitation</button></section><section class="poster-preview"><h3>Invite poster</h3><img data-poster-preview alt="Invitation poster preview"><button class="btn" data-download-poster>⇩　Download poster</button><small>Perfect for group chats and social posts.</small></section></div><label class="share-link-label"><span>↗</span><input readonly value="${esc(inviteUrl)}"><button data-copy-invite>Copy link</button></label>`;
+    dialog.innerHTML = `<button class="dialog-close" data-close-share aria-label="Close">×</button><section class="share-room-head"><img src="/assets/bg/1.png" alt=""><div><h2>Shared Story Room</h2><p>${esc(activeRoom.title)}</p><span>◷ Waiting　♧ ${activeRoom.players?.length || 1} / ${activeRoom.maxPlayers || 3} players</span></div></section><section class="share-reward-card"><p>Invite friends & earn rewards</p><strong>Earn up to ${referral.maxRewardedInvites * referral.rewardPerQualifiedInvite} Bonus Credits</strong><span>Get ${referral.rewardPerQualifiedInvite} Bonus Credits for each new friend who joins and completes the opening.</span><div class="reward-progress"><i style="width:${(rewarded / referral.maxRewardedInvites) * 100}%"></i></div><small>${rewarded} of ${referral.maxRewardedInvites} rewards unlocked · Sharing alone does not grant Credits.</small></section><div class="share-modal-grid"><section class="share-channels"><h3>Share your invitation</h3><p>Invite friends to join your shared room on ${BRAND_NAME}.</p><div class="share-network-row"><button data-share-channel="WHATSAPP"><b>◉</b>WhatsApp</button><button data-share-channel="TELEGRAM"><b>➤</b>Telegram</button><button data-share-channel="DISCORD"><b>♣</b>Discord</button><button data-share-channel="FACEBOOK"><b>f</b>Facebook</button><button data-share-channel="X"><b>𝕏</b>X</button><button data-copy-invite><b>▣</b>Copy link</button></div><button class="btn primary share-native" data-native-share>↗　Share invitation</button></section><section class="poster-preview"><h3>Invite poster</h3><img data-poster-preview alt="Invitation poster preview"><button class="btn" data-download-poster>⇩　Download poster</button><small>Perfect for group chats and social posts.</small></section></div><label class="share-link-label"><span>↗</span><input readonly value="${esc(inviteUrl)}"><button data-copy-invite>Copy link</button></label>`;
     document.body.append(dialog); dialog.showModal(); dialog.querySelector("[data-close-share]").addEventListener("click", () => dialog.close());
     const qr = await fetchInviteQr(activeRoom.code); const posterUrl = await buildInvitePoster({ title:activeRoom.title, code:activeRoom.code, qr }); dialog.querySelector("[data-poster-preview]").src = posterUrl;
     dialog.querySelectorAll("[data-copy-invite]").forEach((button) => button.addEventListener("click", () => copyInviteLink(dialog, inviteUrl)));
     dialog.querySelectorAll("[data-share-channel]").forEach((button) => button.addEventListener("click", async () => { const channel = button.dataset.shareChannel; await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel, runId:activeRoom.id }) }); const channelUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}&channel=${encodeURIComponent(channel)}`; const encodedUrl = encodeURIComponent(channelUrl); const encodedText = encodeURIComponent(shareText); const links = { WHATSAPP:`https://wa.me/?text=${encodedText}%20${encodedUrl}`, TELEGRAM:`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, DISCORD:"https://discord.com/channels/@me", FACEBOOK:`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, X:`https://x.com/intent/post?text=${encodedText}%20${encodedUrl}` }; if (!window.open(links[channel] || inviteUrl, "_blank", "noopener,noreferrer")) await copyInviteLink(dialog, inviteUrl); }));
-    dialog.querySelector("[data-native-share]").addEventListener("click", async () => { await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel:"NATIVE", runId:activeRoom.id }) }); if (navigator.share) { try { await navigator.share({ title:"Many Worlds", text:shareText, url:inviteUrl }); } catch {} } else await copyInviteLink(dialog, inviteUrl); });
+    dialog.querySelector("[data-native-share]").addEventListener("click", async () => { await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel:"NATIVE", runId:activeRoom.id }) }); if (navigator.share) { try { await navigator.share({ title:BRAND_NAME, text:shareText, url:inviteUrl }); } catch {} } else await copyInviteLink(dialog, inviteUrl); });
     dialog.querySelector("[data-download-poster]").addEventListener("click", () => { const link = document.createElement("a"); link.download = `many-worlds-${activeRoom.code}-invite.png`; link.href = posterUrl; link.click(); });
     dialog.addEventListener("close", () => { URL.revokeObjectURL(qr.objectUrl); URL.revokeObjectURL(posterUrl); dialog.remove(); opener?.focus?.(); }, { once:true });
   } catch (error) { notice(error.message || "Unable to prepare the invitation link."); }
@@ -555,10 +550,52 @@ async function openInviteShare() {
 function sessionToken() { return hasSessionCookie() ? "cookie-session" : ""; }
 function requireSession() { if (sessionToken()) return true; location.assign(`/auth?returnTo=${encodeURIComponent(path + location.search)}`); return false; }
 async function request(url, options = {}) { const response = await fetch(apiUrl(url), { ...options, credentials: "include", headers: { "content-type":"application/json", ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (response.status === 401) clearSessionHint(); if (!response.ok) { const error = new Error(data.message || data.code || `Request failed: ${response.status}`); error.code = data.code || null; error.status = response.status; throw error; } return data; }
-function roomRows(rooms) { return rooms.map((room, index) => `<div class="room-table room-row"><div class="world-cell"><img class="thumb" src="/assets/bg/${(index % 5) + 1}.png" alt=""><strong>${esc(room.worldId === "sangtian" ? "嘉靖财政危局" : "Caesar")}</strong></div><span>${esc(room.title)}</span><span>${room.players.length} of ${room.maxPlayers}</span><span class="badge">Open</span><button class="btn small" data-open-room="${esc(room.id)}" data-join-code="${esc(room.code || "")}">Join</button></div>`).join("") || `<p class="refresh-note">No open rooms yet. Create the first room.</p>`; }
-function myRoomRows(rooms) { return rooms.map((room, index) => { const action = room.nextAction === "continue" ? "Continue" : room.nextAction === "view_result" ? "View Result" : "Open"; return `<div class="my-room"><img src="/assets/bg/${(index % 5) + 1}.png" alt=""><div><strong>${esc(room.title)}</strong><span>${esc(room.worldId === "sangtian" ? "嘉靖财政危局" : "Caesar")}</span></div><button class="btn small" data-my-room="${esc(room.id)}" data-next-action="${esc(room.nextAction || "open")}">${action}</button></div>`; }).join("") || `<p class="refresh-note">No rooms yet.</p>`; }
-function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { try { if (button.dataset.joinCode) await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode }) }); location.assign(`/rooms/${button.dataset.openRoom}`); } catch (error) { notice(error.message || "Unable to join this room."); } })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/room-game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
-async function hydrateRooms() { try { const data = await request(`/api/v4/rooms${params.get("worldId") ? `?worldId=${encodeURIComponent(params.get("worldId"))}` : ""}`); const heading = root.querySelector(".room-table.head"); if (!heading) return; root.querySelectorAll(".room-row").forEach((node) => node.remove()); root.querySelectorAll("[data-live-rooms]").forEach((node) => node.remove()); heading.insertAdjacentHTML("afterend", `<div data-live-rooms>${roomRows(data.rooms || [])}</div>`); const mine = root.querySelector(".my-rooms"); if (mine) mine.innerHTML = `<h2>My Rooms</h2>${myRoomRows(data.myRooms || [])}`; bindRoomActions(); } catch (error) { notice(error.message || "Unable to load rooms."); } }
+function roomWorldLabel(worldId) { return worldId === "sangtian" ? "Sangtian Edict" : worldId === "caesar" ? "Caesar" : String(worldId || "World").replace(/[-_]/g, " "); }
+function roomWorldImage(worldId, index) { return `/assets/bg/${worldId === "sangtian" ? 2 : worldId === "caesar" ? 1 : (index % 5) + 1}.png`; }
+function roomStatus(room, view) {
+  if (view === "open") return { label: "Open", tone: "open" };
+  if (room.status === "playing") return { label: "In Progress", tone: "progress" };
+  if (room.status === "chapter_generated") return { label: "Complete", tone: "complete" };
+  return { label: room.players?.length >= room.maxPlayers ? "Full" : "Waiting", tone: room.players?.length >= room.maxPlayers ? "full" : "wait" };
+}
+function roomAction(room, view) {
+  if (view === "open") return { label: "Join", attributes: `data-open-room="${esc(room.id)}" data-join-code="${esc(room.code || "")}"` };
+  const action = room.nextAction || "open";
+  const label = action === "continue" ? "Continue" : action === "view_result" ? "View Result" : "Start";
+  return { label, attributes: `data-my-room="${esc(room.id)}" data-next-action="${esc(action)}"` };
+}
+function roomRows(rooms, view = "open") {
+  const emptyCopy = view === "open" ? "No open rooms yet. Create the first room." : "You have not joined a room yet.";
+  return rooms.map((room, index) => {
+    const status = roomStatus(room, view);
+    const action = roomAction(room, view);
+    const playerCount = Array.isArray(room.players) ? room.players.length : 0;
+    return `<article class="room-table room-row"><div class="world-cell"><img class="thumb" src="${roomWorldImage(room.worldId, index)}" alt=""><strong>${esc(roomWorldLabel(room.worldId))}</strong><span class="world-flourish" aria-hidden="true">❧</span></div><span class="room-name">${esc(roomDisplayTitle(room) || room.title || "Untitled room")}</span><span class="player-count">${playerCount} of ${esc(room.maxPlayers || "—")}</span><span><span class="badge ${status.tone}"><i aria-hidden="true"></i>${status.label}</span></span><span><button class="btn small room-action" ${action.attributes}>${action.label}</button></span></article>`;
+  }).join("") || `<p class="rooms-empty-state">${emptyCopy}</p>`;
+}
+function renderRoomsView() {
+  const target = root.querySelector("[data-live-rooms]");
+  if (!sessionToken()) {
+    target.innerHTML = `<p class="rooms-empty-state">Log in to view live rooms.</p>`;
+    root.querySelector("[data-room-refresh-note]")?.setAttribute("hidden", "");
+    return;
+  }
+  if (!target) return;
+  const activeRooms = roomsView.activeTab === "open" ? roomsView.openRooms : roomsView.myRooms;
+  target.innerHTML = roomRows(activeRooms, roomsView.activeTab);
+  root.querySelectorAll(".rooms-tabs [role='tab']").forEach((tab) => {
+    const active = tab.dataset.action === `${roomsView.activeTab}-tab`;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+  bindRoomActions();
+}
+function setRoomsTab(activeTab) {
+  roomsView.activeTab = activeTab === "my" ? "my" : "open";
+  renderRoomsView();
+}
+function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { if (!requireSession()) return; try { if (button.dataset.joinCode) await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode }) }); location.assign(`/rooms/${button.dataset.openRoom}`); } catch (error) { notice(error.message || "Unable to join this room."); } })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/room-game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
+async function hydrateRooms() { try { const data = await request(`/api/v4/rooms${params.get("worldId") ? `?worldId=${encodeURIComponent(params.get("worldId"))}` : ""}`); roomsView.openRooms = Array.isArray(data.rooms) ? data.rooms : []; roomsView.myRooms = Array.isArray(data.myRooms) ? data.myRooms : []; renderRoomsView(); } catch (error) { notice(error.message || "Unable to load rooms."); const target = root.querySelector("[data-live-rooms]"); if (target) target.innerHTML = `<p class="rooms-empty-state rooms-load-error">Rooms could not be loaded. Please try again.</p>`; } }
 function roomWorldTitle(worldId) { return worldId === "sangtian" ? "嘉靖财政危局" : "Caesar: The Last Spring of the Republic"; }
 function roomDisplayTitle(room) {
   const title = String(room.title || "").trim();
@@ -584,12 +621,12 @@ const actions = {
   solo: () => location.assign("/role-select?story=caesar"), rooms: () => location.assign("/rooms?worldId=caesar"),
   "sangtian-solo": () => location.assign("/role-select?story=sangtian"), "sangtian-rooms": () => location.assign("/rooms?worldId=sangtian"),
   "join-code": async () => { if (!requireSession()) return; const code = prompt("Enter an invite code"); if (!code) return; try { const room = await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: code.trim().toUpperCase() }) }); location.assign(`/rooms/${room.id}`); } catch (error) { notice(error.message || "Unable to join this room."); } },
-  "create-room": async (_event, element) => { if (!requireSession()) return; const previousLabel = element?.textContent; if (element) { element.disabled = true; element.textContent = "Creating room…"; } notice("Creating a durable room…"); try { const room = await request("/api/v4/rooms", { method:"POST", body:JSON.stringify({ worldId: params.get("worldId") || "caesar" }) }); location.assign(`/rooms/${room.id}`); } catch (error) { if (element) { element.disabled = false; element.textContent = previousLabel || "＋  Create Room"; } notice(error.message || "Unable to create a room."); } }, "join-room": () => location.assign("/rooms/fixture-caesar-waiting"),
+  "create-room": async (_event, element) => { if (!requireSession()) return; const previousLabel = element?.textContent; if (element) { element.disabled = true; element.textContent = "Creating room…"; } notice("Creating a durable room…"); try { const room = await request("/api/v4/rooms", { method:"POST", body:JSON.stringify({ worldId: params.get("worldId") || "caesar" }) }); location.assign(`/rooms/${room.id}`); } catch (error) { if (element) { element.disabled = false; element.textContent = previousLabel || "＋  Create Room"; } notice(error.message || "Unable to create a room."); } },
   "share-invite": () => { void openInviteShare(); },
   "select-role": async (_event, element) => { if (!activeRoom || !requireSession()) return; try { await request(`/api/v4/rooms/${activeRoom.id}/role`, { method:"POST", body:JSON.stringify({ roleId: element.dataset.roleId }) }); if (activeRoom.isHost && !activeRoom.hostRoleLocked) await request(`/api/v4/rooms/${activeRoom.id}/role/lock`, { method:"POST", body:"{}" }); await hydrateRoom(activeRoom.id); } catch (error) { notice(error.message || "Unable to select that role."); } },
   ready: async () => { if (!activeRoom || !requireSession()) return; try { await request(`/api/v4/rooms/${activeRoom.id}/ready`, { method:"POST", body:JSON.stringify({ ready:true }) }); await hydrateRoom(activeRoom.id); } catch (error) { notice(error.message || "Unable to mark ready."); } }, "start-game": async () => { if (!activeRoom || !requireSession()) return; try { const started = await request(`/api/v4/rooms/${activeRoom.id}/start`, { method:"POST", body:"{}" }); location.assign(`/room-game?runId=${encodeURIComponent(started.id)}`); } catch (error) { notice(error.message || "Room is not ready to start."); } },
   "request-refund": (_event, element) => openRefundRequest(element.dataset.purchaseId),
-  "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds/caesar"), "share-recap": () => { void openResultShare(); }, "open-tab": () => {}, "my-tab": () => root.querySelector(".my-rooms")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds"), "share-recap": () => { void openResultShare(); }, "open-tab": () => setRoomsTab("open"), "my-tab": () => setRoomsTab("my"), "clear-world-filter": () => location.assign("/rooms")
 };
 async function initializePlatform() {
   await migrateLegacySession();

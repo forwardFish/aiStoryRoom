@@ -1,0 +1,363 @@
+/*
+ * Many Worlds typography system
+ *
+ * Display copy uses a literary serif stack to support the story-world brand.
+ * Product copy and controls use the bundled Inter family for clarity.
+ * No user-facing copy should be set below 12px; normal reading copy starts at 16px.
+ */
+@font-face {
+  font-family: "MW Inter";
+  src: url("/assets/fonts/inter-400.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MW Inter";
+  src: url("/assets/fonts/inter-500.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MW Inter";
+  src: url("/assets/fonts/inter-600.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MW Inter";
+  src: url("/assets/fonts/inter-700.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MW Inter";
+  src: url("/assets/fonts/inter-800.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --mw-font-display: Georgia, "Times New Roman", "Noto Serif SC", "Songti SC", STSong, serif;
+  --mw-font-sans: "MW Inter", Inter, "SF Pro Text", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+
+  --mw-type-display-xl: clamp(56px, 5.2vw, 78px);
+  --mw-type-display: clamp(48px, 4.2vw, 66px);
+  --mw-type-h1: clamp(40px, 3.5vw, 56px);
+  --mw-type-h2: clamp(32px, 2.7vw, 44px);
+  --mw-type-h3: clamp(22px, 1.7vw, 28px);
+  --mw-type-title: 20px;
+  --mw-type-body-lg: 18px;
+  --mw-type-body: 16px;
+  --mw-type-body-sm: 14px;
+  --mw-type-label: 13px;
+  --mw-type-caption: 12px;
+
+  --mw-leading-display: 1.04;
+  --mw-leading-heading: 1.18;
+  --mw-leading-body: 1.65;
+  --mw-leading-compact: 1.4;
+  --mw-tracking-display: -.035em;
+  --mw-tracking-heading: -.02em;
+  --mw-tracking-label: .06em;
+}
+
+html { font-family: var(--mw-font-sans); font-size: 16px; text-rendering: optimizeLegibility; }
+body { font-family: var(--mw-font-sans); font-size: var(--mw-type-body); line-height: var(--mw-leading-body); }
+button, input, select, textarea { font-family: var(--mw-font-sans); }
+
+/* Brand and editorial surfaces: literary display headings, highly readable copy. */
+.mw-type-marketing .mw-brand,
+.mw-type-marketing .footer-brand b,
+.mw-type-marketing .worlds-heading h1,
+.mw-type-marketing .hero-copy h1,
+.mw-type-marketing .section-head h2,
+.mw-type-marketing .principles h2,
+.mw-type-marketing .entry-card h2,
+.mw-type-marketing .build-world h2,
+.mw-type-marketing .faq-intro h2,
+.mw-type-marketing .pricing h2,
+.mw-type-marketing .world-card h2,
+.mw-type-marketing .world-card h3,
+.mw-type-marketing .legal-content h1,
+.mw-type-marketing .legal-content h2 {
+  font-family: var(--mw-font-display);
+}
+
+.mw-type-marketing .hero-copy h1 {
+  font-size: var(--mw-type-display);
+  font-weight: 700;
+  line-height: var(--mw-leading-display);
+  letter-spacing: var(--mw-tracking-display);
+}
+
+.mw-type-marketing .eyebrow,
+.mw-type-marketing .entry-label,
+.mw-type-marketing .world-category,
+.mw-type-marketing .world-coming-badge {
+  font-size: var(--mw-type-label);
+  font-weight: 700;
+  line-height: var(--mw-leading-compact);
+  letter-spacing: var(--mw-tracking-label);
+}
+
+.mw-type-marketing .hero-copy > p {
+  max-width: 38ch;
+  font-size: var(--mw-type-body-lg);
+  line-height: var(--mw-leading-body);
+}
+
+.mw-type-marketing .mw-header nav { font-size: 15px; font-weight: 600; }
+.mw-type-marketing .header-right { font-size: var(--mw-type-body-sm); }
+.mw-type-marketing .mw-brand { font-size: 23px; line-height: 1.05; }
+.mw-type-marketing .mw-brand small { font: 500 var(--mw-type-caption)/1.3 var(--mw-font-sans); }
+.mw-type-marketing .mw-primary,
+.mw-type-marketing .mw-secondary,
+.mw-type-marketing .get-started { font-size: 15px; line-height: 1.35; }
+.mw-type-marketing .hero-proof { font-size: var(--mw-type-label); line-height: var(--mw-leading-compact); }
+.mw-type-marketing .hero-proof span { max-width: 145px; }
+
+.mw-type-marketing .section-head h2,
+.mw-type-marketing .principles h2,
+.mw-type-marketing .pricing h2 {
+  font-size: var(--mw-type-h2);
+  font-weight: 700;
+  line-height: var(--mw-leading-heading);
+  letter-spacing: var(--mw-tracking-heading);
+}
+
+.mw-type-marketing .section-head p,
+.mw-type-marketing .principles > p,
+.mw-type-marketing .pricing > div > p,
+.mw-type-marketing .build-world p,
+.mw-type-marketing .faq-intro > p {
+  font-size: var(--mw-type-body);
+  line-height: var(--mw-leading-body);
+}
+
+.mw-type-marketing .section-head > a,
+.mw-type-marketing .world-filters button { font-size: var(--mw-type-body-sm); }
+.mw-type-marketing .world-filters button { padding: 10px 22px; }
+
+.mw-type-marketing .world-card h2,
+.mw-type-marketing .world-card h3 {
+  font-size: var(--mw-type-h3);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -.018em;
+}
+
+.mw-type-marketing .world-card p { font-size: var(--mw-type-body-sm); line-height: 1.55; }
+.mw-type-marketing .world-card small,
+.mw-type-marketing .world-meta,
+.mw-type-marketing .world-playable,
+.mw-type-marketing .coming-label { font-size: var(--mw-type-label); line-height: var(--mw-leading-compact); }
+.mw-type-marketing .world-card.featured h3,
+.mw-type-marketing .world-card.hero-card.featured h3 { font-size: clamp(30px, 2.5vw, 40px); }
+.mw-type-marketing .world-card.hero-card h3 { font-size: clamp(20px, 1.7vw, 28px); }
+
+.mw-type-marketing .principle-grid b,
+.mw-type-marketing .flow-grid b,
+.mw-type-marketing .ending-list b,
+.mw-type-marketing .impact-card b { font-size: var(--mw-type-body); line-height: var(--mw-leading-compact); }
+.mw-type-marketing .principle-grid p,
+.mw-type-marketing .flow-grid p,
+.mw-type-marketing .ending-list small,
+.mw-type-marketing .impact-card p,
+.mw-type-marketing .impact-card strong { font-size: var(--mw-type-body-sm); line-height: var(--mw-leading-body); }
+.mw-type-marketing .flow-number { font-size: var(--mw-type-label); }
+
+.mw-type-marketing .entry-card h2,
+.mw-type-marketing .build-world h2 { font-size: 32px; line-height: var(--mw-leading-heading); letter-spacing: var(--mw-tracking-heading); }
+.mw-type-marketing .entry-card p { font-size: var(--mw-type-body); line-height: var(--mw-leading-body); }
+.mw-type-marketing .entry-card ul { font-size: var(--mw-type-body-sm); line-height: 1.75; }
+.mw-type-marketing .build-tags span,
+.mw-type-marketing .overview-card p { font-size: var(--mw-type-caption); line-height: 1.5; }
+.mw-type-marketing .overview-card h4 { font-size: var(--mw-type-body-sm); }
+.mw-type-marketing .build-world > a { font-size: var(--mw-type-body-sm); }
+
+.mw-type-marketing .faq h3 { font-size: var(--mw-type-title); line-height: var(--mw-leading-heading); }
+.mw-type-marketing .faq details,
+.mw-type-marketing .faq-grid details { font-size: var(--mw-type-body); line-height: var(--mw-leading-body); }
+.mw-type-marketing .faq details p,
+.mw-type-marketing .faq-grid details p { font-size: 15px; line-height: var(--mw-leading-body); }
+.mw-type-marketing .mw-footer > div { font-size: var(--mw-type-label); line-height: 1.5; }
+.mw-type-marketing .footer-brand b { font-size: var(--mw-type-title); }
+.mw-type-marketing .footer-brand p { font-size: var(--mw-type-label); line-height: 1.55; }
+.mw-type-marketing .footer-social small { font-size: var(--mw-type-caption); }
+
+/* Lobby and editorial pages share the same page-title rhythm. */
+.mw-type-marketing .worlds-heading h1,
+.mw-type-marketing .legal-content h1 {
+  font-size: var(--mw-type-display);
+  line-height: var(--mw-leading-display);
+  letter-spacing: var(--mw-tracking-display);
+}
+.mw-type-marketing .worlds-heading p { font-size: var(--mw-type-body-lg); line-height: 1.55; }
+.mw-type-marketing .world-card-body h2 { font-size: 23px; }
+.mw-type-marketing .world-card-body p { font-size: 15px; }
+.mw-type-marketing .legal-content { font-size: var(--mw-type-body); line-height: 1.75; }
+.mw-type-marketing .legal-content h2 { font-size: var(--mw-type-h3); }
+.mw-type-marketing .legal-content h3 { font-size: var(--mw-type-title); }
+
+/* Product surfaces: strong hierarchy without turning controls into display copy. */
+.mw-type-product .account-heading h1,
+.mw-type-product .world-hero h1,
+.mw-type-product .page-heading h1,
+.mw-type-product .credits-heading h1,
+.mw-type-product .credits-confirm > h1,
+.mw-type-product .status-card h1,
+.mw-type-product .join-frame h1,
+.mw-type-product .auth-title,
+.mw-type-product .room-game-top h1,
+.mw-type-product main > h1 {
+  font-family: var(--mw-font-display);
+  font-size: var(--mw-type-h1);
+  font-weight: 700;
+  line-height: var(--mw-leading-heading);
+  letter-spacing: var(--mw-tracking-heading);
+}
+
+.mw-type-product .account-heading p,
+.mw-type-product .world-lead,
+.mw-type-product .page-heading p,
+.mw-type-product .credits-heading .muted,
+.mw-type-product .credits-confirm > .muted,
+.mw-type-product .auth-subtitle,
+.mw-type-product .status-card .muted,
+.mw-type-product .room-game-top p { font-size: var(--mw-type-body-lg); line-height: 1.6; }
+
+.mw-type-product .world-copy,
+.mw-type-product .room-game-panel p,
+.mw-type-product .room-unlock-gate p,
+.mw-type-product .room-unlock-modal-card p { font-size: var(--mw-type-body); line-height: var(--mw-leading-body); }
+.mw-type-product .btn,
+.mw-type-product button,
+.mw-type-product input,
+.mw-type-product select,
+.mw-type-product textarea { font-size: 16px; }
+.mw-type-product .field,
+.mw-type-product label { font-size: var(--mw-type-body-sm); }
+.mw-type-product .account-profile-copy h2,
+.mw-type-product .account-purchases-header h2,
+.mw-type-product .role-title,
+.mw-type-product .mode-card h2,
+.mw-type-product .my-rooms h2,
+.mw-type-product .room-game-panel h2,
+.mw-type-product .pack-section h2,
+.mw-type-product .credit-rewards h2,
+.mw-type-product .credits-how h2 { font-size: var(--mw-type-h3); line-height: var(--mw-leading-heading); }
+.mw-type-product .account-profile-copy p,
+.mw-type-product .mode-card p,
+.mw-type-product .role-card p { font-size: var(--mw-type-body-sm); line-height: 1.55; }
+.mw-type-product .account-purchase-table th,
+.mw-type-product .account-status,
+.mw-type-product .meta,
+.mw-type-product .badge,
+.mw-type-product .room-game-player span { font-size: var(--mw-type-label); }
+.mw-type-product .account-purchase-table td { font-size: var(--mw-type-body-sm); }
+.mw-type-product .account-purchase-table td small { font-size: var(--mw-type-caption); }
+
+/* Role selection is a product page with a story-specific display layer. */
+.mw-type-product .role-brand,
+.mw-type-product .story-banner-copy h1,
+.mw-type-product .story-banner-copy h1::after,
+.mw-type-product .role-heading h2,
+.mw-type-product .role-card-name strong { font-family: var(--mw-font-display); }
+.mw-type-product .story-banner-copy h1::after { font-size: var(--mw-type-h2); line-height: var(--mw-leading-heading); }
+.mw-type-product .story-banner-copy p { font-size: var(--mw-type-body); line-height: var(--mw-leading-body); }
+.mw-type-product .role-card-name span { font-size: var(--mw-type-body-sm); }
+.mw-type-product .selection-panel > p,
+.mw-type-product .selection-panel dt,
+.mw-type-product .selection-panel dd,
+.mw-type-product .trait-grid b { font-size: var(--mw-type-label); }
+
+/* Game surfaces remain compact, but establish a legible 12px floor. */
+.mw-type-game { font-family: var(--mw-font-sans); font-size: var(--mw-type-body-sm); }
+.mw-type-game button,
+.mw-type-game input,
+.mw-type-game select,
+.mw-type-game textarea { font-family: var(--mw-font-sans); }
+.mw-type-game .story-card .meta,
+.mw-type-game .option-copy > span,
+.mw-type-game .option-copy > small,
+.mw-type-game .actions span,
+.mw-type-game .maneuver-usage small,
+.mw-type-game .maneuver-active-label,
+.mw-type-game .maneuver-workbench-head small,
+.mw-type-game .maneuver-choice-card small,
+.mw-type-game .maneuver-choice-card em,
+.mw-type-game .history-head span,
+.mw-type-game .history-list article span { font-size: var(--mw-type-caption); }
+.mw-type-game .story-card p,
+.mw-type-game .history-list article p,
+.mw-type-game .history-empty { font-size: var(--mw-type-body-sm); line-height: 1.6; }
+.mw-type-game .opening-copy,
+.mw-type-game .decision-copy,
+.mw-type-game .result-copy { font-family: var(--mw-font-display); }
+
+@media (max-width: 980px) and (min-width: 681px) {
+  :root {
+    --mw-type-display: clamp(44px, 6vw, 58px);
+    --mw-type-h1: clamp(38px, 5vw, 50px);
+    --mw-type-h2: clamp(30px, 4vw, 40px);
+  }
+  .mw-type-marketing .mw-header nav { font-size: 13px; }
+  .mw-type-marketing .hero-copy > p { font-size: 16px; }
+  .mw-type-marketing .hero-proof { font-size: var(--mw-type-caption); }
+  .mw-type-marketing .world-card h3 { font-size: 20px; }
+  .mw-type-marketing .world-card p { font-size: var(--mw-type-label); }
+  .mw-type-marketing .world-card small { font-size: var(--mw-type-caption); }
+}
+
+@media (max-width: 680px) {
+  :root {
+    --mw-type-display: clamp(40px, 12vw, 50px);
+    --mw-type-h1: clamp(36px, 10vw, 46px);
+    --mw-type-h2: clamp(30px, 8vw, 38px);
+    --mw-type-h3: clamp(22px, 6vw, 27px);
+    --mw-type-body-lg: 17px;
+  }
+
+  .mw-type-marketing .hero-copy h1 { font-size: var(--mw-type-display); }
+  .mw-type-marketing .hero-copy > p,
+  .mw-type-marketing .section-head p,
+  .mw-type-marketing .principles > p,
+  .mw-type-marketing .pricing > div > p,
+  .mw-type-marketing .entry-card p,
+  .mw-type-marketing .build-world p { font-size: var(--mw-type-body); }
+  .mw-type-marketing .hero-proof { flex-wrap: wrap; font-size: var(--mw-type-caption); }
+  .mw-type-marketing .section-head { gap: 18px; }
+  .mw-type-marketing .section-head > a { flex: 0 0 auto; font-size: var(--mw-type-label); }
+  .mw-type-marketing .world-card h2,
+  .mw-type-marketing .world-card h3 { font-size: 22px; }
+  .mw-type-marketing .world-card p { font-size: var(--mw-type-body-sm); }
+  .mw-type-marketing .world-card small,
+  .mw-type-marketing .world-meta,
+  .mw-type-marketing .world-playable,
+  .mw-type-marketing .coming-label { font-size: var(--mw-type-caption); }
+  .mw-type-marketing .world-card.hero-card.featured h3 { font-size: 28px; }
+  .mw-type-marketing .world-card.hero-card h3 { font-size: 20px; }
+  .mw-type-marketing .entry-card h2,
+  .mw-type-marketing .build-world h2 { font-size: 30px; }
+  .mw-type-marketing .principle-grid b,
+  .mw-type-marketing .flow-grid b { font-size: 15px; }
+  .mw-type-marketing .principle-grid p,
+  .mw-type-marketing .flow-grid p { font-size: var(--mw-type-body-sm); }
+  .mw-type-marketing .mw-footer > div { font-size: var(--mw-type-label); }
+
+  .mw-type-product .btn,
+  .mw-type-product button,
+  .mw-type-product input,
+  .mw-type-product select,
+  .mw-type-product textarea { font-size: 16px; }
+  .mw-type-product .account-purchase-table td { font-size: var(--mw-type-body-sm); }
+}

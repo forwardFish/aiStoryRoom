@@ -12,7 +12,7 @@ test("auth page loads the public runtime configuration before its Google button"
     readFile(new URL("../../../vercel.json", import.meta.url), "utf8")
   ]);
 
-  assert.match(html, /<script src="\/runtime-config\.js"><\/script>\s*<script type="module" src="\/platform\.js">/);
+  assert.match(html, /<script src="\/runtime-config\.js"><\/script>\s*<script type="module" src="\/world-catalog\.js[^"]*"><\/script>\s*<script type="module" src="\/platform\.js">/);
   assert.match(runtimeConfig, /googleWebClientId: ""/);
   assert.match(server, /PUBLIC_GOOGLE_WEB_CLIENT_ID/);
   assert.match(server, /cache-control": "no-store/);

@@ -541,7 +541,7 @@ function renderTopbar(view, state) {
   const progress = dayProgress(view);
   const maneuver = view.maneuverState || {};
   return `<header class="causal-topbar">
-    <div class="mw-brand"><span class="mw-brand-mark">Many Worlds</span></div>
+    <div class="mw-brand"><span class="mw-brand-mark">Our Many Worlds</span></div>
     <div class="location-title"><span class="seal-mark">⌂</span><b>杭州总督府 · 内厅</b><span class="chevron">⌄</span></div>
     <div class="top-day">第 ${number(run.currentDay)} 天 · ${esc(run.currentTime || "局势推演中")}</div>
     <div class="top-countdown">距离御前裁决：<b>${Number(run.currentDay) >= FINAL_DAY ? 0 : remaining}</b> 天</div>

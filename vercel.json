@@ -36,6 +36,7 @@
     { "source": "/shared/result", "destination": "/platform.html" },
     { "source": "/reset-password", "destination": "/reset-password.html" },
     { "source": "/join", "destination": "/platform.html" },
+    { "source": "/worlds", "destination": "/worlds.html" },
     { "source": "/worlds/:path*", "destination": "/platform.html" },
     { "source": "/rooms", "destination": "/platform.html" },
     { "source": "/rooms/:path*", "destination": "/platform.html" },

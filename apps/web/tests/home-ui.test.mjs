@@ -2,21 +2,26 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("Many Worlds 首页包含真实资源、完整内容分区和单人入口", async () => {
-  const [html, script, css] = await Promise.all([
+test("Our Many Worlds 首页包含真实资源、完整内容分区和单人入口", async () => {
+  const [html, script, css, catalog] = await Promise.all([
     readFile(new URL("../public/home.html", import.meta.url), "utf8"),
     readFile(new URL("../public/home.js", import.meta.url), "utf8"),
-    readFile(new URL("../public/home.css", import.meta.url), "utf8")
+    readFile(new URL("../public/home.css", import.meta.url), "utf8"),
+    readFile(new URL("../public/world-catalog.js", import.meta.url), "utf8")
   ]);
 
   assert.match(html, /home\.js\?v=/);
-  assert.match(html, /Many Worlds/);
-  assert.match(html, /Many Worlds \| AI-powered story rooms/);
+  assert.match(html, /Our Many Worlds/);
+  assert.match(html, /Our Many Worlds \| Real players\. Living worlds\./);
+  assert.match(script, /Our Many Worlds<small>Real players\. Living worlds\.<\/small>/);
+  assert.match(html, /rel="icon"[^>]+many-worlds-logo\.png/);
+  assert.match(html, /rel="apple-touch-icon"[^>]+many-worlds-logo\.png/);
   assert.doesNotMatch(html, /AI 故事局/);
   assert.match(script, /\/assets\/brand\/many-worlds-logo\.png/);
   assert.match(script, /Every situation/);
+  assert.match(script, /Every situation looks <em>different<\/em><br\/>from the inside\./);
   assert.match(script, /AI-POWERED STORY ROOMS/);
-  assert.match(script, /Sangtian Edict: The Jiajing Fiscal Crisis/);
+  assert.match(catalog, /Sangtian Edict: The Jiajing Fiscal Crisis/);
   assert.match(script, /Worlds worth stepping into/);
   assert.match(script, /Not a story with branches/);
   assert.match(script, /How a world unfolds/);
@@ -51,29 +56,45 @@ test("Many Worlds 首页包含真实资源、完整内容分区和单人入口",
   assert.doesNotMatch(script, /Bonus Credits expire/i);
   assert.doesNotMatch(script, /two reward slots/i);
   assert.match(script, /data-start-solo/);
+  assert.match(script, /browserWindow\.location\.href = "\/worlds"/);
   assert.match(script, /many_worlds_session_hint=1/);
   assert.match(script, /fetch\("\/api\/v4\/auth\/me"/);
   assert.match(script, /credentials: "include"/);
-  assert.match(script, /\/assets\/icon\/17\.png/);
+  assert.doesNotMatch(script, /<img src="\/assets\/icon\/17\.png"/);
+  assert.match(script, /account\?\.email \|\| account\?\.nickname \|\| "M"/);
+  assert.match(script, /esc\(accountInitial\(account\)\)/);
   assert.match(script, /My Account/);
   assert.match(script, /href="\/account"/);
   assert.match(script, /Logout/);
   assert.match(script, /\/api\/v4\/auth\/logout/);
   assert.match(script, /disableAutoSelect/);
   assert.doesNotMatch(script, /account-name|>My rooms</);
-  assert.equal((script.match(/title:/g) || []).length >= 8, true);
+  assert.equal((catalog.match(/title:/g) || []).length >= 8, true);
   assert.match(script, /function asset\(group, index\)/);
   assert.match(script, /worlds\.slice\(0, 6\)/);
   assert.match(script, /setInterval/);
+  assert.match(script, /CAROUSEL_TRANSITION_MS = 650/);
+  assert.match(script, /CAROUSEL_AUTOPLAY_MS = 3000/);
+  assert.match(script, /carouselRole/);
+  assert.match(script, /showCarouselItem/);
+  assert.match(script, /data-carousel-item/);
+  assert.doesNotMatch(script, /data-carousel-prev|data-carousel-next|carousel-controls/);
   assert.match(script, /renderHeroCarousel/);
   assert.match(script, /hero-card/);
   assert.match(script, /asset\("bg"/);
   assert.match(script, /asset\("portrait"/);
   assert.match(script, /asset\("icon"/);
   assert.match(css, /\.mw-hero/);
+  assert.match(css, /Stacked hero composition/);
+  assert.match(css, /\.many-worlds-page \.mw-hero \{[\s\S]*?flex-direction: column/);
+  assert.match(css, /\.mw-header nav \{ position: absolute; left: 50%/);
   assert.match(css, /\.account-trigger/);
+  assert.match(css, /width: 36px; height: 36px/);
   assert.match(css, /\.account-menu/);
   assert.match(css, /\.world-carousel/);
+  assert.match(css, /\.carousel-item\[data-role="center"\]/);
+  assert.match(css, /650ms cubic-bezier\(\.4,0,\.2,1\)/);
+  assert.doesNotMatch(css, /\.carousel-controls/);
   assert.match(css, /\.faq-layout/);
   assert.match(css, /\.faq-content/);
   assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);

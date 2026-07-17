@@ -1,1 +1,81 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create your Many Worlds account</title></head><body><main><h1>Create your account</h1><p>Create and verify your Many Worlds account to continue.</p><p data-message></p><form data-join><input name="email" type="email" placeholder="Email" required><input name="password" type="password" minlength="8" placeholder="Password" required><input name="nickname" placeholder="Display name"><button>Create account</button></form><label>Verification token <input data-token readonly></label><form data-verify><input name="email" type="email" placeholder="Email" required><input name="verificationToken" placeholder="Verification token" required><button>Verify account</button></form><script type="module">import {apiFetch,setToken} from './js/api-client.js'; const query=new URLSearchParams(location.search); const ref=query.get('ref')||''; const requestedReturn=query.get('returnTo')||'/'; const returnTo=requestedReturn.startsWith('/')&&!requestedReturn.startsWith('//')&&!requestedReturn.includes('\\')?requestedReturn:'/'; const message=document.querySelector('[data-message]'); let pendingCredentials=null; document.querySelector('[data-join]').addEventListener('submit',async(e)=>{e.preventDefault(); try{const data=Object.fromEntries(new FormData(e.currentTarget)); data.referralCode=ref; const result=await apiFetch('/v4/auth/register',{method:'POST',body:JSON.stringify(data)}); pendingCredentials={email:data.email,password:data.password}; document.querySelector('[data-token]').value=result.verificationToken||''; document.querySelector('[data-verify] input[name="email"]').value=data.email; document.querySelector('[data-verify] input[name="verificationToken"]').value=result.verificationToken||''; message.textContent='Account created. Verify your email to continue.';}catch(error){message.textContent=error.message;}}); document.querySelector('[data-verify]').addEventListener('submit',async(e)=>{e.preventDefault(); try{const verification=Object.fromEntries(new FormData(e.currentTarget)); await apiFetch('/v4/auth/verify',{method:'POST',body:JSON.stringify(verification)}); if(!pendingCredentials) throw new Error('Enter your account details again to continue.'); const session=await apiFetch('/v4/auth/login',{method:'POST',body:JSON.stringify(pendingCredentials)}); setToken(session.accessToken||session.token); location.href=returnTo;}catch(error){message.textContent=error.message;}});</script></main></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create an Our Many Worlds account</title>
+    <link rel="stylesheet" href="/typography.css?v=20260717-1">
+  </head>
+  <body class="mw-type-product">
+    <main>
+      <h1>Create your account</h1>
+      <p>Create and verify your account for Our Many Worlds to continue.</p>
+      <p data-message></p>
+      <form data-join>
+        <input name="email" type="email" placeholder="Email" required>
+        <input name="password" type="password" minlength="8" placeholder="Password" required>
+        <input name="nickname" placeholder="Display name">
+        <button>Create account</button>
+      </form>
+      <label>Verification token <input data-token readonly></label>
+      <form data-verify>
+        <input name="email" type="email" placeholder="Email" required>
+        <input name="verificationToken" placeholder="Verification token" required>
+        <button>Verify account</button>
+      </form>
+    </main>
+    <script type="module">
+      import { apiFetch, setToken } from "./js/api-client.js";
+
+      const query = new URLSearchParams(location.search);
+      const ref = query.get("ref") || "";
+      const requestedReturn = query.get("returnTo") || "/";
+      const returnTo = requestedReturn.startsWith("/")
+        && !requestedReturn.startsWith("//")
+        && !requestedReturn.includes("\\")
+        ? requestedReturn
+        : "/";
+      const message = document.querySelector("[data-message]");
+      let pendingCredentials = null;
+
+      document.querySelector("[data-join]").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          const data = Object.fromEntries(new FormData(event.currentTarget));
+          data.referralCode = ref;
+          const result = await apiFetch("/v4/auth/register", {
+            method: "POST",
+            body: JSON.stringify(data)
+          });
+          pendingCredentials = { email: data.email, password: data.password };
+          document.querySelector("[data-token]").value = result.verificationToken || "";
+          document.querySelector('[data-verify] input[name="email"]').value = data.email;
+          document.querySelector('[data-verify] input[name="verificationToken"]').value = result.verificationToken || "";
+          message.textContent = "Account created. Verify your email to continue.";
+        } catch (error) {
+          message.textContent = error.message;
+        }
+      });
+
+      document.querySelector("[data-verify]").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          const verification = Object.fromEntries(new FormData(event.currentTarget));
+          await apiFetch("/v4/auth/verify", {
+            method: "POST",
+            body: JSON.stringify(verification)
+          });
+          if (!pendingCredentials) throw new Error("Enter your account details again to continue.");
+          const session = await apiFetch("/v4/auth/login", {
+            method: "POST",
+            body: JSON.stringify(pendingCredentials)
+          });
+          setToken(session.accessToken || session.token);
+          location.href = returnTo;
+        } catch (error) {
+          message.textContent = error.message;
+        }
+      });
+    </script>
+  </body>
+</html>

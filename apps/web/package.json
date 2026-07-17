@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node src/server.mjs",
     "typecheck": "node --check src/server.mjs && node --check public/api-story-storage.js && node --check public/app.js && node --check public/home.js && node --check public/legal.js && node --check public/platform.js && node --check public/reset-password.js && node --check public/role-select.js && node --check public/trio.js && node --check public/js/api-client.js && node --check public/js/credits.js && node --check public/js/credits-success.js && node --check tests/browser-smoke.test.mjs && node --check tests/home-ui.test.mjs && node --check tests/lobby-navigation.test.mjs && node --check tests/trio-ui.test.mjs && node --check tests/world-credits-ui.test.mjs",
-    "test": "node --test tests/*.test.mjs",
+    "test": "node --test --test-isolation=none tests/*.test.mjs",
     "test:smoke": "node --test tests/*.test.mjs",
     "build": "node -e \"console.log('web MVP is static; validation is performed by typecheck and node:test')\""
   },

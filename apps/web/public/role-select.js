@@ -101,7 +101,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
 
 function renderHeader() {
   return `<header class="role-header">
-    <a class="role-brand" href="/"><img src="/assets/brand/many-worlds-logo.png" alt="Many Worlds logo"/><strong>Many Worlds</strong></a>
+    <a class="role-brand" href="/"><img src="/assets/brand/many-worlds-logo.png" alt="Our Many Worlds logo"/><strong>Our Many Worlds</strong></a>
     <div class="role-header-actions"><a href="#help">${helpIcon()} 帮助</a><button type="button" aria-label="用户菜单">${userIcon()} ${chevronDownIcon()}</button></div>
   </header>`;
 }

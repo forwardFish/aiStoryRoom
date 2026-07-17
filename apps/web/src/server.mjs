@@ -48,6 +48,7 @@ const pageRoutes = new Map([
   ["/shared/result", "/platform.html"],
   ["/reset-password", "/reset-password.html"],
   ["/join", "/platform.html"],
+  ["/worlds", "/worlds.html"],
   ["/worlds/sangtian", "/platform.html"],
   ["/worlds/caesar", "/platform.html"],
   ["/rooms", "/platform.html"],
@@ -112,7 +113,8 @@ function proxyApiRequest(req, res, url) {
 }
 
 export const server = createServer((req, res) => {
-  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const requestTarget = (req.url || "/").replace(/^\/{2,}/, "/");
+  const url = new URL(requestTarget, `http://${req.headers.host || "localhost"}`);
   const legacyRedirects = new Map([
     ["/home", "/"],
     ["/credits.html", "/credits"],

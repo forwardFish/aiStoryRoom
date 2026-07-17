@@ -30,7 +30,7 @@ function markdownToHtml(markdown) {
 }
 
 function navigation(pathname) {
-  return `<header class="legal-header"><a class="legal-brand" href="/"><img src="/assets/brand/many-worlds-logo.png" alt="Many Worlds logo"/><span>Our Many Worlds</span></a><nav class="legal-nav" aria-label="Legal pages">${Object.entries(pages).map(([path, page]) => `<a href="${path}" ${path === pathname ? 'aria-current="page"' : ""}>${page.title}</a>`).join("")}</nav></header>`;
+  return `<header class="legal-header"><a class="legal-brand" href="/"><img src="/assets/brand/many-worlds-logo.png" alt="Our Many Worlds logo"/><span>Our Many Worlds</span></a><nav class="legal-nav" aria-label="Legal pages">${Object.entries(pages).map(([path, page]) => `<a href="${path}" ${path === pathname ? 'aria-current="page"' : ""}>${page.title}</a>`).join("")}</nav></header>`;
 }
 
 async function render() {
