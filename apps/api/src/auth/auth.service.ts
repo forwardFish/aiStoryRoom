@@ -217,6 +217,14 @@ export class AuthService {
     };
   }
 
+  async updateProfile(userId: string, input: { nickname?: string }) {
+    const nickname = String(input.nickname || "").trim().replace(/\s+/g, " ");
+    if (!nickname) throw new BadRequestException({ code: "PROFILE_NAME_REQUIRED", message: "Enter a display name" });
+    if (nickname.length > 80) throw new BadRequestException({ code: "PROFILE_NAME_TOO_LONG", message: "Display name must be 80 characters or fewer" });
+    const user = await this.prisma.user.update({ where: { id: userId }, data: { nickname } });
+    return this.safeUser(user);
+  }
+
   private async createOneTimeToken(userId: string, purpose: AuthTokenPurpose): Promise<OneTimeToken> {
     const raw = randomBytes(32).toString("base64url");
     const now = new Date();

@@ -85,16 +85,21 @@ test("production Google sign-in reaches the same-origin cookie session endpoint 
   dom.window.close();
 });
 
-test("account security page exposes explicit Google link and safe unlink flows", async () => {
+test("account page exposes the approved profile and purchase-history experience", async () => {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   assert.match(source, /function renderAccount\(\)/);
   assert.match(source, /function hydrateAccount\(\)/);
-  assert.match(source, /function mountGoogleLink\(\)/);
-  assert.match(source, /\/api\/v4\/auth\/google\/link/);
-  assert.match(source, /method:\s*"DELETE"/);
-  assert.match(source, /loginMethods\?\.google/);
-  assert.match(source, /only sign-in method/);
+  assert.match(source, /function emailInitial\(value\)/);
+  assert.match(source, /emailInitial\(account\.email\)/);
+  assert.match(source, /account-purchase-table/);
+  assert.match(source, /Edit profile/);
+  assert.match(source, /method:"PATCH"/);
+  assert.match(source, /\/api\/v4\/auth\/me/);
+  assert.match(source, /\/api\/v4\/billing\/purchases/);
+  assert.match(source, /data-action="account-logout"/);
   assert.match(source, /path === "\/account"/);
-  assert.match(source, /ACCOUNT_LINK_REQUIRED/);
+  assert.doesNotMatch(source, /ACCOUNT SECURITY/);
+  assert.doesNotMatch(source, /data-action="unlink-google"/);
+  assert.doesNotMatch(source, /Email status/);
   assert.doesNotMatch(source, /providerSubject|client_secret/i);
 });

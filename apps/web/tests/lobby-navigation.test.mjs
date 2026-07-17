@@ -58,7 +58,7 @@ test("deployed platform authentication uses Vercel's same-origin API proxy", asy
 test("login, signup and password reset surfaces stay account-only", async () => {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   const start = source.indexOf("function renderAuth()");
-  const end = source.indexOf("function renderJoin()", start);
+  const end = source.indexOf("function renderAccount()", start);
   const authPage = source.slice(start, end);
 
   assert.match(authPage, /Welcome to Many Worlds/);

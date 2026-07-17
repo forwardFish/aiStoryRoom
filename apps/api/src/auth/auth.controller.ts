@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Headers, Inject, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Headers, Inject, Patch, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "./auth.guard";
 import { AuthService } from "./auth.service";
 import { CurrentUser, type AuthenticatedUser } from "./current-user.decorator";
@@ -70,6 +70,12 @@ export class AuthController {
   @Get("me")
   me(@CurrentUser() user: AuthenticatedUser) {
     return this.auth.me(user.id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch("me")
+  updateMe(@CurrentUser() user: AuthenticatedUser, @Body() body: { nickname?: string }) {
+    return this.auth.updateProfile(user.id, body);
   }
 
   // One-time bridge for existing browsers that still hold a pre-cookie token.

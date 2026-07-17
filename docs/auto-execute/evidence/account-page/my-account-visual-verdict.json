@@ -1,0 +1,24 @@
+{
+  "score": 95,
+  "verdict": "pass",
+  "categoryMatch": true,
+  "reference": "D:/lyh/agent/agent-frame/aiStoryRoom/docs/UI/web/My_Account.png",
+  "screenshot": "docs/auto-execute/evidence/account-page/my-account-desktop.png",
+  "intentionalDifferences": [
+    "The avatar is the first letter of the live account email rather than an illustrative portrait.",
+    "The number and content of rows follow the live Supabase purchase history rather than the illustrative reference rows."
+  ],
+  "geometryEvidence": {
+    "referenceDimensions": [1484, 1060],
+    "screenshotDimensions": [1484, 1060],
+    "profileCardTop": { "reference": 185, "screenshot": 185 },
+    "purchaseCardTop": { "reference": 369, "screenshot": 369 },
+    "tableHeaderDivider": { "reference": 444, "screenshot": 444 },
+    "firstRowDivider": { "reference": 495, "screenshot": 495 }
+  },
+  "pixelDiff": {
+    "path": "docs/auto-execute/evidence/account-page/my-account-diff.png",
+    "normalizedMae": 0.025373,
+    "pixelsWithin20": 0.945359
+  }
+}

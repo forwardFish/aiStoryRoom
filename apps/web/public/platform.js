@@ -7,6 +7,8 @@ const platformApiBase = (params.get("apiBase") || (isLocalRuntime ? "/api" : dep
 const purple = "#6434d7";
 let activeRoom = null;
 let roomRefreshTimer = null;
+let currentAccount = null;
+let accountPurchaseCache = new Map();
 const roles = [
   ["Brutus", "I serve Rome, not any man.", "/assets/portrait/1.png"],
   ["Caesar", "I came, I saw, I changed Rome.", "/assets/portrait/2.png"],
@@ -17,6 +19,7 @@ const roles = [
 ];
 
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]); }
+function emailInitial(value) { return String(value || "M").trim().charAt(0).toUpperCase() || "M"; }
 function safeReturnTo(value) {
   if (typeof value !== "string" || value.includes("\\") || value.startsWith("//")) return "/";
   try {
@@ -132,44 +135,6 @@ async function mountGoogleSignIn(returnTo) {
   }
 }
 
-async function mountGoogleLink() {
-  const target = root.querySelector("[data-google-link]");
-  const unavailable = root.querySelector("[data-google-link-unavailable]");
-  const clientId = googleWebClientId();
-  if (!target || !clientId) {
-    if (unavailable) unavailable.hidden = false;
-    return;
-  }
-  try {
-    const challenge = await request("/api/v4/auth/google/challenge", { method: "POST", headers: { "x-requested-with": "many-worlds-web" }, body: "{}" });
-    const google = await loadGoogleIdentityLibrary();
-    google.accounts.id.initialize({
-      client_id: clientId,
-      nonce: challenge.nonce,
-      auto_select: false,
-      ux_mode: "popup",
-      callback: async (credentialResponse) => {
-        try {
-          await request("/api/v4/auth/google/link", {
-            method: "POST",
-            headers: { "x-requested-with": "many-worlds-web" },
-            body: JSON.stringify({ credential: credentialResponse.credential, challengeId: challenge.challengeId })
-          });
-          notice("Google account linked successfully.");
-          await hydrateAccount();
-        } catch (error) {
-          notice(error.message || "Google account could not be linked.");
-        }
-      }
-    });
-    target.hidden = false;
-    google.accounts.id.renderButton(target, { theme: "outline", size: "large", text: "continue_with", shape: "rectangular", width: 320 });
-  } catch (error) {
-    if (unavailable) unavailable.hidden = false;
-    notice(error.message || "Google account linking is temporarily unavailable.");
-  }
-}
-
 function restoreBrowserSession(returnTo) {
   appShell(`<section class="page-frame auth-frame"><p class="muted">Restoring your signed-in session...</p></section>`);
   const controller = new AbortController();
@@ -225,28 +190,28 @@ function renderAccount() {
     location.assign("/auth?returnTo=%2Faccount");
     return;
   }
-  appShell(`<section class="page-frame account-frame"><a class="back-link" href="/">Back to home</a><div class="account-card"><p class="eyebrow">ACCOUNT SECURITY</p><h1>My Account</h1><p class="muted">Review your account and choose how you sign in.</p><div data-notice class="notice" hidden></div><section class="account-summary" data-account-summary><p>Loading your account…</p></section><section class="login-methods" data-login-methods></section><section class="account-purchases"><div class="account-section-heading"><div><h2>Purchases and refunds</h2><p>Request a refund for an eligible confirmed payment. Approval never removes Credits until Creem confirms the refund.</p></div><a class="btn small" href="/credits">Add Credits</a></div><div data-purchase-records><p class="muted">Loading purchase records…</p></div></section><a class="admin-refund-link" data-admin-refunds href="/admin/refunds" hidden>Review refund requests</a><div class="account-actions"><a class="btn" href="/credits">World Credits</a><button class="btn danger" type="button" data-action="account-logout">Log out</button></div></div></section>`);
+  appShell(`<section class="page-frame account-page"><a class="back-link account-back" href="/">Back to home</a><header class="account-heading"><h1>My Account</h1><p>View your profile and purchase history.</p></header><div data-notice class="notice account-notice" hidden></div><section class="account-profile-card" data-account-summary aria-label="Account profile"><div class="account-profile-loading">Loading your profile…</div></section><section class="account-purchases-card"><header class="account-purchases-header"><h2>Purchases &amp; refunds</h2><a class="account-add-credits" href="/credits">Add Credits</a></header><div class="account-table-wrap"><table class="account-purchase-table"><thead><tr><th>Order number</th><th>Purchase date</th><th>World Credits</th><th>Amount</th><th>Payment status</th><th>Refund status</th><th>Action</th></tr></thead><tbody data-purchase-records><tr><td colspan="7" class="account-table-message">Loading purchase records…</td></tr></tbody></table></div></section><button class="account-logout" type="button" data-action="account-logout"><span aria-hidden="true">↪</span>Log out</button></section>`);
   void hydrateAccount();
 }
 
 async function hydrateAccount() {
   try {
     const account = await request("/api/v4/auth/me");
-    const summary = root.querySelector("[data-account-summary]");
-    const methods = root.querySelector("[data-login-methods]");
-    if (!summary || !methods) return;
-    const googleIdentity = account.loginMethods?.google?.[0] || null;
-    const hasPassword = Boolean(account.loginMethods?.password);
-    summary.innerHTML = `<div><span>Email</span><strong>${esc(account.email || "Not available")}</strong></div><div><span>Display name</span><strong>${esc(account.nickname || "Many Worlds player")}</strong></div><div><span>Email status</span><strong>${account.emailVerified ? "Verified" : "Not verified"}</strong></div>`;
-    methods.innerHTML = `<h2>Sign-in methods</h2><article class="login-method"><div><strong>Email and password</strong><p>${hasPassword ? "Available for this account." : "No verified password is configured."}</p></div><span class="method-state ${hasPassword ? "connected" : ""}">${hasPassword ? "Connected" : "Unavailable"}</span></article><article class="login-method"><div><strong>Google</strong><p>${googleIdentity ? `Linked to ${esc(googleIdentity.email || "your Google account")}.` : "Link Google for a faster sign-in option."}</p></div>${googleIdentity ? `<button class="btn small" type="button" data-action="unlink-google" ${hasPassword ? "" : "disabled"}>Unlink</button>` : `<div class="google-link-button" data-google-link hidden></div>`}</article>${googleIdentity && !hasPassword ? `<p class="method-warning">Add and verify a password before unlinking your only sign-in method.</p>` : ""}<p class="google-unavailable" data-google-link-unavailable hidden>Google account linking is unavailable here.</p>`;
+    currentAccount = account;
+    renderAccountProfile(account);
     bind();
-    if (!googleIdentity) void mountGoogleLink();
     await hydratePurchases();
-    void revealAdminRefundLink();
   } catch (error) {
     if (error.status === 401) location.assign("/auth?returnTo=%2Faccount");
     else notice(error.message || "Unable to load your account.");
   }
+}
+
+function renderAccountProfile(account) {
+  const summary = root.querySelector("[data-account-summary]");
+  if (!summary) return;
+  const name = account.nickname || "Many Worlds player";
+  summary.innerHTML = `<div class="account-avatar" aria-hidden="true"><span>${esc(emailInitial(account.email))}</span></div><div class="account-profile-copy"><h2>${esc(name)}</h2><p>${esc(account.email || "Email not available")}</p></div><button class="account-edit-profile" type="button" data-action="edit-profile"><span aria-hidden="true">✎</span>Edit profile</button>`;
 }
 
 async function hydratePurchases() {
@@ -255,22 +220,82 @@ async function hydratePurchases() {
   try {
     const data = await request("/api/v4/billing/purchases");
     const purchases = Array.isArray(data.purchases) ? data.purchases : [];
-    target.innerHTML = purchases.length ? purchases.map((purchase) => {
-      const refund = purchase.refund;
-      const canRequest = purchase.status === "PAID" && !refund;
-      const amount = new Intl.NumberFormat("en-US", { style:"currency", currency:purchase.currency || "USD" }).format(Number(purchase.amountCents || 0) / 100);
-      return `<article class="purchase-row"><div><strong>${esc(purchase.orderDisplayCode)}</strong><span>${esc(String(purchase.credits))} World Credits · ${esc(amount)}</span><small>${esc(purchase.paidAt ? new Date(purchase.paidAt).toLocaleDateString() : "Payment pending")}</small></div><div class="purchase-refund-state"><span class="method-state ${purchase.status === "PAID" ? "connected" : ""}">${esc(purchase.status)}</span>${refund ? `<b>${esc(refund.status.replaceAll("_", " "))}</b>` : canRequest ? `<button class="btn small" data-action="request-refund" data-purchase-id="${esc(purchase.id)}">Request refund</button>` : ""}</div></article>`;
-    }).join("") : '<p class="muted">No purchases yet.</p>';
+    accountPurchaseCache = new Map(purchases.map((purchase) => [purchase.id, purchase]));
+    target.innerHTML = purchases.length ? purchases.map(renderPurchaseRow).join("") : '<tr><td colspan="7" class="account-table-message">No purchase records yet.</td></tr>';
     bind();
-  } catch (error) { target.innerHTML = `<p class="notice">${esc(error.message || "Unable to load purchases.")}</p>`; }
+  } catch (error) { target.innerHTML = `<tr><td colspan="7" class="account-table-message account-table-error">${esc(error.message || "Unable to load purchases.")} <button type="button" data-action="retry-purchases">Retry</button></td></tr>`; bind(); }
 }
 
-async function revealAdminRefundLink() {
-  try {
-    await request("/api/v4/admin/refunds?status=PENDING");
-    const link = root.querySelector("[data-admin-refunds]");
-    if (link) link.hidden = false;
-  } catch {}
+function renderPurchaseRow(purchase) {
+  const amount = new Intl.NumberFormat("en-US", { style:"currency", currency:purchase.currency || "USD" }).format(Number(purchase.amountCents || 0) / 100);
+  const payment = purchasePaymentState(purchase.status);
+  const refund = purchaseRefundState(purchase);
+  return `<tr><td data-label="Order number"><strong>${esc(purchase.orderDisplayCode)}</strong></td><td data-label="Purchase date">${esc(accountDate(purchase.paidAt || purchase.createdAt))}</td><td data-label="World Credits">${esc(new Intl.NumberFormat("en-US").format(Number(purchase.credits || 0)))} Credits</td><td data-label="Amount">${esc(amount)}</td><td data-label="Payment status"><span class="account-status ${payment.className}"><span aria-hidden="true">${payment.icon}</span>${esc(payment.label)}</span></td><td data-label="Refund status">${refund.statusHtml}</td><td data-label="Action">${refund.actionHtml}</td></tr>`;
+}
+
+function purchasePaymentState(status) {
+  if (status === "PENDING") return { label:"Payment pending", className:"pending", icon:"◷" };
+  if (status === "FAILED") return { label:"Payment failed", className:"failed", icon:"!" };
+  return { label:"Paid", className:"paid", icon:"✓" };
+}
+
+function purchaseRefundState(purchase) {
+  const refund = purchase.refund;
+  if (purchase.status === "DISPUTED") return { statusHtml:'<span class="account-status disputed">Disputed</span>', actionHtml:`<button class="account-row-action" type="button" data-action="view-dispute" data-purchase-id="${esc(purchase.id)}">View case</button>` };
+  if (purchase.status === "REFUNDED" || refund?.status === "COMPLETED") {
+    const completed = refund?.completedAt ? `<small>Refunded on ${esc(accountDate(refund.completedAt))}</small>` : "";
+    return { statusHtml:`<span class="account-status refunded"><span aria-hidden="true">✓</span>Refunded</span>${completed}`, actionHtml:'<span class="account-empty-action">—</span>' };
+  }
+  if (purchase.status === "PARTIALLY_REFUNDED") return { statusHtml:'<span class="account-status refunded">Partially refunded</span>', actionHtml:'<span class="account-empty-action">—</span>' };
+  if (refund) {
+    const status = String(refund.status || "");
+    if (status === "FAILED") return { statusHtml:'<span class="account-status refund-failed"><span aria-hidden="true">△</span>Refund failed</span><small>Please try again.</small>', actionHtml:`<button class="account-row-action" type="button" data-action="view-refund" data-purchase-id="${esc(purchase.id)}">View request</button>` };
+    if (status === "REJECTED") return { statusHtml:'<span class="account-status refund-failed">Not approved</span>', actionHtml:`<button class="account-row-action" type="button" data-action="view-refund" data-purchase-id="${esc(purchase.id)}">View request</button>` };
+    return { statusHtml:'<span class="account-status reviewing">Under review</span>', actionHtml:`<button class="account-row-action" type="button" data-action="view-refund" data-purchase-id="${esc(purchase.id)}">View request</button>` };
+  }
+  if (purchase.status === "PAID") return { statusHtml:'<span class="account-status eligible">Eligible</span>', actionHtml:`<button class="account-row-action" type="button" data-action="request-refund" data-purchase-id="${esc(purchase.id)}">Request refund</button>` };
+  return { statusHtml:'<span class="account-empty-action">—</span>', actionHtml:'<span class="account-empty-action">—</span>' };
+}
+
+function accountDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("en-US", { month:"short", day:"numeric", year:"numeric" }).format(date);
+}
+
+function openProfileEditor() {
+  if (!currentAccount) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "account-dialog profile-dialog";
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close">×</button><h2>Edit profile</h2><p>Update the name shown to other players.</p><form><label>Display name<input name="nickname" maxlength="80" required value="${esc(currentAccount.nickname || "")}"></label><button class="btn primary" type="submit">Save changes</button></form>`;
+  document.body.append(dialog); dialog.showModal();
+  dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.querySelector("form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector("button[type=submit]");
+    const nickname = event.currentTarget.elements.nickname.value.trim();
+    button.disabled = true;
+    try {
+      currentAccount = await request("/api/v4/auth/me", { method:"PATCH", body:JSON.stringify({ nickname }) });
+      renderAccountProfile(currentAccount); bind(); dialog.close(); notice("Profile updated.");
+    } catch (error) { button.disabled = false; notice(error.message || "Unable to update your profile."); }
+  });
+}
+
+function openPurchaseStatus(purchaseId, dispute = false) {
+  const purchase = accountPurchaseCache.get(purchaseId);
+  if (!purchase) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "account-dialog purchase-status-dialog";
+  const refund = purchase.refund;
+  const title = dispute ? "Payment dispute" : "Refund request";
+  const status = dispute ? "Under review by the payment provider" : String(refund?.status || "Pending").replaceAll("_", " ").toLowerCase();
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close">×</button><h2>${title}</h2><dl><div><dt>Order</dt><dd>${esc(purchase.orderDisplayCode)}</dd></div><div><dt>Status</dt><dd>${esc(status)}</dd></div>${refund?.requestedAt ? `<div><dt>Requested</dt><dd>${esc(accountDate(refund.requestedAt))}</dd></div>` : ""}${refund?.adminNote ? `<div><dt>Update</dt><dd>${esc(refund.adminNote)}</dd></div>` : ""}</dl><button class="btn" type="button" data-dialog-done>Done</button>`;
+  document.body.append(dialog); dialog.showModal();
+  dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
+  dialog.querySelector("[data-dialog-done]").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
 }
 
 function openRefundRequest(purchaseId) {
@@ -537,7 +562,10 @@ const actions = {
   "toggle-password": (_event, element) => { const input = root.querySelector('input[name="password"]'); if (!input) return; const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; element.textContent = reveal ? "Hide" : "Show"; element.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); },
   forgot: async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter your verified email address first."); try { await request("/api/v4/auth/password-reset/request", { method:"POST", body:JSON.stringify({ email }) }); notice("If this verified account exists, a password-reset email has been sent."); } catch (error) { notice(error.message || "Unable to request a password reset."); } },
   "resend-verification": async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter the email address that needs verification first."); try { await request("/api/v4/auth/verification/resend", { method:"POST", body:JSON.stringify({ email, returnTo: safeReturnTo(params.get("returnTo")) }) }); notice("If this account still needs verification, a new email has been sent."); } catch (error) { notice(error.message || "Unable to resend the verification email."); } },
-  "unlink-google": async (_event, element) => { if (element?.disabled) return; element.disabled = true; try { await request("/api/v4/auth/google/link", { method:"DELETE" }); notice("Google account unlinked."); await hydrateAccount(); } catch (error) { element.disabled = false; notice(error.message || "Google account could not be unlinked."); } },
+  "edit-profile": () => openProfileEditor(),
+  "retry-purchases": () => { void hydratePurchases(); },
+  "view-refund": (_event, element) => openPurchaseStatus(element.dataset.purchaseId),
+  "view-dispute": (_event, element) => openPurchaseStatus(element.dataset.purchaseId, true),
   "account-logout": async (_event, element) => { if (element?.disabled) return; element.disabled = true; try { await request("/api/v4/auth/logout", { method:"POST", body:"{}" }); try { globalThis.google?.accounts?.id?.disableAutoSelect?.(); } catch {} clearSessionHint(); location.assign("/"); } catch (error) { element.disabled = false; notice(error.message || "Unable to log out."); } },
   solo: () => location.assign("/role-select?story=caesar"), rooms: () => location.assign("/rooms?worldId=caesar"),
   "sangtian-solo": () => location.assign("/role-select?story=sangtian"), "sangtian-rooms": () => location.assign("/rooms?worldId=sangtian"),

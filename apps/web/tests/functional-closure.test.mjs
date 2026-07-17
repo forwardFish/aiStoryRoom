@@ -11,6 +11,10 @@ test("account and admin pages expose the reviewed refund workflow", async () => 
   ]);
   assert.match(source, /\/api\/v4\/billing\/purchases/);
   assert.match(source, /\/api\/v4\/billing\/refund-requests/);
+  assert.match(source, /account-purchase-table/);
+  assert.match(source, /Edit profile/);
+  assert.match(source, /method:"PATCH"/);
+  assert.match(source, /emailInitial\(account\.email\)/);
   assert.match(source, /Approve & submit/);
   assert.match(source, /credit reversal waits for the signed refund webhook/i);
   assert.match(source, /path === "\/admin\/refunds"/);

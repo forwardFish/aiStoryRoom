@@ -46,6 +46,13 @@ async function run() {
       google: [{ id: "identity_1", provider: "GOOGLE", email: "alice@gmail.com", linkedAt: new Date("2026-07-16T00:00:00.000Z") }]
     }
   });
+  assert.deepEqual(await auth.updateProfile(prisma.users[0].id, { nickname: "  Alice   Morgan  " }), {
+    id: prisma.users[0].id,
+    email: "alice@example.test",
+    emailVerified: true,
+    nickname: "Alice Morgan"
+  });
+  await assert.rejects(() => auth.updateProfile(prisma.users[0].id, { nickname: "   " }), hasCode("PROFILE_NAME_REQUIRED"));
   const missingResetRequest = await auth.requestPasswordReset({ email: "missing@example.test", clientIp: "127.0.0.8" });
   assert.deepEqual(missingResetRequest, { accepted: true });
   const resetRequest = await auth.requestPasswordReset({ email: "alice@example.test", clientIp: "127.0.0.9" });

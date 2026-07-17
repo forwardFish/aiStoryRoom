@@ -1,0 +1,60 @@
+{
+  "status": "PASS",
+  "scope": "My Account page rendered from the live Supabase-backed API",
+  "reference": "D:\\lyh\\agent\\agent-frame\\aiStoryRoom\\docs\\UI\\web\\My_Account.png",
+  "route": "http://127.0.0.1:5281/account",
+  "fixtureOnly": false,
+  "accountType": "non-personal example.test acceptance account",
+  "dataSource": {
+    "profile": "GET /api/v4/auth/me",
+    "purchases": "GET /api/v4/billing/purchases"
+  },
+  "desktop": {
+    "viewport": {
+      "width": 1484,
+      "height": 1060
+    },
+    "document": {
+      "width": 1484,
+      "height": 1060
+    },
+    "overflowX": false,
+    "avatarText": "W",
+    "displayedEmail": "[redacted acceptance email]",
+    "purchaseRows": 3,
+    "orders": [
+      "MW-8B539041",
+      "MW-5C8D02F0",
+      "MW-EDFA7C7F"
+    ],
+    "hasGlobalHeader": false
+  },
+  "mobile": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "documentWidth": 390,
+    "overflowX": false,
+    "avatarText": "W"
+  },
+  "readback": {
+    "purchaseCount": 3,
+    "orders": [
+      "MW-8B539041",
+      "MW-5C8D02F0",
+      "MW-EDFA7C7F"
+    ]
+  },
+  "checks": {
+    "usesRealApiData": true,
+    "avatarUsesEmailInitial": true,
+    "noGlobalHeader": true,
+    "desktopNoHorizontalOverflow": true,
+    "mobileNoHorizontalOverflow": true,
+    "cookieSessionPersistsOnReload": true,
+    "noRuntimeExceptions": true
+  },
+  "runtimeExceptions": [],
+  "capturedAt": "2026-07-17T04:12:44.208Z"
+}
