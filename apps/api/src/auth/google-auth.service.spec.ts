@@ -93,6 +93,17 @@ test("Google sign-in verifies a nonce-bound one-time challenge and does not dupl
       source: "auth-google",
       payload: { identityId: prisma.identities[0].id, loginKind: "repeat", destination: "ROOM_INVITE", hasRoom: true, hasReferral: true, hasChannel: true }
     });
+
+    const accountChallenge = await service.createChallenge({ clientIp: "127.0.0.1" });
+    verifier.candidate = googleIdentity({ nonce: accountChallenge.nonce });
+    const accountLogin = await service.login({ credential: "google-id-token", challengeId: accountChallenge.challengeId, returnTo: "/account", clientIp: "127.0.0.1" });
+    assert.equal(accountLogin.returnTo, "/account");
+    assert.deepEqual(prisma.events.at(-1), {
+      userId: first.user.id,
+      eventName: "google_login_succeeded",
+      source: "auth-google",
+      payload: { identityId: prisma.identities[0].id, loginKind: "repeat", destination: "ACCOUNT" }
+    });
   } finally {
     if (priorEnabled === undefined) delete process.env.GOOGLE_AUTH_ENABLED; else process.env.GOOGLE_AUTH_ENABLED = priorEnabled;
     if (priorClientId === undefined) delete process.env.GOOGLE_WEB_CLIENT_ID; else process.env.GOOGLE_WEB_CLIENT_ID = priorClientId;

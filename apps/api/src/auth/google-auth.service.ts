@@ -216,6 +216,8 @@ function auditReturnDestination(returnTo: string) {
   if (/^\/worlds\/[A-Za-z0-9_-]+$/.test(url.pathname)) return { destination: "WORLD" };
   const fixedDestinations: Record<string, string> = {
     "/": "HOME",
+    "/account": "ACCOUNT",
+    "/admin/refunds": "ADMIN_REFUNDS",
     "/rooms": "ROOMS",
     "/game": "GAME",
     "/game/result": "GAME_RESULT",
