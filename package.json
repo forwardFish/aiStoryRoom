@@ -56,7 +56,7 @@
     "test:provider-retry": "tsx scripts/e2e/provider-retry-contract.ts",
     "test:ai-budget": "tsx scripts/e2e/ai-budget-contract.ts",
     "test:continuous": "tsx scripts/e2e/mvp-acceptance-matrix.ts continuous",
-    "test:continuous-mp:fault": "tsx scripts/e2e/continuous-strategy-fault-recovery.ts",
+    "test:continuous-mp:fault": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\acceptance\\run-continuous-fault-recovery.ps1",
     "test:storage-recovery": "tsx scripts/e2e/storage-failure-recovery.ts",
     "test:ai-live-v4": "tsx scripts/e2e/v4-deepseek-live-smoke.ts",
     "test:simulated-player": "node scripts/e2e/simulated-player-browser.mjs",

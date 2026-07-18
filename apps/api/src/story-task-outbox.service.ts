@@ -194,6 +194,11 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         : task.taskType === "ROLE_AGENT_DECISION"
           ? await this.roleAgents.execute(task.id, fence)
           : await this.story.resolveNode(task.nodeId);
+      if ((resolution as any)?.outcome === "LEASE_LOST") {
+        leaseLost = true;
+        this.logger.warn(`Story task ${task.id} lost lease ${fence.leaseVersion}; completion suppressed`);
+        return;
+      }
       const completed = await this.prisma.storyTaskOutbox.updateMany({
         where: {
           id: task.id,

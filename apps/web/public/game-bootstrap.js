@@ -6,7 +6,7 @@ export async function bootGamePage({
   fetchImpl = win?.fetch?.bind(win),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
-  loadSolo = () => import("./app.js?v=20260713-28"),
+  loadSolo = () => import("./app.js?v=20260718-room-stage-v1"),
   navigate = (url) => win?.location?.assign?.(url)
 } = {}) {
   if (!root) throw new TypeError("game root is required");

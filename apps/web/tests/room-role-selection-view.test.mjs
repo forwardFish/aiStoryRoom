@@ -68,8 +68,21 @@ test("the shared component has no world-specific artwork lookup", async () => {
 
 test("both worlds use one Solo flow and render standard banner and portrait inputs", async () => {
   for (const world of [
-    { id: "caesar", firstRole: "brutus", selectedRole: "caesar" },
-    { id: "sangtian", firstRole: "zhejiang_governor", selectedRole: "xunfu" }
+    {
+      id: "caesar", selectedRole: "caesar",
+      roles: ["brutus", "caesar", "cassius", "mark_antony", "decimus", "cicero"].map((key) => ({ key, portrait: `/assets/game/caesar/${key.replace("_", "-")}.png` }))
+    },
+    {
+      id: "sangtian", selectedRole: "xunfu",
+      roles: [
+        ["zhejiang_governor", "/assets/game/sangtian/generated/role-governor-scene-v1.png"],
+        ["xunfu", "/assets/game/sangtian/generated/role-xunfu-scene-v1.png"],
+        ["county_magistrate", "/assets/game/sangtian/generated/governor-scene-v1.png"],
+        ["clerk", "/assets/game/sangtian/generated/role-clerk-scene-v1.png"],
+        ["merchant", "/assets/game/sangtian/generated/role-merchant-scene-v1.png"],
+        ["sili_jian", "/assets/game/sangtian/generated/role-spy-scene-v1.png"]
+      ].map(([key, portrait]) => ({ key, portrait }))
+    }
   ]) {
     const dom = new JSDOM('<!doctype html><main id="roleApp"></main>');
     const requests = [];
@@ -81,30 +94,33 @@ test("both worlds use one Solo flow and render standard banner and portrait inpu
     };
     const browserWindow = {
       location,
-      localStorage: { setItem: (key, value) => storedRuns.set(key, value) }
+      localStorage: {
+        getItem: (key) => storedRuns.get(key) || null,
+        setItem: (key, value) => storedRuns.set(key, value),
+        removeItem: (key) => storedRuns.delete(key)
+      }
     };
     const banner = `/assets/game/${world.id}/room-banner.png`;
-    const firstPortrait = `/assets/game/${world.id}/${world.firstRole}.png`;
+    const firstPortrait = world.roles[0].portrait;
     const fetchImpl = async (url, options = {}) => {
       requests.push({ url, options });
       const payload = options.method === "POST"
-        ? { id: `solo-${world.id}` }
+        ? { runId: `solo-${world.id}`, roomId: `solo-${world.id}` }
         : {
             id: world.id,
             title: `Title ${world.id}`,
-            roleSelectionBanner: banner,
-            roles: [
-              { key: world.firstRole, name: "First", portrait: firstPortrait, playableSolo: true },
-              { key: world.selectedRole, name: "Second", portrait: `/assets/game/${world.id}/second.png`, playableSolo: true }
-            ]
+            presentation: { sceneBackground: banner },
+            roles: world.roles.map((role, index) => ({ ...role, name: `Role ${index + 1}`, publicInfo: `Public role ${index + 1}`, playableSolo: true }))
           };
-      return new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify(payload), { status: options.method === "POST" ? 201 : 200, headers: { "content-type": "application/json" } });
     };
 
     const app = createRoleSelectApp({ root: dom.window.document.querySelector("#roleApp"), window: browserWindow, fetchImpl });
     await app.boot();
     assert.equal(dom.window.document.querySelector(".mw-room-banner")?.getAttribute("src"), banner);
     assert.equal(dom.window.document.querySelector(".mw-room-role-card img")?.getAttribute("src"), firstPortrait);
+    assert.equal(dom.window.document.querySelector(".mw-room-role-card em")?.textContent, "Public role 1");
+    assert.equal(dom.window.document.querySelectorAll(".mw-room-role-card").length, 6);
     app.selectRole(world.selectedRole);
     await app.createRun();
 
@@ -112,21 +128,64 @@ test("both worlds use one Solo flow and render standard banner and portrait inpu
     assert.equal(requests[1].url, "/api/v4/rooms/solo");
     assert.equal(requests[1].options.method, "POST");
     assert.equal(requests[1].options.credentials, "include");
-    assert.deepEqual(JSON.parse(requests[1].options.body), { worldId: world.id, roleKey: world.selectedRole });
+    const createBody = JSON.parse(requests[1].options.body);
+    assert.deepEqual({ worldId: createBody.worldId, roleKey: createBody.roleKey }, { worldId: world.id, roleKey: world.selectedRole });
+    assert.match(createBody.idempotencyKey, /^solo-create:/);
     assert.deepEqual([...storedRuns.values()], [`solo-${world.id}`]);
     assert.equal(location.href, `/game?runId=solo-${world.id}`);
     dom.window.close();
   }
 });
 
-test("three-role and six-role inputs keep intrinsic Caesar-sized grid rows", async () => {
+test("a failed Solo request reuses its idempotency key and accepts roomId on retry", async () => {
+  const dom = new JSDOM('<!doctype html><main id="roleApp"></main>');
+  const values = new Map();
+  const postBodies = [];
+  const location = { href: "http://game.test/role-select?story=sangtian", hostname: "game.test", search: "?story=sangtian" };
+  const browserWindow = {
+    location,
+    crypto: { randomUUID: () => "retry-key-0000-0000-0000-000000000001" },
+    localStorage: {
+      getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key)
+    }
+  };
+  const fetchImpl = async (_url, options = {}) => {
+    if (options.method !== "POST") {
+      return new Response(JSON.stringify({
+        id: "sangtian", title: "嘉靖财政危局",
+        roles: [{ key: "zhejiang_governor", name: "浙江总督", playableSolo: true }]
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    postBodies.push(JSON.parse(options.body));
+    if (postBodies.length === 1) return new Response(JSON.stringify({ message: "temporary failure" }), { status: 503, headers: { "content-type": "application/json" } });
+    return new Response(JSON.stringify({ roomId: "solo-replayed" }), { status: 201, headers: { "content-type": "application/json" } });
+  };
+
+  const app = createRoleSelectApp({ root: dom.window.document.querySelector("#roleApp"), window: browserWindow, fetchImpl });
+  await app.boot();
+  await app.createRun();
+  assert.equal(app.getState().busy, false);
+  await app.createRun();
+
+  assert.equal(postBodies.length, 2);
+  assert.equal(postBodies[0].idempotencyKey, postBodies[1].idempotencyKey);
+  assert.equal(postBodies[0].idempotencyKey, "solo-create:retry-key-0000-0000-0000-000000000001");
+  assert.equal(location.href, "/game?runId=solo-replayed");
+  dom.window.close();
+});
+
+test("both six-role world inputs keep intrinsic Caesar-sized grid rows", async () => {
   const css = await readFile(new URL("../public/room-role-selection.css", import.meta.url), "utf8");
   assert.match(css, /\.mw-room-role-grid\s*\{[^}]*grid-auto-rows:\s*max-content;[^}]*align-content:\s*start;[^}]*align-self:\s*start;/s);
 
-  const three = renderRoomSelectionPage({ mode: "multiplayer", worldId: "sangtian", roles, selectedRole: "brutus" });
-  const six = renderRoomSelectionPage({ mode: "multiplayer", worldId: "caesar", roles: [...roles, ...roles.map((role, index) => ({ ...role, key: `${role.key}-${index}` }))], selectedRole: "brutus" });
-  for (const html of [three, six]) {
+  const sixRoles = [...roles, ...roles.map((role, index) => ({ ...role, key: `${role.key}-${index}` }))];
+  const sangtian = renderRoomSelectionPage({ mode: "multiplayer", worldId: "sangtian", roles: sixRoles, selectedRole: "brutus" });
+  const caesar = renderRoomSelectionPage({ mode: "multiplayer", worldId: "caesar", roles: sixRoles, selectedRole: "brutus" });
+  for (const html of [sangtian, caesar]) {
     assert.match(html, /class="mw-room-role-grid"/);
     assert.match(html, /class="mw-room-current-choice"/);
+    assert.equal((html.match(/class="mw-room-role-card/g) || []).length, 6);
   }
 });

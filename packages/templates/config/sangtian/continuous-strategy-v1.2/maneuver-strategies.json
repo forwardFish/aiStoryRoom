@@ -1,0 +1,804 @@
+{
+  "schemaVersion": "continuous_strategy_maneuvers_v1",
+  "contentVersion": "sangtian_v1_2",
+  "maneuverStrategies": [
+    {
+      "maneuverStrategyKey": "maneuver_s1_governor_cross_check_deadline",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "zhejiang_governor",
+      "title": "交叉核验催办时限",
+      "objective": "用密奏渠道核对巡抚的进度口径，并保留不公开叫停的余地。",
+      "allowedTargetRoleKeys": [
+        "xunfu"
+      ],
+      "leverageAssetKeys": [
+        "asset_s1_governor_memorial_channel",
+        "asset_s1_review_authority"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s1_governor_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s1_xunfu_probe_governor_limit",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "xunfu",
+      "title": "试探总督复核底线",
+      "objective": "通过公开进度与私下接触判断总督会容忍多大范围的暂缓。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s1_xunfu_clerk_network",
+        "asset_s1_review_authority"
+      ],
+      "allowedTypes": [
+        "CONTACT",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s1_xunfu_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s1_magistrate_seek_sealed_protection",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "county_magistrate",
+      "title": "密封请求证据保护",
+      "objective": "用县册原件作筹码，要求总督给出不公开但可追溯的保护承诺。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s1_magistrate_register_original",
+        "asset_s1_review_authority"
+      ],
+      "allowedTypes": [
+        "CONTACT",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s1_magistrate_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s2_governor_verify_letter_route",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "zhejiang_governor",
+      "title": "追查密信递送路径",
+      "objective": "核验信件是否被巡抚幕僚截取，并判断县令还保留了哪些副本。",
+      "allowedTargetRoleKeys": [
+        "county_magistrate"
+      ],
+      "leverageAssetKeys": [
+        "asset_s2_governor_sealed_mail_channel",
+        "asset_s2_document_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "CONTACT"
+      ],
+      "fallbackActionKey": "fallback_s2_governor_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s2_xunfu_question_letter_witness",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "xunfu",
+      "title": "接触密信见证人",
+      "objective": "用查验名册锁定经手人，但避免公开逼迫县令撤回证词。",
+      "allowedTargetRoleKeys": [
+        "county_magistrate"
+      ],
+      "leverageAssetKeys": [
+        "asset_s2_xunfu_inspection_roster",
+        "asset_s2_document_custody"
+      ],
+      "allowedTypes": [
+        "CONTACT",
+        "INVESTIGATE"
+      ],
+      "fallbackActionKey": "fallback_s2_xunfu_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s2_magistrate_trade_copy_for_witness",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "county_magistrate",
+      "title": "以副本交换见证保护",
+      "objective": "只让上官核验关键编号，并换取对经手书吏的保护。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s2_magistrate_contract_copy",
+        "asset_s2_document_custody"
+      ],
+      "allowedTypes": [
+        "LEVERAGE",
+        "CONTACT"
+      ],
+      "fallbackActionKey": "fallback_s2_magistrate_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s3_governor_compare_grain_ledgers",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "zhejiang_governor",
+      "title": "比对官仓与商会账",
+      "objective": "调查两套库存数字的差额，防止单一来源垄断粮价解释。",
+      "allowedTargetRoleKeys": [
+        "xunfu"
+      ],
+      "leverageAssetKeys": [
+        "asset_s3_governor_granary_release_order",
+        "asset_s3_grain_route"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s3_governor_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s3_xunfu_split_merchant_alliance",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "xunfu",
+      "title": "分化米商同盟",
+      "objective": "接触愿意交账的米商，以局部透明换取市场供给。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s3_xunfu_merchant_summons",
+        "asset_s3_grain_route"
+      ],
+      "allowedTypes": [
+        "CONTACT",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s3_xunfu_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s3_magistrate_show_loss_sample",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "county_magistrate",
+      "title": "展示粮田损失样本",
+      "objective": "只向总督展示可核验样本，迫使其把粮田损失纳入平粮决策。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s3_magistrate_grain_loss_ledger",
+        "asset_s3_grain_route"
+      ],
+      "allowedTypes": [
+        "LEVERAGE",
+        "CONTACT"
+      ],
+      "fallbackActionKey": "fallback_s3_magistrate_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s4_governor_audit_chain_of_custody",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "zhejiang_governor",
+      "title": "核对证据接触链",
+      "objective": "调查原件、副本和证人每次转手，排除被替换的空档。",
+      "allowedTargetRoleKeys": [
+        "county_magistrate"
+      ],
+      "leverageAssetKeys": [
+        "asset_s4_governor_evidence_seal",
+        "asset_s4_evidence_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s4_governor_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s4_xunfu_test_ledger_sequence",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "xunfu",
+      "title": "核验暗账号段",
+      "objective": "用已掌握的商会往来编号检查暗账是否被拼接。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s4_xunfu_integrity_objection",
+        "asset_s4_evidence_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s4_xunfu_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s4_magistrate_move_witness_openly",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "county_magistrate",
+      "title": "公开登记证人转移",
+      "objective": "用可见登记换取安全地点，避免秘密转移被解释为操纵。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s4_magistrate_witness_roster",
+        "asset_s4_evidence_custody"
+      ],
+      "allowedTypes": [
+        "CONTACT",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s4_magistrate_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s5_governor_compare_orders_and_losses",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "zhejiang_governor",
+      "title": "对照命令与损失日期",
+      "objective": "用复核时序揭示哪些损失发生在巡抚追加催办之后。",
+      "allowedTargetRoleKeys": [
+        "xunfu"
+      ],
+      "leverageAssetKeys": [
+        "asset_s5_governor_review_timeline",
+        "asset_s5_responsibility_narrative"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s5_governor_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s5_xunfu_secure_counter_testimony",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "xunfu",
+      "title": "取得执行官吏反证",
+      "objective": "联系不涉暗账的执行官吏，证明部分催办经过合法授权。",
+      "allowedTargetRoleKeys": [
+        "county_magistrate"
+      ],
+      "leverageAssetKeys": [
+        "asset_s5_xunfu_execution_schedule",
+        "asset_s5_responsibility_narrative"
+      ],
+      "allowedTypes": [
+        "CONTACT",
+        "INVESTIGATE"
+      ],
+      "fallbackActionKey": "fallback_s5_xunfu_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s5_magistrate_link_source_to_order",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "county_magistrate",
+      "title": "逐条连接来源与命令",
+      "objective": "把每份民情、县册和暗账来源对应到具体上级命令。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s5_magistrate_source_index",
+        "asset_s5_responsibility_narrative"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s5_magistrate_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s6_governor_cross_reference_memorials",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "zhejiang_governor",
+      "title": "交叉标注三份奏报",
+      "objective": "把巡抚进度与县令证据逐条标入主奏，提前发现互相矛盾。",
+      "allowedTargetRoleKeys": [
+        "xunfu"
+      ],
+      "leverageAssetKeys": [
+        "asset_s6_governor_main_memorial_seal",
+        "asset_s6_final_memorial"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s6_governor_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s6_xunfu_rebut_loss_causation",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "xunfu",
+      "title": "反驳粮损因果链",
+      "objective": "用分县时间线指出部分粮价波动早于追加催办。",
+      "allowedTargetRoleKeys": [
+        "county_magistrate"
+      ],
+      "leverageAssetKeys": [
+        "asset_s6_xunfu_merit_memorial",
+        "asset_s6_final_memorial"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s6_xunfu_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s6_magistrate_verify_source_redaction",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "county_magistrate",
+      "title": "核验来源匿名化",
+      "objective": "与总督确认每条匿名材料仍保留可独立复核的封存编号。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s6_magistrate_evidence_catalog",
+        "asset_s6_final_memorial"
+      ],
+      "allowedTypes": [
+        "CONTACT",
+        "INVESTIGATE"
+      ],
+      "fallbackActionKey": "fallback_s6_magistrate_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s7_governor_cross_examine_execution",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "zhejiang_governor",
+      "title": "御前追问巡抚执行链",
+      "objective": "用复核时序要求巡抚解释每次追加催办与损失之间的关系。",
+      "allowedTargetRoleKeys": [
+        "xunfu"
+      ],
+      "leverageAssetKeys": [
+        "asset_s7_governor_imperial_defense_outline",
+        "asset_s7_final_responsibility"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s7_governor_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s7_xunfu_present_progress_proof",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "xunfu",
+      "title": "呈递进度原始凭证",
+      "objective": "用签发时间与收讫记录反驳总督对越权催办的概括。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s7_xunfu_execution_evidence_bundle",
+        "asset_s7_final_responsibility"
+      ],
+      "allowedTypes": [
+        "LEVERAGE",
+        "INVESTIGATE"
+      ],
+      "fallbackActionKey": "fallback_s7_xunfu_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s7_magistrate_protect_sources_at_hearing",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "county_magistrate",
+      "title": "御前保全证据来源",
+      "objective": "用封存编号证明来源存在，同时阻止地方官场获得真实姓名。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s7_magistrate_final_evidence_index",
+        "asset_s7_final_responsibility"
+      ],
+      "allowedTypes": [
+        "LEVERAGE",
+        "CONTACT"
+      ],
+      "fallbackActionKey": "fallback_s7_magistrate_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s1_clerk_verify_document_index",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "clerk",
+      "title": "核验改桑急令中的原始名册索引",
+      "objective": "使用原始名册索引交叉检查改桑急令的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "merchant"
+      ],
+      "leverageAssetKeys": [
+        "asset_s1_clerk_document_index",
+        "asset_s1_review_authority"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s1_clerk_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s1_merchant_verify_trade_ledger",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "merchant",
+      "title": "核验改桑急令中的商会往来账",
+      "objective": "使用商会往来账交叉检查改桑急令的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "sili_jian"
+      ],
+      "leverageAssetKeys": [
+        "asset_s1_merchant_trade_ledger",
+        "asset_s1_review_authority"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s1_merchant_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s1_sili_verify_imperial_channel",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "sili_jian",
+      "title": "核验改桑急令中的内廷密报渠道",
+      "objective": "使用内廷密报渠道交叉检查改桑急令的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s1_sili_imperial_channel",
+        "asset_s1_review_authority"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s1_sili_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s2_clerk_verify_document_index",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "clerk",
+      "title": "核验县令密信中的原始名册索引",
+      "objective": "使用原始名册索引交叉检查县令密信的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "merchant"
+      ],
+      "leverageAssetKeys": [
+        "asset_s2_clerk_document_index",
+        "asset_s2_document_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s2_clerk_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s2_merchant_verify_trade_ledger",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "merchant",
+      "title": "核验县令密信中的商会往来账",
+      "objective": "使用商会往来账交叉检查县令密信的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "sili_jian"
+      ],
+      "leverageAssetKeys": [
+        "asset_s2_merchant_trade_ledger",
+        "asset_s2_document_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s2_merchant_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s2_sili_verify_imperial_channel",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "sili_jian",
+      "title": "核验县令密信中的内廷密报渠道",
+      "objective": "使用内廷密报渠道交叉检查县令密信的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s2_sili_imperial_channel",
+        "asset_s2_document_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s2_sili_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s3_clerk_verify_document_index",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "clerk",
+      "title": "核验粮价失控中的原始名册索引",
+      "objective": "使用原始名册索引交叉检查粮价失控的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "merchant"
+      ],
+      "leverageAssetKeys": [
+        "asset_s3_clerk_document_index",
+        "asset_s3_grain_route"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s3_clerk_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s3_merchant_verify_trade_ledger",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "merchant",
+      "title": "核验粮价失控中的商会往来账",
+      "objective": "使用商会往来账交叉检查粮价失控的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "sili_jian"
+      ],
+      "leverageAssetKeys": [
+        "asset_s3_merchant_trade_ledger",
+        "asset_s3_grain_route"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s3_merchant_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s3_sili_verify_imperial_channel",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "sili_jian",
+      "title": "核验粮价失控中的内廷密报渠道",
+      "objective": "使用内廷密报渠道交叉检查粮价失控的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s3_sili_imperial_channel",
+        "asset_s3_grain_route"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s3_sili_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s4_clerk_verify_document_index",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "clerk",
+      "title": "核验暗账浮出中的原始名册索引",
+      "objective": "使用原始名册索引交叉检查暗账浮出的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "merchant"
+      ],
+      "leverageAssetKeys": [
+        "asset_s4_clerk_document_index",
+        "asset_s4_evidence_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s4_clerk_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s4_merchant_verify_trade_ledger",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "merchant",
+      "title": "核验暗账浮出中的商会往来账",
+      "objective": "使用商会往来账交叉检查暗账浮出的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "sili_jian"
+      ],
+      "leverageAssetKeys": [
+        "asset_s4_merchant_trade_ledger",
+        "asset_s4_evidence_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s4_merchant_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s4_sili_verify_imperial_channel",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "sili_jian",
+      "title": "核验暗账浮出中的内廷密报渠道",
+      "objective": "使用内廷密报渠道交叉检查暗账浮出的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s4_sili_imperial_channel",
+        "asset_s4_evidence_custody"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s4_sili_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s5_clerk_verify_document_index",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "clerk",
+      "title": "核验相互弹劾中的原始名册索引",
+      "objective": "使用原始名册索引交叉检查相互弹劾的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "merchant"
+      ],
+      "leverageAssetKeys": [
+        "asset_s5_clerk_document_index",
+        "asset_s5_responsibility_narrative"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s5_clerk_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s5_merchant_verify_trade_ledger",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "merchant",
+      "title": "核验相互弹劾中的商会往来账",
+      "objective": "使用商会往来账交叉检查相互弹劾的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "sili_jian"
+      ],
+      "leverageAssetKeys": [
+        "asset_s5_merchant_trade_ledger",
+        "asset_s5_responsibility_narrative"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s5_merchant_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s5_sili_verify_imperial_channel",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "sili_jian",
+      "title": "核验相互弹劾中的内廷密报渠道",
+      "objective": "使用内廷密报渠道交叉检查相互弹劾的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s5_sili_imperial_channel",
+        "asset_s5_responsibility_narrative"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s5_sili_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s6_clerk_verify_document_index",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "clerk",
+      "title": "核验京师回批中的原始名册索引",
+      "objective": "使用原始名册索引交叉检查京师回批的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "merchant"
+      ],
+      "leverageAssetKeys": [
+        "asset_s6_clerk_document_index",
+        "asset_s6_final_memorial"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s6_clerk_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s6_merchant_verify_trade_ledger",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "merchant",
+      "title": "核验京师回批中的商会往来账",
+      "objective": "使用商会往来账交叉检查京师回批的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "sili_jian"
+      ],
+      "leverageAssetKeys": [
+        "asset_s6_merchant_trade_ledger",
+        "asset_s6_final_memorial"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s6_merchant_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s6_sili_verify_imperial_channel",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "sili_jian",
+      "title": "核验京师回批中的内廷密报渠道",
+      "objective": "使用内廷密报渠道交叉检查京师回批的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s6_sili_imperial_channel",
+        "asset_s6_final_memorial"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s6_sili_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s7_clerk_verify_document_index",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "clerk",
+      "title": "核验御前裁决中的原始名册索引",
+      "objective": "使用原始名册索引交叉检查御前裁决的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "merchant"
+      ],
+      "leverageAssetKeys": [
+        "asset_s7_clerk_document_index",
+        "asset_s7_final_responsibility"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s7_clerk_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s7_merchant_verify_trade_ledger",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "merchant",
+      "title": "核验御前裁决中的商会往来账",
+      "objective": "使用商会往来账交叉检查御前裁决的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "sili_jian"
+      ],
+      "leverageAssetKeys": [
+        "asset_s7_merchant_trade_ledger",
+        "asset_s7_final_responsibility"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s7_merchant_preserve_position"
+    },
+    {
+      "maneuverStrategyKey": "maneuver_s7_sili_verify_imperial_channel",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "sili_jian",
+      "title": "核验御前裁决中的内廷密报渠道",
+      "objective": "使用内廷密报渠道交叉检查御前裁决的公开口径，并保留独立复核能力。",
+      "allowedTargetRoleKeys": [
+        "zhejiang_governor"
+      ],
+      "leverageAssetKeys": [
+        "asset_s7_sili_imperial_channel",
+        "asset_s7_final_responsibility"
+      ],
+      "allowedTypes": [
+        "INVESTIGATE",
+        "LEVERAGE"
+      ],
+      "fallbackActionKey": "fallback_s7_sili_preserve_position"
+    }
+  ]
+}

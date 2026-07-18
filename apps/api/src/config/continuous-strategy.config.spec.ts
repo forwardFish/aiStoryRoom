@@ -27,18 +27,18 @@ assert.equal(normalizeRoleAgentAttemptTimeoutMs("invalid"), 4_500);
 
 assert.deepEqual(selectRunVersions({ templateKey: "sangtian", mode: "room", maxPlayers: 3, enabledForNewRooms: true }), {
   engineVersion: "continuous_strategy_v1_1",
-  strategyVersion: "sangtian_v1_1"
+  strategyVersion: "sangtian_v1_2"
 });
-for (const maxPlayers of [1, 2]) {
+for (const maxPlayers of [1, 2, 4, 5, 6]) {
   assert.deepEqual(selectRunVersions({ templateKey: "sangtian", mode: "room", maxPlayers, enabledForNewRooms: true }), {
     engineVersion: "continuous_strategy_v1_1",
-    strategyVersion: "sangtian_v1_1"
+    strategyVersion: "sangtian_v1_2"
   });
 }
 for (const changed of [
   { templateKey: "other", mode: "room", maxPlayers: 3 },
   { templateKey: "sangtian", mode: "single", maxPlayers: 3 },
-  { templateKey: "sangtian", mode: "room", maxPlayers: 4 }
+  { templateKey: "sangtian", mode: "room", maxPlayers: 7 }
 ]) {
   assert.deepEqual(selectRunVersions({ ...changed, enabledForNewRooms: true }), { engineVersion: "legacy_v1", strategyVersion: "legacy_v1" });
 }

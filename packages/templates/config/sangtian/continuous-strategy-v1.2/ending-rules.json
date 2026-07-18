@@ -1,0 +1,222 @@
+{
+  "schemaVersion": "continuous_strategy_ending_rules_v1",
+  "contentVersion": "sangtian_v1_2",
+  "globalEndingRule": {
+    "ruleKey": "global_ending_sangtian_v1_2",
+    "metric": "PUBLIC_OR_OBSERVABLE_FACTS_PLUS_CROSS_ROLE_INFLUENCES",
+    "evidenceStageRange": [
+      1,
+      6
+    ],
+    "classifications": [
+      {
+        "endingKey": "global_reform_and_audit",
+        "title": "新政复核与责任重建",
+        "minimumScore": 38
+      },
+      {
+        "endingKey": "global_stable_but_watched",
+        "title": "危局暂稳但京师持续监视",
+        "minimumScore": 28
+      },
+      {
+        "endingKey": "global_progress_without_people",
+        "title": "数字完成而民生受损",
+        "minimumScore": 18
+      },
+      {
+        "endingKey": "global_scapegoat",
+        "title": "以替罪者封住危局",
+        "minimumScore": 0
+      }
+    ]
+  },
+  "personalEndingRules": [
+    {
+      "ruleKey": "personal_ending_governor_sangtian_v1_2",
+      "roleKey": "zhejiang_governor",
+      "metric": "SEALED_ACTIONS_PLUS_MANEUVERS_PLUS_AUTHORIZED_INFLUENCES",
+      "evidenceStageRange": [
+        1,
+        6
+      ],
+      "classifications": [
+        {
+          "endingKey": "personal_governor_s",
+          "title": "统筹与纠偏被采信",
+          "minimumScore": 14
+        },
+        {
+          "endingKey": "personal_governor_a",
+          "title": "稳局有功但担责",
+          "minimumScore": 11
+        },
+        {
+          "endingKey": "personal_governor_b",
+          "title": "失察留任观察",
+          "minimumScore": 8
+        },
+        {
+          "endingKey": "personal_governor_c",
+          "title": "以失察获罪",
+          "minimumScore": 0
+        }
+      ]
+    },
+    {
+      "ruleKey": "personal_ending_xunfu_sangtian_v1_2",
+      "roleKey": "xunfu",
+      "metric": "SEALED_ACTIONS_PLUS_MANEUVERS_PLUS_AUTHORIZED_INFLUENCES",
+      "evidenceStageRange": [
+        1,
+        6
+      ],
+      "classifications": [
+        {
+          "endingKey": "personal_xunfu_s",
+          "title": "执行与诚信兼得",
+          "minimumScore": 14
+        },
+        {
+          "endingKey": "personal_xunfu_a",
+          "title": "政绩获认可但受审计",
+          "minimumScore": 11
+        },
+        {
+          "endingKey": "personal_xunfu_b",
+          "title": "执行有功责任未清",
+          "minimumScore": 8
+        },
+        {
+          "endingKey": "personal_xunfu_c",
+          "title": "越权催办获罪",
+          "minimumScore": 0
+        }
+      ]
+    },
+    {
+      "ruleKey": "personal_ending_magistrate_sangtian_v1_2",
+      "roleKey": "county_magistrate",
+      "metric": "SEALED_ACTIONS_PLUS_MANEUVERS_PLUS_AUTHORIZED_INFLUENCES",
+      "evidenceStageRange": [
+        1,
+        6
+      ],
+      "classifications": [
+        {
+          "endingKey": "personal_magistrate_s",
+          "title": "保民与证据链被采信",
+          "minimumScore": 14
+        },
+        {
+          "endingKey": "personal_magistrate_a",
+          "title": "证据有功来源受限",
+          "minimumScore": 11
+        },
+        {
+          "endingKey": "personal_magistrate_b",
+          "title": "地方自保获宽宥",
+          "minimumScore": 8
+        },
+        {
+          "endingKey": "personal_magistrate_c",
+          "title": "抗令与隐证获罪",
+          "minimumScore": 0
+        }
+      ]
+    },
+    {
+      "ruleKey": "personal_ending_clerk_sangtian_v1_2",
+      "roleKey": "clerk",
+      "metric": "SEALED_ACTIONS_PLUS_MANEUVERS_PLUS_AUTHORIZED_INFLUENCES",
+      "evidenceStageRange": [
+        1,
+        6
+      ],
+      "classifications": [
+        {
+          "endingKey": "personal_clerk_s",
+          "title": "改桑书吏的证据与选择改变了御前裁决",
+          "minimumScore": 14
+        },
+        {
+          "endingKey": "personal_clerk_a",
+          "title": "改桑书吏守住关键位置并承担代价",
+          "minimumScore": 11
+        },
+        {
+          "endingKey": "personal_clerk_b",
+          "title": "改桑书吏保全自身但失去部分主动",
+          "minimumScore": 8
+        },
+        {
+          "endingKey": "personal_clerk_c",
+          "title": "改桑书吏在清算中失去可信度",
+          "minimumScore": 0
+        }
+      ]
+    },
+    {
+      "ruleKey": "personal_ending_merchant_sangtian_v1_2",
+      "roleKey": "merchant",
+      "metric": "SEALED_ACTIONS_PLUS_MANEUVERS_PLUS_AUTHORIZED_INFLUENCES",
+      "evidenceStageRange": [
+        1,
+        6
+      ],
+      "classifications": [
+        {
+          "endingKey": "personal_merchant_s",
+          "title": "江南商会会首的证据与选择改变了御前裁决",
+          "minimumScore": 14
+        },
+        {
+          "endingKey": "personal_merchant_a",
+          "title": "江南商会会首守住关键位置并承担代价",
+          "minimumScore": 11
+        },
+        {
+          "endingKey": "personal_merchant_b",
+          "title": "江南商会会首保全自身但失去部分主动",
+          "minimumScore": 8
+        },
+        {
+          "endingKey": "personal_merchant_c",
+          "title": "江南商会会首在清算中失去可信度",
+          "minimumScore": 0
+        }
+      ]
+    },
+    {
+      "ruleKey": "personal_ending_sili_sangtian_v1_2",
+      "roleKey": "sili_jian",
+      "metric": "SEALED_ACTIONS_PLUS_MANEUVERS_PLUS_AUTHORIZED_INFLUENCES",
+      "evidenceStageRange": [
+        1,
+        6
+      ],
+      "classifications": [
+        {
+          "endingKey": "personal_sili_s",
+          "title": "司礼监织造使的证据与选择改变了御前裁决",
+          "minimumScore": 14
+        },
+        {
+          "endingKey": "personal_sili_a",
+          "title": "司礼监织造使守住关键位置并承担代价",
+          "minimumScore": 11
+        },
+        {
+          "endingKey": "personal_sili_b",
+          "title": "司礼监织造使保全自身但失去部分主动",
+          "minimumScore": 8
+        },
+        {
+          "endingKey": "personal_sili_c",
+          "title": "司礼监织造使在清算中失去可信度",
+          "minimumScore": 0
+        }
+      ]
+    }
+  ]
+}

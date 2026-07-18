@@ -39,7 +39,9 @@ test("Create Room requires an explicit playable multiplayer world", async () => 
   assert.match(dialog, /world\.playable && world\.modes\?\.includes\("multiplayer"\)/);
   assert.match(dialog, /input type="radio" name="worldId"/);
   assert.match(dialog, /Choose a world before creating the room/);
-  assert.match(dialog, /JSON\.stringify\(\{ worldId \}\)/);
+  assert.match(dialog, /JSON\.stringify\(\{ worldId, idempotencyKey \}\)/);
+  assert.match(dialog, /many-worlds:create-room:/);
+  assert.match(dialog, /localStorage\.removeItem\(idempotencyStorageKey\)/);
   assert.match(action, /openCreateRoomDialog\(\)/);
   assert.doesNotMatch(action, /\|\| "caesar"/);
 });
@@ -51,7 +53,7 @@ test("My Rooms leaves readable width for the title and moves its action below", 
   assert.match(css, /\.my-room \.btn \{ grid-column:2;/);
   assert.match(css, /word-break:normal/);
   assert.match(html, /platform\.css\?v=20260717-dialog-watchdog-v2/);
-  assert.match(html, /platform\.js\?v=20260717-room-recovery-v1/);
+  assert.match(html, /platform\.js\?v=20260718-solo-auth-gate-v1/);
 });
 
 test("Rooms mobile layout clears the legacy table minimum width", async () => {

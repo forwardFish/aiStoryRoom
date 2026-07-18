@@ -44,6 +44,7 @@ docs/剧本/**/UI/**/*.webp
 docs/**/ChatGPT Image *.png
 
 # Local test and browser artifacts
+.tmp-headless-chrome/
 test-results/
 playwright-report/
 *.log

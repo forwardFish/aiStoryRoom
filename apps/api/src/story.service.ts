@@ -139,7 +139,7 @@ export class StoryService {
   async createRun(
     openid: string,
     input: CreateStoryRunInput,
-    internalVersions: { engineVersion: string; strategyVersion: string } = { engineVersion: "legacy_v1", strategyVersion: "legacy_v1" }
+    internalVersions: { engineVersion: string; strategyVersion: string; runId?: string } = { engineVersion: "legacy_v1", strategyVersion: "legacy_v1" }
   ) {
     const owner = await this.ensureUser(openid);
     const template = getTemplate(input.templateId);
@@ -158,6 +158,7 @@ export class StoryService {
 
     const run = await this.prisma.storyRun.create({
       data: {
+        id: internalVersions.runId,
         templateId: template.id,
         templateKey: gameDefinition?.worldId || "sangtian",
         ownerUserId: owner.id,
@@ -181,13 +182,21 @@ export class StoryService {
       }
     });
 
-    await this.createInitialRunAssets(run.id, template.id, mode);
+    try {
+      await this.createInitialRunAssets(run.id, template.id, mode);
 
-    if (input.ownerAsPlayer !== false || mode === "single" || isAiTrio) {
-      await this.joinRun(openid, run.id);
+      if (input.ownerAsPlayer !== false || mode === "single" || isAiTrio) {
+        await this.joinRun(openid, run.id);
+      }
+
+      return await this.getRun(run.id);
+    } catch (error) {
+      // Creation is all-or-nothing. A transport failure after StoryRun.create
+      // must not leave a deterministic idempotency key permanently bound to a
+      // half-created run that no client can resume.
+      await this.prisma.storyRun.deleteMany({ where: { id: run.id } }).catch(() => undefined);
+      throw error;
     }
-
-    return this.getRun(run.id);
   }
 
   async getRun(runId: string) {

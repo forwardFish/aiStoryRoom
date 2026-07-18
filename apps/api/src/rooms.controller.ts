@@ -12,8 +12,8 @@ export class RoomsController {
   constructor(@Inject(RoomsService) private readonly rooms: RoomsService) {}
   @Get() list(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.list(worldId, user); }
   @Get("mine") mine(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.mine(user, worldId); }
-  @Post() create(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; title?: string; visibility?: string; maxPlayers?: number }) { return this.rooms.create(user, body); }
-  @Post("solo") createSolo(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; roleKey?: string }) { return this.rooms.createSolo(user, body); }
+  @Post() create(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; title?: string; visibility?: string; maxPlayers?: number; idempotencyKey?: string }) { return this.rooms.create(user, body); }
+  @Post("solo") createSolo(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; roleKey?: string; idempotencyKey?: string }) { return this.rooms.createSolo(user, body); }
   @Post("join-by-code") join(@CurrentUser() user: AuthenticatedUser, @Body() body: { inviteCode?: string; code?: string }) { return this.rooms.joinByCode(user, String(body.inviteCode || body.code || "")); }
   @Get(":roomId/game") game(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.game(user, roomId); }
   @Get(":roomId/result") result(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.result(user, roomId); }

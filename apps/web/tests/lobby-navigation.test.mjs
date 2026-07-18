@@ -266,6 +266,11 @@ test("the live invitation dialog uses the exact product brand", async () => {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   const posterSource = source.slice(source.indexOf("async function buildInvitePoster"), source.indexOf("async function copyInviteLink"));
   assert.doesNotMatch(posterSource, /Room code:/);
+  assert.doesNotMatch(posterSource, /drawImage\(qr\.image/);
+  assert.match(posterSource, /canvas\.height = 950/);
+  assert.match(posterSource, /Play living story worlds/);
+  assert.match(posterSource, /invite-promo-background\.png/);
+  assert.match(posterSource, /ourmanyworlds\.com/);
   window.close();
 });
 

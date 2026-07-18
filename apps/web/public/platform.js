@@ -18,8 +18,39 @@ let currentAccount = null;
 let accountPurchaseCache = new Map();
 let roomDialogRecoveryTimer = null;
 let roomsRefreshPending = false;
+const pendingMutations = new Set();
 const roomDialogDraftKey = "many-worlds:rooms-dialog-draft";
+async function runMutationOnce(key, element, pendingLabel, operation) {
+  if (pendingMutations.has(key) || element?.disabled) return;
+  pendingMutations.add(key);
+  const priorDisabled = Boolean(element?.disabled);
+  const priorText = element?.textContent;
+  if (element) {
+    element.disabled = true;
+    element.setAttribute("aria-busy", "true");
+    if (pendingLabel) element.textContent = pendingLabel;
+  }
+  try { return await operation(); }
+  finally {
+    pendingMutations.delete(key);
+    if (element?.isConnected) {
+      element.disabled = priorDisabled;
+      element.removeAttribute("aria-busy");
+      if (pendingLabel && priorText != null) element.textContent = priorText;
+    }
+  }
+}
+function pendingMutationKey(storageKey) {
+  const existing = localStorage.getItem(storageKey);
+  if (existing) return existing;
+  const generated = `room-create:${globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`}`;
+  localStorage.setItem(storageKey, generated);
+  return generated;
+}
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]); }
+function backLink(href, className = "back-link") {
+  return `<a class="${esc(`${className} mw-back`)}" href="${esc(href)}" aria-label="Back"><span class="mw-back__icon" aria-hidden="true">←</span><span>Back</span></a>`;
+}
 function emailInitial(value) { return String(value || "M").trim().charAt(0).toUpperCase() || "M"; }
 function roomFilterLabel(worldId) { return worldId === "caesar" ? "Rome, 44 BC" : worldId === "sangtian" ? "Ming, 1565" : ""; }
 function roomFilterChip(worldId) { const label = roomFilterLabel(worldId); return label ? `<span class="filter-chip" data-world-chip>${esc(label)}<button type="button" data-action="clear-world-filter" aria-label="Clear world filter">×</button></span>` : ""; }
@@ -314,7 +345,7 @@ function renderAccount() {
     location.assign("/auth?returnTo=%2Faccount");
     return;
   }
-  appShell(`<section class="page-frame account-page"><a class="back-link account-back" href="/">Back to home</a><header class="account-heading"><h1>My Account</h1><p>View your profile and purchase history.</p></header><div data-notice class="notice account-notice" hidden></div><section class="account-profile-card" data-account-summary aria-label="Account profile"><div class="account-profile-loading">Loading your profile…</div></section><section class="account-purchases-card"><header class="account-purchases-header"><h2>Purchases &amp; refunds</h2><a class="account-add-credits" href="/credits">Add Credits</a></header><div class="account-table-wrap"><table class="account-purchase-table"><thead><tr><th>Order number</th><th>Purchase date</th><th>World Credits</th><th>Amount</th><th>Payment status</th><th>Refund status</th><th>Action</th></tr></thead><tbody data-purchase-records><tr><td colspan="7" class="account-table-message">Loading purchase records…</td></tr></tbody></table></div></section><button class="account-logout" type="button" data-action="account-logout"><span aria-hidden="true">↪</span>Log out</button></section>`);
+  appShell(`<section class="page-frame account-page">${backLink("/", "back-link account-back")}<header class="account-heading"><h1>My Account</h1><p>View your profile and purchase history.</p></header><div data-notice class="notice account-notice" hidden></div><section class="account-profile-card" data-account-summary aria-label="Account profile"><div class="account-profile-loading">Loading your profile…</div></section><section class="account-purchases-card"><header class="account-purchases-header"><h2>Purchases &amp; refunds</h2><a class="account-add-credits" href="/credits">Add Credits</a></header><div class="account-table-wrap"><table class="account-purchase-table"><thead><tr><th>Order number</th><th>Purchase date</th><th>World Credits</th><th>Amount</th><th>Payment status</th><th>Refund status</th><th>Action</th></tr></thead><tbody data-purchase-records><tr><td colspan="7" class="account-table-message">Loading purchase records…</td></tr></tbody></table></div></section><button class="account-logout" type="button" data-action="account-logout"><span aria-hidden="true">↪</span>Log out</button></section>`);
   void hydrateAccount();
 }
 
@@ -443,7 +474,7 @@ function openRefundRequest(purchaseId) {
 
 function renderAdminRefunds() {
   if (!sessionToken()) { location.assign("/auth?returnTo=%2Fadmin%2Frefunds"); return; }
-  appShell(`<section class="page-frame admin-refund-frame"><a class="back-link" href="/account">Back to My Account</a><p class="eyebrow">PAYMENT OPERATIONS</p><h1>Refund requests</h1><p class="muted">Approval submits the refund through the configured Creem provider adapter. Credit reversal waits for the signed refund webhook.</p><div data-notice class="notice" hidden></div><div class="refund-filter"><button class="btn small" data-refund-filter="PENDING">Pending</button><button class="btn small" data-refund-filter="">All</button></div><section data-admin-refund-list><p>Loading requests…</p></section></section>`);
+  appShell(`<section class="page-frame admin-refund-frame">${backLink("/account")}<p class="eyebrow">PAYMENT OPERATIONS</p><h1>Refund requests</h1><p class="muted">Approval submits the refund through the configured Creem provider adapter. Credit reversal waits for the signed refund webhook.</p><div data-notice class="notice" hidden></div><div class="refund-filter"><button class="btn small" data-refund-filter="PENDING">Pending</button><button class="btn small" data-refund-filter="">All</button></div><section data-admin-refund-list><p>Loading requests…</p></section></section>`);
   root.querySelectorAll("[data-refund-filter]").forEach((button) => button.addEventListener("click", () => hydrateAdminRefunds(button.dataset.refundFilter)));
   void hydrateAdminRefunds("PENDING");
 }
@@ -522,19 +553,19 @@ function worldDetailMarkup(world) {
   const playable = world.status === "playable";
   const background = world.heroCover || world.presentation?.sceneBackground;
   const roleCards = worldRoleCards(world);
-  return `<section class="page-frame" data-world-detail data-world-id="${esc(world.worldId)}"><a class="back-link" href="/worlds">Back to worlds</a><div class="world-hero" data-world-id="${esc(world.worldId)}"><div><div class="eyebrow">${esc(world.genre)}</div><h1>${esc(world.title)}</h1><p class="world-lead">${esc(world.subtitle)}</p><p class="world-copy">${esc(world.description)}</p><div class="meta-row"><span class="meta">♧ &nbsp; ${esc(worldPlayerRange(world))}</span><span class="meta">◷ &nbsp; ${esc(world.durationLabel)}</span><span class="meta">♜ &nbsp; ${esc(world.categoryLabel || world.genre)}</span><span class="meta">♙ &nbsp; ${esc(world.roleCount)} Characters</span></div></div><img class="world-image" data-world-background src="${esc(background)}" alt="${esc(world.title)}"></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards || '<p class="muted">Role details will be announced later.</p>'}</div>${playable ? `<div class="mode-grid">${worldModeCards(world)}</div><p class="world-cost">Starts from 20 World Credits</p>` : '<p class="world-coming">Coming Soon</p>'}</section>`;
+  return `<section class="page-frame" data-world-detail data-world-id="${esc(world.worldId)}">${backLink("/worlds")}<div class="world-hero" data-world-id="${esc(world.worldId)}"><div><div class="eyebrow">${esc(world.genre)}</div><h1>${esc(world.title)}</h1><p class="world-lead">${esc(world.subtitle)}</p><p class="world-copy">${esc(world.description)}</p><div class="meta-row"><span class="meta">♧ &nbsp; ${esc(worldPlayerRange(world))}</span><span class="meta">◷ &nbsp; ${esc(world.durationLabel)}</span><span class="meta">♜ &nbsp; ${esc(world.categoryLabel || world.genre)}</span><span class="meta">♙ &nbsp; ${esc(world.roleCount)} Characters</span></div></div><img class="world-image" data-world-background src="${esc(background)}" alt="${esc(world.title)}"></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards || '<p class="muted">Role details will be announced later.</p>'}</div>${playable ? `<div class="mode-grid">${worldModeCards(world)}</div><p class="world-cost">Starts from 20 World Credits</p>` : '<p class="world-coming">Coming Soon</p>'}</section>`;
 }
 async function renderWorld() {
   const worldId = worldIdFromPath();
   if (!worldId) { location.assign("/worlds"); return; }
   const fallback = worldCatalog.find((entry) => entry.id === worldId);
   if (fallback) appShell(worldDetailMarkup(catalogWorldDetail(fallback)), "worlds");
-  else appShell('<section class="page-frame" data-world-detail-state="loading"><a class="back-link" href="/worlds">Back to worlds</a><p class="muted">Loading world…</p></section>', "worlds");
+  else appShell(`<section class="page-frame" data-world-detail-state="loading">${backLink("/worlds")}<p class="muted">Loading world…</p></section>`, "worlds");
   try {
     const world = await request(`/api/v4/worlds/${encodeURIComponent(worldId)}`);
     appShell(worldDetailMarkup(world), "worlds");
   } catch (error) {
-    if (!fallback) appShell(`<section class="page-frame" data-world-detail-error><a class="back-link" href="/worlds">Back to worlds</a><h1>World unavailable</h1><p class="muted">${esc(error.message || "This world could not be loaded.")}</p></section>`, "worlds");
+    if (!fallback) appShell(`<section class="page-frame" data-world-detail-error>${backLink("/worlds")}<h1>World unavailable</h1><p class="muted">${esc(error.message || "This world could not be loaded.")}</p></section>`, "worlds");
   }
 }
 function roomRow(room, index, view = "open") {
@@ -559,7 +590,7 @@ function visualIcon(id, label, extra = "") {
 }
 function renderResult() {
   const fixture = params.get("runId") === "fixture-caesar-finished";
-  appShell(`<section class="page-frame"><a class="back-link" href="/worlds">Back to worlds</a><div class="result-run"><img src="/assets/bg/1.png" alt="Rome"><div><h1>Caesar: The Last Spring of the Republic</h1><span class="session-complete">${visualIcon(15, "", "session-icon")}Session Complete</span></div></div><h1 class="result-title">A Republic Without a Master</h1><p class="result-lead">Caesar survived, but accepted limits on his authority.<br>Rome avoided civil war—for now.</p><div class="summary-grid"><article class="summary-card"><span class="mode-icon">${visualIcon(17, "")}</span><div><h2>Your Role</h2><img class="portrait" src="/assets/portrait/1.png" alt="Brutus"><strong>Brutus</strong></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(31, "")}</span><div><h2>Your Ending</h2><strong>The Reluctant Architect</strong><p>You chose restraint over power, building guardrails that may hold—if others keep faith.</p></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(12, "")}</span><div><h2>World State</h2><strong>Fragile Stability</strong><p>Rome stands together, but old rivalries smolder and the future is uncertain.</p></div></article></div><div class="lower-grid"><section class="lower-card"><h2>${visualIcon(25, "", "section-icon")}Key Decisions</h2><div class="decision-item"><span class="number-dot">1</span><span>You opposed the dictatorship and pushed for limits on power.</span></div><div class="decision-item"><span class="number-dot">2</span><span>You brokered a compromise between the Senate and Caesar.</span></div><div class="decision-item"><span class="number-dot">3</span><span>You secured support from key allies to pass reforms.</span></div></section><section class="lower-card"><h2>${visualIcon(10, "", "section-icon")}Goals Completed <span class="badge progress">2 / 3</span></h2><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Prevent Caesar from becoming an unrestrained dictator.</span></div><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Avoid a civil war.</span></div><div class="goal-item"><span class="open-check">◯</span><span>Pass meaningful reforms to strengthen the Republic.</span></div></section></div><div class="result-actions"><button class="btn primary" data-action="play-again">${visualIcon(4, "", "button-icon inverted")}Play Again</button><button class="btn" data-action="other-role">${visualIcon(5, "", "button-icon")}Try Another Role</button><button class="btn" data-action="back-worlds">${visualIcon(8, "", "button-icon")}Back to Worlds</button></div></section>`, "worlds");
+  appShell(`<section class="page-frame">${backLink("/worlds")}<div class="result-run"><img src="/assets/bg/1.png" alt="Rome"><div><h1>Caesar: The Last Spring of the Republic</h1><span class="session-complete">${visualIcon(15, "", "session-icon")}Session Complete</span></div></div><h1 class="result-title">A Republic Without a Master</h1><p class="result-lead">Caesar survived, but accepted limits on his authority.<br>Rome avoided civil war—for now.</p><div class="summary-grid"><article class="summary-card"><span class="mode-icon">${visualIcon(17, "")}</span><div><h2>Your Role</h2><img class="portrait" src="/assets/portrait/1.png" alt="Brutus"><strong>Brutus</strong></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(31, "")}</span><div><h2>Your Ending</h2><strong>The Reluctant Architect</strong><p>You chose restraint over power, building guardrails that may hold—if others keep faith.</p></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(12, "")}</span><div><h2>World State</h2><strong>Fragile Stability</strong><p>Rome stands together, but old rivalries smolder and the future is uncertain.</p></div></article></div><div class="lower-grid"><section class="lower-card"><h2>${visualIcon(25, "", "section-icon")}Key Decisions</h2><div class="decision-item"><span class="number-dot">1</span><span>You opposed the dictatorship and pushed for limits on power.</span></div><div class="decision-item"><span class="number-dot">2</span><span>You brokered a compromise between the Senate and Caesar.</span></div><div class="decision-item"><span class="number-dot">3</span><span>You secured support from key allies to pass reforms.</span></div></section><section class="lower-card"><h2>${visualIcon(10, "", "section-icon")}Goals Completed <span class="badge progress">2 / 3</span></h2><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Prevent Caesar from becoming an unrestrained dictator.</span></div><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Avoid a civil war.</span></div><div class="goal-item"><span class="open-check">◯</span><span>Pass meaningful reforms to strengthen the Republic.</span></div></section></div><div class="result-actions"><button class="btn primary" data-action="play-again">${visualIcon(4, "", "button-icon inverted")}Play Again</button><button class="btn" data-action="other-role">${visualIcon(5, "", "button-icon")}Try Another Role</button><button class="btn" data-action="back-worlds">${visualIcon(8, "", "button-icon")}Back to Worlds</button></div></section>`, "worlds");
   root.querySelector(".result-actions")?.insertAdjacentHTML("afterend", `<button class="result-share-recap" data-action="share-recap" ${fixture ? "" : "disabled"}>${fixture ? "Share Recap" : "Loading recap…"}</button>`);
   bind();
   root.querySelector("a.back-link")?.setAttribute("href", "/worlds");
@@ -664,63 +695,73 @@ async function downloadInvitePoster({ title, inviteUrl, code, qr }) {
   ctx.fillStyle = "#e9ddff"; ctx.font = '400 28px "MW Inter", Arial, sans-serif'; ctx.fillText("Scan to choose a role and join the story", 90, 1210); const link = document.createElement("a"); link.download = `many-worlds-${code}-invite.png`; link.href = canvas.toDataURL("image/png"); link.click();
 }
 function wrapPosterText(ctx, text, x, y, maxWidth, lineHeight) { const words = String(text).split(/\s+/); let line = "", offset = 0; words.forEach((word) => { const next = `${line}${line ? " " : ""}${word}`; if (ctx.measureText(next).width > maxWidth && line) { ctx.fillText(line, x, y + offset); line = word; offset += lineHeight; } else line = next; }); if (line) ctx.fillText(line, x, y + offset); }
-async function buildInvitePoster({ title, code, qr }) {
+async function buildInvitePoster({ title }) {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
-  canvas.height = 1350;
+  canvas.height = 950;
   await document.fonts?.ready;
   const ctx = canvas.getContext("2d");
-  const background = await loadCanvasImage("/assets/poster/invite-background.png");
+  const background = await loadCanvasImage("/assets/poster/invite-promo-background.png");
   const logo = await loadCanvasImage("/assets/brand/many-worlds-logo.png");
-  ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-  const overlay = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  overlay.addColorStop(0, "rgba(18,16,46,.10)");
-  overlay.addColorStop(.45, "rgba(86,53,191,.13)");
-  overlay.addColorStop(1, "rgba(18,15,45,.34)");
-  ctx.fillStyle = overlay;
+  ctx.fillStyle = "#f4efff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  const glow = ctx.createLinearGradient(90, 86, 890, 890);
-  glow.addColorStop(0, "rgba(255,255,255,.22)");
-  glow.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(74, 82, 916, 932);
-  ctx.drawImage(logo, 92, 90, 112, 112);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = '600 34px "MW Inter", "Segoe UI", sans-serif';
-  ctx.fillText(BRAND_NAME, 224, 144);
-  ctx.fillStyle = "rgba(243,236,255,.84)";
-  ctx.font = '400 24px "MW Inter", "Segoe UI", sans-serif';
-  ctx.fillText(BRAND_TAGLINE, 224, 182);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = '700 72px Georgia, "Times New Roman", serif';
-  wrapPosterText(ctx, title, 92, 332, 894, 82);
-  const chipX = 92, chipY = 840, chipWidth = 342, chipHeight = 58;
-  ctx.fillStyle = "rgba(253,249,255,.22)";
-  roundRect(ctx, chipX, chipY, chipWidth, chipHeight, 29);
+  ctx.save();
+  ctx.filter = "blur(2px) saturate(.62) contrast(.78)";
+  ctx.drawImage(background, 0, 0, background.width, background.height, -8, -8, canvas.width + 16, canvas.height + 16);
+  ctx.restore();
+  const wash = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  wash.addColorStop(0, "rgba(255,255,255,.58)");
+  wash.addColorStop(.52, "rgba(255,253,255,.46)");
+  wash.addColorStop(1, "rgba(239,232,255,.28)");
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.globalAlpha = .94;
+  ctx.drawImage(logo, 310, 55, 88, 88);
+  ctx.restore();
+  ctx.fillStyle = "#182044";
+  ctx.font = '700 36px "MW Inter", "Segoe UI", sans-serif';
+  ctx.fillText(BRAND_NAME, 414, 94);
+  ctx.fillStyle = "#68718d";
+  ctx.font = '400 21px "MW Inter", "Segoe UI", sans-serif';
+  ctx.fillText(BRAND_TAGLINE, 414, 125);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111a42";
+  ctx.font = '700 58px "MW Inter", "Segoe UI", sans-serif';
+  ctx.fillText("Play living story worlds", canvas.width / 2, 286);
+  ctx.fillText("together on the web", canvas.width / 2, 354);
+  ctx.fillStyle = "#4f5877";
+  ctx.font = '400 29px "MW Inter", "Segoe UI", sans-serif';
+  ctx.fillText("Explore different worlds. Join a shared room.", canvas.width / 2, 434);
+  ctx.fillText("Choose a role, share decisions, and shape the outcome.", canvas.width / 2, 472);
+
+  ctx.fillStyle = "#6944dc";
+  ctx.font = '600 23px "MW Inter", "Segoe UI", sans-serif';
+  ctx.fillText("Historical intrigue  ·  Sci-fi crisis  ·  Social drama  ·  Fantasy", canvas.width / 2, 564);
+
+  const buttonWidth = 410, buttonHeight = 94, buttonX = (canvas.width - buttonWidth) / 2, buttonY = 686;
+  const buttonGradient = ctx.createLinearGradient(buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight);
+  buttonGradient.addColorStop(0, "#7650e2");
+  buttonGradient.addColorStop(1, "#6640dc");
+  ctx.fillStyle = buttonGradient;
+  roundRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, 47);
   ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,.28)";
-  ctx.lineWidth = 2;
-  roundRect(ctx, chipX, chipY, chipWidth, chipHeight, 29);
-  ctx.stroke();
   ctx.fillStyle = "#ffffff";
+  ctx.font = '700 31px "MW Inter", "Segoe UI", sans-serif';
+  ctx.fillText("Start on the web", canvas.width / 2, buttonY + 58);
+  ctx.fillStyle = "#40356b";
   ctx.font = '600 28px "MW Inter", "Segoe UI", sans-serif';
-  ctx.fillText(code || "Shared room", chipX + 26, chipY + 37);
-  ctx.fillStyle = "rgba(240,232,255,.92)";
-  ctx.font = '600 26px "MW Inter", "Segoe UI", sans-serif';
-  ctx.fillText("A shared story room awaits", 92, 744);
-  ctx.font = '400 26px "MW Inter", "Segoe UI", sans-serif';
-  ctx.fillText("Choose a role. Shape one outcome.", 92, 788);
-  const qrSize = 286, qrLeft = 686, qrTop = 922;
-  ctx.fillStyle = "#ffffff";
-  roundRect(ctx, qrLeft - 22, qrTop - 22, qrSize + 44, qrSize + 44, 26);
-  ctx.fill();
-  ctx.drawImage(qr.image, qrLeft, qrTop, qrSize, qrSize);
-  ctx.fillStyle = "#efe7ff";
-  ctx.font = '600 26px "MW Inter", "Segoe UI", sans-serif';
-  ctx.fillText("Scan to join", qrLeft + 34, qrTop + qrSize + 60);
-  ctx.fillStyle = "rgba(239,231,255,.84)";
-  ctx.font = '400 24px "MW Inter", "Segoe UI", sans-serif';
-  ctx.fillText("manyworlds.com/join", 92, 1232);
+  ctx.fillText("ourmanyworlds.com", canvas.width / 2, 864);
+
+  ctx.fillStyle = "rgba(111,75,220,.38)";
+  [[112,170,8],[936,144,6],[158,616,5],[914,594,8],[848,844,5]].forEach(([x,y,radius]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.textAlign = "start";
   return await new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(URL.createObjectURL(blob)) : reject(new Error("Invitation poster could not be encoded")), "image/png"));
 }
 function roundRect(ctx, x, y, width, height, radius) {
@@ -894,16 +935,31 @@ async function openInviteShare() {
     const dialog = document.createElement("dialog"); dialog.className = "share-dialog invite-share-dialog";
     dialog.innerHTML = `<button type="button" class="dialog-close" data-close-share aria-label="Close">×</button><section class="share-room-head"><img src="${roomWorldImage(activeRoom.worldId, 0)}" alt="${esc(worldTitle)}"><div class="share-room-copy"><h2>Shared Story Room</h2><p>${esc(worldTitle)} · ${esc(roomTitle)}</p><div class="share-room-meta"><span class="share-status">◷ <b>Waiting</b></span><span class="share-player-count">♧ ${activeRoom.players?.length || 1} / ${activeRoom.maxPlayers || 3} players</span></div></div></section><section class="share-reward-card"><span class="share-reward-emblem">${shareUiIcon("gift")}</span><div class="share-reward-copy"><p>Invite friends & earn rewards</p><strong>Earn up to ${rewardCap * rewardPerInvite} Bonus Credits</strong><span>Get ${rewardPerInvite} Bonus Credits for each new friend who joins and completes the opening.</span><div class="reward-progress"><i style="width:${rewardPercent}%"></i></div><small class="reward-progress-label">${rewarded} of ${rewardCap} rewards unlocked</small><small class="reward-honesty-note">ⓘ Sharing alone does not grant Credits.</small></div><img class="share-reward-coins" src="/assets/payment/credits-stack-transparent.png" alt=""></section><div class="share-modal-grid"><section class="share-channels"><h3>Share your invitation</h3><p>Invite friends to this room on ${BRAND_NAME}.</p><div class="share-network-row"><button type="button" data-share-channel="WHATSAPP"><b>${shareUiIcon("whatsapp")}</b>WhatsApp</button><button type="button" data-share-channel="TELEGRAM"><b>${shareUiIcon("telegram")}</b>Telegram</button><button type="button" data-share-channel="DISCORD"><b>${shareUiIcon("discord")}</b>Discord</button><button type="button" data-share-channel="FACEBOOK"><b class="share-letter-icon">f</b>Facebook</button><button type="button" data-share-channel="X"><b class="share-letter-icon share-x-icon">𝕏</b>X</button><button type="button" data-copy-invite><b>${shareUiIcon("copy")}</b>Copy link</button></div><button type="button" class="btn primary share-native" data-native-share>${shareUiIcon("share")}<span>Share invitation</span></button></section><section class="poster-preview"><h3>Invite poster</h3><img data-poster-preview alt="Invitation poster preview"><button type="button" class="btn" data-download-poster>${shareUiIcon("download")}<span>Download poster</span></button><small>Perfect for group chats and social posts.</small></section></div><label class="share-link-label">${shareUiIcon("link")}<input readonly value="${esc(displayInviteUrl)}" data-full-invite-url="${esc(inviteUrl)}" aria-label="Invitation link"><button type="button" data-copy-invite>${shareUiIcon("copy")}<span>Copy link</span></button></label>`;
     document.body.append(dialog); dialog.showModal(); dialog.querySelector("[data-close-share]").addEventListener("click", () => dialog.close());
-    const qr = await fetchInviteQr(activeRoom.code); const posterUrl = await buildInvitePoster({ title:activeRoom.title, qr }); dialog.querySelector("[data-poster-preview]").src = posterUrl;
+    const posterUrl = await buildInvitePoster({ title:activeRoom.title }); dialog.querySelector("[data-poster-preview]").src = posterUrl;
     dialog.querySelectorAll("[data-copy-invite]").forEach((button) => button.addEventListener("click", () => copyInviteLink(dialog, inviteUrl)));
     dialog.querySelectorAll("[data-share-channel]").forEach((button) => button.addEventListener("click", async () => { const channel = button.dataset.shareChannel; await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel, runId:activeRoom.id }) }); const channelUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}&channel=${encodeURIComponent(channel)}`; const encodedUrl = encodeURIComponent(channelUrl); const encodedText = encodeURIComponent(shareText); const links = { WHATSAPP:`https://wa.me/?text=${encodedText}%20${encodedUrl}`, TELEGRAM:`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, DISCORD:"https://discord.com/channels/@me", FACEBOOK:`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, X:`https://x.com/intent/post?text=${encodedText}%20${encodedUrl}` }; if (!window.open(links[channel] || inviteUrl, "_blank", "noopener,noreferrer")) await copyInviteLink(dialog, inviteUrl); }));
     dialog.querySelector("[data-native-share]").addEventListener("click", async () => { await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel:"NATIVE", runId:activeRoom.id }) }); if (navigator.share) { try { await navigator.share({ title:BRAND_NAME, text:shareText, url:inviteUrl }); } catch {} } else await copyInviteLink(dialog, inviteUrl); });
     dialog.querySelector("[data-download-poster]").addEventListener("click", () => { const link = document.createElement("a"); link.download = `many-worlds-${activeRoom.code}-invite.png`; link.href = posterUrl; link.click(); });
-    dialog.addEventListener("close", () => { URL.revokeObjectURL(qr.objectUrl); URL.revokeObjectURL(posterUrl); dialog.remove(); opener?.focus?.(); }, { once:true });
+    dialog.addEventListener("close", () => { URL.revokeObjectURL(posterUrl); dialog.remove(); opener?.focus?.(); }, { once:true });
   } catch (error) { notice(error.message || "Unable to prepare the invitation link."); }
 }
 function sessionToken() { return hasSessionCookie() ? "cookie-session" : ""; }
-function requireSession() { if (sessionToken()) return true; location.assign(`/auth?returnTo=${encodeURIComponent(path + location.search)}`); return false; }
+function loginUrl(returnTo) { return `/auth?returnTo=${encodeURIComponent(safeReturnTo(returnTo))}`; }
+async function openAuthenticatedRoute(returnTo) {
+  const target = safeReturnTo(returnTo);
+  if (!sessionToken()) {
+    location.assign(loginUrl(target));
+    return;
+  }
+  try {
+    await request("/api/v4/auth/me");
+    location.assign(target);
+  } catch (error) {
+    if (error?.status === 401) location.assign(loginUrl(target));
+    else notice(error?.message || "Unable to verify your login. Please try again.");
+  }
+}
+function requireSession() { if (sessionToken()) return true; location.assign(loginUrl(path + location.search)); return false; }
 async function request(url, options = {}) { const response = await fetch(apiUrl(url), { ...options, credentials: "include", headers: { "content-type":"application/json", ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (response.status === 401) clearSessionHint(); if (!response.ok) { const error = new Error(data.message || data.code || `Request failed: ${response.status}`); error.code = data.code || null; error.status = response.status; throw error; } return data; }
 function roomWorldLabel(worldId) {
   if (worldId === "sangtian") return "Sangtian Edict";
@@ -948,7 +1004,7 @@ function setRoomsTab(activeTab) {
   renderRoomsView();
   bindRoomActions();
 }
-function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { if (!requireSession()) return; try { if (button.dataset.joinCode) await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode }) }); location.assign(`/rooms/${button.dataset.openRoom}`); } catch (error) { notice(error.message || "Unable to join this room."); } })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
+function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { if (!requireSession() || button.disabled) return; const roomId = button.dataset.openRoom; return runMutationOnce(`join-open-room:${roomId}`, button, "Joining…", async () => { try { if (button.dataset.joinCode) await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode }) }); location.assign(`/rooms/${roomId}`); } catch (error) { notice(error.message || "Unable to join this room."); } }); })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
 async function hydrateRooms() { try { const data = await request(`/api/v4/rooms${params.get("worldId") ? `?worldId=${encodeURIComponent(params.get("worldId"))}` : ""}`); roomsView.openRooms = Array.isArray(data.rooms) ? data.rooms : []; roomsView.myRooms = Array.isArray(data.myRooms) ? data.myRooms : []; renderRoomsView(); bindRoomActions(); clearNotice(); } catch (error) { notice(error.code === "INTERNAL_ERROR" ? "Rooms are temporarily unavailable. Retrying automatically…" : error.message || "Unable to load rooms."); const target = root.querySelector("[data-live-rooms]"); if (target) target.innerHTML = `<p class="rooms-empty-state rooms-load-error">Rooms could not be loaded. Please try again.</p>`; } }
 function roomWorldTitle(room) {
   const declaredTitle = String(room?.world?.title || "").trim();
@@ -1068,19 +1124,17 @@ function openJoinCodeDialog(restoredDraft = null) {
       input.focus();
       return;
     }
-    submit.disabled = true;
-    submit.textContent = "Joining…";
-    error.hidden = true;
-    try {
-      const room = await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code }) });
-      clearRoomDialogDraft();
-      location.assign(`/rooms/${room.id}`);
-    } catch (joinError) {
-      error.textContent = joinError.message || "Unable to join this room.";
-      error.hidden = false;
-      submit.disabled = false;
-      submit.textContent = "Join Room";
-    }
+    return runMutationOnce(`join-room:${code}`, submit, "Joining…", async () => {
+      error.hidden = true;
+      try {
+        const room = await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code }) });
+        clearRoomDialogDraft();
+        location.assign(`/rooms/${room.id}`);
+      } catch (joinError) {
+        error.textContent = joinError.message || "Unable to join this room.";
+        error.hidden = false;
+      }
+    });
   };
   dialog.querySelector(".dialog-close").addEventListener("click", close);
   dialog.querySelector("[data-cancel]").addEventListener("click", close);
@@ -1119,19 +1173,20 @@ function openCreateRoomDialog(restoredDraft = null) {
       error.hidden = false;
       return;
     }
-    submit.disabled = true;
-    submit.textContent = "Creating room…";
-    error.hidden = true;
-    try {
-      const room = await request("/api/v4/rooms", { method:"POST", body:JSON.stringify({ worldId }) });
-      clearRoomDialogDraft();
-      location.assign(`/rooms/${room.id}`);
-    } catch (createError) {
-      error.textContent = createError.message || "Unable to create this room.";
-      error.hidden = false;
-      submit.disabled = false;
-      submit.textContent = "Create Room";
-    }
+    const idempotencyStorageKey = `many-worlds:create-room:${worldId}`;
+    const idempotencyKey = pendingMutationKey(idempotencyStorageKey);
+    return runMutationOnce(`create-room:${worldId}`, submit, "Creating room…", async () => {
+      error.hidden = true;
+      try {
+        const room = await request("/api/v4/rooms", { method:"POST", body:JSON.stringify({ worldId, idempotencyKey }) });
+        localStorage.removeItem(idempotencyStorageKey);
+        clearRoomDialogDraft();
+        location.assign(`/rooms/${room.id}`);
+      } catch (createError) {
+        error.textContent = createError.message || "Unable to create this room.";
+        error.hidden = false;
+      }
+    });
   };
   dialog.querySelector(".dialog-close").addEventListener("click", close);
   dialog.querySelector("[data-cancel]").addEventListener("click", close);
@@ -1184,36 +1239,54 @@ const actions = {
   "view-refund": (_event, element) => openPurchaseStatus(element.dataset.purchaseId),
   "view-dispute": (_event, element) => openPurchaseStatus(element.dataset.purchaseId, true),
   "account-logout": async (_event, element) => { if (element?.disabled) return; element.disabled = true; try { await request("/api/v4/auth/logout", { method:"POST", body:"{}" }); try { globalThis.google?.accounts?.id?.disableAutoSelect?.(); } catch {} clearSessionHint(); location.assign("/"); } catch (error) { element.disabled = false; notice(error.message || "Unable to log out."); } },
-  solo: () => location.assign("/role-select?story=caesar"), rooms: () => location.assign("/rooms?worldId=caesar"),
-  "sangtian-solo": () => location.assign("/role-select?story=sangtian"), "sangtian-rooms": () => location.assign("/rooms?worldId=sangtian"),
-  "world-solo": (_event, element) => location.assign(`/role-select?story=${encodeURIComponent(element.dataset.worldId)}`),
+  solo: (_event, element) => runMutationOnce("solo:caesar", element, "Checking login…", () => openAuthenticatedRoute("/role-select?story=caesar")), rooms: () => location.assign("/rooms?worldId=caesar"),
+  "sangtian-solo": (_event, element) => runMutationOnce("solo:sangtian", element, "Checking login…", () => openAuthenticatedRoute("/role-select?story=sangtian")), "sangtian-rooms": () => location.assign("/rooms?worldId=sangtian"),
+  "world-solo": (_event, element) => {
+    const worldId = String(element?.dataset.worldId || "");
+    if (!worldId) return;
+    return runMutationOnce(`world-solo:${worldId}`, element, "Checking login…", () => openAuthenticatedRoute(`/role-select?story=${encodeURIComponent(worldId)}`));
+  },
   "world-rooms": (_event, element) => location.assign(`/rooms?worldId=${encodeURIComponent(element.dataset.worldId)}`),
   "join-code": () => { openJoinCodeDialog(); },
   "create-room": () => { openCreateRoomDialog(); },
   "share-invite": () => { void openInviteShare(); },
-  "select-role": async (_event, element) => { if (!activeRoom || !requireSession()) return; try { await request(`/api/v4/rooms/${activeRoom.id}/role`, { method:"POST", body:JSON.stringify({ roleId: element.dataset.roleId }) }); if (activeRoom.isHost && !activeRoom.hostRoleLocked) await request(`/api/v4/rooms/${activeRoom.id}/role/lock`, { method:"POST", body:"{}" }); await hydrateSharedRoom(activeRoom.id); } catch (error) { notice(error.message || "Unable to select that role."); } },
+  "select-role": async (_event, element) => {
+    if (!activeRoom || !requireSession() || element?.disabled) return;
+    const roomId = activeRoom.id;
+    return runMutationOnce(`room:${roomId}:select-role`, element, "", async () => {
+      try {
+        await request(`/api/v4/rooms/${roomId}/role`, { method:"POST", body:JSON.stringify({ roleId: element.dataset.roleId }) });
+        if (activeRoom?.id === roomId && activeRoom.isHost && !activeRoom.hostRoleLocked) await request(`/api/v4/rooms/${roomId}/role/lock`, { method:"POST", body:"{}" });
+        await hydrateSharedRoom(roomId);
+      } catch (error) { notice(error.message || "Unable to select that role."); }
+    });
+  },
   ready: async (_event, element) => {
     if (!activeRoom || !requireSession() || element?.disabled) return;
-    if (element) { element.disabled = true; element.textContent = "Saving…"; }
-    try {
-      await request(`/api/v4/rooms/${activeRoom.id}/ready`, { method:"POST", body:JSON.stringify({ ready:true }) });
-      await hydrateSharedRoom(activeRoom.id);
-    } catch (error) {
-      notice(error.message || "Unable to mark ready.");
-      await hydrateSharedRoom(activeRoom.id).catch(() => {});
-    }
+    const roomId = activeRoom.id;
+    return runMutationOnce(`room:${roomId}:ready`, element, "Saving…", async () => {
+      try {
+        await request(`/api/v4/rooms/${roomId}/ready`, { method:"POST", body:JSON.stringify({ ready:true }) });
+        await hydrateSharedRoom(roomId);
+      } catch (error) {
+        notice(error.message || "Unable to mark ready.");
+        await hydrateSharedRoom(roomId).catch(() => {});
+      }
+    });
   },
   "start-game": async (_event, element) => {
     if (!activeRoom || !requireSession() || element?.disabled) return;
-    if (element) { element.disabled = true; element.textContent = "Starting…"; }
-    try {
-      const started = await request(`/api/v4/rooms/${activeRoom.id}/start`, { method:"POST", body:"{}" });
-      const runId = started.runId || started.roomId || activeRoom.id;
-      location.assign(`/game?runId=${encodeURIComponent(runId)}`);
-    } catch (error) {
-      notice(error.message || "Room is not ready to start.");
-      await hydrateSharedRoom(activeRoom.id).catch(() => {});
-    }
+    const roomId = activeRoom.id;
+    return runMutationOnce(`room:${roomId}:start`, element, "Starting…", async () => {
+      try {
+        const started = await request(`/api/v4/rooms/${roomId}/start`, { method:"POST", body:"{}" });
+        const runId = started.runId || started.roomId || roomId;
+        location.assign(`/game?runId=${encodeURIComponent(runId)}`);
+      } catch (error) {
+        notice(error.message || "Room is not ready to start.");
+        await hydrateSharedRoom(roomId).catch(() => {});
+      }
+    });
   },
   "request-refund": (_event, element) => openRefundRequest(element.dataset.purchaseId),
   "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds"), "share-recap": () => { void openResultShare(); }, "open-tab": () => setRoomsTab("open"), "my-tab": () => setRoomsTab("my"), "clear-world-filter": () => location.assign("/rooms")

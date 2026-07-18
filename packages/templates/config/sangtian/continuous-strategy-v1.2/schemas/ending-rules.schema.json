@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.com/schemas/continuous-strategy/ending-rules-v1.json",
+  "title": "Continuous Strategy Ending Rules V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contentVersion",
+    "globalEndingRule",
+    "personalEndingRules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "continuous_strategy_ending_rules_v1"
+    },
+    "contentVersion": {
+      "const": "sangtian_v1_2"
+    },
+    "globalEndingRule": {
+      "$ref": "#/$defs/endingRule"
+    },
+    "personalEndingRules": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "$ref": "#/$defs/personalEndingRule"
+      }
+    }
+  },
+  "$defs": {
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "endingKey",
+        "title",
+        "minimumScore"
+      ],
+      "properties": {
+        "endingKey": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "minimumScore": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "endingRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ruleKey",
+        "metric",
+        "evidenceStageRange",
+        "classifications"
+      ],
+      "properties": {
+        "ruleKey": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "evidenceStageRange": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "classifications": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/classification"
+          }
+        }
+      }
+    },
+    "personalEndingRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ruleKey",
+        "roleKey",
+        "metric",
+        "evidenceStageRange",
+        "classifications"
+      ],
+      "properties": {
+        "ruleKey": {
+          "type": "string"
+        },
+        "roleKey": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "evidenceStageRange": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "classifications": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/classification"
+          }
+        }
+      }
+    }
+  }
+}

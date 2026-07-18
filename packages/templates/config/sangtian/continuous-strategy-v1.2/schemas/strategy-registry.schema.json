@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.com/schemas/continuous-strategy/strategy-registry-v1.json",
+  "title": "Sangtian Strategy Registry V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "defaultStrategyVersion",
+    "strategies"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "strategy_registry_v1"
+    },
+    "defaultStrategyVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strategies": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifactDirectory",
+          "manifestSha256",
+          "status"
+        ],
+        "properties": {
+          "artifactDirectory": {
+            "type": "string",
+            "minLength": 1
+          },
+          "manifestSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "status": {
+            "enum": [
+              "development",
+              "published"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

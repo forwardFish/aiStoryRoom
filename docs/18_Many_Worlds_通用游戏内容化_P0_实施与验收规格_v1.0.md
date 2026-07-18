@@ -16,7 +16,7 @@
 | 游戏素材隔离 | PASS | 桑田诏和凯撒的封面、背景、头像均由各自 JSON 引用自己的 `assets/game/<worldId>/` 目录 |
 | 游戏大厅 | PASS | `/worlds` 从 `GET /api/v4/worlds` 渲染 2 个 playable 和 4 个 Coming Soon；HTML 不含具体卡片 |
 | 世界详情 | PASS | `/worlds/:worldId` 使用一个服务器路由、一个页面模板和一个渲染函数 |
-| 两款游戏数据来源 | PASS | 桑田诏 3 个角色、凯撒 6 个角色的标题、介绍、人数、背景、头像均完成 JSON→API→DOM 浏览器比对 |
+| 两款游戏数据来源 | PASS | 桑田诏与凯撒各 6 个角色的标题、介绍、人数、背景、头像均完成 JSON→API→DOM 浏览器比对 |
 | 后续标准页面 | 未开始/未完成 | 选角、房间、主游戏和结局仍按 P0-4、P0-5、P0-7 实施 |
 | 第三个游戏全流程零代码 | 未验收 | 必须完成作者 CLI、凯撒连续内容包及 P0-8 后才能宣称达到最终目标 |
 
@@ -814,7 +814,8 @@ href="/worlds/caesar"
 
 必须运行：
 
-- 桑田 1 真人 + 2 AI，完整七阶段。
+- 桑田 1 真人 + 5 AI，完整七阶段。
+- 桑田 3 真人 + 3 AI，完整七阶段。
 - 凯撒 1 真人 + 5 AI，完整七阶段。
 - 凯撒 3 真人 + 3 AI，完整七阶段。
 - 凯撒全角色确定性离线七阶段。
@@ -830,7 +831,7 @@ href="/worlds/caesar"
 测试游戏要求：
 
 - 使用新的 `worldId`。
-- 至少 4 个正常角色，不能复制桑田的 3 角色数量。
+- 使用作者内容实际定义的正常角色数量，不能依赖页面或引擎中的固定角色数。
 - 1–4 个真人，剩余角色 AI 补位。
 - 完整 7 阶段和 4 个个人结局。
 - 独立封面、背景和头像。
@@ -857,7 +858,7 @@ href="/worlds/caesar"
 | AC-03 | 构建确定性 | 相同输入连续构建两次，所有输出哈希一致 | PASS |
 | AC-04 | 发布不可变性 | 再次发布同一版本被拒绝 | PASS |
 | AC-05 | 素材完整性 | 缺少头像或背景时 validate 失败 | PASS |
-| AC-06 | 桑田回归 | 真实桑田包七阶段和三角色结局通过 | PASS |
+| AC-06 | 桑田回归 | 真实桑田包七阶段和六角色结局通过 | PASS |
 | AC-07 | 凯撒真实加载 | `worldId=caesar` 不再抛 `GAME_ENGINE_NOT_CONTINUOUS` | PASS |
 | AC-08 | 凯撒 1+5 | 1 真人、5 AI 完成七阶段 | PASS |
 | AC-09 | 凯撒 3+3 | 3 真人、3 AI 完成七阶段 | PASS |
@@ -885,7 +886,7 @@ href="/worlds/caesar"
 
 ```bash
 pnpm --filter @ai-story/templates test:games
-pnpm game:validate --world sangtian --version sangtian_v1_1
+pnpm game:validate --world sangtian --version sangtian_v1_2
 pnpm game:validate --world caesar --version caesar_v1_0
 pnpm test:api
 pnpm --filter @apps/web test

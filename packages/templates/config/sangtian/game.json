@@ -8,7 +8,7 @@
   "catalog": {
     "title": "桑田诏：嘉靖财政危局",
     "subtitle": "七轮连续权谋故事局",
-    "description": "嘉靖朝财政危局中，三位地方官员必须在改革、粮价、田契、暗账与御前裁决之间作出彼此影响的选择。",
+    "description": "嘉靖朝财政危局中，六方角色必须在改革、粮价、田契、暗账、内廷与御前裁决之间作出彼此影响的选择。",
     "genre": "历史权谋",
     "tags": ["历史", "权谋", "多人", "多结局"],
     "durationLabel": "40–60 Minutes",
@@ -24,11 +24,11 @@
     "solo": true,
     "multiplayer": true,
     "minHumanPlayers": 1,
-    "maxHumanPlayers": 3
+    "maxHumanPlayers": 6
   },
   "engine": {
     "engineVersion": "continuous_strategy_v1_1",
-    "strategyVersion": "sangtian_v1_1",
+    "strategyVersion": "sangtian_v1_2",
     "strategyRegistryPath": "strategy-registry.json",
     "fixedRules": {
       "stageCount": 7,
@@ -36,10 +36,10 @@
     }
   },
   "worldActor": {
-    "actorKey": "merchant",
-    "actorName": "江南商会",
-    "description": "由规则引擎控制的世界势力，每轮施加粮价、银路和商路压力；它不是玩家角色。",
-    "portrait": "/assets/game/sangtian/merchant.png"
+    "actorKey": "court_market_pressure",
+    "actorName": "朝廷与市势",
+    "description": "由规则引擎控制的诏令、粮价、舆情与御前压力；它不占玩家角色名额。",
+    "portrait": "/assets/game/sangtian/palace.png"
   },
   "presentation": {
     "locationLabel": "杭州总督府 · 内厅",
@@ -63,7 +63,7 @@
       "arcText": "从维持局势到承担裁决。",
       "knownInfo": ["改桑时限", "县令密信渠道"],
       "cannotDo": ["越过朝廷直接改写国策"],
-      "portrait": "/assets/game/sangtian/governor.png",
+      "portrait": "/assets/game/sangtian/generated/role-governor-scene-v1.png",
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },
@@ -79,7 +79,7 @@
       "arcText": "从争功到面对代价。",
       "knownInfo": ["改桑名册", "内阁财政派联络"],
       "cannotDo": ["替县令销毁证据"],
-      "portrait": "/assets/game/sangtian/minister.png",
+      "portrait": "/assets/game/sangtian/generated/role-xunfu-scene-v1.png",
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },
@@ -95,7 +95,55 @@
       "arcText": "从自保到公开证据。",
       "knownInfo": ["民田风险清单", "田契副本"],
       "cannotDo": ["强迫百姓承担国策代价"],
-      "portrait": "/assets/game/sangtian/magistrate.png",
+      "portrait": "/assets/game/sangtian/generated/governor-scene-v1.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "clerk",
+      "roleName": "改桑书吏",
+      "identity": "经手田亩名册、催办底稿与驿站文书的关键书吏",
+      "publicInfo": "你没有高位，却知道每一笔数字是谁改的、每一道命令是谁补签的。",
+      "hiddenSecret": "你私留了一份被撤换前的原始名册索引，能串起暗账与催办链。",
+      "personalGoal": "保全原始文书和经手人，并让真正篡改名册的人承担责任。",
+      "currentState": "两衙都在索取底稿，与你共事的书吏已经有人失踪。",
+      "abilityText": "可核对印记、驿站登记、田亩名册与文书流转时序。",
+      "arcText": "从被动经手到主动证明整条证据链。",
+      "knownInfo": ["原始名册索引", "催办文书经手顺序"],
+      "cannotDo": ["凭空改写已经封存的官方文书"],
+      "portrait": "/assets/game/sangtian/generated/role-clerk-scene-v1.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "merchant",
+      "roleName": "江南商会会首",
+      "identity": "掌握粮仓、丝路、垫银与官商往来账的商会领袖",
+      "publicInfo": "谁能保护商路与契约，商会就向谁提供粮银；但每笔援手都有代价。",
+      "hiddenSecret": "商会账簿记录了巡抚幕僚、织造局与地方官员的多笔隐秘往来。",
+      "personalGoal": "稳住粮路和商路，避免商会在御前清算中成为唯一替罪羊。",
+      "currentState": "粮价上涨、银路收紧，官府各方都要求商会先行垫付。",
+      "abilityText": "可调度粮仓、银票、商船和跨衙门的消息网络。",
+      "arcText": "从两头下注到为商会选择公开立场。",
+      "knownInfo": ["商会往来账", "粮仓真实库存"],
+      "cannotDo": ["直接决定官员任免或御前裁决"],
+      "portrait": "/assets/game/sangtian/generated/role-merchant-scene-v1.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "sili_jian",
+      "roleName": "司礼监织造使",
+      "identity": "代表内廷巡视浙江银路、织造与奏报真伪的皇帝耳目",
+      "publicInfo": "你奉旨查的是银路与欺瞒，但所有人都担心你借调查控制江南。",
+      "hiddenSecret": "你收到的密令要求同时核查内阁财政派是否借改桑截留内帑。",
+      "personalGoal": "查清银粮和奏报差异，把可验证的真相送到御前并保住内廷权威。",
+      "currentState": "总督与巡抚奏报互相矛盾，商会又在寻求内廷保护。",
+      "abilityText": "可使用织造局、内廷密报、驿站盘查与直达御前的渠道。",
+      "arcText": "从暗中观察到公开决定御前证据口径。",
+      "knownInfo": ["内廷密令", "织造局银路记录"],
+      "cannotDo": ["替皇帝预先宣布最终裁决"],
+      "portrait": "/assets/game/sangtian/generated/role-spy-scene-v1.png",
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     }

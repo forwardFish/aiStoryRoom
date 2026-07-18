@@ -17,8 +17,8 @@ function message(text, kind = "info") { const node = by("[data-message]"); node.
 function urlFor(pack = "") { const next = new URLSearchParams(); if (intent === "WORLD_UNLOCK") next.set("intent", intent); if (runId) next.set("runId", runId); if (returnTo !== "/credits") next.set("returnTo", returnTo); if (pack) next.set("confirm", pack); const text = next.toString(); return `/credits${text ? `?${text}` : ""}`; }
 function authUrl(pack) { return `/auth?returnTo=${encodeURIComponent(urlFor(pack))}`; }
 function setContext() {
-  by("[data-return-link]").href = returnTo; by("[data-return-link]").textContent = runId ? "Back to room" : "Back to rooms";
-  by("[data-return-bottom]").href = returnTo; by("[data-return-bottom]").textContent = runId ? "Back to room" : "Back to rooms";
+  by("[data-return-link]").href = returnTo;
+  by("[data-return-bottom]").href = returnTo;
   const active = intent === "WORLD_UNLOCK";
   by("[data-unlock-context]").hidden = !active;
   by("[data-context-copy]").textContent = active ? "Add Credits to your account, then return to your shared story." : "Add Credits to your account. Choose a pack to continue to secure checkout.";

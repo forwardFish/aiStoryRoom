@@ -147,18 +147,33 @@ async function initializeSuite() {
 
 async function createRoom(suite: SuiteState, caseId: string) {
   const players = suite.players.map((player) => ({ ...player }));
-  const created = (await post("/v4/rooms", {
+  const createBody = {
     worldId: "sangtian",
     title: `continuous-fault-${caseId}-${suite.stamp}`,
     visibility: "private",
-    maxPlayers: 3
-  }, players[0].cookie)).payload;
+    maxPlayers: 3,
+    idempotencyKey: `fault-room:${caseId}:${suite.stamp}`
+  };
+  let created: Json | null = null;
+  let lastCreateError: unknown;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      created = (await post("/v4/rooms", createBody, players[0].cookie)).payload;
+      break;
+    } catch (error) {
+      lastCreateError = error;
+      if (attempt === 3 || !/\b(500|502|503)\b/.test(String(error))) throw error;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+    }
+  }
+  if (!created) throw lastCreateError;
   const roomId = String(created.id);
   assert.equal(created.engineVersion, "continuous_strategy_v1_1");
+  assert.equal(created.strategyVersion, "sangtian_v1_2");
   for (let index = 0; index < players.length; index += 1) {
     const player = players[index];
     if (index > 0) {
-      const joined = (await post("/v4/rooms/join-by-code", { code: created.code }, player.cookie)).payload;
+      const joined: Json = (await post("/v4/rooms/join-by-code", { code: created.code }, player.cookie)).payload;
       assert.equal(joined.id, roomId);
     }
     const room = (await request(`/v4/rooms/${roomId}`, {}, player.cookie)).payload;
@@ -190,13 +205,13 @@ async function submitStage(players: Player[], roomId: string, stageIndex: number
   const opening = await unlockIfNeeded(players, roomId, await game(players[0], roomId));
   assert.equal(opening.run.stageIndex, stageIndex);
   assert.equal(opening.actionWindow.status, "MAIN_OPEN");
-  for (const player of players) {
-    const projection = await game(player, roomId);
+  const mainProjections = await Promise.all(players.map((player) => game(player, roomId)));
+  await Promise.all(players.map(async (player, index) => {
+    const projection = mainProjections[index];
     const result = (await post(`/v4/rooms/${roomId}/game/actions/main`, slotCommand(projection, projection.availableMainActions[0], `fault-main-${stageIndex}`), player.cookie)).payload;
     assert.equal(result.accepted, true);
-  }
-  const doneCommands: Array<{ player: Player; body: Json }> = [];
-  for (const player of players) {
+  }));
+  const doneCommands = await Promise.all(players.map(async (player) => {
     let projection = await game(player, roomId);
     if (projection.pendingReaction) {
       projection = (await post(`/v4/rooms/${roomId}/game/events/${projection.pendingReaction.eventId}/reaction`, slotCommand(projection, projection.pendingReaction.options[0], `fault-reaction-${stageIndex}`), player.cookie)).payload.gameProjection;
@@ -204,15 +219,15 @@ async function submitStage(players: Player[], roomId: string, stageIndex: number
     if (projection.availableManeuvers.length) {
       projection = (await post(`/v4/rooms/${roomId}/game/actions/maneuver`, slotCommand(projection, projection.availableManeuvers[0], `fault-maneuver-${stageIndex}`), player.cookie)).payload.gameProjection;
     }
-    doneCommands.push({
+    return {
       player,
       body: {
         idempotencyKey: `fault-done-${roomId}-${projection.player.roleKey}-${stageIndex}`,
         windowId: projection.actionWindow.id,
         controlEpoch: projection.myControl.epoch
       }
-    });
-  }
+    };
+  }));
   const submitCount = holdFinalDone ? doneCommands.length - 1 : doneCommands.length;
   for (let index = 0; index < submitCount; index += 1) {
     const done = (await post(`/v4/rooms/${roomId}/game/layout/done`, doneCommands[index].body, doneCommands[index].player.cookie)).payload;

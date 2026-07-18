@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.com/schemas/continuous-strategy/maneuvers-v1.json",
+  "title": "Continuous Strategy Maneuver Strategies V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contentVersion",
+    "maneuverStrategies"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "continuous_strategy_maneuvers_v1"
+    },
+    "contentVersion": {
+      "const": "sangtian_v1_2"
+    },
+    "maneuverStrategies": {
+      "type": "array",
+      "minItems": 21,
+      "maxItems": 21,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "maneuverStrategyKey",
+          "stageKey",
+          "roleKey",
+          "title",
+          "objective",
+          "allowedTargetRoleKeys",
+          "leverageAssetKeys",
+          "allowedTypes",
+          "fallbackActionKey"
+        ],
+        "properties": {
+          "maneuverStrategyKey": {
+            "type": "string"
+          },
+          "stageKey": {
+            "type": "string"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "string"
+          },
+          "allowedTargetRoleKeys": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "leverageAssetKeys": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowedTypes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "CONTACT",
+                "INVESTIGATE",
+                "LEVERAGE"
+              ]
+            }
+          },
+          "fallbackActionKey": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

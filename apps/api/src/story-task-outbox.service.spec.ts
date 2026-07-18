@@ -218,6 +218,26 @@ async function roleAgentProviderWaitsRunConcurrently() {
   assert.deepEqual(executed.sort(), candidates.map((entry) => entry.id).sort());
 }
 
+async function roleAgentLeaseLossNeverCompletesTheOutboxTask() {
+  const updates: any[] = [];
+  const current = task({ taskType: "ROLE_AGENT_DECISION", inputRefId: "decision-lease-lost" });
+  const prisma = {
+    storyTaskOutbox: {
+      findUnique: async () => current,
+      updateMany: async (args: any) => { updates.push(args); return { count: 1 }; }
+    },
+    storyRun: { updateMany: async () => ({ count: 0 }) }
+  };
+  const { service, workerId } = serviceWith(prisma, {}, {}, {
+    execute: async () => ({ outcome: "LEASE_LOST" })
+  });
+  current.leaseOwner = workerId;
+
+  await (service as any).process(current.id);
+
+  assert.deepEqual(updates, [], "a worker that lost its lease must not mark the outbox task completed");
+}
+
 function leaseConfigurationIsBounded() {
   assert.equal(normalizeStoryTaskLeaseMs(undefined), 30_000);
   assert.equal(normalizeStoryTaskLeaseMs(1_000), 5_000);
@@ -235,6 +255,7 @@ async function run() {
   await retryBoundaryUsesIncrementedAttempt();
   await staleLeaseCannotRecordFailure();
   await injectedExitLeavesLeaseUntouched();
+  await roleAgentLeaseLossNeverCompletesTheOutboxTask();
   await roleAgentProviderWaitsRunConcurrently();
   console.log("story-task outbox lease fencing contracts: PASS");
 }

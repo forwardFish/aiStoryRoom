@@ -55,7 +55,12 @@ test("submitted host sees the formal waiting narrative and can resolve when all 
   await harness.app.boot();
 
   assert.ok(harness.root.querySelector('[data-testid="room-waiting"]'));
+  assert.ok(harness.root.querySelector(".top-context-cluster"));
+  assert.ok(harness.root.querySelector(".top-phase-cluster"));
+  assert.ok(harness.root.querySelector(".room-stage-card"));
   assert.equal(harness.root.querySelector("[data-room-resolve]").disabled, false);
+  assert.equal(harness.root.querySelectorAll("[data-room-resolve]").length, 1, "the host sees one primary round action");
+  assert.match(harness.root.querySelector(".room-party-status").textContent, /中央舞台/);
   assert.equal(harness.root.querySelectorAll(".room-formal-party-list article.submitted").length, 3);
   assert.match(harness.root.querySelector(".player").textContent, /浙江总督/);
   harness.dom.window.close();

@@ -590,13 +590,17 @@ function renderTopbar(view, state) {
   const maneuver = view.maneuverState || {};
   const roomSession = view.roomSession;
   return `<header class="causal-topbar">
-    <div class="mw-brand"><span class="mw-brand-mark">Our Many Worlds</span></div>
-    <div class="location-title"><span class="seal-mark">⌂</span><b>杭州总督府 · 内厅</b><span class="chevron">⌄</span></div>
-    <div class="top-day">第 ${number(run.currentDay)} 天 · ${esc(run.currentTime || "局势推演中")}</div>
-    <div class="top-countdown">距离御前裁决：<b>${Number(run.currentDay) >= FINAL_DAY ? 0 : remaining}</b> 天</div>
-    <span class="status-chip">主线决策&nbsp; <b>${activePromptForView(view) ? progress.completed + 1 : progress.completed} / ${progress.required || 2}</b></span>
-    <span class="status-chip maneuver-chip">${roomSession ? `三人局&nbsp; <b>${roomSession.submittedRoleIds.length} / ${roomSession.room.players.filter((player) => player.roleId).length}</b>` : `谋划&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)} / ${Number(maneuver.maneuverOpportunitiesPerDay ?? 2)}</b>`}<i></i><i></i></span>
-    <div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; 历史回顾</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; ${view.roomSession ? "房间" : "设置"}</button></div>
+    <div class="top-context-cluster">
+      <div class="mw-brand"><span class="mw-brand-mark">Our Many Worlds</span></div>
+      <div class="location-title"><span class="seal-mark">⌂</span><b>杭州总督府 · 内厅</b><span class="chevron">⌄</span></div>
+    </div>
+    <div class="top-phase-cluster">
+      <div class="top-day">第 ${number(run.currentDay)} 天 · ${esc(run.currentTime || "局势推演中")}</div>
+      <div class="top-countdown">距离御前裁决：<b>${Number(run.currentDay) >= FINAL_DAY ? 0 : remaining}</b> 天</div>
+      <span class="status-chip">主线决策&nbsp; <b>${activePromptForView(view) ? progress.completed + 1 : progress.completed} / ${progress.required || 2}</b></span>
+      <span class="status-chip maneuver-chip">${roomSession ? `三人局&nbsp; <b>${roomSession.submittedRoleIds.length} / ${roomSession.room.players.filter((player) => player.roleId).length}</b>` : `谋划&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)} / ${Number(maneuver.maneuverOpportunitiesPerDay ?? 2)}</b>`}<i></i><i></i></span>
+    </div>
+    <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; 历史回顾</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; ${view.roomSession ? "房间" : "设置"}</button></div></div>
   </header>`;
 }
 
@@ -733,7 +737,7 @@ function renderRoomWaiting(view, state = {}) {
   const session = view.roomSession || {};
   const submitted = new Set(session.submittedRoleIds || []);
   const total = session.room?.players?.filter((player) => player.roleId).length || 0;
-  return `<section class="result-narrative room-waiting-narrative" data-testid="room-waiting"><div class="result-copy"><span class="room-formal-kicker">第 ${number(session.round)} 轮 · 共同故事局</span><h1>你的决策已经送达</h1><p>你的行动已写入本轮共同局势。系统正在等待其他角色分别作出决定；三方行动汇合后，房主才能开始本轮推演。</p><div class="room-waiting-progress"><b>${submitted.size} / ${total}</b><span>名玩家已完成本轮决策</span></div>${session.room?.isHost && session.allSubmitted ? `<button class="room-formal-resolve" type="button" data-room-resolve ${state.busy ? "disabled" : ""}>${state.busy ? "AI 正在推演……" : "推演本轮共同结果"}</button>` : `<small>其他玩家完成后，本页面会自动更新。</small>`}</div></section>`;
+  return `<section class="result-narrative room-waiting-narrative" data-testid="room-waiting"><div class="result-copy room-stage-card"><span class="room-formal-kicker">第 ${number(session.round)} 轮 · 共同故事局</span><h1>你的决策已经送达</h1><p>你的行动已写入本轮共同局势。系统正在等待其他角色分别作出决定；三方行动汇合后，房主才能开始本轮推演。</p><div class="room-waiting-progress"><b>${submitted.size} / ${total}</b><span>名玩家已完成本轮决策</span></div>${session.room?.isHost && session.allSubmitted ? `<button class="room-formal-resolve" type="button" data-room-resolve ${state.busy ? "disabled" : ""}>${state.busy ? "AI 正在推演……" : "推演本轮共同结果"}</button>` : `<small>其他玩家完成后，本页面会自动更新。</small>`}</div></section>`;
 }
 
 function renderRoomComplete(view) {
@@ -746,7 +750,13 @@ function renderRoomPartyPanel(view, state = {}) {
   const room = session.room || {};
   const submitted = new Set(session.submittedRoleIds || []);
   const players = array(room.players).filter((player) => player.roleId);
-  return `<section class="maneuver-panel room-formal-party" data-testid="room-party-panel"><div class="maneuver-heading"><h2>共同故事局</h2><span class="room-formal-live"><i></i>实时同步</span></div><div class="room-formal-party-list">${players.map((player) => `<article class="${submitted.has(player.roleId) ? "submitted" : ""}"><div><b>${esc(player.nickname)}</b><small>${esc(player.roleName || "玩家角色")}</small></div><em>${submitted.has(player.roleId) ? "已决策" : session.resolving ? "推演中" : "思考中"}</em></article>`).join("")}</div>${room.isHost ? `<button class="room-party-resolve" type="button" data-room-resolve ${!session.allSubmitted || session.resolving || state.busy ? "disabled" : ""}>${session.resolving || state.busy ? "AI 推演中……" : session.allSubmitted ? "推演本轮共同结果" : "等待全部玩家决策"}</button>` : `<p class="room-party-help">房主会在全部玩家提交后推进共同回合。</p>`}</section>`;
+  let roomStatus = "房主会在全部玩家提交后推进共同回合";
+  if (room.isHost) {
+    if (session.resolving || state.busy) roomStatus = "AI 正在汇合三方行动";
+    else if (session.allSubmitted) roomStatus = "全员已提交，请在中央舞台推进本轮";
+    else roomStatus = "等待全部玩家完成本轮决策";
+  }
+  return `<section class="maneuver-panel room-formal-party" data-testid="room-party-panel"><div class="maneuver-heading"><h2>共同故事局</h2><span class="room-formal-live"><i></i>实时同步</span></div><div class="room-formal-party-list">${players.map((player) => `<article class="${submitted.has(player.roleId) ? "submitted" : ""}"><div><b>${esc(player.nickname)}</b><small>${esc(player.roleName || "玩家角色")}</small></div><em>${submitted.has(player.roleId) ? "已决策" : session.resolving ? "推演中" : "思考中"}</em></article>`).join("")}</div><p class="room-party-status ${session.allSubmitted ? "ready" : ""}"><i></i><span>${roomStatus}</span></p></section>`;
 }
 
 function resultNarrativeText(view) {

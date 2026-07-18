@@ -748,6 +748,7 @@ function timingConfig() {
     realtime: { mainSeconds: 180, graceSeconds: 45, graceMinimumSeconds: 20, aiOnlyGraceSeconds: 2 },
     "manual-three-page": { mainSeconds: 1200, graceSeconds: 900, graceMinimumSeconds: 30, aiOnlyGraceSeconds: 2 },
     "automated-success": { mainSeconds: 240, graceSeconds: 120, graceMinimumSeconds: 20, aiOnlyGraceSeconds: 1 },
+    "fault-acceptance": { mainSeconds: 90, graceSeconds: 45, graceMinimumSeconds: 8, aiOnlyGraceSeconds: 1 },
     timeout: { mainSeconds: 15, graceSeconds: 8, graceMinimumSeconds: 8, aiOnlyGraceSeconds: 1 }
   };
   return profiles[profile] || profiles.realtime;

@@ -14,6 +14,27 @@ import { ActionWindowService } from "./continuous-strategy/action-window.service
 import { ActionCommandService } from "./continuous-strategy/action-command.service";
 import { ContinuousEventDeliveryService } from "./continuous-strategy/event-delivery.service";
 import { MemberProjectionService } from "./continuous-strategy/member-projection.service";
+import { createHash } from "node:crypto";
+
+const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
+const IDEMPOTENCY_REPLAY_ATTEMPTS = 300;
+const IDEMPOTENCY_REPLAY_DELAY_MS = 100;
+
+export function soloRunIdForRequest(userId: string, idempotencyKey: string) {
+  return `solo_${createHash("sha256").update(`${userId}\0${idempotencyKey}`).digest("hex").slice(0, 32)}`;
+}
+
+export function sharedRoomRunIdForRequest(userId: string, idempotencyKey: string) {
+  return `room_${createHash("sha256").update(`${userId}\0${idempotencyKey}`).digest("hex").slice(0, 32)}`;
+}
+
+export function soloCreationResponse(runId: string, payload: Record<string, unknown>) {
+  return { ...payload, id: runId, runId, roomId: runId };
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002");
+}
 
 function roomTitleWithoutWorldPrefix(title: string, worldTitle: string) {
   const value = String(title || "").trim();
@@ -79,7 +100,7 @@ export class RoomsService {
     };
   }
 
-  async create(user: AuthenticatedUser, input: { worldId?: string; title?: string; visibility?: string; maxPlayers?: number }) {
+  async create(user: AuthenticatedUser, input: { worldId?: string; title?: string; visibility?: string; maxPlayers?: number; idempotencyKey?: string }, internal: { runId?: string; skipPublicIdempotency?: boolean } = {}) {
     const worldId = String(input.worldId || "sangtian");
     const world = findGameDefinition(worldId);
     if (!world || world.status !== "playable" || !world.modes.multiplayer) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "That world is not available for multiplayer" });
@@ -88,53 +109,124 @@ export class RoomsService {
       ? Math.max(world.modes.minHumanPlayers, Math.min(world.modes.maxHumanPlayers, world.roles.length, Number(input.maxPlayers || world.modes.maxHumanPlayers)))
       : Math.max(world.modes.minHumanPlayers, Math.min(world.modes.maxHumanPlayers, Number(input.maxPlayers || world.modes.maxHumanPlayers)));
     const requiredHumanPlayers = world.modes.minHumanPlayers;
+    let deterministicRunId = internal.runId;
+    let idempotentPublicRequest = false;
+    const idempotencyKey = String(input.idempotencyKey || "").trim();
+    if (!internal.skipPublicIdempotency && idempotencyKey) {
+      if (!SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
+      deterministicRunId = sharedRoomRunIdForRequest(user.id, idempotencyKey);
+      idempotentPublicRequest = true;
+      const replay = await this.replaySharedRoomCreation(user, deterministicRunId, worldId, maxPlayers, false);
+      if (replay) return replay;
+    }
     const versions = selectRunVersions({
       templateKey: worldId,
       mode: "room",
       maxPlayers,
       enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
     });
-    const created = await this.story.createRun(
-      user.openid,
-      { templateId: world.templateId, mode: "room", maxPlayers, aiPlayerCount: 0, ownerAsPlayer: true },
-      versions
-    );
-    const state = { ...roomState(created.stateJson), room: { worldId: world.worldId, readyUserIds: [], hostRoleLocked: false, minPlayers: requiredHumanPlayers, createdAt: new Date().toISOString() } };
-    const roomTitle = String(input.title || roomTitleWithoutWorldPrefix(created.title, world.catalog.title)).slice(0, 100);
-    await this.prisma.storyRun.update({ where: { id: created.id }, data: { title: roomTitle, status: "waiting_players", templateKey: world.worldId, totalDays: world.engine.fixedRules?.stageCount || 7, visibility: input.visibility === "private" ? "link" : "public", stateJson: state as any } });
-    return this.get(user, created.id);
+    try {
+      const created = await this.story.createRun(
+        user.openid,
+        { templateId: world.templateId, mode: "room", maxPlayers, aiPlayerCount: 0, ownerAsPlayer: true },
+        { ...versions, runId: deterministicRunId }
+      );
+      const state = { ...roomState(created.stateJson), room: { worldId: world.worldId, readyUserIds: [], hostRoleLocked: false, minPlayers: requiredHumanPlayers, createdAt: new Date().toISOString() } };
+      const roomTitle = String(input.title || roomTitleWithoutWorldPrefix(created.title, world.catalog.title)).slice(0, 100);
+      await this.prisma.storyRun.update({ where: { id: created.id }, data: { title: roomTitle, status: "waiting_players", templateKey: world.worldId, totalDays: world.engine.fixedRules?.stageCount || 7, visibility: input.visibility === "private" ? "link" : "public", stateJson: state as any } });
+      return this.get(user, created.id);
+    } catch (error) {
+      if (!idempotentPublicRequest || !deterministicRunId || !isUniqueConstraintError(error)) throw error;
+      const replay = await this.replaySharedRoomCreation(user, deterministicRunId, worldId, maxPlayers, true);
+      if (replay) return replay;
+      throw error;
+    }
+  }
+
+  private async replaySharedRoomCreation(user: AuthenticatedUser, runId: string, worldId: string, maxPlayers: number, waitForConcurrent: boolean) {
+    const attempts = waitForConcurrent ? IDEMPOTENCY_REPLAY_ATTEMPTS : 1;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const run = await this.prisma.storyRun.findUnique({ where: { id: runId } });
+      if (!run) return null;
+      if (run.ownerUserId !== user.id || run.templateKey !== worldId || run.maxPlayers !== maxPlayers) {
+        throw new ConflictException({ code: "IDEMPOTENCY_KEY_REUSED", message: "The idempotency key belongs to a different room request" });
+      }
+      if (roomState(run.stateJson).room) return this.get(user, run.id);
+      if (attempt + 1 < attempts) await new Promise((resolve) => setTimeout(resolve, IDEMPOTENCY_REPLAY_DELAY_MS));
+    }
+    throw new ConflictException({ code: "ROOM_CREATION_IN_PROGRESS", message: "This room is still being created; retry the same request" });
   }
 
   /** A private one-player run that uses the same seven-node engine as rooms. */
-  async createSolo(user: AuthenticatedUser, input: { worldId?: string; roleKey?: string }) {
+  async createSolo(user: AuthenticatedUser, input: { worldId?: string; roleKey?: string; idempotencyKey?: string }) {
     const worldId = String(input.worldId || "caesar");
     const world = findGameDefinition(worldId);
     if (!world || world.status !== "playable" || !world.modes.solo) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "That world is not available for solo play" });
+    const requestedRole = String(input.roleKey || world.roles[0]?.roleKey || "");
+    if (!world.roles.some((role) => role.roleKey === requestedRole)) throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That role is not available in this world" });
+    const idempotencyKey = String(input.idempotencyKey || "").trim();
+    if (idempotencyKey && !SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
+    const deterministicRunId = idempotencyKey ? soloRunIdForRequest(user.id, idempotencyKey) : undefined;
+    if (deterministicRunId) {
+      const replay = await this.replaySoloCreation(user, deterministicRunId, worldId, requestedRole, false);
+      if (replay) return replay;
+    }
     const versions = selectRunVersions({
       templateKey: worldId,
       mode: "room",
       maxPlayers: 1,
       enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
     });
-    if (versions.engineVersion === CONTINUOUS_ENGINE_VERSION) {
-      const created = await this.create(user, { worldId, maxPlayers: 1, visibility: "private" });
-      const requestedRole = String(input.roleKey || world.roles[0]?.roleKey || "");
+    try {
+      if (versions.engineVersion === CONTINUOUS_ENGINE_VERSION) {
+        const created = await this.create(user, { worldId, maxPlayers: 1, visibility: "private" }, { runId: deterministicRunId, skipPublicIdempotency: true });
+        const role = created.roles.find((item: { roleKey: string }) => item.roleKey === requestedRole);
+        if (!role) throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That role is not available in this world" });
+        await this.selectRole(user, created.id, role.id);
+        await this.lockHostRole(user, created.id);
+        await this.ready(user, created.id, true);
+        await this.prisma.storyRun.update({ where: { id: created.id }, data: { visibility: "private" } });
+        return soloCreationResponse(created.id, await this.start(user, created.id));
+      }
+      const created = await this.story.createRun(user.openid, { templateId: world.templateId, mode: "room", maxPlayers: 1, aiPlayerCount: 0, ownerAsPlayer: true }, { ...versions, runId: deterministicRunId });
       const role = created.roles.find((item: { roleKey: string }) => item.roleKey === requestedRole);
       if (!role) throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That role is not available in this world" });
-      await this.selectRole(user, created.id, role.id);
-      await this.lockHostRole(user, created.id);
-      await this.ready(user, created.id, true);
-      await this.prisma.storyRun.update({ where: { id: created.id }, data: { visibility: "private" } });
-      return this.start(user, created.id);
+      await this.story.claimRole(user.openid, created.id, role.id);
+      const state = { ...roomState(created.stateJson), room: { worldId: world.worldId, readyUserIds: [user.id], hostRoleLocked: true, minPlayers: 1, createdAt: new Date().toISOString(), solo: true } };
+      await this.prisma.storyRun.update({ where: { id: created.id }, data: { title: `${roomTitleWithoutWorldPrefix(created.title, world.catalog.title)} · Solo`, templateKey: world.worldId, totalDays: world.engine.fixedRules?.stageCount || 7, maxPlayers: 1, visibility: "private", stateJson: state as any } });
+      return soloCreationResponse(created.id, await this.get(user, created.id));
+    } catch (error) {
+      if (!deterministicRunId || !isUniqueConstraintError(error)) throw error;
+      const concurrentReplay = await this.replaySoloCreation(user, deterministicRunId, worldId, requestedRole, true);
+      if (concurrentReplay) return concurrentReplay;
+      throw error;
     }
-    const created = await this.story.createRun(user.openid, { templateId: world.templateId, mode: "room", maxPlayers: 1, aiPlayerCount: 0, ownerAsPlayer: true }, versions);
-    const requestedRole = String(input.roleKey || world.roles[0]?.roleKey || "");
-    const role = created.roles.find((item: { roleKey: string }) => item.roleKey === requestedRole);
-    if (!role) throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That role is not available in this world" });
-    await this.story.claimRole(user.openid, created.id, role.id);
-    const state = { ...roomState(created.stateJson), room: { worldId: world.worldId, readyUserIds: [user.id], hostRoleLocked: true, minPlayers: 1, createdAt: new Date().toISOString(), solo: true } };
-    await this.prisma.storyRun.update({ where: { id: created.id }, data: { title: `${roomTitleWithoutWorldPrefix(created.title, world.catalog.title)} · Solo`, templateKey: world.worldId, totalDays: world.engine.fixedRules?.stageCount || 7, maxPlayers: 1, visibility: "private", stateJson: state as any } });
-    return this.get(user, created.id);
+  }
+
+  private async replaySoloCreation(user: AuthenticatedUser, runId: string, worldId: string, roleKey: string, waitForConcurrent: boolean) {
+    const attempts = waitForConcurrent ? IDEMPOTENCY_REPLAY_ATTEMPTS : 1;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const run = await this.prisma.storyRun.findUnique({
+        where: { id: runId },
+        include: { players: { where: { userId: user.id }, include: { role: true } } }
+      });
+      if (!run) return null;
+      if (run.ownerUserId !== user.id || run.templateKey !== worldId) {
+        throw new ConflictException({ code: "IDEMPOTENCY_KEY_REUSED", message: "The idempotency key belongs to a different Solo request" });
+      }
+      const claimedRole = run.players[0]?.role?.roleKey;
+      if (claimedRole && claimedRole !== roleKey) {
+        throw new ConflictException({ code: "IDEMPOTENCY_KEY_REUSED", message: "The idempotency key belongs to a different Solo role" });
+      }
+      if (run.status === "playing" && claimedRole === roleKey) {
+        const payload = run.engineVersion === CONTINUOUS_ENGINE_VERSION
+          ? { gameProjection: await this.memberProjections.game(user, run.id) }
+          : await this.get(user, run.id);
+        return soloCreationResponse(run.id, payload);
+      }
+      if (attempt + 1 < attempts) await new Promise((resolve) => setTimeout(resolve, IDEMPOTENCY_REPLAY_DELAY_MS));
+    }
+    throw new ConflictException({ code: "SOLO_CREATION_IN_PROGRESS", message: "This Solo game is still being created; retry the same request" });
   }
 
   async joinByCode(user: AuthenticatedUser, inviteCode: string) {

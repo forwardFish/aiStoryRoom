@@ -1,0 +1,49 @@
+.mw-back {
+  display: inline-flex;
+  min-height: 42px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 9px;
+  padding: 0 16px 0 13px;
+  border: 1px solid rgba(96, 69, 255, 0.16);
+  border-radius: 999px;
+  color: #4f3bd4;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 6px 18px rgba(45, 42, 92, 0.06);
+  font-family: "MW Inter", Inter, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.mw-back::before,
+.mw-back.back-link::before {
+  display: none;
+  content: none;
+}
+
+.mw-back > span { font: inherit; }
+
+.mw-back > .mw-back__icon {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.mw-back:hover {
+  border-color: rgba(96, 69, 255, 0.32);
+  color: #4932d2;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(62, 47, 145, 0.10);
+  transform: translateY(-1px);
+}
+
+.mw-back:hover > .mw-back__icon { transform: translateX(-2px); }
+.mw-back:focus-visible { outline: 3px solid rgba(96, 69, 255, 0.22); outline-offset: 3px; }
+
+@media (max-width: 720px) {
+  .mw-back { min-height: 40px; padding-right: 15px; }
+}

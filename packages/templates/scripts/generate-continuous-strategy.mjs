@@ -9,7 +9,8 @@ const sangtianRoot = join(packageRoot, "config", "sangtian");
 const outputRoot = join(sangtianRoot, "continuous-strategy-v1.1");
 const checkOnly = process.argv.includes("--check");
 const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
-const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const canonicalUtf8Text = (value) => value.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+const sha256 = (value) => createHash("sha256").update(canonicalUtf8Text(value)).digest("hex");
 
 const ROLES = {
   governor: { roleKey: "zhejiang_governor", name: "浙江总督", riskProfile: "BALANCED" },
@@ -373,13 +374,26 @@ const manifestFiles = [
 ];
 const manifest = { schemaVersion: "continuous_strategy_manifest_v1", contentVersion: CONTENT_VERSION, templateKey: "sangtian", releaseStatus: "published", stageCoverage: [1, 2, 3, 4, 5, 6, 7], files: manifestFiles };
 const manifestString = json(manifest);
-const registry = { schemaVersion: "strategy_registry_v1", defaultStrategyVersion: CONTENT_VERSION, strategies: { [CONTENT_VERSION]: { artifactDirectory: "continuous-strategy-v1.1", manifestSha256: sha256(manifestString), status: "published" } } };
+const registryPath = join(sangtianRoot, "strategy-registry.json");
+const currentRegistry = JSON.parse(canonicalUtf8Text(readFileSync(registryPath, "utf8")));
+const registry = {
+  schemaVersion: "strategy_registry_v1",
+  defaultStrategyVersion: currentRegistry.defaultStrategyVersion || CONTENT_VERSION,
+  strategies: {
+    ...(currentRegistry.strategies || {}),
+    [CONTENT_VERSION]: {
+      artifactDirectory: "continuous-strategy-v1.1",
+      manifestSha256: sha256(manifestString),
+      status: "published"
+    }
+  }
+};
 const expected = { ...artifactStrings, "manifest.json": manifestString };
 
 function writeOrCheck(path, value) {
   const absolute = join(outputRoot, path);
   if (checkOnly) {
-    const actual = readFileSync(absolute, "utf8");
+    const actual = canonicalUtf8Text(readFileSync(absolute, "utf8"));
     if (actual !== value) throw new Error(`GENERATED_CONTENT_DRIFT:${path}`);
   } else {
     mkdirSync(dirname(absolute), { recursive: true });
@@ -388,9 +402,8 @@ function writeOrCheck(path, value) {
 }
 for (const [path, value] of Object.entries(expected)) writeOrCheck(path, value);
 const registryString = json(registry);
-const registryPath = join(sangtianRoot, "strategy-registry.json");
 if (checkOnly) {
-  if (readFileSync(registryPath, "utf8") !== registryString) throw new Error("GENERATED_CONTENT_DRIFT:strategy-registry.json");
+  if (canonicalUtf8Text(readFileSync(registryPath, "utf8")) !== registryString) throw new Error("GENERATED_CONTENT_DRIFT:strategy-registry.json");
 } else writeFileSync(registryPath, registryString, "utf8");
 
 console.log(JSON.stringify({ status: "PASS", mode: checkOnly ? "check" : "write", contentVersion: CONTENT_VERSION, stages: stages.length, roleStages: roleStages.length, mainCards: roleStages.flatMap((entry) => entry.mainCards).length, maneuvers: maneuverStrategies.length, reactions: reactionScenarios.length, systemActions: systemActions.length, policies: policies.length, publicResults: publicStageRules.length, personalResults: personalStageRules.length, globalEndings: 1, personalEndings: endingRules.personalEndingRules.length, manifestSha256: sha256(manifestString) }));

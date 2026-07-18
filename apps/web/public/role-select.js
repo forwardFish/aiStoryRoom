@@ -38,6 +38,10 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
   async function createRun() {
     const role = selectedRole(state);
     if (!role || role.playableSolo === false || state.busy) return;
+    const pendingKey = `many-worlds:solo-create:${state.story.id}:${role.key}`;
+    const storage = browserWindow?.localStorage;
+    const idempotencyKey = storage?.getItem?.(pendingKey) || newIdempotencyKey(browserWindow);
+    storage?.setItem?.(pendingKey, idempotencyKey);
     state.busy = true;
     state.error = "";
     render();
@@ -46,12 +50,12 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
         method: "POST",
         credentials: "include",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ worldId: state.story.id, roleKey: role.key })
+        body: JSON.stringify({ worldId: state.story.id, roleKey: role.key, idempotencyKey })
       });
       const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload?.id) throw new Error(payload?.message || `创建故事局失败（HTTP ${response.status}）`);
-      const runId = payload.id;
-      if (!runId) throw new Error("Story run was not created");
+      const runId = payload?.id || payload?.runId || payload?.roomId;
+      if (!response.ok || !runId) throw new Error(payload?.message || `创建故事局失败（HTTP ${response.status}）`);
+      storage?.removeItem?.(pendingKey);
       browserWindow.localStorage?.setItem(storyRunStorageKey, runId);
       const override = apiOverride(browserWindow?.location);
       browserWindow.location.href = `/game?runId=${encodeURIComponent(runId)}${override ? `&apiBase=${encodeURIComponent(override)}` : ""}`;
@@ -77,7 +81,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
     const roomRoles = story.roles.map((item, index) => ({
       key: item.key,
       name: item.name,
-      tagline: item.tagline || item.identity || "A voice that can change Rome.",
+      tagline: item.publicInfo || item.tagline || item.identity || "A voice that can change this world.",
       artwork: item.portrait || roomRoleArtwork(story.id, item.key || item.name, index),
       selected: item.key === state.selectedRoleKey,
       disabled: item.playableSolo === false,
@@ -88,7 +92,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
       mode: "solo",
       worldId: story.id,
       title: story.title,
-      bannerArtwork: story.roleSelectionBanner || story.heroCover || "",
+      bannerArtwork: story.presentation?.sceneBackground || story.roleSelectionBanner || story.heroCover || "",
       sessionLabel: "Play Solo",
       roles: roomRoles,
       selectedRole: state.selectedRoleKey,
@@ -108,6 +112,12 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
 
 function selectedRole(state) {
   return state.story?.roles?.find((role) => role.key === state.selectedRoleKey) || null;
+}
+
+function newIdempotencyKey(browserWindow) {
+  const generated = browserWindow?.crypto?.randomUUID?.() || globalThis.crypto?.randomUUID?.();
+  if (generated) return `solo-create:${generated}`;
+  return `solo-create:${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`;
 }
 
 function apiBase(location = globalThis.location) {

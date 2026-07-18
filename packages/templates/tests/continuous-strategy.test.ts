@@ -10,9 +10,17 @@ import {
   evaluateSevenStages,
   evaluateStageOne,
   loadContinuousStrategyPackage,
+  sha256Utf8,
   validateStages
 } from "../src/continuous-strategy";
 import { lintContinuousStrategy } from "../src/continuous-strategy/lint";
+
+test("published text hashes are stable across LF and CRLF checkouts", () => {
+  const lf = "{\n  \"schema\": true\n}\n";
+  const crlf = lf.replace(/\n/g, "\r\n");
+  assert.equal(sha256Utf8(lf), sha256Utf8(crlf));
+  assert.notEqual(sha256Utf8(lf), sha256Utf8(`${lf}\n`));
+});
 
 test("published sangtian_v1_1 content has all exact D08 counts and distinct authored text", () => {
   const result = lintContinuousStrategy();

@@ -27,5 +27,8 @@ assert.match(soloSource, /selectRunVersions/, "solo must use the same rollout ve
 assert.doesNotMatch(roomsSource, /forceContinuous/, "solo must not bypass the continuous-strategy rollout flag");
 assert.match(soloSource, /world\.roles\[0\]\?\.roleKey/, "solo default role must come from the game registry");
 assert.doesNotMatch(soloSource, /brutus|zhejiang_governor/, "solo must not hardcode a world-specific default role");
+assert.match(soloSource, /idempotencyKey/, "solo creation must accept an idempotency key");
+assert.match(soloSource, /soloRunIdForRequest/, "solo retries must share a deterministic database identity");
+assert.match(soloSource, /soloCreationResponse/, "solo creation must return the canonical id, runId and roomId contract");
 
 console.log("continuous strategy runtime genericity source gates: PASS");

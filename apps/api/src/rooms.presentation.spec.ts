@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getGameDefinition } from "@ai-story/templates";
-import { RoomsService } from "./rooms.service";
+import { RoomsService, sharedRoomRunIdForRequest, soloCreationResponse, soloRunIdForRequest } from "./rooms.service";
 
 const service = new RoomsService(
   {} as never,
@@ -54,4 +54,28 @@ test("room projection uses the standard game definition for both worlds", () => 
     assert.equal(projection.players[0]?.roleName, firstRole.roleName);
     assert.equal(projection.roles[0]?.claimedByCurrentUser, true);
   }
+});
+
+test("Solo creation derives one stable run id per user idempotency key", () => {
+  const first = soloRunIdForRequest("user-1", "solo-create:request-1");
+  assert.equal(first, soloRunIdForRequest("user-1", "solo-create:request-1"));
+  assert.notEqual(first, soloRunIdForRequest("user-1", "solo-create:request-2"));
+  assert.notEqual(first, soloRunIdForRequest("user-2", "solo-create:request-1"));
+  assert.match(first, /^solo_[a-f0-9]{32}$/);
+});
+
+test("shared room creation uses a separate stable database identity", () => {
+  const roomId = sharedRoomRunIdForRequest("user-1", "room-create:request-1");
+  assert.equal(roomId, sharedRoomRunIdForRequest("user-1", "room-create:request-1"));
+  assert.notEqual(roomId, soloRunIdForRequest("user-1", "room-create:request-1"));
+  assert.match(roomId, /^room_[a-f0-9]{32}$/);
+});
+
+test("Solo creation response exposes every supported run identifier", () => {
+  assert.deepEqual(soloCreationResponse("solo-1", { status: "playing", runId: "stale" }), {
+    status: "playing",
+    id: "solo-1",
+    runId: "solo-1",
+    roomId: "solo-1"
+  });
 });

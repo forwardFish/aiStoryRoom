@@ -33,8 +33,12 @@ export type ContinuousStrategyLoadContract = {
   worldActorKey: string;
 };
 
+export function canonicalUtf8Text(value: string): string {
+  return value.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+}
+
 export function sha256Utf8(value: string): string {
-  return createHash("sha256").update(value).digest("hex");
+  return createHash("sha256").update(canonicalUtf8Text(value)).digest("hex");
 }
 
 export function assertSha256(value: string, expected: string, label: string): string {

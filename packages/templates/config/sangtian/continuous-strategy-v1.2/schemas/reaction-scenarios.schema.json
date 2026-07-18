@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.com/schemas/continuous-strategy/reactions-v1.json",
+  "title": "Continuous Strategy Reaction Scenarios V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contentVersion",
+    "reactionScenarios"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "continuous_strategy_reactions_v1"
+    },
+    "contentVersion": {
+      "const": "sangtian_v1_2"
+    },
+    "reactionScenarios": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reactionKey",
+          "stageKey",
+          "sourceRoleKey",
+          "targetRoleKey",
+          "triggerActionKey",
+          "interactionRequestKey",
+          "responseOptions",
+          "fallbackResponseActionKey",
+          "passAllowed"
+        ],
+        "properties": {
+          "reactionKey": {
+            "type": "string"
+          },
+          "stageKey": {
+            "type": "string"
+          },
+          "sourceRoleKey": {
+            "type": "string"
+          },
+          "targetRoleKey": {
+            "type": "string"
+          },
+          "triggerActionKey": {
+            "type": "string"
+          },
+          "interactionRequestKey": {
+            "type": "string"
+          },
+          "responseOptions": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "actionKey",
+                "title",
+                "factKey",
+                "nextStateKey"
+              ],
+              "properties": {
+                "actionKey": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "factKey": {
+                  "type": "string"
+                },
+                "nextStateKey": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "fallbackResponseActionKey": {
+            "type": "string"
+          },
+          "passAllowed": {
+            "const": false
+          }
+        }
+      }
+    }
+  }
+}

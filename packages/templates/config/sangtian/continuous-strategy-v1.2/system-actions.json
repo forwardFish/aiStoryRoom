@@ -1,0 +1,188 @@
+{
+  "schemaVersion": "continuous_strategy_system_actions_v1",
+  "contentVersion": "sangtian_v1_2",
+  "systemActions": [
+    {
+      "systemActionKey": "system_s1_tighten_merchant_credit",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "court_market_pressure",
+      "inputStateKeys": [
+        "state_s1_change_mulberry_order_open"
+      ],
+      "factKeys": [
+        "fact_s1_system_tighten_merchant_credit"
+      ],
+      "observableTraceKeys": [
+        "trace_s1_system_tighten_merchant_credit"
+      ],
+      "visiblePressure": "朝廷限期催报，地方执行必须在速度、复核与民生之间留下可审计记录。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s1_court_pressure_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "court_market_pressure"
+        }
+      ],
+      "nextStateKey": "state_s2_county_secret_letter_open"
+    },
+    {
+      "systemActionKey": "system_s2_offer_paid_custody",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "court_market_pressure",
+      "inputStateKeys": [
+        "state_s2_county_secret_letter_open"
+      ],
+      "factKeys": [
+        "fact_s2_system_offer_paid_custody"
+      ],
+      "observableTraceKeys": [
+        "trace_s2_system_offer_paid_custody"
+      ],
+      "visiblePressure": "京师追问田契副本去向，任何秘密转移都会增加御前疑心。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s2_court_pressure_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "court_market_pressure"
+        }
+      ],
+      "nextStateKey": "state_s3_grain_price_crisis_open"
+    },
+    {
+      "systemActionKey": "system_s3_restrict_grain_release",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "court_market_pressure",
+      "inputStateKeys": [
+        "state_s3_grain_price_crisis_open"
+      ],
+      "factKeys": [
+        "fact_s3_system_restrict_grain_release"
+      ],
+      "observableTraceKeys": [
+        "trace_s3_system_restrict_grain_release"
+      ],
+      "visiblePressure": "粮价与银路同时波动，公开市场要求六方给出可核验的库存和责任口径。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s3_court_pressure_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "court_market_pressure"
+        }
+      ],
+      "nextStateKey": "state_s4_hidden_ledger_open"
+    },
+    {
+      "systemActionKey": "system_s4_buy_witness_silence",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "court_market_pressure",
+      "inputStateKeys": [
+        "state_s4_hidden_ledger_open"
+      ],
+      "factKeys": [
+        "fact_s4_system_buy_witness_silence"
+      ],
+      "observableTraceKeys": [
+        "trace_s4_system_buy_witness_silence"
+      ],
+      "visiblePressure": "暗账线索外泄，证人安全、原件保管和接触记录同时承压。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s4_court_pressure_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "court_market_pressure"
+        }
+      ],
+      "nextStateKey": "state_s5_mutual_impeachment_open"
+    },
+    {
+      "systemActionKey": "system_s5_publish_counter_ledger",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "court_market_pressure",
+      "inputStateKeys": [
+        "state_s5_mutual_impeachment_open"
+      ],
+      "factKeys": [
+        "fact_s5_system_publish_counter_ledger"
+      ],
+      "observableTraceKeys": [
+        "trace_s5_system_publish_counter_ledger"
+      ],
+      "visiblePressure": "相互弹劾进入京师视野，所有指控必须绑定命令、账册或证词。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s5_court_pressure_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "court_market_pressure"
+        }
+      ],
+      "nextStateKey": "state_s6_capital_reply_open"
+    },
+    {
+      "systemActionKey": "system_s6_offer_emergency_credit",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "court_market_pressure",
+      "inputStateKeys": [
+        "state_s6_capital_reply_open"
+      ],
+      "factKeys": [
+        "fact_s6_system_offer_emergency_credit"
+      ],
+      "observableTraceKeys": [
+        "trace_s6_system_offer_emergency_credit"
+      ],
+      "visiblePressure": "御前要求一份能交叉核验的最终奏报，删节与矛盾都会留下痕迹。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s6_court_pressure_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "court_market_pressure"
+        }
+      ],
+      "nextStateKey": "state_s7_imperial_judgment_open"
+    },
+    {
+      "systemActionKey": "system_s7_freeze_trade_credit",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "court_market_pressure",
+      "inputStateKeys": [
+        "state_s7_imperial_judgment_open"
+      ],
+      "factKeys": [
+        "fact_s7_system_freeze_trade_credit"
+      ],
+      "observableTraceKeys": [
+        "trace_s7_system_freeze_trade_credit"
+      ],
+      "visiblePressure": "裁决前停止新增缓冲，六方只能以此前六轮真实行动和证据自辩。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s7_court_pressure_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "court_market_pressure"
+        }
+      ],
+      "nextStateKey": "state_run_completed"
+    }
+  ]
+}

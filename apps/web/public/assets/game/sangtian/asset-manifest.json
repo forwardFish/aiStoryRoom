@@ -1,9 +1,15 @@
 {
   "schemaVersion": "1.0",
   "storyId": "sangtian",
-  "sourceDirectory": "docs/UI/web/game/嘉靖财政局",
-  "delivery": "The web server maps semantic URLs to the source files; the source PNGs are not duplicated.",
+  "sourceDirectory": "apps/web/public/assets/game/sangtian",
+  "delivery": "Runtime game.json URLs point directly to the versioned Web assets listed here.",
   "assets": [
+    {"assetKey":"role-zhejiang-governor","source":"generated/role-governor-scene-v1.png","sha256":"efdf3ef5723c91f5c42f485d782d2bd86deec8827d0f811046ce7b1d836be2eb","dimensions":"1024x1536","role":"player portrait","crop":"cover","alt":"浙江总督角色头像"},
+    {"assetKey":"role-xunfu","source":"generated/role-xunfu-scene-v1.png","sha256":"ac08191479460065b38901d4be7c8a57792bde65a058005381a4f9e5d9498bbf","dimensions":"1024x1536","role":"player portrait","crop":"cover","alt":"浙江巡抚角色头像"},
+    {"assetKey":"role-county-magistrate","source":"generated/governor-scene-v1.png","sha256":"f0717f98574f8943c251c5c2561dc2e8ccb89924748bb6cd23bfce2cfd52549f","dimensions":"1014x1551","role":"player portrait","crop":"cover","alt":"清流县令角色头像"},
+    {"assetKey":"role-clerk","source":"generated/role-clerk-scene-v1.png","sha256":"f937c82828c8f5e2e14e07a02be2b0d00887e46731f64ebf87bfd2e3a81f2eeb","dimensions":"1122x1402","role":"player portrait","crop":"cover","alt":"改桑书吏角色头像"},
+    {"assetKey":"role-merchant","source":"generated/role-merchant-scene-v1.png","sha256":"2f61f98324c789a9e227244f85402991b2a9fd79a5de06fc6ba5317318401c83","dimensions":"1254x1254","role":"player portrait","crop":"cover","alt":"江南商会会首角色头像"},
+    {"assetKey":"role-sili-jian","source":"generated/role-spy-scene-v1.png","sha256":"0a2246becf894b372facec7f5b6efc3f1459502ad3463f46029ddc0663b629a4","dimensions":"1254x1254","role":"player portrait","crop":"cover","alt":"司礼监织造使角色头像"},
     {"assetKey":"background","source":"ChatGPT Image 2026年7月12日 08_46_39 (1).png","sha256":"de8bc6b6434bf9e10d342b0f648d4a542730614a6b6791f0c42c58f7d5747816","dimensions":"1448x1086","role":"scene background","crop":"cover","alt":"嘉靖财政局水墨山水背景"},
     {"assetKey":"governor","source":"ChatGPT Image 2026年7月12日 08_46_39 (2).png","sha256":"b9e29141e929f7c0134b013a56ab8740b032fe4b32d58ae5cd1e11e71640da29","dimensions":"1254x1254","role":"player portrait","crop":"cover","alt":"浙江总督角色头像"},
     {"assetKey":"many-worlds","source":"ChatGPT Image 2026年7月12日 08_46_39 (3).png","sha256":"3da609d8cdc962c914750919ec619deb057b5a4236c5f962232847fc69b2a654","dimensions":"1254x1254","role":"brand icon","crop":"contain","alt":"Many Worlds 标识"},

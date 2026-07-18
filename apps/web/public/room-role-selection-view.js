@@ -18,7 +18,7 @@ export function renderRoomSelectionPage(model = {}) {
 
   return `<div class="mw-room-page" data-room-mode="${mode}">
     <a class="mw-room-brand" href="/worlds"><strong>Our Many Worlds</strong><small>Real players. Living worlds.</small></a>
-    <a class="mw-room-back" href="${escapeAttr(model.backHref || "/worlds")}">← ${escapeHtml(model.backLabel || "Back to worlds")}</a>
+    <a class="mw-room-back mw-back" href="${escapeAttr(model.backHref || "/worlds")}" aria-label="Back"><span class="mw-back__icon" aria-hidden="true">←</span><span>Back</span></a>
     <header class="mw-room-header">
       <div class="mw-room-title-block room-world">${bannerArtwork ? `<img class="mw-room-banner" src="${escapeAttr(bannerArtwork)}" alt="" loading="eager" decoding="sync" fetchpriority="high">` : ""}<div><h1>${escapeHtml(title)}</h1><p class="mw-room-session">${escapeHtml(model.sessionLabel || (mode === "solo" ? "Play Solo" : "Shared room"))}</p></div></div>
       ${mode === "multiplayer" ? renderInviteCard(model) : renderSoloCard(model)}

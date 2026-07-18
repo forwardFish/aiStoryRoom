@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "continuous_strategy_reactions_v1",
+  "contentVersion": "sangtian_v1_2",
+  "reactionScenarios": [
+    {
+      "reactionKey": "reaction_s2_p3_original_request",
+      "stageKey": "s2_county_secret_letter",
+      "sourceRoleKey": "zhejiang_governor",
+      "targetRoleKey": "county_magistrate",
+      "triggerActionKey": "main_s2_governor_request_original",
+      "interactionRequestKey": "request_s2_handover_original",
+      "responseOptions": [
+        {
+          "actionKey": "reaction_s2_magistrate_offer_sealed_copy",
+          "title": "只交封缄副本",
+          "factKey": "fact_s2_reaction_offer_sealed_copy",
+          "nextStateKey": "state_s3_grain_price_crisis_open"
+        },
+        {
+          "actionKey": "reaction_s2_magistrate_retain_original",
+          "title": "拒交原件并说明风险",
+          "factKey": "fact_s2_reaction_retain_original",
+          "nextStateKey": "state_s3_grain_price_crisis_open"
+        }
+      ],
+      "fallbackResponseActionKey": "reaction_s2_magistrate_retain_original",
+      "passAllowed": false
+    },
+    {
+      "reactionKey": "reaction_s4_p1_witness_protection",
+      "stageKey": "s4_hidden_ledger",
+      "sourceRoleKey": "county_magistrate",
+      "targetRoleKey": "zhejiang_governor",
+      "triggerActionKey": "main_s4_magistrate_protect_witness",
+      "interactionRequestKey": "request_s4_protect_witness",
+      "responseOptions": [
+        {
+          "actionKey": "reaction_s4_governor_accept_joint_protection",
+          "title": "接受联合保护",
+          "factKey": "fact_s4_reaction_accept_joint_protection",
+          "nextStateKey": "state_s5_mutual_impeachment_open"
+        },
+        {
+          "actionKey": "reaction_s4_governor_limit_to_sealed_custody",
+          "title": "仅提供密封保管",
+          "factKey": "fact_s4_reaction_limit_to_sealed_custody",
+          "nextStateKey": "state_s5_mutual_impeachment_open"
+        }
+      ],
+      "fallbackResponseActionKey": "reaction_s4_governor_limit_to_sealed_custody",
+      "passAllowed": false
+    },
+    {
+      "reactionKey": "reaction_s5_p2_impeachment_reply",
+      "stageKey": "s5_mutual_impeachment",
+      "sourceRoleKey": "zhejiang_governor",
+      "targetRoleKey": "xunfu",
+      "triggerActionKey": "main_s5_governor_impeach_abuse",
+      "interactionRequestKey": "request_s5_answer_impeachment",
+      "responseOptions": [
+        {
+          "actionKey": "reaction_s5_xunfu_submit_execution_schedule",
+          "title": "提交执行时序反证",
+          "factKey": "fact_s5_reaction_submit_execution_schedule",
+          "nextStateKey": "state_s6_capital_reply_open"
+        },
+        {
+          "actionKey": "reaction_s5_xunfu_challenge_review_delay",
+          "title": "反指复核拖延",
+          "factKey": "fact_s5_reaction_challenge_review_delay",
+          "nextStateKey": "state_s6_capital_reply_open"
+        }
+      ],
+      "fallbackResponseActionKey": "reaction_s5_xunfu_submit_execution_schedule",
+      "passAllowed": false
+    }
+  ]
+}

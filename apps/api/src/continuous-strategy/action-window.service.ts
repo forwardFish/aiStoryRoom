@@ -18,7 +18,7 @@ export function assignRoleControllers<TRole extends { id: string }, TPlayer exte
 }
 
 export type ContinuousTiming = {
-  profile: "realtime" | "manual-three-page" | "automated-success" | "timeout";
+  profile: "realtime" | "manual-three-page" | "automated-success" | "fault-acceptance" | "timeout";
   mainSeconds: number;
   graceSeconds: number;
   graceMinimumSeconds: number;
@@ -48,6 +48,7 @@ export class ActionWindowService {
       // materially longer than an in-memory test. Keep this success profile
       // bounded, but do not turn infrastructure latency into WINDOW_CLOSED.
       "automated-success": { mainSeconds: 240, graceSeconds: 120, graceMinimumSeconds: 20, offlineGraceSeconds: 30, aiOnlyGraceSeconds: 1 },
+      "fault-acceptance": { mainSeconds: 90, graceSeconds: 45, graceMinimumSeconds: 8, offlineGraceSeconds: 3, aiOnlyGraceSeconds: 1 },
       timeout: { mainSeconds: 15, graceSeconds: 8, graceMinimumSeconds: 8, offlineGraceSeconds: 3, aiOnlyGraceSeconds: 1 }
     };
     if (!defaults[profile]) throw new Error(`Unsupported CONTINUOUS_TIMING_PROFILE: ${profile}`);
