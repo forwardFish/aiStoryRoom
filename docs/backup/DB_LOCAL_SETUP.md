@@ -1,8 +1,8 @@
 # AI 多人故事局 PRD v3.1 补充：PostgreSQL + Prisma 本地数据库落地方案
 
-> 适用文档：`AI_multiplayer_story_RPG_MVP_Codex_PRD_v3_0.md`
-> 补充目标：让第一版 MVP 可以在本地完整跑通「创建故事局 → 选择角色 → 提交行动 → AI mock 结算 → 更新世界状态 → 生成章节」闭环。
-> 推荐数据库：PostgreSQL 16 + Prisma ORM。
+> 适用文档：`AI_multiplayer_story_RPG_MVP_Codex_PRD_v3_0.md`  
+> 补充目标：让第一版 MVP 可以在本地完整跑通「创建故事局 → 选择角色 → 提交行动 → AI mock 结算 → 更新世界状态 → 生成章节」闭环。  
+> 推荐数据库：PostgreSQL 16 + Prisma ORM。  
 > 推荐本地依赖：Docker Compose 启动 PostgreSQL + Redis；Node.js 服务通过 Prisma 连接数据库；BullMQ 使用 Redis。
 
 ---
