@@ -47,43 +47,43 @@
     },
     {
       "path": "schemas/manifest.schema.json",
-      "sha256": "d63a0b90cd280f5757eb341e9d05605d15404f3ffa0c56ec9362a9cece00f23f"
+      "sha256": "820ef39a185632307efeaec9ad1fb41389efdecb28021ac16856bc5501c316bb"
     },
     {
       "path": "schemas/stages.schema.json",
-      "sha256": "9f1c1d907552995c432e952bbb2fda34f59f8e973b44a3f23d94a25dfe4ba4b2"
+      "sha256": "c9730af0e7930d9ac531aa4a9947c258dccc393a403367d1dcd7a74ccdc52b7e"
     },
     {
       "path": "schemas/role-stage-content.schema.json",
-      "sha256": "7c5845001ae16c16f56200ec602f32b55461c97319016bacd2d9268f77c5ec61"
+      "sha256": "9897d41ae262db3dee7c662e8ee06ee1b2791fa9a0124239daece550084d083d"
     },
     {
       "path": "schemas/maneuver-strategies.schema.json",
-      "sha256": "8d4d1f2805eea1003b35d36b32943173c20924ede1615522056dfd5fb0bcc52d"
+      "sha256": "bc898a3261f333e0fc8fab7b3635830b726edc0515a2bf27dfd4ec17cabc6d7e"
     },
     {
       "path": "schemas/reaction-scenarios.schema.json",
-      "sha256": "06545b0c5a946dcf5085733c59d66de1bc73ef12c66c85992681e6c1dfde67d1"
+      "sha256": "d80489aac13bc6b8c6131faf5819e938caba0d9b66c0fa4f8707a65a54839db1"
     },
     {
       "path": "schemas/system-actions.schema.json",
-      "sha256": "fe79f7a749d8510ca030a91de293af3959b7ab2dcf7ec7baaea8db75433d742e"
+      "sha256": "5e67b4521f9e85e22708137b68a04723f8e918118805786badba1dccd1dabce0"
     },
     {
       "path": "schemas/agent-policies.schema.json",
-      "sha256": "54bbcb4b5e9b4ae67fc482b024f50b8ec6338168374c50c97bc9f16aeb78225f"
+      "sha256": "a17e58f37520857ac2e36449408c22b49aef0728323f4fcc682f481fc1fa0c2a"
     },
     {
       "path": "schemas/result-rules.schema.json",
-      "sha256": "dcb8e2ce7ef682e174702a962d2d98c0e307f423f4ee5c1fff2214c866926ab0"
+      "sha256": "016c60d3f2ed3cf52fdbdee0bb4c2480b37d59083bc77ad08ff79d2e076036d1"
     },
     {
       "path": "schemas/ending-rules.schema.json",
-      "sha256": "535ddb7864642c3b1c2f12a7c85dca5e600448882ed188c92179da4730f8d6ca"
+      "sha256": "d331859da64f436aacebb7f18b6a3cef42a6d66a3b15f16b711a496d56182c2c"
     },
     {
       "path": "schemas/strategy-registry.schema.json",
-      "sha256": "4c4e3f60bf2a1022a4ae0f2b73322e97e7e5921da2c3bf150f28b2cbf3f03312"
+      "sha256": "3477d1179d53ddbab0b7d3182cd07826418aa8924648516c614010fbecc892f6"
     }
   ]
 }

@@ -1,0 +1,3 @@
+# Strategy content is hash-addressed byte-for-byte. Keep its line endings
+# stable across Windows and Unix checkouts so registry hashes remain valid.
+packages/templates/config/**/*.json text eol=lf
