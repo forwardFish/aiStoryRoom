@@ -13,3 +13,42 @@ apps/miniprogram/dist/
 apps/miniprogram/project.private.config.json
 
 .vercel
+
+# Local verification evidence and generated reports
+outputs/
+**/evidence/
+**/logs/
+**/screenshots/
+docs/auto-execute/results/
+docs/auto-execute/**/results/
+docs/auto-execute/latest/
+docs/auto-execute/summaries/
+docs/auto-execute/comparison/
+docs/auto-execute/**/runtime/
+docs/auto-execute/**/*.png
+
+# Local UI/reference screenshots (keep application image assets trackable)
+docs/UI/**/*.png
+docs/UI/**/*.jpg
+docs/UI/**/*.jpeg
+docs/UI/**/*.webp
+docs/UI/**/*.zip
+docs/剧本/**/UI/**/*.png
+docs/剧本/**/UI/**/*.jpg
+docs/剧本/**/UI/**/*.jpeg
+docs/剧本/**/UI/**/*.webp
+docs/**/ChatGPT Image *.png
+
+# Local test and browser artifacts
+test-results/
+playwright-report/
+*.log
+*.pid
+*.tmp
+__pycache__/
+*.py[cod]
+
+# Generated deployment/build outputs and caches
+apps/web/dist-vercel/
+*.tsbuildinfo
+.omx/
