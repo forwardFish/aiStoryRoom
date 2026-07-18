@@ -32,15 +32,22 @@ function harness(options: { revokedAt?: Date | null; expiresAt?: Date; status?: 
 }
 
 test("creates an expiring result share without persisting the bearer token", async () => {
-  const { service, created } = harness();
-  const result: any = await service.create(user, "run_1", { expiresInDays: 7, includeRoleName: true, channel: "LINK" });
-  assert.match(result.url, /^http:\/\/localhost:3000\/shared\/result\?token=/);
-  assert.match(result.qrDataUrl, /^data:image\/png;base64,/);
-  assert.equal(created.length, 1);
-  assert.equal(created[0].token, undefined);
-  assert.match(created[0].tokenHash, /^[a-f0-9]{64}$/);
-  assert.equal(created[0].tokenPrefix.length, 8);
-  assert.equal(result.security.rawTokenStored, false);
+  const previousOrigin = process.env.PUBLIC_WEB_URL;
+  process.env.PUBLIC_WEB_URL = "http://localhost:3000";
+  try {
+    const { service, created } = harness();
+    const result: any = await service.create(user, "run_1", { expiresInDays: 7, includeRoleName: true, channel: "LINK" });
+    assert.match(result.url, /^http:\/\/localhost:3000\/shared\/result\?token=/);
+    assert.match(result.qrDataUrl, /^data:image\/png;base64,/);
+    assert.equal(created.length, 1);
+    assert.equal(created[0].token, undefined);
+    assert.match(created[0].tokenHash, /^[a-f0-9]{64}$/);
+    assert.equal(created[0].tokenPrefix.length, 8);
+    assert.equal(result.security.rawTokenStored, false);
+  } finally {
+    if (previousOrigin === undefined) delete process.env.PUBLIC_WEB_URL;
+    else process.env.PUBLIC_WEB_URL = previousOrigin;
+  }
 });
 
 test("public result is a strict projection and redacts contact details", async () => {

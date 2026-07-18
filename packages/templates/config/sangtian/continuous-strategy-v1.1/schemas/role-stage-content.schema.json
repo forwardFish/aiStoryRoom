@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.com/schemas/continuous-strategy/role-stage-content-v1.json",
+  "title": "Continuous Strategy Role Stage Content V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contentVersion", "roleStages"],
+  "properties": {
+    "schemaVersion": { "const": "continuous_strategy_role_stage_content_v1" },
+    "contentVersion": { "const": "sangtian_v1_1" },
+    "roleStages": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stageKey", "roleKey", "privateBrief", "personalPressure", "mainCards"],
+        "properties": {
+          "stageKey": { "type": "string" },
+          "roleKey": { "type": "string" },
+          "privateBrief": { "type": "string", "minLength": 1 },
+          "personalPressure": { "type": "string", "minLength": 1 },
+          "mainCards": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": { "$ref": "#/$defs/mainCard" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "mainCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actionKey", "title", "objective", "visibility", "risk", "fallbackActionKey", "targetRoleKey", "receipt", "effect", "assetMutations"],
+      "properties": {
+        "actionKey": { "type": "string" },
+        "title": { "type": "string" },
+        "objective": { "type": "string" },
+        "visibility": { "enum": ["PUBLIC", "OBSERVABLE", "LIMITED", "PRIVATE"] },
+        "risk": { "enum": ["LOW", "NORMAL", "HIGH"] },
+        "fallbackActionKey": { "type": "string" },
+        "targetRoleKey": { "type": "string" },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["receiptKey", "text"],
+          "properties": { "receiptKey": { "type": "string" }, "text": { "type": "string" } }
+        },
+        "effect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["effectKey", "factKeys", "influenceEdges", "observableTraceKeys", "interactionRequestKeys", "nextStateKey"],
+          "properties": {
+            "effectKey": { "type": "string" },
+            "factKeys": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+            "influenceEdges": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["affectedRoleKey", "effectKey", "visibility"],
+                "properties": { "affectedRoleKey": { "type": "string" }, "effectKey": { "type": "string" }, "visibility": { "enum": ["PUBLIC", "OBSERVABLE", "LIMITED", "PRIVATE"] } }
+              }
+            },
+            "observableTraceKeys": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+            "interactionRequestKeys": { "type": "array", "items": { "type": "string" } },
+            "nextStateKey": { "type": "string" }
+          }
+        },
+        "assetMutations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/assetMutation" } }
+      }
+    },
+    "assetMutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetKey", "mutationType", "delta", "toRoleKey"],
+      "properties": { "assetKey": { "type": "string" }, "mutationType": { "type": "string" }, "delta": { "type": "integer" }, "toRoleKey": { "type": ["string", "null"] } }
+    }
+  }
+}

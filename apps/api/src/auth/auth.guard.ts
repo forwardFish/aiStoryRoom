@@ -1,14 +1,20 @@
-import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, Inject, Injectable, Optional, UnauthorizedException } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { PrismaService } from "../prisma.service";
 import type { AuthenticatedUser } from "./current-user.decorator";
 import { verifyAccessToken } from "./auth.service";
 import { renewSessionCookie, sessionTokenFromRequest } from "./auth-cookie";
+import { PUBLIC_ROUTE_METADATA } from "./public.decorator";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Optional() @Inject(Reflector) private readonly reflector?: Reflector
+  ) {}
 
   async canActivate(context: ExecutionContext) {
+    if (this.reflector?.getAllAndOverride<boolean>(PUBLIC_ROUTE_METADATA, [context.getHandler(), context.getClass()])) return true;
     const request = context.switchToHttp().getRequest();
     const authorization = String(request.headers.authorization || "");
     const bearerToken = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";

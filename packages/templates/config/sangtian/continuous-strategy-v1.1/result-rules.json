@@ -1,0 +1,358 @@
+{
+  "schemaVersion": "continuous_strategy_result_rules_v1",
+  "contentVersion": "sangtian_v1_1",
+  "publicStageRules": [
+    {
+      "ruleKey": "public_result_s1",
+      "stageKey": "s1_change_mulberry_order",
+      "candidateFactKeys": [
+        "fact_s1_governor_joint_review",
+        "fact_s1_governor_pause_one_county",
+        "fact_s1_governor_endorse_fast_execution",
+        "fact_s1_xunfu_accelerate_orders",
+        "fact_s1_xunfu_publish_progress",
+        "fact_s1_xunfu_reserve_review_window",
+        "fact_s1_magistrate_retain_original_register",
+        "fact_s1_magistrate_phase_execution",
+        "fact_s1_magistrate_submit_copy_for_protection"
+      ],
+      "outcomeStateKey": "state_s2_county_secret_letter_open",
+      "summary": "改桑急令形成了可审计的执行边界；速度、复核和县册去向开始互相制约。"
+    },
+    {
+      "ruleKey": "public_result_s2",
+      "stageKey": "s2_county_secret_letter",
+      "candidateFactKeys": [
+        "fact_s2_governor_receive_letter_privately",
+        "fact_s2_governor_dual_verification",
+        "fact_s2_governor_request_original",
+        "fact_s2_xunfu_trace_leak",
+        "fact_s2_xunfu_seize_drafts",
+        "fact_s2_xunfu_challenge_letter",
+        "fact_s2_magistrate_send_copy",
+        "fact_s2_magistrate_hide_original",
+        "fact_s2_magistrate_trade_protection"
+      ],
+      "outcomeStateKey": "state_s3_grain_price_crisis_open",
+      "summary": "县令密信迫使三方明确证据由谁保管、谁能核验，以及拒绝交出原件的代价。"
+    },
+    {
+      "ruleKey": "public_result_s3",
+      "stageKey": "s3_grain_price_crisis",
+      "candidateFactKeys": [
+        "fact_s3_governor_release_granary",
+        "fact_s3_governor_audit_merchants",
+        "fact_s3_governor_unify_price_message",
+        "fact_s3_xunfu_blame_merchants",
+        "fact_s3_xunfu_summon_dealers",
+        "fact_s3_xunfu_accelerate_levy",
+        "fact_s3_magistrate_publish_loss",
+        "fact_s3_magistrate_organize_petitions",
+        "fact_s3_magistrate_protect_local_granary"
+      ],
+      "outcomeStateKey": "state_s4_hidden_ledger_open",
+      "summary": "粮价危机将每个人此前的执行选择转换为官仓余量、商会压力和可归责的价格口径。"
+    },
+    {
+      "ruleKey": "public_result_s4",
+      "stageKey": "s4_hidden_ledger",
+      "candidateFactKeys": [
+        "fact_s4_governor_seal_evidence",
+        "fact_s4_governor_protect_witness",
+        "fact_s4_governor_control_access",
+        "fact_s4_xunfu_challenge_integrity",
+        "fact_s4_xunfu_seize_original",
+        "fact_s4_xunfu_cut_off_aide",
+        "fact_s4_magistrate_send_copy",
+        "fact_s4_magistrate_move_original",
+        "fact_s4_magistrate_protect_witness"
+      ],
+      "outcomeStateKey": "state_s5_mutual_impeachment_open",
+      "summary": "暗账的效力不再由文案决定，而由原件去向、证人保护和每次接触的可追溯记录决定。"
+    },
+    {
+      "ruleKey": "public_result_s5",
+      "stageKey": "s5_mutual_impeachment",
+      "candidateFactKeys": [
+        "fact_s5_governor_split_liability",
+        "fact_s5_governor_suppress_unsupported",
+        "fact_s5_governor_impeach_abuse",
+        "fact_s5_xunfu_impeach_delay",
+        "fact_s5_xunfu_claim_credit",
+        "fact_s5_xunfu_counter_accuse",
+        "fact_s5_magistrate_prove_overreach",
+        "fact_s5_magistrate_request_public_audit",
+        "fact_s5_magistrate_preserve_sources"
+      ],
+      "outcomeStateKey": "state_s6_capital_reply_open",
+      "summary": "弹劾不再是空泛指控；每份责任叙事都必须对应前序命令、证据接触和粮价事实。"
+    },
+    {
+      "ruleKey": "public_result_s6",
+      "stageKey": "s6_capital_reply",
+      "candidateFactKeys": [
+        "fact_s6_governor_consolidate_memorial",
+        "fact_s6_governor_accept_review_duty",
+        "fact_s6_governor_preserve_flexibility",
+        "fact_s6_xunfu_secret_merit_report",
+        "fact_s6_xunfu_minimize_ledger",
+        "fact_s6_xunfu_demand_closure",
+        "fact_s6_magistrate_submit_evidence_index",
+        "fact_s6_magistrate_attach_petitions",
+        "fact_s6_magistrate_protect_sources"
+      ],
+      "outcomeStateKey": "state_s7_imperial_judgment_open",
+      "summary": "最终奏报把粮价、田契、暗账、责任和来源保护压缩为一份可被御前逐条追问的记录。"
+    },
+    {
+      "ruleKey": "public_result_s7",
+      "stageKey": "s7_imperial_judgment",
+      "candidateFactKeys": [
+        "fact_s7_governor_state_stability_case",
+        "fact_s7_governor_accept_final_duty",
+        "fact_s7_governor_defend_local_flexibility",
+        "fact_s7_xunfu_defend_execution",
+        "fact_s7_xunfu_admit_costs",
+        "fact_s7_xunfu_seek_forced_acquittal",
+        "fact_s7_magistrate_submit_final_index",
+        "fact_s7_magistrate_plead_for_people",
+        "fact_s7_magistrate_shield_sources"
+      ],
+      "outcomeStateKey": "state_run_completed",
+      "summary": "御前裁决以七阶段行动、跨角色影响、证据链和奏报差异为依据，形成一个公共结局与三条个人命运。"
+    }
+  ],
+  "personalStageRules": [
+    {
+      "ruleKey": "personal_result_s1_governor",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "zhejiang_governor",
+      "candidateFactKeys": [
+        "fact_s1_governor_joint_review",
+        "fact_s1_governor_pause_one_county",
+        "fact_s1_governor_endorse_fast_execution"
+      ],
+      "summary": "总督本轮的复核边界决定了他日后能否解释浙江执行失衡。"
+    },
+    {
+      "ruleKey": "personal_result_s1_xunfu",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "xunfu",
+      "candidateFactKeys": [
+        "fact_s1_xunfu_accelerate_orders",
+        "fact_s1_xunfu_publish_progress",
+        "fact_s1_xunfu_reserve_review_window"
+      ],
+      "summary": "巡抚本轮留下的进度承诺会在后续粮价和弹劾中转化为个人责任。"
+    },
+    {
+      "ruleKey": "personal_result_s1_magistrate",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "county_magistrate",
+      "candidateFactKeys": [
+        "fact_s1_magistrate_retain_original_register",
+        "fact_s1_magistrate_phase_execution",
+        "fact_s1_magistrate_submit_copy_for_protection"
+      ],
+      "summary": "县令是否保住原件以及谁收到副本，将决定后续密信和暗账的可信度。"
+    },
+    {
+      "ruleKey": "personal_result_s2_governor",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "zhejiang_governor",
+      "candidateFactKeys": [
+        "fact_s2_governor_receive_letter_privately",
+        "fact_s2_governor_dual_verification",
+        "fact_s2_governor_request_original"
+      ],
+      "summary": "总督如何接信与核验，决定他掌握的是情报、证据还是新的政治债务。"
+    },
+    {
+      "ruleKey": "personal_result_s2_xunfu",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "xunfu",
+      "candidateFactKeys": [
+        "fact_s2_xunfu_trace_leak",
+        "fact_s2_xunfu_seize_drafts",
+        "fact_s2_xunfu_challenge_letter"
+      ],
+      "summary": "巡抚的调查方式决定密信会成为反证、把柄还是可共同核验的事实。"
+    },
+    {
+      "ruleKey": "personal_result_s2_magistrate",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "county_magistrate",
+      "candidateFactKeys": [
+        "fact_s2_magistrate_send_copy",
+        "fact_s2_magistrate_hide_original",
+        "fact_s2_magistrate_trade_protection"
+      ],
+      "summary": "县令在原件、副本和保护之间的取舍，将决定暗账出现时谁拥有证据主动权。"
+    },
+    {
+      "ruleKey": "personal_result_s3_governor",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "zhejiang_governor",
+      "candidateFactKeys": [
+        "fact_s3_governor_release_granary",
+        "fact_s3_governor_audit_merchants",
+        "fact_s3_governor_unify_price_message"
+      ],
+      "summary": "总督是否区分短期平粮与长期粮田损失，决定他能否在京师解释危机根源。"
+    },
+    {
+      "ruleKey": "personal_result_s3_xunfu",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "xunfu",
+      "candidateFactKeys": [
+        "fact_s3_xunfu_blame_merchants",
+        "fact_s3_xunfu_summon_dealers",
+        "fact_s3_xunfu_accelerate_levy"
+      ],
+      "summary": "巡抚选择归责、谈判或加征，将决定商会账簿和地方民情在弹劾中的分量。"
+    },
+    {
+      "ruleKey": "personal_result_s3_magistrate",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "county_magistrate",
+      "candidateFactKeys": [
+        "fact_s3_magistrate_publish_loss",
+        "fact_s3_magistrate_organize_petitions",
+        "fact_s3_magistrate_protect_local_granary"
+      ],
+      "summary": "县令是否把损失册变成公共证据，将决定百姓代价能否进入最终奏报。"
+    },
+    {
+      "ruleKey": "personal_result_s4_governor",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "zhejiang_governor",
+      "candidateFactKeys": [
+        "fact_s4_governor_seal_evidence",
+        "fact_s4_governor_protect_witness",
+        "fact_s4_governor_control_access"
+      ],
+      "summary": "总督对保管链与证人保护的选择，决定暗账能否在御前经受程序质疑。"
+    },
+    {
+      "ruleKey": "personal_result_s4_xunfu",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "xunfu",
+      "candidateFactKeys": [
+        "fact_s4_xunfu_challenge_integrity",
+        "fact_s4_xunfu_seize_original",
+        "fact_s4_xunfu_cut_off_aide"
+      ],
+      "summary": "巡抚能否以程序核验而非强取证据自保，将决定弹劾时的可信度。"
+    },
+    {
+      "ruleKey": "personal_result_s4_magistrate",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "county_magistrate",
+      "candidateFactKeys": [
+        "fact_s4_magistrate_send_copy",
+        "fact_s4_magistrate_move_original",
+        "fact_s4_magistrate_protect_witness"
+      ],
+      "summary": "县令能否同时保全原件与证人，决定他在相互弹劾中是证据源还是替罪羊。"
+    },
+    {
+      "ruleKey": "personal_result_s5_governor",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "zhejiang_governor",
+      "candidateFactKeys": [
+        "fact_s5_governor_split_liability",
+        "fact_s5_governor_suppress_unsupported",
+        "fact_s5_governor_impeach_abuse"
+      ],
+      "summary": "总督能否用时序而非权位拆分责任，将决定御前是否相信其稳局能力。"
+    },
+    {
+      "ruleKey": "personal_result_s5_xunfu",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "xunfu",
+      "candidateFactKeys": [
+        "fact_s5_xunfu_impeach_delay",
+        "fact_s5_xunfu_claim_credit",
+        "fact_s5_xunfu_counter_accuse"
+      ],
+      "summary": "巡抚的答辩是否承认真实代价，将决定政绩数字是保护还是反噬。"
+    },
+    {
+      "ruleKey": "personal_result_s5_magistrate",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "county_magistrate",
+      "candidateFactKeys": [
+        "fact_s5_magistrate_prove_overreach",
+        "fact_s5_magistrate_request_public_audit",
+        "fact_s5_magistrate_preserve_sources"
+      ],
+      "summary": "县令是否把来源与命令一一对应，决定其证据能否超越地方自辩。"
+    },
+    {
+      "ruleKey": "personal_result_s6_governor",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "zhejiang_governor",
+      "candidateFactKeys": [
+        "fact_s6_governor_consolidate_memorial",
+        "fact_s6_governor_accept_review_duty",
+        "fact_s6_governor_preserve_flexibility"
+      ],
+      "summary": "总督主奏是否容纳冲突事实，决定御前把他视为稳局者还是遮掩者。"
+    },
+    {
+      "ruleKey": "personal_result_s6_xunfu",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "xunfu",
+      "candidateFactKeys": [
+        "fact_s6_xunfu_secret_merit_report",
+        "fact_s6_xunfu_minimize_ledger",
+        "fact_s6_xunfu_demand_closure"
+      ],
+      "summary": "巡抚密奏与公开主奏之间的差异，将成为御前判断其诚信的直接依据。"
+    },
+    {
+      "ruleKey": "personal_result_s6_magistrate",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "county_magistrate",
+      "candidateFactKeys": [
+        "fact_s6_magistrate_submit_evidence_index",
+        "fact_s6_magistrate_attach_petitions",
+        "fact_s6_magistrate_protect_sources"
+      ],
+      "summary": "县令是否兼顾可核验与来源安全，决定其材料在御前是证据还是未经证实的陈情。"
+    },
+    {
+      "ruleKey": "personal_result_s7_governor",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "zhejiang_governor",
+      "candidateFactKeys": [
+        "fact_s7_governor_state_stability_case",
+        "fact_s7_governor_accept_final_duty",
+        "fact_s7_governor_defend_local_flexibility"
+      ],
+      "summary": "总督最终命运取决于他能否用前六阶段事实证明统筹、纠偏与承担同时存在。"
+    },
+    {
+      "ruleKey": "personal_result_s7_xunfu",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "xunfu",
+      "candidateFactKeys": [
+        "fact_s7_xunfu_defend_execution",
+        "fact_s7_xunfu_admit_costs",
+        "fact_s7_xunfu_seek_forced_acquittal"
+      ],
+      "summary": "巡抚的结局取决于政绩、授权与代价是否能在同一证据链中自洽。"
+    },
+    {
+      "ruleKey": "personal_result_s7_magistrate",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "county_magistrate",
+      "candidateFactKeys": [
+        "fact_s7_magistrate_submit_final_index",
+        "fact_s7_magistrate_plead_for_people",
+        "fact_s7_magistrate_shield_sources"
+      ],
+      "summary": "县令的命运取决于证据能否证明保民、守法和来源保护不是互相冲突的借口。"
+    }
+  ]
+}

@@ -314,3 +314,6 @@ export function getTemplate(templateId: string): StoryTemplate {
   if (!template) throw new Error(`Unknown template: ${templateId}`);
   return template;
 }
+
+export * from "./continuous-strategy";
+export * from "./game-registry";

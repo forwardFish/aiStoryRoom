@@ -1,4 +1,4 @@
-import { Controller, Inject, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Inject, Param, Post, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
 import { CurrentUser, type AuthenticatedUser } from "../auth/current-user.decorator";
 import { StoryAccessService } from "./story-access.service";
@@ -14,7 +14,7 @@ export class StoryAccessController {
   }
 
   @Post(":runId/unlock")
-  unlock(@CurrentUser() user: AuthenticatedUser, @Param("runId") runId: string) {
-    return this.access.unlock(user, runId);
+  unlock(@CurrentUser() user: AuthenticatedUser, @Param("runId") runId: string, @Body() body: { idempotencyKey?: string }) {
+    return this.access.unlock(user, runId, body);
   }
 }

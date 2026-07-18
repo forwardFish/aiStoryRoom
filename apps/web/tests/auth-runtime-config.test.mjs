@@ -12,7 +12,7 @@ test("auth page loads the public runtime configuration before its Google button"
     readFile(new URL("../../../vercel.json", import.meta.url), "utf8")
   ]);
 
-  assert.match(html, /<script src="\/runtime-config\.js"><\/script>\s*<script type="module" src="\/world-catalog\.js[^"]*"><\/script>\s*<script type="module" src="\/platform\.js">/);
+  assert.match(html, /<script src="\/runtime-config\.js"><\/script>\s*<script type="module" src="\/world-catalog\.js[^"]*"><\/script>\s*<script type="module" src="\/platform\.js(?:\?v=[^"]+)?">/);
   assert.match(runtimeConfig, /googleWebClientId: ""/);
   assert.match(server, /PUBLIC_GOOGLE_WEB_CLIENT_ID/);
   assert.match(server, /cache-control": "no-store/);
@@ -39,6 +39,12 @@ test("Google browser sign-in is challenge-bound and leaves email authentication 
   assert.match(google, /google\.accounts\.id\.renderButton/);
   assert.doesNotMatch(google, /client_secret/i);
   assert.match(source, /function apiUrl\(url\)/);
+});
+
+test("password reset always uses the deployment's same-origin API proxy", async () => {
+  const source = await readFile(new URL("../public/reset-password.js", import.meta.url), "utf8");
+  assert.match(source, /const apiBase = "\/api"/);
+  assert.doesNotMatch(source, /appsapi-test|railway\.app/);
 });
 
 test("production Google sign-in reaches the same-origin cookie session endpoint without runtime errors", async () => {

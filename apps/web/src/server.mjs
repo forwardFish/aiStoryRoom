@@ -37,7 +37,6 @@ const pageRoutes = new Map([
   ["/role-select", "/role-select.html"],
   ["/trio", "/trio.html"],
   ["/game", "/index.html"],
-  ["/room-game", "/room-game.html"],
   ["/credits", "/credits.html"],
   ["/credits/status", "/credits-status.html"],
   ["/credits/cancel", "/credits-status.html"],
@@ -49,8 +48,6 @@ const pageRoutes = new Map([
   ["/reset-password", "/reset-password.html"],
   ["/join", "/platform.html"],
   ["/worlds", "/worlds.html"],
-  ["/worlds/sangtian", "/platform.html"],
-  ["/worlds/caesar", "/platform.html"],
   ["/rooms", "/platform.html"],
   ["/rooms/fixture-caesar-waiting", "/platform.html"],
   ["/game/result", "/platform.html"]
@@ -119,7 +116,8 @@ export const server = createServer((req, res) => {
     ["/home", "/"],
     ["/credits.html", "/credits"],
     ["/credits-success.html", "/credits/status"],
-    ["/join.html", "/join"]
+    ["/join.html", "/join"],
+    ["/room-game", "/game"]
   ]);
   const canonical = legacyRedirects.get(url.pathname);
   if (canonical) {
@@ -176,7 +174,7 @@ export const server = createServer((req, res) => {
   }
   const normalizedPathname = url.pathname.replace(/\/$/, "") || "/";
   let requested = pageRoutes.get(normalizedPathname) || url.pathname;
-  if (/^\/worlds\/[^/]+$/.test(normalizedPathname) || /^\/rooms\/[^/]+$/.test(normalizedPathname) || normalizedPathname === "/game/result") {
+  if (/^\/worlds\/[^/]+$/.test(normalizedPathname) || /^\/rooms\/[^/]+$/.test(normalizedPathname)) {
     requested = "/platform.html";
   }
   if (requested.startsWith("/ui/2/")) {

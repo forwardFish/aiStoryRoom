@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.com/schemas/continuous-strategy/stages-v1.json",
+  "title": "Continuous Strategy Stages V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contentVersion", "stages"],
+  "properties": {
+    "schemaVersion": { "const": "continuous_strategy_stages_v1" },
+    "contentVersion": { "const": "sangtian_v1_1" },
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stageKey", "stageNumber", "title", "playableRoleKeys", "systemRoleKey", "commonContest", "stateCatalog", "factCatalog", "assetCatalog", "traceCatalog", "interactionRequestCatalog", "carriedFactKeys", "systemActionKey", "nextStateKey", "minimumDistinctPlayableInfluenceSources"],
+        "properties": {
+          "stageKey": { "type": "string", "minLength": 1 },
+          "stageNumber": { "type": "integer", "minimum": 1, "maximum": 7 },
+          "title": { "type": "string", "minLength": 1 },
+          "playableRoleKeys": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "type": "string" } },
+          "systemRoleKey": { "type": "string" },
+          "commonContest": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["contestKey", "title", "assetKey", "description"],
+            "properties": { "contestKey": { "type": "string" }, "title": { "type": "string" }, "assetKey": { "type": "string" }, "description": { "type": "string" } }
+          },
+          "stateCatalog": { "$ref": "#/$defs/keyDescriptionCatalog" },
+          "factCatalog": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["factKey", "visibility"],
+              "properties": { "factKey": { "type": "string" }, "visibility": { "enum": ["PUBLIC", "OBSERVABLE", "LIMITED", "PRIVATE"] } }
+            }
+          },
+          "assetCatalog": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["assetKey", "kind", "initialOwnerRoleKey"],
+              "properties": { "assetKey": { "type": "string" }, "kind": { "type": "string" }, "initialOwnerRoleKey": { "type": ["string", "null"] } }
+            }
+          },
+          "traceCatalog": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["traceKey", "description"],
+              "properties": { "traceKey": { "type": "string" }, "description": { "type": "string" } }
+            }
+          },
+          "interactionRequestCatalog": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["requestKey", "sourceRoleKey", "targetRoleKey", "eventType", "defaultOutcomeKey"],
+              "properties": { "requestKey": { "type": "string" }, "sourceRoleKey": { "type": "string" }, "targetRoleKey": { "type": "string" }, "eventType": { "type": "string" }, "defaultOutcomeKey": { "type": "string" } }
+            }
+          },
+          "carriedFactKeys": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+          "systemActionKey": { "type": "string" },
+          "nextStateKey": { "type": "string" },
+          "minimumDistinctPlayableInfluenceSources": { "type": "integer", "minimum": 2 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "keyDescriptionCatalog": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stateKey", "description"],
+        "properties": { "stateKey": { "type": "string" }, "description": { "type": "string" } }
+      }
+    }
+  }
+}

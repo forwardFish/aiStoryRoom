@@ -7,7 +7,8 @@
     { "source": "/home", "destination": "/", "permanent": false },
     { "source": "/credits.html", "destination": "/credits", "permanent": false },
     { "source": "/credits-success.html", "destination": "/credits/status", "permanent": false },
-    { "source": "/join.html", "destination": "/join", "permanent": false }
+    { "source": "/join.html", "destination": "/join", "permanent": false },
+    { "source": "/room-game", "destination": "/game", "permanent": true }
   ],
   "headers": [
     {
@@ -40,7 +41,6 @@
     { "source": "/worlds/:path*", "destination": "/platform.html" },
     { "source": "/rooms", "destination": "/platform.html" },
     { "source": "/rooms/:path*", "destination": "/platform.html" },
-    { "source": "/room-game", "destination": "/room-game.html" },
     { "source": "/game/result", "destination": "/platform.html" },
     { "source": "/credits", "destination": "/credits.html" },
     { "source": "/credits/status", "destination": "/credits-status.html" },

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "continuous_strategy_manifest_v1",
+  "contentVersion": "sangtian_v1_1",
+  "templateKey": "sangtian",
+  "releaseStatus": "published",
+  "stageCoverage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "files": [
+    {
+      "path": "stages.json",
+      "sha256": "11d1b77596d431c8add2821e69379737719a8a258ef84115e94d61690ebfbff2"
+    },
+    {
+      "path": "role-stage-content.json",
+      "sha256": "7bca980e78ae5a735ac19294b1021cd71458eda4cb82219c38e80172e1796b5f"
+    },
+    {
+      "path": "maneuver-strategies.json",
+      "sha256": "b9b26b05fcb5fb7721855ff93b971e51a5d08e95d7d12337946c14771ba0ebe3"
+    },
+    {
+      "path": "reaction-scenarios.json",
+      "sha256": "c08f8db63901ac12b9d3ed1575b1971eaa391586a7c72eb9660d7b2a9b7aa183"
+    },
+    {
+      "path": "system-actions.json",
+      "sha256": "0c8112dc52359e9e961e3cfb826fee784e2898265f063753238435c814f472a4"
+    },
+    {
+      "path": "agent-policies.json",
+      "sha256": "9465ec1d6480c5323158628fb6e062cec1efeaf54c35f107539809e06b8beeee"
+    },
+    {
+      "path": "result-rules.json",
+      "sha256": "343b2db8eca866f1cdb53883048b270eada9f11388df715e5bb2d5baf95f0088"
+    },
+    {
+      "path": "ending-rules.json",
+      "sha256": "31a12b9f5a5d8a0b6f323d5ca051339f7a7cb27253980a37554fffe5518d37c6"
+    },
+    {
+      "path": "schemas/manifest.schema.json",
+      "sha256": "d63a0b90cd280f5757eb341e9d05605d15404f3ffa0c56ec9362a9cece00f23f"
+    },
+    {
+      "path": "schemas/stages.schema.json",
+      "sha256": "9f1c1d907552995c432e952bbb2fda34f59f8e973b44a3f23d94a25dfe4ba4b2"
+    },
+    {
+      "path": "schemas/role-stage-content.schema.json",
+      "sha256": "7c5845001ae16c16f56200ec602f32b55461c97319016bacd2d9268f77c5ec61"
+    },
+    {
+      "path": "schemas/maneuver-strategies.schema.json",
+      "sha256": "8d4d1f2805eea1003b35d36b32943173c20924ede1615522056dfd5fb0bcc52d"
+    },
+    {
+      "path": "schemas/reaction-scenarios.schema.json",
+      "sha256": "06545b0c5a946dcf5085733c59d66de1bc73ef12c66c85992681e6c1dfde67d1"
+    },
+    {
+      "path": "schemas/system-actions.schema.json",
+      "sha256": "fe79f7a749d8510ca030a91de293af3959b7ab2dcf7ec7baaea8db75433d742e"
+    },
+    {
+      "path": "schemas/agent-policies.schema.json",
+      "sha256": "54bbcb4b5e9b4ae67fc482b024f50b8ec6338168374c50c97bc9f16aeb78225f"
+    },
+    {
+      "path": "schemas/result-rules.schema.json",
+      "sha256": "dcb8e2ce7ef682e174702a962d2d98c0e307f423f4ee5c1fff2214c866926ab0"
+    },
+    {
+      "path": "schemas/ending-rules.schema.json",
+      "sha256": "535ddb7864642c3b1c2f12a7c85dca5e600448882ed188c92179da4730f8d6ca"
+    },
+    {
+      "path": "schemas/strategy-registry.schema.json",
+      "sha256": "4c4e3f60bf2a1022a4ae0f2b73322e97e7e5921da2c3bf150f28b2cbf3f03312"
+    }
+  ]
+}

@@ -3,18 +3,29 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { configureApiTransport } from "./api-transport";
 
-// Supabase is the default shared test database whenever its connection is configured.
-// This keeps ordinary local startup aligned with the configured test environment.
-if (process.env.SUPABASE_DATABASE_URL) {
-  const databaseUrl = new URL(process.env.SUPABASE_DATABASE_URL);
-  // Keep the Supabase session-pool footprint small, while reserving one
-  // connection for the leased story worker and one for an interactive request.
-  // A single connection lets the 250ms worker poll starve resolve-async
-  // transactions during a multi-player room.
-  if (!databaseUrl.searchParams.has("connection_limit")) databaseUrl.searchParams.set("connection_limit", "2");
-  process.env.DATABASE_URL = databaseUrl.toString();
+// Supabase is the default shared test database, but an explicit remote DATABASE_URL wins so isolated acceptance schemas are preserved.
+{
+  const explicit = process.env.DATABASE_URL;
+  const fallback = process.env.SUPABASE_DATABASE_URL;
+  let selected = explicit;
+  if (fallback) {
+    let explicitIsLocal = !explicit;
+    if (explicit) {
+      try {
+        const host = new URL(explicit).hostname.toLowerCase();
+        explicitIsLocal = host === "127.0.0.1" || host === "localhost" || host === "::1";
+      } catch {
+        explicitIsLocal = true;
+      }
+    }
+    if (explicitIsLocal) selected = fallback;
+  }
+  if (selected) {
+    const databaseUrl = new URL(selected);
+    if (!databaseUrl.searchParams.has("connection_limit")) databaseUrl.searchParams.set("connection_limit", "2");
+    process.env.DATABASE_URL = databaseUrl.toString();
+  }
 }
-
 async function bootstrap() {
   if (process.env.STORY_WORKER_ENABLED === undefined) process.env.STORY_WORKER_ENABLED = "true";
   const app = await NestFactory.create(AppModule, { rawBody: true });

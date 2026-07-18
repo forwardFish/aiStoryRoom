@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "ninety-days-left",
+  "publicId": "ninety-days-left",
+  "aliases": [],
+  "templateId": "template_ninety_days_left_001",
+  "status": "coming_soon",
+  "catalog": {
+    "title": "Ninety Days Left",
+    "subtitle": "A crisis measured in a shrinking runway",
+    "description": "A shrinking runway, mounting pressure, and ninety days to hold the line.",
+    "genre": "Crisis & Survival",
+    "tags": ["Crisis", "Survival", "Leadership"],
+    "durationLabel": "60–90 Minutes",
+    "cardCover": "/assets/game/ninety-days-left/cover.png",
+    "heroCover": "/assets/game/ninety-days-left/cover.png",
+    "lobby": {
+      "title": "Ninety Days Left",
+      "description": "A shrinking runway, mounting pressure, and ninety days to hold the line.",
+      "categoryLabel": "Crisis & Survival"
+    }
+  },
+  "modes": { "solo": false, "multiplayer": false, "minHumanPlayers": 4, "maxHumanPlayers": 6 },
+  "engine": { "engineVersion": "unavailable_v1", "strategyVersion": "unpublished", "strategyRegistryPath": null, "fixedRules": null },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "Emergency Room",
+    "roundLabel": "Day",
+    "finaleLabel": "Day Ninety",
+    "sceneBackground": "/assets/game/ninety-days-left/cover.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": []
+}

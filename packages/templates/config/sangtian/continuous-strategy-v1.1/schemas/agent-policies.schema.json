@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.com/schemas/continuous-strategy/agent-policies-v1.json",
+  "title": "Continuous Strategy Agent Policies V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contentVersion", "policies", "fallbackActions"],
+  "properties": {
+    "schemaVersion": { "const": "continuous_strategy_agent_policies_v1" },
+    "contentVersion": { "const": "sangtian_v1_1" },
+    "policies": {
+      "type": "array", "minItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["stageKey", "roleKey", "policyVersion", "goals", "riskProfile", "assetPriority", "actionWeights", "fallbackBySlot"],
+        "properties": {
+          "stageKey": { "type": "string" }, "roleKey": { "type": "string" }, "policyVersion": { "type": "string" },
+          "goals": {
+            "type": "array", "minItems": 1,
+            "items": { "type": "object", "additionalProperties": false, "required": ["goalKey", "weight"], "properties": { "goalKey": { "type": "string" }, "weight": { "type": "integer", "minimum": 0, "maximum": 100 } } }
+          },
+          "riskProfile": { "enum": ["CAUTIOUS", "BALANCED", "ASSERTIVE"] },
+          "assetPriority": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "actionWeights": {
+            "type": "array", "minItems": 3,
+            "items": { "type": "object", "additionalProperties": false, "required": ["actionKey", "weight"], "properties": { "actionKey": { "type": "string" }, "weight": { "type": "integer", "minimum": 0, "maximum": 100 } } }
+          },
+          "fallbackBySlot": {
+            "type": "object", "additionalProperties": false, "required": ["MAIN", "MANEUVER"],
+            "properties": { "MAIN": { "type": "string" }, "MANEUVER": { "const": "PASS" } }
+          }
+        }
+      }
+    },
+    "fallbackActions": {
+      "type": "array", "minItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["actionKey", "stageKey", "roleKey", "actionSlot", "objective", "factKeys", "nextStateKey", "assetMutations"],
+        "properties": {
+          "actionKey": { "type": "string" }, "stageKey": { "type": "string" }, "roleKey": { "type": "string" }, "actionSlot": { "const": "MAIN" }, "objective": { "type": "string" },
+          "factKeys": { "type": "array", "minItems": 1, "items": { "type": "string" } }, "nextStateKey": { "type": "string" },
+          "assetMutations": {
+            "type": "array", "minItems": 1,
+            "items": { "type": "object", "additionalProperties": false, "required": ["assetKey", "mutationType", "delta", "toRoleKey"], "properties": { "assetKey": { "type": "string" }, "mutationType": { "type": "string" }, "delta": { "type": "integer" }, "toRoleKey": { "type": ["string", "null"] } } }
+          }
+        }
+      }
+    }
+  }
+}

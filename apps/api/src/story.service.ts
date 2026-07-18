@@ -12,7 +12,7 @@ import {
   type MockLoginInput,
   type SubmitActionInput
 } from "@ai-story/shared";
-import { getTemplate, midnightStoreTemplate } from "@ai-story/templates";
+import { findGameDefinitionByTemplateId, getTemplate, midnightStoreTemplate } from "@ai-story/templates";
 import { PrismaService } from "./prisma.service";
 import { MvpStoryEngine } from "./mvp-causal-runtime";
 import { FileMvpStoryStorage } from "./mvp-storage";
@@ -136,23 +136,30 @@ export class StoryService {
     return template;
   }
 
-  async createRun(openid: string, input: CreateStoryRunInput) {
+  async createRun(
+    openid: string,
+    input: CreateStoryRunInput,
+    internalVersions: { engineVersion: string; strategyVersion: string } = { engineVersion: "legacy_v1", strategyVersion: "legacy_v1" }
+  ) {
     const owner = await this.ensureUser(openid);
     const template = getTemplate(input.templateId);
+    const gameDefinition = findGameDefinitionByTemplateId(template.id);
+    const canonicalTemplate = gameDefinition ? { ...template, roles: gameDefinition.roles } : template;
     await this.prisma.worldTemplate.upsert({
       where: { id: template.id },
-      update: { name: template.name, genre: template.genre, hook: template.hook, worldBase: template.worldBase, status: "online", configJson: template as any },
-      create: { id: template.id, name: template.name, genre: template.genre, hook: template.hook, worldBase: template.worldBase, status: "online", configJson: template as any }
+      update: { name: template.name, genre: template.genre, hook: template.hook, worldBase: template.worldBase, status: "online", configJson: canonicalTemplate as any },
+      create: { id: template.id, name: template.name, genre: template.genre, hook: template.hook, worldBase: template.worldBase, status: "online", configJson: canonicalTemplate as any }
     });
     const mode = input.mode || "invite";
     const isAiTrio = mode === "ai-trio";
     const isRoom = mode === "room";
-    const maxPlayers = isAiTrio ? 3 : Math.max(1, Math.min(isRoom ? 6 : 5, Number(input.maxPlayers || 3)));
+    const maxPlayers = isAiTrio ? 3 : Math.max(1, Math.trunc(Number(input.maxPlayers || 3)));
     const inviteCode = await this.nextInviteCode();
 
     const run = await this.prisma.storyRun.create({
       data: {
         templateId: template.id,
+        templateKey: gameDefinition?.worldId || "sangtian",
         ownerUserId: owner.id,
         title: isAiTrio ? `${template.name}：三人 AI 推演` : `${template.name}：没有影子的客人`,
         hook: template.hook,
@@ -168,7 +175,9 @@ export class StoryService {
           simulation: isAiTrio ? { roundCount: 7, decisionOrder: ["player_a", "player_b", "player_c"] } : undefined
         },
         visibility: mode === "single" ? "private" : "link",
-        inviteCode
+        inviteCode,
+        engineVersion: internalVersions.engineVersion,
+        strategyVersion: internalVersions.strategyVersion
       }
     });
 
@@ -477,10 +486,11 @@ export class StoryService {
     if (existing) return existing;
 
     await this.fillMissingActions(nodeId);
-    const actions = await this.prisma.playerAction.findMany({
-      where: { nodeId, status: "accepted" },
+    const rawActions = await this.prisma.playerAction.findMany({
+      where: { nodeId, status: "accepted", roleId: { not: null } },
       include: { role: true }
     });
+    const actions = rawActions.filter((action): action is typeof action & { roleId: string; role: NonNullable<typeof action.role> } => Boolean(action.roleId && action.role));
     if (actions.length === 0) throw new BadRequestException("no accepted actions to resolve");
 
     const template = getTemplate(node.run.templateId);
@@ -971,6 +981,8 @@ export class StoryService {
 
   private async createInitialRunAssets(runId: string, templateId: string, mode: string) {
     const template = getTemplate(templateId);
+    const gameDefinition = findGameDefinitionByTemplateId(templateId);
+    const canonicalTemplate = gameDefinition ? { ...template, roles: gameDefinition.roles } : template;
     await this.prisma.chapterSandbox.create({
       data: {
         runId,
@@ -979,11 +991,14 @@ export class StoryService {
         mainLocation: template.name,
         chapterGoal: "确认异常的来源，并让所有角色产生第一次协作。",
         currentQuestion: this.nodeDefinition(template, 1, mode)?.nodeGoal || template.hook,
-        sandboxJson: template
+        sandboxJson: canonicalTemplate
       }
     });
 
-    for (const role of template.roles) {
+    // Registered games own the canonical player-seat list. A world actor is
+    // deliberately absent here and is materialized only as an internal runtime
+    // principal when a continuous action needs a required roleId foreign key.
+    for (const role of gameDefinition?.roles || template.roles) {
       await this.prisma.storyRole.create({
         data: {
           runId,

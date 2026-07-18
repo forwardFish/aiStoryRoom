@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.mjs",
-    "typecheck": "node --check src/server.mjs && node --check public/api-story-storage.js && node --check public/app.js && node --check public/home.js && node --check public/legal.js && node --check public/platform.js && node --check public/reset-password.js && node --check public/role-select.js && node --check public/trio.js && node --check public/js/api-client.js && node --check public/js/credits.js && node --check public/js/credits-success.js && node --check tests/browser-smoke.test.mjs && node --check tests/home-ui.test.mjs && node --check tests/lobby-navigation.test.mjs && node --check tests/trio-ui.test.mjs && node --check tests/world-credits-ui.test.mjs",
+    "typecheck": "node --check src/server.mjs && node --check public/api-story-storage.js && node --check public/app.js && node --check public/game-bootstrap.js && node --check public/room-story-storage.js && node --check public/continuous-game-client.js && node --check public/continuous-game-view.js && node --check public/home.js && node --check public/legal.js && node --check public/platform.js && node --check public/reset-password.js && node --check public/worlds.js && node --check public/role-select.js && node --check public/trio.js && node --check public/js/api-client.js && node --check public/js/credits.js && node --check public/js/credits-success.js && node --check tests/auth-runtime-config.test.mjs && node --check tests/browser-smoke.test.mjs && node --check tests/continuous-game.test.mjs && node --check tests/deployment-routes.test.mjs && node --check tests/home-ui.test.mjs && node --check tests/lobby-navigation.test.mjs && node --check tests/room-main-game.test.mjs && node --check tests/room-world-selection.test.mjs && node --check tests/trio-ui.test.mjs && node --check tests/world-credits-ui.test.mjs && node --check tests/worlds-lobby.test.mjs && node --check tests/world-detail-content.test.mjs",
     "test": "node --test --test-isolation=none tests/*.test.mjs",
-    "test:smoke": "node --test tests/*.test.mjs",
+    "test:smoke": "node --test --test-isolation=none tests/*.test.mjs",
     "build": "node -e \"console.log('web MVP is static; validation is performed by typecheck and node:test')\""
   },
   "devDependencies": {

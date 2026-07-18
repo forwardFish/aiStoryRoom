@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "last-night-shift",
+  "publicId": "last-night-shift",
+  "aliases": [],
+  "templateId": "template_last_night_shift_001",
+  "status": "coming_soon",
+  "catalog": {
+    "title": "The Last Night Shift",
+    "subtitle": "A mystery for a crew that cannot trust the clock",
+    "description": "One night, one crew, and too many things that do not add up.",
+    "genre": "Mystery",
+    "tags": ["Mystery", "Investigation", "Team Conflict"],
+    "durationLabel": "60–90 Minutes",
+    "cardCover": "/assets/game/last-night-shift/cover.png",
+    "heroCover": "/assets/game/last-night-shift/cover.png",
+    "lobby": {
+      "title": "The Last Night Shift",
+      "description": "One night, one crew, and too many things that do not add up.",
+      "categoryLabel": "Mystery"
+    }
+  },
+  "modes": { "solo": false, "multiplayer": false, "minHumanPlayers": 4, "maxHumanPlayers": 6 },
+  "engine": { "engineVersion": "unavailable_v1", "strategyVersion": "unpublished", "strategyRegistryPath": null, "fixedRules": null },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "Night Shift",
+    "roundLabel": "Scene",
+    "finaleLabel": "Final Report",
+    "sceneBackground": "/assets/game/last-night-shift/cover.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": []
+}

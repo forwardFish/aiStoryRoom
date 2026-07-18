@@ -1,0 +1,188 @@
+{
+  "schemaVersion": "continuous_strategy_system_actions_v1",
+  "contentVersion": "sangtian_v1_1",
+  "systemActions": [
+    {
+      "systemActionKey": "system_s1_tighten_merchant_credit",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "merchant",
+      "inputStateKeys": [
+        "state_s1_change_mulberry_order_open"
+      ],
+      "factKeys": [
+        "fact_s1_system_tighten_merchant_credit"
+      ],
+      "observableTraceKeys": [
+        "trace_s1_system_tighten_merchant_credit"
+      ],
+      "visiblePressure": "商会把垫银账期缩短为十日，任何执行路线都必须承担更高的粮价与现金压力。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s1_merchant_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "merchant"
+        }
+      ],
+      "nextStateKey": "state_s2_county_secret_letter_open"
+    },
+    {
+      "systemActionKey": "system_s2_offer_paid_custody",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "merchant",
+      "inputStateKeys": [
+        "state_s2_county_secret_letter_open"
+      ],
+      "factKeys": [
+        "fact_s2_system_offer_paid_custody"
+      ],
+      "observableTraceKeys": [
+        "trace_s2_system_offer_paid_custody"
+      ],
+      "visiblePressure": "商会提出有偿保管与转运文书，谁接受就会留下资金和接触记录。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s2_merchant_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "merchant"
+        }
+      ],
+      "nextStateKey": "state_s3_grain_price_crisis_open"
+    },
+    {
+      "systemActionKey": "system_s3_restrict_grain_release",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "merchant",
+      "inputStateKeys": [
+        "state_s3_grain_price_crisis_open"
+      ],
+      "factKeys": [
+        "fact_s3_system_restrict_grain_release"
+      ],
+      "observableTraceKeys": [
+        "trace_s3_system_restrict_grain_release"
+      ],
+      "visiblePressure": "商会以银路紧张为由限制放粮，公开市场出现新的价格锚点。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s3_merchant_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "merchant"
+        }
+      ],
+      "nextStateKey": "state_s4_hidden_ledger_open"
+    },
+    {
+      "systemActionKey": "system_s4_buy_witness_silence",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "merchant",
+      "inputStateKeys": [
+        "state_s4_hidden_ledger_open"
+      ],
+      "factKeys": [
+        "fact_s4_system_buy_witness_silence"
+      ],
+      "observableTraceKeys": [
+        "trace_s4_system_buy_witness_silence"
+      ],
+      "visiblePressure": "商会向关键书吏提出离境安置，证人安全与证词完整性同时受到影响。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s4_merchant_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "merchant"
+        }
+      ],
+      "nextStateKey": "state_s5_mutual_impeachment_open"
+    },
+    {
+      "systemActionKey": "system_s5_publish_counter_ledger",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "merchant",
+      "inputStateKeys": [
+        "state_s5_mutual_impeachment_open"
+      ],
+      "factKeys": [
+        "fact_s5_system_publish_counter_ledger"
+      ],
+      "observableTraceKeys": [
+        "trace_s5_system_publish_counter_ledger"
+      ],
+      "visiblePressure": "商会公开一份选择性账册，试图把所有责任压回官府执行链。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s5_merchant_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "merchant"
+        }
+      ],
+      "nextStateKey": "state_s6_capital_reply_open"
+    },
+    {
+      "systemActionKey": "system_s6_offer_emergency_credit",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "merchant",
+      "inputStateKeys": [
+        "state_s6_capital_reply_open"
+      ],
+      "factKeys": [
+        "fact_s6_system_offer_emergency_credit"
+      ],
+      "observableTraceKeys": [
+        "trace_s6_system_offer_emergency_credit"
+      ],
+      "visiblePressure": "商会提出以紧急垫银换取奏报中的免责措辞，形成最后一次利益交换。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s6_merchant_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "merchant"
+        }
+      ],
+      "nextStateKey": "state_s7_imperial_judgment_open"
+    },
+    {
+      "systemActionKey": "system_s7_freeze_trade_credit",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "merchant",
+      "inputStateKeys": [
+        "state_s7_imperial_judgment_open"
+      ],
+      "factKeys": [
+        "fact_s7_system_freeze_trade_credit"
+      ],
+      "observableTraceKeys": [
+        "trace_s7_system_freeze_trade_credit"
+      ],
+      "visiblePressure": "商会在裁决前冻结新增垫银，迫使所有人面对既有选择而不能购买新的缓冲。",
+      "claimable": false,
+      "controllerMode": "SYSTEM",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s7_merchant_system_resource",
+          "mutationType": "SET_STATE",
+          "delta": -1,
+          "toRoleKey": "merchant"
+        }
+      ],
+      "nextStateKey": "state_run_completed"
+    }
+  ]
+}

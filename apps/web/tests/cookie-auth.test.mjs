@@ -15,7 +15,9 @@ test("browser authentication uses a same-origin HttpOnly cookie session", async 
   ]);
 
   assert.match(vercel, /"source": "\/api\/:path\*", "destination": "\/api\/proxy\?path=:path\*"/);
-  assert.match(apiProxy, /appsapi-test\.up\.railway\.app/);
+  assert.match(apiProxy, /MANY_WORLDS_API_ORIGIN/);
+  assert.match(apiProxy, /API_PROXY_CONFIG_INVALID/);
+  assert.doesNotMatch(apiProxy, /appsapi-test\.up\.railway\.app/);
   assert.match(apiProxy, /set-cookie/);
   assert.match(platform, /const deployedApiBase = "\/api"/);
   assert.match(platform, /credentials: "include"/);
@@ -40,11 +42,12 @@ test("browser authentication uses a same-origin HttpOnly cookie session", async 
   assert.doesNotMatch(roomGame, /Bearer \$\{token\(\)\}/);
 });
 
-test("the platform header stays disabled", async () => {
+test("only a shared room lobby mounts the platform header", async () => {
   const platform = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   const start = platform.indexOf("function appShell");
   const end = platform.indexOf("function bind()", start);
   const appShell = platform.slice(start, end);
-  assert.match(appShell, /root\.innerHTML = content/);
-  assert.doesNotMatch(appShell, /^\s*root\.innerHTML = `\$\{header\(/m);
+  assert.match(appShell, /const roomWaitingHeader = path\.startsWith\("\/rooms\/"\) \? header\("rooms"\) : ""/);
+  assert.match(appShell, /root\.innerHTML = `\$\{roomWaitingHeader\}\$\{content\}`/);
+  assert.doesNotMatch(appShell, /header\(active \|\|/);
 });

@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { getGameDefinition } from "@ai-story/templates";
 
 export interface MvpRoleCatalogItem {
   key: string;
@@ -205,19 +206,21 @@ export const SANGTIAN_ROLES: MvpRoleCatalogItem[] = [
   }
 ];
 
+const SANGTIAN_GAME = getGameDefinition("sangtian");
 const SANGTIAN_DETAIL = {
-  id: "sangtian",
-  title: "嘉靖财政危局",
-  displayTitle: "嘉靖财政危局",
-  description: "你将进入嘉靖朝的财政与权谋危机，在 7 天内做出关键决策。",
-  subtitle: "7天动态权谋故事局",
-  category: "权谋历史",
-  heroCover: "/assets/stories/sangtian-hero.webp",
-  totalDays: 7,
-  modeLabel: "单人 / 多人",
-  durationLabel: "30–45分钟",
-  tags: ["权谋斗争", "历史还原", "多结局"],
-  roles: SANGTIAN_ROLES
+  id: SANGTIAN_GAME.worldId,
+  title: SANGTIAN_GAME.catalog.title,
+  displayTitle: SANGTIAN_GAME.catalog.title,
+  description: SANGTIAN_GAME.catalog.description,
+  subtitle: SANGTIAN_GAME.catalog.subtitle,
+  category: SANGTIAN_GAME.catalog.genre,
+  heroCover: SANGTIAN_GAME.catalog.heroCover,
+  roleSelectionBanner: SANGTIAN_GAME.presentation.sceneBackground,
+  totalDays: SANGTIAN_GAME.engine.fixedRules?.stageCount || 7,
+  modeLabel: SANGTIAN_GAME.modes.multiplayer ? "单人 / 多人" : "单人",
+  durationLabel: SANGTIAN_GAME.catalog.durationLabel,
+  tags: SANGTIAN_GAME.catalog.tags,
+  roles: registryRoles("sangtian", SANGTIAN_ROLES)
 };
 
 const CAESAR_ROLES: MvpRoleCatalogItem[] = [
@@ -234,12 +237,36 @@ const CAESAR_ROLES: MvpRoleCatalogItem[] = [
   traits: [{ icon: "strategy", label: "Political judgment" }, { icon: "risk", label: "High stakes" }]
 }));
 
+const CAESAR_GAME = getGameDefinition("caesar");
 const CAESAR_DETAIL = {
-  id: "caesar", title: "Caesar: The Last Spring of the Republic", displayTitle: "Caesar: The Last Spring of the Republic",
-  description: "In the final days of the Republic, every alliance and restraint writes a different Rome.", subtitle: "Seven scenes of power, loyalty, and public consequence",
-  category: "Historical · Alternate History", heroCover: "/assets/bg/1.png", totalDays: 7, modeLabel: "Solo / Multiplayer", durationLabel: "40–60 Minutes",
-  tags: ["History", "Power", "Alternate History"], roles: CAESAR_ROLES
+  id: CAESAR_GAME.worldId, title: CAESAR_GAME.catalog.title, displayTitle: CAESAR_GAME.catalog.title,
+  description: CAESAR_GAME.catalog.description, subtitle: CAESAR_GAME.catalog.subtitle,
+  category: CAESAR_GAME.catalog.genre, heroCover: CAESAR_GAME.catalog.heroCover, roleSelectionBanner: CAESAR_GAME.presentation.sceneBackground, totalDays: CAESAR_GAME.engine.fixedRules?.stageCount || 7, modeLabel: "Solo / Multiplayer", durationLabel: CAESAR_GAME.catalog.durationLabel,
+  tags: CAESAR_GAME.catalog.tags, roles: registryRoles("caesar", CAESAR_ROLES)
 };
+
+function registryRoles(worldId: string, legacyRoles: MvpRoleCatalogItem[]): MvpRoleCatalogItem[] {
+  const game = getGameDefinition(worldId);
+  return game.roles.map((definition) => {
+    const legacy = legacyRoles.find((role) => role.key === definition.roleKey);
+    return {
+      key: definition.roleKey,
+      name: definition.roleName,
+      identity: definition.identity,
+      tagline: definition.publicInfo,
+      portrait: definition.portrait,
+      playable: true,
+      publicGoal: definition.personalGoal,
+      fateQuestion: legacy?.fateQuestion || definition.arcText,
+      rank: legacy?.rank || game.catalog.genre,
+      office: legacy?.office || game.presentation.locationLabel,
+      goals: legacy?.goals || [definition.personalGoal],
+      resources: legacy?.resources || definition.knownInfo.map((value) => [value, "Known"] as [string, string]),
+      leverage: legacy?.leverage || [definition.abilityText],
+      traits: legacy?.traits || [{ icon: "strategy", label: definition.arcText }]
+    };
+  });
+}
 
 export function listMvpStories() {
   return {

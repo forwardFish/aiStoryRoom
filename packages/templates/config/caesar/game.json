@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "caesar",
+  "publicId": "caesar_last_spring",
+  "aliases": [],
+  "templateId": "template_caesar_001",
+  "status": "playable",
+  "catalog": {
+    "title": "Caesar: The Last Spring of the Republic",
+    "subtitle": "Seven scenes of power, loyalty, and public consequence",
+    "description": "In the final days of the Roman Republic, every alliance and restraint writes a different Rome.",
+    "genre": "Alternate History",
+    "tags": ["History", "Power", "Alternate History"],
+    "durationLabel": "40–60 Minutes",
+    "cardCover": "/assets/game/caesar/cover.png",
+    "heroCover": "/assets/game/caesar/cover.png",
+    "lobby": {
+      "title": "Caesar: The Last Spring of the Republic",
+      "description": "Caesar trusts you. The conspirators need you. Rome will judge whatever survives.",
+      "categoryLabel": "History & Power"
+    }
+  },
+  "modes": {
+    "solo": true,
+    "multiplayer": true,
+    "minHumanPlayers": 1,
+    "maxHumanPlayers": 6
+  },
+  "engine": {
+    "engineVersion": "legacy_v1",
+    "strategyVersion": "legacy_v1",
+    "strategyRegistryPath": null,
+    "fixedRules": null
+  },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "Rome · The Senate",
+    "roundLabel": "Scene",
+    "finaleLabel": "The Republic's Verdict",
+    "sceneBackground": "/assets/game/caesar/room-banner.png",
+    "assetManifest": null,
+    "accent": "#6b4ce6",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": [
+    {
+      "roleKey": "brutus",
+      "roleName": "Brutus",
+      "identity": "A senator torn between friendship and the Republic.",
+      "publicInfo": "You serve Rome, not any man.",
+      "hiddenSecret": "You have seen Caesar's private pledge.",
+      "personalGoal": "Prevent an unrestrained dictatorship.",
+      "currentState": "The Senate is divided.",
+      "abilityText": "Build coalitions and set boundaries.",
+      "arcText": "From restraint to authorship.",
+      "knownInfo": ["Senate votes", "Caesar's trust"],
+      "cannotDo": ["Command the legions"],
+      "portrait": "/assets/game/caesar/brutus.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "caesar",
+      "roleName": "Caesar",
+      "identity": "Victor of Rome and the center of every alliance.",
+      "publicInfo": "I came, I saw, I changed Rome.",
+      "hiddenSecret": "Your enemies know your calendar.",
+      "personalGoal": "Preserve Rome without becoming its master.",
+      "currentState": "Triumph has made every promise costly.",
+      "abilityText": "Call allies and make public commitments.",
+      "arcText": "From power to limits.",
+      "knownInfo": ["Legion loyalty", "Popular support"],
+      "cannotDo": ["Know conspirators' private plans"],
+      "portrait": "/assets/game/caesar/caesar.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "cassius",
+      "roleName": "Cassius",
+      "identity": "A senator who calls fear by its true name.",
+      "publicInfo": "Liberty isn't given. It's taken.",
+      "hiddenSecret": "Your strongest ally doubts violence.",
+      "personalGoal": "Keep the Republic from submission.",
+      "currentState": "The conspiracy lacks a public mandate.",
+      "abilityText": "Expose danger and recruit support.",
+      "arcText": "From anger to consequence.",
+      "knownInfo": ["Senate anxiety"],
+      "cannotDo": ["Force another player to betray"],
+      "portrait": "/assets/game/caesar/cassius.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "mark_antony",
+      "roleName": "Mark Antony",
+      "identity": "Caesar's ally and Rome's most dangerous speaker.",
+      "publicInfo": "I speak for Rome. And I remember.",
+      "hiddenSecret": "You can calm crowds or inflame them.",
+      "personalGoal": "Keep Rome from civil war.",
+      "currentState": "The Forum is waiting.",
+      "abilityText": "Mobilize popular support.",
+      "arcText": "From loyalty to responsibility.",
+      "knownInfo": ["Forum mood"],
+      "cannotDo": ["Read sealed Senate letters"],
+      "portrait": "/assets/game/caesar/mark-antony.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "decimus",
+      "roleName": "Decimus",
+      "identity": "A commander trusted by both camps.",
+      "publicInfo": "I watch. I learn. I will decide.",
+      "hiddenSecret": "You know the roads to the Capitol.",
+      "personalGoal": "Avoid a point of no return.",
+      "currentState": "Every route can become a trap.",
+      "abilityText": "Control timing and access.",
+      "arcText": "From observer to decision maker.",
+      "knownInfo": ["Capitol routes"],
+      "cannotDo": ["Guarantee any outcome"],
+      "portrait": "/assets/game/caesar/decimus.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "cicero",
+      "roleName": "Cicero",
+      "identity": "An orator whose words can still change the vote.",
+      "publicInfo": "Words are my sharpest weapon.",
+      "hiddenSecret": "You hold drafts of a compromise.",
+      "personalGoal": "Keep institutions alive.",
+      "currentState": "The Senate needs language for restraint.",
+      "abilityText": "Draft terms and rally senators.",
+      "arcText": "From witness to architect.",
+      "knownInfo": ["Compromise draft"],
+      "cannotDo": ["Command soldiers"],
+      "portrait": "/assets/game/caesar/cicero.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    }
+  ]
+}

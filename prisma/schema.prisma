@@ -32,6 +32,10 @@ model User {
   authIdentities AuthIdentity[]
   refundRequests RefundRequest[] @relation("RefundRequester")
   reviewedRefundRequests RefundRequest[] @relation("RefundReviewer")
+  roleControlTransitions RoleControlTransition[] @relation("RoleControlTransitionInitiator")
+  eventDeliveries        EventDelivery[]
+  eventDeliveryCursors   EventDeliveryCursor[]
+  presenceSessions       PresenceSession[]
 
   @@index([status])
   @@index([createdAt])
@@ -141,6 +145,8 @@ model StoryRun {
   freeDecisionsUsed  Int            @default(0)
   paywallReachedAt   DateTime?
   unlockedAt         DateTime?
+  engineVersion      String         @default("legacy_v1")
+  strategyVersion    String         @default("legacy_v1")
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -169,6 +175,18 @@ model StoryRun {
   storyThreads      StoryThread[]
   sceneSnapshots    SceneSnapshot[]
   narrativeEntries  NarrativeEntry[]
+  actionWindows      ActionWindow[]
+  roleControls       RoleControl[]
+  interactionRequests InteractionRequest[]
+  roleAssets         RoleAsset[]
+  storyEventCursor   StoryEventCursor?
+  eventDeliveries    EventDelivery[]
+  eventDeliveryCursors EventDeliveryCursor[]
+  presenceSessions     PresenceSession[]
+  roleAgentPolicies  RoleAgentPolicy[]
+  roleAgentProjections RoleAgentProjection[]
+  roleAgentDecisions RoleAgentDecision[]
+  resolutionWorkflows ResolutionWorkflow[]
 
   @@index([templateId])
   @@index([ownerUserId])
@@ -183,20 +201,29 @@ enum RunAccessLevel {
 }
 
 model StoryEvent {
-  id          String   @id
-  runId       String
-  day         Int
-  type        String
-  messageType String   @default("system")
-  roleKey     String?
-  visibility  String   @default("player_visible")
-  payloadJson Json
-  createdAt   DateTime @default(now())
+  id                      String   @id
+  runId                   String
+  day                     Int
+  type                    String
+  messageType             String   @default("system")
+  roleKey                 String?
+  visibility              String   @default("player_visible")
+  payloadJson             Json
+  sequence                Int?
+  dedupeKey               String?  @unique
+  audienceType            String?
+  audienceRoleIdsJson     Json?
+  sourceActionId          String?
+  createdAt               DateTime @default(now())
 
-  run StoryRun @relation("StoryRunStoryEvents", fields: [runId], references: [id], onDelete: Cascade)
+  run          StoryRun       @relation("StoryRunStoryEvents", fields: [runId], references: [id], onDelete: Cascade)
+  sourceAction PlayerAction?  @relation("StoryEventSourceAction", fields: [sourceActionId], references: [id], onDelete: SetNull)
+  deliveries   EventDelivery[]
 
+  @@unique([runId, sequence])
   @@index([runId, day, createdAt])
   @@index([runId, type])
+  @@index([sourceActionId])
 }
 
 model StoryPlayer {
@@ -212,6 +239,8 @@ model StoryPlayer {
   run  StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
   user User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   role StoryRole? @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  roleControls RoleControl[]
+  presenceSessions PresenceSession[]
 
   @@unique([runId, userId])
   @@unique([runId, roleId])
@@ -247,6 +276,21 @@ model StoryRole {
   characterMind    CharacterMind?
   sceneSnapshots   SceneSnapshot[]
   narrativeEntries NarrativeEntry[]
+  targetedActions   PlayerAction[]                  @relation("PlayerActionTargetRole")
+  openingProjections ActionWindowOpeningProjection[]
+  windowParticipants ActionWindowParticipant[]
+  roleControls       RoleControl[]
+  targetedInteractionRequests InteractionRequest[]  @relation("InteractionTargetRole")
+  ownedRoleAssets    RoleAsset[]                     @relation("RoleAssetOwner")
+  assetMutationsFrom RoleAssetMutation[]             @relation("RoleAssetMutationFromRole")
+  assetMutationsTo   RoleAssetMutation[]             @relation("RoleAssetMutationToRole")
+  eventDeliveries    EventDelivery[]
+  roleAgentPolicies  RoleAgentPolicy[]
+  roleAgentProjections RoleAgentProjection[]
+  roleAgentDecisions RoleAgentDecision[]
+  targetedRoleAgentDecisions RoleAgentDecision[] @relation("RoleAgentDecisionTargetRole")
+  presenceSessions PresenceSession[]
+  outboxTasks        StoryTaskOutbox[]
 
   @@unique([runId, roleKey])
   @@index([runId, status])
@@ -323,6 +367,9 @@ model SceneNode {
   canonFacts        CanonFact[]          @relation("CanonFactSourceNode")
   sceneSnapshots    SceneSnapshot[]
   narrativeEntries  NarrativeEntry[]
+  actionWindow      ActionWindow?
+  interactionRequests InteractionRequest[]
+  resolutionWorkflow ResolutionWorkflow?
 
   @@unique([runId, chapterIndex, nodeIndex])
   @@index([runId, status])
@@ -330,40 +377,464 @@ model SceneNode {
 }
 
 model PlayerAction {
-  id             String   @id @default(cuid())
-  runId          String
-  nodeId         String
-  chapterIndex   Int
-  userId         String?
-  roleId         String
-  playerType     String   @default("human")
-  actionType     String
-  targetType     String?
-  targetId       String?
-  targetText     String?
-  method         String   @db.Text
-  intent         String   @db.Text
-  riskLevel      String   @default("normal")
-  freeText       String?  @db.Text
-  normalizedJson Json?
-  guardStatus    String   @default("pending")
-  guardReason    String?  @db.Text
-  auditStatus    String   @default("pending")
-  status         String   @default("draft")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                         String   @id @default(cuid())
+  runId                      String
+  nodeId                     String
+  chapterIndex               Int
+  userId                     String?
+  roleId                     String?
+  playerType                 String   @default("human")
+  actionType                 String
+  targetType                 String?
+  targetId                   String?
+  targetText                 String?
+  method                     String   @db.Text
+  intent                     String   @db.Text
+  riskLevel                  String   @default("normal")
+  freeText                   String?  @db.Text
+  normalizedJson             Json?
+  guardStatus                String   @default("pending")
+  guardReason                String?  @db.Text
+  auditStatus                String   @default("pending")
+  status                     String   @default("draft")
+  actionSlot                 String?  @default("MAIN")
+  actorKind                  String?
+  controlEpoch               Int?     @default(0)
+  policyVersion              String?
+  provider                   String?
+  modelName                  String?
+  actionKey                  String?
+  idempotencyKey             String?  @unique
+  requestHash                String?
+  sourceInteractionRequestId String?  @unique
+  visibility                 String?
+  targetRoleId               String?
+  leverageKey                String?
+  sealedAt                   DateTime?
+  expiresAt                  DateTime?
+  immediateJson              Json?
+  resolvedJson               Json?
+  resolvedAt                 DateTime?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
-  run     StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node    SceneNode  @relation(fields: [nodeId], references: [id], onDelete: Cascade)
-  user    User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  role    StoryRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  aiTasks AiTask[]
-  events  EventLog[]
+  run                       StoryRun            @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node                      SceneNode           @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user                      User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role                      StoryRole?          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  targetRole                StoryRole?          @relation("PlayerActionTargetRole", fields: [targetRoleId], references: [id], onDelete: SetNull)
+  sourceInteractionRequest  InteractionRequest? @relation("PlayerActionSourceInteraction", fields: [sourceInteractionRequestId], references: [id], onDelete: SetNull)
+  initiatedInteractions     InteractionRequest[] @relation("InteractionSourceAction")
+  recordedInteractionResponse InteractionRequest? @relation("InteractionResponseActionId")
+  sourceEvents              StoryEvent[]        @relation("StoryEventSourceAction")
+  assetMutations            RoleAssetMutation[]
+  roleAgentDecision         RoleAgentDecision?
+  aiTasks                   AiTask[]
+  events                    EventLog[]
 
-  @@unique([nodeId, roleId])
+  @@unique([nodeId, roleId, actionSlot])
   @@index([runId, nodeId])
   @@index([userId])
+  @@index([targetRoleId])
   @@index([status, auditStatus, guardStatus])
+}
+
+model ActionWindow {
+  id                     String   @id @default(cuid())
+  runId                  String
+  nodeId                 String   @unique
+  status                 String   @default("PREPARING")
+  mainOpenedAt           DateTime?
+  mainClosesAt           DateTime?
+  graceOpenedAt          DateTime?
+  graceMinClosesAt       DateTime?
+  graceClosesAt          DateTime?
+  aiQueueDrainedAt       DateTime?
+  closingReason          String?
+  resolutionTaskId       String?  @unique
+  openingSnapshotVersion Int?
+  projectionVersion      Int      @default(0)
+  version                Int      @default(1)
+  resolvedAt             DateTime?
+  configJson             Json
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  run                    StoryRun                       @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node                   SceneNode                      @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  resolutionTask         StoryTaskOutbox?               @relation("ActionWindowResolutionTask", fields: [resolutionTaskId], references: [id], onDelete: SetNull)
+  openingProjections     ActionWindowOpeningProjection[]
+  participants           ActionWindowParticipant[]
+  reclaimingRoleControls RoleControl[]                  @relation("RoleControlReclaimAfterWindow")
+  stageLeavingRoleControls RoleControl[]                @relation("RoleControlStageLeaveWindow")
+  effectiveTransitions   RoleControlTransition[]
+  interactionRequests    InteractionRequest[]
+  outboxTasks            StoryTaskOutbox[]               @relation("StoryTaskOutboxWindow")
+  roleAgentProjections   RoleAgentProjection[]
+  roleAgentDecisions     RoleAgentDecision[]
+  resolutionWorkflow     ResolutionWorkflow?
+
+  @@index([status, mainClosesAt])
+  @@index([status, graceClosesAt])
+  @@index([runId, status])
+}
+
+model ActionWindowOpeningProjection {
+  id              String   @id @default(cuid())
+  windowId        String
+  roleId          String
+  snapshotVersion Int
+  projectionJson  Json
+  contentHash     String
+  createdAt       DateTime @default(now())
+
+  window ActionWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  role   StoryRole    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([windowId, roleId])
+  @@index([windowId, snapshotVersion])
+}
+
+model ActionWindowParticipant {
+  id             String    @id @default(cuid())
+  windowId       String
+  roleId         String
+  mainStatus     String    @default("PENDING")
+  maneuverStatus String    @default("LOCKED")
+  reactionStatus String    @default("NOT_OPEN")
+  maneuverUsedAt DateTime?
+  reactionUsedAt DateTime?
+  doneAt         DateTime?
+  version        Int       @default(1)
+
+  window ActionWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  role   StoryRole    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([windowId, roleId])
+  @@index([windowId, mainStatus, doneAt])
+}
+
+model RoleControl {
+  id                   String   @id @default(cuid())
+  runId                String
+  roleId               String
+  humanPlayerId        String?
+  mode                 String
+  epoch                Int      @default(1)
+  reason               String?
+  lastHeartbeatAt      DateTime?
+  offlineSince         DateTime?
+  takeoverAt           DateTime?
+  reclaimAfterWindowId String?
+  stageLeaveWindowId   String?
+  policyVersion        String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  run                StoryRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  role               StoryRole    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  humanPlayer        StoryPlayer? @relation(fields: [humanPlayerId], references: [id], onDelete: SetNull)
+  reclaimAfterWindow ActionWindow? @relation("RoleControlReclaimAfterWindow", fields: [reclaimAfterWindowId], references: [id], onDelete: SetNull)
+  stageLeaveWindow   ActionWindow? @relation("RoleControlStageLeaveWindow", fields: [stageLeaveWindowId], references: [id], onDelete: SetNull)
+  transitions       RoleControlTransition[]
+
+  @@unique([runId, roleId])
+  @@index([mode, lastHeartbeatAt])
+  @@index([humanPlayerId])
+}
+
+model RoleControlTransition {
+  id                String   @id @default(cuid())
+  roleControlId     String
+  fromMode          String
+  toMode            String
+  fromEpoch         Int
+  toEpoch           Int
+  reason            String
+  initiatedByUserId String?
+  effectiveWindowId String?
+  effectiveSlot     String?
+  idempotencyKey    String   @unique
+  createdAt         DateTime @default(now())
+
+  roleControl    RoleControl @relation(fields: [roleControlId], references: [id], onDelete: Cascade)
+  initiatedByUser User?      @relation("RoleControlTransitionInitiator", fields: [initiatedByUserId], references: [id], onDelete: SetNull)
+  effectiveWindow ActionWindow? @relation(fields: [effectiveWindowId], references: [id], onDelete: SetNull)
+
+  @@index([roleControlId, createdAt])
+  @@index([effectiveWindowId])
+}
+
+model PresenceSession {
+  id                          String   @id @default(cuid())
+  runId                       String
+  userId                      String
+  playerId                    String
+  roleId                      String
+  sessionInstanceId           String
+  lastHeartbeatSequence       Int      @default(0)
+  lastAppliedDeliverySequence Int      @default(0)
+  lastHeartbeatAt             DateTime @default(now())
+  expiresAt                   DateTime
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  run    StoryRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player StoryPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  role   StoryRole   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, userId, sessionInstanceId])
+  @@index([runId, lastHeartbeatAt])
+  @@index([playerId, expiresAt])
+  @@index([roleId, lastHeartbeatAt])
+}
+
+model InteractionRequest {
+  id                 String   @id @default(cuid())
+  runId              String
+  nodeId              String
+  windowId            String
+  sourceActionId      String
+  targetRoleId        String
+  eventType           String
+  priority            Int      @default(0)
+  status              String   @default("OPEN")
+  opensAt             DateTime @default(now())
+  expiresAt           DateTime
+  defaultOutcomeJson  Json
+  responseActionId    String?  @unique
+  dedupeKey           String   @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  run              StoryRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node             SceneNode   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  window           ActionWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  sourceAction     PlayerAction @relation("InteractionSourceAction", fields: [sourceActionId], references: [id], onDelete: Restrict)
+  targetRole       StoryRole    @relation("InteractionTargetRole", fields: [targetRoleId], references: [id], onDelete: Restrict)
+  responseAction   PlayerAction? @relation("InteractionResponseActionId", fields: [responseActionId], references: [id], onDelete: SetNull)
+  consumedResponse PlayerAction? @relation("PlayerActionSourceInteraction")
+
+  @@index([runId, status])
+  @@index([windowId, targetRoleId, status])
+  @@index([sourceActionId])
+}
+
+model RoleAsset {
+  id          String   @id @default(cuid())
+  runId       String
+  assetKey    String
+  kind        String
+  ownerRoleId String?
+  ownerActorKey String?
+  quantity    Int      @default(0)
+  status      String   @default("ACTIVE")
+  visibility  String   @default("PRIVATE")
+  stateJson   Json
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  run       StoryRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  ownerRole StoryRole?         @relation("RoleAssetOwner", fields: [ownerRoleId], references: [id], onDelete: Restrict)
+  mutations RoleAssetMutation[]
+
+  @@unique([runId, assetKey])
+  @@index([ownerRoleId, status])
+  @@index([ownerActorKey, status])
+}
+
+model RoleAssetMutation {
+  id             String   @id @default(cuid())
+  assetId        String
+  actionId       String
+  mutationType   String
+  delta          Int
+  fromRoleId     String?
+  toRoleId       String?
+  beforeJson     Json
+  afterJson      Json
+  idempotencyKey String   @unique
+  createdAt      DateTime @default(now())
+
+  asset   RoleAsset   @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  action  PlayerAction @relation(fields: [actionId], references: [id], onDelete: Restrict)
+  fromRole StoryRole? @relation("RoleAssetMutationFromRole", fields: [fromRoleId], references: [id], onDelete: SetNull)
+  toRole   StoryRole? @relation("RoleAssetMutationToRole", fields: [toRoleId], references: [id], onDelete: SetNull)
+
+  @@index([assetId, createdAt])
+  @@index([actionId])
+}
+
+model StoryEventCursor {
+  id           String   @id @default(cuid())
+  runId        String   @unique
+  nextSequence Int      @default(1)
+  version      Int      @default(1)
+  updatedAt    DateTime @updatedAt
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+}
+
+model EventDeliveryCursor {
+  id           String   @id @default(cuid())
+  roomId       String
+  userId       String
+  nextSequence Int      @default(1)
+  version      Int      @default(1)
+  updatedAt    DateTime @updatedAt
+
+  room StoryRun @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model EventDelivery {
+  id               String   @id @default(cuid())
+  eventId          String
+  roomId           String
+  userId           String
+  roleId           String?
+  deliverySequence Int
+  payloadJson      Json
+  deliveredAt      DateTime @default(now())
+
+  event StoryEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  room  StoryRun   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role  StoryRole? @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@unique([roomId, userId, deliverySequence])
+  @@unique([eventId, userId])
+  @@index([userId, deliveredAt])
+  @@index([roleId])
+}
+
+model RoleAgentPolicy {
+  id                 String   @id @default(cuid())
+  runId              String
+  roleId             String
+  policyVersion      String
+  promptVersion      String
+  provider           String
+  modelName          String
+  goalsJson          Json
+  riskProfileJson    Json
+  assetPriorityJson  Json
+  actionWeightsJson  Json
+  fallbackBySlotJson Json
+  status             String   @default("ACTIVE")
+  createdAt          DateTime @default(now())
+  supersededAt       DateTime?
+
+  run  StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  role StoryRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([runId, roleId, policyVersion])
+  @@index([runId, roleId, status])
+}
+
+model RoleAgentProjection {
+  id                     String   @id @default(cuid())
+  runId                  String
+  windowId               String
+  roleId                 String
+  actionSlot             String
+  controlEpoch           Int
+  policyVersion          String
+  openingSnapshotVersion Int
+  projectionJson         Json
+  contentHash            String
+  createdAt              DateTime @default(now())
+
+  run       StoryRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  window    ActionWindow       @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  role      StoryRole          @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  decisions RoleAgentDecision[]
+
+  @@unique([windowId, roleId, actionSlot, controlEpoch])
+  @@index([runId, roleId, createdAt])
+}
+
+model RoleAgentDecision {
+  id                     String   @id @default(cuid())
+  runId                  String
+  windowId               String
+  roleId                 String
+  actionSlot             String
+  controlEpoch           Int
+  policyVersion          String
+  openingSnapshotVersion Int
+  taskDedupeKey          String   @unique
+  projectionId           String
+  status                 String   @default("PENDING")
+  visibleFactIdsJson     Json
+  chosenActionKey        String?
+  targetRoleId           String?
+  leverageKey            String?
+  shortRationale         String?
+  provider               String?
+  modelName              String?
+  providerAttempts       Int      @default(0)
+  providerResponseHash   String?
+  guardDecisionJson      Json?
+  playerActionId         String?  @unique
+  lastError              String?  @db.Text
+  startedAt              DateTime?
+  completedAt            DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  run          StoryRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  window       ActionWindow       @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  role         StoryRole          @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  targetRole   StoryRole?         @relation("RoleAgentDecisionTargetRole", fields: [targetRoleId], references: [id], onDelete: SetNull)
+  projection   RoleAgentProjection @relation(fields: [projectionId], references: [id], onDelete: Cascade)
+  playerAction PlayerAction?      @relation(fields: [playerActionId], references: [id], onDelete: SetNull)
+
+  @@unique([windowId, roleId, actionSlot, controlEpoch])
+  @@index([runId, roleId, createdAt])
+  @@index([projectionId])
+}
+
+model ResolutionWorkflow {
+  id              String   @id @default(cuid())
+  runId           String
+  windowId        String   @unique
+  nodeId          String   @unique
+  resolutionId    String?  @unique
+  status          String   @default("RUNNING")
+  rulesInputHash  String
+  rulesOutputJson Json?
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+
+  run         StoryRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  window      ActionWindow       @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  node        SceneNode          @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  resolution  DirectorResolution? @relation(fields: [resolutionId], references: [id], onDelete: SetNull)
+  checkpoints ResolutionCheckpoint[]
+
+  @@index([runId, status])
+}
+
+model ResolutionCheckpoint {
+  id            String   @id @default(cuid())
+  workflowId    String
+  checkpointKey String
+  contentHash   String
+  outputRefType String?
+  outputRefId   String?
+  completedAt   DateTime @default(now())
+
+  workflow ResolutionWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, checkpointKey])
 }
 
 model DirectorResolution {
@@ -390,6 +861,7 @@ model DirectorResolution {
   node              SceneNode          @relation(fields: [nodeId], references: [id], onDelete: Cascade)
   narrativeSegments NarrativeSegment[]
   narrativeEntries  NarrativeEntry[]
+  resolutionWorkflow ResolutionWorkflow?
 
   @@index([runId, chapterIndex])
   @@index([auditStatus])
@@ -493,6 +965,7 @@ model SceneSnapshot {
   stateJson            Json
   knownFactKeysJson    Json
   activeThreadKeysJson Json
+  dedupeKey            String?  @unique
   createdAt            DateTime @default(now())
 
   run  StoryRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
@@ -518,6 +991,7 @@ model NarrativeEntry {
   factKeysJson       Json
   threadKeysJson     Json
   sourceEventIdsJson Json
+  dedupeKey          String?  @unique
   createdAt          DateTime @default(now())
 
   run        StoryRun            @relation(fields: [runId], references: [id], onDelete: Cascade)
@@ -659,14 +1133,23 @@ model AiTask {
 model StoryTaskOutbox {
   id             String    @id @default(cuid())
   runId          String
-  nodeId         String    @unique
+  nodeId         String
+  dedupeKey      String    @unique
+  windowId       String?
+  roleId         String?
+  actionSlot     String?
+  controlEpoch   Int?
   taskType       String
   status         String    @default("pending")
+  outcome        String?
+  inputRefId     String?
+  checkpointKey  String?
   attempt        Int       @default(0)
   maxAttempts    Int       @default(3)
   nextRetryAt    DateTime  @default(now())
   leaseOwner     String?
   leaseExpiresAt DateTime?
+  leaseVersion   Int       @default(0)
   startedAt      DateTime?
   completedAt    DateTime?
   resultJson     Json?
@@ -674,11 +1157,18 @@ model StoryTaskOutbox {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  run  StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
-  node SceneNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  run                 StoryRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node                SceneNode    @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  window              ActionWindow? @relation("StoryTaskOutboxWindow", fields: [windowId], references: [id], onDelete: SetNull)
+  role                StoryRole?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  resolutionForWindow ActionWindow? @relation("ActionWindowResolutionTask")
 
   @@index([status, nextRetryAt])
   @@index([runId, createdAt])
+  @@index([runId, taskType, status])
+  @@index([nodeId])
+  @@index([windowId, roleId, actionSlot])
+  @@index([leaseOwner, leaseExpiresAt])
   @@index([leaseExpiresAt])
 }
 
@@ -895,7 +1385,7 @@ model CreemPurchase {
   // The database default keeps rolling deploys compatible with API instances
   // from before this field was introduced. Current code still supplies a
   // human-friendly value explicitly.
-  orderDisplayCode    String              @unique @default(dbgenerated("'MW-' || upper(left(replace(gen_random_uuid()::text, '-', ''), 12))"))
+  orderDisplayCode    String              @unique @default(dbgenerated("('MW-'::text || upper(\"left\"(replace((gen_random_uuid())::text, '-'::text, ''::text), 12)))"))
   status              CreemPurchaseStatus @default(PENDING)
   checkoutId          String?             @unique
   orderId             String?             @unique

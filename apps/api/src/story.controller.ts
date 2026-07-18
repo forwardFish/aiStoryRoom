@@ -1,18 +1,24 @@
-import { Body, Controller, Get, Headers, HttpException, HttpStatus, Inject, Param, Post, ServiceUnavailableException } from "@nestjs/common";
+import { Body, Controller, Get, HttpException, HttpStatus, Inject, Param, Post, ServiceUnavailableException, UseGuards } from "@nestjs/common";
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
-import { verifyAccessToken } from "./auth/auth.service";
-import { EmailService } from "./email/email.service";
+import { AdminGuard } from "./auth/admin.guard";
+import { AuthGuard } from "./auth/auth.guard";
+import { CurrentUser, type AuthenticatedUser } from "./auth/current-user.decorator";
+import { Public } from "./auth/public.decorator";
+import { LegacyStoryAccessGuard } from "./auth/legacy-story-access.guard";
 import { creemConfigurationReadiness } from "./billing/creem.client";
+import { EmailService } from "./email/email.service";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 
 const deploymentVersion = () => process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "local";
 
 @Controller()
+@UseGuards(AuthGuard, LegacyStoryAccessGuard)
 export class StoryController {
   constructor(@Inject(StoryService) private readonly story: StoryService, @Inject(PrismaService) private readonly prisma: PrismaService, @Inject(EmailService) private readonly email: EmailService) {}
 
   @Get()
+  @Public()
   index() {
     return {
       ok: true,
@@ -28,14 +34,17 @@ export class StoryController {
   }
 
   @Get("health")
+  @Public()
   health() {
     return { ok: true, service: "ai-story-room-api", version: deploymentVersion() };
   }
 
   @Get("health/live")
+  @Public()
   live() { return { ok: true, service: "ai-story-room-api", status: "live", version: deploymentVersion() }; }
 
   @Get("health/ready")
+  @Public()
   async ready() {
     const [database, email] = await Promise.all([this.prisma.readiness(), Promise.resolve(this.email.readiness())]);
     const billing = creemConfigurationReadiness();
@@ -44,32 +53,39 @@ export class StoryController {
   }
 
   @Post("auth/wechat-login")
+  @Public()
   login(@Body() body: MockLoginInput) {
     return this.story.login(body);
   }
 
   @Get("user/me")
-  me(@Headers() headers: Record<string, string | undefined>) {
-    return this.story.me(this.openid(headers));
+  me(@CurrentUser() user: AuthenticatedUser) {
+    return this.story.me(user.openid);
   }
 
   @Post("user/agree-policy")
-  agreePolicy(@Headers() headers: Record<string, string | undefined>) {
-    return this.story.agreePolicy(this.openid(headers));
+  agreePolicy(@CurrentUser() user: AuthenticatedUser) {
+    return this.story.agreePolicy(user.openid);
   }
 
   @Get("world-templates")
+  @Public()
   templates() {
     return this.story.templates();
   }
 
   @Get("world-templates/:templateId")
+  @Public()
   template(@Param("templateId") templateId: string) {
     return this.story.template(templateId);
   }
 
   @Post("v4/story-runs")
   createMvpRun(@Body() body: Record<string, unknown>) {
+    const mode = String(body.mode || "single").toLowerCase();
+    if (mode !== "single" && mode !== "solo") {
+      throw new HttpException({ code: "ROOM_CREATE_REQUIRES_LOBBY", message: "Create multiplayer rooms through /api/v4/rooms" }, HttpStatus.BAD_REQUEST);
+    }
     return this.story.createMvpRun(body);
   }
 
@@ -135,8 +151,9 @@ export class StoryController {
   }
 
   @Post("story-runs")
-  createRun(@Headers() headers: Record<string, string | undefined>, @Body() body: CreateStoryRunInput) {
-    return this.story.createRun(this.openid(headers), body);
+  createRun(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateStoryRunInput) {
+    if (body.mode === "room") throw new HttpException({ code: "ROOM_CREATE_REQUIRES_LOBBY", message: "Create multiplayer rooms through /api/v4/rooms" }, HttpStatus.BAD_REQUEST);
+    return this.story.createRun(user.openid, body);
   }
 
   @Get("story-runs/:runId")
@@ -150,13 +167,13 @@ export class StoryController {
   }
 
   @Get("my/story-runs")
-  myRuns(@Headers() headers: Record<string, string | undefined>) {
-    return this.story.myRuns(this.openid(headers));
+  myRuns(@CurrentUser() user: AuthenticatedUser) {
+    return this.story.myRuns(user.openid);
   }
 
   @Post("story-runs/:runId/join")
-  joinRun(@Headers() headers: Record<string, string | undefined>, @Param("runId") runId: string) {
-    return this.story.joinRun(this.openid(headers), runId);
+  joinRun(@CurrentUser() user: AuthenticatedUser, @Param("runId") runId: string) {
+    return this.story.joinRun(user.openid, runId);
   }
 
   @Post("story-runs/:runId/start")
@@ -176,16 +193,16 @@ export class StoryController {
 
   @Post("story-runs/:runId/roles/:roleId/claim")
   claimRole(
-    @Headers() headers: Record<string, string | undefined>,
+    @CurrentUser() user: AuthenticatedUser,
     @Param("runId") runId: string,
     @Param("roleId") roleId: string
   ) {
-    return this.story.claimRole(this.openid(headers), runId, roleId);
+    return this.story.claimRole(user.openid, runId, roleId);
   }
 
   @Get("story-runs/:runId/my-role")
-  myRole(@Headers() headers: Record<string, string | undefined>, @Param("runId") runId: string) {
-    return this.story.myRole(this.openid(headers), runId);
+  myRole(@CurrentUser() user: AuthenticatedUser, @Param("runId") runId: string) {
+    return this.story.myRole(user.openid, runId);
   }
 
   @Get("story-runs/:runId/current-node")
@@ -205,11 +222,11 @@ export class StoryController {
 
   @Post("nodes/:nodeId/actions")
   submitAction(
-    @Headers() headers: Record<string, string | undefined>,
+    @CurrentUser() user: AuthenticatedUser,
     @Param("nodeId") nodeId: string,
     @Body() body: SubmitActionInput
   ) {
-    return this.story.submitAction(this.openid(headers), nodeId, body);
+    return this.story.submitAction(user.openid, nodeId, body);
   }
 
   @Get("nodes/:nodeId/actions")
@@ -248,78 +265,82 @@ export class StoryController {
   }
 
   @Post("chapters/:chapterId/share")
-  shareChapter(@Headers() headers: Record<string, string | undefined>, @Param("chapterId") chapterId: string) {
-    return this.story.shareChapter(this.openid(headers), chapterId);
+  shareChapter(@CurrentUser() user: AuthenticatedUser, @Param("chapterId") chapterId: string) {
+    return this.story.shareChapter(user.openid, chapterId);
   }
 
   @Get("notifications")
-  notifications(@Headers() headers: Record<string, string | undefined>) {
-    return this.story.notifications(this.openid(headers));
+  notifications(@CurrentUser() user: AuthenticatedUser) {
+    return this.story.notifications(user.openid);
   }
 
   @Post("feedback/report")
-  reportFeedback(@Headers() headers: Record<string, string | undefined>, @Body() body: Record<string, unknown>) {
-    return this.story.reportFeedback(this.openid(headers), body);
+  reportFeedback(@CurrentUser() user: AuthenticatedUser, @Body() body: Record<string, unknown>) {
+    return this.story.reportFeedback(user.openid, body);
   }
 
   @Get("story-runs/:runId/insights")
-  insights(@Headers() headers: Record<string, string | undefined>, @Param("runId") runId: string) {
-    return this.story.insights(this.openid(headers), runId);
+  insights(@CurrentUser() user: AuthenticatedUser, @Param("runId") runId: string) {
+    return this.story.insights(user.openid, runId);
   }
 
   @Get("admin/dashboard")
+  @UseGuards(AdminGuard)
   adminDashboard() {
     return this.story.adminDashboard();
   }
 
   @Get("admin/story-runs")
+  @UseGuards(AdminGuard)
   adminStoryRuns() {
     return this.story.adminStoryRuns();
   }
 
   @Get("admin/story-runs/:runId")
+  @UseGuards(AdminGuard)
   adminStoryRun(@Param("runId") runId: string) {
     return this.story.adminStoryRun(runId);
   }
 
   @Get("admin/roles")
+  @UseGuards(AdminGuard)
   adminRoles() {
     return this.story.adminRoles();
   }
 
   @Get("admin/actions")
+  @UseGuards(AdminGuard)
   adminActions() {
     return this.story.adminActions();
   }
 
   @Get("admin/resolutions")
+  @UseGuards(AdminGuard)
   adminResolutions() {
     return this.story.adminResolutions();
   }
 
   @Get("admin/ai-tasks")
+  @UseGuards(AdminGuard)
   adminAiTasks() {
     return this.story.adminAiTasks();
   }
 
   @Get("admin/audit-logs")
+  @UseGuards(AdminGuard)
   adminAuditLogs() {
     return this.story.adminAuditLogs();
   }
 
   @Get("admin/event-logs")
+  @UseGuards(AdminGuard)
   adminEventLogs() {
     return this.story.adminEventLogs();
   }
 
   @Get("admin/action-guard")
+  @UseGuards(AdminGuard)
   adminActionGuard() {
     return this.story.adminActionGuard();
-  }
-
-  private openid(headers: Record<string, string | undefined>) {
-    const auth = headers.authorization || "";
-    const token = auth.replace(/^Bearer\s+/i, "");
-    return headers["x-mock-openid"] || verifyAccessToken(token)?.openid || token || "mock_openid_owner_001";
   }
 }

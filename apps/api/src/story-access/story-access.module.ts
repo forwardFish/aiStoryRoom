@@ -2,11 +2,12 @@ import { Module, forwardRef } from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
 import { CreditsModule } from "../credits/credits.module";
 import { ReferralsModule } from "../referrals/referrals.module";
+import { ContinuousStrategyModule } from "../continuous-strategy/continuous-strategy.module";
 import { StoryAccessController } from "./story-access.controller";
 import { StoryAccessService } from "./story-access.service";
 
 @Module({
-  imports: [forwardRef(() => CreditsModule), forwardRef(() => ReferralsModule)],
+  imports: [forwardRef(() => CreditsModule), forwardRef(() => ReferralsModule), ContinuousStrategyModule],
   controllers: [StoryAccessController],
   providers: [StoryAccessService, AuthGuard],
   exports: [StoryAccessService]

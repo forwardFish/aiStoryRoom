@@ -6,7 +6,12 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate:continuous-strategy": "node scripts/generate-continuous-strategy.mjs",
+    "check:continuous-strategy-generated": "node scripts/generate-continuous-strategy.mjs --check",
+    "lint:continuous-strategy": "node --import tsx src/continuous-strategy/lint.ts",
+    "test:continuous-strategy": "node --import tsx --test tests/continuous-strategy.test.ts",
+    "test:games": "node --import tsx --test tests/game-registry.test.ts tests/continuous-strategy-multiworld.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

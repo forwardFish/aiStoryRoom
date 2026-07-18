@@ -26,6 +26,9 @@ test("Our Many Worlds 首页包含真实资源、完整内容分区和单人入�
   assert.match(script, /Not a story with branches/);
   assert.match(script, /How a world unfolds/);
   assert.match(script, /When the run ends/);
+  assert.doesNotMatch(script, /Open a room, not a script|Room Overview|Room Tensions/);
+  assert.doesNotMatch(script, /\/#create/);
+  assert.match(script, /href="\/rooms\?worldId=caesar">Create<\/a>/);
   assert.match(script, /World Credits/);
   assert.match(script, /New account reward/);
   assert.match(script, /\+50 World Credits/);
@@ -42,9 +45,14 @@ test("Our Many Worlds 首页包含真实资源、完整内容分区和单人入�
   assert.doesNotMatch(script, /credits\.html|#flow|#explore/);
   assert.doesNotMatch(script, /Many Worlds Plus/);
   assert.doesNotMatch(script, /\/ month/);
-  assert.match(script, /class="faq-section mw-panel"/);
-  assert.match(script, /class="faq-layout"/);
-  assert.match(script, /Everything you need before the first decision/);
+  assert.match(script, /class="faq-section faq-simple mw-panel"/);
+  assert.match(script, /Frequently asked questions/);
+  assert.doesNotMatch(script, /faq-layout|faq-intro|faq-notes|faq-content|faq-cta/);
+  assert.match(css, /\.faq-section\.faq-simple\s*\{[\s\S]*?width:\s*min\(1320px, calc\(100vw - 48px\)\)/);
+  assert.match(css, /\.faq-simple-head h2\s*\{[\s\S]*?font-size:\s*48px/);
+  assert.match(css, /\.faq-simple \.faq-grid details\s*\{[\s\S]*?font-size:\s*19px/);
+  assert.match(css, /\.faq-simple \.faq-grid details p\s*\{[\s\S]*?font-size:\s*17px/);
+  assert.ok(script.indexOf('id="pricing"') < script.indexOf('id="faq"'));
   assert.match(script, /What are World Credits/);
   assert.match(script, /How can I get World Credits/);
   assert.doesNotMatch(script, /How do World Credits unlock a room/);

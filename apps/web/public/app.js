@@ -63,18 +63,18 @@ export function createStoryApp({
     await boot();
   }
 
-  async function refresh({ conflict = false } = {}) {
+  async function refresh({ conflict = false, silent = false } = {}) {
     if (!state.view?.run?.id && !storage.savedRunId) return boot();
-    state.busy = true;
+    if (!silent) state.busy = true;
     state.error = "";
-    render();
+    if (!silent) render();
     try {
       acceptView(await storage.getRun(state.view?.run?.id || storage.savedRunId));
-      state.notice = conflict ? "局势已被其他请求更新，已为你刷新到最新版本。请重新确认这一步。" : "局势已刷新。";
+      if (!silent) state.notice = conflict ? "局势已被其他请求更新，已为你刷新到最新版本。请重新确认这一步。" : "局势已刷新。";
     } catch (error) {
-      state.error = errorMessage(error);
+      if (!silent) state.error = errorMessage(error);
     } finally {
-      state.busy = false;
+      if (!silent) state.busy = false;
       render();
     }
   }
@@ -107,7 +107,8 @@ export function createStoryApp({
         };
       } else {
         acceptView(result);
-        startResultStream(result);
+        if (result.roomSession) state.notice = "你的角色决策已提交，正在等待其他玩家。";
+        else startResultStream(result);
       }
     } catch (error) {
       if (isVersionConflict(error)) {
@@ -228,6 +229,10 @@ export function createStoryApp({
 
   async function resetRun() {
     if (state.busy) return;
+    if (state.view?.roomSession) {
+      browserWindow.location.assign(`/rooms/${encodeURIComponent(state.view.roomSession.room.id)}`);
+      return;
+    }
     if (browserWindow?.confirm && !browserWindow.confirm("确定重开《桑田诏》吗？当前故事局仍会保留在服务端。")) return;
     state.busy = true;
     state.error = "";
@@ -275,12 +280,34 @@ export function createStoryApp({
     state.customText = "";
   }
 
+  async function resolveRoomRound() {
+    if (!state.view?.roomSession?.room?.isHost || !state.view.roomSession.allSubmitted || state.busy || typeof storage.resolveRoomRound !== "function") return;
+    state.busy = true;
+    state.error = "";
+    state.notice = "三方决策已齐，AI 正在推演共同结果……";
+    render();
+    try {
+      acceptView(await storage.resolveRoomRound());
+      state.notice = state.view?.roomSession?.completed ? "七轮共同决策已经完成。" : "本轮推演完成，下一轮局势已经展开。";
+    } catch (error) {
+      state.error = errorMessage(error);
+      state.notice = "";
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
   function startResultStream(view) {
     stopResultStream();
     const text = resultNarrativeText(view);
     state.resultScroll = { top: 0, follow: true };
     state.resultStream = { kind: "decision", title: "", text, index: 0, visibleText: "", done: text.length === 0 };
     if (state.resultStream.done) {
+      return;
+    }
+    if (shouldRevealStreamImmediately(browserWindow)) {
+      revealResultStreamImmediately();
       return;
     }
     resultTimer = (browserWindow?.setTimeout || setTimeout).call(browserWindow || globalThis, advanceResultStream, streamDelay(text, 0, browserWindow));
@@ -293,6 +320,10 @@ export function createStoryApp({
     state.resultScroll = { top: 0, follow: true };
     state.resultStream = { kind: "maneuver", title: String(latest.title || "谋划已展开"), text, index: 0, visibleText: "", done: text.length === 0 };
     if (state.resultStream.done) return;
+    if (shouldRevealStreamImmediately(browserWindow)) {
+      revealResultStreamImmediately();
+      return;
+    }
     resultTimer = (browserWindow?.setTimeout || setTimeout).call(browserWindow || globalThis, advanceResultStream, streamDelay(text, 0, browserWindow));
   }
 
@@ -301,6 +332,13 @@ export function createStoryApp({
     const text = openingNarrativeText();
     state.openingStream = { text, index: 0, visibleText: "", done: text.length === 0 };
     if (state.openingStream.done) {
+      scheduleOpeningAdvance();
+      return;
+    }
+    if (shouldRevealStreamImmediately(browserWindow)) {
+      state.openingStream.index = text.length;
+      state.openingStream.visibleText = text;
+      state.openingStream.done = true;
       scheduleOpeningAdvance();
       return;
     }
@@ -349,6 +387,13 @@ export function createStoryApp({
     if (!state.resultStream?.done) return;
     stopResultStream();
     render();
+  }
+
+  function revealResultStreamImmediately() {
+    if (!state.resultStream) return;
+    state.resultStream.index = state.resultStream.text.length;
+    state.resultStream.visibleText = state.resultStream.text;
+    state.resultStream.done = true;
   }
 
   function stopResultStream() {
@@ -435,11 +480,12 @@ export function createStoryApp({
           ${renderCausalRecalls(view)}
         </aside>
         <main class="causal-center ${mainMode === "history" ? "history-center" : ""} ${mainMode === "critical_pending" ? "critical-pending-center" : ""} ${mainMode === "decision" ? "decision-center" : ""}">
-          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" ? renderSimulation(view, state) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
+          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
           ${mainMode === "opening_ready" ? renderOpeningStart() : mainMode === "decision" ? renderDecisionZone(view, state) : ""}
         </main>
         <aside class="causal-right" aria-label="主动谋划中枢">
           ${renderManeuverPanel(view, state)}
+          ${view.roomSession ? renderRoomPartyPanel(view, state) : ""}
           ${state.debugBuild ? renderBuildDiagnostics(view) : ""}
         </aside>
         ${renderCriticalEvent(view, state)}
@@ -468,6 +514,7 @@ export function createStoryApp({
     root.querySelector("#refreshBtn")?.addEventListener("click", () => refresh());
     root.querySelector("#submitDecision")?.addEventListener("click", submitDecision);
     root.querySelector("#maneuverSubmit")?.addEventListener("click", submitManeuver);
+    root.querySelector("[data-room-resolve]")?.addEventListener("click", resolveRoomRound);
     root.querySelector("#criticalRespondBtn")?.addEventListener("click", () => startCriticalResponse(root.querySelector("#criticalRespondBtn")?.dataset.eventId));
     root.querySelector("#criticalDeferBtn")?.addEventListener("click", () => deferCriticalEvent(root.querySelector("#criticalDeferBtn")?.dataset.eventId));
     root.querySelector("#criticalDeferIconBtn")?.addEventListener("click", () => deferCriticalEvent(root.querySelector("#criticalDeferIconBtn")?.dataset.eventId));
@@ -517,6 +564,7 @@ export function createStoryApp({
     submitDecision,
     advanceDay,
     finalize,
+    resolveRoomRound,
     submitManeuver,
     startCriticalResponse,
     deferCriticalEvent,
@@ -540,14 +588,15 @@ function renderTopbar(view, state) {
   const remaining = Math.max(0, Number(run.totalDays || FINAL_DAY) - Number(run.currentDay));
   const progress = dayProgress(view);
   const maneuver = view.maneuverState || {};
+  const roomSession = view.roomSession;
   return `<header class="causal-topbar">
     <div class="mw-brand"><span class="mw-brand-mark">Our Many Worlds</span></div>
     <div class="location-title"><span class="seal-mark">⌂</span><b>杭州总督府 · 内厅</b><span class="chevron">⌄</span></div>
     <div class="top-day">第 ${number(run.currentDay)} 天 · ${esc(run.currentTime || "局势推演中")}</div>
     <div class="top-countdown">距离御前裁决：<b>${Number(run.currentDay) >= FINAL_DAY ? 0 : remaining}</b> 天</div>
     <span class="status-chip">主线决策&nbsp; <b>${activePromptForView(view) ? progress.completed + 1 : progress.completed} / ${progress.required || 2}</b></span>
-    <span class="status-chip maneuver-chip">谋划&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)} / ${Number(maneuver.maneuverOpportunitiesPerDay ?? 2)}</b><i></i><i></i></span>
-    <div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; 历史回顾</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; 设置</button></div>
+    <span class="status-chip maneuver-chip">${roomSession ? `三人局&nbsp; <b>${roomSession.submittedRoleIds.length} / ${roomSession.room.players.filter((player) => player.roleId).length}</b>` : `谋划&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)} / ${Number(maneuver.maneuverOpportunitiesPerDay ?? 2)}</b>`}<i></i><i></i></span>
+    <div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; 历史回顾</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; ${view.roomSession ? "房间" : "设置"}</button></div>
   </header>`;
 }
 
@@ -603,7 +652,7 @@ function renderLeverage(player = {}) {
 
 function renderManeuverPanel(view, state) {
   const maneuver = view.maneuverState || { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 };
-  const disabled = Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy;
+  const disabled = Boolean(view.roomSession) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy;
   const draft = state.maneuverDraft;
   const contacts = [["county_magistrate", "卢象升", "县令 · 信任", "art-avatar-county"], ["merchant", "江南商会会首", "商会 · 观望", "art-avatar-merchant"], ["xunfu", "刘瑾", "巡抚 · 敌对", "art-avatar-xunfu"], ["sili_jian", "司礼监织造使", "内廷 · 警惕", "art-avatar-sili"]];
   const types = [["contact", "人物交谈"], ["investigate", "派遣调查"], ["leverage", "使用筹码"], ["custom", "自拟谋划"]];
@@ -680,6 +729,26 @@ function renderNarrativeIdle() {
   return `<section class="result-narrative narrative-idle"><div class="result-copy"><h1>局势暂歇</h1><p>新的剧情正在整理中。请刷新后继续阅读。</p></div><div class="result-continue"><button id="refreshBtn" type="button">刷新局势</button></div></section>`;
 }
 
+function renderRoomWaiting(view, state = {}) {
+  const session = view.roomSession || {};
+  const submitted = new Set(session.submittedRoleIds || []);
+  const total = session.room?.players?.filter((player) => player.roleId).length || 0;
+  return `<section class="result-narrative room-waiting-narrative" data-testid="room-waiting"><div class="result-copy"><span class="room-formal-kicker">第 ${number(session.round)} 轮 · 共同故事局</span><h1>你的决策已经送达</h1><p>你的行动已写入本轮共同局势。系统正在等待其他角色分别作出决定；三方行动汇合后，房主才能开始本轮推演。</p><div class="room-waiting-progress"><b>${submitted.size} / ${total}</b><span>名玩家已完成本轮决策</span></div>${session.room?.isHost && session.allSubmitted ? `<button class="room-formal-resolve" type="button" data-room-resolve ${state.busy ? "disabled" : ""}>${state.busy ? "AI 正在推演……" : "推演本轮共同结果"}</button>` : `<small>其他玩家完成后，本页面会自动更新。</small>`}</div></section>`;
+}
+
+function renderRoomComplete(view) {
+  const roomId = view.roomSession?.room?.id || view.run?.id;
+  return `<section class="result-narrative room-waiting-narrative" data-testid="room-complete"><div class="result-copy"><span class="room-formal-kicker">七轮共同决策已经完成</span><h1>御前裁决已经落定</h1><p>三名玩家的选择已经汇入同一条因果链。现在可以查看共同结局，以及你的角色在嘉靖财政危局中留下的影响。</p><a class="room-formal-result" href="/game/result?runId=${encodeURIComponent(roomId)}">查看共同结局</a></div></section>`;
+}
+
+function renderRoomPartyPanel(view, state = {}) {
+  const session = view.roomSession || {};
+  const room = session.room || {};
+  const submitted = new Set(session.submittedRoleIds || []);
+  const players = array(room.players).filter((player) => player.roleId);
+  return `<section class="maneuver-panel room-formal-party" data-testid="room-party-panel"><div class="maneuver-heading"><h2>共同故事局</h2><span class="room-formal-live"><i></i>实时同步</span></div><div class="room-formal-party-list">${players.map((player) => `<article class="${submitted.has(player.roleId) ? "submitted" : ""}"><div><b>${esc(player.nickname)}</b><small>${esc(player.roleName || "玩家角色")}</small></div><em>${submitted.has(player.roleId) ? "已决策" : session.resolving ? "推演中" : "思考中"}</em></article>`).join("")}</div>${room.isHost ? `<button class="room-party-resolve" type="button" data-room-resolve ${!session.allSubmitted || session.resolving || state.busy ? "disabled" : ""}>${session.resolving || state.busy ? "AI 推演中……" : session.allSubmitted ? "推演本轮共同结果" : "等待全部玩家决策"}</button>` : `<p class="room-party-help">房主会在全部玩家提交后推进共同回合。</p>`}</section>`;
+}
+
 function resultNarrativeText(view) {
   const card = view?.dashboard?.visibleCausalCard || view?.visibleCausalCard || {};
   const messages = array(view?.messages);
@@ -725,6 +794,9 @@ function maneuverNarrativeText(view, maneuver = {}) {
 function resolveMainMode({ view, state, showOpening, activePrompt, simulating, openingPause, resultPause, criticalPending }) {
   if (state.historyOpen) return "history";
   if (simulating) return "simulating";
+  if (view?.roomSession?.completed) return "room_complete";
+  if (view?.roomSession?.resolving) return "room_resolving";
+  if (view?.roomSession?.ownSubmitted) return "room_waiting";
   if (view?.run?.status === "finished") return "final_judgement";
   if (openingPause) return "opening_stream";
   if (resultPause) return "result_stream";
@@ -925,6 +997,7 @@ function renderBanner(kind, message) {
 
 export function dayProgress(view) {
   if (!view?.run) return { completed: 0, required: DAY_DECISIONS };
+  if (view.roomSession) return { completed: view.roomSession.ownSubmitted ? 1 : 0, required: 1 };
   const day = Number(view.run.currentDay || 1);
   if (day >= FINAL_DAY) return { completed: 0, required: 0 };
   const serverProgress = view.dayProgress || view.run.dayProgress;
@@ -1100,6 +1173,10 @@ function clamp(value) {
 
 function className(value) {
   return String(value || "normal").replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+function shouldRevealStreamImmediately(browserWindow) {
+  return Number(browserWindow?.__STORY_STREAM_DELAY_MULTIPLIER__) === 0;
 }
 
 function streamDelay(text, index, browserWindow) {

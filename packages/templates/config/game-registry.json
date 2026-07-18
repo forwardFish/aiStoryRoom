@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "game_registry_v1",
+  "games": [
+    { "worldId": "sangtian", "definitionPath": "sangtian/game.json" },
+    { "worldId": "caesar", "definitionPath": "caesar/game.json" },
+    { "worldId": "last-night-shift", "definitionPath": "last-night-shift/game.json" },
+    { "worldId": "ninety-days-left", "definitionPath": "ninety-days-left/game.json" },
+    { "worldId": "inheritance-table", "definitionPath": "inheritance-table/game.json" },
+    { "worldId": "blackout-protocol", "definitionPath": "blackout-protocol/game.json" }
+  ]
+}

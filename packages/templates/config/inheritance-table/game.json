@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "inheritance-table",
+  "publicId": "inheritance-table",
+  "aliases": [],
+  "templateId": "template_inheritance_table_001",
+  "status": "coming_soon",
+  "catalog": {
+    "title": "The Inheritance Table",
+    "subtitle": "Every memory has a claimant",
+    "description": "A family gathering becomes a negotiation over loyalty, memory, and control.",
+    "genre": "Relationships",
+    "tags": ["Relationships", "Family", "Negotiation"],
+    "durationLabel": "60–90 Minutes",
+    "cardCover": "/assets/game/inheritance-table/cover.png",
+    "heroCover": "/assets/game/inheritance-table/cover.png",
+    "lobby": {
+      "title": "The Inheritance Table",
+      "description": "A family gathering becomes a negotiation over loyalty, memory, and control.",
+      "categoryLabel": "Relationships"
+    }
+  },
+  "modes": { "solo": false, "multiplayer": false, "minHumanPlayers": 3, "maxHumanPlayers": 5 },
+  "engine": { "engineVersion": "unavailable_v1", "strategyVersion": "unpublished", "strategyRegistryPath": null, "fixedRules": null },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "Family Dining Room",
+    "roundLabel": "Course",
+    "finaleLabel": "The Reading",
+    "sceneBackground": "/assets/game/inheritance-table/cover.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": []
+}

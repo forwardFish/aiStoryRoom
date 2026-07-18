@@ -4,14 +4,15 @@ import test from "node:test";
 import { JSDOM } from "jsdom";
 
 test("user-facing surfaces use the Our Many Worlds brand and tagline", async () => {
-  const [homeHtml, homeJs, platformHtml, platformJs, credits, worlds, roleSelect] = await Promise.all([
+  const [homeHtml, homeJs, platformHtml, platformJs, credits, worlds, roleSelect, roleSelectionView] = await Promise.all([
     readFile(new URL("../public/home.html", import.meta.url), "utf8"),
     readFile(new URL("../public/home.js", import.meta.url), "utf8"),
     readFile(new URL("../public/platform.html", import.meta.url), "utf8"),
     readFile(new URL("../public/platform.js", import.meta.url), "utf8"),
     readFile(new URL("../public/credits.html", import.meta.url), "utf8"),
     readFile(new URL("../public/worlds.html", import.meta.url), "utf8"),
-    readFile(new URL("../public/role-select.js", import.meta.url), "utf8")
+    readFile(new URL("../public/role-select.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/room-role-selection-view.js", import.meta.url), "utf8")
   ]);
 
   assert.match(homeHtml, /<title>Our Many Worlds \| Real players\. Living worlds\.<\/title>/);
@@ -22,9 +23,10 @@ test("user-facing surfaces use the Our Many Worlds brand and tagline", async () 
   assert.match(platformJs, /const BRAND_TAGLINE = "Real players\. Living worlds\."/);
   assert.match(credits, /<b>Our Many Worlds<\/b><small>Real players\. Living worlds\.<\/small>/);
   assert.match(worlds, /Explore Worlds \| Our Many Worlds/);
-  assert.match(roleSelect, /<strong>Our Many Worlds<\/strong>/);
+  assert.match(roleSelect, /renderRoomSelectionPage/);
+  assert.match(roleSelectionView, /<strong>Our Many Worlds<\/strong>/);
 
-  const combined = [homeHtml, homeJs, platformHtml, platformJs, credits, worlds, roleSelect].join("\n");
+  const combined = [homeHtml, homeJs, platformHtml, platformJs, credits, worlds, roleSelect, roleSelectionView].join("\n");
   assert.doesNotMatch(combined, /AI-powered story rooms|AI-powered social simulations/);
   assert.doesNotMatch(platformJs, /MutationObserver|applyBrandText/);
   assert.doesNotMatch(platformJs, /openInviteShareLegacy|on Many Worlds/);

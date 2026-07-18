@@ -1487,3 +1487,87 @@ a.world-card-link:focus-visible { outline: 3px solid rgba(112,79,245,.35); outli
   .mw-header nav { position: absolute; left: 50%; width: max-content; flex: none; transform: translateX(-50%); }
   .header-right { margin-left: auto; }
 }
+
+/* Traditional FAQ: one heading followed by one full-width accordion. */
+.faq-section.faq-simple {
+  width: min(1320px, calc(100vw - 48px));
+  max-width: 1320px;
+  margin: 0 auto 24px;
+  padding: 64px 72px 72px;
+}
+.faq-simple-head {
+  max-width: 1120px;
+  margin: 0 auto 34px;
+}
+.mw-type-marketing .faq-simple-head .entry-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--purple);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.mw-type-marketing .faq-simple-head h2 {
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-size: 48px;
+  line-height: 1.16;
+}
+.mw-type-marketing .faq-simple-head p {
+  margin: 0;
+  color: #687391;
+  font-size: 18px;
+  line-height: 1.65;
+}
+.faq-simple .faq-grid {
+  display: block;
+  max-width: 1120px;
+  margin: 0 auto;
+  border-top: 1px solid #e9eaf3;
+}
+.mw-type-marketing .faq-simple .faq-grid details {
+  margin: 0;
+  border-bottom: 1px solid #e9eaf3;
+  color: var(--ink);
+  font-size: 19px;
+}
+.mw-type-marketing .faq-simple .faq-grid summary {
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.mw-type-marketing .faq-simple .faq-grid summary .mw-icon {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  margin-left: auto;
+  transition: transform .2s ease;
+}
+.mw-type-marketing .faq-simple .faq-grid details[open] summary .mw-icon { transform: rotate(180deg); }
+.mw-type-marketing .faq-simple .faq-grid details p {
+  max-width: 940px;
+  margin: -1px 0 0;
+  padding: 0 40px 25px 0;
+  color: #687391;
+  font-size: 17px;
+  line-height: 1.7;
+}
+@media (max-width: 680px) {
+  .faq-section.faq-simple {
+    width: calc(100% - 32px);
+    padding: 40px 24px 46px;
+  }
+  .faq-simple-head { margin-bottom: 26px; }
+  .mw-type-marketing .faq-simple-head .entry-label { margin-bottom: 8px; font-size: 12px; }
+  .mw-type-marketing .faq-simple-head h2 { margin-bottom: 10px; font-size: 34px; line-height: 1.18; }
+  .mw-type-marketing .faq-simple-head p { font-size: 16px; }
+  .mw-type-marketing .faq-simple .faq-grid details { font-size: 17px; }
+  .mw-type-marketing .faq-simple .faq-grid summary { min-height: 72px; gap: 10px; padding: 17px 0; }
+  .mw-type-marketing .faq-simple .faq-grid summary .mw-icon { width: 17px; height: 17px; }
+  .mw-type-marketing .faq-simple .faq-grid details p { padding: 0 16px 19px 0; font-size: 15px; line-height: 1.65; }
+}

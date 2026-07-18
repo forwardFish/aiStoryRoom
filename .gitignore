@@ -2,6 +2,10 @@ node_modules/
 dist/
 .env
 .env.local
+.env.test
+.env.prd
+deploy/env/*.local
+deploy/env/generated/
 .runtime/
 .cache/
 .turbo/
@@ -50,5 +54,8 @@ __pycache__/
 
 # Generated deployment/build outputs and caches
 apps/web/dist-vercel/
+packages/shared/src/**/*.js
+packages/templates/src/**/*.js
+scripts/acceptance/generated/
 *.tsbuildinfo
 .omx/

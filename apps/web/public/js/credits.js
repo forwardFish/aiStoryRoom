@@ -4,7 +4,7 @@ const root = document.querySelector("[data-credits-app]");
 const query = new URLSearchParams(location.search);
 const intent = query.get("intent") === "WORLD_UNLOCK" ? "WORLD_UNLOCK" : "WALLET";
 const runId = query.get("runId") || "";
-const canonicalReturn = runId ? `/room-game?runId=${encodeURIComponent(runId)}` : "/credits";
+const canonicalReturn = runId ? `/game?runId=${encodeURIComponent(runId)}` : "/credits";
 const requestedReturn = query.get("returnTo") || canonicalReturn;
 const returnTo = requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") ? requestedReturn : canonicalReturn;
 const packs = { credits_300: { credits: 300, price: "$7.99" }, credits_650: { credits: 650, price: "$14.99" } };

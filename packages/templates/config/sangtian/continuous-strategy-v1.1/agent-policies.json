@@ -1,0 +1,1205 @@
+{
+  "schemaVersion": "continuous_strategy_agent_policies_v1",
+  "contentVersion": "sangtian_v1_1",
+  "policies": [
+    {
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "zhejiang_governor",
+      "policyVersion": "sangtian_v1_1:s1:governor:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s1_governor_joint_review",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s1_governor_pause_one_county",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "BALANCED",
+      "assetPriority": [
+        "asset_s1_governor_memorial_channel",
+        "asset_s1_review_authority"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s1_governor_joint_review",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s1_governor_pause_one_county",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s1_governor_endorse_fast_execution",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s1_governor_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "xunfu",
+      "policyVersion": "sangtian_v1_1:s1:xunfu:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s1_xunfu_accelerate_orders",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s1_xunfu_publish_progress",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "ASSERTIVE",
+      "assetPriority": [
+        "asset_s1_xunfu_clerk_network",
+        "asset_s1_review_authority"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s1_xunfu_accelerate_orders",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s1_xunfu_publish_progress",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s1_xunfu_reserve_review_window",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s1_xunfu_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "county_magistrate",
+      "policyVersion": "sangtian_v1_1:s1:magistrate:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s1_magistrate_retain_original_register",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s1_magistrate_phase_execution",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "CAUTIOUS",
+      "assetPriority": [
+        "asset_s1_magistrate_register_original",
+        "asset_s1_review_authority"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s1_magistrate_retain_original_register",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s1_magistrate_phase_execution",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s1_magistrate_submit_copy_for_protection",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s1_magistrate_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "zhejiang_governor",
+      "policyVersion": "sangtian_v1_1:s2:governor:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s2_governor_receive_letter_privately",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s2_governor_dual_verification",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "BALANCED",
+      "assetPriority": [
+        "asset_s2_governor_sealed_mail_channel",
+        "asset_s2_document_custody"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s2_governor_receive_letter_privately",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s2_governor_dual_verification",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s2_governor_request_original",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s2_governor_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "xunfu",
+      "policyVersion": "sangtian_v1_1:s2:xunfu:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s2_xunfu_trace_leak",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s2_xunfu_seize_drafts",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "ASSERTIVE",
+      "assetPriority": [
+        "asset_s2_xunfu_inspection_roster",
+        "asset_s2_document_custody"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s2_xunfu_trace_leak",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s2_xunfu_seize_drafts",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s2_xunfu_challenge_letter",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s2_xunfu_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "county_magistrate",
+      "policyVersion": "sangtian_v1_1:s2:magistrate:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s2_magistrate_send_copy",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s2_magistrate_hide_original",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "CAUTIOUS",
+      "assetPriority": [
+        "asset_s2_magistrate_contract_copy",
+        "asset_s2_document_custody"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s2_magistrate_send_copy",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s2_magistrate_hide_original",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s2_magistrate_trade_protection",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s2_magistrate_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "zhejiang_governor",
+      "policyVersion": "sangtian_v1_1:s3:governor:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s3_governor_release_granary",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s3_governor_audit_merchants",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "BALANCED",
+      "assetPriority": [
+        "asset_s3_governor_granary_release_order",
+        "asset_s3_grain_route"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s3_governor_release_granary",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s3_governor_audit_merchants",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s3_governor_unify_price_message",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s3_governor_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "xunfu",
+      "policyVersion": "sangtian_v1_1:s3:xunfu:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s3_xunfu_blame_merchants",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s3_xunfu_summon_dealers",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "ASSERTIVE",
+      "assetPriority": [
+        "asset_s3_xunfu_merchant_summons",
+        "asset_s3_grain_route"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s3_xunfu_blame_merchants",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s3_xunfu_summon_dealers",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s3_xunfu_accelerate_levy",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s3_xunfu_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "county_magistrate",
+      "policyVersion": "sangtian_v1_1:s3:magistrate:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s3_magistrate_publish_loss",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s3_magistrate_organize_petitions",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "CAUTIOUS",
+      "assetPriority": [
+        "asset_s3_magistrate_grain_loss_ledger",
+        "asset_s3_grain_route"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s3_magistrate_publish_loss",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s3_magistrate_organize_petitions",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s3_magistrate_protect_local_granary",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s3_magistrate_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "zhejiang_governor",
+      "policyVersion": "sangtian_v1_1:s4:governor:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s4_governor_seal_evidence",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s4_governor_protect_witness",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "BALANCED",
+      "assetPriority": [
+        "asset_s4_governor_evidence_seal",
+        "asset_s4_evidence_custody"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s4_governor_seal_evidence",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s4_governor_protect_witness",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s4_governor_control_access",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s4_governor_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "xunfu",
+      "policyVersion": "sangtian_v1_1:s4:xunfu:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s4_xunfu_challenge_integrity",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s4_xunfu_seize_original",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "ASSERTIVE",
+      "assetPriority": [
+        "asset_s4_xunfu_integrity_objection",
+        "asset_s4_evidence_custody"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s4_xunfu_challenge_integrity",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s4_xunfu_seize_original",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s4_xunfu_cut_off_aide",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s4_xunfu_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "county_magistrate",
+      "policyVersion": "sangtian_v1_1:s4:magistrate:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s4_magistrate_send_copy",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s4_magistrate_move_original",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "CAUTIOUS",
+      "assetPriority": [
+        "asset_s4_magistrate_witness_roster",
+        "asset_s4_evidence_custody"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s4_magistrate_send_copy",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s4_magistrate_move_original",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s4_magistrate_protect_witness",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s4_magistrate_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "zhejiang_governor",
+      "policyVersion": "sangtian_v1_1:s5:governor:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s5_governor_split_liability",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s5_governor_suppress_unsupported",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "BALANCED",
+      "assetPriority": [
+        "asset_s5_governor_review_timeline",
+        "asset_s5_responsibility_narrative"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s5_governor_split_liability",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s5_governor_suppress_unsupported",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s5_governor_impeach_abuse",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s5_governor_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "xunfu",
+      "policyVersion": "sangtian_v1_1:s5:xunfu:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s5_xunfu_impeach_delay",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s5_xunfu_claim_credit",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "ASSERTIVE",
+      "assetPriority": [
+        "asset_s5_xunfu_execution_schedule",
+        "asset_s5_responsibility_narrative"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s5_xunfu_impeach_delay",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s5_xunfu_claim_credit",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s5_xunfu_counter_accuse",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s5_xunfu_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "county_magistrate",
+      "policyVersion": "sangtian_v1_1:s5:magistrate:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s5_magistrate_prove_overreach",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s5_magistrate_request_public_audit",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "CAUTIOUS",
+      "assetPriority": [
+        "asset_s5_magistrate_source_index",
+        "asset_s5_responsibility_narrative"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s5_magistrate_prove_overreach",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s5_magistrate_request_public_audit",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s5_magistrate_preserve_sources",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s5_magistrate_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s6_capital_reply",
+      "roleKey": "zhejiang_governor",
+      "policyVersion": "sangtian_v1_1:s6:governor:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s6_governor_consolidate_memorial",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s6_governor_accept_review_duty",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "BALANCED",
+      "assetPriority": [
+        "asset_s6_governor_main_memorial_seal",
+        "asset_s6_final_memorial"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s6_governor_consolidate_memorial",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s6_governor_accept_review_duty",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s6_governor_preserve_flexibility",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s6_governor_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s6_capital_reply",
+      "roleKey": "xunfu",
+      "policyVersion": "sangtian_v1_1:s6:xunfu:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s6_xunfu_secret_merit_report",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s6_xunfu_minimize_ledger",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "ASSERTIVE",
+      "assetPriority": [
+        "asset_s6_xunfu_merit_memorial",
+        "asset_s6_final_memorial"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s6_xunfu_secret_merit_report",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s6_xunfu_minimize_ledger",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s6_xunfu_demand_closure",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s6_xunfu_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s6_capital_reply",
+      "roleKey": "county_magistrate",
+      "policyVersion": "sangtian_v1_1:s6:magistrate:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s6_magistrate_submit_evidence_index",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s6_magistrate_attach_petitions",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "CAUTIOUS",
+      "assetPriority": [
+        "asset_s6_magistrate_evidence_catalog",
+        "asset_s6_final_memorial"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s6_magistrate_submit_evidence_index",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s6_magistrate_attach_petitions",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s6_magistrate_protect_sources",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s6_magistrate_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "zhejiang_governor",
+      "policyVersion": "sangtian_v1_1:s7:governor:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s7_governor_state_stability_case",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s7_governor_accept_final_duty",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "BALANCED",
+      "assetPriority": [
+        "asset_s7_governor_imperial_defense_outline",
+        "asset_s7_final_responsibility"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s7_governor_state_stability_case",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s7_governor_accept_final_duty",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s7_governor_defend_local_flexibility",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s7_governor_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "xunfu",
+      "policyVersion": "sangtian_v1_1:s7:xunfu:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s7_xunfu_defend_execution",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s7_xunfu_admit_costs",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "ASSERTIVE",
+      "assetPriority": [
+        "asset_s7_xunfu_execution_evidence_bundle",
+        "asset_s7_final_responsibility"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s7_xunfu_defend_execution",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s7_xunfu_admit_costs",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s7_xunfu_seek_forced_acquittal",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s7_xunfu_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    },
+    {
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "county_magistrate",
+      "policyVersion": "sangtian_v1_1:s7:magistrate:v1",
+      "goals": [
+        {
+          "goalKey": "goal_s7_magistrate_submit_final_index",
+          "weight": 100
+        },
+        {
+          "goalKey": "goal_s7_magistrate_plead_for_people",
+          "weight": 80
+        }
+      ],
+      "riskProfile": "CAUTIOUS",
+      "assetPriority": [
+        "asset_s7_magistrate_final_evidence_index",
+        "asset_s7_final_responsibility"
+      ],
+      "actionWeights": [
+        {
+          "actionKey": "main_s7_magistrate_submit_final_index",
+          "weight": 100
+        },
+        {
+          "actionKey": "main_s7_magistrate_plead_for_people",
+          "weight": 80
+        },
+        {
+          "actionKey": "main_s7_magistrate_shield_sources",
+          "weight": 65
+        }
+      ],
+      "fallbackBySlot": {
+        "MAIN": "fallback_s7_magistrate_preserve_position",
+        "MANEUVER": "PASS"
+      }
+    }
+  ],
+  "fallbackActions": [
+    {
+      "actionKey": "fallback_s1_governor_preserve_position",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "zhejiang_governor",
+      "actionSlot": "MAIN",
+      "objective": "在改桑急令中维持密奏与复核渠道的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s1_governor_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s2_county_secret_letter_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s1_governor_memorial_channel",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "zhejiang_governor"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s1_xunfu_preserve_position",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "xunfu",
+      "actionSlot": "MAIN",
+      "objective": "在改桑急令中维持催办吏员网络的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s1_xunfu_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s2_county_secret_letter_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s1_xunfu_clerk_network",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "xunfu"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s1_magistrate_preserve_position",
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "county_magistrate",
+      "actionSlot": "MAIN",
+      "objective": "在改桑急令中维持清流县册原件的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s1_magistrate_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s2_county_secret_letter_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s1_magistrate_register_original",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "county_magistrate"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s2_governor_preserve_position",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "zhejiang_governor",
+      "actionSlot": "MAIN",
+      "objective": "在县令密信中维持总督密封收件渠道的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s2_governor_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s3_grain_price_crisis_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s2_governor_sealed_mail_channel",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "zhejiang_governor"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s2_xunfu_preserve_position",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "xunfu",
+      "actionSlot": "MAIN",
+      "objective": "在县令密信中维持巡抚查验名册的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s2_xunfu_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s3_grain_price_crisis_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s2_xunfu_inspection_roster",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "xunfu"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s2_magistrate_preserve_position",
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "county_magistrate",
+      "actionSlot": "MAIN",
+      "objective": "在县令密信中维持田契核验副本的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s2_magistrate_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s3_grain_price_crisis_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s2_magistrate_contract_copy",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "county_magistrate"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s3_governor_preserve_position",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "zhejiang_governor",
+      "actionSlot": "MAIN",
+      "objective": "在粮价失控中维持官仓放粮令的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s3_governor_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s4_hidden_ledger_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s3_governor_granary_release_order",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "zhejiang_governor"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s3_xunfu_preserve_position",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "xunfu",
+      "actionSlot": "MAIN",
+      "objective": "在粮价失控中维持米商召集令的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s3_xunfu_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s4_hidden_ledger_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s3_xunfu_merchant_summons",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "xunfu"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s3_magistrate_preserve_position",
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "county_magistrate",
+      "actionSlot": "MAIN",
+      "objective": "在粮价失控中维持粮田损失册的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s3_magistrate_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s4_hidden_ledger_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s3_magistrate_grain_loss_ledger",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "county_magistrate"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s4_governor_preserve_position",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "zhejiang_governor",
+      "actionSlot": "MAIN",
+      "objective": "在暗账浮出中维持总督证据封印的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s4_governor_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s5_mutual_impeachment_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s4_governor_evidence_seal",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "zhejiang_governor"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s4_xunfu_preserve_position",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "xunfu",
+      "actionSlot": "MAIN",
+      "objective": "在暗账浮出中维持完整性质疑书的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s4_xunfu_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s5_mutual_impeachment_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s4_xunfu_integrity_objection",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "xunfu"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s4_magistrate_preserve_position",
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "county_magistrate",
+      "actionSlot": "MAIN",
+      "objective": "在暗账浮出中维持证人保护名册的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s4_magistrate_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s5_mutual_impeachment_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s4_magistrate_witness_roster",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "county_magistrate"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s5_governor_preserve_position",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "zhejiang_governor",
+      "actionSlot": "MAIN",
+      "objective": "在相互弹劾中维持总督复核时序的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s5_governor_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s6_capital_reply_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s5_governor_review_timeline",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "zhejiang_governor"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s5_xunfu_preserve_position",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "xunfu",
+      "actionSlot": "MAIN",
+      "objective": "在相互弹劾中维持巡抚执行时序的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s5_xunfu_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s6_capital_reply_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s5_xunfu_execution_schedule",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "xunfu"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s5_magistrate_preserve_position",
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "county_magistrate",
+      "actionSlot": "MAIN",
+      "objective": "在相互弹劾中维持县令证据来源目录的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s5_magistrate_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s6_capital_reply_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s5_magistrate_source_index",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "county_magistrate"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s6_governor_preserve_position",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "zhejiang_governor",
+      "actionSlot": "MAIN",
+      "objective": "在京师回批中维持主奏封印的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s6_governor_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s7_imperial_judgment_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s6_governor_main_memorial_seal",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "zhejiang_governor"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s6_xunfu_preserve_position",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "xunfu",
+      "actionSlot": "MAIN",
+      "objective": "在京师回批中维持巡抚政绩密奏的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s6_xunfu_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s7_imperial_judgment_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s6_xunfu_merit_memorial",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "xunfu"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s6_magistrate_preserve_position",
+      "stageKey": "s6_capital_reply",
+      "roleKey": "county_magistrate",
+      "actionSlot": "MAIN",
+      "objective": "在京师回批中维持完整证据目录的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s6_magistrate_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_s7_imperial_judgment_open",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s6_magistrate_evidence_catalog",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "county_magistrate"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s7_governor_preserve_position",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "zhejiang_governor",
+      "actionSlot": "MAIN",
+      "objective": "在御前裁决中维持总督御前答辩提纲的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s7_governor_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_run_completed",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s7_governor_imperial_defense_outline",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "zhejiang_governor"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s7_xunfu_preserve_position",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "xunfu",
+      "actionSlot": "MAIN",
+      "objective": "在御前裁决中维持巡抚执行证据束的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s7_xunfu_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_run_completed",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s7_xunfu_execution_evidence_bundle",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "xunfu"
+        }
+      ]
+    },
+    {
+      "actionKey": "fallback_s7_magistrate_preserve_position",
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "county_magistrate",
+      "actionSlot": "MAIN",
+      "objective": "在御前裁决中维持县令终局证据目录的可核验状态，不替角色交出、公开或销毁关键资源。",
+      "factKeys": [
+        "fact_s7_magistrate_fallback_preserve_position"
+      ],
+      "nextStateKey": "state_run_completed",
+      "assetMutations": [
+        {
+          "assetKey": "asset_s7_magistrate_final_evidence_index",
+          "mutationType": "SET_STATE",
+          "delta": 0,
+          "toRoleKey": "county_magistrate"
+        }
+      ]
+    }
+  ]
+}

@@ -2,9 +2,7 @@ const root = document.querySelector("#reset-password-app");
 const form = root?.querySelector("[data-reset-password-form]");
 const notice = root?.querySelector("[data-reset-notice]");
 const token = String(new URLSearchParams(location.search).get("token") || "").trim();
-const isLocalRuntime = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-const deployedApiBase = "https://appsapi-test.up.railway.app/api";
-const apiBase = (isLocalRuntime ? "/api" : deployedApiBase).replace(/\/$/, "");
+const apiBase = "/api";
 
 function showNotice(message) {
   if (!notice) return;

@@ -11,7 +11,7 @@ test("正式入口只加载唯一 API 客户端，首屏不会白屏", async () 
   const index = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
   const appSource = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
   const gameStyles = await readFile(new URL("../public/main-game.css", import.meta.url), "utf8");
-  assert.match(index, /type="module" src="\.\/app\.js(?:\?[^\"]+)?"/);
+  assert.match(index, /type="module" src="\/game-bootstrap\.js(?:\?[^\"]+)?"/);
   assert.doesNotMatch(index, /causal-player-v3|causal-experience-rules|causal-overlay/);
   assert.doesNotMatch(appSource, /opening-location|杭州粮局/);
   assert.match(gameStyles, /\.result-narrative \{[^}]*overflow-y: auto/);

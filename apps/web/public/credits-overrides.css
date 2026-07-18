@@ -46,6 +46,7 @@
   max-width: 1510px;
   padding-top: 46px;
 }
+body:has(.status-page) .status-page { min-height: 100vh; }
 .credits-heading {
   max-width: 980px;
 }

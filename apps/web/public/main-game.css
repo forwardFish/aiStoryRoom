@@ -384,6 +384,32 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   .decision-composer { width: min(520px, calc(100vw - 24px)); }
 }
 
+/* Multiplayer rooms reuse the original formal game surface. These additions
+   only expose shared-player state and the host's round control. */
+.causal-right:has(.room-formal-party) { overflow-y: auto; }
+.causal-right:has(.room-formal-party) > .maneuver-panel { flex: 0 0 auto; }
+.room-waiting-narrative { display: grid; place-items: center; text-align: center; }
+.room-waiting-narrative .result-copy { width: min(650px, 100%); }
+.room-formal-kicker { display: block; margin-bottom: 14px; color: #6d49ef; font-family: Inter, "Noto Sans SC", sans-serif; font-size: 13px; font-weight: 800; letter-spacing: .06em; }
+.room-waiting-progress { width: min(360px, 100%); display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 12px; margin: 28px auto 14px; padding: 18px 22px; border: 1px solid #e0e3f4; border-radius: 12px; background: rgba(255,255,255,.9); color: #737b9b; font-family: Inter, "Noto Sans SC", sans-serif; text-align: left; }
+.room-waiting-progress b { color: #6545f5; font-size: 26px; }
+.room-waiting-narrative small { color: #858cab; font-family: Inter, "Noto Sans SC", sans-serif; font-size: 12px; }
+.room-formal-resolve, .room-formal-result { width: min(340px, 100%); min-height: 50px; display: grid; place-items: center; margin: 24px auto 0; border: 0; border-radius: 25px; background: linear-gradient(90deg, #5937ef, #8758f6); box-shadow: 0 8px 18px rgba(101,69,245,.2); color: #fff; font-family: Inter, "Noto Sans SC", sans-serif; font-size: 16px; font-weight: 700; text-decoration: none; }
+.room-formal-party { padding-bottom: 13px; }
+.room-formal-live { display: inline-flex; align-items: center; gap: 6px; color: #31845c; font-size: 11px; }
+.room-formal-live i { width: 8px; height: 8px; border-radius: 50%; background: #55a66d; box-shadow: 0 0 0 4px rgba(85,166,109,.12); }
+.room-formal-party-list { display: grid; gap: 7px; padding: 2px 13px 10px; }
+.room-formal-party-list article { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 11px; border: 1px solid #e6e8f6; border-radius: 9px; background: #fbfcff; }
+.room-formal-party-list article.submitted { border-color: #d7eee0; background: #f5fcf8; }
+.room-formal-party-list b, .room-formal-party-list small { display: block; }
+.room-formal-party-list b { color: #343b68; font-size: 13px; }
+.room-formal-party-list small { margin-top: 2px; color: #8b92af; font-size: 10px; }
+.room-formal-party-list em { padding: 4px 7px; border-radius: 999px; background: #f0effa; color: #777e9d; font-size: 10px; font-style: normal; }
+.room-formal-party-list article.submitted em { background: #e2f5e9; color: #278252; }
+.room-party-resolve { width: calc(100% - 26px); min-height: 40px; margin: 2px 13px 0; border: 0; border-radius: 20px; background: linear-gradient(90deg, #5937ef, #8758f6); color: #fff; font-size: 12px; font-weight: 700; }
+.room-party-resolve:disabled { background: #e5e6ee; color: #989daf; box-shadow: none; }
+.room-party-help { margin: 0 13px; padding: 9px 10px; border-radius: 8px; background: #f7f5ff; color: #858cab; font-size: 10px; line-height: 1.5; }
+
 /* Opening decisions use the same story surface as the introduction: keep the
    landscape visible and replace the old prose with the shared decision card. */
 .causal-center.decision-center {

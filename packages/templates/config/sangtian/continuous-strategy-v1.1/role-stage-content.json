@@ -1,0 +1,2645 @@
+{
+  "schemaVersion": "continuous_strategy_role_stage_content_v1",
+  "contentVersion": "sangtian_v1_1",
+  "roleStages": [
+    {
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "zhejiang_governor",
+      "privateBrief": "急令必须执行，但县册与巡抚催办数字互相冲突；求快会留下失察责任，求稳会被归咎迟延。",
+      "personalPressure": "不公开暗账线索的前提下取得执行边界与复核权。",
+      "mainCards": [
+        {
+          "actionKey": "main_s1_governor_joint_review",
+          "title": "设立联合复核程序",
+          "objective": "把执行速度与证据复核同时纳入总督衙门控制。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s1_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_governor_joint_review",
+            "text": "复核印记已下发，巡抚催办必须留下可核验底稿。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_governor_joint_review",
+            "factKeys": [
+              "fact_s1_governor_joint_review"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s1_governor_joint_review_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_governor_joint_review"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_governor_memorial_channel",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s1_governor_pause_one_county",
+          "title": "暂缓一县并封存底稿",
+          "objective": "用最小范围暂缓换取真实样本，避免全省公开抗令。",
+          "visibility": "OBSERVABLE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s1_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_governor_pause_one_county",
+            "text": "清流县获得短复核期，原始底稿进入封存清单。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_governor_pause_one_county",
+            "factKeys": [
+              "fact_s1_governor_pause_one_county"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s1_governor_pause_one_county_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_governor_pause_one_county"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_review_authority",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s1_governor_endorse_fast_execution",
+          "title": "支持强推并附追责条款",
+          "objective": "让巡抚承担速度，同时保留日后复核的政治抓手。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s1_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_governor_endorse_fast_execution",
+            "text": "强推获得背书，每份催办令同时带上追责编号。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_governor_endorse_fast_execution",
+            "factKeys": [
+              "fact_s1_governor_endorse_fast_execution"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s1_governor_endorse_fast_execution_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_governor_endorse_fast_execution"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_governor_memorial_channel",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "xunfu",
+      "privateBrief": "京师只看进度，不会替你解释地方阻力；总督正在争夺复核权，县令可能以底册反证催办过急。",
+      "personalPressure": "在总督接管口径前形成可见政绩，并避免留下无法解释的催收链。",
+      "mainCards": [
+        {
+          "actionKey": "main_s1_xunfu_accelerate_orders",
+          "title": "抢先催办各县",
+          "objective": "用先发命令锁定执行节奏，使总督只能在既成进度上复核。",
+          "visibility": "OBSERVABLE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s1_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_xunfu_accelerate_orders",
+            "text": "加急催办抵达清流县，县令的可用时间被压缩。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_xunfu_accelerate_orders",
+            "factKeys": [
+              "fact_s1_xunfu_accelerate_orders"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s1_xunfu_accelerate_orders_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_xunfu_accelerate_orders"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_xunfu_clerk_network",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s1_xunfu_publish_progress",
+          "title": "公开各县执行进度",
+          "objective": "把进度变成公共政治事实，迫使总督承担暂缓成本。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s1_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_xunfu_publish_progress",
+            "text": "进度榜已经公开，任何复核决定都会改变公众口径。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_xunfu_publish_progress",
+            "factKeys": [
+              "fact_s1_xunfu_publish_progress"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s1_xunfu_publish_progress_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_xunfu_publish_progress"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_review_authority",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s1_xunfu_reserve_review_window",
+          "title": "压缩复核但保留窗口",
+          "objective": "承认有限复核以换取总督不全面叫停。",
+          "visibility": "LIMITED",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s1_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_xunfu_reserve_review_window",
+            "text": "县令得到短复核窗口，逾时材料不进入本轮奏报。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_xunfu_reserve_review_window",
+            "factKeys": [
+              "fact_s1_xunfu_reserve_review_window"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s1_xunfu_reserve_review_window_to_magistrate",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_xunfu_reserve_review_window"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_xunfu_clerk_network",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s1_change_mulberry_order",
+      "roleKey": "county_magistrate",
+      "privateBrief": "原始县册能证明部分桑田其实是粮田，但公开抗令会立即断送官位；两位上官都尚未承诺保护证据。",
+      "personalPressure": "保住县册和百姓生计，同时让至少一位上官对证据链承担责任。",
+      "mainCards": [
+        {
+          "actionKey": "main_s1_magistrate_retain_original_register",
+          "title": "封存并留住原始县册",
+          "objective": "阻止原件在催办中被替换，并请求总督明确保护证据。",
+          "visibility": "PRIVATE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s1_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_magistrate_retain_original_register",
+            "text": "原始县册已封存，保护请求通过密封公文送往总督衙门。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_magistrate_retain_original_register",
+            "factKeys": [
+              "fact_s1_magistrate_retain_original_register"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s1_magistrate_retain_original_register_to_governor",
+                "visibility": "PRIVATE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_magistrate_retain_original_register"
+            ],
+            "interactionRequestKeys": [
+              "request_s1_protect_evidence"
+            ],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_magistrate_register_original",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s1_magistrate_phase_execution",
+          "title": "按粮田风险分批执行",
+          "objective": "不公开抗令，但把高风险地块推迟到核验之后。",
+          "visibility": "OBSERVABLE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s1_magistrate_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_magistrate_phase_execution",
+            "text": "分批清单已经发出，巡抚必须回应较慢但可核验的进度。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_magistrate_phase_execution",
+            "factKeys": [
+              "fact_s1_magistrate_phase_execution"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s1_magistrate_phase_execution_to_xunfu",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_magistrate_phase_execution"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_review_authority",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s1_magistrate_submit_copy_for_protection",
+          "title": "递交副本换取保护",
+          "objective": "让总督掌握可核验副本，使县衙不再独自承担风险。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s1_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s1_magistrate_submit_copy_for_protection",
+            "text": "副本已经收讫，总督对证据去向产生了可追溯责任。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s1_magistrate_submit_copy_for_protection",
+            "factKeys": [
+              "fact_s1_magistrate_submit_copy_for_protection"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s1_magistrate_submit_copy_for_protection_to_governor",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s1_magistrate_submit_copy_for_protection"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s2_county_secret_letter_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s1_magistrate_register_original",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "zhejiang_governor",
+      "privateBrief": "密信与县册线索吻合，但若由你单独收件，巡抚会指控总督衙门私藏证据。",
+      "personalPressure": "取得可信证据，同时避免把县令暴露为唯一来源。",
+      "mainCards": [
+        {
+          "actionKey": "main_s2_governor_receive_letter_privately",
+          "title": "私下接收密信",
+          "objective": "先保护来源，再决定是否把密信转入正式证据链。",
+          "visibility": "PRIVATE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s2_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_governor_receive_letter_privately",
+            "text": "密信进入总督密档，县令身份暂未公开。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_governor_receive_letter_privately",
+            "factKeys": [
+              "fact_s2_governor_receive_letter_privately"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s2_governor_receive_letter_privately_to_magistrate",
+                "visibility": "PRIVATE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_governor_receive_letter_privately"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_governor_sealed_mail_channel",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s2_governor_dual_verification",
+          "title": "建立双人核验",
+          "objective": "让两衙共同核验纸张、印记和田契编号，降低伪造争议。",
+          "visibility": "OBSERVABLE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s2_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_governor_dual_verification",
+            "text": "双人核验程序成立，巡抚必须在记录上签名。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_governor_dual_verification",
+            "factKeys": [
+              "fact_s2_governor_dual_verification"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s2_governor_dual_verification_to_xunfu",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_governor_dual_verification"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_document_custody",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s2_governor_request_original",
+          "title": "要求县令交出原件",
+          "objective": "用原件结束真伪争论，但必须承担保管与来源保护责任。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s2_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_governor_request_original",
+            "text": "原件交付请求已经送达，县令进入强制回应。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_governor_request_original",
+            "factKeys": [
+              "fact_s2_governor_request_original"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s2_governor_request_original_to_magistrate",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_governor_request_original"
+            ],
+            "interactionRequestKeys": [
+              "request_s2_handover_original"
+            ],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_governor_sealed_mail_channel",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "xunfu",
+      "privateBrief": "密信可能揭开催办链中的违规，也可能是总督和县令联手拖延的工具。",
+      "personalPressure": "控制泄密调查，不让幕僚往来成为别人定义你的证据。",
+      "mainCards": [
+        {
+          "actionKey": "main_s2_xunfu_trace_leak",
+          "title": "追查密信泄漏路径",
+          "objective": "查明谁绕过巡抚衙门向总督递信。",
+          "visibility": "OBSERVABLE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s2_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_xunfu_trace_leak",
+            "text": "经手人名单被锁定，县令的递信渠道承受压力。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_xunfu_trace_leak",
+            "factKeys": [
+              "fact_s2_xunfu_trace_leak"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s2_xunfu_trace_leak_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_xunfu_trace_leak"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_xunfu_inspection_roster",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s2_xunfu_seize_drafts",
+          "title": "收缴催办底稿",
+          "objective": "先控制可能与密信互证的底稿，防止责任链外流。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s2_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_xunfu_seize_drafts",
+            "text": "巡抚衙门收拢底稿，总督可见的原始材料减少。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_xunfu_seize_drafts",
+            "factKeys": [
+              "fact_s2_xunfu_seize_drafts"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s2_xunfu_seize_drafts_to_governor",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_xunfu_seize_drafts"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_document_custody",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s2_xunfu_challenge_letter",
+          "title": "公开质疑密信完整性",
+          "objective": "把举证责任推回县令，同时保留后续反转空间。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s2_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_xunfu_challenge_letter",
+            "text": "密信真伪成为公共争点，县令必须补足证据链。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_xunfu_challenge_letter",
+            "factKeys": [
+              "fact_s2_xunfu_challenge_letter"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s2_xunfu_challenge_letter_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_xunfu_challenge_letter"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_xunfu_inspection_roster",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s2_county_secret_letter",
+      "roleKey": "county_magistrate",
+      "privateBrief": "你知道密信所述真实，但交出原件会失去唯一保命筹码；拒交又可能被定性为抗拒调查。",
+      "personalPressure": "证明密信可信，同时保留至少一份不受他人控制的原始材料。",
+      "mainCards": [
+        {
+          "actionKey": "main_s2_magistrate_send_copy",
+          "title": "递交可核验副本",
+          "objective": "提供足以核验的材料，但不放弃原件控制。",
+          "visibility": "LIMITED",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s2_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_magistrate_send_copy",
+            "text": "副本进入总督核验链，原件仍由县衙封存。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_magistrate_send_copy",
+            "factKeys": [
+              "fact_s2_magistrate_send_copy"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s2_magistrate_send_copy_to_governor",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_magistrate_send_copy"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_magistrate_contract_copy",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s2_magistrate_hide_original",
+          "title": "转移并隐藏原件",
+          "objective": "防止突击收缴，但承担被指控隐匿证据的风险。",
+          "visibility": "PRIVATE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s2_magistrate_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_magistrate_hide_original",
+            "text": "原件离开常规库房，巡抚的收缴行动扑空。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_magistrate_hide_original",
+            "factKeys": [
+              "fact_s2_magistrate_hide_original"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s2_magistrate_hide_original_to_xunfu",
+                "visibility": "PRIVATE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_magistrate_hide_original"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_document_custody",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s2_magistrate_trade_protection",
+          "title": "用证据交换书面保护",
+          "objective": "要求上官先承担来源保护，再开放进一步核验。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s2_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s2_magistrate_trade_protection",
+            "text": "保护条款与证据开放被绑定，县令不再单方面交付。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s2_magistrate_trade_protection",
+            "factKeys": [
+              "fact_s2_magistrate_trade_protection"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s2_magistrate_trade_protection_to_governor",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s2_magistrate_trade_protection"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s3_grain_price_crisis_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s2_magistrate_contract_copy",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "zhejiang_governor",
+      "privateBrief": "官仓可以暂时压价，却可能遮蔽改桑造成的粮田损失；查商会又会触发银路收缩。",
+      "personalPressure": "稳定价格，同时取得能够解释粮价来源的独立数据。",
+      "mainCards": [
+        {
+          "actionKey": "main_s3_governor_release_granary",
+          "title": "限量开放官仓",
+          "objective": "用可回收的官粮平抑价格，不掩盖真实粮田损失。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s3_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_governor_release_granary",
+            "text": "官仓开始限量放粮，县衙获得短期缓冲。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_governor_release_granary",
+            "factKeys": [
+              "fact_s3_governor_release_granary"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s3_governor_release_granary_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_governor_release_granary"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_governor_granary_release_order",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s3_governor_audit_merchants",
+          "title": "联查商会库存",
+          "objective": "要求巡抚共享商会往来记录，核验囤积与垫银。",
+          "visibility": "OBSERVABLE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s3_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_governor_audit_merchants",
+            "text": "联查请求进入巡抚衙门，商会库存不再是单方口径。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_governor_audit_merchants",
+            "factKeys": [
+              "fact_s3_governor_audit_merchants"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s3_governor_audit_merchants_to_xunfu",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_governor_audit_merchants"
+            ],
+            "interactionRequestKeys": [
+              "request_s3_share_merchant_records"
+            ],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_grain_route",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s3_governor_unify_price_message",
+          "title": "发布统一粮价口径",
+          "objective": "先稳定恐慌，再把差异数据留给内部复核。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s3_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_governor_unify_price_message",
+            "text": "统一口径压住谣言，也把后续解释责任集中到总督。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_governor_unify_price_message",
+            "factKeys": [
+              "fact_s3_governor_unify_price_message"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s3_governor_unify_price_message_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_governor_unify_price_message"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_governor_granary_release_order",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "xunfu",
+      "privateBrief": "商会与幕僚往来可能被粮价调查翻出，若只归责商人又无法解释催征导致的断粮。",
+      "personalPressure": "让执行进度继续，同时把价格责任锁定在可控制的对象上。",
+      "mainCards": [
+        {
+          "actionKey": "main_s3_xunfu_blame_merchants",
+          "title": "公开归责囤粮商会",
+          "objective": "把价格上涨定义为市场操纵，转移改桑责任。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s3_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_xunfu_blame_merchants",
+            "text": "商会成为公开责任对象，但开始收紧银路。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_xunfu_blame_merchants",
+            "factKeys": [
+              "fact_s3_xunfu_blame_merchants"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s3_xunfu_blame_merchants_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_xunfu_blame_merchants"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_xunfu_merchant_summons",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s3_xunfu_summon_dealers",
+          "title": "召集米商议价放粮",
+          "objective": "用行政压力换取短期供给，并留下谈判记录。",
+          "visibility": "OBSERVABLE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s3_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_xunfu_summon_dealers",
+            "text": "米商同意分批放粮，县令获得可见的供应承诺。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_xunfu_summon_dealers",
+            "factKeys": [
+              "fact_s3_xunfu_summon_dealers"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s3_xunfu_summon_dealers_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_xunfu_summon_dealers"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_grain_route",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s3_xunfu_accelerate_levy",
+          "title": "加速征收补官仓",
+          "objective": "以征收补充官仓，但把压力直接推向地方。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s3_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_xunfu_accelerate_levy",
+            "text": "征收额度提高，县衙粮田与民情风险同步上升。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_xunfu_accelerate_levy",
+            "factKeys": [
+              "fact_s3_xunfu_accelerate_levy"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s3_xunfu_accelerate_levy_to_magistrate",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_xunfu_accelerate_levy"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_xunfu_merchant_summons",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s3_grain_price_crisis",
+      "roleKey": "county_magistrate",
+      "privateBrief": "本县粮田损失已经反映在市价上，但公开全部数据会证明改桑执行出现系统性偏差。",
+      "personalPressure": "保护地方粮仓和百姓口粮，并让上官承认价格与改桑之间的关系。",
+      "mainCards": [
+        {
+          "actionKey": "main_s3_magistrate_publish_loss",
+          "title": "公布粮田损失清单",
+          "objective": "让价格危机拥有可核验的土地来源，而非只归责商人。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s3_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_magistrate_publish_loss",
+            "text": "粮田损失进入公共视野，总督必须调整危机解释。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_magistrate_publish_loss",
+            "factKeys": [
+              "fact_s3_magistrate_publish_loss"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s3_magistrate_publish_loss_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_magistrate_publish_loss"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_magistrate_grain_loss_ledger",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s3_magistrate_organize_petitions",
+          "title": "汇总民情与米价证词",
+          "objective": "用多份独立证词降低县令单方陈述的风险。",
+          "visibility": "OBSERVABLE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s3_magistrate_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_magistrate_organize_petitions",
+            "text": "民情证词形成目录，巡抚的进度口径受到反证。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_magistrate_organize_petitions",
+            "factKeys": [
+              "fact_s3_magistrate_organize_petitions"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s3_magistrate_organize_petitions_to_xunfu",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_magistrate_organize_petitions"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_grain_route",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s3_magistrate_protect_local_granary",
+          "title": "封存地方保命粮仓",
+          "objective": "拒绝把最后口粮用于填补上级进度数字。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s3_magistrate_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s3_magistrate_protect_local_granary",
+            "text": "地方粮仓停止外调，巡抚可用库存下降。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s3_magistrate_protect_local_granary",
+            "factKeys": [
+              "fact_s3_magistrate_protect_local_granary"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s3_magistrate_protect_local_granary_to_xunfu",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s3_magistrate_protect_local_granary"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s4_hidden_ledger_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s3_magistrate_grain_loss_ledger",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "zhejiang_governor",
+      "privateBrief": "暗账能解释粮价与催办链，但接触过早会让总督衙门承担灭证或操纵证人的嫌疑。",
+      "personalPressure": "建立可信保管链，并决定保护证人的范围。",
+      "mainCards": [
+        {
+          "actionKey": "main_s4_governor_seal_evidence",
+          "title": "封存暗账并编号",
+          "objective": "把原件纳入不可静默替换的正式保管链。",
+          "visibility": "OBSERVABLE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s4_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_governor_seal_evidence",
+            "text": "暗账获得封存编号，任何后续接触都必须留痕。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_governor_seal_evidence",
+            "factKeys": [
+              "fact_s4_governor_seal_evidence"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s4_governor_seal_evidence_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_governor_seal_evidence"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_governor_evidence_seal",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s4_governor_protect_witness",
+          "title": "建立双衙证人保护",
+          "objective": "让证人脱离单一衙门控制，降低翻供和失踪风险。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s4_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_governor_protect_witness",
+            "text": "证人进入双衙保护，巡抚也获得有限核验权。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_governor_protect_witness",
+            "factKeys": [
+              "fact_s4_governor_protect_witness"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s4_governor_protect_witness_to_xunfu",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_governor_protect_witness"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_evidence_custody",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s4_governor_control_access",
+          "title": "限制证据接触权限",
+          "objective": "减少灭证机会，但承担被指控垄断证据的风险。",
+          "visibility": "PRIVATE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s4_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_governor_control_access",
+            "text": "暗账访问被收紧，巡抚只能通过登记申请核验。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_governor_control_access",
+            "factKeys": [
+              "fact_s4_governor_control_access"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s4_governor_control_access_to_xunfu",
+                "visibility": "PRIVATE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_governor_control_access"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_governor_evidence_seal",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "xunfu",
+      "privateBrief": "暗账可能指向你的幕僚；承认完整性会失去主动，贸然抢夺又会留下干预证据的记录。",
+      "personalPressure": "在暗账被定性前取得核验机会，并隔离幕僚风险。",
+      "mainCards": [
+        {
+          "actionKey": "main_s4_xunfu_challenge_integrity",
+          "title": "质疑暗账完整性",
+          "objective": "要求补足页码、印记和来源，延缓其直接成为定案证据。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s4_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_xunfu_challenge_integrity",
+            "text": "暗账进入完整性复核，证据目录必须补充缺页说明。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_xunfu_challenge_integrity",
+            "factKeys": [
+              "fact_s4_xunfu_challenge_integrity"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s4_xunfu_challenge_integrity_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_xunfu_challenge_integrity"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_xunfu_integrity_objection",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s4_xunfu_seize_original",
+          "title": "申请收缴原件复验",
+          "objective": "取得原件控制，但承担干预保管链的高风险。",
+          "visibility": "OBSERVABLE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s4_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_xunfu_seize_original",
+            "text": "收缴申请公开留痕，县令面临原件交付压力。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_xunfu_seize_original",
+            "factKeys": [
+              "fact_s4_xunfu_seize_original"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s4_xunfu_seize_original_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_xunfu_seize_original"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_evidence_custody",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s4_xunfu_cut_off_aide",
+          "title": "切割涉账幕僚",
+          "objective": "承认个人往来但阻断其继续影响证据与商会。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s4_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_xunfu_cut_off_aide",
+            "text": "涉账幕僚被停职，巡抚失去一条执行网络。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_xunfu_cut_off_aide",
+            "factKeys": [
+              "fact_s4_xunfu_cut_off_aide"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s4_xunfu_cut_off_aide_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_xunfu_cut_off_aide"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_xunfu_integrity_objection",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s4_hidden_ledger",
+      "roleKey": "county_magistrate",
+      "privateBrief": "你掌握的原件与暗账能互证，但证人已经受到商会接触；任何转移都可能被视为灭证。",
+      "personalPressure": "保全原件和证人，同时把保护责任分担给上级。",
+      "mainCards": [
+        {
+          "actionKey": "main_s4_magistrate_send_copy",
+          "title": "递交暗账副本核验",
+          "objective": "让上级验证内容，同时继续保留原件对照。",
+          "visibility": "LIMITED",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s4_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_magistrate_send_copy",
+            "text": "副本进入总督核验链，原件位置仍未公开。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_magistrate_send_copy",
+            "factKeys": [
+              "fact_s4_magistrate_send_copy"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s4_magistrate_send_copy_to_governor",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_magistrate_send_copy"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_magistrate_witness_roster",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s4_magistrate_move_original",
+          "title": "转移原件到中立库房",
+          "objective": "避开巡抚突击收缴，并以第三方封条保持连续性。",
+          "visibility": "OBSERVABLE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s4_magistrate_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_magistrate_move_original",
+            "text": "原件进入中立库房，巡抚无法单方取得。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_magistrate_move_original",
+            "factKeys": [
+              "fact_s4_magistrate_move_original"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s4_magistrate_move_original_to_xunfu",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_magistrate_move_original"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_evidence_custody",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s4_magistrate_protect_witness",
+          "title": "请求总督保护证人",
+          "objective": "迫使总督对证人安全作出可追溯回应。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s4_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s4_magistrate_protect_witness",
+            "text": "证人保护请求送达，总督进入强制回应。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s4_magistrate_protect_witness",
+            "factKeys": [
+              "fact_s4_magistrate_protect_witness"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s4_magistrate_protect_witness_to_governor",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s4_magistrate_protect_witness"
+            ],
+            "interactionRequestKeys": [
+              "request_s4_protect_witness"
+            ],
+            "nextStateKey": "state_s5_mutual_impeachment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s4_magistrate_witness_roster",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "zhejiang_governor",
+      "privateBrief": "你必须解释为何允许催办、何时开始复核，以及暗账出现后是否保护了证据。",
+      "personalPressure": "拆分制度责任与个人滥权，避免全局失控被归到总督失察。",
+      "mainCards": [
+        {
+          "actionKey": "main_s5_governor_split_liability",
+          "title": "按时序拆分责任",
+          "objective": "把国策、执行追加和地方违规分开归责。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s5_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_governor_split_liability",
+            "text": "责任表按日期展开，三方不能再用单一叙事覆盖全部事实。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_governor_split_liability",
+            "factKeys": [
+              "fact_s5_governor_split_liability"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s5_governor_split_liability_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_governor_split_liability"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_governor_review_timeline",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s5_governor_suppress_unsupported",
+          "title": "压下无证据弹劾",
+          "objective": "要求所有指控绑定原始命令或账册，防止政治噪声淹没事实。",
+          "visibility": "OBSERVABLE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s5_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_governor_suppress_unsupported",
+            "text": "无来源指控被退回，县令的证据目录权重上升。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_governor_suppress_unsupported",
+            "factKeys": [
+              "fact_s5_governor_suppress_unsupported"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s5_governor_suppress_unsupported_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_governor_suppress_unsupported"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_responsibility_narrative",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s5_governor_impeach_abuse",
+          "title": "弹劾巡抚越权催办",
+          "objective": "以时序和粮价损失要求巡抚正式答辩。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s5_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_governor_impeach_abuse",
+            "text": "弹劾进入正式流程，巡抚必须提交回应。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_governor_impeach_abuse",
+            "factKeys": [
+              "fact_s5_governor_impeach_abuse"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s5_governor_impeach_abuse_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_governor_impeach_abuse"
+            ],
+            "interactionRequestKeys": [
+              "request_s5_answer_impeachment"
+            ],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_governor_review_timeline",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "xunfu",
+      "privateBrief": "总督掌握复核时序，县令掌握损失与暗账；你必须证明进度不是滥权，而是可追踪的政策执行。",
+      "personalPressure": "抢在他人之前定义执行成果，并为幕僚和商会往来建立边界。",
+      "mainCards": [
+        {
+          "actionKey": "main_s5_xunfu_impeach_delay",
+          "title": "弹劾总督拖延复核",
+          "objective": "把粮价恶化归因于迟迟未定的复核边界。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s5_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_xunfu_impeach_delay",
+            "text": "总督的复核时序成为公开审查对象。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_xunfu_impeach_delay",
+            "factKeys": [
+              "fact_s5_xunfu_impeach_delay"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s5_xunfu_impeach_delay_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_xunfu_impeach_delay"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_xunfu_execution_schedule",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s5_xunfu_claim_credit",
+          "title": "提交改桑进度政绩",
+          "objective": "用完成数字证明执行有效，但必须接受粮田损失交叉核验。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s5_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_xunfu_claim_credit",
+            "text": "进度数字进入奏报，县令损失册成为必要附件。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_xunfu_claim_credit",
+            "factKeys": [
+              "fact_s5_xunfu_claim_credit"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s5_xunfu_claim_credit_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_xunfu_claim_credit"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_responsibility_narrative",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s5_xunfu_counter_accuse",
+          "title": "反指县令隐匿原件",
+          "objective": "用原件转移记录削弱县令证据的中立性。",
+          "visibility": "OBSERVABLE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s5_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_xunfu_counter_accuse",
+            "text": "原件保管链被质疑，县令必须公开更多接触记录。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_xunfu_counter_accuse",
+            "factKeys": [
+              "fact_s5_xunfu_counter_accuse"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s5_xunfu_counter_accuse_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_xunfu_counter_accuse"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_xunfu_execution_schedule",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s5_mutual_impeachment",
+      "roleKey": "county_magistrate",
+      "privateBrief": "两位上官都可能拿你的原件转移和地方暂缓作为攻击材料，但你掌握最完整的损失与来源链。",
+      "personalPressure": "证明地方行为是保全证据与民生，而非抗令或选边。",
+      "mainCards": [
+        {
+          "actionKey": "main_s5_magistrate_prove_overreach",
+          "title": "提交越权催办反证",
+          "objective": "以签发时间证明部分催办超出总督授权。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s5_magistrate_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_magistrate_prove_overreach",
+            "text": "越权证据进入弹劾卷，巡抚必须解释签发依据。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_magistrate_prove_overreach",
+            "factKeys": [
+              "fact_s5_magistrate_prove_overreach"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s5_magistrate_prove_overreach_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_magistrate_prove_overreach"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_magistrate_source_index",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s5_magistrate_request_public_audit",
+          "title": "请求公开审计证据链",
+          "objective": "让三方材料在同一规则下接受核验，减少县令被单独归责。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s5_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_magistrate_request_public_audit",
+            "text": "公开审计程序启动，证据接触记录成为共同标准。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_magistrate_request_public_audit",
+            "factKeys": [
+              "fact_s5_magistrate_request_public_audit"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s5_magistrate_request_public_audit_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_magistrate_request_public_audit"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_responsibility_narrative",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s5_magistrate_preserve_sources",
+          "title": "封存来源身份附录",
+          "objective": "向御前证明来源存在，但暂不把证人暴露给地方争斗。",
+          "visibility": "PRIVATE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s5_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s5_magistrate_preserve_sources",
+            "text": "来源附录被独立封存，县令保留日后核验能力。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s5_magistrate_preserve_sources",
+            "factKeys": [
+              "fact_s5_magistrate_preserve_sources"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s5_magistrate_preserve_sources_to_governor",
+                "visibility": "PRIVATE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s5_magistrate_preserve_sources"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s6_capital_reply_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s5_magistrate_source_index",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s6_capital_reply",
+      "roleKey": "zhejiang_governor",
+      "privateBrief": "京师不接受模糊的稳局表述；你必须明确哪些决定由自己承担，哪些事实仍需地方弹性。",
+      "personalPressure": "形成能容纳冲突证据的主奏，同时维持皇帝对总督统筹能力的信任。",
+      "mainCards": [
+        {
+          "actionKey": "main_s6_governor_consolidate_memorial",
+          "title": "汇总事实形成主奏",
+          "objective": "把进度、损失和证据链放入同一可核验结构。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s6_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_governor_consolidate_memorial",
+            "text": "主奏形成统一目录，巡抚必须回应其中的时序差异。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_governor_consolidate_memorial",
+            "factKeys": [
+              "fact_s6_governor_consolidate_memorial"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s6_governor_consolidate_memorial_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_governor_consolidate_memorial"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_governor_main_memorial_seal",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s6_governor_accept_review_duty",
+          "title": "承担复核失察责任",
+          "objective": "以主动承担换取对地方证据和后续修正的信任。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s6_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_governor_accept_review_duty",
+            "text": "总督承担复核责任，县令材料获得更高核验优先级。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_governor_accept_review_duty",
+            "factKeys": [
+              "fact_s6_governor_accept_review_duty"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s6_governor_accept_review_duty_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_governor_accept_review_duty"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_final_memorial",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s6_governor_preserve_flexibility",
+          "title": "保留地方执行弹性",
+          "objective": "承认政策目标但请求允许按粮田风险修正执行。",
+          "visibility": "OBSERVABLE",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s6_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_governor_preserve_flexibility",
+            "text": "主奏加入地方弹性条款，县令的分批执行获得制度入口。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_governor_preserve_flexibility",
+            "factKeys": [
+              "fact_s6_governor_preserve_flexibility"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s6_governor_preserve_flexibility_to_magistrate",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_governor_preserve_flexibility"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_governor_main_memorial_seal",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s6_capital_reply",
+      "roleKey": "xunfu",
+      "privateBrief": "你的政绩必须经得住损失册、暗账和催办时序核验；淡化任一项都可能被另外两份奏报揭穿。",
+      "personalPressure": "保住执行成果，并把可以证明合法授权的材料送入京师。",
+      "mainCards": [
+        {
+          "actionKey": "main_s6_xunfu_secret_merit_report",
+          "title": "密奏执行政绩",
+          "objective": "向皇帝直接说明完成数字和合法授权，绕开地方口径争夺。",
+          "visibility": "PRIVATE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s6_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_xunfu_secret_merit_report",
+            "text": "政绩密奏进入京师，但与主奏差异留下可比对痕迹。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_xunfu_secret_merit_report",
+            "factKeys": [
+              "fact_s6_xunfu_secret_merit_report"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s6_xunfu_secret_merit_report_to_governor",
+                "visibility": "PRIVATE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_xunfu_secret_merit_report"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_xunfu_merit_memorial",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s6_xunfu_minimize_ledger",
+          "title": "淡化暗账关联",
+          "objective": "承认幕僚失当而否认其代表巡抚政策。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s6_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_xunfu_minimize_ledger",
+            "text": "巡抚切割暗账责任，证据接触链成为成败关键。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_xunfu_minimize_ledger",
+            "factKeys": [
+              "fact_s6_xunfu_minimize_ledger"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s6_xunfu_minimize_ledger_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_xunfu_minimize_ledger"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_final_memorial",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s6_xunfu_demand_closure",
+          "title": "请求强制结案",
+          "objective": "以行政确定性阻止地方继续追加材料。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s6_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_xunfu_demand_closure",
+            "text": "结案请求压缩县令补证时间，也把遗漏责任锁定到巡抚。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_xunfu_demand_closure",
+            "factKeys": [
+              "fact_s6_xunfu_demand_closure"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s6_xunfu_demand_closure_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_xunfu_demand_closure"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_xunfu_merit_memorial",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s6_capital_reply",
+      "roleKey": "county_magistrate",
+      "privateBrief": "京师给了最后一次提交材料的机会；过度公开会伤害来源，过度隐匿又会让证据失去效力。",
+      "personalPressure": "让证据、民情和来源保护同时进入奏报，而不是只剩一段地方陈情。",
+      "mainCards": [
+        {
+          "actionKey": "main_s6_magistrate_submit_evidence_index",
+          "title": "提交完整证据目录",
+          "objective": "让每个结论都能追溯到县册、暗账或证词。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s6_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_magistrate_submit_evidence_index",
+            "text": "证据目录进入主奏，所有关键结论获得来源编号。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_magistrate_submit_evidence_index",
+            "factKeys": [
+              "fact_s6_magistrate_submit_evidence_index"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s6_magistrate_submit_evidence_index_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_magistrate_submit_evidence_index"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_magistrate_evidence_catalog",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s6_magistrate_attach_petitions",
+          "title": "附上民情与粮价证词",
+          "objective": "让百姓代价进入御前判断，而非只呈现官员责任。",
+          "visibility": "OBSERVABLE",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s6_magistrate_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_magistrate_attach_petitions",
+            "text": "民情附件进入奏报，巡抚政绩必须回应真实代价。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_magistrate_attach_petitions",
+            "factKeys": [
+              "fact_s6_magistrate_attach_petitions"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s6_magistrate_attach_petitions_to_xunfu",
+                "visibility": "OBSERVABLE"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_magistrate_attach_petitions"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_final_memorial",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s6_magistrate_protect_sources",
+          "title": "请求保护证据来源",
+          "objective": "要求总督以匿名编号替代公开姓名，保留后续核验。",
+          "visibility": "LIMITED",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s6_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s6_magistrate_protect_sources",
+            "text": "来源保护请求送达，主奏必须决定匿名化边界。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s6_magistrate_protect_sources",
+            "factKeys": [
+              "fact_s6_magistrate_protect_sources"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s6_magistrate_protect_sources_to_governor",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s6_magistrate_protect_sources"
+            ],
+            "interactionRequestKeys": [
+              "request_s6_protect_sources_in_memorial"
+            ],
+            "nextStateKey": "state_s7_imperial_judgment_open"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s6_magistrate_evidence_catalog",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "zhejiang_governor",
+      "privateBrief": "皇帝会同时追问你为何允许强推、何时启动复核，以及是否在暗账出现后保护了真相。",
+      "personalPressure": "用完整时序证明稳局不是遮掩，并明确自己承担的责任。",
+      "mainCards": [
+        {
+          "actionKey": "main_s7_governor_state_stability_case",
+          "title": "陈述稳局与纠偏路线",
+          "objective": "证明官仓、复核和证据保护共同避免了更大危机。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s7_governor_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_governor_state_stability_case",
+            "text": "总督以七阶段时序陈述稳局，巡抚进度被纳入交叉核验。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_governor_state_stability_case",
+            "factKeys": [
+              "fact_s7_governor_state_stability_case"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s7_governor_state_stability_case_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_governor_state_stability_case"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_governor_imperial_defense_outline",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s7_governor_accept_final_duty",
+          "title": "承担最终复核责任",
+          "objective": "主动承担制度责任，换取对地方证据和改革建议的采信。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s7_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_governor_accept_final_duty",
+            "text": "总督明确承担复核责任，县令证据获得正式回应。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_governor_accept_final_duty",
+            "factKeys": [
+              "fact_s7_governor_accept_final_duty"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s7_governor_accept_final_duty_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_governor_accept_final_duty"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_final_responsibility",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "zhejiang_governor"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s7_governor_defend_local_flexibility",
+          "title": "为地方弹性辩护",
+          "objective": "说明分批执行和来源保护为何不是抗令。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s7_governor_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_governor_defend_local_flexibility",
+            "text": "地方弹性进入裁决问题，县令不再只是被动被审。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_governor_defend_local_flexibility",
+            "factKeys": [
+              "fact_s7_governor_defend_local_flexibility"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s7_governor_defend_local_flexibility_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_governor_defend_local_flexibility"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_governor_imperial_defense_outline",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "xunfu",
+      "privateBrief": "皇帝将比较你的密奏、公开进度和暗账回应；任何无法解释的差异都会被视为欺瞒。",
+      "personalPressure": "为执行路线辩护，同时承认真实代价而不让政绩彻底失效。",
+      "mainCards": [
+        {
+          "actionKey": "main_s7_xunfu_defend_execution",
+          "title": "为执行路线完整辩护",
+          "objective": "把授权、进度和风险上报连成可核验链条。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s7_xunfu_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_xunfu_defend_execution",
+            "text": "巡抚提交执行链，要求总督确认共同时间线。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_xunfu_defend_execution",
+            "factKeys": [
+              "fact_s7_xunfu_defend_execution"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s7_xunfu_defend_execution_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_xunfu_defend_execution"
+            ],
+            "interactionRequestKeys": [
+              "request_s7_confirm_shared_timeline"
+            ],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_xunfu_execution_evidence_bundle",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s7_xunfu_admit_costs",
+          "title": "承认代价并主张必要性",
+          "objective": "承认粮价和地方损失，但证明当时存在更大财政风险。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s7_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_xunfu_admit_costs",
+            "text": "巡抚承认真实代价，县令材料成为必要性判断依据。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_xunfu_admit_costs",
+            "factKeys": [
+              "fact_s7_xunfu_admit_costs"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s7_xunfu_admit_costs_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_xunfu_admit_costs"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_final_responsibility",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "xunfu"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s7_xunfu_seek_forced_acquittal",
+          "title": "请求以政绩结案",
+          "objective": "要求皇帝用完成数字终止证据争议。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s7_xunfu_preserve_position",
+          "targetRoleKey": "county_magistrate",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_xunfu_seek_forced_acquittal",
+            "text": "巡抚把命运押在政绩数字上，未解释证据转为直接风险。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_xunfu_seek_forced_acquittal",
+            "factKeys": [
+              "fact_s7_xunfu_seek_forced_acquittal"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "county_magistrate",
+                "effectKey": "influence_main_s7_xunfu_seek_forced_acquittal_to_magistrate",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_xunfu_seek_forced_acquittal"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_xunfu_execution_evidence_bundle",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stageKey": "s7_imperial_judgment",
+      "roleKey": "county_magistrate",
+      "privateBrief": "你必须证明保护百姓、保全原件和隐去来源姓名都是同一条合法选择，而不是连续抗令。",
+      "personalPressure": "让证据链和民情被采信，并确保来源不会因裁决暴露。",
+      "mainCards": [
+        {
+          "actionKey": "main_s7_magistrate_submit_final_index",
+          "title": "提交终局证据目录",
+          "objective": "按阶段列出每项事实、来源与影响，接受御前逐条核验。",
+          "visibility": "PUBLIC",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s7_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_magistrate_submit_final_index",
+            "text": "终局目录展开，前六阶段事实进入最终裁决。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_magistrate_submit_final_index",
+            "factKeys": [
+              "fact_s7_magistrate_submit_final_index"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s7_magistrate_submit_final_index_to_governor",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_magistrate_submit_final_index"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_magistrate_final_evidence_index",
+              "mutationType": "SET_STATE",
+              "delta": 0,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s7_magistrate_plead_for_people",
+          "title": "以民情与粮损陈述保民路线",
+          "objective": "证明地方选择减少了不可逆的民生损害。",
+          "visibility": "PUBLIC",
+          "risk": "HIGH",
+          "fallbackActionKey": "fallback_s7_magistrate_preserve_position",
+          "targetRoleKey": "xunfu",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_magistrate_plead_for_people",
+            "text": "粮损与民情进入裁决，巡抚必须回应执行代价。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_magistrate_plead_for_people",
+            "factKeys": [
+              "fact_s7_magistrate_plead_for_people"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "xunfu",
+                "effectKey": "influence_main_s7_magistrate_plead_for_people_to_xunfu",
+                "visibility": "PUBLIC"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_magistrate_plead_for_people"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_final_responsibility",
+              "mutationType": "CLAIM",
+              "delta": 1,
+              "toRoleKey": "county_magistrate"
+            }
+          ]
+        },
+        {
+          "actionKey": "main_s7_magistrate_shield_sources",
+          "title": "请求裁决继续保护来源",
+          "objective": "让结案不以暴露证人和书吏为代价。",
+          "visibility": "LIMITED",
+          "risk": "NORMAL",
+          "fallbackActionKey": "fallback_s7_magistrate_preserve_position",
+          "targetRoleKey": "zhejiang_governor",
+          "receipt": {
+            "receiptKey": "receipt_main_s7_magistrate_shield_sources",
+            "text": "来源保护成为裁决条款，证据链可核验但不公开姓名。"
+          },
+          "effect": {
+            "effectKey": "effect_main_s7_magistrate_shield_sources",
+            "factKeys": [
+              "fact_s7_magistrate_shield_sources"
+            ],
+            "influenceEdges": [
+              {
+                "affectedRoleKey": "zhejiang_governor",
+                "effectKey": "influence_main_s7_magistrate_shield_sources_to_governor",
+                "visibility": "LIMITED"
+              }
+            ],
+            "observableTraceKeys": [
+              "trace_s7_magistrate_shield_sources"
+            ],
+            "interactionRequestKeys": [],
+            "nextStateKey": "state_run_completed"
+          },
+          "assetMutations": [
+            {
+              "assetKey": "asset_s7_magistrate_final_evidence_index",
+              "mutationType": "SPEND",
+              "delta": -1,
+              "toRoleKey": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

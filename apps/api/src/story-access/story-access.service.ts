@@ -4,10 +4,36 @@ import { AuthenticatedUser } from "../auth/current-user.decorator";
 import { CreditsService } from "../credits/credits.service";
 import { PrismaService } from "../prisma.service";
 import { ReferralsService } from "../referrals/referrals.service";
+import { ActionWindowService } from "../continuous-strategy/action-window.service";
+import { MemberProjectionService } from "../continuous-strategy/member-projection.service";
+import { CONTINUOUS_ENGINE_VERSION, type UnlockResponseV1 } from "@ai-story/shared";
 
 @Injectable()
 export class StoryAccessService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService, @Inject(CreditsService) private readonly credits: CreditsService, @Inject(ReferralsService) private readonly referrals: ReferralsService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CreditsService) private readonly credits: CreditsService,
+    @Inject(ReferralsService) private readonly referrals: ReferralsService,
+    @Inject(ActionWindowService) private readonly actionWindows: ActionWindowService,
+    @Inject(MemberProjectionService) private readonly projections: MemberProjectionService
+  ) {}
+
+  private async retrySerializableTransaction<T>(operation: () => Promise<T>): Promise<T> {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        const message = String(error?.message || error || "");
+        const transient = error?.code === "P2034" || /40P01|40001|deadlock detected|write conflict/i.test(message);
+        if (!transient || attempt === 3) throw error;
+        // Two rooms owned by the same player can reach the shared credit
+        // wallet at the same instant. Retrying the whole idempotent unlock
+        // transaction is required by PostgreSQL Serializable isolation.
+        await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+      }
+    }
+    throw new Error("unreachable serialization retry state");
+  }
 
   roomAccessState(run: { accessLevel: string; freeDecisionsUsed: number }, currentRound: number) {
     const freeRounds = Number(process.env.CREDIT_FREE_DECISION_LIMIT || 3);
@@ -81,19 +107,34 @@ export class StoryAccessService {
     return { ...result, run: undefined };
   }
 
-  async unlock(user: AuthenticatedUser, runId: string) {
+  async unlock(user: AuthenticatedUser, runId: string, command: { idempotencyKey?: string } = {}): Promise<UnlockResponseV1> {
+    const requestedKey = String(command.idempotencyKey || `world-unlock:${runId}`).trim();
+    if (requestedKey.length < 8 || requestedKey.length > 160) throw new HttpException({ code: "INVALID_COMMAND", message: "A valid idempotencyKey is required" }, HttpStatus.BAD_REQUEST);
     const cost = Number(process.env.CREDIT_STANDARD_WORLD_COST || 100);
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.worldUnlock.findUnique({ where: { runId } });
-      if (existing?.status === "COMMITTED") return { unlocked: true, alreadyUnlocked: true, runId, creditsCharged: 0, balance: await this.credits.getBalance(user.id, tx) };
-      const run = await tx.storyRun.findUnique({ where: { id: runId } });
-      if (!run) throw new NotFoundException({ code: "STORY_RUN_NOT_FOUND", message: "Story run not found" });
-      const participant = run.ownerUserId === user.id || Boolean(await tx.storyPlayer.findFirst({ where: { runId, userId: user.id, status: "active" } }));
-      if (!participant) throw new ForbiddenException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only participants can unlock this world" });
-      const ledger = await this.credits.spendCredits({ userId: user.id, amount: cost, reason: "WORLD_UNLOCK", idempotencyKey: `world-unlock:${runId}`, externalRef: runId, metadata: { runId, templateKey: run.templateKey }, tx });
-      const unlock = await tx.worldUnlock.create({ data: { runId, templateKey: run.templateKey, paidByUserId: user.id, creditsCharged: cost, debitLedgerId: ledger.id } });
-      await tx.storyRun.update({ where: { id: runId }, data: { accessLevel: "UNLOCKED", unlockedAt: new Date() } });
-      return { unlocked: true, alreadyUnlocked: false, runId, creditsCharged: cost, paidByUserId: user.id, unlockId: unlock.id, balance: await this.credits.getBalance(user.id, tx) };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    const result = await this.retrySerializableTransaction(() => this.prisma.$transaction(async (tx) => {
+        const run = await tx.storyRun.findUnique({ where: { id: runId } });
+        if (!run) throw new NotFoundException({ code: "STORY_RUN_NOT_FOUND", message: "Story run not found" });
+        const participant = run.ownerUserId === user.id || Boolean(await tx.storyPlayer.findFirst({ where: { runId, userId: user.id, status: "active" } }));
+        if (!participant) throw new ForbiddenException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only participants can unlock this world" });
+        const existing = await tx.worldUnlock.findUnique({ where: { runId } });
+        if (existing?.status === "COMMITTED") {
+          if (run.engineVersion === CONTINUOUS_ENGINE_VERSION) await this.actionWindows.resumeAfterUnlock(tx, runId, user.id);
+          return { alreadyUnlocked: true, creditsCharged: 0, payerUserId: existing.paidByUserId };
+        }
+        const ledger = await this.credits.spendCredits({ userId: user.id, amount: cost, reason: "WORLD_UNLOCK", idempotencyKey: `world-unlock:${runId}`, externalRef: runId, metadata: { runId, templateKey: run.templateKey }, tx });
+        const unlock = await tx.worldUnlock.create({ data: { runId, templateKey: run.templateKey, paidByUserId: user.id, creditsCharged: cost, debitLedgerId: ledger.id } });
+        await tx.storyRun.update({ where: { id: runId }, data: { accessLevel: "UNLOCKED", unlockedAt: new Date() } });
+        if (run.engineVersion === CONTINUOUS_ENGINE_VERSION) await this.actionWindows.resumeAfterUnlock(tx, runId, user.id);
+        return { alreadyUnlocked: false, creditsCharged: cost, payerUserId: unlock.paidByUserId };
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10_000, timeout: 30_000 }));
+    const gameProjection = await this.projections.game(user, runId);
+    return {
+      unlocked: true,
+      alreadyUnlocked: result.alreadyUnlocked,
+      creditsCharged: result.creditsCharged,
+      payerUserId: result.payerUserId,
+      access: gameProjection.access,
+      gameProjection
+    };
   }
 }

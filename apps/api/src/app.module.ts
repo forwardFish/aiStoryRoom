@@ -14,10 +14,17 @@ import { WorldsController } from "./worlds.controller";
 import { StoryTaskOutboxController } from "./story-task-outbox.controller";
 import { StoryTaskOutboxService } from "./story-task-outbox.service";
 import { ResultSharingModule } from "./result-sharing/result-sharing.module";
+import { ContinuousStrategyModule } from "./continuous-strategy/continuous-strategy.module";
+import { PresenceHeartbeatRateLimitGuard } from "./api-transport";
 
 @Module({
-  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, StoryAccessModule, ResultSharingModule],
+  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ResultSharingModule],
   controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController],
-  providers: [StoryService, StoryTaskOutboxService, RoomsService]
+  providers: [
+    StoryService,
+    StoryTaskOutboxService,
+    RoomsService,
+    PresenceHeartbeatRateLimitGuard
+  ]
 })
 export class AppModule {}

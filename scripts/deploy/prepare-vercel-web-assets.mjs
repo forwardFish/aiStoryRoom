@@ -74,7 +74,7 @@ await Promise.all(gameKeys.map((key, index) => cp(join(gameDirectory, gameFiles[
 // untouched and create a separate deploy-only output where / is the homepage.
 await resetDirectory(vercelOutput);
 await cp(webPublic, vercelOutput, { recursive: true });
-await cp(join(vercelOutput, "home.html"), join(vercelOutput, "index.html"));
+// Keep index.html as the formal game entry. Vercel rewrites / to home.html.
 await writeFile(
   join(vercelOutput, "runtime-config.js"),
   `window.__MANY_WORLDS_RUNTIME__ = { googleWebClientId: ${JSON.stringify(String(process.env.PUBLIC_GOOGLE_WEB_CLIENT_ID || "").trim())} };\n`

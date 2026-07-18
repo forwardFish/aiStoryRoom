@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "blackout-protocol",
+  "publicId": "blackout-protocol",
+  "aliases": [],
+  "templateId": "template_blackout_protocol_001",
+  "status": "coming_soon",
+  "catalog": {
+    "title": "Blackout Protocol",
+    "subtitle": "When the network fails, responsibility becomes visible",
+    "description": "A citywide systems failure forces every decision into the open.",
+    "genre": "Speculative Futures",
+    "tags": ["Speculative Futures", "Systems", "Crisis"],
+    "durationLabel": "60–90 Minutes",
+    "cardCover": "/assets/game/blackout-protocol/cover.png",
+    "heroCover": "/assets/game/blackout-protocol/cover.png",
+    "lobby": {
+      "title": "Blackout Protocol",
+      "description": "A citywide systems failure forces every decision into the open.",
+      "categoryLabel": "Speculative Futures"
+    }
+  },
+  "modes": { "solo": false, "multiplayer": false, "minHumanPlayers": 4, "maxHumanPlayers": 6 },
+  "engine": { "engineVersion": "unavailable_v1", "strategyVersion": "unpublished", "strategyRegistryPath": null, "fixedRules": null },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "City Control Center",
+    "roundLabel": "Protocol",
+    "finaleLabel": "Restoration",
+    "sceneBackground": "/assets/game/blackout-protocol/cover.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": []
+}

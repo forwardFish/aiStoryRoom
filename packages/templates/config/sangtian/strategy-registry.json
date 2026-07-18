@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "strategy_registry_v1",
+  "defaultStrategyVersion": "sangtian_v1_1",
+  "strategies": {
+    "sangtian_v1_1": {
+      "artifactDirectory": "continuous-strategy-v1.1",
+      "manifestSha256": "8f4beb99ace857c5f6985f0509ffb4f6110d20e631129e2ecc148a31ba2d0a4a",
+      "status": "published"
+    }
+  }
+}
