@@ -28,8 +28,12 @@ test("local and Vercel routes keep home, game, result and legacy redirect distin
   assert.deepEqual(vercel.redirects.find((entry) => entry.source === "/room-game"), {
     source: "/room-game", destination: "/game", permanent: true
   });
+  assert.deepEqual(vercel.redirects.find((entry) => entry.source === "/"), {
+    source: "/", destination: "/home", permanent: false
+  });
   assert.equal(vercel.rewrites.some((entry) => entry.source === "/room-game"), false);
-  assert.equal(vercel.rewrites.find((entry) => entry.source === "/")?.destination, "/home.html");
+  assert.equal(vercel.rewrites.find((entry) => entry.source === "/")?.destination, undefined);
+  assert.equal(vercel.rewrites.find((entry) => entry.source === "/home")?.destination, "/home.html");
   assert.equal(vercel.rewrites.find((entry) => entry.source === "/game")?.destination, "/index.html");
   assert.equal(vercel.rewrites.find((entry) => entry.source === "/game/result")?.destination, "/platform.html");
   assert.equal(vercel.rewrites.find((entry) => entry.source === "/account")?.destination, "/platform.html");
