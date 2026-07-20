@@ -11,7 +11,7 @@ assert.equal(catalog.sections.flatMap((section) => section.stories).length, 9);
 const story = getMvpStory("sangtian");
 assert.equal(story.totalDays, 7);
 assert.equal(story.roles.length, 6);
-assert.equal(story.roleSelectionBanner, "/assets/game/sangtian/background.png");
+assert.equal(story.roleSelectionBanner, "/assets/game/sangtian/background.png?v=efb61093");
 assert.deepEqual(story.roles.map((role) => role.portrait), [
   "/assets/game/sangtian/generated/role-governor-scene-v1.png",
   "/assets/game/sangtian/generated/role-xunfu-scene-v1.png",
