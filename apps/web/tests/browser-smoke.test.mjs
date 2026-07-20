@@ -15,6 +15,7 @@ test("正式入口只加载唯一 API 客户端，首屏不会白屏", async () 
   assert.doesNotMatch(index, /causal-player-v3|causal-experience-rules|causal-overlay/);
   assert.doesNotMatch(appSource, /opening-location|杭州粮局/);
   assert.match(gameStyles, /\.result-narrative \{[^}]*overflow-y: auto/);
+  assert.match(gameStyles, /\.opening-narrative \{[^}]*overflow-y: auto/);
   assert.match(appSource, /rememberResultScroll\(\).*restoreResultScroll\(\)/s);
 
   const harness = setup();

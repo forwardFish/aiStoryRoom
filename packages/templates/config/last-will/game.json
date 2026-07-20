@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "last-will",
+  "publicId": "last-will",
+  "aliases": [],
+  "templateId": "template_last_will_001",
+  "status": "coming_soon",
+  "catalog": {
+    "title": "The Last Will: Heirs to the Empire",
+    "subtitle": "A family empire has forty-eight hours to choose its future",
+    "description": "The will opens in 48 hours. Before then, the family must decide who controls the empire.",
+    "genre": "Family & Business",
+    "tags": ["Family", "Business", "Succession", "Power"],
+    "durationLabel": "40–60 Minutes",
+    "cardCover": "/assets/game/last-will/catalog-cover.png",
+    "heroCover": "/assets/game/last-will/catalog-cover.png",
+    "lobby": {
+      "title": "The Last Will: Heirs to the Empire",
+      "description": "The will opens in 48 hours. Before then, the family must decide who controls the empire.",
+      "categoryLabel": "Family & Business"
+    }
+  },
+  "modes": { "solo": false, "multiplayer": false, "minHumanPlayers": 1, "maxHumanPlayers": 6 },
+  "engine": { "engineVersion": "unavailable_v1", "strategyVersion": "unpublished", "strategyRegistryPath": null, "fixedRules": null },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "The Family Boardroom",
+    "roundLabel": "Scene",
+    "finaleLabel": "The Reading of the Will",
+    "sceneBackground": "/assets/game/last-will/catalog-cover.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": []
+}

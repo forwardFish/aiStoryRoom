@@ -49,7 +49,7 @@ function topbar(p, state) {
     <div class="top-countdown">${terminal ? "七轮推演：<b>已完成</b>" : `距离御前裁决：<b>${Math.max(0, 7 - p.run.stageIndex)}</b> 轮`}</div>
     <span class="status-chip">${terminal ? "结局已落定" : windowLabel(w.status)}</span>
     <span class="status-chip maneuver-chip">${terminal ? "终局回顾" : controlLabel(p.myControl)} <i></i></span>
-    <div class="top-actions"><button type="button" data-refresh ${state.busy ? "disabled" : ""}>刷新局势</button><a href="/rooms/${encodeURIComponent(p.run.runId)}">返回房间</a></div>
+    <div class="top-actions"><button type="button" data-refresh ${state.busy ? "disabled" : ""}>刷新局势</button><a href="/">返回主页</a></div>
     ${deadline ? `<time class="continuous-deadline" datetime="${esc(deadline)}">截止 ${formatTime(deadline)}</time>` : ""}
   </header>`;
 }
@@ -109,7 +109,7 @@ function waiting(p) {
 }
 
 function resolving(p) {
-  return `<section class="simulation-stage" data-testid="room-resolving"><div class="simulation-copy"><span>第 ${p.run.stageIndex} 轮 · 权威裁决器</span><div class="simulation-seal">推演<br>中</div><h1>三方行动正在形成共同后果</h1><p>规则、资产账本与角色 Agent 的行动正在同一条因果链中结算，无需房主手动推进。</p><small>完成后，三个页面会通过房间事件自动进入下一轮。</small></div></section>`;
+  return `<section class="simulation-stage" data-testid="room-resolving"><div class="simulation-copy"><span>Round ${p.run.stageIndex} · World Resolution</span><div class="simulation-seal">WORLD<br>IN MOTION</div><h1>Every action is becoming a shared consequence</h1><p>Rules, resources, relationships, and role actions are resolving along the same causal chain.</p><small>Every player will move forward automatically when the new world state is ready.</small></div></section>`;
 }
 
 function unlockView(p, state) {

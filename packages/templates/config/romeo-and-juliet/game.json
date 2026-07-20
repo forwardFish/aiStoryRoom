@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "romeo-and-juliet",
+  "publicId": "romeo-and-juliet",
+  "aliases": [],
+  "templateId": "template_romeo_and_juliet_001",
+  "status": "coming_soon",
+  "catalog": {
+    "title": "Romeo & Juliet: Before Dawn",
+    "subtitle": "Verona knows the tragedy, but its ending is not yet written",
+    "description": "Everyone knows how the tragedy ends. This time, Verona is still unwritten.",
+    "genre": "Literature & Romance",
+    "tags": ["Literature", "Romance", "Family Conflict", "Rewritten Tragedy"],
+    "durationLabel": "40–60 Minutes",
+    "cardCover": "/assets/game/romeo-and-juliet/catalog-cover.png",
+    "heroCover": "/assets/game/romeo-and-juliet/catalog-cover.png",
+    "lobby": {
+      "title": "Romeo & Juliet: Before Dawn",
+      "description": "Everyone knows how the tragedy ends. This time, Verona is still unwritten.",
+      "categoryLabel": "Literature & Romance"
+    }
+  },
+  "modes": { "solo": false, "multiplayer": false, "minHumanPlayers": 1, "maxHumanPlayers": 6 },
+  "engine": { "engineVersion": "unavailable_v1", "strategyVersion": "unpublished", "strategyRegistryPath": null, "fixedRules": null },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "Verona Before Dawn",
+    "roundLabel": "Scene",
+    "finaleLabel": "Before Dawn",
+    "sceneBackground": "/assets/game/romeo-and-juliet/catalog-cover.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": []
+}

@@ -49,6 +49,25 @@ test("multiplayer room reuses the original formal game renderer", async () => {
   harness.dom.window.close();
 });
 
+test("Caesar reuses the same main-game renderer with its own script-backed English world data", async () => {
+  const harness = createHarness(caesarRoomModel());
+  await harness.app.boot();
+
+  const shell = harness.root.querySelector('[data-testid="story-shell"]');
+  assert.ok(shell);
+  assert.equal(shell.getAttribute("data-game-locale"), "en");
+  assert.match(shell.getAttribute("style"), /assets\/game\/caesar\/room-banner\.png/);
+  assert.match(harness.root.querySelector(".player .portrait").getAttribute("style"), /game-player-portrait/);
+  assert.match(harness.root.querySelector(".player").textContent, /My Role/);
+  assert.match(harness.root.querySelector(".player").textContent, /Marcus Junius Brutus/);
+  assert.match(harness.root.querySelector(".status-strip").textContent, /Caesar's Authority\s*78/);
+  assert.match(harness.root.querySelector(".status-strip").textContent, /Senate Legitimacy\s*48/);
+  assert.match(harness.root.textContent, /Maneuver Board/);
+  assert.equal(harness.app.getState().view.run.title, "Caesar: The Last Spring of the Republic");
+  assert.doesNotMatch(harness.root.textContent, /杭州总督府|国库银|改桑进度|桑田诏/);
+  harness.dom.window.close();
+});
+
 test("submitted host sees the formal waiting narrative and can resolve when all players are ready", async () => {
   const model = roomModel({ mine: "role-governor", isHost: true, submittedRoleIds: ["role-governor", "role-xunfu", "role-magistrate"] });
   const harness = createHarness(model);
@@ -98,5 +117,71 @@ test("game bootstrap fails closed when an explicit room run does not exist", asy
   assert.equal(result, null);
   assert.equal(soloLoaded, false);
   assert.ok(dom.window.document.querySelector('[data-testid="fatal-error"]'));
+  dom.window.close();
+});
+
+const caesarWorld = {
+  schemaVersion: "game_page_world_v1",
+  worldId: "caesar",
+  title: "Caesar: The Last Spring of the Republic",
+  locale: "en",
+  totalStages: 7,
+  presentation: {
+    locationLabel: "Rome · The Senate", roundLabel: "Scene", finaleLabel: "The Republic's Verdict",
+    sceneBackground: "/assets/game/caesar/room-banner.png", accent: "#6b4ce6", accentSoft: "#f3f0ff",
+    statusMetrics: [
+      { key: "caesar_authority", label: "Caesar's Authority", value: 78, suffix: "", tone: "crown" },
+      { key: "senate_legitimacy", label: "Senate Legitimacy", value: 48, suffix: "", tone: "default" },
+      { key: "public_support", label: "Public Support", value: 68, suffix: "", tone: "green" },
+      { key: "legion_loyalty", label: "Legion Loyalty", value: 72, suffix: "", tone: "gold" },
+      { key: "civil_war_risk", label: "Civil War Risk", value: 46, suffix: "", tone: "default" }
+    ]
+  },
+  roles: [{
+    roleKey: "brutus", roleName: "Brutus", identity: "A senator torn between friendship and the Republic.",
+    publicInfo: "You serve Rome, not any man.", personalGoal: "Prevent an unrestrained dictatorship.",
+    currentState: "The Senate is divided.", abilityText: "Build coalitions and set boundaries.", arcText: "From restraint to authorship.",
+    knownInfo: ["Senate votes", "Caesar's trust"], cannotDo: ["Command the legions"], portrait: "/assets/game/caesar/brutus.png",
+    gameplayProfile: {
+      characterName: "Marcus Junius Brutus", rank: "Senator · Urban Praetor", office: "Voice of an old republican house",
+      fateQuestion: "Do you oppose a tyrant, or your fear that one might emerge?",
+      goals: ["Preserve republican institutions", "Prevent Caesar from becoming king", "Keep Rome from another civil war"],
+      resources: [{ label: "Republican Reputation", value: "72" }, { label: "Caesar's Trust", value: "66" }],
+      leverage: ["Caesar's pardon and promotion", "Evidence that Cassius is testing you"]
+    }
+  }]
+};
+
+function caesarRoomModel() {
+  const role = { id: "role-brutus", ...caesarWorld.roles[0], claimedByCurrentUser: true };
+  return {
+    world: caesarWorld, completed: false, submittedRoleIds: [], access: { requiresUnlock: false },
+    currentNode: {
+      id: "caesar-node-1", nodeIndex: 1, title: "The Crown", publicNarration: "Caesar refused the crown, but Rome did not stop fearing a king.",
+      nodeGoal: "Decide what the crown ceremony means for the Republic.",
+      actionOptions: ["Defend Caesar's refusal", "Demand a public limit", "Question Cassius in private"]
+    },
+    room: {
+      id: "caesar-room", title: caesarWorld.title, worldId: "caesar", world: caesarWorld, status: "playing", isHost: true,
+      players: [{ userId: "host", nickname: "lin", roleId: role.id, roleKey: "brutus", roleName: "Brutus" }],
+      roles: [role]
+    }
+  };
+}
+
+test("unavailable shared room uses the approved recovery screen", async () => {
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', { url: "http://127.0.0.1:5200/game?runId=unavailable-room" });
+  await bootGamePage({
+    root: dom.window.document.querySelector("#app"), window: dom.window,
+    fetchImpl: async () => new Response(JSON.stringify({ code: "SERVICE_UNAVAILABLE" }), { status: 503, headers: { "content-type": "application/json" } })
+  });
+
+  const error = dom.window.document.querySelector('[data-testid="fatal-error"]');
+  assert.ok(error);
+  assert.equal(error.querySelector("h1")?.innerHTML, "Unable to enter the<br>shared story room");
+  assert.match(error.textContent, /We can't load this shared story room right now/);
+  assert.equal(error.querySelector(".seal"), null);
+  assert.equal(error.querySelector("[data-boot-retry]")?.textContent.trim(), "↻Reconnect");
+  assert.equal(error.querySelector(".room-back-button")?.getAttribute("href"), "/rooms");
   dom.window.close();
 });

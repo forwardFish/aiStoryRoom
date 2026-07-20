@@ -42,12 +42,11 @@ test("browser authentication uses a same-origin HttpOnly cookie session", async 
   assert.doesNotMatch(roomGame, /Bearer \$\{token\(\)\}/);
 });
 
-test("only a shared room lobby mounts the platform header", async () => {
+test("the platform shell mounts the shared standard page header", async () => {
   const platform = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   const start = platform.indexOf("function appShell");
   const end = platform.indexOf("function bind()", start);
   const appShell = platform.slice(start, end);
-  assert.match(appShell, /const roomWaitingHeader = path\.startsWith\("\/rooms\/"\) \? header\("rooms"\) : ""/);
-  assert.match(appShell, /root\.innerHTML = `\$\{roomWaitingHeader\}\$\{content\}`/);
-  assert.doesNotMatch(appShell, /header\(active \|\|/);
+  assert.match(appShell, /renderStandardPage\(content\)/);
+  assert.doesNotMatch(appShell, /roomWaitingHeader|header\(active \|\|/);
 });

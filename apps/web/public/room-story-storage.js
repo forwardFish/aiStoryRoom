@@ -1,3 +1,5 @@
+import { gamePresentationFromProjection, gameRoleFromProjection, gameWorldFromProjection } from "./game-world-view.js";
+
 export class RoomStoryStorage {
   constructor({ roomId, initialModel = null, fetchImpl = globalThis.fetch?.bind(globalThis), localStorage = globalThis.localStorage } = {}) {
     if (!roomId) throw new TypeError("RoomStoryStorage requires a room id");
@@ -70,14 +72,16 @@ export class RoomStoryStorage {
 
   toFormalView(model) {
     const room = model.room;
-    const role = room.roles.find((item) => item.claimedByCurrentUser) || {};
+    const world = gameWorldFromProjection(model);
+    const presentation = gamePresentationFromProjection(world);
+    const role = gameRoleFromProjection(world, room.roles.find((item) => item.claimedByCurrentUser) || {});
     const player = room.players.find((item) => item.roleId === role.id) || {};
     const submitted = new Set(model.submittedRoleIds || []);
     const ownSubmitted = Boolean(role.id && submitted.has(role.id));
     const activePlayers = room.players.filter((item) => item.roleId);
     const allSubmitted = activePlayers.length > 0 && activePlayers.every((item) => submitted.has(item.roleId));
     const round = Number(model.currentNode?.nodeIndex || 7);
-    const profile = roleProfile(role.roleKey, role.roleName);
+    const profile = role.gameplayProfile || roleProfile(role.roleKey, role.roleName);
     const completedRounds = Math.max(0, round - 1);
     const options = roomActionOptions(model.currentNode).map((title, index) => ({ key: "ABCD"[index], title, body: title }));
     const completed = Boolean(model.completed || room.status === "chapter_generated");
@@ -86,12 +90,12 @@ export class RoomStoryStorage {
     return {
       run: {
         id: room.id,
-        storyId: "sangtian-zhao",
-        title: "桑田诏：嘉靖财政危局",
-        location: "杭州总督府 · 内厅",
+        storyId: world?.worldId || room.worldId,
+        title: presentation.title || room.title,
+        location: presentation.locationLabel,
         currentDay: round,
         currentTime: resolving ? "共同推演中" : "共同决策",
-        totalDays: 7,
+        totalDays: presentation.totalStages,
         status: completed ? "room_complete" : resolving ? "room_resolving" : ownSubmitted ? "room_waiting" : "awaiting_decision",
         version: round,
         decisionsCompletedToday: ownSubmitted ? 1 : 0,
@@ -101,14 +105,17 @@ export class RoomStoryStorage {
       },
       player: {
         roleName: role.roleName || profile.roleName,
-        name: player.nickname || "玩家",
+        name: profile.characterName || player.nickname || (presentation.locale === "en" ? "Player" : "玩家"),
         rank: profile.rank,
         office: profile.office,
-        fateQuestion: role.identity || profile.fateQuestion,
-        goals: [model.currentNode?.nodeGoal, role.personalGoal, profile.goal].filter(Boolean),
-        resources: profile.resources,
+        fateQuestion: profile.fateQuestion || role.personalGoal || role.identity,
+        goals: [model.currentNode?.nodeGoal, ...(profile.goals || []), profile.goal].filter(Boolean),
+        resources: (profile.resources || []).map((item) => Array.isArray(item) ? item : [item.label, item.value]),
         leverage: profile.leverage
       },
+      locale: presentation.locale,
+      presentation: { ...presentation, playerPortrait: role.portrait },
+      openingNarrative: model.currentNode?.publicNarration || "",
       messages: model.currentNode ? [{
         id: model.currentNode.id,
         day: round,
@@ -124,7 +131,8 @@ export class RoomStoryStorage {
         options
       } : null,
       dashboard: {
-        worldState: [["国库银两", 42], ["民心", 55], ["粮价", 72], ["改桑进度", 58], ["皇帝信任", 43]],
+        worldState: presentation.statusMetrics.map((metric) => [metric.key, metric.value]),
+        statusMetrics: presentation.statusMetrics,
         relationships: activePlayers.filter((item) => item.roleId !== role.id).map((item) => ({ name: item.roleName, person: item.nickname, stance: submitted.has(item.roleId) ? "已决策" : "思考中", score: submitted.has(item.roleId) ? 60 : 45 })),
         risks: [["改桑期限", "高"], ["三方权责冲突", "中"]],
         traces: [],

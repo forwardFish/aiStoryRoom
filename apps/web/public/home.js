@@ -1,24 +1,13 @@
-import { worlds } from "./world-catalog.js";
+import { DEFAULT_WORLD_CATALOG, fetchWorldCatalog, normalizeWorldCatalog } from "./world-api.js";
 const LOGO_ASSET = "/assets/brand/many-worlds-logo.png";
-
-// Keep the hero carousel focused on the six worlds shown in the catalog.
-// The order is intentional: the initial frame keeps Caesar in the center.
-const carouselWorlds = [worlds[0], worlds[2], worlds[1], worlds[3], worlds[5], worlds[4]];
 const CAROUSEL_TRANSITION_MS = 650;
 const CAROUSEL_AUTOPLAY_MS = 3000;
 
-function carouselRole(itemIndex, activeIndex) {
-  const offset = (itemIndex - activeIndex + carouselWorlds.length) % carouselWorlds.length;
+function carouselRole(itemIndex, activeIndex, itemCount) {
+  if (!itemCount) return "back";
+  const offset = (itemIndex - activeIndex + itemCount) % itemCount;
   return ["center", "right-near", "right-far", "back", "left-far", "left-near"][offset];
 }
-
-const featurePoints = [
-  ["17-user-role", "Different roles, different truths", "Each player sees only what their role would realistically know."],
-  ["18-eye", "Private motives", "Everyone enters with their own goals, pressures, relationships, and limits."],
-  ["11-branching-choice", "Decisions in your own words", "Negotiate, persuade, cooperate, or act, on your own terms."],
-  ["05-users", "One shared world", "All actions have real effects through relationships, resources, secrets, and the wider situation."],
-  ["13-infinity", "No preset ending", "Outcomes emerge from what everyone does."],
-];
 
 const faqItems = [
   ["What is a world in Our Many Worlds?", "A world is a shared situation with roles, private information, relationships, resources, and an open-ended outcome."],
@@ -36,14 +25,26 @@ function asset(group, index) {
   return `/assets/${group}/${normalized}.png`;
 }
 function icon(index, label = "") { return `<img class="mw-icon" src="${asset("icon", index)}" alt="${label}" aria-hidden="${label ? "false" : "true"}" />`; }
+function howItWorksIcon(kind) {
+  const artwork = {
+    world: `<g class="how-icon-art"><ellipse cx="110" cy="91" rx="31" ry="37"/><path d="M79 91h62M110 54v74M86 69c15 9 33 9 48 0M86 113c15-9 33-9 48 0M110 54c-12 10-18 22-18 37s6 27 18 37M110 54c12 10 18 22 18 37s-6 27-18 37"/><path d="M48 120c21-2 37 3 50 13v39c-13-10-29-15-50-13zM172 120c-21-2-37 3-50 13v39c13-10 29-15 50-13zM98 133c5 4 9 9 12 15 3-6 7-11 12-15"/><circle cx="110" cy="151" r="22" fill="var(--how-panel)"/><circle cx="110" cy="145" r="7"/><path d="M97 165c2-10 7-15 13-15s11 5 13 15"/></g>`,
+    shared: `<g class="how-icon-art"><path d="M78 51h64a9 9 0 0 1 9 9v29a9 9 0 0 1-9 9h-22l-10 14-10-14H78a9 9 0 0 1-9-9V60a9 9 0 0 1 9-9z"/><circle cx="93" cy="74" r="2" fill="currentColor" stroke="none"/><circle cx="110" cy="74" r="2" fill="currentColor" stroke="none"/><circle cx="127" cy="74" r="2" fill="currentColor" stroke="none"/><circle cx="110" cy="128" r="18"/><circle cx="110" cy="123" r="5"/><path d="M101 138c2-7 5-10 9-10s7 3 9 10M94 134l-24 15M126 134l24 15"/><circle cx="67" cy="155" r="14"/><circle cx="153" cy="155" r="14"/><circle cx="67" cy="151" r="4"/><circle cx="153" cy="151" r="4"/><path d="M60 164c1-6 4-8 7-8s6 2 7 8M146 164c1-6 4-8 7-8s6 2 7 8"/></g>`,
+    changed: `<g class="how-icon-art"><path d="M111 62v76M111 65h43l-10 14 10 14h-43M102 139h20M100 145h24"/><path d="M67 171c-1-17 14-28 37-30 35-3 54 10 47 25-5 11-27 10-35 22"/><path d="M116 188l4-1-2-4"/><path d="M67 96l3 7 7 3-7 3-3 7-3-7-7-3 7-3zM151 112l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></g>`
+  };
+  return `<svg class="how-step-icon" viewBox="0 0 220 220" aria-hidden="true" focusable="false"><g class="how-icon-frame"><circle cx="110" cy="110" r="91"/><circle cx="110" cy="110" r="82" stroke-dasharray="2 7"/><path d="M110 8l8 10-8 10-8-10zM212 110l-10 8-10-8 10-8zM110 212l-8-10 8-10 8 10zM8 110l10-8 10 8-10 8z" fill="var(--how-panel)"/></g>${artwork[kind]}</svg>`;
+}
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]); }
 function accountInitial(account) {
   return String(account?.email || account?.nickname || "M").trim().charAt(0).toLocaleUpperCase() || "M";
 }
 
-export function createHomeApp({ root, window: browserWindow = globalThis.window } = {}) {
+export function createHomeApp({ root, window: browserWindow = globalThis.window, catalog = null } = {}) {
   if (!root) throw new TypeError("createHomeApp requires a root element");
-  let carouselIndex = 2;
+  const suppliedWorlds = normalizeWorldCatalog(catalog);
+  const fallbackWorlds = normalizeWorldCatalog(DEFAULT_WORLD_CATALOG);
+  let worlds = suppliedWorlds.length ? suppliedWorlds : fallbackWorlds;
+  let carouselWorlds = worlds.slice(0, 6);
+  let carouselIndex = Math.max(0, carouselWorlds.findIndex((world) => world.id === "caesar"));
   let carouselTimer = null;
   let carouselUnlockTimer = null;
   let carouselAnimating = false;
@@ -57,7 +58,6 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
     browserWindow.location.href = `/role-select?story=caesar${api}`;
   };
   const gotoWorld = () => { browserWindow.location.href = "/worlds"; };
-  const gotoRooms = () => { browserWindow.location.href = "/rooms?worldId=caesar"; };
   const pauseCarousel = () => {
     if (carouselTimer) browserWindow.clearInterval?.(carouselTimer);
     carouselTimer = null;
@@ -68,7 +68,7 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
     carousel.dataset.activeIndex = String(carouselIndex);
     carousel.setAttribute("aria-label", `Featured world: ${carouselWorlds[carouselIndex].title}`);
     carousel.querySelectorAll("[data-carousel-item]").forEach((item) => {
-      const role = carouselRole(Number(item.dataset.carouselItem), carouselIndex);
+      const role = carouselRole(Number(item.dataset.carouselItem), carouselIndex, carouselWorlds.length);
       item.dataset.role = role;
       item.setAttribute("aria-hidden", String(role === "back"));
       item.setAttribute("aria-current", String(role === "center"));
@@ -82,6 +82,7 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
     });
   };
   const showCarouselItem = (nextIndex, restartAutoplay = false) => {
+    if (!carouselWorlds.length) return;
     const normalizedIndex = (Number(nextIndex) + carouselWorlds.length) % carouselWorlds.length;
     if (normalizedIndex === carouselIndex) return;
     carouselAnimating = true;
@@ -106,13 +107,14 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
   };
   const startCarousel = () => {
     pauseCarousel();
+    if (carouselWorlds.length < 2) return;
     carouselTimer = browserWindow.setInterval?.(advanceCarousel, CAROUSEL_AUTOPLAY_MS);
   };
   const preloadCarousel = () => {
     if (typeof browserWindow.Image !== "function") return;
     carouselWorlds.forEach((world) => {
       const image = new browserWindow.Image();
-      image.src = asset("bg", world.image);
+      image.src = world.imageUrl;
     });
   };
   const signOut = async (button) => {
@@ -148,24 +150,42 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window 
     }
     root.querySelectorAll("[data-account-logout]").forEach((button) => button.addEventListener("click", () => void signOut(button)));
   };
-  const render = () => {
+  const render = ({ autoplay = true } = {}) => {
     pauseCarousel();
-    root.innerHTML = renderPage(carouselIndex, account);
+    if (!worlds.length) {
+      root.innerHTML = '<section class="page-loading" aria-live="polite"><div class="brand-orbit" aria-hidden="true"><span></span><span></span></div><p>Opening Our Many Worlds…</p></section>';
+      return;
+    }
+    root.innerHTML = renderPage(carouselIndex, account, worlds, carouselWorlds);
     root.querySelectorAll("[data-start-solo]").forEach((button) => button.addEventListener("click", gotoSolo));
     root.querySelectorAll("[data-open-world]").forEach((button) => button.addEventListener("click", gotoWorld));
-    root.querySelectorAll("[data-open-rooms]").forEach((button) => button.addEventListener("click", gotoRooms));
     root.querySelector("[data-menu]")?.addEventListener("click", () => root.querySelector(".mobile-nav")?.classList.toggle("is-open"));
     bindAccountMenu();
     bindCarousel();
-    startCarousel();
+    if (autoplay) startCarousel();
   };
-  preloadCarousel();
-  render();
-  if (account) void loadAccount(browserWindow).then((currentAccount) => {
+  render({ autoplay: suppliedWorlds.length > 0 });
+  const applyCatalog = (catalogWorlds) => {
+    worlds = normalizeWorldCatalog(catalogWorlds).sort((left, right) => Number(right.playable) - Number(left.playable));
+    carouselWorlds = worlds.slice(0, 6);
+    carouselIndex = Math.max(0, carouselWorlds.findIndex((world) => world.id === "caesar"));
+    preloadCarousel();
+    render();
+    return worlds;
+  };
+  const ready = suppliedWorlds.length
+    ? Promise.resolve(applyCatalog(suppliedWorlds))
+    : fetchWorldCatalog({ fetch: browserWindow.fetch.bind(browserWindow) })
+      .then(applyCatalog)
+      .catch(() => {
+        applyCatalog(fallbackWorlds);
+        return fallbackWorlds;
+      });
+  if (account) void Promise.all([ready.catch(() => []), loadAccount(browserWindow)]).then(([, currentAccount]) => {
     account = currentAccount;
     render();
   });
-  return { render, startSolo: gotoSolo };
+  return { render, ready, startSolo: gotoSolo };
 }
 
 function hasSessionHint(browserWindow) {
@@ -191,7 +211,7 @@ async function loadAccount(browserWindow) {
   }
 }
 
-function renderPage(activeIndex = 2, account = null) {
+function renderPage(activeIndex = 0, account = null, worlds = [], carouselWorlds = []) {
   return `<div class="many-worlds-page">
     ${renderHeader(account)}
     <main>
@@ -203,22 +223,43 @@ function renderPage(activeIndex = 2, account = null) {
           <div class="hero-actions"><button class="mw-primary" data-open-world>Explore Worlds ${icon(3)}</button><a class="mw-secondary" href="#how-it-works">${icon(4)} See How It Works</a></div>
           <div class="hero-proof"><span>${icon(5)} Solo or Multiplayer</span><span>${icon(6)} Different information for every role</span><span>${icon(7)} No fixed storyline</span></div>
         </div>
-        ${renderHeroCarousel(activeIndex)}
+        ${renderHeroCarousel(activeIndex, carouselWorlds)}
       </section>
 
       <section class="worlds-section mw-panel" id="worlds">
-        <div class="section-head"><div><h2>Worlds worth stepping into</h2><p>Six story worlds, each beginning with a live situation, private motives, and more than one way forward.</p></div><a href="/worlds">Explore worlds ${icon(3)}</a></div>
-        <div class="world-filters"><button class="active">All Worlds</button><button>History &amp; Power</button><button>Business &amp; Work</button><button>Mystery</button><button>Crisis &amp; Survival</button><button>Speculative Futures</button><button>Relationships</button></div>
-        <div class="world-grid" aria-label="Six story worlds">${worlds.slice(0, 6).map((world) => `<a class="world-card-link" href="/worlds" aria-label="Open the world lobby">${renderWorldCard(world, "grid")}</a>`).join("")}</div>
+        <div class="section-head"><div><h2>Worlds worth stepping into</h2><p>${worlds.length} story worlds, each beginning with a live situation, private motives, and more than one way forward.</p></div><a href="/worlds">Explore worlds ${icon(3)}</a></div>
+        <div class="world-filters"><button class="active">All Worlds</button>${[...new Set(worlds.map((world) => world.category))].map((category) => `<button>${esc(category)}</button>`).join("")}</div>
+        <div class="world-grid" aria-label="${worlds.length} story worlds">${worlds.slice(0, 6).map((world) => `<a class="world-card-link" href="/worlds" aria-label="Open the world lobby">${renderWorldCard(world, "grid")}</a>`).join("")}</div>
       </section>
 
-      <section class="principles" id="how-it-works"><h2>Not a story with branches. <span>A situation with people.</span></h2><p>The opening is designed. Everything after that emerges from what everyone does.</p><div class="principle-grid">${featurePoints.map(([i, title, copy]) => `<article>${icon(i)}<b>${title}</b><p>${copy}</p></article>`).join("")}</div></section>
-
-      <section class="entry-grid"><article class="entry-card solo"><div><span class="entry-label">Enter alone.</span><h2>Start Solo</h2><p>Step into a world now. AI-controlled characters fill the remaining roles while you test your first decision.</p><ul><li>Choose one role</li><li>Read your private briefing</li><li>Make decisions at your pace</li><li>See how the situation responds</li></ul><button class="mw-primary" data-start-solo>Start Solo</button></div><div class="role-stack"><div class="role-ghost portrait-01"></div><div class="role-ghost portrait-02"></div><div class="role-main portrait-03"><span>${icon(14)}</span></div></div></article><article class="entry-card invite"><div><span class="entry-label">Bring others in.</span><h2>Host a Room</h2><p>Open a shared room and invite people into different roles. Everyone sees their own side of the situation and shapes one shared outcome.</p><ul><li>Private role briefings</li><li>Live or asynchronous sessions</li><li>Independent decisions</li><li>One shared outcome</li></ul><button class="mw-secondary" data-open-rooms>Open a Room ${icon(3)}</button></div><div class="avatar-orbit">${[1,2,3,4,5,6].map((n) => `<img src="${asset("portrait", n)}" alt=""/>`).join("")}<span>${icon(42)}</span></div></article></section>
-
-      <section class="flow-section mw-panel" id="flow"><div class="section-head"><div><h2>How a world unfolds</h2><p>Every situation develops from the people inside it.</p></div></div><div class="flow-grid">${[[16,"Choose a World","Pick a world that excites you and read its situation."],[17,"Take a Role","Receive your role identity, briefing, relationships, and private information."],[18,"Learn Your Side","Understand what you know, what you don't, and your motivation."],[19,"Make Your Decision","Talk, investigate, negotiate, cooperate, or act, on your own terms."],[20,"Watch the World Respond","AI simulates how every character and event evolves."],[21,"See Where It Leads","Discover the outcome together and review how it all came to be."]].map(([i,t,c],idx)=>`<article><span class="flow-number">${idx+1}</span>${icon(i)}<b>${t}</b><p>${c}</p></article>`).join("")}</div></section>
-
-      <section class="ending-section mw-panel"><div class="section-head"><div><h2>When the run ends, see what really happened</h2><p>Review the story from every role and uncover how the world changed.</p></div></div><div class="ending-grid"><div class="ending-list">${[[25,"Your decision trail","See what you did and why."],[26,"Major turning points","Key moments that changed everything."],[27,"Hidden information revealed","Discover what others knew and kept secret."],[28,"Relationship changes","See how alliances and rivalries evolved."],[29,"A shareable world recap","Export the full run to read or share."]].map(([i,t,c])=>`<article>${icon(i)}<span><b>${t}</b><small>${c}</small></span></article>`).join("")}</div><div class="impact-card"><span>${icon(30)}</span><b>Example impact</b><p>You convinced the board to delay the succession vote.</p><strong>Two weeks later,<br/>the founder resigned.</strong><em>Consequence unlocked</em></div></div></section>
+      <section class="how-it-works-showcase" id="how-it-works" aria-labelledby="how-it-works-title">
+        <header class="how-showcase-head">
+          <span class="how-kicker">How It Works</span>
+          <h2 id="how-it-works-title"><span>Not a story with branches.</span><em>A situation with people.</em></h2>
+          <p>Choose a role. Act in your own words. See how one shared world changes.</p>
+        </header>
+        <div class="how-steps">
+          <span class="how-connector" aria-hidden="true"><i></i><i></i></span>
+          <article class="how-step">
+            ${howItWorksIcon("world")}
+            <span class="how-step-number">Step 01</span>
+            <h3>Choose a World and Role</h3>
+            <p>Enter a world already in motion. Receive the private information, goals, and relationships only your role would know.</p>
+          </article>
+          <article class="how-step">
+            ${howItWorksIcon("shared")}
+            <span class="how-step-number">Step 02</span>
+            <h3>Shape One Shared World</h3>
+            <p>Act in your own words. AI responds to every decision and moves the shared world forward.</p>
+          </article>
+          <article class="how-step">
+            ${howItWorksIcon("changed")}
+            <span class="how-step-number">Step 03</span>
+            <h3>See What Changed</h3>
+            <p>Reach an open ending and review the key decisions and consequences that shaped it.</p>
+          </article>
+        </div>
+      </section>
 
       <section class="pricing wallet-pricing" id="pricing"><div class="section-head pricing-head"><div><span class="entry-label">World Credits</span><h2>Add World Credits to your account.</h2><p>Use World Credits for eligible paid experiences across Our Many Worlds. The exact Credit cost is shown before you confirm any use.</p></div><a href="/credits">Open Credits wallet ${icon(3)}</a></div><div class="wallet-offer-grid"><article class="wallet-pack-card"><small>Credit pack</small><div class="wallet-pack-amount"><h3>300</h3><span>World Credits</span></div><strong>$7.99</strong><p>A simple way to add Credits to your balance.</p><a class="mw-primary" href="/credits?confirm=credits_300">Buy 300 Credits</a></article><article class="wallet-pack-card wallet-pack-best"><small>Best value</small><div class="wallet-pack-amount"><h3>650</h3><span>World Credits</span></div><strong>$14.99</strong><p>More Credits at a lower price per Credit.</p><a class="mw-primary" href="/credits?confirm=credits_650">Buy 650 Credits</a></article><aside class="wallet-rewards" aria-label="World Credits rewards"><div><span class="reward-icon">${icon(31)}</span><div><small>New account reward</small><b>+50 World Credits</b><p>Create an account and receive 50 World Credits.</p></div></div><div><span class="reward-icon">${icon(42)}</span><div><small>Referral reward</small><b>+25 World Credits</b><p>Earn 25 World Credits through an eligible referral. Terms apply.</p></div></div></aside></div></section>
 
@@ -228,10 +269,10 @@ function renderPage(activeIndex = 2, account = null) {
   </div>`;
 }
 
-function renderHeroCarousel(activeIndex) {
+function renderHeroCarousel(activeIndex, carouselWorlds) {
   return `<div class="world-carousel" data-carousel data-active-index="${activeIndex}" aria-label="Featured world: ${esc(carouselWorlds[activeIndex].title)}" aria-live="polite">
     ${carouselWorlds.map((world, index) => {
-      const role = carouselRole(index, activeIndex);
+      const role = carouselRole(index, activeIndex, carouselWorlds.length);
       const label = role === "center" ? `Current world: ${world.title}` : `Show ${world.title}`;
       return `<button class="carousel-item" type="button" data-carousel-item="${index}" data-role="${role}" aria-hidden="${role === "back"}" aria-current="${role === "center"}" aria-label="${esc(label)}" tabindex="${role === "center" || role === "back" ? -1 : 0}">${renderWorldCard(world, role === "center" ? "featured" : "peek", true)}</button>`;
     }).join("")}
@@ -246,7 +287,7 @@ function renderHeader(account = null) {
     : `<a href="/auth?returnTo=%2F">Log in</a>`;
   return `<header class="mw-header"><a class="mw-brand" href="/"><img src="${LOGO_ASSET}" alt="Our Many Worlds logo"/><span>Our Many Worlds<small>Real players. Living worlds.</small></span></a><nav><a class="active" href="/worlds">Explore Worlds</a><a href="/rooms?worldId=caesar">Create</a><a href="/#how-it-works">How It Works</a><a href="/#pricing">Pricing</a><a href="/#faq">FAQ</a></nav><div class="header-right">${desktopAccount}</div><button class="menu-button" data-menu aria-label="Open menu">☰</button><div class="mobile-nav"><a href="/worlds">Explore Worlds</a><a href="/rooms?worldId=caesar">Create</a><a href="/#how-it-works">How It Works</a><a href="/#pricing">Pricing</a><a href="/#faq">FAQ</a>${mobileAccount}</div></header>`;
 }
-function renderWorldCard(world, variant, clean = false) { return `<article class="world-card ${variant}${clean ? " hero-card" : ""}" style="--cover:url('${asset("bg", world.image)}')">${clean ? "" : `<span class="world-category">${world.category}</span>`}<div><h3>${world.title}</h3>${clean ? "" : `<p>${world.copy}</p>${variant === "featured" ? `<span class="featured-people">${[1,2,3,4,5].map((n) => `<img src="${asset("portrait", n)}" alt=""/>`).join("")}</span>` : ""}<small>${icon(5)} ${world.meta}</small>`}</div></article>`; }
+function renderWorldCard(world, variant, clean = false) { return `<article class="world-card ${variant}${clean ? " hero-card" : ""}" style="--cover:url('${esc(world.imageUrl)}')">${clean ? "" : `<span class="world-category">${esc(world.category)}</span>`}<div><h3>${esc(world.title)}</h3>${clean ? "" : `<p>${esc(world.copy)}</p>${variant === "featured" ? `<span class="featured-people">${[1,2,3,4,5].map((n) => `<img src="${asset("portrait", n)}" alt=""/>`).join("")}</span>` : ""}<small>${icon(5)} ${esc(world.meta)}</small>`}</div></article>`; }
 function renderFooter() { return `<footer class="mw-footer"><div class="footer-brand"><img src="${LOGO_ASSET}" alt="Our Many Worlds logo"/><b>Our Many Worlds</b><p>Real players.<br/>Living worlds.</p></div><div><b>Product</b><a href="#worlds">Explore Worlds</a><a href="#how-it-works">How It Works</a><a href="#pricing">Pricing</a><a href="#create">Create</a></div><div><b>Support</b><a href="#faq">Help Center</a><a href="/credits#rewards">Account rewards</a></div><div><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/refund">Refund Policy</a></div><div class="footer-social"><small>© 2026 Our Many Worlds. All rights reserved.</small></div></footer>`; }
 
 function renderLegalFooter() { return `<footer class="mw-footer"><div class="footer-brand"><img src="${LOGO_ASSET}" alt="Our Many Worlds logo"/><b>Our Many Worlds</b><p>Real players.<br/>Living worlds.</p></div><div><b>Product</b><a href="/worlds">Explore Worlds</a><a href="/#how-it-works">How It Works</a><a href="/#pricing">World Credits</a><a href="/rooms?worldId=caesar">Open a Room</a></div><div><b>Play</b><a href="/role-select?story=caesar">Start Solo</a><a href="/rooms?worldId=caesar">Invite a Group</a><a href="/auth?returnTo=%2F">Sign in</a><a href="/#faq">FAQ</a></div><div><b>Credits</b><a href="/credits">Credits wallet</a><a href="/credits#rewards">Account rewards</a></div><div><b>Legal</b><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/refund">Refund Policy</a></div><div class="footer-social"><small>© 2026 Our Many Worlds. All rights reserved.</small></div></footer>`; }

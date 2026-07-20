@@ -20,6 +20,7 @@ import { ContinuousStrategyContentService } from "../continuous-strategy/content
 import { ContinuousEventDeliveryService } from "../continuous-strategy/event-delivery.service";
 import { PrismaService } from "../prisma.service";
 import { StoryAccessService } from "../story-access/story-access.service";
+import { gamePageProjection } from "../game-page-projection";
 import { assetDisplayName } from "./asset-language";
 import {
   evaluateStageProgress,
@@ -419,6 +420,7 @@ export class ContinuousStoryV2Service {
       generatedAt: new Date().toISOString(),
       worldSequence: run.worldSequence,
       room: { id: run.id, title: run.title, worldId: run.templateKey, status: run.status, mode: run.maxPlayers === 1 ? "solo" : "multiplayer" },
+      world: gamePageProjection(run.templateKey),
       player: {
         userId: user.id,
         roleId: membership.role.id,

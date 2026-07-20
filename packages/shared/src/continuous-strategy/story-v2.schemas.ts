@@ -138,11 +138,51 @@ export type ObservableTraceProjectionV2 = {
   createdAt: string;
 };
 
+export type GamePageWorldProjectionV1 = {
+  schemaVersion: "game_page_world_v1";
+  worldId: string;
+  title: string;
+  locale: "en" | "zh-CN";
+  totalStages: number;
+  presentation: {
+    locationLabel: string;
+    roundLabel: string;
+    finaleLabel: string;
+    sceneBackground: string;
+    accent: string;
+    accentSoft: string;
+    statusMetrics: Array<{ key: string; label: string; value: number; suffix: string; tone: "default" | "green" | "gold" | "crown" }>;
+  };
+  roles: Array<{
+    roleKey: string;
+    roleName: string;
+    identity: string;
+    publicInfo: string;
+    personalGoal: string;
+    currentState: string;
+    abilityText: string;
+    arcText: string;
+    knownInfo: string[];
+    cannotDo: string[];
+    portrait: string;
+    gameplayProfile: {
+      characterName: string;
+      rank: string;
+      office: string;
+      fateQuestion: string;
+      goals: string[];
+      resources: Array<{ label: string; value: string }>;
+      leverage: string[];
+    };
+  }>;
+};
+
 export type GameProjectionV2 = {
   schemaVersion: typeof GAME_PROJECTION_V2_SCHEMA_VERSION;
   generatedAt: string;
   worldSequence: number;
   room: { id: string; title: string; worldId: string; status: string; mode: string };
+  world?: GamePageWorldProjectionV1;
   player: { userId: string; roleId: string; roleKey: string; roleName: string; identity: string; personalGoal: string };
   control: { mode: string; epoch: number; canHumanAct: boolean };
   currentTurn: ActorTurnProjectionV2 | null;

@@ -17,8 +17,6 @@ export function renderRoomSelectionPage(model = {}) {
   const bannerArtwork = model.bannerArtwork || "";
 
   return `<div class="mw-room-page" data-room-mode="${mode}">
-    <a class="mw-room-brand" href="/worlds"><strong>Our Many Worlds</strong><small>Real players. Living worlds.</small></a>
-    <a class="mw-room-back mw-back" href="${escapeAttr(model.backHref || "/worlds")}" aria-label="Back"><span class="mw-back__icon" aria-hidden="true">←</span><span>Back</span></a>
     <header class="mw-room-header">
       <div class="mw-room-title-block room-world">${bannerArtwork ? `<img class="mw-room-banner" src="${escapeAttr(bannerArtwork)}" alt="" loading="eager" decoding="sync" fetchpriority="high">` : ""}<div><h1>${escapeHtml(title)}</h1><p class="mw-room-session">${escapeHtml(model.sessionLabel || (mode === "solo" ? "Play Solo" : "Shared room"))}</p></div></div>
       ${mode === "multiplayer" ? renderInviteCard(model) : renderSoloCard(model)}
@@ -63,11 +61,11 @@ function renderRoleCard(role = {}, model, index, isDisabled) {
   const classes = ["mw-room-role-card", selected ? "is-selected" : "", role.disabled ? "is-taken" : "", isDisabled ? "is-disabled" : ""].filter(Boolean).join(" ");
   const multiplayerAction = model.mode === "multiplayer" ? ` data-action="select-role" data-role-id="${escapeAttr(role.id || key)}"` : "";
   return `<button type="button" class="${classes}" data-room-role-key="${escapeAttr(key)}"${multiplayerAction} aria-pressed="${selected}" ${disabled(isDisabled)}>
-    <img src="${escapeAttr(artwork)}" alt="${escapeAttr(role.name || key)}" loading="eager" decoding="sync" fetchpriority="high">
-    <span class="mw-room-role-status">${escapeHtml(status)}</span>
+    <span class="mw-room-role-portrait"><img src="${escapeAttr(artwork)}" alt="${escapeAttr(role.name || key)}" loading="eager" decoding="sync" fetchpriority="high"></span>
     <strong>${escapeHtml(role.name || key)}</strong>
     ${role.tagline ? `<em>${escapeHtml(role.tagline)}</em>` : ""}
     ${renderTraits(role.traits)}
+    <span class="mw-room-role-status">${escapeHtml(status)}</span>
   </button>`;
 }
 
@@ -91,7 +89,7 @@ function renderChoiceAside(role, model) {
 function renderFooter(mode, model, role) {
   if (mode === "solo") {
     const label = model.footerMessage || "You will begin alone. AI will play every remaining role.";
-    return `<footer class="mw-room-footer room-footer mw-room-footer-solo"><p>${escapeHtml(label)}</p><a class="mw-room-button mw-room-button-secondary" href="${escapeAttr(model.backHref || "/worlds")}">${controlIcon("back")}<span>Back</span></a><button class="mw-room-button mw-room-button-primary" id="enterRole" type="button" ${disabled(!role || role.disabled || model.loading || model.busy)}>${controlIcon("confirm")}<span>${model.busy ? "Entering…" : escapeHtml(model.confirmLabel || "Confirm Role and Begin")}</span></button></footer>`;
+    return `<footer class="mw-room-footer room-footer mw-room-footer-solo"><p>${escapeHtml(label)}</p><a class="mw-room-button mw-room-button-secondary" href="${escapeAttr(model.backHref || "/")}">${controlIcon("back")}<span>Back</span></a><button class="mw-room-button mw-room-button-primary" id="enterRole" type="button" ${disabled(!role || role.disabled || model.loading || model.busy)}>${controlIcon("confirm")}<span>${model.busy ? "Entering…" : escapeHtml(model.confirmLabel || "Confirm Role and Begin")}</span></button></footer>`;
   }
   const readyLabel = model.busy ? "Saving…" : model.readyLabel || "Ready";
   const footerMessage = model.footerMessage || (model.isHost ? "Start when everyone is ready." : "Tell the host when you are ready.");

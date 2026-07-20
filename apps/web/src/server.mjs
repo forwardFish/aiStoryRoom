@@ -74,17 +74,6 @@ const assetFile = (group, key) => {
   if (group === "icon") return iconFiles[index - 1] ? join(iconRoot, iconFiles[index - 1]) : null;
   return null;
 };
-const gameAssetRoot = normalize(join(webUiRoot, "game", "嘉靖财政局"));
-const gameAssetFiles = existsSync(gameAssetRoot) ? pngFiles(gameAssetRoot) : [];
-const gameAssetByKey = new Map([
-  ["background", gameAssetFiles[0]], ["governor", gameAssetFiles[1]], ["many-worlds", gameAssetFiles[2]],
-  ["palace", gameAssetFiles[3]], ["treasury", gameAssetFiles[4]], ["heart", gameAssetFiles[5]],
-  ["grain", gameAssetFiles[6]], ["sprout", gameAssetFiles[7]], ["crown", gameAssetFiles[8]],
-  ["minister", gameAssetFiles[9]], ["magistrate", gameAssetFiles[10]], ["clerk", gameAssetFiles[11]],
-  ["merchant", gameAssetFiles[12]], ["spy", gameAssetFiles[13]], ["network", gameAssetFiles[14]],
-  ["rank", gameAssetFiles[15]], ["shield", gameAssetFiles[16]], ["eye", gameAssetFiles[17]]
-]);
-
 function isAllowedApiProxyPath(pathname) {
   return apiProxyPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 }
@@ -134,16 +123,6 @@ export const server = createServer((req, res) => {
     res.writeHead(200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "no-store" });
     res.end(`window.__MANY_WORLDS_RUNTIME__ = { googleWebClientId: ${JSON.stringify(googleWebClientId)} };\n`);
     return;
-  }
-  const gameAssetMatch = url.pathname.match(/^\/assets\/game\/sangtian\/([a-z-]+)\.png$/);
-  if (gameAssetMatch) {
-    const assetName = gameAssetByKey.get(gameAssetMatch[1]);
-    const assetPath = assetName ? join(gameAssetRoot, assetName) : null;
-    if (assetPath && existsSync(assetPath)) {
-      res.writeHead(200, { "content-type": "image/png", "cache-control": "public, max-age=3600" });
-      createReadStream(assetPath).pipe(res);
-      return;
-    }
   }
   if (url.pathname === "/reference/main-game.png" && existsSync(mainGameReference)) {
     res.writeHead(200, { "content-type": "image/png", "cache-control": "public, max-age=3600" });

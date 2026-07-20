@@ -12,7 +12,7 @@
     "genre": "Alternate History",
     "tags": ["History", "Power", "Alternate History"],
     "durationLabel": "40–60 Minutes",
-    "cardCover": "/assets/game/caesar/cover.png",
+    "cardCover": "/assets/game/caesar/catalog-cover.png",
     "heroCover": "/assets/game/caesar/cover.png",
     "lobby": {
       "title": "Caesar: The Last Spring of the Republic",
@@ -34,13 +34,21 @@
   },
   "worldActor": null,
   "presentation": {
+    "locale": "en",
     "locationLabel": "Rome · The Senate",
     "roundLabel": "Scene",
     "finaleLabel": "The Republic's Verdict",
     "sceneBackground": "/assets/game/caesar/room-banner.png",
     "assetManifest": null,
     "accent": "#6b4ce6",
-    "accentSoft": "#f3f0ff"
+    "accentSoft": "#f3f0ff",
+    "statusMetrics": [
+      { "key": "caesar_authority", "label": "Caesar's Authority", "value": 78, "suffix": "", "tone": "crown" },
+      { "key": "senate_legitimacy", "label": "Senate Legitimacy", "value": 48, "suffix": "", "tone": "default" },
+      { "key": "public_support", "label": "Public Support", "value": 68, "suffix": "", "tone": "green" },
+      { "key": "legion_loyalty", "label": "Legion Loyalty", "value": 72, "suffix": "", "tone": "gold" },
+      { "key": "civil_war_risk", "label": "Civil War Risk", "value": 46, "suffix": "", "tone": "default" }
+    ]
   },
   "roles": [
     {
@@ -56,6 +64,21 @@
       "knownInfo": ["Senate votes", "Caesar's trust"],
       "cannotDo": ["Command the legions"],
       "portrait": "/assets/game/caesar/brutus.png",
+      "gameplayProfile": {
+        "characterName": "Marcus Junius Brutus",
+        "rank": "Senator · Urban Praetor",
+        "office": "Voice of an old republican house",
+        "fateQuestion": "Do you oppose a tyrant, or your fear that one might emerge?",
+        "goals": ["Preserve republican institutions", "Prevent Caesar from becoming king", "Keep Rome from another civil war"],
+        "resources": [
+          { "label": "Republican Reputation", "value": "72" },
+          { "label": "Caesar's Trust", "value": "66" },
+          { "label": "Political Control", "value": "38" },
+          { "label": "Senate Standing", "value": "Praetor" },
+          { "label": "Private Channels", "value": "2" }
+        ],
+        "leverage": ["Caesar's pardon and promotion", "Evidence that Cassius is testing you", "Public doubt after the crown ceremony", "Cicero's case for limiting personal power"]
+      },
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },
@@ -72,6 +95,21 @@
       "knownInfo": ["Legion loyalty", "Popular support"],
       "cannotDo": ["Know conspirators' private plans"],
       "portrait": "/assets/game/caesar/caesar.png",
+      "gameplayProfile": {
+        "characterName": "Gaius Julius Caesar",
+        "rank": "Dictator for Life",
+        "office": "Commander · Reformer · Victor of the civil war",
+        "fateQuestion": "If the old order only makes civil war, does surpassing it save the Republic or end it?",
+        "goals": ["End factional conflict", "Complete Rome's reforms", "Stabilize Rome before the eastern campaign"],
+        "resources": [
+          { "label": "Authority", "value": "78" },
+          { "label": "Public Support", "value": "68" },
+          { "label": "Legion Loyalty", "value": "72" },
+          { "label": "Appointments", "value": "Controlled" },
+          { "label": "Administrative System", "value": "Active" }
+        ],
+        "leverage": ["Brutus's pardon and promotion", "Antony's public loyalty", "Decimus's military position", "Unpublished succession arrangements"]
+      },
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },
@@ -88,6 +126,21 @@
       "knownInfo": ["Senate anxiety"],
       "cannotDo": ["Force another player to betray"],
       "portrait": "/assets/game/caesar/cassius.png",
+      "gameplayProfile": {
+        "characterName": "Gaius Cassius Longinus",
+        "rank": "Senator · Commander",
+        "office": "Organizer of the anti-Caesar network",
+        "fateQuestion": "Are you resisting tyranny, or refusing to obey a man more successful than you?",
+        "goals": ["Stop Caesar from becoming king", "Restore the Senate's independence", "Keep Antony from inheriting Caesar's power"],
+        "resources": [
+          { "label": "Conspiracy Cohesion", "value": "28" },
+          { "label": "Senator Network", "value": "Active" },
+          { "label": "Military Experience", "value": "High" },
+          { "label": "Secret Meetings", "value": "Available" },
+          { "label": "Brutus's Trust", "value": "58" }
+        ],
+        "leverage": ["The anonymous-letter plan", "An initial participant list", "Intelligence on Caesar's campaign schedule", "Senators' fear of Antony"]
+      },
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },
@@ -104,6 +157,21 @@
       "knownInfo": ["Forum mood"],
       "cannotDo": ["Read sealed Senate letters"],
       "portrait": "/assets/game/caesar/mark-antony.png",
+      "gameplayProfile": {
+        "characterName": "Marcus Antonius",
+        "rank": "Consul",
+        "office": "Caesar's ally · Voice of the veterans and Forum",
+        "fateQuestion": "Are you loyal to Caesar the man, or to the power left by his victory?",
+        "goals": ["Protect Caesar and his reforms", "Keep Rome under the victors' alliance", "Prevent the Senate from deciding your future"],
+        "resources": [
+          { "label": "Consular Authority", "value": "Active" },
+          { "label": "Veteran Channels", "value": "Strong" },
+          { "label": "Forum Mobilization", "value": "Available" },
+          { "label": "Caesar's Papers", "value": "Access" },
+          { "label": "Political Instinct", "value": "High" }
+        ],
+        "leverage": ["The crown ceremony's true arrangement", "Caesar's plan for Rome during the campaign", "Veteran representative lists", "Fragments of intelligence on Cassius"]
+      },
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },
@@ -120,6 +188,21 @@
       "knownInfo": ["Capitol routes"],
       "cannotDo": ["Guarantee any outcome"],
       "portrait": "/assets/game/caesar/decimus.png",
+      "gameplayProfile": {
+        "characterName": "Decimus Junius Brutus Albinus",
+        "rank": "Commander · Governor-designate",
+        "office": "A trusted officer with access to Caesar",
+        "fateQuestion": "When loyalty and advancement conflict, which one will you call the Republic's interest?",
+        "goals": ["Preserve the stability of Caesar's coalition", "Secure your province and command", "Keep a final route open between both camps"],
+        "resources": [
+          { "label": "Caesar's Trust", "value": "72" },
+          { "label": "Private Access", "value": "Granted" },
+          { "label": "Military Position", "value": "Active" },
+          { "label": "Conspiracy Intelligence", "value": "Core" },
+          { "label": "Meeting Access", "value": "Decisive" }
+        ],
+        "leverage": ["Caesar's travel habits", "The Senate meeting schedule", "Identities of several participants", "Access on the day of action"]
+      },
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },
@@ -136,6 +219,21 @@
       "knownInfo": ["Compromise draft"],
       "cannotDo": ["Command soldiers"],
       "portrait": "/assets/game/caesar/cicero.png",
+      "gameplayProfile": {
+        "characterName": "Marcus Tullius Cicero",
+        "rank": "Former Consul · Orator",
+        "office": "Interpreter of law and republican legitimacy",
+        "fateQuestion": "When force has emptied the law, is legal procedure courage or evasion?",
+        "goals": ["Limit personal dictatorship", "Restore public Senate debate", "Prevent another military strongman from taking Rome"],
+        "resources": [
+          { "label": "Senate Recognition", "value": "48" },
+          { "label": "Public Speech", "value": "Powerful" },
+          { "label": "Neutral Senators", "value": "Network" },
+          { "label": "Legal Precedent", "value": "Available" },
+          { "label": "Letters", "value": "Wide Reach" }
+        ],
+        "leverage": ["A draft limiting dictatorial power", "Public influence over the kingship rumor", "The ability to define the official narrative after the crisis"]
+      },
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     }

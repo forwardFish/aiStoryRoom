@@ -74,6 +74,9 @@ test("deployed platform authentication uses Vercel's same-origin API proxy", asy
   assert.match(source, /\/api\/v4\/auth\/verification\/resend/);
   assert.match(source, /\/api\/v4\/auth\/google\/challenge/);
   assert.match(source, /Account created\. Check your email to verify it/);
+  assert.match(source, /function completeSignedInEntry/);
+  assert.match(source, /\/api\/v4\/credits\/onboarding/);
+  assert.match(source, /await completeSignedInEntry\(returnTo\)/);
 });
 
 test("login, signup and password reset surfaces stay account-only", async () => {

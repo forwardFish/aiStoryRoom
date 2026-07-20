@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "hamlet",
+  "publicId": "hamlet",
+  "aliases": [],
+  "templateId": "template_hamlet_001",
+  "status": "coming_soon",
+  "catalog": {
+    "title": "Hamlet: The Ghost Beneath the Crown",
+    "subtitle": "The truth may avenge a king or destroy Denmark",
+    "description": "The dead king has named his murderer. Denmark may not survive the truth.",
+    "genre": "Literature & Power",
+    "tags": ["Literature", "Court Mystery", "Succession", "Rewritten Tragedy"],
+    "durationLabel": "45–65 Minutes",
+    "cardCover": "/assets/game/hamlet/catalog-cover.png",
+    "heroCover": "/assets/game/hamlet/catalog-cover.png",
+    "lobby": {
+      "title": "Hamlet: The Ghost Beneath the Crown",
+      "description": "The dead king has named his murderer. Denmark may not survive the truth.",
+      "categoryLabel": "Literature & Power"
+    }
+  },
+  "modes": { "solo": false, "multiplayer": false, "minHumanPlayers": 1, "maxHumanPlayers": 6 },
+  "engine": { "engineVersion": "unavailable_v1", "strategyVersion": "unpublished", "strategyRegistryPath": null, "fixedRules": null },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "Elsinore Castle",
+    "roundLabel": "Scene",
+    "finaleLabel": "Denmark's Verdict",
+    "sceneBackground": "/assets/game/hamlet/catalog-cover.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": []
+}

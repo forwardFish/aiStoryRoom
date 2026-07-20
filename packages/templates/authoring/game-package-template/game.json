@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "template_world",
+  "publicId": "template_world",
+  "aliases": [],
+  "templateId": "template_template_world_001",
+  "status": "hidden",
+  "catalog": {
+    "title": "请填写游戏标题",
+    "subtitle": "请填写一句副标题",
+    "description": "请填写游戏背景、核心冲突和玩家目标。",
+    "genre": "请填写游戏类型",
+    "tags": ["标签一", "标签二"],
+    "durationLabel": "40–60 Minutes",
+    "cardCover": "/assets/game/template_world/cover.png",
+    "heroCover": "/assets/game/template_world/cover.png",
+    "lobby": {
+      "title": "请填写大厅卡片标题",
+      "description": "请填写大厅卡片简介。",
+      "categoryLabel": "History & Power"
+    }
+  },
+  "modes": {
+    "solo": true,
+    "multiplayer": true,
+    "minHumanPlayers": 1,
+    "maxHumanPlayers": 6
+  },
+  "engine": {
+    "engineVersion": "continuous_strategy_v1_1",
+    "strategyVersion": "template_world_v1_0",
+    "strategyRegistryPath": "strategy-registry.json",
+    "fixedRules": {
+      "stageCount": 7,
+      "mainCardsPerRoleStage": 3
+    }
+  },
+  "worldActor": {
+    "actorKey": "template_world_actor",
+    "actorName": "世界局势",
+    "description": "由规则引擎控制的公共事件与环境压力；它不占玩家角色名额。",
+    "portrait": "/assets/game/template_world/world-actor.png"
+  },
+  "presentation": {
+    "locationLabel": "请填写主要地点",
+    "roundLabel": "共同回合",
+    "finaleLabel": "最终裁决",
+    "sceneBackground": "/assets/game/template_world/background.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": [
+    {
+      "roleKey": "template_role_01",
+      "roleName": "角色一",
+      "identity": "角色公开身份",
+      "publicInfo": "其他玩家可以看到的角色介绍。",
+      "hiddenSecret": "只有该角色本人知道的秘密。",
+      "personalGoal": "该角色的个人目标。",
+      "currentState": "开局时该角色的处境。",
+      "abilityText": "该角色擅长做什么。",
+      "arcText": "该角色可能经历的变化。",
+      "knownInfo": ["已知信息一", "已知信息二"],
+      "cannotDo": ["明确禁止的越权行为"],
+      "portrait": "/assets/game/template_world/roles/role-01.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "template_role_02",
+      "roleName": "角色二",
+      "identity": "角色公开身份",
+      "publicInfo": "其他玩家可以看到的角色介绍。",
+      "hiddenSecret": "只有该角色本人知道的秘密。",
+      "personalGoal": "该角色的个人目标。",
+      "currentState": "开局时该角色的处境。",
+      "abilityText": "该角色擅长做什么。",
+      "arcText": "该角色可能经历的变化。",
+      "knownInfo": ["已知信息一", "已知信息二"],
+      "cannotDo": ["明确禁止的越权行为"],
+      "portrait": "/assets/game/template_world/roles/role-02.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "template_role_03",
+      "roleName": "角色三",
+      "identity": "角色公开身份",
+      "publicInfo": "其他玩家可以看到的角色介绍。",
+      "hiddenSecret": "只有该角色本人知道的秘密。",
+      "personalGoal": "该角色的个人目标。",
+      "currentState": "开局时该角色的处境。",
+      "abilityText": "该角色擅长做什么。",
+      "arcText": "该角色可能经历的变化。",
+      "knownInfo": ["已知信息一", "已知信息二"],
+      "cannotDo": ["明确禁止的越权行为"],
+      "portrait": "/assets/game/template_world/roles/role-03.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "template_role_04",
+      "roleName": "角色四",
+      "identity": "角色公开身份",
+      "publicInfo": "其他玩家可以看到的角色介绍。",
+      "hiddenSecret": "只有该角色本人知道的秘密。",
+      "personalGoal": "该角色的个人目标。",
+      "currentState": "开局时该角色的处境。",
+      "abilityText": "该角色擅长做什么。",
+      "arcText": "该角色可能经历的变化。",
+      "knownInfo": ["已知信息一", "已知信息二"],
+      "cannotDo": ["明确禁止的越权行为"],
+      "portrait": "/assets/game/template_world/roles/role-04.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "template_role_05",
+      "roleName": "角色五",
+      "identity": "角色公开身份",
+      "publicInfo": "其他玩家可以看到的角色介绍。",
+      "hiddenSecret": "只有该角色本人知道的秘密。",
+      "personalGoal": "该角色的个人目标。",
+      "currentState": "开局时该角色的处境。",
+      "abilityText": "该角色擅长做什么。",
+      "arcText": "该角色可能经历的变化。",
+      "knownInfo": ["已知信息一", "已知信息二"],
+      "cannotDo": ["明确禁止的越权行为"],
+      "portrait": "/assets/game/template_world/roles/role-05.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    },
+    {
+      "roleKey": "template_role_06",
+      "roleName": "角色六",
+      "identity": "角色公开身份",
+      "publicInfo": "其他玩家可以看到的角色介绍。",
+      "hiddenSecret": "只有该角色本人知道的秘密。",
+      "personalGoal": "该角色的个人目标。",
+      "currentState": "开局时该角色的处境。",
+      "abilityText": "该角色擅长做什么。",
+      "arcText": "该角色可能经历的变化。",
+      "knownInfo": ["已知信息一", "已知信息二"],
+      "cannotDo": ["明确禁止的越权行为"],
+      "portrait": "/assets/game/template_world/roles/role-06.png",
+      "canBeHumanControlled": true,
+      "canBeAiControlled": true
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "continuous_strategy_ending_rules_v1",
+  "contentVersion": "template_world_v1_0",
+  "globalEndingRule": {
+    "ruleKey": "global_ending_template_world_v1_0",
+    "metric": "PUBLIC_OR_OBSERVABLE_FACTS_PLUS_CROSS_ROLE_INFLUENCES",
+    "evidenceStageRange": [1, 6],
+    "classifications": []
+  },
+  "personalEndingRules": []
+}

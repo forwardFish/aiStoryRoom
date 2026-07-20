@@ -1,0 +1,92 @@
+standard-page-header {
+  --standard-header-purple: #5234dc;
+  --standard-header-muted: #68718e;
+  display: block;
+  width: 100%;
+  background: transparent;
+}
+
+.standard-page-header__bar {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 0 clamp(30px, 7vw, 144px) 0 30px;
+}
+
+.standard-page-header__back {
+  min-height: 42px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  padding: 0 16px 0 13px;
+  border: 1px solid rgba(96, 69, 255, 0.16);
+  border-radius: 999px;
+  color: #4f3bd4;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 6px 18px rgba(45, 42, 92, 0.06);
+  font-family: "MW Inter", Inter, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.standard-page-header__back-icon {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.standard-page-header__back:hover {
+  border-color: rgba(96, 69, 255, 0.32);
+  color: #4932d2;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(62, 47, 145, 0.1);
+  transform: translateY(-1px);
+}
+
+.standard-page-header__back:hover .standard-page-header__back-icon { transform: translateX(-2px); }
+.standard-page-header__back:focus-visible,
+.standard-page-header__brand:focus-visible { outline: 3px solid rgba(96, 69, 255, 0.22); outline-offset: 3px; }
+
+.standard-page-header__brand {
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+  color: var(--standard-header-purple);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.standard-page-header__brand strong {
+  font-family: Georgia, "Times New Roman", "Noto Serif SC", serif;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.standard-page-header__brand small {
+  color: var(--standard-header-muted);
+  font-family: "MW Inter", Inter, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+@media (max-width: 680px) {
+  .standard-page-header__bar { min-height: 72px; gap: 18px; padding: 0 16px; }
+  .standard-page-header__back { min-height: 40px; padding-right: 15px; }
+  .standard-page-header__brand { display: grid; gap: 2px; text-align: right; }
+  .standard-page-header__brand strong { font-size: 16px; }
+  .standard-page-header__brand small { font-size: 10px; }
+}
+
+@media (max-width: 420px) {
+  .standard-page-header__brand small { display: none; }
+}

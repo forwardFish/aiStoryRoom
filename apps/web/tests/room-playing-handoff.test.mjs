@@ -10,6 +10,8 @@ test("a lobby poll enters the continuous game as soon as the room starts", async
 
   assert.match(hydrateRoom, /room\.status === "playing"/);
   assert.match(hydrateRoom, /location\.assign\(`\/game\?runId=\$\{encodeURIComponent\(room\.id\)\}`\)/);
+  assert.match(hydrateRoom, /renderStandardPage\(sharedMultiplayerRoomMarkup\(room\)\)/);
+  assert.doesNotMatch(hydrateRoom, /root\.innerHTML\s*=/);
   assert.ok(
     hydrateRoom.indexOf('room.status === "playing"') < hydrateRoom.indexOf("sharedMultiplayerRoomMarkup(room)"),
     "navigation must happen before rendering a stale lobby state"

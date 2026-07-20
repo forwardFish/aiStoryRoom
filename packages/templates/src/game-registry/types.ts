@@ -13,6 +13,15 @@ export type GameRoleDefinition = {
   knownInfo: string[];
   cannotDo: string[];
   portrait: string;
+  gameplayProfile?: {
+    characterName: string;
+    rank: string;
+    office: string;
+    fateQuestion: string;
+    goals: string[];
+    resources: Array<{ label: string; value: string }>;
+    leverage: string[];
+  };
   canBeHumanControlled: true;
   canBeAiControlled: true;
 };
@@ -61,6 +70,7 @@ export type GameDefinition = {
     portrait: string;
   };
   presentation: {
+    locale?: "en" | "zh-CN";
     locationLabel: string;
     roundLabel: string;
     finaleLabel: string;
@@ -68,6 +78,13 @@ export type GameDefinition = {
     assetManifest: string | null;
     accent: string;
     accentSoft: string;
+    statusMetrics?: Array<{
+      key: string;
+      label: string;
+      value: number;
+      suffix: string;
+      tone: "default" | "green" | "gold" | "crown";
+    }>;
   };
   roles: GameRoleDefinition[];
 };

@@ -1,3 +1,5 @@
+import { gamePresentationFromProjection, gameRoleFromProjection, gameWorldFromProjection } from "./game-world-view.js";
+
 const SCHEMA = "continuous_game_projection_v2";
 
 export class ContinuousStoryV2LegacyStorage {
@@ -139,6 +141,9 @@ export class ContinuousStoryV2LegacyStorage {
 
 export function adaptProjection(projection, { resolution = null, decisionForm = null } = {}) {
   const p = requireProjection(projection);
+  const world = gameWorldFromProjection(p);
+  const presentation = gamePresentationFromProjection(world);
+  const role = gameRoleFromProjection(world, p.player);
   const turn = p.currentTurn;
   const results = p.timeline.filter((entry) => entry.kind === "RESULT");
   const choices = visibleChoices(p);
@@ -190,7 +195,7 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
   const currentTurnIndex = turn?.turnIndex || results.length;
   const visibleAssets = p.visibleAssets || [];
   const latestStory = turn?.narrative || results.at(-1)?.content || "你的故事正在整理最后的回响。";
-  const legacyProfile = approvedLegacyProfile(p);
+  const legacyProfile = role.gameplayProfile || approvedLegacyProfile(p);
   const canDecide = !completed
     && turn?.status === "OPEN"
     && p.control.canHumanAct
@@ -204,10 +209,12 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
     v2CurrentTurn: turn,
     run: {
       id: p.room.id,
-      title: p.room.title,
+      storyId: world?.worldId || p.room.worldId,
+      title: presentation.title || p.room.title,
+      location: presentation.locationLabel,
       status: completed ? "finished" : "playing",
       currentDay: currentStage,
-      totalDays: 7,
+      totalDays: presentation.totalStages,
       currentTime: turn?.title || "故事推进中",
       totalDecisionsCompleted: results.length,
       decisionsCompletedToday: 0,
@@ -216,18 +223,24 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
     },
     player: {
       roleName: p.player.roleName,
-      name: legacyProfile.name || p.player.identity,
+      name: legacyProfile.characterName || legacyProfile.name || p.player.identity,
       rank: legacyProfile.rank,
       office: legacyProfile.office,
-      fateQuestion: p.player.personalGoal,
-      goals: legacyProfile.goals.length ? legacyProfile.goals : [p.player.personalGoal].filter(Boolean),
-      resources: legacyProfile.resources,
+      fateQuestion: legacyProfile.fateQuestion || p.player.personalGoal,
+      goals: legacyProfile.goals?.length ? legacyProfile.goals : [p.player.personalGoal].filter(Boolean),
+      resources: (legacyProfile.resources || []).map((item) => Array.isArray(item) ? item : [item.label, item.value]),
       leverage: [
-        ...legacyProfile.leverage,
+        ...(legacyProfile.leverage || []),
         ...visibleAssets.filter((asset) => asset.status === "ACTIVE" && asset.quantity > 0).map((asset) => asset.label)
       ].filter((label, index, labels) => label && labels.indexOf(label) === index)
     },
-    dashboard: { worldState: [], risks: [], relationships: [], traces: [] },
+    locale: presentation.locale,
+    presentation: { ...presentation, playerPortrait: role.portrait },
+    dashboard: {
+      worldState: presentation.statusMetrics.map((metric) => [metric.key, metric.value]),
+      statusMetrics: presentation.statusMetrics,
+      risks: [], relationships: [], traces: []
+    },
     dayProgress: { completed: 0, required: 1 },
     maneuverState: { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 },
     activePrompt: canDecide ? {

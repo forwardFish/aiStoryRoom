@@ -44,15 +44,20 @@ test("room projection uses the standard game definition for both worlds", () => 
     };
 
     const projection = (service as unknown as { project: (value: unknown, viewerId: string) => any }).project(room, "user-1");
-    assert.deepEqual(projection.world, {
-      title: definition.catalog.title,
-      bannerArtwork: definition.presentation.sceneBackground
-    });
+    assert.equal(projection.world.schemaVersion, "game_page_world_v1");
+    assert.equal(projection.world.worldId, definition.worldId);
+    assert.equal(projection.world.title, definition.catalog.title);
+    assert.equal(projection.world.presentation.sceneBackground, definition.presentation.sceneBackground);
+    assert.equal(projection.world.presentation.locationLabel, definition.presentation.locationLabel);
+    assert.equal(projection.world.roles.length, definition.roles.length);
+    assert.equal(projection.world.roles[0]?.portrait, firstRole.portrait);
+    assert.equal(projection.world.roles[0]?.gameplayProfile.characterName, firstRole.gameplayProfile?.characterName || firstRole.roleName);
     assert.equal(projection.roles[0]?.portrait, firstRole.portrait);
     assert.equal(projection.roles[0]?.roleName, firstRole.roleName);
     assert.equal(projection.roles[0]?.identity, firstRole.identity);
     assert.equal(projection.roles[0]?.publicInfo, firstRole.publicInfo);
     assert.equal(projection.roles[0]?.personalGoal, firstRole.personalGoal);
+    assert.equal(projection.roles[0]?.gameplayProfile.characterName, firstRole.gameplayProfile?.characterName || firstRole.roleName);
     assert.equal(projection.players[0]?.roleName, firstRole.roleName);
     assert.equal(projection.roles[0]?.claimedByCurrentUser, true);
   }

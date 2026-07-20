@@ -20,6 +20,7 @@ export function createStoryApp({
 
   const state = {
     loading: true,
+    redirectingToAuth: false,
     busy: false,
     error: "",
     notice: "",
@@ -46,6 +47,7 @@ export function createStoryApp({
 
   async function boot() {
     state.loading = true;
+    state.redirectingToAuth = false;
     state.error = "";
     render();
     try {
@@ -54,10 +56,16 @@ export function createStoryApp({
       if (restoredView?.v2CurrentTurn?.status === "RESOLVING") state.showOpening = false;
       else if (state.showOpening && ((restoredView?.continuousV2 === true && restoredView?.run?.status !== "finished") || isOpeningDecisionState(restoredView))) startOpeningStream(restoredView);
     } catch (error) {
+      if (Number(error?.status) === 401) {
+        const returnTo = `${browserWindow?.location?.pathname || "/game"}${browserWindow?.location?.search || ""}${browserWindow?.location?.hash || ""}`;
+        state.redirectingToAuth = true;
+        browserWindow?.location?.assign?.(`/auth?returnTo=${encodeURIComponent(returnTo)}`);
+        return;
+      }
       state.error = errorMessage(error);
     } finally {
       state.loading = false;
-      render();
+      if (!state.redirectingToAuth) render();
     }
   }
 
@@ -479,20 +487,20 @@ export function createStoryApp({
       criticalPending
     });
     root.innerHTML = `
-      <div class="causal-shell" data-testid="story-shell">
+      <div class="causal-shell" data-testid="story-shell" data-game-locale="${esc(view.locale || "zh-CN")}" style="${esc(gameStyle(view))}">
         ${renderTopbar(view, state)}
         ${renderStatusStrip(view)}
         <aside class="causal-left" aria-label="玩家信息">
-          ${renderPlayer(view.player)}
+          ${renderPlayer(view)}
           ${renderDayMission(view)}
-          ${renderResources(view.player)}
-          ${renderLeverage(view.player)}
+          ${renderResources(view)}
+          ${renderLeverage(view)}
           ${renderRisks(view.dashboard)}
           ${renderCausalRecalls(view)}
         </aside>
         <main class="causal-center ${mainMode === "history" ? "history-center" : ""} ${mainMode === "critical_pending" ? "critical-pending-center" : ""} ${mainMode === "decision" ? "decision-center" : ""}">
           ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
-          ${mainMode === "opening_ready" ? renderOpeningStart() : mainMode === "decision" ? renderDecisionZone(view, state) : ""}
+          ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" ? renderDecisionZone(view, state) : ""}
         </main>
         <aside class="causal-right" aria-label="主动谋划中枢">
           ${renderManeuverPanel(view, state)}
@@ -622,18 +630,21 @@ function renderTopbar(view, state) {
   const progress = dayProgress(view);
   const maneuver = view.maneuverState || {};
   const roomSession = view.roomSession;
+  const en = isEnglish(view);
+  const stageLabel = view.presentation?.roundLabel || (en ? "Scene" : "第");
+  const finaleLabel = view.presentation?.finaleLabel || (en ? "Finale" : "御前裁决");
   return `<header class="causal-topbar">
     <div class="top-context-cluster">
       <div class="mw-brand"><span class="mw-brand-mark">Our Many Worlds</span></div>
-      <div class="location-title"><span class="seal-mark">⌂</span><b>杭州总督府 · 内厅</b><span class="chevron">⌄</span></div>
+      <div class="location-title"><span class="seal-mark">⌂</span><b>${esc(view.presentation?.locationLabel || run.location || "杭州总督府 · 内厅")}</b><span class="chevron">⌄</span></div>
     </div>
     <div class="top-phase-cluster">
-      <div class="top-day">第 ${number(run.currentDay)} 天 · ${esc(run.currentTime || "局势推演中")}</div>
-      <div class="top-countdown">距离御前裁决：<b>${Number(run.currentDay) >= FINAL_DAY ? 0 : remaining}</b> 天</div>
-      <span class="status-chip">主线决策&nbsp; <b>${activePromptForView(view) ? progress.completed + 1 : progress.completed} / ${progress.required || 2}</b></span>
-      <span class="status-chip maneuver-chip">${roomSession ? `三人局&nbsp; <b>${roomSession.submittedRoleIds.length} / ${roomSession.room.players.filter((player) => player.roleId).length}</b>` : `谋划&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)} / ${Number(maneuver.maneuverOpportunitiesPerDay ?? 2)}</b>`}<i></i><i></i></span>
+      <div class="top-day">${en ? `${esc(stageLabel)} ${number(run.currentDay)}` : `第 ${number(run.currentDay)} 天`} · ${esc(run.currentTime || (en ? "Story in motion" : "局势推演中"))}</div>
+      <div class="top-countdown">${en ? `Until ${esc(finaleLabel)}:` : "距离御前裁决："}<b>${Number(run.currentDay) >= FINAL_DAY ? 0 : remaining}</b>${en ? " scenes" : " 天"}</div>
+      <span class="status-chip">${en ? "Key Decisions" : "主线决策"}&nbsp; <b>${activePromptForView(view) ? progress.completed + 1 : progress.completed} / ${progress.required || 2}</b></span>
+      <span class="status-chip maneuver-chip">${roomSession ? `${en ? "Players" : "三人局"}&nbsp; <b>${roomSession.submittedRoleIds.length} / ${roomSession.room.players.filter((player) => player.roleId).length}</b>` : `${en ? "Maneuvers" : "谋划"}&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)} / ${Number(maneuver.maneuverOpportunitiesPerDay ?? 2)}</b>`}<i></i><i></i></span>
     </div>
-    <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; 历史回顾</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; ${view.roomSession ? "房间" : "设置"}</button></div></div>
+    <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; ${en ? "History" : "历史回顾"}</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; ${en ? (view.roomSession ? "Room" : "Settings") : (view.roomSession ? "房间" : "设置")}</button></div></div>
   </header>`;
 }
 
@@ -641,6 +652,11 @@ function renderStatusStrip(view) {
   const run = view.run;
   const maneuvers = view.maneuverState || {};
   const progress = dayProgress(view);
+  const configured = array(view.dashboard?.statusMetrics || view.presentation?.statusMetrics);
+  if (configured.length) {
+    const icons = ["♛", "▥", "♥", "✦", "⚔"];
+    return `<div class="status-strip" aria-label="${isEnglish(view) ? "World status" : "世界状态"}">${view.continuousV2 === true ? `<span class="v2-current-situation-summary" hidden>◇&nbsp; 当前局势&nbsp; <b>${esc(view.v2CurrentTurn?.title || run.currentTime || "故事正在推进")}</b></span>` : ""}${configured.map((metric, index) => `<span class="metric-${esc(metric.tone || "default")}">${icons[index] || "◆"}&nbsp; ${esc(metric.label)}&nbsp; <b>${esc(metric.value)}${esc(metric.suffix || "")}</b></span>`).join("")}</div>`;
+  }
   const stats = worldEntries(view.dashboard?.worldState);
   const get = (name, fallback) => stats.find(([key]) => key === name)?.[1] ?? fallback;
   return `<div class="status-strip" aria-label="世界状态">
@@ -653,13 +669,15 @@ function renderStatusStrip(view) {
   </div>`;
 }
 
-function renderPlayer(player = {}) {
+function renderPlayer(view) {
+  const player = view.player || {};
+  const en = isEnglish(view);
   const portraitClass = "art-game-governor";
   return `<section class="causal-panel player">
-    <h2>我的身份</h2>
-    <div class="portrait ${portraitClass}" aria-hidden="true" role="img" aria-label="${esc(player.roleName || "浙江总督")}"></div>
-    <h3>${esc(player.roleName || "浙江总督")}</h3>
-    <p class="player-meta"><strong>${esc(player.name || "郝帅彬")}</strong><span>${esc(player.rank || "从四品")}</span><span>${esc(player.office || "兵部侍郎衔")}</span></p>
+    <h2>${en ? "My Role" : "我的身份"}</h2>
+    <div class="portrait ${portraitClass}" style="${portraitStyle(view)}" aria-hidden="true" role="img" aria-label="${esc(player.roleName || (en ? "Player role" : "浙江总督"))}"></div>
+    <h3>${esc(player.roleName || (en ? "Player role" : "浙江总督"))}</h3>
+    <p class="player-meta"><strong>${esc(player.name || (en ? "Player" : "郝帅彬"))}</strong><span>${esc(player.rank || (en ? "Role standing" : "从四品"))}</span><span>${esc(player.office || (en ? "Current office" : "兵部侍郎衔"))}</span></p>
     ${player.fateQuestion ? `<em>${esc(player.fateQuestion)}</em>` : ""}
   </section>`;
 }
@@ -667,28 +685,31 @@ function renderPlayer(player = {}) {
 function renderDayMission(view) {
   const goals = array(view.player?.goals);
   return `<section class="causal-panel day-mission">
-    <h2>当前目标</h2>
-    ${goals.length ? `<ul>${goals.slice(0, 3).map((goal) => `<li>${esc(goal)}</li>`).join("")}</ul>` : `<p>稳定局势，保留证据，并让真正的责任进入可解释的因果链。</p>`}
+    <h2>${isEnglish(view) ? "Current Objectives" : "当前目标"}</h2>
+    ${goals.length ? `<ul>${goals.slice(0, 3).map((goal) => `<li>${esc(goal)}</li>`).join("")}</ul>` : `<p>${isEnglish(view) ? "Preserve your position, test the evidence, and keep Rome governable." : "稳定局势，保留证据，并让真正的责任进入可解释的因果链。"}</p>`}
     <span class="decision-progress sr-only" data-testid="day-progress">${dayProgress(view).completed} / ${dayProgress(view).required}</span>
   </section>`;
 }
 
-function renderResources(player = {}) {
+function renderResources(view) {
+  const player = view.player || {};
   const resources = array(player.resources);
-  return `<section class="causal-panel resources-panel"><h2>我的资源</h2>${resources.length
+  return `<section class="causal-panel resources-panel"><h2>${isEnglish(view) ? "My Standing" : "我的资源"}</h2>${resources.length
     ? resources.map((item) => {
         const [key, value] = Array.isArray(item) ? item : [item?.name || item?.key, item?.value];
         return `<div class="kv"><span>${esc(key)}</span><b>${esc(value)}</b></div>`;
       }).join("")
-    : `<p>暂无可公开资源。</p>`}</section>`;
+    : `<p>${isEnglish(view) ? "No public standing is available yet." : "暂无可公开资源。"}</p>`}</section>`;
 }
 
-function renderLeverage(player = {}) {
+function renderLeverage(view) {
+  const player = view.player || {};
   const leverage = array(player.leverage);
-  return `<section class="causal-panel leverage-panel"><h2>我的筹码</h2>${leverage.length ? `<ul>${leverage.map((item) => `<li>${esc(typeof item === "string" ? item : item?.title)}</li>`).join("")}</ul>` : `<p>尚未获得可用筹码。</p>`}</section>`;
+  return `<section class="causal-panel leverage-panel"><h2>${isEnglish(view) ? "Leverage" : "我的筹码"}</h2>${leverage.length ? `<ul>${leverage.map((item) => `<li>${esc(typeof item === "string" ? item : item?.title)}</li>`).join("")}</ul>` : `<p>${isEnglish(view) ? "No leverage is available yet." : "尚未获得可用筹码。"}</p>`}</section>`;
 }
 
 function renderManeuverPanel(view, state) {
+  if (isEnglish(view)) return renderEnglishManeuverPanel(view, state);
   const maneuver = view.maneuverState || { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 };
   const disabled = Boolean(view.roomSession) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy || (view.continuousV2 && !view.activePrompt);
   const draft = state.maneuverDraft;
@@ -719,6 +740,34 @@ function renderManeuverPanel(view, state) {
   </section>`;
 }
 
+function renderEnglishManeuverPanel(view, state) {
+  const maneuver = view.maneuverState || { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 };
+  const disabled = Boolean(view.roomSession) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy;
+  const draft = state.maneuverDraft;
+  const currentRoleKey = view.roomSession?.role?.roleKey;
+  const contacts = array(view.roomSession?.room?.roles).filter((role) => role.roleKey !== currentRoleKey).slice(0, 4);
+  const knownInfo = array(view.roomSession?.role?.knownInfo).slice(0, 3);
+  const types = [["contact", "Contacts"], ["investigate", "Investigate"], ["leverage", "Use Leverage"], ["custom", "Custom Maneuver"]];
+  const investigationChoices = (knownInfo.length ? knownInfo : ["Senate records", "Private correspondence", "Military loyalties"]).map((label, index) => [`investigate_${index + 1}`, `Investigate ${label}`, "Trace the records, witnesses, and political interests behind this lead."]);
+  const leverage = array(view.player?.leverage).slice(0, 4).map((label, index) => [label, `leverage_${index + 1}`]);
+  const activeType = types.find(([key]) => key === draft.maneuverType)?.[1] || "Custom Maneuver";
+  const workbench = draft.maneuverType === "contact"
+    ? `<section class="maneuver-workbench maneuver-contact-workbench" data-testid="maneuver-contact-workbench"><div class="maneuver-workbench-head"><span>Contacts</span><small>Choose one person to approach</small></div>${contacts.map((role) => `<button class="contact-row ${draft.targetRoleKey === role.roleKey ? "selected" : ""}" type="button" data-maneuver-type="contact" data-maneuver-direct="true" data-maneuver-contact="${esc(role.roleKey)}" data-target-role="${esc(role.roleKey)}" ${disabled ? "disabled" : ""}><span class="contact-avatar" style="${assetBackgroundStyle(role.portrait)}" aria-hidden="true"></span><span><b>${esc(role.roleName)}</b><small>${esc(role.publicInfo || role.identity)}</small></span><em>Meet</em></button>`).join("")}<button class="see-more" type="button">View all characters&nbsp;›</button></section>`
+    : draft.maneuverType === "investigate"
+      ? `<section class="maneuver-workbench maneuver-investigate-workbench" data-testid="maneuver-investigate-workbench"><div class="maneuver-workbench-head"><span>Lines of Inquiry</span><small>Choose one lead to pursue</small></div><div class="maneuver-choice-list">${investigationChoices.map(([intentKey, title, description]) => `<button class="maneuver-choice-card" type="button" data-maneuver-type="investigate" data-maneuver-direct="true" data-maneuver-investigation="${intentKey}" data-intent-key="${intentKey}" ${disabled ? "disabled" : ""}><b>${esc(title)}</b><small>${esc(description)}</small><em>Probe</em></button>`).join("")}</div></section>`
+      : draft.maneuverType === "leverage"
+        ? `<section class="maneuver-workbench maneuver-leverage-workbench" data-testid="maneuver-leverage-workbench"><div class="maneuver-workbench-head"><span>Available Leverage</span><small>Using leverage leaves a trace</small></div>${leverage.map(([label, key]) => `<div class="leverage-row"><span class="leverage-icon">▣</span><span>${esc(label)}</span><button type="button" data-maneuver-type="leverage" data-maneuver-direct="true" data-maneuver-leverage="${key}" data-leverage-key="${key}" ${disabled ? "disabled" : ""}>Use</button></div>`).join("")}</section>`
+        : `<section class="maneuver-workbench maneuver-custom-workbench" data-testid="maneuver-custom-workbench"><div class="maneuver-workbench-head"><span>Custom Maneuver</span><small>Describe one action you want to advance</small></div><div class="custom-wrap"><textarea id="maneuverCustomText" maxlength="200" placeholder="Describe your maneuver…">${esc(draft.customText || "")}</textarea><span>${String(draft.customText || "").length} / 200</span></div><div class="maneuver-form-row"><button id="maneuverSubmit" type="button" ${disabled ? "disabled" : ""}>Execute Maneuver</button></div></section>`;
+  const objectives = array(view.player?.goals).slice(0, 2);
+  return `<section class="maneuver-panel" data-testid="maneuver-panel">
+    <div class="maneuver-heading"><h2>Maneuver Board</h2><button class="help-dot" type="button" title="A maneuver cannot replace a key decision">?</button></div>
+    <section class="maneuver-usage"><span>Maneuvers This Act</span><b>${Number(maneuver.maneuverOpportunitiesRemaining)} / ${Number(maneuver.maneuverOpportunitiesPerDay)}</b><div class="opportunity-dots" aria-label="Remaining opportunities"><i class="${Number(maneuver.maneuverOpportunitiesRemaining) < 2 ? "spent" : ""}"></i><i class="${Number(maneuver.maneuverOpportunitiesRemaining) < 1 ? "spent" : ""}"></i></div><small>Unused opportunities do not carry over</small></section>
+    <div class="maneuver-type-grid" aria-label="Choose a maneuver type">${types.map(([key, label]) => `<button type="button" class="${draft.maneuverType === key ? "active" : ""}" data-maneuver-type="${key}" aria-pressed="${draft.maneuverType === key}" ${disabled ? "disabled" : ""}>${label}</button>`).join("")}</div>
+    <div class="maneuver-active-label">Current: ${activeType}</div>${workbench}
+    <details class="maneuver-progress"><summary>In Progress <span>${objectives.length}</span></summary>${objectives.map((goal, index) => `<div class="progress-row"><span>${esc(goal)}</span><b>${index + 1} / ${objectives.length || 1}</b></div>`).join("")}</details>
+  </section>`;
+}
+
 function renderContinuousV2Context(view) {
   const turn = view.v2CurrentTurn || {};
   const projection = view.v2Projection || {};
@@ -733,16 +782,17 @@ function renderContinuousV2Context(view) {
 }
 
 function renderOpeningNarrative(view, state = {}) {
-  const title = view.run?.title || "桑田诏：嘉靖财政危局";
+  const en = isEnglish(view);
+  const title = view.run?.title || (en ? "Caesar: The Last Spring of the Republic" : "桑田诏：嘉靖财政危局");
   const stream = state.openingStream;
   const narrative = stream ? stream.visibleText : openingNarrativeText(view);
   return `<section class="opening-narrative" data-testid="role-opening">
-    <div class="opening-copy"><p>嘉靖三十五年五月初八</p><p>杭州 · 总督府</p><i></i><h1>${esc(title)}</h1><i></i><p class="opening-stream-copy" aria-live="polite">${lineBreaks(narrative || "……")}${stream && !stream.done ? `<span class="result-caret" aria-hidden="true">▋</span>` : ""}</p></div>
+    <div class="opening-copy"><p>${en ? "ROME, 44 BC" : "嘉靖三十五年五月初八"}</p><p>${esc(view.presentation?.locationLabel || (en ? "Rome · The Senate" : "杭州 · 总督府"))}</p><i></i><h1>${esc(title)}</h1><i></i><p class="opening-stream-copy" aria-live="polite">${lineBreaks(narrative || "……")}${stream && !stream.done ? `<span class="result-caret" aria-hidden="true">▋</span>` : ""}</p></div>
   </section>`;
 }
 
-function renderOpeningStart() {
-  return `<section class="opening-start" data-testid="decision-zone"><span>前情介绍完毕 · 点击进入今日主线决策</span><button id="beginStoryBtn" type="button">进入局势</button></section>`;
+function renderOpeningStart(view) {
+  return `<section class="opening-start" data-testid="decision-zone"><span>${isEnglish(view) ? "The scene is set · Enter your first key decision" : "前情介绍完毕 · 点击进入今日主线决策"}</span><button id="beginStoryBtn" type="button">${isEnglish(view) ? "Enter the Scene" : "进入局势"}</button></section>`;
 }
 
 function openingNarrativeText(view) {
@@ -791,11 +841,13 @@ function renderRoomWaiting(view, state = {}) {
   const session = view.roomSession || {};
   const submitted = new Set(session.submittedRoleIds || []);
   const total = session.room?.players?.filter((player) => player.roleId).length || 0;
+  if (isEnglish(view)) return `<section class="result-narrative room-waiting-narrative" data-testid="room-waiting"><div class="result-copy room-stage-card"><span class="room-formal-kicker">Scene ${number(session.round)} · Shared Story</span><h1>Your decision has been received</h1><p>Your action is now part of this scene. The world is waiting for every other role to make an independent choice before the host advances the shared result.</p><div class="room-waiting-progress"><b>${submitted.size} / ${total}</b><span>players have completed this scene</span></div>${session.room?.isHost && session.allSubmitted ? `<button class="room-formal-resolve" type="button" data-room-resolve ${state.busy ? "disabled" : ""}>${state.busy ? "AI is resolving the scene…" : "Resolve the Shared Scene"}</button>` : `<small>This page updates when the other players finish.</small>`}</div></section>`;
   return `<section class="result-narrative room-waiting-narrative" data-testid="room-waiting"><div class="result-copy room-stage-card"><span class="room-formal-kicker">第 ${number(session.round)} 轮 · 共同故事局</span><h1>你的决策已经送达</h1><p>你的行动已写入本轮共同局势。系统正在等待其他角色分别作出决定；三方行动汇合后，房主才能开始本轮推演。</p><div class="room-waiting-progress"><b>${submitted.size} / ${total}</b><span>名玩家已完成本轮决策</span></div>${session.room?.isHost && session.allSubmitted ? `<button class="room-formal-resolve" type="button" data-room-resolve ${state.busy ? "disabled" : ""}>${state.busy ? "AI 正在推演……" : "推演本轮共同结果"}</button>` : `<small>其他玩家完成后，本页面会自动更新。</small>`}</div></section>`;
 }
 
 function renderRoomComplete(view) {
   const roomId = view.roomSession?.room?.id || view.run?.id;
+  if (isEnglish(view)) return `<section class="result-narrative room-waiting-narrative" data-testid="room-complete"><div class="result-copy"><span class="room-formal-kicker">Seven shared scenes are complete</span><h1>Rome's Judgment Is Final</h1><p>Every player's choices now belong to one causal history. View the fate of the Republic and the part your role played in it.</p><a class="room-formal-result" href="/game/result?runId=${encodeURIComponent(roomId)}">View the Shared Ending</a></div></section>`;
   return `<section class="result-narrative room-waiting-narrative" data-testid="room-complete"><div class="result-copy"><span class="room-formal-kicker">七轮共同决策已经完成</span><h1>御前裁决已经落定</h1><p>三名玩家的选择已经汇入同一条因果链。现在可以查看共同结局，以及你的角色在嘉靖财政危局中留下的影响。</p><a class="room-formal-result" href="/game/result?runId=${encodeURIComponent(roomId)}">查看共同结局</a></div></section>`;
 }
 
@@ -804,6 +856,11 @@ function renderRoomPartyPanel(view, state = {}) {
   const room = session.room || {};
   const submitted = new Set(session.submittedRoleIds || []);
   const players = array(room.players).filter((player) => player.roleId);
+  if (isEnglish(view)) {
+    let roomStatus = "The host advances after every player submits";
+    if (room.isHost) roomStatus = session.resolving || state.busy ? "AI is combining every role's action" : session.allSubmitted ? "Everyone has submitted; advance the scene from the center" : "Waiting for every player to decide";
+    return `<section class="maneuver-panel room-formal-party" data-testid="room-party-panel"><div class="maneuver-heading"><h2>Shared Story</h2><span class="room-formal-live"><i></i>Live Sync</span></div><div class="room-formal-party-list">${players.map((player) => `<article class="${submitted.has(player.roleId) ? "submitted" : ""}"><div><b>${esc(player.nickname)}</b><small>${esc(player.roleName || "Player role")}</small></div><em>${submitted.has(player.roleId) ? "Decided" : session.resolving ? "Resolving" : "Thinking"}</em></article>`).join("")}</div><p class="room-party-status ${session.allSubmitted ? "ready" : ""}"><i></i><span>${roomStatus}</span></p></section>`;
+  }
   let roomStatus = "房主会在全部玩家提交后推进共同回合";
   if (room.isHost) {
     if (session.resolving || state.busy) roomStatus = "AI 正在汇合三方行动";
@@ -935,6 +992,18 @@ function renderOptionV12(option, checked) {
 
 // 共通决策提交组件：主线决策、关键事件响应和后续新增决策都复用这一套结构。
 function renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision }) {
+  if (isEnglish(view)) {
+    return `<section class="decision-zone decision-composer ${storyDecision ? "story-decision" : ""} ${openingDecision ? "opening-decision" : ""}" data-testid="decision-zone" aria-label="Submit decision">
+      <div class="decision-zone-head"><span class="decision-kicker">Key Decision&nbsp; ${progress.completed + 1} / ${progress.required}</span><h2>How will you respond?</h2><span>Current event: ${esc(decision.title)}&nbsp; ?</span></div>
+      <div class="options" role="radiogroup" aria-label="Decision options">${options.map((option) => renderOptionV12(option, option.key === selected)).join("")}
+        <label class="option-card decision-custom-option custom key-D"><input type="radio" name="decision" value="CUSTOM" ${selected === "CUSTOM" ? "checked" : ""}/><span class="option-key">${esc(customLabel)}</span><span class="option-copy"><b>Custom Decision</b><span>Write your own strategy. The system checks your identity, resources, period, and current scene.</span></span><small class="custom-label-text">${esc(customLabel)}. Custom Decision</small></label>
+      </div>
+      <div class="custom-decision-label">You may also write your own decision:</div>
+      <div class="custom-decision-input"><textarea id="customDecision" ${state.busy ? "disabled" : ""} maxlength="200" placeholder="Describe how you will respond…" aria-label="Custom response">${esc(state.customText)}</textarea><span id="customDecisionCount">${String(state.customText || "").length}/200</span></div>
+      ${state.guard ? `<div class="guard-result" data-testid="guard-error"><b>This action cannot be executed yet</b><p>${esc(state.guard.reason)}</p>${state.guard.suggestedRewrite ? `<p>Try: ${esc(state.guard.suggestedRewrite)}</p>` : ""}</div>` : ""}
+      <div class="actions"><span>Once confirmed, this enters the causal record and cannot be withdrawn.</span><button id="submitDecision" type="button" ${state.busy || options.length === 0 ? "disabled" : ""}><i aria-hidden="true">✦</i><b>${state.busy ? "Resolving…" : "Submit Decision"}</b><i aria-hidden="true">✦</i></button></div>
+    </section>`;
+  }
   return `<section class="decision-zone decision-composer ${storyDecision ? "story-decision" : ""} ${openingDecision ? "opening-decision" : ""}" data-testid="decision-zone" aria-label="提交决策">
     <div class="decision-zone-head"><span class="decision-kicker">今日主线决策&nbsp; ${progress.completed + 1} / ${progress.required}</span><h2>你要如何应对？</h2><span>当前事件：${esc(decision.title)}&nbsp; ?</span></div>
     <div class="options" role="radiogroup" aria-label="决策选项">${options.map((option) => renderOptionV12(option, option.key === selected)).join("")}
@@ -1130,7 +1199,6 @@ function activePromptForView(view) {
 }
 
 function completedResultKind(previousView, nextView) {
-  if (!nextView?.continuousV2) return null;
   const previousResult = latestPlayerResult(previousView);
   const nextResult = latestPlayerResult(nextView);
   if (!nextResult) return null;
@@ -1268,6 +1336,40 @@ function streamDelay(text, index, browserWindow) {
 
 function lineBreaks(value) {
   return esc(value).replace(/\n/g, "<br/>");
+}
+
+function isEnglish(view) {
+  return String(view?.locale || view?.presentation?.locale || "zh-CN").toLowerCase().startsWith("en");
+}
+
+function safeAssetUrl(value) {
+  const url = String(value || "");
+  return /^\/assets\/[A-Za-z0-9_./?=&%-]+$/.test(url) ? url : "";
+}
+
+function safeColor(value, fallback) {
+  const color = String(value || "");
+  return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : fallback;
+}
+
+function gameStyle(view) {
+  const background = safeAssetUrl(view?.presentation?.sceneBackground);
+  const portrait = safeAssetUrl(view?.presentation?.playerPortrait);
+  return [
+    background ? `--game-scene-background:url('${background}')` : "",
+    portrait ? `--game-player-portrait:url('${portrait}')` : "",
+    `--game-accent:${safeColor(view?.presentation?.accent, "#6545f5")}`,
+    `--game-accent-soft:${safeColor(view?.presentation?.accentSoft, "#f3f0ff")}`
+  ].filter(Boolean).join(";");
+}
+
+function portraitStyle(view) {
+  return view?.presentation?.playerPortrait ? "background-image:var(--game-player-portrait)" : "";
+}
+
+function assetBackgroundStyle(value) {
+  const url = safeAssetUrl(value);
+  return url ? `background-image:url('${url}')` : "";
 }
 
 function esc(value) {

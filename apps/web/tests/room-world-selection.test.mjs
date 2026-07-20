@@ -52,8 +52,8 @@ test("My Rooms leaves readable width for the title and moves its action below", 
   assert.match(css, /\.my-room \{[^}]*grid-template-columns:83px minmax\(0,1fr\)/s);
   assert.match(css, /\.my-room \.btn \{ grid-column:2;/);
   assert.match(css, /word-break:normal/);
-  assert.match(html, /platform\.css\?v=20260717-dialog-watchdog-v2/);
-  assert.match(html, /platform\.js\?v=20260718-solo-auth-gate-v1/);
+  assert.match(html, /platform\.css\?v=[^"']+/);
+  assert.match(html, /platform\.js\?v=[^"']+/);
 });
 
 test("Rooms mobile layout clears the legacy table minimum width", async () => {

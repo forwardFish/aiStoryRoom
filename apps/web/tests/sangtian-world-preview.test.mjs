@@ -28,7 +28,9 @@ test("Sangtian world preview matches the six playable roles and generated period
     ),
     true
   );
-  assert.equal(definition.catalog.heroCover, "/assets/game/sangtian/cover.png");
+  assert.match(definition.catalog.heroCover, /^\/assets\/game\/sangtian\/background\.png(?:\?v=[a-z0-9]+)?$/);
+  assert.equal(definition.catalog.cardCover, "/assets/game/sangtian/catalog-cover.png");
+  assert.notEqual(definition.catalog.heroCover, definition.catalog.cardCover);
   assert.match(preview, /\(world\.roles \|\| \[\]\)\.map/);
   assert.match(preview, /role\.portrait/);
   assert.match(preview, /request\(`\/api\/v4\/worlds\/\$\{encodeURIComponent\(worldId\)\}`\)/);
@@ -37,5 +39,5 @@ test("Sangtian world preview matches the six playable roles and generated period
   assert.doesNotMatch(css, /body\s*\{\s*min-width:\s*1024px/);
   assert.match(css, /@media \(max-width:900px\)[\s\S]*\.world-hero\s*\{\s*grid-template-columns:1fr/);
   assert.match(css, /@media \(max-width:900px\)[\s\S]*\.room-main\s*\{\s*grid-template-columns:1fr/);
-  assert.match(html, /platform\.js\?v=20260718-solo-auth-gate-v1/);
+  assert.match(html, /platform\.js\?v=[^"']+/);
 });

@@ -257,7 +257,7 @@ export const wildVillageTemplate: StoryTemplate = {
 
 const sangtianRoles: StoryTemplateRole[] = [
   {
-    roleKey: "zhejiang_governor", roleName: "浙江总督", identity: "统筹浙江军政的封疆大吏", publicInfo: "你必须在皇权、财政、民心与海防之间稳住全局。", hiddenSecret: "你掌握一条尚未公开的田契暗账线索。", personalGoal: "稳住浙江并避免皇帝认定你欺瞒。", currentState: "粮价不稳，巡抚越级，京师催报。", abilityText: "可调度总督衙门、密奏与赈济资源。", arcText: "从维持局势到承担裁决。", knownInfo: ["改桑时限", "县令密信渠道"], cannotDo: ["越过朝廷直接改写国策"], isAiControlled: false
+    roleKey: "zhejiang_governor", roleName: "浙江总督", identity: "统筹浙江军政的封疆大吏", publicInfo: "你必须在皇权、财政、民心与海防之间稳住全局。", hiddenSecret: "县令密信原件已由你亲自看过并锁在内厅小匣中；信中只暗示县册改痕可能牵出一条尚未公开的田契暗账线索，你手里仍没有暗账、抄件或田契实物。", personalGoal: "稳住浙江并避免皇帝认定你欺瞒。", currentState: "粮价不稳，巡抚越级，京师催报。", abilityText: "可调度总督衙门、密奏与赈济资源。", arcText: "从维持局势到承担裁决。", knownInfo: ["改桑时限", "县令密信渠道"], cannotDo: ["越过朝廷直接改写国策"], isAiControlled: false
   },
   {
     roleKey: "xunfu", roleName: "浙江巡抚", identity: "督办改桑新政的地方大员", publicInfo: "你要尽快交出政绩，但也不能让暗账反噬。", hiddenSecret: "你的幕僚与商会有一笔未入册的往来。", personalGoal: "推进新政并抢在总督之前坐实功劳。", currentState: "改桑阻力上升，地方催缴失控。", abilityText: "可调动执行官吏与上报渠道。", arcText: "从争功到面对代价。", knownInfo: ["改桑名册", "内阁财政派联络"], cannotDo: ["替县令销毁证据"], isAiControlled: false

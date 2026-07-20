@@ -31,6 +31,10 @@ function integer(value: unknown, label: string): number {
   if (!Number.isInteger(value)) fail(`${label} must be an integer`);
   return value as number;
 }
+function finiteNumber(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) fail(`${label} must be a finite number`);
+  return value;
+}
 function boolean(value: unknown, label: string): boolean {
   if (typeof value !== "boolean") fail(`${label} must be a boolean`);
   return value;
@@ -109,7 +113,7 @@ export function validateGameDefinition(value: unknown): GameDefinition {
     exactKeys(rules, "engine.fixedRules", ["stageCount", "mainCardsPerRoleStage"]);
     if (rules.stageCount !== 7 || rules.mainCardsPerRoleStage !== 3) fail("continuous v1 rules must remain 7 stages and 3 MAIN cards per role-stage");
   }
-  if (engineVersion.startsWith("continuous_strategy_") && engine.fixedRules === null) fail("continuous strategy games require fixedRules");
+  if (engineVersion.startsWith("continuous_") && engine.fixedRules === null) fail("continuous games require fixedRules");
 
   if (root.worldActor !== null) {
     const worldActor = record(root.worldActor, "worldActor");
@@ -119,28 +123,54 @@ export function validateGameDefinition(value: unknown): GameDefinition {
   }
 
   const presentation = record(root.presentation, "presentation");
-  exactKeys(presentation, "presentation", ["locationLabel", "roundLabel", "finaleLabel", "sceneBackground", "assetManifest", "accent", "accentSoft"]);
+  requiredAndOptionalKeys(presentation, "presentation", ["locationLabel", "roundLabel", "finaleLabel", "sceneBackground", "assetManifest", "accent", "accentSoft"], ["locale", "statusMetrics"]);
   for (const key of ["locationLabel", "roundLabel", "finaleLabel", "accent", "accentSoft"] as const) text(presentation[key], `presentation.${key}`);
+  if (presentation.locale !== undefined && !["en", "zh-CN"].includes(String(presentation.locale))) fail("presentation.locale is invalid");
   publicAssetPath(presentation.sceneBackground, "presentation.sceneBackground");
   if (presentation.assetManifest !== null) publicAssetPath(presentation.assetManifest, "presentation.assetManifest");
+  if (presentation.statusMetrics !== undefined) {
+    if (!Array.isArray(presentation.statusMetrics) || presentation.statusMetrics.length !== 5) fail("presentation.statusMetrics must contain exactly five metrics");
+    presentation.statusMetrics.forEach((value, index) => {
+      const metric = record(value, `presentation.statusMetrics[${index}]`);
+      exactKeys(metric, `presentation.statusMetrics[${index}]`, ["key", "label", "value", "suffix", "tone"]);
+      for (const key of ["key", "label"] as const) text(metric[key], `presentation.statusMetrics[${index}].${key}`);
+      if (typeof metric.suffix !== "string") fail(`presentation.statusMetrics[${index}].suffix must be a string`);
+      finiteNumber(metric.value, `presentation.statusMetrics[${index}].value`);
+      if (!["default", "green", "gold", "crown"].includes(String(metric.tone))) fail(`presentation.statusMetrics[${index}].tone is invalid`);
+    });
+  }
 
   if (!Array.isArray(root.roles)) fail("roles must be an array");
   if (root.status === "playable" && !root.roles.length) fail("playable games must configure at least one role");
   const roleKeys: string[] = [];
   root.roles.forEach((value, index) => {
     const role = record(value, `roles[${index}]`);
-    exactKeys(role, `roles[${index}]`, ["roleKey", "roleName", "identity", "publicInfo", "hiddenSecret", "personalGoal", "currentState", "abilityText", "arcText", "knownInfo", "cannotDo", "portrait", "canBeHumanControlled", "canBeAiControlled"]);
+    requiredAndOptionalKeys(role, `roles[${index}]`, ["roleKey", "roleName", "identity", "publicInfo", "hiddenSecret", "personalGoal", "currentState", "abilityText", "arcText", "knownInfo", "cannotDo", "portrait", "canBeHumanControlled", "canBeAiControlled"], ["gameplayProfile"]);
     for (const key of ["roleKey", "roleName", "identity", "publicInfo", "hiddenSecret", "personalGoal", "currentState", "abilityText", "arcText"] as const) text(role[key], `roles[${index}].${key}`);
     roleKeys.push(String(role.roleKey));
     textArray(role.knownInfo, `roles[${index}].knownInfo`);
     textArray(role.cannotDo, `roles[${index}].cannotDo`);
     publicAssetPath(role.portrait, `roles[${index}].portrait`);
+    if (role.gameplayProfile !== undefined) {
+      const profile = record(role.gameplayProfile, `roles[${index}].gameplayProfile`);
+      exactKeys(profile, `roles[${index}].gameplayProfile`, ["characterName", "rank", "office", "fateQuestion", "goals", "resources", "leverage"]);
+      for (const key of ["characterName", "rank", "office", "fateQuestion"] as const) text(profile[key], `roles[${index}].gameplayProfile.${key}`);
+      textArray(profile.goals, `roles[${index}].gameplayProfile.goals`);
+      textArray(profile.leverage, `roles[${index}].gameplayProfile.leverage`);
+      if (!Array.isArray(profile.resources)) fail(`roles[${index}].gameplayProfile.resources must be an array`);
+      profile.resources.forEach((value, resourceIndex) => {
+        const resource = record(value, `roles[${index}].gameplayProfile.resources[${resourceIndex}]`);
+        exactKeys(resource, `roles[${index}].gameplayProfile.resources[${resourceIndex}]`, ["label", "value"]);
+        text(resource.label, `roles[${index}].gameplayProfile.resources[${resourceIndex}].label`);
+        text(resource.value, `roles[${index}].gameplayProfile.resources[${resourceIndex}].value`);
+      });
+    }
     if (boolean(role.canBeHumanControlled, `roles[${index}].canBeHumanControlled`) !== true) fail(`roles[${index}] must support human control`);
     if (boolean(role.canBeAiControlled, `roles[${index}].canBeAiControlled`) !== true) fail(`roles[${index}] must support AI Agent control`);
   });
   if (new Set(roleKeys).size !== roleKeys.length) fail("roleKey values must be unique");
   if (root.status === "playable" && maxHumanPlayers > root.roles.length) fail("maxHumanPlayers cannot exceed the configured role count");
   if (root.worldActor && roleKeys.includes(String((root.worldActor as JsonRecord).actorKey))) fail("worldActor must not duplicate a player roleKey");
-  if (engineVersion.startsWith("continuous_strategy_") && (!engine.strategyRegistryPath || !root.worldActor)) fail("continuous strategy games require a strategy registry and a separate worldActor");
+  if (engineVersion.startsWith("continuous_") && (!engine.strategyRegistryPath || !root.worldActor)) fail("continuous games require a strategy registry and a separate worldActor");
   return root as GameDefinition;
 }

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "game_definition_v1",
+  "worldId": "ten-years-later",
+  "publicId": "ten-years-later",
+  "aliases": [],
+  "templateId": "template_ten_years_later_001",
+  "status": "coming_soon",
+  "catalog": {
+    "title": "Ten Years Later: Reunion Night",
+    "subtitle": "Six memories, one recording, and a truth due at midnight",
+    "description": "At midnight, the recording goes public. Everyone remembers that night differently.",
+    "genre": "Relationships & Mystery",
+    "tags": ["Relationships", "Mystery", "Reputation", "Secrets"],
+    "durationLabel": "35–55 Minutes",
+    "cardCover": "/assets/game/ten-years-later/catalog-cover.png",
+    "heroCover": "/assets/game/ten-years-later/catalog-cover.png",
+    "lobby": {
+      "title": "Ten Years Later: Reunion Night",
+      "description": "At midnight, the recording goes public. Everyone remembers that night differently.",
+      "categoryLabel": "Relationships & Mystery"
+    }
+  },
+  "modes": { "solo": false, "multiplayer": false, "minHumanPlayers": 1, "maxHumanPlayers": 6 },
+  "engine": { "engineVersion": "unavailable_v1", "strategyVersion": "unpublished", "strategyRegistryPath": null, "fixedRules": null },
+  "worldActor": null,
+  "presentation": {
+    "locationLabel": "Reunion Night",
+    "roundLabel": "Scene",
+    "finaleLabel": "Midnight",
+    "sceneBackground": "/assets/game/ten-years-later/catalog-cover.png",
+    "assetManifest": null,
+    "accent": "#6545f5",
+    "accentSoft": "#f3f0ff"
+  },
+  "roles": []
+}

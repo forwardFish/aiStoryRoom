@@ -16,6 +16,7 @@ import { ContinuousEventDeliveryService } from "./continuous-strategy/event-deli
 import { MemberProjectionService } from "./continuous-strategy/member-projection.service";
 import { createHash } from "node:crypto";
 import { ContinuousStoryV2Service } from "./continuous-story-v2/continuous-story-v2.service";
+import { gamePageProjection } from "./game-page-projection";
 
 const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const IDEMPOTENCY_REPLAY_ATTEMPTS = 300;
@@ -466,13 +467,14 @@ export class RoomsService {
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.game(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.game(user, roomId);
     const room = await this.get(user, roomId);
-    if (room.status === "chapter_generated") return { room, completed: true, currentNode: null, submittedRoleIds: [], access: this.access.roomAccessState(room, 7) };
+    if (room.status === "chapter_generated") return { world: room.world, room, completed: true, currentNode: null, submittedRoleIds: [], access: this.access.roomAccessState(room, 7) };
     if (room.status !== "playing" && room.status !== "resolving") throw new ConflictException({ code: "ROOM_NOT_STARTED", message: "The host has not started this room" });
     const currentNode = await this.story.currentNode(roomId);
     const actions = await this.story.nodeActions(currentNode.id);
     const access = this.access.roomAccessState(room, currentNode.nodeIndex);
     const balance = access.requiresUnlock ? await this.credits.getBalance(user.id) : undefined;
     return {
+      world: room.world,
       room,
       completed: false,
       access: { ...access, balance: balance?.available },
@@ -688,6 +690,7 @@ export class RoomsService {
     const state = roomState(room.stateJson);
     const ready = new Set(state.room?.readyUserIds || []);
     const world = findGameDefinition(room.templateKey);
+    const pageWorld = world ? gamePageProjection(world.worldId) : null;
     const roleDefinitions = new Map((world?.roles || []).map((role) => [role.roleKey, role]));
     const nextAction = room.status === "waiting_players" ? "open" : room.status === "playing" || room.status === "resolving" ? "continue" : room.status === "chapter_generated" ? "view_result" : "none";
     const humans = room.players.filter((player: any) => player.playerType === "human");
@@ -702,10 +705,7 @@ export class RoomsService {
       id: room.id,
       title: room.title,
       worldId: room.templateKey,
-      world: world ? {
-        title: world.catalog.title,
-        bannerArtwork: world.presentation.sceneBackground
-      } : null,
+      world: pageWorld,
       templateId: room.templateId,
       status: room.status,
       nextAction,
@@ -748,7 +748,13 @@ export class RoomsService {
             identity: definition?.identity || role.identity,
             publicInfo: definition?.publicInfo || role.publicInfo,
             personalGoal: definition?.personalGoal || role.personalGoal,
+            currentState: definition?.currentState || "",
+            abilityText: definition?.abilityText || "",
+            arcText: definition?.arcText || "",
+            knownInfo: definition?.knownInfo || [],
+            cannotDo: definition?.cannotDo || [],
             portrait: definition?.portrait || "",
+            gameplayProfile: definition ? pageWorld?.roles.find((item) => item.roleKey === definition.roleKey)?.gameplayProfile : undefined,
             status: role.status,
             humanSelectable: true,
             isAiControlled: role.isAiControlled,

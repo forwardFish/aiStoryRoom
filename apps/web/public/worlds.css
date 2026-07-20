@@ -34,41 +34,6 @@ body {
   padding: 30px 32px 72px;
 }
 
-.lobby-back {
-  display: inline-flex;
-  min-height: 42px;
-  align-items: center;
-  gap: 9px;
-  padding: 0 16px 0 13px;
-  border: 1px solid rgba(96, 69, 255, 0.16);
-  border-radius: 999px;
-  color: #4f3bd4;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 6px 18px rgba(45, 42, 92, 0.06);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  text-decoration: none;
-  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
-}
-
-.lobby-back span {
-  font-size: 20px;
-  font-weight: 400;
-  line-height: 1;
-  transition: transform 160ms ease;
-}
-
-.lobby-back:hover {
-  border-color: rgba(96, 69, 255, 0.32);
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(62, 47, 145, 0.1);
-  transform: translateY(-1px);
-}
-
-.lobby-back:hover span { transform: translateX(-2px); }
-.lobby-back:focus-visible { outline: 3px solid rgba(96, 69, 255, 0.22); outline-offset: 3px; }
-
 .worlds-heading { margin: 28px 0 30px; }
 
 .worlds-heading h1 {
@@ -246,7 +211,6 @@ body {
 
 @media (max-width: 720px) {
   .worlds-lobby { max-width: 520px; padding: 22px 18px 42px; }
-  .lobby-back { min-height: 40px; padding-right: 15px; }
   .worlds-heading { margin: 24px 0 24px; }
   .worlds-heading h1 { font-size: 42px; }
   .worlds-heading p { font-size: 17px; }

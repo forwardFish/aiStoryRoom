@@ -30,6 +30,8 @@ test("solo and multiplayer render the same shared room role-selection skeleton",
   assert.match(multiplayer, /data-action="share-invite"/);
   assert.match(multiplayer, /data-action="ready"/);
   assert.match(multiplayer, /data-action="start-game"/);
+  assert.doesNotMatch(solo, /mw-room-brand|mw-room-back/);
+  assert.match(solo, /mw-room-button mw-room-button-secondary" href="\/"/);
 });
 
 test("role status and disabled controls communicate selected, taken, and available states", () => {
@@ -176,9 +178,39 @@ test("a failed Solo request reuses its idempotency key and accepts roomId on ret
   dom.window.close();
 });
 
-test("both six-role world inputs keep intrinsic Caesar-sized grid rows", async () => {
+test("start=new explicitly creates a fresh Solo run instead of resuming the active one", async () => {
+  const dom = new JSDOM('<!doctype html><main id="roleApp"></main>');
+  const location = { href: "http://game.test/role-select?story=sangtian&start=new", hostname: "game.test", search: "?story=sangtian&start=new" };
+  let createBody = null;
+  const browserWindow = {
+    location,
+    crypto: { randomUUID: () => "fresh-run-0000-0000-0000-000000000001" },
+    localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+  };
+  const fetchImpl = async (_url, options = {}) => {
+    if (options.method === "POST") {
+      createBody = JSON.parse(options.body);
+      return new Response(JSON.stringify({ runId: "solo-fresh" }), { status: 201, headers: { "content-type": "application/json" } });
+    }
+    return new Response(JSON.stringify({ id: "sangtian", title: "??????", roles: [{ key: "zhejiang_governor", name: "????", playableSolo: true }] }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  const app = createRoleSelectApp({ root: dom.window.document.querySelector("#roleApp"), window: browserWindow, fetchImpl });
+  await app.boot();
+  await app.createRun();
+
+  assert.equal(createBody.resumeExisting, false);
+  assert.equal(location.href, "/game?runId=solo-fresh");
+  dom.window.close();
+});
+
+test("both six-role multiplayer worlds keep compact cards beside the side panels", async () => {
   const css = await readFile(new URL("../public/room-role-selection.css", import.meta.url), "utf8");
-  assert.match(css, /\.mw-room-role-grid\s*\{[^}]*grid-auto-rows:\s*max-content;[^}]*align-content:\s*start;[^}]*align-self:\s*start;/s);
+  assert.match(css, /data-room-mode="multiplayer"[^}]*\.mw-room-body\s*\{[^}]*min-height:\s*396px;/s);
+  assert.match(css, /data-room-mode="multiplayer"[^}]*\.mw-room-role-card\s*\{[^}]*min-height:\s*198px;/s);
+  assert.match(css, /data-room-mode="multiplayer"[^}]*\.mw-room-role-portrait\s*\{[^}]*width:\s*49%;[^}]*height:\s*124px;/s);
+  assert.match(css, /data-room-mode="multiplayer"[^}]*\.mw-room-role-status\s*\{[^}]*width:\s*calc\(100%\s*-\s*24px\);[^}]*min-height:\s*44px;/s);
+  assert.doesNotMatch(css, /data-room-mode="multiplayer"[^}]*\.mw-room-role-card\s*\{[^}]*height:\s*100%;/s);
 
   const sixRoles = [...roles, ...roles.map((role, index) => ({ ...role, key: `${role.key}-${index}` }))];
   const sangtian = renderRoomSelectionPage({ mode: "multiplayer", worldId: "sangtian", roles: sixRoles, selectedRole: "brutus" });

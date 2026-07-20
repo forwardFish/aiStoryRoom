@@ -1180,6 +1180,7 @@ a.world-card-link:focus-visible { outline: 3px solid rgba(112,79,245,.35); outli
   .footer-brand img { width: 42px; height: 42px; object-fit: contain; }
 }
 
+
 /* Stacked hero composition: message first, living-world carousel second. */
 .many-worlds-page .mw-hero {
   display: flex;
@@ -1570,4 +1571,212 @@ a.world-card-link:focus-visible { outline: 3px solid rgba(112,79,245,.35); outli
   .mw-type-marketing .faq-simple .faq-grid summary { min-height: 72px; gap: 10px; padding: 17px 0; }
   .mw-type-marketing .faq-simple .faq-grid summary .mw-icon { width: 17px; height: 17px; }
   .mw-type-marketing .faq-simple .faq-grid details p { padding: 0 16px 19px 0; font-size: 15px; line-height: 1.65; }
+}
+
+/* The catalog panel is white: keep its surrounding navigation and copy at
+   a deliberate dark contrast. Card copy remains white over the artwork. */
+.worlds-section .section-head h2 { color: #0b1028; }
+.worlds-section .section-head p { color: #34405d; }
+.worlds-section .section-head > a { color: #37229b; }
+.worlds-section .world-filters button { color: #26324e; font-weight: 600; }
+.worlds-section .world-filters button.active { color: #fff; }
+
+/* Approved three-step How It Works composition. */
+.many-worlds-page .how-it-works-showcase {
+  --how-ink: #111936;
+  --how-purple: #5e49e8;
+  --how-line: #b7a8f5;
+  --how-copy: #3f496b;
+  --how-panel: #f8f6ff;
+  position: relative;
+  width: min(1320px, calc(100vw - 48px));
+  margin: 36px auto 32px;
+  padding: 30px 48px 36px;
+  border: 2px solid rgba(255,255,255,.92);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255,255,255,.97), rgba(255,255,255,0) 38%),
+    linear-gradient(115deg, #faf9ff 0%, #f8f6ff 48%, #f2effc 100%);
+  box-shadow:
+    0 12px 30px rgba(42,34,82,.12),
+    0 0 0 1px rgba(157,143,218,.2),
+    inset 0 1px 0 rgba(255,255,255,.95);
+  color: var(--how-ink);
+  isolation: isolate;
+}
+.many-worlds-page .how-it-works-showcase::before,
+.many-worlds-page .how-it-works-showcase::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 116px;
+  height: 116px;
+  opacity: .2;
+  background: repeating-conic-gradient(from 2deg, #d4af73 0deg 1deg, transparent 1deg 20deg);
+  -webkit-mask: radial-gradient(circle, transparent 0 18%, #000 19% 20%, transparent 21% 42%, #000 43% 44%, transparent 45%);
+  mask: radial-gradient(circle, transparent 0 18%, #000 19% 20%, transparent 21% 42%, #000 43% 44%, transparent 45%);
+}
+.many-worlds-page .how-it-works-showcase::before { top: 72px; left: -86px; }
+.many-worlds-page .how-it-works-showcase::after { right: -87px; bottom: 40px; }
+.how-showcase-head { position: relative; z-index: 2; text-align: center; }
+.mw-type-marketing .how-kicker {
+  display: inline-flex;
+  min-width: 250px;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  color: var(--how-purple);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+}
+.how-kicker::before,
+.how-kicker::after {
+  content: "";
+  width: 58px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(94,73,232,.35));
+}
+.how-kicker::after { transform: rotate(180deg); }
+.how-showcase-head::after {
+  content: "✦";
+  display: block;
+  height: 10px;
+  margin-top: 4px;
+  color: var(--how-purple);
+  font-size: 16px;
+  line-height: 10px;
+}
+.mw-type-marketing .how-showcase-head h2 {
+  margin: 10px 0 12px;
+  color: var(--how-ink);
+  font-family: var(--mw-font-display);
+  font-size: clamp(43px, 4.25vw, 62px);
+  font-weight: 400;
+  line-height: .99;
+  letter-spacing: -.035em;
+}
+.how-showcase-head h2 span,
+.how-showcase-head h2 em { display: block; }
+.how-showcase-head h2 em { color: var(--how-purple); font-style: normal; }
+.mw-type-marketing .how-showcase-head > p {
+  margin: 18px auto 0;
+  color: #303a60;
+  font-size: clamp(15px, 1.28vw, 18px);
+  line-height: 1.5;
+  letter-spacing: .005em;
+}
+.how-steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 48px;
+  margin-top: 2px;
+}
+.how-connector {
+  position: absolute;
+  z-index: 0;
+  top: 89px;
+  right: 16.666%;
+  left: 16.666%;
+  height: 1px;
+  background: var(--how-line);
+}
+.how-connector::before,
+.how-connector::after,
+.how-connector i {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--how-purple);
+  background: var(--how-panel);
+  transform: translate(-50%,-50%) rotate(45deg);
+}
+.how-connector::before { left: 0; }
+.how-connector::after { left: 100%; }
+.how-connector i:first-child { left: 25%; }
+.how-connector i:last-child { left: 75%; }
+.how-step {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  text-align: center;
+}
+.how-step-icon {
+  display: block;
+  width: 178px;
+  height: 178px;
+  margin: 0 auto 5px;
+  overflow: visible;
+  color: var(--how-purple);
+  background: radial-gradient(circle, var(--how-panel) 0 46%, transparent 47%);
+}
+.how-icon-frame,
+.how-icon-art {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.how-icon-frame { stroke-width: 1.35; opacity: .68; }
+.how-icon-art { stroke-width: 3.6; }
+.mw-type-marketing .how-step-number {
+  display: block;
+  margin-top: -1px;
+  color: var(--how-purple);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+.mw-type-marketing .how-step h3 {
+  margin: 8px 0 8px;
+  color: var(--how-ink);
+  font-family: var(--mw-font-display);
+  font-size: clamp(21px, 1.65vw, 25px);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -.025em;
+}
+.mw-type-marketing .how-step p {
+  max-width: 330px;
+  margin: 0 auto;
+  color: var(--how-copy);
+  font-size: 14px;
+  line-height: 1.55;
+}
+@media (max-width: 980px) {
+  .many-worlds-page .how-it-works-showcase { padding: 28px 30px 34px; }
+  .mw-type-marketing .how-showcase-head h2 { font-size: clamp(39px, 5.7vw, 52px); }
+  .how-steps { gap: 22px; }
+  .how-step-icon { width: 150px; height: 150px; }
+  .how-connector { top: 75px; }
+  .mw-type-marketing .how-step h3 { font-size: 20px; }
+  .mw-type-marketing .how-step p { font-size: 13px; }
+}
+@media (max-width: 680px) {
+  .many-worlds-page .how-it-works-showcase {
+    width: calc(100% - 32px);
+    margin: 24px auto;
+    padding: 34px 22px 38px;
+    border-radius: 22px;
+  }
+  .many-worlds-page .how-it-works-showcase::before,
+  .many-worlds-page .how-it-works-showcase::after { display: none; }
+  .mw-type-marketing .how-kicker { min-width: 0; gap: 8px; font-size: 12px; letter-spacing: .24em; }
+  .how-kicker::before,
+  .how-kicker::after { width: 34px; }
+  .mw-type-marketing .how-showcase-head h2 { margin-top: 13px; font-size: clamp(34px, 10.2vw, 46px); line-height: 1.03; }
+  .mw-type-marketing .how-showcase-head > p { max-width: 360px; margin-top: 15px; font-size: 15px; }
+  .how-steps { grid-template-columns: 1fr; gap: 34px; margin-top: 22px; }
+  .how-connector { display: none; }
+  .how-step-icon { width: 164px; height: 164px; }
+  .mw-type-marketing .how-step-number { font-size: 13px; }
+  .mw-type-marketing .how-step h3 { font-size: 24px; }
+  .mw-type-marketing .how-step p { max-width: 350px; font-size: 15px; line-height: 1.6; }
 }

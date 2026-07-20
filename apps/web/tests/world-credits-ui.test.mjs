@@ -47,6 +47,12 @@ test("World Credits script preserves room return routing without advertising an 
   assert.doesNotMatch(script, /\|\| 100/);
   assert.doesNotMatch(script, /You are unlocking/);
   assert.doesNotMatch(script, /Round \$\{/);
+  assert.match(script, /canonicalReturn = intent === "WORLD_UNLOCK" && runId/);
+  assert.match(script, /returnTo = intent === "WORLD_UNLOCK" && runId \? safeRequestedReturn : "\/"/);
+  assert.match(script, /document\.querySelectorAll\("\[data-return-link\], \[data-return-bottom\]"\)/);
+  assert.doesNotMatch(script, /by\("\[data-return-link\]"\)\.href/);
+  assert.match(script, /else \{\s*setContext\(\);\s*render\(\);\s*await Promise\.all/s);
+  assert.match(script, /Return to story/);
 });
 
 test("success page delegates credit authority to checkout status polling", () => {

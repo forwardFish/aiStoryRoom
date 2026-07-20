@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "continuous_strategy_manifest_v1",
+  "contentVersion": "template_world_v1_0",
+  "templateKey": "template_world",
+  "releaseStatus": "development_vertical_slice",
+  "stageCoverage": [1],
+  "files": [
+    {
+      "path": "stages.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

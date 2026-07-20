@@ -3,12 +3,11 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>World Credits · Our Many Worlds</title>
-    <link rel="stylesheet" href="/platform.css"><link rel="stylesheet" href="/credits.css"><link rel="stylesheet" href="/credits-overrides.css"><link rel="stylesheet" href="/typography.css?v=20260717-1"><link rel="stylesheet" href="/back-link.css?v=20260718-1">
+    <link rel="stylesheet" href="/platform.css"><link rel="stylesheet" href="/credits.css"><link rel="stylesheet" href="/credits-overrides.css"><link rel="stylesheet" href="/typography.css?v=20260717-1"><link rel="stylesheet" href="/back-link.css?v=20260718-1"><link rel="stylesheet" href="/standard-page-header.css?v=20260720-1">
   </head>
   <body class="mw-type-product">
-    <header class="mw-header credits-header"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span class="brand-copy"><b>Our Many Worlds</b><small>Real players. Living worlds.</small></span></a><nav class="mw-nav"><a href="/worlds"><i class="nav-explore"></i>Explore Worlds</a><a href="/rooms"><i class="nav-rooms"></i>Rooms</a><a class="active" href="/credits"><i class="nav-credits"></i>World Credits</a></nav><div class="header-right"><a href="/#faq"><i class="nav-help"></i>Help</a><span class="language-label"><i class="nav-language"></i>English⌄</span><a href="/auth" aria-label="Account" class="profile-icon"></a></div></header>
+    <standard-page-header back-href="/" dynamic-return></standard-page-header>
     <main class="credits-page" data-credits-app>
-      <a class="back-link mw-back" data-return-link href="/rooms" aria-label="Back"><span class="mw-back__icon" aria-hidden="true">←</span><span>Back</span></a>
       <header class="credits-heading credits-heading-row"><div><span class="credits-eyebrow">Our Many Worlds wallet</span><h1 data-wallet-title>World Credits</h1><p class="muted" data-context-copy>Add Credits to your account. Choose a pack to continue to secure checkout.</p></div><aside class="wallet-balance wallet-balance-inline"><span>Your balance</span><strong data-balance>—</strong><small>World Credits</small></aside></header>
       <p class="credits-message" data-message aria-live="polite"></p>
       <section class="unlock-context" data-unlock-context hidden><span class="context-icon">⌂</span><div><strong data-context-room>Add Credits, then return to your shared story</strong><p data-context-round>Your room will be ready when you return.</p></div></section>
@@ -17,8 +16,9 @@
       </section>
       <section class="credits-confirm" data-confirm-state hidden><h1>Confirm your purchase</h1><p class="muted">Review your Credit pack before continuing to secure checkout.</p><article class="confirm-card"><span class="confirm-icon">◎</span><h2><strong data-confirm-credits>300</strong> World Credits</h2><b data-confirm-price>$7.99</b><hr><p>Your current balance <strong data-confirm-current>— Credits</strong></p><p>Balance after payment <strong class="positive" data-confirm-after>— Credits</strong></p><section class="confirm-context" data-confirm-context hidden><span>⌂</span><div><strong data-confirm-room>Return to your shared story after checkout</strong><small data-confirm-round>Your room link will be preserved.</small></div></section><p class="confirm-safe">◈ Credits are added after payment confirmation.</p><button class="btn primary" data-confirm-purchase>Continue to secure payment</button><button class="btn confirm-back" data-back-wallet>Back to World Credits</button></article><p class="confirm-footnote">You will complete payment on a secure Creem checkout page.</p></section>
       <section class="credits-trust"><span>Secure checkout</span><span>Credits added after payment confirmation</span><span>Exact Credit cost shown before you confirm any use</span></section>
-      <a class="credits-bottom-return mw-back" data-return-bottom href="/rooms" aria-label="Back"><span class="mw-back__icon" aria-hidden="true">←</span><span>Back</span></a>
+      <a class="credits-bottom-return mw-back" data-return-bottom href="/" aria-label="Back"><span class="mw-back__icon" aria-hidden="true">←</span><span data-return-label>Back</span></a>
     </main>
+    <script type="module" src="/standard-page-header.js?v=20260720-1"></script>
     <script type="module" src="/js/credits.js"></script>
   </body>
 </html>

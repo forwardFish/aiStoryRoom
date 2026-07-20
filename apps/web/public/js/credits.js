@@ -4,9 +4,10 @@ const root = document.querySelector("[data-credits-app]");
 const query = new URLSearchParams(location.search);
 const intent = query.get("intent") === "WORLD_UNLOCK" ? "WORLD_UNLOCK" : "WALLET";
 const runId = query.get("runId") || "";
-const canonicalReturn = runId ? `/game?runId=${encodeURIComponent(runId)}` : "/credits";
+const canonicalReturn = intent === "WORLD_UNLOCK" && runId ? `/game?runId=${encodeURIComponent(runId)}` : "/";
 const requestedReturn = query.get("returnTo") || canonicalReturn;
-const returnTo = requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") ? requestedReturn : canonicalReturn;
+const safeRequestedReturn = requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") && !requestedReturn.startsWith("/credits") ? requestedReturn : canonicalReturn;
+const returnTo = intent === "WORLD_UNLOCK" && runId ? safeRequestedReturn : "/";
 const packs = { credits_300: { credits: 300, price: "$7.99" }, credits_650: { credits: 650, price: "$14.99" } };
 let selectedPack = query.get("confirm") in packs ? query.get("confirm") : "";
 let currentBalance = { available: 0 };
@@ -14,12 +15,15 @@ let roomContext = null;
 
 const by = (selector) => root.querySelector(selector);
 function message(text, kind = "info") { const node = by("[data-message]"); node.textContent = text || ""; node.dataset.kind = kind; }
-function urlFor(pack = "") { const next = new URLSearchParams(); if (intent === "WORLD_UNLOCK") next.set("intent", intent); if (runId) next.set("runId", runId); if (returnTo !== "/credits") next.set("returnTo", returnTo); if (pack) next.set("confirm", pack); const text = next.toString(); return `/credits${text ? `?${text}` : ""}`; }
+function urlFor(pack = "") { const next = new URLSearchParams(); if (intent === "WORLD_UNLOCK") next.set("intent", intent); if (runId) next.set("runId", runId); if (returnTo !== "/") next.set("returnTo", returnTo); if (pack) next.set("confirm", pack); const text = next.toString(); return `/credits${text ? `?${text}` : ""}`; }
 function authUrl(pack) { return `/auth?returnTo=${encodeURIComponent(urlFor(pack))}`; }
 function setContext() {
-  by("[data-return-link]").href = returnTo;
-  by("[data-return-bottom]").href = returnTo;
   const active = intent === "WORLD_UNLOCK";
+  document.querySelectorAll("[data-return-label]").forEach((label) => { label.textContent = active ? "Return to story" : "Back"; });
+  document.querySelectorAll("[data-return-link], [data-return-bottom]").forEach((link) => {
+    link.href = returnTo;
+    link.setAttribute("aria-label", active ? "Return to story" : "Back");
+  });
   by("[data-unlock-context]").hidden = !active;
   by("[data-context-copy]").textContent = active ? "Add Credits to your account, then return to your shared story." : "Add Credits to your account. Choose a pack to continue to secure checkout.";
   if (roomContext) {
@@ -89,5 +93,9 @@ window.addEventListener("popstate", () => {
 if (selectedPack && !getToken()) {
   location.replace(authUrl(selectedPack));
 } else {
-  await Promise.all([loadAccount(), loadRoomContext()]); setContext(); render();
+  setContext();
+  render();
+  await Promise.all([loadAccount(), loadRoomContext()]);
+  setContext();
+  render();
 }

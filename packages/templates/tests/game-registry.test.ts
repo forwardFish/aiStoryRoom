@@ -9,14 +9,17 @@ test("the canonical game registry owns all six lobby cards in display order", ()
   assert.deepEqual(games.map((game) => game.worldId), [
     "sangtian",
     "caesar",
-    "last-night-shift",
-    "ninety-days-left",
-    "inheritance-table",
-    "blackout-protocol"
+    "last-will",
+    "ten-years-later",
+    "romeo-and-juliet",
+    "hamlet"
   ]);
   assert.equal(games.filter((game) => game.status === "playable").length, 2);
   assert.equal(games.filter((game) => game.status === "coming_soon").length, 4);
   assert.ok(games.every((game) => game.catalog.lobby?.title && game.catalog.lobby?.description && game.catalog.lobby?.categoryLabel));
+  assert.ok(games.every((game) => !/[\u3400-\u9fff]/u.test(`${game.catalog.title} ${game.catalog.subtitle} ${game.catalog.description} ${game.catalog.genre} ${game.catalog.lobby?.title} ${game.catalog.lobby?.description} ${game.catalog.lobby?.categoryLabel}`)));
+  assert.ok(games.every((game) => game.catalog.cardCover === `/assets/game/${game.worldId}/catalog-cover.png`));
+  assert.ok(games.filter((game) => game.status === "playable").every((game) => game.catalog.cardCover !== game.catalog.heroCover));
   assert.equal(new Set(games.map((game) => game.templateId)).size, games.length);
   assert.equal(findGameDefinition("caesar_last_spring")?.worldId, "caesar");
 });
@@ -59,7 +62,10 @@ test("every registered background and role portrait exists in the Web asset tree
   for (const game of listGameDefinitions()) {
     const urls = [game.catalog.cardCover, game.catalog.heroCover, game.presentation.sceneBackground, ...game.roles.map((role) => role.portrait)];
     if (game.worldActor) urls.push(game.worldActor.portrait);
-    for (const url of urls) assert.equal(existsSync(resolve(publicRoot, url.slice(1))), true, `${game.worldId}: ${url}`);
+    for (const url of urls) {
+      const pathname = new URL(url, "http://many-worlds.local").pathname;
+      assert.equal(existsSync(resolve(publicRoot, pathname.slice(1))), true, `${game.worldId}: ${url}`);
+    }
   }
 });
 

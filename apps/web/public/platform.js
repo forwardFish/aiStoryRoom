@@ -48,9 +48,6 @@ function pendingMutationKey(storageKey) {
   return generated;
 }
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]); }
-function backLink(href, className = "back-link") {
-  return `<a class="${esc(`${className} mw-back`)}" href="${esc(href)}" aria-label="Back"><span class="mw-back__icon" aria-hidden="true">←</span><span>Back</span></a>`;
-}
 function emailInitial(value) { return String(value || "M").trim().charAt(0).toUpperCase() || "M"; }
 function roomFilterLabel(worldId) { return worldId === "caesar" ? "Rome, 44 BC" : worldId === "sangtian" ? "Ming, 1565" : ""; }
 function roomFilterChip(worldId) { const label = roomFilterLabel(worldId); return label ? `<span class="filter-chip" data-world-chip>${esc(label)}<button type="button" data-action="clear-world-filter" aria-label="Clear world filter">×</button></span>` : ""; }
@@ -96,20 +93,26 @@ async function migrateLegacySession() {
     // Keep the old token until a later visit can safely migrate it.
   }
 }
-function header(active = "") {
-  const profile = `<a class="profile-icon" aria-label="Account" href="/auth?returnTo=${encodeURIComponent(path + location.search)}"></a>`;
-  const utility = `<div class="header-right"><a href="/#faq">Help</a><span class="divider"></span><span class="language-label" aria-label="Language">English⌄</span>${profile}</div>`;
-  if (active === "auth") return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>${BRAND_NAME}</span></a>${utility}</header>`;
-  return `<header class="mw-header"><a class="brand" href="/"><span class="brand-mark">◉</span><span>${BRAND_NAME}</span></a><nav class="mw-nav"><a class="${active === "worlds" ? "active" : ""}" href="/worlds">Explore Worlds</a><a class="${active === "rooms" ? "active" : ""}" href="/rooms">Rooms</a><a href="/credits">World Credits</a></nav>${utility}</header>`;
+function standardHeaderBackHref() {
+  if (path.startsWith("/worlds/")) return "/worlds";
+  if (path.startsWith("/rooms/")) return "/rooms";
+  if (path === "/rooms" || path === "/join") return "/worlds";
+  if (path === "/game/result") return "/worlds";
+  if (path === "/admin/refunds") return "/account";
+  if (path === "/auth") return safeReturnTo(params.get("returnTo") || "/");
+  return "/";
 }
-function appShell(content, active = "") {
+function standardPageHeader() {
+  return `<standard-page-header back-href="${esc(standardHeaderBackHref())}"></standard-page-header>`;
+}
+function renderStandardPage(content) {
+  root.innerHTML = `${standardPageHeader()}${content}`;
+  if (path !== "/auth" && path !== "/rooms") root.querySelector(".page-frame")?.classList.add("visual-tight");
+}
+function appShell(content) {
   if (roomRefreshTimer) { clearInterval(roomRefreshTimer); roomRefreshTimer = null; }
   if (roomDialogRecoveryTimer) { clearInterval(roomDialogRecoveryTimer); roomDialogRecoveryTimer = null; }
-  // Room waiting references retain the product navigation behind modal layers.
-  // Other platform surfaces keep their current page-specific shell unchanged.
-  const roomWaitingHeader = path.startsWith("/rooms/") ? header("rooms") : "";
-  root.innerHTML = `${roomWaitingHeader}${content}`;
-  if (path !== "/auth" && path !== "/rooms") root.querySelector(".page-frame")?.classList.add("visual-tight");
+  renderStandardPage(content);
   bind();
   if (path === "/rooms") {
     if (sessionToken()) {
@@ -232,7 +235,7 @@ async function mountGoogleSignIn(returnTo) {
             headers: { "x-requested-with": "many-worlds-web" },
             body: JSON.stringify({ credential: credentialResponse.credential, challengeId: challenge.challengeId, returnTo })
           });
-          location.assign(safeReturnTo(session.returnTo || returnTo));
+          await completeSignedInEntry(session.returnTo || returnTo);
         } catch (error) {
           notice(error.code === "ACCOUNT_LINK_REQUIRED"
             ? "This email is already registered with Our Many Worlds. Log in with your password, then open My Account to link Google."
@@ -301,6 +304,15 @@ function restoreBrowserSession(returnTo) {
     });
 }
 
+async function completeSignedInEntry(returnTo) {
+  // The onboarding grant already exists as an idempotent server contract. It
+  // belongs in the real signed-in journey so a verified player can actually
+  // reach the paid part of a story without an acceptance script mutating the
+  // wallet behind the UI.
+  await request("/api/v4/credits/onboarding", { method: "POST", body: "{}" });
+  location.assign(safeReturnTo(returnTo));
+}
+
 let authSkipRestore = false;
 let authRestoreError = "";
 function renderAuth() {
@@ -322,7 +334,7 @@ function renderAuth() {
     restoreBrowserSession(returnTo);
     return;
   }
-  appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to ${BRAND_NAME}</h1><p class="auth-subtitle">${BRAND_TAGLINE}</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password">Show</button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
+  appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to ${BRAND_NAME}</h1><p class="auth-subtitle">${BRAND_TAGLINE}</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password" aria-pressed="false"></button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
   root.querySelector(".auth-title").textContent = `Welcome to ${BRAND_NAME}`;
   root.querySelector(".auth-subtitle").textContent = BRAND_TAGLINE;
   if (restoreError) notice(restoreError);
@@ -330,12 +342,10 @@ function renderAuth() {
   const form = root.querySelector("[data-auth-form]");
   const applyMode = (next) => { mode = next; root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.authTab === next)); root.querySelectorAll(".signup-only").forEach((node) => node.hidden = next !== "signup"); root.querySelectorAll(".login-only").forEach((node) => node.hidden = next !== "login"); form.querySelector("button[type=submit]").textContent = next === "login" ? "Log in" : "Create account"; form.querySelector("input[name=password]").autocomplete = next === "login" ? "current-password" : "new-password"; };
   root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.addEventListener("click", () => applyMode(tab.dataset.authTab)));
-  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } location.assign(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
+  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } await completeSignedInEntry(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
   if (isVerificationLink) {
     notice("Verifying your email…");
-    void request("/api/v4/auth/verify", { method: "POST", body: JSON.stringify({ token: legacyResetToken }) }).then((session) => {
-      location.assign(returnTo);
-    }).catch((error) => notice(error.message || "This verification link is invalid or expired."));
+    void request("/api/v4/auth/verify", { method: "POST", body: JSON.stringify({ token: legacyResetToken }) }).then(() => completeSignedInEntry(returnTo)).catch((error) => notice(error.message || "This verification link is invalid or expired."));
   }
   void mountGoogleSignIn(returnTo);
 }
@@ -345,7 +355,7 @@ function renderAccount() {
     location.assign("/auth?returnTo=%2Faccount");
     return;
   }
-  appShell(`<section class="page-frame account-page">${backLink("/", "back-link account-back")}<header class="account-heading"><h1>My Account</h1><p>View your profile and purchase history.</p></header><div data-notice class="notice account-notice" hidden></div><section class="account-profile-card" data-account-summary aria-label="Account profile"><div class="account-profile-loading">Loading your profile…</div></section><section class="account-purchases-card"><header class="account-purchases-header"><h2>Purchases &amp; refunds</h2><a class="account-add-credits" href="/credits">Add Credits</a></header><div class="account-table-wrap"><table class="account-purchase-table"><thead><tr><th>Order number</th><th>Purchase date</th><th>World Credits</th><th>Amount</th><th>Payment status</th><th>Refund status</th><th>Action</th></tr></thead><tbody data-purchase-records><tr><td colspan="7" class="account-table-message">Loading purchase records…</td></tr></tbody></table></div></section><button class="account-logout" type="button" data-action="account-logout"><span aria-hidden="true">↪</span>Log out</button></section>`);
+  appShell(`<section class="page-frame account-page"><header class="account-heading"><h1>My Account</h1><p>View your profile and purchase history.</p></header><div data-notice class="notice account-notice" hidden></div><section class="account-profile-card" data-account-summary aria-label="Account profile"><div class="account-profile-loading">Loading your profile…</div></section><section class="account-purchases-card"><header class="account-purchases-header"><h2>Purchases &amp; refunds</h2><a class="account-add-credits" href="/credits">Add Credits</a></header><div class="account-table-wrap"><table class="account-purchase-table"><thead><tr><th>Order number</th><th>Purchase date</th><th>World Credits</th><th>Amount</th><th>Payment status</th><th>Refund status</th><th>Action</th></tr></thead><tbody data-purchase-records><tr><td colspan="7" class="account-table-message">Loading purchase records…</td></tr></tbody></table></div></section><button class="account-logout" type="button" data-action="account-logout"><span aria-hidden="true">↪</span>Log out</button></section>`);
   void hydrateAccount();
 }
 
@@ -474,7 +484,7 @@ function openRefundRequest(purchaseId) {
 
 function renderAdminRefunds() {
   if (!sessionToken()) { location.assign("/auth?returnTo=%2Fadmin%2Frefunds"); return; }
-  appShell(`<section class="page-frame admin-refund-frame">${backLink("/account")}<p class="eyebrow">PAYMENT OPERATIONS</p><h1>Refund requests</h1><p class="muted">Approval submits the refund through the configured Creem provider adapter. Credit reversal waits for the signed refund webhook.</p><div data-notice class="notice" hidden></div><div class="refund-filter"><button class="btn small" data-refund-filter="PENDING">Pending</button><button class="btn small" data-refund-filter="">All</button></div><section data-admin-refund-list><p>Loading requests…</p></section></section>`);
+  appShell(`<section class="page-frame admin-refund-frame"><p class="eyebrow">PAYMENT OPERATIONS</p><h1>Refund requests</h1><p class="muted">Approval submits the refund through the configured Creem provider adapter. Credit reversal waits for the signed refund webhook.</p><div data-notice class="notice" hidden></div><div class="refund-filter"><button class="btn small" data-refund-filter="PENDING">Pending</button><button class="btn small" data-refund-filter="">All</button></div><section data-admin-refund-list><p>Loading requests…</p></section></section>`);
   root.querySelectorAll("[data-refund-filter]").forEach((button) => button.addEventListener("click", () => hydrateAdminRefunds(button.dataset.refundFilter)));
   void hydrateAdminRefunds("PENDING");
 }
@@ -553,19 +563,19 @@ function worldDetailMarkup(world) {
   const playable = world.status === "playable";
   const background = world.heroCover || world.presentation?.sceneBackground;
   const roleCards = worldRoleCards(world);
-  return `<section class="page-frame" data-world-detail data-world-id="${esc(world.worldId)}">${backLink("/worlds")}<div class="world-hero" data-world-id="${esc(world.worldId)}"><div><div class="eyebrow">${esc(world.genre)}</div><h1>${esc(world.title)}</h1><p class="world-lead">${esc(world.subtitle)}</p><p class="world-copy">${esc(world.description)}</p><div class="meta-row"><span class="meta">♧ &nbsp; ${esc(worldPlayerRange(world))}</span><span class="meta">◷ &nbsp; ${esc(world.durationLabel)}</span><span class="meta">♜ &nbsp; ${esc(world.categoryLabel || world.genre)}</span><span class="meta">♙ &nbsp; ${esc(world.roleCount)} Characters</span></div></div><img class="world-image" data-world-background src="${esc(background)}" alt="${esc(world.title)}"></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards || '<p class="muted">Role details will be announced later.</p>'}</div>${playable ? `<div class="mode-grid">${worldModeCards(world)}</div><p class="world-cost">Starts from 20 World Credits</p>` : '<p class="world-coming">Coming Soon</p>'}</section>`;
+  return `<section class="page-frame" data-world-detail data-world-id="${esc(world.worldId)}"><div class="world-hero" data-world-id="${esc(world.worldId)}"><div><div class="eyebrow">${esc(world.genre)}</div><h1>${esc(world.title)}</h1><p class="world-lead">${esc(world.subtitle)}</p><p class="world-copy">${esc(world.description)}</p><div class="meta-row"><span class="meta">♧ &nbsp; ${esc(worldPlayerRange(world))}</span><span class="meta">◷ &nbsp; ${esc(world.durationLabel)}</span><span class="meta">♜ &nbsp; ${esc(world.categoryLabel || world.genre)}</span><span class="meta">♙ &nbsp; ${esc(world.roleCount)} Characters</span></div></div><img class="world-image" data-world-background src="${esc(background)}" alt="${esc(world.title)}"></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards || '<p class="muted">Role details will be announced later.</p>'}</div>${playable ? `<div class="mode-grid">${worldModeCards(world)}</div><p class="world-cost">Starts from 20 World Credits</p>` : '<p class="world-coming">Coming Soon</p>'}</section>`;
 }
 async function renderWorld() {
   const worldId = worldIdFromPath();
   if (!worldId) { location.assign("/worlds"); return; }
   const fallback = worldCatalog.find((entry) => entry.id === worldId);
   if (fallback) appShell(worldDetailMarkup(catalogWorldDetail(fallback)), "worlds");
-  else appShell(`<section class="page-frame" data-world-detail-state="loading">${backLink("/worlds")}<p class="muted">Loading world…</p></section>`, "worlds");
+  else appShell(`<section class="page-frame" data-world-detail-state="loading"><p class="muted">Loading world…</p></section>`, "worlds");
   try {
     const world = await request(`/api/v4/worlds/${encodeURIComponent(worldId)}`);
     appShell(worldDetailMarkup(world), "worlds");
   } catch (error) {
-    if (!fallback) appShell(`<section class="page-frame" data-world-detail-error>${backLink("/worlds")}<h1>World unavailable</h1><p class="muted">${esc(error.message || "This world could not be loaded.")}</p></section>`, "worlds");
+    if (!fallback) appShell(`<section class="page-frame" data-world-detail-error><h1>World unavailable</h1><p class="muted">${esc(error.message || "This world could not be loaded.")}</p></section>`, "worlds");
   }
 }
 function roomRow(room, index, view = "open") {
@@ -590,10 +600,9 @@ function visualIcon(id, label, extra = "") {
 }
 function renderResult() {
   const fixture = params.get("runId") === "fixture-caesar-finished";
-  appShell(`<section class="page-frame">${backLink("/worlds")}<div class="result-run"><img src="/assets/bg/1.png" alt="Rome"><div><h1>Caesar: The Last Spring of the Republic</h1><span class="session-complete">${visualIcon(15, "", "session-icon")}Session Complete</span></div></div><h1 class="result-title">A Republic Without a Master</h1><p class="result-lead">Caesar survived, but accepted limits on his authority.<br>Rome avoided civil war—for now.</p><div class="summary-grid"><article class="summary-card"><span class="mode-icon">${visualIcon(17, "")}</span><div><h2>Your Role</h2><img class="portrait" src="/assets/portrait/1.png" alt="Brutus"><strong>Brutus</strong></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(31, "")}</span><div><h2>Your Ending</h2><strong>The Reluctant Architect</strong><p>You chose restraint over power, building guardrails that may hold—if others keep faith.</p></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(12, "")}</span><div><h2>World State</h2><strong>Fragile Stability</strong><p>Rome stands together, but old rivalries smolder and the future is uncertain.</p></div></article></div><div class="lower-grid"><section class="lower-card"><h2>${visualIcon(25, "", "section-icon")}Key Decisions</h2><div class="decision-item"><span class="number-dot">1</span><span>You opposed the dictatorship and pushed for limits on power.</span></div><div class="decision-item"><span class="number-dot">2</span><span>You brokered a compromise between the Senate and Caesar.</span></div><div class="decision-item"><span class="number-dot">3</span><span>You secured support from key allies to pass reforms.</span></div></section><section class="lower-card"><h2>${visualIcon(10, "", "section-icon")}Goals Completed <span class="badge progress">2 / 3</span></h2><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Prevent Caesar from becoming an unrestrained dictator.</span></div><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Avoid a civil war.</span></div><div class="goal-item"><span class="open-check">◯</span><span>Pass meaningful reforms to strengthen the Republic.</span></div></section></div><div class="result-actions"><button class="btn primary" data-action="play-again">${visualIcon(4, "", "button-icon inverted")}Play Again</button><button class="btn" data-action="other-role">${visualIcon(5, "", "button-icon")}Try Another Role</button><button class="btn" data-action="back-worlds">${visualIcon(8, "", "button-icon")}Back to Worlds</button></div></section>`, "worlds");
+  appShell(`<section class="page-frame"><div class="result-run"><img src="/assets/bg/1.png" alt="Rome"><div><h1>Caesar: The Last Spring of the Republic</h1><span class="session-complete">${visualIcon(15, "", "session-icon")}Session Complete</span></div></div><h1 class="result-title">A Republic Without a Master</h1><p class="result-lead">Caesar survived, but accepted limits on his authority.<br>Rome avoided civil war—for now.</p><div class="summary-grid"><article class="summary-card"><span class="mode-icon">${visualIcon(17, "")}</span><div><h2>Your Role</h2><img class="portrait" src="/assets/portrait/1.png" alt="Brutus"><strong>Brutus</strong></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(31, "")}</span><div><h2>Your Ending</h2><strong>The Reluctant Architect</strong><p>You chose restraint over power, building guardrails that may hold—if others keep faith.</p></div></article><article class="summary-card"><span class="mode-icon">${visualIcon(12, "")}</span><div><h2>World State</h2><strong>Fragile Stability</strong><p>Rome stands together, but old rivalries smolder and the future is uncertain.</p></div></article></div><div class="lower-grid"><section class="lower-card"><h2>${visualIcon(25, "", "section-icon")}Key Decisions</h2><div class="decision-item"><span class="number-dot">1</span><span>You opposed the dictatorship and pushed for limits on power.</span></div><div class="decision-item"><span class="number-dot">2</span><span>You brokered a compromise between the Senate and Caesar.</span></div><div class="decision-item"><span class="number-dot">3</span><span>You secured support from key allies to pass reforms.</span></div></section><section class="lower-card"><h2>${visualIcon(10, "", "section-icon")}Goals Completed <span class="badge progress">2 / 3</span></h2><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Prevent Caesar from becoming an unrestrained dictator.</span></div><div class="goal-item"><span class="check">${visualIcon(15, "")}</span><span>Avoid a civil war.</span></div><div class="goal-item"><span class="open-check">◯</span><span>Pass meaningful reforms to strengthen the Republic.</span></div></section></div><div class="result-actions"><button class="btn primary" data-action="play-again">${visualIcon(4, "", "button-icon inverted")}Play Again</button><button class="btn" data-action="other-role">${visualIcon(5, "", "button-icon")}Try Another Role</button><button class="btn" data-action="back-worlds">${visualIcon(8, "", "button-icon")}Back to Worlds</button></div></section>`, "worlds");
   root.querySelector(".result-actions")?.insertAdjacentHTML("afterend", `<button class="result-share-recap" data-action="share-recap" ${fixture ? "" : "disabled"}>${fixture ? "Share Recap" : "Loading recap…"}</button>`);
   bind();
-  root.querySelector("a.back-link")?.setAttribute("href", "/worlds");
   if (!fixture) void hydrateResult(params.get("runId")).then((loaded) => {
     const shareButton = root.querySelector('[data-action="share-recap"]');
     if (!loaded || !shareButton) return;
@@ -610,7 +619,6 @@ async function hydrateResult(runId) {
     const chapter = result.chapter || {};
     const highlights = Array.isArray(chapter.highlights) ? chapter.highlights : [];
     const shell = root.querySelector(".page-frame");
-    shell.querySelector(".back-link").href = "/worlds";
     shell.querySelector(".result-run h1").textContent = title;
     shell.querySelector(".result-run img").alt = title;
     shell.querySelector(".result-title").textContent = chapter.title || `${title} — Session Complete`;
@@ -1074,7 +1082,7 @@ function sharedMultiplayerRoomMarkup(room, { loading = false } = {}) {
     statusLabel: loading ? "Loading status…" : `${room.players.length} / ${room.maxPlayers} players  ·  Waiting for players`,
     infoText: loading ? "Loading role guidance…" : room.isHost ? "As the room creator, you choose roles first." : "Choose an available role and mark yourself ready.",
     footerMessage: loading ? "Loading live room status…" : footerMessage,
-    backHref: room?.worldId ? `/worlds/${encodeURIComponent(room.worldId)}` : "/worlds",
+    backHref: "/",
     isHost: Boolean(room?.isHost),
     canReady: Boolean(currentPlayer?.roleId && !currentPlayer?.ready),
     canStart: allPlayersReady,
@@ -1223,7 +1231,7 @@ async function hydrateSharedRoom(roomId) {
       location.assign(`/game?runId=${encodeURIComponent(room.id)}`);
       return;
     }
-    root.innerHTML = sharedMultiplayerRoomMarkup(room);
+    renderStandardPage(sharedMultiplayerRoomMarkup(room));
     bind();
   } catch (error) {
     notice(error.message || "Unable to load this room.");
@@ -1231,7 +1239,7 @@ async function hydrateSharedRoom(roomId) {
 }
 
 const actions = {
-  "toggle-password": (_event, element) => { const input = root.querySelector('input[name="password"]'); if (!input) return; const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; element.textContent = reveal ? "Hide" : "Show"; element.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); },
+  "toggle-password": (_event, element) => { const input = root.querySelector('input[name="password"]'); if (!input) return; const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; element.setAttribute("aria-pressed", String(reveal)); element.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); },
   forgot: async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter your verified email address first."); try { await request("/api/v4/auth/password-reset/request", { method:"POST", body:JSON.stringify({ email }) }); notice("If this verified account exists, a password-reset email has been sent."); } catch (error) { notice(error.message || "Unable to request a password reset."); } },
   "resend-verification": async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter the email address that needs verification first."); try { await request("/api/v4/auth/verification/resend", { method:"POST", body:JSON.stringify({ email, returnTo: safeReturnTo(params.get("returnTo")) }) }); notice("If this account still needs verification, a new email has been sent."); } catch (error) { notice(error.message || "Unable to resend the verification email."); } },
   "edit-profile": () => openProfileEditor(),

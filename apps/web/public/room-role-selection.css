@@ -43,37 +43,14 @@ body:has(.mw-room-page)::after { right: 0; transform: scaleX(-1); }
 
 .mw-room-page {
   width: min(1360px, calc(100vw - 112px));
-  min-height: 100vh;
+  min-height: calc(100vh - 82px);
   margin: 0 auto;
   padding: 26px 0 30px;
   color: var(--mw-room-ink);
   font-family: Georgia, "Times New Roman", "Noto Serif", serif;
 }
 
-.mw-room-brand {
-  float: right;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0 8px 15px 24px;
-  color: #4933dc;
-  text-decoration: none;
-}
-.mw-room-brand strong { font-size: 18px; }
-.mw-room-brand small { color: #6f7391; font: 500 12px/1.2 "MW Inter", Inter, sans-serif; }
-
-.mw-room-back {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  margin: 0 0 15px 8px;
-  color: #4933dc;
-  font-size: 15px;
-  text-decoration: none;
-}
-
 .mw-room-header {
-  clear: both;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 230px;
   gap: 34px;
@@ -265,7 +242,7 @@ body:has(.mw-room-page)::after { right: 0; transform: scaleX(-1); }
   position: relative;
   min-width: 0;
   min-height: 258px;
-  padding: 0 0 39px;
+  padding: 0 0 56px;
   overflow: hidden;
   border: 1px solid #dcd8e8;
   border-radius: 13px;
@@ -281,10 +258,11 @@ body:has(.mw-room-page)::after { right: 0; transform: scaleX(-1); }
 .mw-room-role-card.is-selected { border: 2px solid #7554f5; box-shadow: 0 0 0 3px rgba(113, 82, 243, 0.14), 0 10px 22px rgba(82, 57, 188, 0.17); }
 .mw-room-role-card:disabled { cursor: default; opacity: 1; }
 .mw-room-role-card.is-taken img { filter: saturate(0.72); }
-.mw-room-role-card img { width: 100%; height: 182px; display: block; object-fit: cover; object-position: center 18%; background: #ebe7e0; }
+.mw-room-role-portrait { width: 100%; height: 182px; display: block; overflow: hidden; background: #ebe7e0; }
+.mw-room-role-card img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center 18%; background: #ebe7e0; }
 .mw-room-role-card strong { display: block; margin: -1px 10px 0; padding-top: 8px; font-size: 23px; }
 .mw-room-role-card em { display: block; margin: 4px 8px; overflow: hidden; font-size: 12px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
-.mw-room-role-status { position: absolute; z-index: 2; bottom: 8px; left: 50%; min-width: 140px; max-width: calc(100% - 32px); min-height: 25px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 3px 16px; transform: translateX(-50%); border: 1px solid #d4dfbf; border-radius: 999px; color: #476a38; background: linear-gradient(180deg, #f7f9ef, #e9efdc); box-shadow: inset 0 1px 0 #fff, 0 2px 5px rgba(65,90,50,.08); font-family: Arial, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .035em; white-space: nowrap; }
+.mw-room-role-status { position: absolute; z-index: 2; bottom: 8px; left: 50%; width: calc(100% - 24px); min-width: 0; max-width: none; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; transform: translateX(-50%); border: 1px solid #d4dfbf; border-radius: 13px; color: #476a38; background: linear-gradient(180deg, #f7f9ef, #e9efdc); box-shadow: inset 0 1px 0 #fff, 0 2px 5px rgba(65,90,50,.08); font-family: Arial, sans-serif; font-size: 13px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
 .mw-room-role-status::before { width: 5px; height: 5px; border-radius: 50%; background: #7c9b64; content: ""; box-shadow: 0 0 0 3px rgba(124,155,100,.12); }
 .mw-room-role-card.is-selected .mw-room-role-status { border-color: #5939db; color: #fff; background: linear-gradient(180deg, #8667ff, #5534da); box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 4px 9px rgba(83,54,203,.24); }
 .mw-room-role-card.is-selected .mw-room-role-status::before { width: 9px; height: 6px; border: 0; border-bottom: 1.5px solid #fff; border-left: 1.5px solid #fff; border-radius: 0; background: transparent; box-shadow: none; transform: rotate(-45deg) translateY(-1px); }
@@ -337,19 +315,84 @@ body:has(.mw-room-page)::after { right: 0; transform: scaleX(-1); }
 .mw-room-page[data-room-mode="multiplayer"] .mw-room-header { grid-template-columns: minmax(0, 1fr) 220px; }
 .mw-room-page[data-room-mode="multiplayer"] .mw-room-title-block { grid-template-columns: minmax(390px, 1.2fr) minmax(330px, 0.8fr); }
 .mw-room-page[data-room-mode="multiplayer"] .mw-room-banner { height: 238px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-body { display: grid; grid-template-columns: 335px minmax(0, 1fr); gap: 16px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-grid { gap: 12px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card { min-height: 184px; padding-bottom: 29px; text-align: left; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card img { width: 49%; height: 145px; float: left; margin-right: 10px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card strong { padding-top: 22px; font-size: 16px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card em { white-space: normal; line-height: 1.4; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice { min-height: 396px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice img { width: 165px; height: 165px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice > strong { width: 185px; }
-.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice .mw-room-role-traits li { min-height: 66px; }
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-body {
+  min-height: 396px;
+  display: grid;
+  grid-template-columns: 335px minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-layout {
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: stretch;
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-grid {
+  gap: 12px;
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card {
+  min-height: 198px;
+  padding: 0 0 56px;
+  text-align: left;
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-portrait {
+  width: 49%;
+  height: 124px;
+  float: left;
+  margin: 10px 10px 8px 10px;
+  border: 1px solid rgba(100, 83, 178, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 5px 12px rgba(42, 31, 92, 0.1);
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  float: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  object-fit: cover;
+  object-position: center 14%;
+  transform: none;
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card strong {
+  margin: 0 10px;
+  padding-top: 24px;
+  font-size: 16px;
+  line-height: 1.2;
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card em {
+  display: -webkit-box;
+  min-height: 34px;
+  margin: 7px 10px 0;
+  overflow: hidden;
+  color: #5f6685;
+  font-size: 12px;
+  line-height: 1.42;
+  text-align: left;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-role-status {
+  width: calc(100% - 24px);
+  max-width: none;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 13px;
+  font-size: 13px;
+  letter-spacing: .02em;
+}
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice { min-height: 396px; height: 100%; padding: 18px 12px; }
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice img { width: 138px; height: 138px; margin-top: 14px; }
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice > strong { width: 172px; min-height: 38px; margin-bottom: 12px; font-size: 19px; }
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice > p { margin-bottom: 12px; }
+.mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice .mw-room-role-traits li { min-height: 58px; padding: 7px 3px; }
 
-.mw-room-roster { min-height: 396px; padding: 17px 16px; border: 1px solid #dedfee; border-radius: 13px; background: rgba(255,255,255,.86); }
+.mw-room-roster { min-height: 396px; height: 100%; padding: 17px 16px; border: 1px solid #dedfee; border-radius: 13px; background: rgba(255,255,255,.86); }
 .mw-room-roster > div { display: flex; align-items: baseline; justify-content: center; gap: 9px; color: #563ce0; }
 .mw-room-roster h2 { margin: 0; font-size: 18px; text-transform: uppercase; }
 .mw-room-roster ul { margin: 10px 0 0; padding: 0; list-style: none; }
@@ -379,7 +422,8 @@ body:has(.mw-room-page)::after { right: 0; transform: scaleX(-1); }
   .mw-room-solo-card,
   .mw-room-invite-card { min-height: 0; }
   .mw-room-page[data-room-mode="multiplayer"] .mw-room-body { grid-template-columns: 280px 1fr; }
-  .mw-room-page[data-room-mode="multiplayer"] .mw-room-role-layout { grid-template-columns: 1fr; }
+  .mw-room-page[data-room-mode="multiplayer"] .mw-room-role-layout { height: auto; grid-template-columns: 1fr; }
+  .mw-room-page[data-room-mode="multiplayer"] .mw-room-current-choice { min-height: 0; height: auto; }
 }
 
 @media (max-width: 820px) {
@@ -391,6 +435,13 @@ body:has(.mw-room-page)::after { right: 0; transform: scaleX(-1); }
   .mw-room-role-layout,
   .mw-room-page[data-room-mode="multiplayer"] .mw-room-body { grid-template-columns: 1fr; }
   .mw-room-role-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .mw-room-page[data-room-mode="multiplayer"] .mw-room-role-grid {
+    height: auto;
+    grid-template-rows: none;
+    grid-auto-rows: minmax(250px, auto);
+  }
+  .mw-room-page[data-room-mode="multiplayer"] .mw-room-role-card { min-height: 250px; }
+  .mw-room-roster { min-height: 0; }
   .mw-room-current-choice { min-height: 0; }
   .mw-room-footer { align-items: stretch; flex-direction: column; padding: 16px; }
   .mw-room-footer p { margin: 0; }

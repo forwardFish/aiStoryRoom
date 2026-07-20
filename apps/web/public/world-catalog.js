@@ -6,11 +6,11 @@ export const worlds = Object.freeze([
     copy: "A grain-price crisis, a court edict, and seven days to decide what to protect.",
     detail: "In a seven-stage fiscal crisis, every public claim, private pressure, and preserved record changes what the other roles can do next.",
     rolePreview: Object.freeze([
-      Object.freeze({ name: "\u6d59\u6c5f\u603b\u7763", copy: "Hold the whole province together.", portrait: "/assets/portrait/1.png" }),
-      Object.freeze({ name: "\u6d59\u6c5f\u5de1\u629a", copy: "Reform cannot outrun the evidence.", portrait: "/assets/portrait/2.png" }),
-      Object.freeze({ name: "\u6e05\u6d41\u53bf\u4ee4", copy: "Protect the people and preserve the records.", portrait: "/assets/portrait/3.png" }),
-      Object.freeze({ name: "\u6c5f\u5357\u5546\u4f1a", copy: "Grain and silver have their own politics.", portrait: "/assets/portrait/4.png" }),
-      Object.freeze({ name: "\u53f8\u793c\u76d1\u7ec7\u9020\u4f7f", copy: "The court watches every silver road.", portrait: "/assets/portrait/5.png" })
+      Object.freeze({ name: "\u6d59\u6c5f\u603b\u7763", copy: "Hold the whole province together.", portrait: "/assets/game/sangtian/generated/role-governor-scene-v1.png" }),
+      Object.freeze({ name: "\u6d59\u6c5f\u5de1\u629a", copy: "Reform cannot outrun the evidence.", portrait: "/assets/game/sangtian/generated/role-xunfu-scene-v1.png" }),
+      Object.freeze({ name: "\u6e05\u6d41\u53bf\u4ee4", copy: "Protect the people and preserve the records.", portrait: "/assets/game/sangtian/generated/governor-scene-v1.png" }),
+      Object.freeze({ name: "\u6c5f\u5357\u5546\u4f1a", copy: "Grain and silver have their own politics.", portrait: "/assets/game/sangtian/generated/role-merchant-scene-v1.png" }),
+      Object.freeze({ name: "\u53f8\u793c\u76d1\u7ec7\u9020\u4f7f", copy: "The court watches every silver road.", portrait: "/assets/game/sangtian/generated/role-spy-scene-v1.png" })
     ]),
     image: 2,
     roles: "1-3",
@@ -26,12 +26,12 @@ export const worlds = Object.freeze([
     copy: "Caesar trusts you. The conspirators need you. Rome will judge whatever survives.",
     detail: "The Republic teeters on a knife's edge. Ambition clashes with loyalty, and every choice writes a different history.",
     rolePreview: Object.freeze([
-      Object.freeze({ name: "Brutus", copy: "I serve Rome, not any man.", portrait: "/assets/portrait/1.png" }),
-      Object.freeze({ name: "Caesar", copy: "I came, I saw, I changed Rome.", portrait: "/assets/portrait/2.png" }),
-      Object.freeze({ name: "Cassius", copy: "Liberty isn't given. It's taken.", portrait: "/assets/portrait/3.png" }),
-      Object.freeze({ name: "Mark Antony", copy: "I speak for Rome. And I remember.", portrait: "/assets/portrait/4.png" }),
-      Object.freeze({ name: "Decimus", copy: "I watch. I learn. I will decide.", portrait: "/assets/portrait/5.png" }),
-      Object.freeze({ name: "Cicero", copy: "Words are my sharpest weapon.", portrait: "/assets/portrait/6.png" })
+      Object.freeze({ name: "Brutus", copy: "I serve Rome, not any man.", portrait: "/assets/game/caesar/brutus.png" }),
+      Object.freeze({ name: "Caesar", copy: "I came, I saw, I changed Rome.", portrait: "/assets/game/caesar/caesar.png" }),
+      Object.freeze({ name: "Cassius", copy: "Liberty isn't given. It's taken.", portrait: "/assets/game/caesar/cassius.png" }),
+      Object.freeze({ name: "Mark Antony", copy: "I speak for Rome. And I remember.", portrait: "/assets/game/caesar/mark-antony.png" }),
+      Object.freeze({ name: "Decimus", copy: "I watch. I learn. I will decide.", portrait: "/assets/game/caesar/decimus.png" }),
+      Object.freeze({ name: "Cicero", copy: "Words are my sharpest weapon.", portrait: "/assets/game/caesar/cicero.png" })
     ]),
     image: 1,
     roles: "1-6",

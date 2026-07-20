@@ -6,14 +6,14 @@
   "templateId": "template_sangtian_001",
   "status": "playable",
   "catalog": {
-    "title": "桑田诏：嘉靖财政危局",
-    "subtitle": "七轮连续权谋故事局",
-    "description": "嘉靖朝财政危局中，六方角色必须在改革、粮价、田契、暗账、内廷与御前裁决之间作出彼此影响的选择。",
-    "genre": "历史权谋",
-    "tags": ["历史", "权谋", "多人", "多结局"],
+    "title": "Sangtian Edict: The Jiajing Fiscal Crisis",
+    "subtitle": "Seven scenes of reform, grain, and imperial power",
+    "description": "Six roles must navigate reform, grain prices, land deeds, hidden accounts, court pressure, and an imperial verdict.",
+    "genre": "History & Power",
+    "tags": ["History", "Power", "Negotiation", "Multiple Endings"],
     "durationLabel": "40–60 Minutes",
-    "cardCover": "/assets/game/sangtian/cover.png",
-    "heroCover": "/assets/game/sangtian/cover.png",
+    "cardCover": "/assets/game/sangtian/catalog-cover.png",
+    "heroCover": "/assets/game/sangtian/background.png?v=efb61093",
     "lobby": {
       "title": "Sangtian Edict: The Jiajing Fiscal Crisis",
       "description": "A grain-price crisis, a court edict, and seven days to decide what to protect.",
@@ -42,13 +42,21 @@
     "portrait": "/assets/game/sangtian/palace.png"
   },
   "presentation": {
+    "locale": "zh-CN",
     "locationLabel": "杭州总督府 · 内厅",
     "roundLabel": "共同回合",
     "finaleLabel": "御前裁决",
-    "sceneBackground": "/assets/game/sangtian/background.png",
+    "sceneBackground": "/assets/game/sangtian/background.png?v=efb61093",
     "assetManifest": "/assets/game/sangtian/asset-manifest.json",
     "accent": "#6545f5",
-    "accentSoft": "#f3f0ff"
+    "accentSoft": "#f3f0ff",
+    "statusMetrics": [
+      { "key": "treasury", "label": "国库银两", "value": 42, "suffix": "", "tone": "default" },
+      { "key": "public_sentiment", "label": "民心", "value": 55, "suffix": "", "tone": "green" },
+      { "key": "grain_price", "label": "粮价", "value": 72, "suffix": "", "tone": "gold" },
+      { "key": "reform_progress", "label": "改桑进度", "value": 58, "suffix": "%", "tone": "green" },
+      { "key": "imperial_trust", "label": "皇帝信任", "value": 43, "suffix": "", "tone": "crown" }
+    ]
   },
   "roles": [
     {
@@ -64,6 +72,21 @@
       "knownInfo": ["改桑时限", "县令密信渠道"],
       "cannotDo": ["越过朝廷直接改写国策"],
       "portrait": "/assets/game/sangtian/generated/role-governor-scene-v1.png",
+      "gameplayProfile": {
+        "characterName": "郑帅彬",
+        "rank": "从四品",
+        "office": "兵部侍郎衔",
+        "fateQuestion": "稳住浙江并避免皇帝认定你欺瞒。",
+        "goals": ["稳定浙江局势", "控制巡抚势力", "避免皇帝生疑"],
+        "resources": [
+          { "label": "银两", "value": "42 万两" },
+          { "label": "粮草", "value": "23 万石" },
+          { "label": "兵丁", "value": "4/5" },
+          { "label": "幕僚", "value": "4 人" },
+          { "label": "密报", "value": "2 条" }
+        ],
+        "leverage": ["田契暗账（半页）", "清流县令密信", "巡抚与商会旧约传闻"]
+      },
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },

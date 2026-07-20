@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "strategy_registry_v1",
+  "defaultStrategyVersion": "template_world_v1_0",
+  "strategies": {
+    "template_world_v1_0": {
+      "artifactDirectory": "continuous-strategy",
+      "manifestSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "status": "development"
+    }
+  }
+}
