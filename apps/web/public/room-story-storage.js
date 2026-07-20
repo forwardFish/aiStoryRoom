@@ -81,9 +81,10 @@ export class RoomStoryStorage {
     const activePlayers = room.players.filter((item) => item.roleId);
     const allSubmitted = activePlayers.length > 0 && activePlayers.every((item) => submitted.has(item.roleId));
     const round = Number(model.currentNode?.nodeIndex || 7);
+    const en = presentation.locale === "en";
     const profile = role.gameplayProfile || roleProfile(role.roleKey, role.roleName);
     const completedRounds = Math.max(0, round - 1);
-    const options = roomActionOptions(model.currentNode).map((title, index) => ({ key: "ABCD"[index], title, body: title }));
+    const options = roomActionOptions(model.currentNode, en).map((title, index) => ({ key: "ABCD"[index], title, body: title }));
     const completed = Boolean(model.completed || room.status === "chapter_generated");
     const resolving = room.status === "resolving";
 
@@ -94,7 +95,7 @@ export class RoomStoryStorage {
         title: presentation.title || room.title,
         location: presentation.locationLabel,
         currentDay: round,
-        currentTime: resolving ? "共同推演中" : "共同决策",
+        currentTime: resolving ? (en ? "Resolving Together" : "共同推演中") : (en ? "Shared Decision" : "共同决策"),
         totalDays: presentation.totalStages,
         status: completed ? "room_complete" : resolving ? "room_resolving" : ownSubmitted ? "room_waiting" : "awaiting_decision",
         version: round,
@@ -119,9 +120,9 @@ export class RoomStoryStorage {
       messages: model.currentNode ? [{
         id: model.currentNode.id,
         day: round,
-        time: "共同决策",
+        time: en ? "Shared Decision" : "共同决策",
         type: "system",
-        label: "本轮局势",
+        label: en ? "Current Situation" : "本轮局势",
         title: model.currentNode.title,
         body: model.currentNode.publicNarration
       }] : [],
@@ -133,14 +134,14 @@ export class RoomStoryStorage {
       dashboard: {
         worldState: presentation.statusMetrics.map((metric) => [metric.key, metric.value]),
         statusMetrics: presentation.statusMetrics,
-        relationships: activePlayers.filter((item) => item.roleId !== role.id).map((item) => ({ name: item.roleName, person: item.nickname, stance: submitted.has(item.roleId) ? "已决策" : "思考中", score: submitted.has(item.roleId) ? 60 : 45 })),
-        risks: [["改桑期限", "高"], ["三方权责冲突", "中"]],
+        relationships: activePlayers.filter((item) => item.roleId !== role.id).map((item) => ({ name: item.roleName, person: item.nickname, stance: submitted.has(item.roleId) ? (en ? "Decided" : "已决策") : (en ? "Thinking" : "思考中"), score: submitted.has(item.roleId) ? 60 : 45 })),
+        risks: en ? [["Civil War Escalation", "High"], ["Senate–Legion Conflict", "Medium"]] : [["改桑期限", "高"], ["三方权责冲突", "中"]],
         traces: [],
         visibleCausalCard: null,
         causalRecallMessages: []
       },
-      publicRoleInferences: activePlayers.filter((item) => item.roleId !== role.id).map((item) => ({ publicIdentity: item.roleName, publicGoal: submitted.has(item.roleId) ? "本轮行动已提交" : "正在判断本轮局势", observableSignals: [item.nickname] })),
-      decisionHistory: ownSubmitted ? [{ day: round, decisionIndex: 1, optionKey: "A", title: "本轮决策已提交" }] : [],
+      publicRoleInferences: activePlayers.filter((item) => item.roleId !== role.id).map((item) => ({ publicIdentity: item.roleName, publicGoal: submitted.has(item.roleId) ? (en ? "Action submitted for this scene" : "本轮行动已提交") : (en ? "Assessing the current situation" : "正在判断本轮局势"), observableSignals: [item.nickname] })),
+      decisionHistory: ownSubmitted ? [{ day: round, decisionIndex: 1, optionKey: "A", title: en ? "Decision submitted" : "本轮决策已提交" }] : [],
       dayProgress: { completed: ownSubmitted ? 1 : 0, required: 1 },
       daySummary: null,
       daySummaries: {},
@@ -160,9 +161,11 @@ export class RoomStoryStorage {
   }
 }
 
-function roomActionOptions(node = {}) {
+function roomActionOptions(node = {}, en = false) {
   const options = Array.isArray(node?.actionOptions) ? node.actionOptions.filter(Boolean).slice(0, 4) : [];
-  return options.length ? options : ["保留证据并交叉核验", "推进本职方案并说明代价", "协调另一位角色的资源"];
+  return options.length ? options : en
+    ? ["Preserve the evidence and cross-check it", "Advance your plan and state its cost", "Coordinate another role's resources"]
+    : ["保留证据并交叉核验", "推进本职方案并说明代价", "协调另一位角色的资源"];
 }
 
 function roleProfile(roleKey, roleName) {

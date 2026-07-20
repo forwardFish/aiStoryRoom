@@ -490,19 +490,19 @@ export function createStoryApp({
       <div class="causal-shell" data-testid="story-shell" data-game-locale="${esc(view.locale || "zh-CN")}" style="${esc(gameStyle(view))}">
         ${renderTopbar(view, state)}
         ${renderStatusStrip(view)}
-        <aside class="causal-left" aria-label="玩家信息">
+        <aside class="causal-left" aria-label="${isEnglish(view) ? "Player information" : "玩家信息"}">
           ${renderPlayer(view)}
           ${renderDayMission(view)}
           ${renderResources(view)}
           ${renderLeverage(view)}
-          ${renderRisks(view.dashboard)}
+          ${renderRisks(view.dashboard, view)}
           ${renderCausalRecalls(view)}
         </aside>
         <main class="causal-center ${mainMode === "history" ? "history-center" : ""} ${mainMode === "critical_pending" ? "critical-pending-center" : ""} ${mainMode === "decision" ? "decision-center" : ""}">
           ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
           ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" ? renderDecisionZone(view, state) : ""}
         </main>
-        <aside class="causal-right" aria-label="主动谋划中枢">
+        <aside class="causal-right" aria-label="${isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
           ${renderManeuverPanel(view, state)}
           ${view.roomSession ? renderRoomPartyPanel(view, state) : ""}
           ${state.debugBuild ? renderBuildDiagnostics(view) : ""}
@@ -1086,10 +1086,10 @@ function renderRelationships(dashboard = {}) {
   return `<section class="causal-panel"><h2>人物关系</h2>${relationships.length ? relationships.map((item) => `<div class="rel"><div><b>${esc(item.name)}</b>${item.person ? `<small>${esc(item.person)}</small>` : ""}</div><span>${esc(item.stance)} ${number(item.score)}</span></div>`).join("") : `<p>人物关系尚未公开。</p>`}</section>`;
 }
 
-function renderRisks(dashboard = {}) {
+function renderRisks(dashboard = {}, view = {}) {
   const risks = array(dashboard.risks);
   if (!risks.length) return "";
-  return `<section class="causal-panel"><h2>当前风险</h2>${risks.map((item) => {
+  return `<section class="causal-panel"><h2>${isEnglish(view) ? "Current Risks" : "当前风险"}</h2>${risks.map((item) => {
     const [name, level] = Array.isArray(item) ? item : [item?.name || item?.title, item?.level];
     return `<div class="kv"><span>${esc(name)}</span><b class="risk-${className(level)}">${esc(level)}</b></div>`;
   }).join("")}</section>`;

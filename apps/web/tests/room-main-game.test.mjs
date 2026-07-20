@@ -63,8 +63,11 @@ test("Caesar reuses the same main-game renderer with its own script-backed Engli
   assert.match(harness.root.querySelector(".status-strip").textContent, /Caesar's Authority\s*78/);
   assert.match(harness.root.querySelector(".status-strip").textContent, /Senate Legitimacy\s*48/);
   assert.match(harness.root.textContent, /Maneuver Board/);
+  assert.match(harness.root.textContent, /Shared Decision/);
+  assert.match(harness.root.textContent, /Current Risks/);
+  assert.match(harness.root.textContent, /Civil War Escalation/);
   assert.equal(harness.app.getState().view.run.title, "Caesar: The Last Spring of the Republic");
-  assert.doesNotMatch(harness.root.textContent, /杭州总督府|国库银|改桑进度|桑田诏/);
+  assert.doesNotMatch(harness.root.textContent, /杭州总督府|国库银|改桑进度|改桑期限|共同决策|当前风险|桑田诏/);
   harness.dom.window.close();
 });
 

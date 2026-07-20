@@ -168,6 +168,9 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .player h3 { margin-top: 16px; color: #262e5b; font-size: 21px; line-height: 1.25; }
 .player p.player-meta { margin-top: 56px; gap: 4px; }
 .player-meta strong { color: #303866; font-size: 16px; } .player-meta span { color: #7a819e; font-size: 14px; }
+.causal-shell[data-game-locale="en"] .player p.player-meta { margin-top: 54px; gap: 1px; line-height: 1.08; }
+.causal-shell[data-game-locale="en"] .player-meta strong { font-size: 13px; }
+.causal-shell[data-game-locale="en"] .player-meta span { font-size: 11px; line-height: 1.12; }
 .player em { margin-top: 15px; padding: 13px 15px; border: 1px solid #e7e7fa; border-radius: 12px; background: #f7f5ff; color: #5b5f88; font-size: 15px; }
 .player em::before { background: var(--mw-purple); }
 .day-mission { min-height: 232px; }

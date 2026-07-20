@@ -42,13 +42,21 @@
     "portrait": "/assets/game/template_world/world-actor.png"
   },
   "presentation": {
+    "locale": "en",
     "locationLabel": "请填写主要地点",
     "roundLabel": "共同回合",
     "finaleLabel": "最终裁决",
     "sceneBackground": "/assets/game/template_world/background.png",
     "assetManifest": null,
     "accent": "#6545f5",
-    "accentSoft": "#f3f0ff"
+    "accentSoft": "#f3f0ff",
+    "statusMetrics": [
+      { "key": "metric_01", "label": "World Metric 1", "value": 50, "suffix": "", "tone": "default" },
+      { "key": "metric_02", "label": "World Metric 2", "value": 50, "suffix": "", "tone": "green" },
+      { "key": "metric_03", "label": "World Metric 3", "value": 50, "suffix": "", "tone": "gold" },
+      { "key": "metric_04", "label": "World Metric 4", "value": 50, "suffix": "%", "tone": "green" },
+      { "key": "metric_05", "label": "World Metric 5", "value": 50, "suffix": "", "tone": "crown" }
+    ]
   },
   "roles": [
     {
@@ -64,6 +72,18 @@
       "knownInfo": ["已知信息一", "已知信息二"],
       "cannotDo": ["明确禁止的越权行为"],
       "portrait": "/assets/game/template_world/roles/role-01.png",
+      "gameplayProfile": {
+        "characterName": "请填写角色完整姓名",
+        "rank": "请填写身份或等级",
+        "office": "请填写职位或公开定位",
+        "fateQuestion": "请填写角色的命运问题",
+        "goals": ["目标一", "目标二", "目标三"],
+        "resources": [
+          { "label": "资源一", "value": "初始值" },
+          { "label": "资源二", "value": "初始值" }
+        ],
+        "leverage": ["初始筹码一", "初始筹码二"]
+      },
       "canBeHumanControlled": true,
       "canBeAiControlled": true
     },
