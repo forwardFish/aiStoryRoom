@@ -10,6 +10,7 @@ import {
 import { WindowLifecycleService } from "./continuous-strategy/window-lifecycle.service";
 import { WindowResolutionService } from "./continuous-strategy/window-resolution.service";
 import { RoleAgentTaskService } from "./continuous-strategy/role-agent-task.service";
+import { ContinuousStoryV2Service } from "./continuous-story-v2/continuous-story-v2.service";
 
 const LEASE_MS = normalizeStoryTaskLeaseMs(process.env.STORY_TASK_LEASE_MS);
 const POLL_MS = 250;
@@ -20,6 +21,13 @@ export { normalizeStoryTaskLeaseMs } from "./config/continuous-strategy.config";
 export function requiresOutboxHeartbeat(taskType: string) {
   return taskType !== "RESOLVE_WINDOW";
 }
+
+const V2_TASK_TYPES = ["ACTOR_OPENING_V2", "ACTOR_AGENT_TURN_V2", "ACTOR_RESULT_V2", "ACTOR_IMPACT_V2", "CONDITIONAL_ACTION_V2"];
+function isV2Task(taskType: string) { return V2_TASK_TYPES.includes(taskType); }
+function pendingStatus(taskType: string) { return isV2Task(taskType) ? "PENDING" : "pending"; }
+function runningStatus(taskType: string) { return isV2Task(taskType) ? "RUNNING" : "running"; }
+function completedStatus(taskType: string) { return isV2Task(taskType) ? "COMPLETED" : "completed"; }
+function failedStatus(taskType: string) { return isV2Task(taskType) ? "FAILED" : "failed"; }
 
 @Injectable()
 export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
@@ -36,7 +44,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
     @Inject(StoryService) private readonly story: StoryService,
     @Inject(WindowLifecycleService) private readonly lifecycle: WindowLifecycleService,
     @Inject(WindowResolutionService) private readonly continuousResolution: WindowResolutionService,
-    @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService
+    @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService,
+    @Inject(ContinuousStoryV2Service) private readonly continuousStoryV2: ContinuousStoryV2Service
   ) {}
 
   onModuleInit() {
@@ -91,9 +100,9 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
 
   async health() {
     const [pending, running, oldest] = await Promise.all([
-      this.prisma.storyTaskOutbox.count({ where: { status: "pending" } }),
-      this.prisma.storyTaskOutbox.count({ where: { status: "running" } }),
-      this.prisma.storyTaskOutbox.findFirst({ where: { status: { in: ["pending", "running"] } }, orderBy: { createdAt: "asc" }, select: { createdAt: true } })
+      this.prisma.storyTaskOutbox.count({ where: { status: { in: ["pending", "PENDING"] } } }),
+      this.prisma.storyTaskOutbox.count({ where: { status: { in: ["running", "RUNNING"] } } }),
+      this.prisma.storyTaskOutbox.findFirst({ where: { status: { in: ["pending", "PENDING", "running", "RUNNING"] } }, orderBy: { createdAt: "asc" }, select: { createdAt: true } })
     ]);
     return { workerId: this.workerId, enabled: readContinuousStrategyConfig().workerEmbedded || process.env.STORY_WORKER_PROCESS === "true", topology: process.env.STORY_WORKER_PROCESS === "true" ? "independent" : "embedded", leaseMs: LEASE_MS, pending, running, oldestAgeMs: oldest ? Date.now() - oldest.createdAt.getTime() : 0 };
   }
@@ -111,12 +120,33 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         where: { status: "running", leaseExpiresAt: { lt: now } },
         data: { status: "pending", leaseOwner: null, leaseExpiresAt: null, nextRetryAt: now, leaseVersion: { increment: 1 } }
       });
-      const first = await this.prisma.storyTaskOutbox.findFirst({ where: { status: "pending", nextRetryAt: { lte: now } }, orderBy: { createdAt: "asc" } });
+      await this.prisma.storyTaskOutbox.updateMany({
+        where: { status: "RUNNING", taskType: { in: V2_TASK_TYPES }, leaseExpiresAt: { lt: now } },
+        data: { status: "PENDING", leaseOwner: null, leaseExpiresAt: null, nextRetryAt: now, leaseVersion: { increment: 1 } }
+      });
+      // Independent V2 actor turns are player-facing continuation work. Do not
+      // let an unrelated backlog of legacy shared-window tasks become a hidden
+      // room-wide barrier for a role that is ready to keep moving.
+      const firstV2Task = await this.prisma.storyTaskOutbox.findFirst({
+        where: {
+          status: "PENDING",
+          taskType: { in: V2_TASK_TYPES },
+          nextRetryAt: { lte: now }
+        },
+        orderBy: { createdAt: "asc" }
+      });
+      const first = firstV2Task || await this.prisma.storyTaskOutbox.findFirst({
+        where: {
+          nextRetryAt: { lte: now },
+          OR: [{ status: "pending" }, { status: "PENDING", taskType: { in: V2_TASK_TYPES } }]
+        },
+        orderBy: { createdAt: "asc" }
+      });
       if (!first) return;
       const limit = Math.max(1, Math.min(ROLE_AGENT_TASK_CONCURRENCY, Math.trunc(roleAgentConcurrency || 1)));
-      // Provider waits must not serialize the three playable roles. Keep every
-      // non-Agent task single-file so resolution ordering and legacy behavior
-      // remain unchanged.
+      // V1 provider waits may overlap. V2 actor turns intentionally remain
+      // single-file here because each one advances the authoritative world
+      // sequence and the supported remote pool is deliberately small.
       const candidates = first.taskType === "ROLE_AGENT_DECISION" && limit > 1
         ? await this.prisma.storyTaskOutbox.findMany({
             where: {
@@ -134,9 +164,11 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         : [first];
       const claimedTaskIds: string[] = [];
       for (const candidate of candidates) {
+        const candidatePending = pendingStatus(candidate.taskType);
+        const candidateRunning = runningStatus(candidate.taskType);
         const claimed = await this.prisma.storyTaskOutbox.updateMany({
-          where: { id: candidate.id, status: "pending", nextRetryAt: { lte: now } },
-          data: { status: "running", leaseOwner: this.workerId, leaseExpiresAt: new Date(Date.now() + LEASE_MS), startedAt: now, attempt: { increment: 1 }, leaseVersion: { increment: 1 } }
+          where: { id: candidate.id, status: candidatePending, nextRetryAt: { lte: now } },
+          data: { status: candidateRunning, leaseOwner: this.workerId, leaseExpiresAt: new Date(Date.now() + LEASE_MS), startedAt: now, attempt: { increment: 1 }, leaseVersion: { increment: 1 } }
         });
         if (claimed.count === 1) claimedTaskIds.push(candidate.id);
       }
@@ -151,7 +183,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
     // incremented by the claim CAS, so the pre-claim candidate must never be
     // used for retries, renewal, completion, or failure.
     const task = await this.prisma.storyTaskOutbox.findUnique({ where: { id: taskId } });
-    if (!task || task.status !== "running" || task.leaseOwner !== this.workerId || !task.leaseExpiresAt || task.leaseExpiresAt.getTime() <= Date.now()) return;
+    if (!task || task.status !== runningStatus(task.taskType) || task.leaseOwner !== this.workerId || !task.leaseExpiresAt || task.leaseExpiresAt.getTime() <= Date.now()) return;
+    const activeStatus = runningStatus(task.taskType);
     const fence = { taskId: task.id, leaseOwner: this.workerId, leaseVersion: task.leaseVersion };
     let leaseLost = false;
 
@@ -164,7 +197,7 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         .updateMany({
           where: {
             id: task.id,
-            status: "running",
+            status: activeStatus,
             leaseOwner: fence.leaseOwner,
             leaseVersion: fence.leaseVersion,
             leaseExpiresAt: { gt: new Date() }
@@ -189,11 +222,7 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn(`Story task ${task.id} lost lease ${fence.leaseVersion}; suppressing execution`);
         return;
       }
-      const resolution = task.taskType === "RESOLVE_WINDOW"
-        ? await this.continuousResolution.resolve(String(task.windowId), fence)
-        : task.taskType === "ROLE_AGENT_DECISION"
-          ? await this.roleAgents.execute(task.id, fence)
-          : await this.story.resolveNode(task.nodeId);
+      const resolution = await this.executeTask(task, fence);
       if ((resolution as any)?.outcome === "LEASE_LOST") {
         leaseLost = true;
         this.logger.warn(`Story task ${task.id} lost lease ${fence.leaseVersion}; completion suppressed`);
@@ -202,12 +231,12 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       const completed = await this.prisma.storyTaskOutbox.updateMany({
         where: {
           id: task.id,
-          status: "running",
+          status: activeStatus,
           leaseOwner: fence.leaseOwner,
           leaseVersion: fence.leaseVersion,
           leaseExpiresAt: { gt: new Date() }
         },
-        data: { status: "completed", outcome: (resolution as any)?.outcome || "COMPLETED", completedAt: new Date(), leaseOwner: null, leaseExpiresAt: null, resultJson: resolution as object, lastError: null }
+        data: { status: completedStatus(task.taskType), outcome: (resolution as any)?.outcome || "COMPLETED", completedAt: new Date(), leaseOwner: null, leaseExpiresAt: null, resultJson: resolution as object, lastError: null }
       });
       if (completed.count !== 1) {
         leaseLost = true;
@@ -232,14 +261,14 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       const recorded = await this.prisma.storyTaskOutbox.updateMany({
         where: {
           id: task.id,
-          status: "running",
+          status: activeStatus,
           leaseOwner: fence.leaseOwner,
           leaseVersion: fence.leaseVersion,
           leaseExpiresAt: { gt: new Date() }
         },
         data: exhausted
-          ? { status: "failed", leaseOwner: null, leaseExpiresAt: null, lastError: message }
-          : { status: "pending", leaseOwner: null, leaseExpiresAt: null, nextRetryAt: new Date(Date.now() + delayMs), lastError: message }
+          ? { status: failedStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, lastError: message }
+          : { status: pendingStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, nextRetryAt: new Date(Date.now() + delayMs), lastError: message }
       });
       if (recorded.count !== 1) {
         this.logger.warn(`Story task ${task.id} lost lease ${fence.leaseVersion}; failure suppressed`);
@@ -249,6 +278,32 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn(`Story task ${task.id} attempt ${task.attempt} failed: ${message}`);
     } finally {
       if (heartbeat) clearInterval(heartbeat);
+    }
+  }
+
+  private async executeTask(task: { id: string; nodeId: string; windowId: string | null; taskType: string }, fence: { taskId: string; leaseOwner: string; leaseVersion: number }) {
+    switch (task.taskType) {
+      case "RESOLVE_WINDOW":
+        return this.continuousResolution.resolve(String(task.windowId), fence);
+      case "ROLE_AGENT_DECISION":
+        return this.roleAgents.execute(task.id, fence);
+      case "ACTOR_OPENING_V2":
+        return this.continuousStoryV2.executeOpeningTask(task.id, fence);
+      case "ACTOR_AGENT_TURN_V2":
+        return this.continuousStoryV2.executeAgentTask(task.id, fence);
+      case "ACTOR_RESULT_V2":
+        return this.continuousStoryV2.executeResultTask(task.id, fence);
+      case "ACTOR_IMPACT_V2":
+        return this.continuousStoryV2.executeImpactTask(task.id, fence);
+      case "CONDITIONAL_ACTION_V2":
+        return this.continuousStoryV2.executeConditionalTask(task.id, fence);
+      case "resolve_node":
+        return this.story.resolveNode(task.nodeId);
+      default:
+        // Never interpret a future task vocabulary as a legacy node
+        // resolution. During rolling deploys that would corrupt an independent
+        // actor thread by creating a shared DirectorResolution.
+        throw new Error(`UNKNOWN_STORY_TASK_TYPE:${task.taskType}`);
     }
   }
 

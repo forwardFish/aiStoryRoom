@@ -7,7 +7,7 @@ import { CreditsService } from "./credits/credits.service";
 import { ReferralsService } from "./referrals/referrals.service";
 import type { AuthenticatedUser } from "./auth/current-user.decorator";
 import { Observable } from "rxjs";
-import { CONTINUOUS_ENGINE_VERSION, type ControlCommandV1, type HeartbeatCommandV1, type LayoutCommandV1, type SlotCommandV1 } from "@ai-story/shared";
+import { CONTINUOUS_ENGINE_VERSION, CONTINUOUS_STORY_ENGINE_VERSION, type ControlCommandV1, type HeartbeatCommandV1, type LayoutCommandV1, type SlotCommandV1, type TurnDecisionCommandV2 } from "@ai-story/shared";
 import { findGameDefinition } from "@ai-story/templates";
 import { readContinuousStrategyConfig, selectRunVersions } from "./config/continuous-strategy.config";
 import { ActionWindowService } from "./continuous-strategy/action-window.service";
@@ -15,6 +15,7 @@ import { ActionCommandService } from "./continuous-strategy/action-command.servi
 import { ContinuousEventDeliveryService } from "./continuous-strategy/event-delivery.service";
 import { MemberProjectionService } from "./continuous-strategy/member-projection.service";
 import { createHash } from "node:crypto";
+import { ContinuousStoryV2Service } from "./continuous-story-v2/continuous-story-v2.service";
 
 const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const IDEMPOTENCY_REPLAY_ATTEMPTS = 300;
@@ -32,8 +33,44 @@ export function soloCreationResponse(runId: string, payload: Record<string, unkn
   return { ...payload, id: runId, runId, roomId: runId };
 }
 
+export function shouldResumeExistingSolo(input: { resumeExisting?: boolean }) {
+  return input.resumeExisting !== false;
+}
+
 function isUniqueConstraintError(error: unknown) {
   return Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002");
+}
+
+function exceptionCode(error: unknown) {
+  if (!error || typeof error !== "object") return "";
+  const direct = "code" in error ? String(error.code || "") : "";
+  if (direct) return direct;
+  if (!("getResponse" in error) || typeof error.getResponse !== "function") return "";
+  const response = error.getResponse();
+  return response && typeof response === "object" && "code" in response ? String(response.code || "") : "";
+}
+
+function isSoloCreationRace(error: unknown) {
+  return isUniqueConstraintError(error) || ["ROOM_NOT_WAITING", "ROOM_STATE_CONFLICT", "ROLE_ALREADY_TAKEN"].includes(exceptionCode(error));
+}
+
+export function compareSoloProgress(left: any, right: any, roleKey: string) {
+  const tuple = (run: any) => {
+    const roleThread = (run.actorThreads || []).find((thread: any) => thread.role?.roleKey === roleKey);
+    return [
+      Number(run.worldSequence || 0),
+      Number(roleThread?.currentStageIndex || 0),
+      Number(roleThread?.currentTurnIndex || 0),
+      Number(run._count?.actionResolutions || 0),
+      new Date(run.updatedAt || 0).getTime()
+    ];
+  };
+  const leftProgress = tuple(left);
+  const rightProgress = tuple(right);
+  for (let index = 0; index < leftProgress.length; index += 1) {
+    if (leftProgress[index] !== rightProgress[index]) return rightProgress[index] - leftProgress[index];
+  }
+  return String(left.id || "").localeCompare(String(right.id || ""));
 }
 
 function roomTitleWithoutWorldPrefix(title: string, worldTitle: string) {
@@ -45,7 +82,7 @@ function roomTitleWithoutWorldPrefix(title: string, worldTitle: string) {
   return value || worldTitle;
 }
 
-type RoomState = { room?: { worldId: string; readyUserIds: string[]; hostRoleLocked: boolean; minPlayers: number; createdAt: string } };
+type RoomState = { room?: { worldId: string; readyUserIds: string[]; hostRoleLocked: boolean; minPlayers: number; createdAt: string; solo?: boolean } };
 function roomState(value: unknown): RoomState { return value && typeof value === "object" && !Array.isArray(value) ? value as RoomState : {}; }
 
 @Injectable()
@@ -60,7 +97,8 @@ export class RoomsService {
     @Inject(ActionWindowService) private readonly actionWindows: ActionWindowService,
     @Inject(ActionCommandService) private readonly commands: ActionCommandService,
     @Inject(ContinuousEventDeliveryService) private readonly continuousEvents: ContinuousEventDeliveryService,
-    @Inject(MemberProjectionService) private readonly memberProjections: MemberProjectionService
+    @Inject(MemberProjectionService) private readonly memberProjections: MemberProjectionService,
+    @Inject(ContinuousStoryV2Service) private readonly storyV2: ContinuousStoryV2Service
   ) {}
 
   async list(worldId?: string, user?: AuthenticatedUser) {
@@ -104,7 +142,7 @@ export class RoomsService {
     const worldId = String(input.worldId || "sangtian");
     const world = findGameDefinition(worldId);
     if (!world || world.status !== "playable" || !world.modes.multiplayer) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "That world is not available for multiplayer" });
-    const continuous = world.engine.engineVersion.startsWith("continuous_strategy_");
+    const continuous = world.engine.engineVersion.startsWith("continuous_");
     const maxPlayers = continuous
       ? Math.max(world.modes.minHumanPlayers, Math.min(world.modes.maxHumanPlayers, world.roles.length, Number(input.maxPlayers || world.modes.maxHumanPlayers)))
       : Math.max(world.modes.minHumanPlayers, Math.min(world.modes.maxHumanPlayers, Number(input.maxPlayers || world.modes.maxHumanPlayers)));
@@ -158,7 +196,7 @@ export class RoomsService {
   }
 
   /** A private one-player run that uses the same seven-node engine as rooms. */
-  async createSolo(user: AuthenticatedUser, input: { worldId?: string; roleKey?: string; idempotencyKey?: string }) {
+  async createSolo(user: AuthenticatedUser, input: { worldId?: string; roleKey?: string; idempotencyKey?: string; resumeExisting?: boolean }) {
     const worldId = String(input.worldId || "caesar");
     const world = findGameDefinition(worldId);
     if (!world || world.status !== "playable" || !world.modes.solo) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "That world is not available for solo play" });
@@ -166,6 +204,18 @@ export class RoomsService {
     if (!world.roles.some((role) => role.roleKey === requestedRole)) throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That role is not available in this world" });
     const idempotencyKey = String(input.idempotencyKey || "").trim();
     if (idempotencyKey && !SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
+
+    // The Solo entry point is also the canonical "continue" action.  A user
+    // who already has an unfinished story for this world and role must resume
+    // the furthest-progressed run instead of silently creating another one.
+    // The `solo_` identity keeps ordinary one-player shared rooms out of this
+    // lookup, including legacy records created before stateJson.room.solo was
+    // added to the contract.
+    if (shouldResumeExistingSolo(input)) {
+      const activeSolo = await this.findActiveSoloRun(user.id, worldId, requestedRole);
+      if (activeSolo) return soloCreationResponse(activeSolo.id, await this.start(user, activeSolo.id));
+    }
+
     const deterministicRunId = idempotencyKey ? soloRunIdForRequest(user.id, idempotencyKey) : undefined;
     if (deterministicRunId) {
       const replay = await this.replaySoloCreation(user, deterministicRunId, worldId, requestedRole, false);
@@ -178,14 +228,11 @@ export class RoomsService {
       enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
     });
     try {
-      if (versions.engineVersion === CONTINUOUS_ENGINE_VERSION) {
+      if (versions.engineVersion === CONTINUOUS_ENGINE_VERSION || versions.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
         const created = await this.create(user, { worldId, maxPlayers: 1, visibility: "private" }, { runId: deterministicRunId, skipPublicIdempotency: true });
         const role = created.roles.find((item: { roleKey: string }) => item.roleKey === requestedRole);
         if (!role) throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That role is not available in this world" });
-        await this.selectRole(user, created.id, role.id);
-        await this.lockHostRole(user, created.id);
-        await this.ready(user, created.id, true);
-        await this.prisma.storyRun.update({ where: { id: created.id }, data: { visibility: "private" } });
+        await this.prepareSoloLobby(user, created.id, role.id, worldId);
         return soloCreationResponse(created.id, await this.start(user, created.id));
       }
       const created = await this.story.createRun(user.openid, { templateId: world.templateId, mode: "room", maxPlayers: 1, aiPlayerCount: 0, ownerAsPlayer: true }, { ...versions, runId: deterministicRunId });
@@ -196,11 +243,77 @@ export class RoomsService {
       await this.prisma.storyRun.update({ where: { id: created.id }, data: { title: `${roomTitleWithoutWorldPrefix(created.title, world.catalog.title)} · Solo`, templateKey: world.worldId, totalDays: world.engine.fixedRules?.stageCount || 7, maxPlayers: 1, visibility: "private", stateJson: state as any } });
       return soloCreationResponse(created.id, await this.get(user, created.id));
     } catch (error) {
-      if (!deterministicRunId || !isUniqueConstraintError(error)) throw error;
+      if (!deterministicRunId || !isSoloCreationRace(error)) throw error;
       const concurrentReplay = await this.replaySoloCreation(user, deterministicRunId, worldId, requestedRole, true);
       if (concurrentReplay) return concurrentReplay;
       throw error;
     }
+  }
+
+  private async prepareSoloLobby(user: AuthenticatedUser, roomId: string, roleId: string, worldId: string) {
+    await this.prisma.$transaction(async (tx) => {
+      const room = await tx.storyRun.findUnique({
+        where: { id: roomId },
+        select: { ownerUserId: true, status: true, templateKey: true, stateJson: true }
+      });
+      if (!room) throw new NotFoundException({ code: `ROOM_NOT_FOUND`, message: `Room not found` });
+      if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: `HOST_REQUIRED`, message: `Only the host can prepare Solo play` });
+      if (room.status !== `waiting_players`) throw new ConflictException({ code: `ROOM_NOT_WAITING`, message: `Solo story is no longer waiting to start` });
+      if (room.templateKey !== worldId) throw new ConflictException({ code: `SOLO_WORLD_MISMATCH`, message: `Solo story world changed during creation` });
+
+      const player = await tx.storyPlayer.findUnique({ where: { runId_userId: { runId: roomId, userId: user.id } } });
+      if (!player) throw new ForbiddenException({ code: `ROOM_MEMBERSHIP_REQUIRED`, message: `Solo player membership is missing` });
+      if (player.roleId && player.roleId !== roleId) {
+        await tx.storyRole.update({ where: { id: player.roleId }, data: { status: `available`, isAiControlled: false } });
+      }
+      const claimed = await tx.storyRole.updateMany({
+        where: { id: roleId, runId: roomId, OR: [{ status: `available` }, { players: { some: { userId: user.id } } }] },
+        data: { status: `claimed`, isAiControlled: false }
+      });
+      if (claimed.count !== 1) throw new ConflictException({ code: `ROLE_ALREADY_TAKEN`, message: `That Solo role is no longer available` });
+      await tx.storyPlayer.update({
+        where: { runId_userId: { runId: roomId, userId: user.id } },
+        data: { roleId, lastActiveAt: new Date() }
+      });
+
+      const state = roomState(room.stateJson);
+      state.room = {
+        worldId,
+        readyUserIds: [user.id],
+        hostRoleLocked: true,
+        minPlayers: 1,
+        createdAt: state.room?.createdAt || new Date().toISOString(),
+        solo: true
+      };
+      await tx.storyRun.update({
+        where: { id: roomId },
+        data: { visibility: `private`, stateJson: state as any, version: { increment: 1 } }
+      });
+    });
+  }
+
+
+  private async findActiveSoloRun(userId: string, worldId: string, roleKey: string) {
+    const candidates = await this.prisma.storyRun.findMany({
+      where: {
+        id: { startsWith: "solo_" },
+        ownerUserId: userId,
+        templateKey: worldId,
+        maxPlayers: 1,
+        status: { in: ["playing", "resolving"] },
+        players: { some: { userId, playerType: "human", role: { roleKey } } }
+      },
+      include: {
+        players: { where: { userId }, include: { role: true } },
+        actorThreads: { include: { role: true } },
+        _count: { select: { actionResolutions: true } }
+      },
+      orderBy: [{ worldSequence: "desc" }, { updatedAt: "desc" }],
+      take: 20
+    });
+    return candidates
+      .filter((run) => run.players[0]?.role?.roleKey === roleKey)
+      .sort((left, right) => compareSoloProgress(left, right, roleKey))[0] || null;
   }
 
   private async replaySoloCreation(user: AuthenticatedUser, runId: string, worldId: string, roleKey: string, waitForConcurrent: boolean) {
@@ -221,8 +334,27 @@ export class RoomsService {
       if (run.status === "playing" && claimedRole === roleKey) {
         const payload = run.engineVersion === CONTINUOUS_ENGINE_VERSION
           ? { gameProjection: await this.memberProjections.game(user, run.id) }
+          : run.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION
+            // start() is idempotent for a playing V2 run. It resumes a human
+            // opening still in GENERATING before returning the projection;
+            // without this, one transient model rejection strands the player
+            // in an apparently started room with no visible story.
+            ? await this.start(user, run.id)
           : await this.get(user, run.id);
         return soloCreationResponse(run.id, payload);
+      }
+      const lobby = roomState(run.stateJson).room;
+      const readyToResume = run.status === "waiting_players"
+        && claimedRole === roleKey
+        && lobby?.hostRoleLocked === true
+        && Boolean(run.players[0]?.userId && lobby.readyUserIds.includes(run.players[0].userId));
+      if (readyToResume && run.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
+        // A prior request may have durably created/claimed/readied the Solo run
+        // and then failed while initializing its independent actor threads or
+        // generating the human opening. Retrying the same idempotency key must
+        // resume that exact run instead of trapping the player behind a
+        // permanent SOLO_CREATION_IN_PROGRESS response.
+        return soloCreationResponse(run.id, await this.start(user, run.id));
       }
       if (attempt + 1 < attempts) await new Promise((resolve) => setTimeout(resolve, IDEMPOTENCY_REPLAY_DELAY_MS));
     }
@@ -269,14 +401,17 @@ export class RoomsService {
   }
 
   async lockHostRole(user: AuthenticatedUser, roomId: string) {
-    const room = await this.requireWaitingMember(user, roomId);
-    if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the host can lock the first role" });
-    const host = room.players.find((player) => player.userId === user.id);
-    if (!host?.roleId) throw new BadRequestException({ code: "ROLE_REQUIRED", message: "Select a role before locking it" });
-    const state = roomState(room.stateJson);
-    state.room = { ...(state.room || { worldId: room.templateKey, readyUserIds: [], minPlayers: 3, createdAt: new Date().toISOString() }), hostRoleLocked: true };
-    await this.prisma.storyRun.update({ where: { id: roomId }, data: { stateJson: state as any } });
-    return this.get(user, roomId);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const room = await this.requireWaitingMember(user, roomId);
+      if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the host can lock the first role" });
+      const host = room.players.find((player) => player.userId === user.id);
+      if (!host?.roleId) throw new BadRequestException({ code: "ROLE_REQUIRED", message: "Select a role before locking it" });
+      const state = roomState(room.stateJson);
+      state.room = { ...(state.room || { worldId: room.templateKey, readyUserIds: [], minPlayers: 3, createdAt: new Date().toISOString() }), hostRoleLocked: true };
+      const updated = await this.prisma.storyRun.updateMany({ where: { id: roomId, version: room.version }, data: { stateJson: state as any, version: { increment: 1 } } });
+      if (updated.count === 1) return this.get(user, roomId);
+    }
+    throw new ConflictException({ code: "ROOM_STATE_CONFLICT", message: "Room state changed; refresh and lock the host role again" });
   }
 
   async ready(user: AuthenticatedUser, roomId: string, isReady = true) {
@@ -298,6 +433,11 @@ export class RoomsService {
   }
 
   async start(user: AuthenticatedUser, roomId: string) {
+    // Story V2 owns an idempotent start/resume implementation.  Route it
+    // before the legacy waiting-lobby guard so a playing Solo run can be
+    // reopened without attempting lobby mutations again.
+    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.start(user, roomId);
     const room = await this.requireWaitingMember(user, roomId);
     if (room.engineVersion === CONTINUOUS_ENGINE_VERSION) {
       const started = await this.actionWindows.start(user, roomId);
@@ -323,6 +463,7 @@ export class RoomsService {
 
   async game(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.game(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.game(user, roomId);
     const room = await this.get(user, roomId);
     if (room.status === "chapter_generated") return { room, completed: true, currentNode: null, submittedRoleIds: [], access: this.access.roomAccessState(room, 7) };
@@ -349,6 +490,7 @@ export class RoomsService {
 
   async result(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.result(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.result(user, roomId);
     const room = await this.get(user, roomId);
     if (room.status !== "chapter_generated") {
@@ -372,7 +514,7 @@ export class RoomsService {
 
   async submitGameAction(user: AuthenticatedUser, roomId: string, input: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) throw new ConflictException({ code: "LEGACY_ACTION_ENDPOINT_DISABLED", message: "Use the versioned action-slot endpoints" });
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) throw new ConflictException({ code: "LEGACY_ACTION_ENDPOINT_DISABLED", message: "Use the versioned decision endpoint" });
     const room = await this.requirePlayingMember(user, roomId);
     const player = room.players.find((item) => item.userId === user.id);
     if (!player?.roleId) throw new BadRequestException({ code: "ROLE_REQUIRED", message: "Select a role before submitting a game action" });
@@ -395,7 +537,7 @@ export class RoomsService {
 
   async resolveGameNode(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
     const { node } = await this.requireResolvableNode(user, roomId);
     const resolution = await this.story.resolveNode(node.id);
     return { resolution, ...(await this.game(user, roomId)) };
@@ -403,7 +545,7 @@ export class RoomsService {
 
   async resolveGameNodeAsync(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
     const { room, node } = await this.requireResolvableNode(user, roomId);
     const task = await this.outbox.enqueueResolve(room.id, node.id);
     return { ...task, runVersion: room.version + (room.status === "playing" ? 1 : 0), roomStatus: "resolving" };
@@ -423,7 +565,7 @@ export class RoomsService {
   /** Member-scoped incremental events. Never include another player's actions or private projection. */
   async events(user: AuthenticatedUser, roomId: string, after?: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) {
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
       const sequence = after && /^\d+$/.test(after) ? Number(after) : 0;
       return this.continuousEvents.page(user, roomId, sequence);
     }
@@ -477,13 +619,27 @@ export class RoomsService {
   }
 
   submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) { return this.commands.submitMain(user, roomId, command); }
+  submitTurnDecision(user: AuthenticatedUser, roomId: string, turnId: string, command: TurnDecisionCommandV2) { return this.storyV2.submit(user, roomId, turnId, command); }
+  retryTurnGeneration(user: AuthenticatedUser, roomId: string) { return this.storyV2.retryResultGeneration(user, roomId); }
+  replyToInteraction(user: AuthenticatedUser, roomId: string, interactionId: string, command: TurnDecisionCommandV2) { return this.storyV2.replyInteraction(user, roomId, interactionId, command); }
   submitManeuver(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) { return this.commands.submitManeuver(user, roomId, command); }
   submitReaction(user: AuthenticatedUser, roomId: string, eventId: string, command: SlotCommandV1) { return this.commands.submitReaction(user, roomId, eventId, command); }
   layoutDone(user: AuthenticatedUser, roomId: string, command: LayoutCommandV1) { return this.commands.done(user, roomId, command); }
   leaveStage(user: AuthenticatedUser, roomId: string, command: LayoutCommandV1) { return this.commands.leaveStage(user, roomId, command); }
-  heartbeat(user: AuthenticatedUser, roomId: string, command: HeartbeatCommandV1) { return this.commands.heartbeat(user, roomId, command); }
-  handoffToAi(user: AuthenticatedUser, roomId: string, command: ControlCommandV1) { return this.commands.handoff(user, roomId, command); }
-  reclaim(user: AuthenticatedUser, roomId: string, command: ControlCommandV1) { return this.commands.reclaim(user, roomId, command); }
+  async heartbeat(user: AuthenticatedUser, roomId: string, command: HeartbeatCommandV1) {
+    return await this.usesStoryV2(roomId) ? this.storyV2.heartbeat(user, roomId, command) : this.commands.heartbeat(user, roomId, command);
+  }
+  async handoffToAi(user: AuthenticatedUser, roomId: string, command: ControlCommandV1) {
+    return await this.usesStoryV2(roomId) ? this.storyV2.handoff(user, roomId, command) : this.commands.handoff(user, roomId, command);
+  }
+  async reclaim(user: AuthenticatedUser, roomId: string, command: ControlCommandV1) {
+    return await this.usesStoryV2(roomId) ? this.storyV2.reclaim(user, roomId, command) : this.commands.reclaim(user, roomId, command);
+  }
+
+  private async usesStoryV2(roomId: string) {
+    const run = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    return run?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION;
+  }
 
   private async requireResolvableNode(user: AuthenticatedUser, roomId: string) {
     const room = await this.requirePlayingMember(user, roomId);
@@ -518,10 +674,14 @@ export class RoomsService {
   }
 
   private async clearReady(roomId: string, userId: string) {
-    const room = await this.prisma.storyRun.findUniqueOrThrow({ where: { id: roomId } });
-    const state = roomState(room.stateJson); const ready = new Set(state.room?.readyUserIds || []); ready.delete(userId);
-    state.room = { ...(state.room || { worldId: room.templateKey, hostRoleLocked: false, minPlayers: 3, createdAt: new Date().toISOString() }), readyUserIds: [...ready] };
-    await this.prisma.storyRun.update({ where: { id: roomId }, data: { stateJson: state as any } });
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const room = await this.prisma.storyRun.findUniqueOrThrow({ where: { id: roomId } });
+      const state = roomState(room.stateJson); const ready = new Set(state.room?.readyUserIds || []); ready.delete(userId);
+      state.room = { ...(state.room || { worldId: room.templateKey, hostRoleLocked: false, minPlayers: 3, createdAt: new Date().toISOString() }), readyUserIds: [...ready] };
+      const updated = await this.prisma.storyRun.updateMany({ where: { id: roomId, version: room.version }, data: { stateJson: state as any, version: { increment: 1 } } });
+      if (updated.count === 1) return;
+    }
+    throw new ConflictException({ code: "ROOM_STATE_CONFLICT", message: "Room state changed; refresh and select the role again" });
   }
 
   private project(room: any, viewerId?: string) {

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import { NotFoundException } from "@nestjs/common";
@@ -28,11 +28,14 @@ function sourceGame(worldId: string): SourceGame {
 test("world list exposes all registry cards in order with playable state", () => {
   const result = new WorldsController().list();
   assert.deepEqual(result.worlds.map((world) => world.worldId), [
-    "sangtian", "caesar", "last-night-shift", "ninety-days-left", "inheritance-table", "blackout-protocol"
+    "sangtian", "caesar", "last-will", "ten-years-later", "romeo-and-juliet", "hamlet"
   ]);
   assert.equal(result.worlds.filter((world) => world.status === "playable").length, 2);
   assert.equal(result.worlds.filter((world) => world.status === "coming_soon").length, 4);
   assert.ok(result.worlds.every((world) => world.detailPath === `/worlds/${world.worldId}`));
+  assert.ok(result.worlds.every((world) => !/[\u3400-\u9fff]/u.test(`${world.cardTitle} ${world.cardDescription} ${world.categoryLabel}`)));
+  assert.ok(result.worlds.every((world) => world.cardCover === `/assets/game/${world.worldId}/catalog-cover.png`));
+  assert.ok(result.worlds.every((world) => existsSync(resolve(__dirname, `../../web/public${world.cardCover}`))));
 });
 
 for (const worldId of ["sangtian", "caesar"] as const) {
@@ -63,7 +66,7 @@ test("world runtime metadata follows the same continuous-strategy rollout flag a
     process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED = "false";
     assert.equal(new WorldsController().detail("sangtian").engineVersion, "legacy_v1");
     process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED = "true";
-    assert.equal(new WorldsController().detail("sangtian").engineVersion, "continuous_strategy_v1_1");
+    assert.equal(new WorldsController().detail("sangtian").engineVersion, "continuous_story_v2");
   } finally {
     if (prior === undefined) delete process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED;
     else process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED = prior;

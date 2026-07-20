@@ -1,9 +1,13 @@
+import { renderTransitionScreen } from "./transition-screen.js";
+
 const CONTINUOUS_SCHEMA = "continuous_game_projection_v1";
+const CONTINUOUS_STORY_V2_SCHEMA = "continuous_game_projection_v2";
 
 export async function bootGamePage({
   root = document.getElementById("app"),
   window: win = globalThis.window,
   fetchImpl = win?.fetch?.bind(win),
+  loadContinuousStoryV2 = () => import("./continuous-story-v2-client.js?v=20260720-solo-maneuver-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
   loadSolo = () => import("./app.js?v=20260718-room-stage-v1"),
@@ -22,7 +26,7 @@ export async function bootGamePage({
   }
 
   if (typeof fetchImpl !== "function") {
-    renderClosedError(root, runId, "当前浏览器无法连接故事服务，请刷新后重试。", true);
+    renderClosedError(root, runId, "We can't load this shared story room right now. Please try again in a moment.", true);
     return null;
   }
 
@@ -35,8 +39,15 @@ export async function bootGamePage({
     });
     payload = await response.json().catch(() => ({}));
   } catch {
-    renderClosedError(root, runId, "暂时无法连接共同故事局，请稍后重试。", true);
+    renderClosedError(root, runId, "We can't load this shared story room right now. Please try again in a moment.", true);
     return null;
+  }
+
+  if (response.ok && payload?.schemaVersion === CONTINUOUS_STORY_V2_SCHEMA) {
+    const { createContinuousStoryV2App } = await loadContinuousStoryV2();
+    const app = createContinuousStoryV2App({ root, window: win, runId, initialProjection: payload, fetchImpl, navigate });
+    await app.boot();
+    return app;
   }
 
   if (response.ok && payload?.schemaVersion === CONTINUOUS_SCHEMA) {
@@ -61,34 +72,39 @@ export async function bootGamePage({
     clearMultiplayerClientState(win, runId);
     const returnTo = `${win?.location?.pathname || "/game"}${win?.location?.search || ""}${win?.location?.hash || ""}`;
     const authUrl = `/auth?returnTo=${encodeURIComponent(returnTo)}`;
-    renderClosedError(root, runId, "登录状态已失效，正在返回登录页面。", false, authUrl);
+    renderClosedError(root, runId, "Your session has expired. Please sign in again.", false, authUrl);
     navigate(authUrl);
     return null;
   }
 
   if (response.status === 403) {
-    renderClosedError(root, runId, "当前账号不能进入这个共同故事局。", false);
+    renderClosedError(root, runId, "This account can't enter this shared story room.", false);
     return null;
   }
 
   if (response.status === 404 || payload?.code === "ROOM_NOT_FOUND") {
-    renderClosedError(root, runId, "当前账号不能进入这个共同故事局。", false);
+    renderClosedError(root, runId, "This shared story room could not be found.", false);
     return null;
   }
 
   const message = response.status === 429
-    ? "连接请求过于频繁，请稍后重试。"
-    : "暂时无法读取共同故事局，请稍后重试。";
+    ? "There have been too many reconnect attempts. Please try again in a moment."
+    : "We can't load this shared story room right now. Please try again in a moment.";
   renderClosedError(root, runId, message, true);
   return null;
 }
 
 function loadingView() {
-  return `<section class="boot-screen" data-testid="loading"><div class="seal">桑田诏</div><p>正在进入共同故事局……</p></section>`;
+  return renderTransitionScreen({
+    eyebrow: "YOUR STORY IS READY",
+    title: "Opening Your World",
+    description: "Preparing your role, private information, and the latest state of the shared story.",
+    status: "Entering the story..."
+  });
 }
 
 function renderClosedError(root, runId, message, retry, authUrl = "") {
-  root.innerHTML = `<section class="boot-screen boot-error" data-testid="fatal-error"><div class="seal">桑田诏</div><h1>无法进入共同故事局</h1><p>${escapeHtml(message)}</p><div class="boot-actions">${retry ? '<button type="button" data-boot-retry>重新连接</button>' : ""}<a class="room-back-button" href="/rooms">返回故事房间</a>${authUrl ? `<a class="room-back-button" href="${escapeHtml(authUrl)}">重新登录</a>` : ""}</div></section>`;
+  root.innerHTML = `<section class="boot-screen boot-error shared-room-error" data-testid="fatal-error" aria-labelledby="shared-room-error-title"><h1 id="shared-room-error-title">Unable to enter the<br>shared story room</h1><p>${escapeHtml(message)}</p><div class="boot-actions">${retry ? '<button class="shared-room-reconnect" type="button" data-boot-retry><span aria-hidden="true">↻</span>Reconnect</button>' : ""}<a class="room-back-button" href="/rooms"><span aria-hidden="true">←</span><span class="room-back-label">Back to story room</span></a>${authUrl ? `<a class="room-back-button" href="${escapeHtml(authUrl)}"><span class="room-back-label">Sign in again</span></a>` : ""}</div></section>`;
   root.querySelector("[data-boot-retry]")?.addEventListener("click", () => globalThis.location?.reload?.());
 }
 
@@ -109,6 +125,6 @@ function escapeHtml(value) {
 if (typeof window !== "undefined" && typeof document !== "undefined" && !window.__AI_STORY_DISABLE_AUTO_BOOT__) {
   void bootGamePage().catch((error) => {
     const root = document.getElementById("app");
-    if (root) root.innerHTML = `<section class="boot-screen boot-error" data-testid="fatal-error"><div class="seal">桑田诏</div><h1>主游戏页面暂不可用</h1><p>${escapeHtml(error?.message || error)}</p><a class="room-back-button" href="/rooms">返回故事房间</a></section>`;
+    if (root) root.innerHTML = `<section class="boot-screen boot-error shared-room-error" data-testid="fatal-error"><h1>Unable to open your story</h1><p>${escapeHtml(error?.message || error)}</p><a class="room-back-button" href="/rooms"><span aria-hidden="true">←</span><span class="room-back-label">Back to story rooms</span></a></section>`;
   });
 }

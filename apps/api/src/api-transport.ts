@@ -37,6 +37,9 @@ export class ApiContractExceptionFilter {
     if (typeof source.currentVersion === "number") body.currentVersion = source.currentVersion;
     if (typeof source.expectedVersion === "number") body.expectedVersion = source.expectedVersion;
     if (typeof source.retryAfterMs === "number") body.retryAfterMs = source.retryAfterMs;
+    for (const field of ["decision", "reason", "matchedRules", "riskFlags", "suggestedRewrite", "issues"] as const) {
+      if (field in source) body[field] = source[field];
+    }
     if (!(exception instanceof HttpException)) {
       const diagnostic = exception instanceof Error ? exception.stack || exception.message : String(exception);
       this.logger.error(`Unhandled API failure for ${request.method} ${request.url}: ${diagnostic}`);

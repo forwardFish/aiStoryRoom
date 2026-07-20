@@ -1,4 +1,5 @@
 export const CONTINUOUS_ENGINE_VERSION = "continuous_strategy_v1_1" as const;
+export const CONTINUOUS_STORY_ENGINE_VERSION = "continuous_story_v2" as const;
 export const CONTINUOUS_STRATEGY_VERSION = "sangtian_v1_1" as const;
 export const LEGACY_ENGINE_VERSION = "legacy_v1" as const;
 export const LEGACY_STRATEGY_VERSION = "legacy_v1" as const;
@@ -36,6 +37,7 @@ export const REACTION_STATUSES = ["NOT_OPEN", "PENDING", "RESPONDED", "FALLBACK"
 export const ACCESS_STATES = ["FREE", "REQUIRES_UNLOCK", "UNLOCKED"] as const;
 
 export const GAME_PROJECTION_SCHEMA_VERSION = "continuous_game_projection_v1" as const;
+export const GAME_PROJECTION_V2_SCHEMA_VERSION = "continuous_game_projection_v2" as const;
 export const RESULT_PROJECTION_SCHEMA_VERSION = "continuous_result_projection_v1" as const;
 export const EVENT_DELIVERY_PAGE_SCHEMA_VERSION = "continuous_event_delivery_page_v1" as const;
 export const ROLE_AGENT_POLICY_SCHEMA_VERSION = "role_agent_policy_v1" as const;

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getGameDefinition } from "@ai-story/templates";
-import { RoomsService, sharedRoomRunIdForRequest, soloCreationResponse, soloRunIdForRequest } from "./rooms.service";
+import { CONTINUOUS_STORY_ENGINE_VERSION } from "@ai-story/shared";
+import { RoomsService, compareSoloProgress, sharedRoomRunIdForRequest, shouldResumeExistingSolo, soloCreationResponse, soloRunIdForRequest } from "./rooms.service";
 
 const service = new RoomsService(
+  {} as never,
   {} as never,
   {} as never,
   {} as never,
@@ -78,4 +80,102 @@ test("Solo creation response exposes every supported run identifier", () => {
     runId: "solo-1",
     roomId: "solo-1"
   });
+});
+
+test("Solo continue ranks real story progress ahead of a newer empty run", () => {
+  const progressed = {
+    id: "solo-progressed",
+    worldSequence: 3,
+    updatedAt: new Date("2026-07-19T01:00:00.000Z"),
+    actorThreads: [{ role: { roleKey: "zhejiang_governor" }, currentStageIndex: 2, currentTurnIndex: 3 }],
+    _count: { actionResolutions: 3 }
+  };
+  const newerButEmpty = {
+    id: "solo-empty",
+    worldSequence: 0,
+    updatedAt: new Date("2026-07-19T07:00:00.000Z"),
+    actorThreads: [{ role: { roleKey: "zhejiang_governor" }, currentStageIndex: 1, currentTurnIndex: 1 }],
+    _count: { actionResolutions: 0 }
+  };
+  assert.deepEqual(
+    [newerButEmpty, progressed].sort((left, right) => compareSoloProgress(left, right, "zhejiang_governor")),
+    [progressed, newerButEmpty]
+  );
+});
+
+test("Solo create resumes the furthest active first-role story without creating a room", async () => {
+  let v2StartCalls = 0;
+  const active = {
+    id: "solo-progressed",
+    ownerUserId: "user-1",
+    templateKey: "sangtian",
+    maxPlayers: 1,
+    status: "playing",
+    engineVersion: CONTINUOUS_STORY_ENGINE_VERSION,
+    worldSequence: 2,
+    updatedAt: new Date("2026-07-19T01:00:00.000Z"),
+    players: [{ userId: "user-1", playerType: "human", role: { roleKey: "zhejiang_governor" } }],
+    actorThreads: [{ role: { roleKey: "zhejiang_governor" }, currentStageIndex: 2, currentTurnIndex: 2 }],
+    _count: { actionResolutions: 2 }
+  };
+  const prisma = {
+    storyRun: {
+      findMany: async () => [
+        { ...active, id: "solo-newer-empty", worldSequence: 0, updatedAt: new Date("2026-07-19T07:00:00.000Z"), _count: { actionResolutions: 0 } },
+        active
+      ],
+      findUnique: async () => ({ engineVersion: CONTINUOUS_STORY_ENGINE_VERSION })
+    }
+  };
+  const storyV2 = {
+    start: async (_user: unknown, runId: string) => {
+      v2StartCalls += 1;
+      return { status: "playing", gameProjection: { run: { id: runId } } };
+    }
+  };
+  const resumableService = new RoomsService(
+    prisma as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    storyV2 as never
+  );
+  (resumableService as unknown as { create: () => never }).create = () => { throw new Error("must not create a duplicate Solo run"); };
+  const user = { id: "user-1", openid: "openid-1" } as never;
+  const result = await resumableService.createSolo(user, { worldId: "sangtian", roleKey: "zhejiang_governor", idempotencyKey: "solo-create:test-resume" });
+  assert.equal(result.id, "solo-progressed");
+  assert.equal(result.runId, "solo-progressed");
+  assert.equal(v2StartCalls, 1);
+});
+
+test("Solo creation only resumes an unfinished run when the caller chose continue", () => {
+  assert.equal(shouldResumeExistingSolo({}), true);
+  assert.equal(shouldResumeExistingSolo({ resumeExisting: true }), true);
+  assert.equal(shouldResumeExistingSolo({ resumeExisting: false }), false);
+});
+
+test("playing Story V2 start bypasses the waiting-room guard and delegates idempotently", async () => {
+  let delegated = 0;
+  const resumableService = new RoomsService(
+    { storyRun: { findUnique: async () => ({ engineVersion: CONTINUOUS_STORY_ENGINE_VERSION }) } } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    { start: async () => { delegated += 1; return { status: "playing" }; } } as never
+  );
+  const result = await resumableService.start({ id: "user-1" } as never, "solo-progressed");
+  assert.equal(result.status, "playing");
+  assert.equal(delegated, 1);
 });

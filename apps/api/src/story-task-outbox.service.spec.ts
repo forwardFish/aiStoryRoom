@@ -37,13 +37,18 @@ function task(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function serviceWith(prisma: any, story: any = {}, resolution: any = {}, roleAgents: any = {}) {
+function serviceWith(prisma: any, story: any = {}, resolution: any = {}, roleAgents: any = {}, continuousStoryV2: any = {}) {
   const service = new StoryTaskOutboxService(
     prisma as any,
     { resolveNode: async () => ({ outcome: "LEGACY" }), ...story } as any,
     { sweep: async () => undefined } as any,
     { resolve: async () => ({ outcome: "RESOLVED" }), ...resolution } as any,
-    { execute: async () => ({ outcome: "SEALED_ACT" }), ...roleAgents } as any
+    { execute: async () => ({ outcome: "SEALED_ACT" }), ...roleAgents } as any,
+    {
+      executeAgentTask: async () => ({ outcome: "ACTOR_TURN_RESOLVED" }),
+      executeConditionalTask: async () => ({ outcome: "CONDITION_RESOLVED" }),
+      ...continuousStoryV2
+    } as any
   );
   return { service, workerId: (service as any).workerId as string };
 }
@@ -247,10 +252,85 @@ function leaseConfigurationIsBounded() {
   assert.equal(requiresOutboxHeartbeat('RESOLVE_WINDOW'), false);
   assert.equal(requiresOutboxHeartbeat('ROLE_AGENT_DECISION'), true);
   assert.equal(requiresOutboxHeartbeat('resolve_node'), true);
+  assert.equal(requiresOutboxHeartbeat('CONDITIONAL_ACTION_V2'), true);
+}
+
+async function v2TasksNeverFallBackToLegacyResolution() {
+  let legacyCalls = 0;
+  let v2Calls = 0;
+  let conditionCalls = 0;
+  let resultCalls = 0;
+  let impactCalls = 0;
+  const { service } = serviceWith({}, { resolveNode: async () => { legacyCalls += 1; } }, {}, {}, {
+    executeAgentTask: async () => { v2Calls += 1; return { outcome: "ACTOR_TURN_RESOLVED" }; },
+    executeConditionalTask: async () => { conditionCalls += 1; return { outcome: "CONDITION_RESOLVED" }; },
+    executeResultTask: async () => { resultCalls += 1; return { outcome: "ACTOR_RESULT_PUBLISHED" }; },
+    executeImpactTask: async () => { impactCalls += 1; return { outcome: "ACTOR_IMPACT_PUBLISHED" }; }
+  });
+  const fence = { taskId: "v2-task", leaseOwner: "worker", leaseVersion: 1 };
+  const result = await (service as any).executeTask({ id: "v2-task", nodeId: "node-1", windowId: null, taskType: "ACTOR_AGENT_TURN_V2" }, fence);
+  assert.equal(result.outcome, "ACTOR_TURN_RESOLVED");
+  assert.equal(v2Calls, 1);
+  assert.equal(legacyCalls, 0);
+  const conditionResult = await (service as any).executeTask({ id: "condition-task", nodeId: "node-1", windowId: null, taskType: "CONDITIONAL_ACTION_V2" }, fence);
+  assert.equal(conditionResult.outcome, "CONDITION_RESOLVED");
+  assert.equal(conditionCalls, 1);
+  const resultTask = await (service as any).executeTask({ id: "result-task", nodeId: "node-1", windowId: null, taskType: "ACTOR_RESULT_V2" }, fence);
+  assert.equal(resultTask.outcome, "ACTOR_RESULT_PUBLISHED");
+  assert.equal(resultCalls, 1);
+  const impactTask = await (service as any).executeTask({ id: "impact-task", nodeId: "node-1", windowId: null, taskType: "ACTOR_IMPACT_V2" }, fence);
+  assert.equal(impactTask.outcome, "ACTOR_IMPACT_PUBLISHED");
+  assert.equal(impactCalls, 1);
+  assert.equal(legacyCalls, 0);
+  await assert.rejects(
+    () => (service as any).executeTask({ id: "future-task", nodeId: "node-1", windowId: null, taskType: "FUTURE_TASK" }, fence),
+    /UNKNOWN_STORY_TASK_TYPE:FUTURE_TASK/
+  );
+  assert.equal(legacyCalls, 0, "unknown task types must fail closed instead of producing DirectorResolution");
+}
+
+async function v2ActorContinuationIsNotBlockedByLegacyBacklog() {
+  const legacy = task({ id: "legacy-old", taskType: "resolve_node", status: "pending", createdAt: new Date(0) });
+  const actor = task({
+    id: "actor-ready",
+    taskType: "ACTOR_AGENT_TURN_V2",
+    status: "PENDING",
+    dedupeKey: "ACTOR_AGENT_TURN_V2:turn-1",
+    inputRefId: "turn-1",
+    roleId: "role-1",
+    leaseOwner: null,
+    leaseExpiresAt: null,
+    leaseVersion: 0,
+    attempt: 0
+  });
+  let claimed: any;
+  const executed: string[] = [];
+  const prisma = {
+    storyTaskOutbox: {
+      findFirst: async (args: any) => Array.isArray(args.where?.taskType?.in) && args.where.taskType.in.includes("ACTOR_AGENT_TURN_V2") ? actor : legacy,
+      findUnique: async () => claimed,
+      updateMany: async (args: any) => {
+        if (args.where?.id === actor.id && args.data.status === "RUNNING") {
+          claimed = { ...actor, status: "RUNNING", leaseOwner: args.data.leaseOwner, leaseExpiresAt: futureLease(), leaseVersion: 1, attempt: 1 };
+          return { count: 1 };
+        }
+        if (args.where?.id === actor.id && args.data.status === "COMPLETED") return { count: 1 };
+        return { count: 0 };
+      }
+    },
+    storyRun: { updateMany: async () => ({ count: 0 }) }
+  };
+  const { service } = serviceWith(prisma, {}, {}, {}, {
+    executeAgentTask: async (taskId: string) => { executed.push(taskId); return { outcome: "ACTOR_TURN_RESOLVED" }; }
+  });
+  await service.drainOne();
+  assert.deepEqual(executed, [actor.id], "a ready independent actor turn must be claimed before unrelated legacy work");
 }
 
 async function run() {
   leaseConfigurationIsBounded();
+  await v2TasksNeverFallBackToLegacyResolution();
+  await v2ActorContinuationIsNotBlockedByLegacyBacklog();
   await claimUsesPostClaimFence();
   await retryBoundaryUsesIncrementedAttempt();
   await staleLeaseCannotRecordFailure();

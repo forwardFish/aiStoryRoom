@@ -261,7 +261,9 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .critical-actions button { border: 0; border-radius: 22px; background: linear-gradient(90deg, #5c3af0, #8456f4); } .critical-actions button:first-child { border: 1px solid #e0ddfa; background: #faf9ff; color: #6a54d7; }
 .critical-modal { position: relative; width: min(710px, calc(100vw - 48px)); height: 426px; min-height: 0; box-sizing: border-box; padding: 42px 66px 30px; text-align: center; }.critical-close { position: absolute; top: 20px; right: 24px; width: 32px; height: 32px; padding: 0; border: 0; background: transparent; color: #53608f; font-size: 34px; line-height: 1; }.critical-kicker { display: inline-flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 700; letter-spacing: .02em; text-transform: none; }.critical-kicker::before { content: "ϟ"; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #eeeaff; color: #714af4; font-size: 28px; }.critical-modal h2 { margin: 34px 0 44px; font-family: "Songti SC", STSong, SimSun, serif; font-size: 35px; }.critical-modal p { max-width: 500px; margin: 0 auto; font-family: "Songti SC", STSong, SimSun, serif; font-size: 18px; line-height: 1.8; text-align: center; white-space: pre-line; }.critical-actions { justify-content: center; gap: 24px; margin-top: 43px; }.critical-actions button { min-width: 252px; min-height: 62px; border-radius: 13px; font-size: 21px; }
 .critical-deferred { border-color: #ddd9fb; border-radius: 10px; background: rgba(255,255,255,.97); color: #5d55a1; box-shadow: 0 8px 22px rgba(76, 66, 170, .16); }
-.opening-narrative { position: relative; min-height: 0; overflow: hidden; padding: 28px 60px; background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.34)), url('/assets/game/sangtian/background.png') center bottom / cover no-repeat; text-align: center; }
+.opening-narrative { position: relative; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 28px 60px; background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.34)), url('/assets/game/sangtian/background.png') center bottom / cover no-repeat; text-align: center; scrollbar-color: rgba(102, 79, 224, .38) transparent; scrollbar-width: thin; }
+.opening-narrative::-webkit-scrollbar { width: 8px; }
+.opening-narrative::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: rgba(102, 79, 224, .38); background-clip: padding-box; }
 .causal-center:has(.opening-narrative) { grid-template-rows: minmax(0, 1fr) auto; }
 .causal-center:has(.decision-narrative) { grid-template-rows: minmax(0, 1fr) 445px; }
 .causal-center:has(.result-narrative) { grid-template-rows: minmax(0, 1fr) 330px; }
@@ -419,4 +421,369 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .causal-center.decision-center .decision-composer {
   align-self: center;
   margin: 0 auto;
+}
+
+/* Shared room connection failure: full-screen recovery state. */
+.shared-room-error {
+  --shared-error-ink: #0b174a;
+  --shared-error-muted: #62698f;
+  --shared-error-accent: #6034ff;
+  min-height: 100vh;
+  place-content: center;
+  justify-items: center;
+  gap: 0;
+  padding: 66px 24px 0;
+  color: var(--shared-error-ink);
+  background: radial-gradient(circle at 50% 48%, #fff 0%, #fff 38%, #fafbfc 100%);
+  font-family: "MW Inter", Inter, "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+.shared-room-error h1 {
+  width: min(640px, 100%);
+  margin: 0;
+  color: var(--shared-error-ink);
+  font-size: clamp(42px, 4.4vw, 64px);
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -.035em;
+}
+
+.shared-room-error > p {
+  width: min(610px, 100%);
+  margin: 30px 0 50px;
+  color: var(--shared-error-muted);
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.shared-room-error .boot-actions {
+  width: min(450px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.shared-room-error .shared-room-reconnect {
+  width: 100%;
+  min-height: 96px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 27px;
+  padding: 0 32px;
+  border: 0;
+  border-radius: 22px;
+  color: #fff;
+  background: linear-gradient(105deg, #5930ff 0%, #6a37ff 55%, #5c2df4 100%);
+  box-shadow: 0 10px 22px rgba(91, 47, 245, .14);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.shared-room-error .shared-room-reconnect:hover,
+.shared-room-error .shared-room-reconnect:focus-visible {
+  filter: brightness(1.04);
+  box-shadow: 0 14px 30px rgba(91, 47, 245, .26);
+  outline: none;
+}
+
+.shared-room-error .shared-room-reconnect > span {
+  font-size: 39px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.shared-room-error .room-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 48px;
+  color: var(--shared-error-accent);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.shared-room-error .room-back-button > span {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.shared-room-error .room-back-label {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 680px) {
+  .shared-room-error {
+    padding: 20px;
+  }
+
+  .shared-room-error h1 {
+    font-size: clamp(38px, 11vw, 48px);
+  }
+
+  .shared-room-error > p {
+    margin: 24px 0 38px;
+    font-size: 19px;
+  }
+
+  .shared-room-error .shared-room-reconnect {
+    min-height: 70px;
+    border-radius: 17px;
+    font-size: 23px;
+  }
+
+  .shared-room-error .room-back-button {
+    margin-top: 32px;
+    font-size: 20px;
+  }
+}
+
+/* Solo V2 visual polish — styling only; preserve DOM, copy and layout. */
+.causal-player-root:has(.v2-current-situation-summary) {
+  --solo-ink: #20284f;
+  --solo-muted: #737b99;
+  --solo-purple: #6748ef;
+  --solo-purple-deep: #4f35d7;
+  --solo-purple-soft: #f4f1ff;
+  --solo-gold: #b48a43;
+  --solo-green: #4f8a68;
+  --solo-line: rgba(103, 93, 165, .15);
+  --solo-line-strong: rgba(103, 93, 165, .24);
+  --solo-shadow: 0 14px 38px rgba(52, 48, 112, .07), 0 2px 8px rgba(52, 48, 112, .035);
+  color: var(--solo-ink);
+  background: radial-gradient(circle at 50% -14%, rgba(228, 221, 255, .62), transparent 42%), linear-gradient(180deg, #fbfbff 0%, #f4f5fb 100%);
+}
+.causal-shell:has(.v2-current-situation-summary) .causal-topbar {
+  border-bottom-color: var(--solo-line);
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .9);
+  backdrop-filter: blur(16px);
+}
+.causal-shell:has(.v2-current-situation-summary) .mw-brand-mark,
+.causal-shell:has(.v2-current-situation-summary) .location-title,
+.causal-shell:has(.v2-current-situation-summary) .top-actions button { color: var(--solo-ink); }
+.causal-shell:has(.v2-current-situation-summary) .location-title { border-left-color: var(--solo-line); }
+.causal-shell:has(.v2-current-situation-summary) .top-day,
+.causal-shell:has(.v2-current-situation-summary) .status-chip {
+  border-color: var(--solo-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(248, 248, 255, .92));
+  box-shadow: inset 0 1px 0 #fff, 0 4px 14px rgba(54, 47, 119, .045);
+}
+.causal-shell:has(.v2-current-situation-summary) .maneuver-chip {
+  border-color: rgba(79, 138, 104, .2);
+  background: linear-gradient(180deg, #f7fcf8, #edf7f0);
+  color: #3f7959;
+}
+.causal-shell:has(.v2-current-situation-summary) .status-strip {
+  border-bottom-color: var(--solo-line);
+  background: rgba(250, 250, 254, .72);
+  color: var(--solo-muted);
+}
+.causal-shell:has(.v2-current-situation-summary) .status-strip b { color: var(--solo-ink); }
+.causal-shell:has(.v2-current-situation-summary) .metric-green { color: var(--solo-green); }
+.causal-shell:has(.v2-current-situation-summary) .metric-gold,
+.causal-shell:has(.v2-current-situation-summary) .metric-crown { color: var(--solo-gold); }
+.causal-shell:has(.v2-current-situation-summary) .causal-left,
+.causal-shell:has(.v2-current-situation-summary) .causal-right,
+.causal-shell:has(.v2-current-situation-summary) .causal-stream,
+.causal-shell:has(.v2-current-situation-summary) .opening-narrative,
+.causal-shell:has(.v2-current-situation-summary) .result-narrative { scrollbar-color: rgba(103, 72, 239, .3) transparent; }
+.causal-shell:has(.v2-current-situation-summary) .causal-left::-webkit-scrollbar,
+.causal-shell:has(.v2-current-situation-summary) .causal-right::-webkit-scrollbar,
+.causal-shell:has(.v2-current-situation-summary) .causal-stream::-webkit-scrollbar { width: 7px; }
+.causal-shell:has(.v2-current-situation-summary) .causal-left::-webkit-scrollbar-thumb,
+.causal-shell:has(.v2-current-situation-summary) .causal-right::-webkit-scrollbar-thumb,
+.causal-shell:has(.v2-current-situation-summary) .causal-stream::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(103, 72, 239, .28);
+  background-clip: padding-box;
+}
+.causal-shell:has(.v2-current-situation-summary) .causal-panel,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-panel,
+.causal-shell:has(.v2-current-situation-summary) .causal-center {
+  border-color: var(--solo-line);
+  background-color: rgba(255, 255, 255, .94);
+  box-shadow: var(--solo-shadow);
+}
+.causal-shell:has(.v2-current-situation-summary) .causal-panel,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-panel { background-image: linear-gradient(145deg, rgba(255, 255, 255, .99), rgba(250, 249, 255, .94)); }
+.causal-shell:has(.v2-current-situation-summary) .causal-center {
+  border-color: rgba(95, 83, 160, .19);
+  box-shadow: 0 18px 48px rgba(51, 45, 110, .09), 0 2px 8px rgba(51, 45, 110, .04);
+}
+.causal-shell:has(.v2-current-situation-summary) .causal-panel h2,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-panel h2 {
+  border-bottom-color: var(--solo-line);
+  color: var(--solo-ink);
+  font-family: "Noto Serif SC", "Songti SC", STSong, SimSun, serif;
+  letter-spacing: .02em;
+}
+.causal-shell:has(.v2-current-situation-summary) .player > h2,
+.causal-shell:has(.v2-current-situation-summary) .day-mission > h2,
+.causal-shell:has(.v2-current-situation-summary) .resources-panel > h2,
+.causal-shell:has(.v2-current-situation-summary) .leverage-panel > h2,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-heading > h2 {
+  background-position: left 0;
+  background-repeat: no-repeat;
+  background-size: 21px auto;
+  padding-left: 31px;
+}
+.causal-shell:has(.v2-current-situation-summary) .player > h2 { background-image: url('/assets/icon/17.png'); }
+.causal-shell:has(.v2-current-situation-summary) .day-mission > h2 { background-image: url('/assets/icon/10.png'); }
+.causal-shell:has(.v2-current-situation-summary) .resources-panel > h2 { background-image: url('/assets/icon/12.png'); }
+.causal-shell:has(.v2-current-situation-summary) .leverage-panel > h2 { background-image: url('/assets/icon/45.png'); }
+.causal-shell:has(.v2-current-situation-summary) .maneuver-heading > h2 { background-image: url('/assets/icon/42.png'); }
+.causal-shell:has(.v2-current-situation-summary) .player .portrait {
+  border-color: rgba(103, 72, 239, .22);
+  box-shadow: 0 10px 24px rgba(50, 46, 105, .12), inset 0 0 0 1px rgba(255, 255, 255, .65);
+}
+.causal-shell:has(.v2-current-situation-summary) .player h3,
+.causal-shell:has(.v2-current-situation-summary) .player-meta strong { color: var(--solo-ink); }
+.causal-shell:has(.v2-current-situation-summary) .player-meta span,
+.causal-shell:has(.v2-current-situation-summary) .causal-panel p,
+.causal-shell:has(.v2-current-situation-summary) .causal-panel li { color: var(--solo-muted); }
+.causal-shell:has(.v2-current-situation-summary) .player em {
+  border-color: rgba(103, 72, 239, .14);
+  background: linear-gradient(135deg, #f7f5ff, #f1effb);
+  color: #5c6287;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85);
+}
+.causal-shell:has(.v2-current-situation-summary) .player em::before {
+  background: linear-gradient(145deg, #7b60f3, #5638dd);
+  box-shadow: 0 3px 9px rgba(93, 62, 222, .22);
+}
+.causal-shell:has(.v2-current-situation-summary) .day-mission li::marker { color: var(--solo-gold); }
+.causal-shell:has(.v2-current-situation-summary) .kv { border-bottom-color: var(--solo-line); color: var(--solo-muted); }
+.causal-shell:has(.v2-current-situation-summary) .kv::before { color: var(--solo-purple); }
+.causal-shell:has(.v2-current-situation-summary) .kv b { color: var(--solo-ink); }
+.causal-shell:has(.v2-current-situation-summary) .opening-narrative,
+.causal-shell:has(.v2-current-situation-summary) .decision-narrative,
+.causal-shell:has(.v2-current-situation-summary) .result-narrative,
+.causal-shell:has(.v2-current-situation-summary) .simulation-stage {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(248, 248, 255, .61)), url('/assets/game/sangtian/background.png') center bottom / cover no-repeat;
+}
+.causal-shell:has(.v2-current-situation-summary) .opening-narrative::after { background: linear-gradient(90deg, rgba(255, 255, 255, .52), transparent 24%, transparent 76%, rgba(255, 255, 255, .52)); }
+.causal-shell:has(.v2-current-situation-summary) .opening-copy,
+.causal-shell:has(.v2-current-situation-summary) .decision-copy,
+.causal-shell:has(.v2-current-situation-summary) .result-copy,
+.causal-shell:has(.v2-current-situation-summary) .simulation-copy {
+  color: #343a66;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .9);
+}
+.causal-shell:has(.v2-current-situation-summary) .opening-copy h1,
+.causal-shell:has(.v2-current-situation-summary) .result-copy h1,
+.causal-shell:has(.v2-current-situation-summary) .simulation-copy h2 { color: var(--solo-ink); }
+.causal-shell:has(.v2-current-situation-summary) .opening-copy i { background: linear-gradient(90deg, transparent, rgba(103, 72, 239, .43), transparent); }
+.causal-shell:has(.v2-current-situation-summary) .narrative-idle .result-copy::before {
+  content: "";
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 auto 18px;
+  background: url('/assets/icon/22.png') center / contain no-repeat;
+  opacity: .78;
+}
+.causal-shell:has(.v2-current-situation-summary) .decision-composer,
+.causal-shell:has(.v2-current-situation-summary) .opening-decision {
+  border-color: var(--solo-line-strong);
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 16px 38px rgba(49, 43, 108, .1);
+}
+.causal-shell:has(.v2-current-situation-summary) .decision-composer .option-card {
+  border-color: var(--solo-line);
+  background: linear-gradient(180deg, #fff, #fdfdff);
+  box-shadow: 0 3px 10px rgba(50, 45, 105, .025);
+}
+.causal-shell:has(.v2-current-situation-summary) .decision-composer .option-card:hover {
+  border-color: rgba(103, 72, 239, .38);
+  background: #faf8ff;
+  box-shadow: 0 7px 18px rgba(76, 56, 180, .07);
+}
+.causal-shell:has(.v2-current-situation-summary) .decision-composer .option-card:has(input:checked) {
+  border-color: rgba(103, 72, 239, .58);
+  background: linear-gradient(135deg, #fbfaff, #f5f1ff);
+  box-shadow: inset 3px 0 var(--solo-purple), 0 8px 20px rgba(76, 56, 180, .09);
+}
+.causal-shell:has(.v2-current-situation-summary) .decision-composer .option-key {
+  background: linear-gradient(145deg, #795cf2, #5434da);
+  box-shadow: 0 4px 10px rgba(79, 53, 201, .22);
+}
+.causal-shell:has(.v2-current-situation-summary) .decision-composer textarea,
+.causal-shell:has(.v2-current-situation-summary) .custom-wrap textarea,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-form-row select {
+  border-color: var(--solo-line-strong);
+  background: rgba(253, 253, 255, .96);
+  box-shadow: inset 0 1px 2px rgba(49, 43, 108, .025);
+}
+.causal-shell:has(.v2-current-situation-summary) .actions button,
+.causal-shell:has(.v2-current-situation-summary) .result-continue button,
+.causal-shell:has(.v2-current-situation-summary) .opening-start button,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-form-row button {
+  background: linear-gradient(110deg, var(--solo-purple-deep), #7d52ef 62%, #6844e9);
+  box-shadow: 0 10px 24px rgba(82, 54, 210, .23), inset 0 1px 0 rgba(255, 255, 255, .24);
+}
+.causal-shell:has(.v2-current-situation-summary) button { transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, filter 160ms ease, color 160ms ease; }
+.causal-shell:has(.v2-current-situation-summary) button:focus-visible,
+.causal-shell:has(.v2-current-situation-summary) textarea:focus-visible,
+.causal-shell:has(.v2-current-situation-summary) select:focus-visible { outline: 3px solid rgba(103, 72, 239, .22); outline-offset: 2px; }
+.causal-shell:has(.v2-current-situation-summary) .maneuver-heading { border-bottom: 1px solid var(--solo-line); }
+.causal-shell:has(.v2-current-situation-summary) .help-dot {
+  border-color: var(--solo-line-strong);
+  background: rgba(255, 255, 255, .82);
+  color: #6f6b93;
+  box-shadow: 0 3px 10px rgba(50, 45, 105, .05);
+}
+.causal-shell:has(.v2-current-situation-summary) .maneuver-usage,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-progress,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-block { border-color: var(--solo-line); }
+.causal-shell:has(.v2-current-situation-summary) .maneuver-type-grid button,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-choice-card,
+.causal-shell:has(.v2-current-situation-summary) .contact-row,
+.causal-shell:has(.v2-current-situation-summary) .leverage-row button {
+  border-color: var(--solo-line);
+  background-color: rgba(252, 252, 255, .94);
+}
+.causal-shell:has(.v2-current-situation-summary) .maneuver-type-grid button:hover,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-choice-card:hover,
+.causal-shell:has(.v2-current-situation-summary) .contact-row:hover {
+  border-color: rgba(103, 72, 239, .34);
+  background-color: var(--solo-purple-soft);
+}
+.causal-shell:has(.v2-current-situation-summary) .maneuver-type-grid button.active {
+  border-color: rgba(103, 72, 239, .55);
+  background: linear-gradient(135deg, #f7f4ff, #ece7ff);
+  color: var(--solo-purple-deep);
+  box-shadow: inset 3px 0 var(--solo-purple);
+}
+.causal-shell:has(.v2-current-situation-summary) .opportunity-dots i,
+.causal-shell:has(.v2-current-situation-summary) .maneuver-chip i {
+  background: var(--solo-green);
+  box-shadow: 0 0 0 3px rgba(79, 138, 104, .1);
+}
+.causal-shell:has(.v2-current-situation-summary) .api-banner,
+.causal-shell:has(.v2-current-situation-summary) .critical-deferred {
+  border-color: var(--solo-line-strong);
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 14px 36px rgba(49, 43, 108, .14);
+}
+@media (prefers-reduced-motion: reduce) {
+  .causal-shell:has(.v2-current-situation-summary) button { transition: none; }
+}
+/* Keep the English loading seal legible without changing its fixed circular layout. */
+.simulation-seal {
+  box-sizing: border-box;
+  padding: 18px;
+  font-size: 20px;
+  line-height: 1.05;
+  text-align: center;
+  white-space: nowrap;
 }

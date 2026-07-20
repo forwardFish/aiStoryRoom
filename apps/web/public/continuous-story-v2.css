@@ -1,0 +1,58 @@
+.story-v2-shell .causal-center { display: block; overflow-y: auto; }
+.story-v2-shell .top-actions span { color: #727895; font-size: 11px; }
+.v2-story-stage { width: min(850px, 94%); margin: 0 auto; padding: 26px 0 50px; }
+.v2-situation, .v2-last-result, .v2-decisions, .v2-complete, .v2-result { box-sizing: border-box; border: 1px solid rgba(112, 80, 237, .16); border-radius: 18px; background: rgba(255,255,255,.94); box-shadow: 0 15px 50px rgba(51,39,111,.08); }
+.v2-situation { padding: 34px 46px; text-align: left; }
+.v2-situation > span, .v2-last-result > span, .v2-decisions header span, .v2-complete > span, .v2-result > span { color: #6b4ce4; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.v2-situation h1 { margin: 12px 0 24px; color: #222a55; font-family: "Songti SC", STSong, serif; font-size: 34px; }
+.v2-situation p { margin: 0 0 1.1em; color: #343c63; font-family: "Songti SC", STSong, serif; font-size: 17px; line-height: 2; text-indent: 2em; }
+.v2-last-result { margin-bottom: 16px; padding: 20px 28px; border-left: 5px solid #a184ff; }
+.v2-last-result p { margin: 9px 0 0; color: #555d7f; font-family: "Songti SC", STSong, serif; font-size: 14px; line-height: 1.85; }
+.v2-decisions { margin-top: 18px; padding: 26px; }
+.v2-decisions header { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+.v2-decisions h2 { margin: 6px 0 0; color: #252c55; font-family: "Songti SC", STSong, serif; font-size: 23px; }
+.v2-decisions header small { max-width: 270px; color: #858ba5; line-height: 1.5; text-align: right; }
+.v2-decision-list .continuous-action-card em { display: block; margin-top: 7px; color: #8879bd; font-size: 10px; font-style: normal; line-height: 1.5; }
+.v2-decision-list .continuous-action-card i { display: block; margin-top: 5px; color: #606887; font-size: 11px; font-style: normal; line-height: 1.55; }
+.v2-custom-start { width: 100%; margin-top: 14px; padding: 12px; border: 1px dashed #8e74ee; border-radius: 10px; background: #faf8ff; color: #6348ca; font-weight: 750; cursor: pointer; }
+.v2-intent-empty { display: grid; gap: 5px; margin: 14px 0; padding: 18px; border-radius: 12px; background: #f6f5fb; color: #6c7391; }
+.v2-intent-editor { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin: 18px 0; padding: 20px; border: 1px solid #dcd5f8; border-radius: 14px; background: #fbfaff; }
+.v2-intent-editor > header, .v2-intent-editor .wide { grid-column: 1 / -1; }
+.v2-intent-editor > header { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid #ebe7fa; }
+.v2-intent-editor h3 { margin: 4px 0 0; color: #2d345d; }
+.v2-intent-editor label { display: grid; gap: 7px; color: #394166; font-size: 12px; }
+.v2-intent-editor input, .v2-intent-editor select, .v2-intent-editor textarea { box-sizing: border-box; width: 100%; padding: 11px 12px; border: 1px solid #dcdeec; border-radius: 9px; background: white; color: #2d3457; font: inherit; }
+.v2-intent-editor textarea { min-height: 105px; resize: vertical; line-height: 1.65; }
+.v2-intent-editor fieldset { display: flex; flex-wrap: wrap; gap: 10px; border: 1px solid #e0dcef; border-radius: 10px; color: #525a7a; }
+.v2-intent-editor fieldset label { display: flex; align-items: center; gap: 6px; padding: 7px 9px; border-radius: 8px; background: white; }
+.v2-intent-editor fieldset input { width: auto; }
+.v2-interactions { margin-bottom: 16px; padding: 22px; border: 1px solid #d9a94d; border-radius: 16px; background: #fffaf0; }
+.v2-interactions header h2 { margin: 5px 0 14px; color: #554524; }
+.v2-interactions article > b { color: #4d432e; }
+.v2-interactions article > p { color: #71664e; line-height: 1.65; }
+.v2-interactions article > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.v2-interactions button { display: grid; gap: 5px; padding: 11px; border: 1px solid #e4cf9e; border-radius: 9px; background: white; color: #55482c; text-align: left; cursor: pointer; }
+.v2-interactions button span { font-size: 11px; line-height: 1.5; }
+.v2-holdings article, .v2-commitments article, .v2-conditions article { display: grid; gap: 4px; margin: 9px 0; padding: 9px; border-radius: 8px; background: rgba(245,243,252,.8); }
+.v2-holdings article span, .v2-commitments small, .v2-conditions small { color: #7c819b; font-size: 10px; }
+.v2-commitments p, .v2-conditions p { margin: 4px 0; color: #5c6380; font-size: 11px; line-height: 1.55; }
+.v2-custom { display: block; margin-top: 16px; color: #353c65; font-size: 13px; }
+.v2-custom textarea { box-sizing: border-box; width: 100%; min-height: 98px; margin-top: 9px; padding: 14px; resize: vertical; border: 1px solid #dfe1ef; border-radius: 10px; color: #32395f; font: inherit; line-height: 1.6; }
+.v2-custom textarea:focus { outline: 2px solid rgba(108,76,231,.22); border-color: #7050ed; }
+.v2-agent-state { display: grid; gap: 5px; margin-top: 15px; padding: 16px 20px; border-radius: 10px; background: #f3f0ff; color: #5d4b9a; }
+.v2-facts ul { margin: 0; padding-left: 19px; }
+.v2-facts li { margin: 8px 0; color: #59617e; font-family: "Songti SC", STSong, serif; font-size: 12px; line-height: 1.6; }
+.v2-timeline article { grid-template-columns: 34px minmax(0,1fr); }
+.v2-timeline article em { white-space: normal; line-height: 1.5; }
+.v2-complete, .v2-result { width: min(850px,94%); margin: 28px auto; padding: 42px; text-align: center; }
+.v2-complete h1, .v2-result h1 { color: #252c55; font-family: "Songti SC", STSong, serif; }
+.v2-complete p { color: #6f7695; line-height: 1.8; }
+.v2-complete .continuous-primary { width: min(420px,100%); margin: 25px auto 0; }
+.v2-result article { margin: 18px 0; padding: 20px; border: 1px solid #eaebf3; border-radius: 10px; text-align: left; }
+.v2-result article small { color: #7455df; }
+.v2-result article p { color: #424a70; font-family: "Songti SC", STSong, serif; line-height: 1.9; }
+.v2-result > .continuous-primary { width: min(420px,100%); margin: 26px auto 0; }
+.v2-unlock { margin-top: 18px; padding: 30px; border: 1px solid #d9d0ff; border-radius: 16px; background: #faf8ff; text-align: center; }
+.v2-unlock p { color: #707795; }
+.v2-unlock .continuous-primary { width: min(420px,100%); margin: 20px auto 0; }
+@media (max-width: 980px) { .v2-situation { padding: 25px; } .v2-decisions header { align-items: start; flex-direction: column; } .v2-decisions header small { text-align: left; } .v2-intent-editor { grid-template-columns: 1fr; } .v2-intent-editor > * { grid-column: 1 / -1; } .v2-interactions article > div { grid-template-columns: 1fr; } }

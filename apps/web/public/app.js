@@ -1,4 +1,5 @@
 import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js?v=20260712-3";
+import { renderTransitionScreen } from "./transition-screen.js";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
@@ -50,7 +51,8 @@ export function createStoryApp({
     try {
       const restoredView = await storage.restoreOrCreate();
       acceptView(restoredView);
-      if (state.showOpening && isOpeningDecisionState(restoredView)) startOpeningStream(restoredView);
+      if (restoredView?.v2CurrentTurn?.status === "RESOLVING") state.showOpening = false;
+      else if (state.showOpening && ((restoredView?.continuousV2 === true && restoredView?.run?.status !== "finished") || isOpeningDecisionState(restoredView))) startOpeningStream(restoredView);
     } catch (error) {
       state.error = errorMessage(error);
     } finally {
@@ -69,7 +71,12 @@ export function createStoryApp({
     state.error = "";
     if (!silent) render();
     try {
-      acceptView(await storage.getRun(state.view?.run?.id || storage.savedRunId));
+      const previousView = state.view;
+      const nextView = await storage.getRun(state.view?.run?.id || storage.savedRunId);
+      const revealCompletedResult = completedResultKind(previousView, nextView);
+      acceptView(nextView);
+      if (revealCompletedResult === "maneuver") startManeuverResultStream(nextView);
+      else if (revealCompletedResult === "decision") startResultStream(nextView);
       if (!silent) state.notice = conflict ? "局势已被其他请求更新，已为你刷新到最新版本。请重新确认这一步。" : "局势已刷新。";
     } catch (error) {
       if (!silent) state.error = errorMessage(error);
@@ -95,6 +102,7 @@ export function createStoryApp({
     render();
 
     try {
+      const previousView = state.view;
       const result = await storage.submitDecision(state.view, {
         messageId: decision?.messageId || prompt.eventId,
         optionKey: selected,
@@ -108,7 +116,8 @@ export function createStoryApp({
       } else {
         acceptView(result);
         if (result.roomSession) state.notice = "你的角色决策已提交，正在等待其他玩家。";
-        else startResultStream(result);
+        else if (completedResultKind(previousView, result)) startResultStream(result);
+        else state.notice = "决定已经提交，结果剧情生成后会自动出现。";
       }
     } catch (error) {
       if (isVersionConflict(error)) {
@@ -230,7 +239,7 @@ export function createStoryApp({
   async function resetRun() {
     if (state.busy) return;
     if (state.view?.roomSession) {
-      browserWindow.location.assign(`/rooms/${encodeURIComponent(state.view.roomSession.room.id)}`);
+      browserWindow.location.assign("/");
       return;
     }
     if (browserWindow?.confirm && !browserWindow.confirm("确定重开《桑田诏》吗？当前故事局仍会保留在服务端。")) return;
@@ -327,9 +336,9 @@ export function createStoryApp({
     resultTimer = (browserWindow?.setTimeout || setTimeout).call(browserWindow || globalThis, advanceResultStream, streamDelay(text, 0, browserWindow));
   }
 
-  function startOpeningStream() {
+  function startOpeningStream(view) {
     stopOpeningStream();
-    const text = openingNarrativeText();
+    const text = openingNarrativeText(view);
     state.openingStream = { text, index: 0, visibleText: "", done: text.length === 0 };
     if (state.openingStream.done) {
       scheduleOpeningAdvance();
@@ -441,7 +450,7 @@ export function createStoryApp({
     rememberResultScroll();
     root.className = "causal-player-root";
     if (state.loading) {
-      root.innerHTML = renderLoading("正在读取总督府局势……");
+      root.innerHTML = renderLoading("Restoring your latest story state...");
       return;
     }
     if (!state.view) {
@@ -451,7 +460,9 @@ export function createStoryApp({
     }
 
     const view = state.view;
-    const showOpening = state.showOpening && array(view.decisionHistory).length === 0 && Number(view.run.currentDay) === 1;
+    const showOpening = state.showOpening && (view.continuousV2 === true
+      ? view.run.status !== "finished"
+      : array(view.decisionHistory).length === 0 && Number(view.run.currentDay) === 1);
     const activePrompt = activePromptForView(view);
     const simulating = state.busy && !showOpening;
     const openingPause = showOpening && !state.historyOpen && Boolean(state.openingStream);
@@ -512,6 +523,7 @@ export function createStoryApp({
       };
     });
     root.querySelector("#refreshBtn")?.addEventListener("click", () => refresh());
+    root.querySelector("#v2RoomBtn")?.addEventListener("click", () => browserWindow?.location?.assign?.("/"));
     root.querySelector("#submitDecision")?.addEventListener("click", submitDecision);
     root.querySelector("#maneuverSubmit")?.addEventListener("click", submitManeuver);
     root.querySelector("[data-room-resolve]")?.addEventListener("click", resolveRoomRound);
@@ -576,15 +588,36 @@ export function createStoryApp({
 }
 
 function renderLoading(text) {
-  return `<section class="boot-screen" data-testid="loading"><div class="seal">桑田诏</div><p>${esc(text)}</p></section>`;
+  return renderTransitionScreen({
+    eyebrow: "WELCOME BACK",
+    title: "Restoring Your Story",
+    description: "Reconnecting your role, private context, and the world shaped by your previous decisions.",
+    status: text
+  });
 }
 
 function renderFatalError(message, busy) {
-  return `<section class="boot-screen boot-error" data-testid="fatal-error"><div class="seal">桑田诏</div><h1>剧情服务暂不可用</h1><p>${esc(message)}</p><div class="boot-actions"><button id="retryBtn" ${busy ? "disabled" : ""}>重新连接</button><button id="resetBtn" ${busy ? "disabled" : ""}>明确重开新局</button></div><small>本页面不会用本地预制剧情冒充服务端推演，也不会在恢复失败时静默替换故事局。</small></section>`;
+  return `<section class="boot-screen boot-error shared-room-error" data-testid="fatal-error"><h1>Your story is temporarily unavailable</h1><p>${esc(message)}</p><div class="boot-actions"><button id="retryBtn" ${busy ? "disabled" : ""}>Reconnect</button><button id="resetBtn" ${busy ? "disabled" : ""}>Start a new story</button></div><small>We will never replace an unavailable server story with a local placeholder.</small></section>`;
 }
 
 function renderTopbar(view, state) {
   const run = view.run;
+  if (view.continuousV2 === true) {
+    const turn = view.v2CurrentTurn || {};
+    return `<header class="causal-topbar">
+      <div class="top-context-cluster">
+        <div class="mw-brand"><span class="mw-brand-mark">Our Many Worlds</span></div>
+        <div class="location-title v2-current-situation-summary" hidden><span class="seal-mark">◇</span><b>${esc(turn.title || run.title || "当前局势")}</b><span class="chevron">◇</span></div>
+      </div>
+      <div class="top-phase-cluster">
+        <div class="top-day">第 ${number(turn.stageIndex || run.currentDay)} 章</div>
+        <div class="top-countdown">本角色第 <b>${number(turn.turnIndex || 1)}</b> 次抉择</div>
+        <span class="status-chip">我的角色&nbsp; <b>${esc(view.player?.roleName || "")}</b></span>
+        <span class="status-chip maneuver-chip">决策后立即单独推演<i></i><i></i></span>
+      </div>
+      <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; 历史回顾</button><button id="v2RoomBtn" type="button" ${state.busy ? "disabled" : ""}>↩&nbsp; 返回主页</button></div></div>
+    </header>`;
+  }
   const remaining = Math.max(0, Number(run.totalDays || FINAL_DAY) - Number(run.currentDay));
   const progress = dayProgress(view);
   const maneuver = view.maneuverState || {};
@@ -611,6 +644,7 @@ function renderStatusStrip(view) {
   const stats = worldEntries(view.dashboard?.worldState);
   const get = (name, fallback) => stats.find(([key]) => key === name)?.[1] ?? fallback;
   return `<div class="status-strip" aria-label="世界状态">
+    ${view.continuousV2 === true ? `<span class="v2-current-situation-summary" hidden>◇&nbsp; 当前局势&nbsp; <b>${esc(view.v2CurrentTurn?.title || run.currentTime || "故事正在推进")}</b></span>` : ""}
     <span>▰&nbsp; 国库银&nbsp; <b>${esc(get("国库银两", 42))}</b></span>
     <span class="metric-green">♥&nbsp; 民心&nbsp; <b>${esc(get("民心", 55))}</b></span>
     <span class="metric-gold">✦&nbsp; 粮价&nbsp; <b>${esc(get("粮价", 72))}</b></span>
@@ -656,12 +690,17 @@ function renderLeverage(player = {}) {
 
 function renderManeuverPanel(view, state) {
   const maneuver = view.maneuverState || { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 };
-  const disabled = Boolean(view.roomSession) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy;
+  const disabled = Boolean(view.roomSession) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy || (view.continuousV2 && !view.activePrompt);
   const draft = state.maneuverDraft;
   const contacts = [["county_magistrate", "卢象升", "县令 · 信任", "art-avatar-county"], ["merchant", "江南商会会首", "商会 · 观望", "art-avatar-merchant"], ["xunfu", "刘瑾", "巡抚 · 敌对", "art-avatar-xunfu"], ["sili_jian", "司礼监织造使", "内廷 · 警惕", "art-avatar-sili"]];
   const types = [["contact", "人物交谈"], ["investigate", "派遣调查"], ["leverage", "使用筹码"], ["custom", "自拟谋划"]];
   const investigationChoices = [["inspect_land_register", "核对田亩底册", "让幕僚复核田亩数目，查清改桑名册的来源。"], ["inspect_courier_registry", "查验驿站登记", "追查巡抚催报的往来文书与经手人。"], ["inspect_grain_store", "清点粮仓库存", "核实城中余粮，判断粮价异动的真实压力。"]];
-  const leverage = [["田契暗账半页", "land_contract_fragment"], ["清流县令密信", "county_letter"], ["海防军报", "coastal_report"]];
+  const currentAssets = array(view.v2Projection?.visibleAssets)
+    .filter((asset) => asset?.status === "ACTIVE" && Number(asset?.quantity) > 0)
+    .map((asset) => [asset.label || asset.assetKey, asset.assetKey]);
+  const leverage = currentAssets.length
+    ? currentAssets
+    : [["田契暗账半页", "land_contract_fragment"], ["清流县令密信", "county_letter"], ["海防军报", "coastal_report"]];
   const activeType = types.find(([key]) => key === draft.maneuverType)?.[1] || "自拟谋划";
   const workbench = draft.maneuverType === "contact"
     ? `<section class="maneuver-workbench maneuver-contact-workbench" data-testid="maneuver-contact-workbench"><div class="maneuver-workbench-head"><span>可接触人物</span><small>选择一人问询</small></div>${contacts.map(([key, name, action, iconClass]) => `<button class="contact-row ${draft.targetRoleKey === key ? "selected" : ""}" type="button" data-maneuver-type="contact" data-maneuver-direct="true" data-maneuver-contact="${key}" data-target-role="${key}" ${disabled ? "disabled" : ""}><span class="contact-avatar ${iconClass}" aria-hidden="true"></span><span><b>${name}</b><small>${action}</small></span><em>问询</em></button>`).join("")}<button class="see-more" type="button">查看全部人物&nbsp;›</button></section>`
@@ -680,10 +719,23 @@ function renderManeuverPanel(view, state) {
   </section>`;
 }
 
+function renderContinuousV2Context(view) {
+  const turn = view.v2CurrentTurn || {};
+  const projection = view.v2Projection || {};
+  const visibleFacts = array(turn.visibleFacts).slice(0, 4);
+  const interaction = array(projection.pendingInteractions)[0] || null;
+  return `<section class="maneuver-panel" data-testid="v2-context-panel">
+    <div class="maneuver-heading"><h2>此刻的局势</h2><span class="help-dot" aria-hidden="true">?</span></div>
+    <section class="maneuver-usage"><span>你需要处理</span><b>${esc(interaction?.pressure || turn.title || "眼前正在发生的事")}</b><small>你的决定提交后会立即单独推演，并续写下一段剧情。</small></section>
+    ${visibleFacts.length ? `<section class="maneuver-workbench"><div class="maneuver-workbench-head"><span>你现在确实知道</span><small>只显示本角色能够知道的事实</small></div><div class="maneuver-choice-list">${visibleFacts.map((fact) => `<article class="maneuver-choice-card"><b>${esc(fact.content || fact.label || fact.factKey)}</b></article>`).join("")}</div></section>` : ""}
+    ${interaction ? `<section class="maneuver-workbench"><div class="maneuver-workbench-head"><span>${esc(interaction.sourceRoleName || "另一名角色")}正在等你回应</span><small>${esc(interaction.pressure || "这项回应不会阻塞其他角色继续行动。")}</small></div></section>` : ""}
+  </section>`;
+}
+
 function renderOpeningNarrative(view, state = {}) {
   const title = view.run?.title || "桑田诏：嘉靖财政危局";
   const stream = state.openingStream;
-  const narrative = stream ? stream.visibleText : openingNarrativeText();
+  const narrative = stream ? stream.visibleText : openingNarrativeText(view);
   return `<section class="opening-narrative" data-testid="role-opening">
     <div class="opening-copy"><p>嘉靖三十五年五月初八</p><p>杭州 · 总督府</p><i></i><h1>${esc(title)}</h1><i></i><p class="opening-stream-copy" aria-live="polite">${lineBreaks(narrative || "……")}${stream && !stream.done ? `<span class="result-caret" aria-hidden="true">▋</span>` : ""}</p></div>
   </section>`;
@@ -693,7 +745,9 @@ function renderOpeningStart() {
   return `<section class="opening-start" data-testid="decision-zone"><span>前情介绍完毕 · 点击进入今日主线决策</span><button id="beginStoryBtn" type="button">进入局势</button></section>`;
 }
 
-function openingNarrativeText() {
+function openingNarrativeText(view) {
+  const generated = String(view?.openingNarrative || "").trim();
+  if (generated) return generated;
   return "杭州粮价已经连续上涨三日。城中米行陆续闭门，百姓开始聚集在粮铺之外。巡抚的奏疏在午前送到总督府，奏疏中将粮价失控归因于江南商会囤积居奇。但你知道，事情远没有这么简单。昨夜送来的密报里，出现了司礼监的名字。粮价、商会、巡抚、京中势力，所有线索都指向同一个问题：杭州，恐怕已不再只是地方粮局之乱。现在，你必须在这盘棋局落定之前，找到第一步该落子的方向。";
 }
 
@@ -704,7 +758,7 @@ function renderDecisionNarrative() {
 function renderSimulation(view, state) {
   const prompt = activePromptForView(view);
   const selected = array(prompt?.options).find((item) => item.optionKey === state.selectedOption || item.key === state.selectedOption);
-  return `<section class="simulation-stage" data-testid="ai-simulating"><div class="simulation-copy"><span>你的决定</span><h1>${esc(selected?.title || "正在写入局势")}</h1><p>你的行动正在被写入角色关系、资源与后续事件的因果链。</p><div class="simulation-seal">推演<br/>中</div><h2>AI 正在推演局势……</h2><small>推演结果将影响后续事件走向</small></div></section>`;
+  return `<section class="simulation-stage" data-testid="ai-simulating"><div class="simulation-copy"><span>Your decision</span><h1>${esc(selected?.title || "Writing your action into the world")}</h1><p>Your action is entering the causal chain of relationships, resources, and future events.</p><div class="simulation-seal">WORLD<br/>IN MOTION</div><h2>AI is shaping the consequences...</h2><small>The outcome will change what happens next.</small></div></section>`;
 }
 
 function renderResultNarrative(view, state = {}) {
@@ -804,6 +858,7 @@ function maneuverNarrativeText(view, maneuver = {}) {
 function resolveMainMode({ view, state, showOpening, activePrompt, simulating, openingPause, resultPause, criticalPending }) {
   if (state.historyOpen) return "history";
   if (simulating) return "simulating";
+  if (view?.v2CurrentTurn?.status === "RESOLVING") return "simulating";
   if (view?.roomSession?.completed) return "room_complete";
   if (view?.roomSession?.resolving) return "room_resolving";
   if (view?.roomSession?.ownSubmitted) return "room_waiting";
@@ -986,12 +1041,13 @@ function renderBuildDiagnostics(view) {
 
 function renderHistory(history = [], messages = [], activeFilter = "all") {
   const decisionItems = array(history).map((item, index) => ({
-    kind: "decision", day: item.day, decisionIndex: item.decisionIndex || ((index % DAY_DECISIONS) + 1),
+    id: item.id, kind: item.kind || "decision", day: item.day, decisionIndex: item.decisionIndex || ((index % DAY_DECISIONS) + 1),
     title: item.title || item.decisionTitle || item.optionKey, summary: item.summary || item.result || "该决定已写入局势因果链，将在后续推演中持续生效。"
   }));
+  const decisionIds = new Set(decisionItems.map((item) => item.id).filter(Boolean));
   const messageKinds = { maneuver_result: "maneuver", role_action: "impact", causal_visible: "world", causal_recall: "impact", day_summary: "world" };
-  const messageItems = array(messages).filter((message) => messageKinds[message.type]).map((message) => ({
-    kind: messageKinds[message.type], day: message.day, title: message.title, summary: message.body || message.label || "局势出现新的可见变化。"
+  const messageItems = array(messages).filter((message) => messageKinds[message.type] && !decisionIds.has(message.id)).map((message) => ({
+    id: message.id, kind: messageKinds[message.type], day: message.day, title: message.title, summary: message.body || message.label || "局势出现新的可见变化。"
   }));
   const items = [...decisionItems, ...messageItems].filter((item) => activeFilter === "all" || item.kind === activeFilter).sort((a, b) => Number(b.day || 0) - Number(a.day || 0));
   return `<section class="history-drawer" role="dialog" aria-modal="true" aria-label="局势记录" data-testid="history-drawer">
@@ -1007,6 +1063,7 @@ function renderBanner(kind, message) {
 
 export function dayProgress(view) {
   if (!view?.run) return { completed: 0, required: DAY_DECISIONS };
+  if (view.continuousV2 === true) return { completed: 0, required: 1 };
   if (view.roomSession) return { completed: view.roomSession.ownSubmitted ? 1 : 0, required: 1 };
   const day = Number(view.run.currentDay || 1);
   if (day >= FINAL_DAY) return { completed: 0, required: 0 };
@@ -1070,6 +1127,19 @@ function activePromptForView(view) {
     maxLength: 200,
     submitLabel: "提交决策"
   };
+}
+
+function completedResultKind(previousView, nextView) {
+  if (!nextView?.continuousV2) return null;
+  const previousResult = latestPlayerResult(previousView);
+  const nextResult = latestPlayerResult(nextView);
+  if (!nextResult) return null;
+  if (previousResult && String(previousResult.id || previousResult.body || "") === String(nextResult.id || nextResult.body || "")) return null;
+  return nextResult.type === "maneuver_result" ? "maneuver" : "decision";
+}
+
+function latestPlayerResult(view) {
+  return array(view?.messages).filter((message) => ["decision_result", "maneuver_result"].includes(message?.type)).at(-1) || null;
 }
 
 function normalizeFinal(view) {

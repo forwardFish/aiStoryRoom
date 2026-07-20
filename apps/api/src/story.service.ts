@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import {
+  CONTINUOUS_STORY_ENGINE_VERSION,
   buildCrossImpacts,
   buildEchoes,
   buildPersonalCards,
@@ -183,7 +184,12 @@ export class StoryService {
     });
 
     try {
-      await this.createInitialRunAssets(run.id, template.id, mode);
+      await this.createInitialRunAssets(
+        run.id,
+        template.id,
+        mode,
+        internalVersions.engineVersion !== CONTINUOUS_STORY_ENGINE_VERSION
+      );
 
       if (input.ownerAsPlayer !== false || mode === "single" || isAiTrio) {
         await this.joinRun(openid, run.id);
@@ -988,28 +994,30 @@ export class StoryService {
     });
   }
 
-  private async createInitialRunAssets(runId: string, templateId: string, mode: string) {
+  private async createInitialRunAssets(runId: string, templateId: string, mode: string, publishSeedNarrative = true) {
     const template = getTemplate(templateId);
     const gameDefinition = findGameDefinitionByTemplateId(templateId);
     const canonicalTemplate = gameDefinition ? { ...template, roles: gameDefinition.roles } : template;
-    await this.prisma.chapterSandbox.create({
-      data: {
-        runId,
-        chapterIndex: 1,
-        title: mode === "ai-trio" ? "第 1 章：三人共同推演" : "第 1 章：没有影子的客人",
-        mainLocation: template.name,
-        chapterGoal: "确认异常的来源，并让所有角色产生第一次协作。",
-        currentQuestion: this.nodeDefinition(template, 1, mode)?.nodeGoal || template.hook,
-        sandboxJson: canonicalTemplate
-      }
-    });
+    const roleDefinitions = gameDefinition?.roles || template.roles;
+    const roleCreatedAt = Date.now();
 
-    // Registered games own the canonical player-seat list. A world actor is
-    // deliberately absent here and is materialized only as an internal runtime
-    // principal when a continuous action needs a required roleId foreign key.
-    for (const role of gameDefinition?.roles || template.roles) {
-      await this.prisma.storyRole.create({
+    // These rows are independent and belong to a brand-new run. Bulk creation
+    // avoids dozens of remote database round trips before the first real story
+    // can even reach the Writer.
+    await Promise.all([
+      this.prisma.chapterSandbox.create({
         data: {
+          runId,
+          chapterIndex: 1,
+          title: mode === "ai-trio" ? "第 1 章：三人共同推演" : "第 1 章：没有影子的客人",
+          mainLocation: template.name,
+          chapterGoal: "确认异常的来源，并让所有角色产生第一次协作。",
+          currentQuestion: this.nodeDefinition(template, 1, mode)?.nodeGoal || template.hook,
+          sandboxJson: canonicalTemplate
+        }
+      }),
+      this.prisma.storyRole.createMany({
+        data: roleDefinitions.map((role, index) => ({
           runId,
           roleKey: role.roleKey,
           roleName: role.roleName,
@@ -1023,46 +1031,41 @@ export class StoryService {
           knownInfoJson: role.knownInfo,
           cannotDoJson: role.cannotDo,
           isAiControlled: false,
-          status: "available"
-        }
-      });
-    }
+          status: "available",
+          createdAt: new Date(roleCreatedAt + index)
+        }))
+      })
+    ]);
 
     const node = await this.ensureNode(runId, 1, 1, templateId, mode);
-    await this.prisma.storyRun.update({ where: { id: runId }, data: { currentNodeId: node.id } });
-
-    for (const clue of template.initialClues) {
-      await this.prisma.clue.create({
-        data: {
+    const [, , , createdRoles] = await Promise.all([
+      this.prisma.storyRun.update({ where: { id: runId }, data: { currentNodeId: node.id } }),
+      this.prisma.clue.createMany({
+        data: template.initialClues.map((clue) => ({
           runId,
           clueKey: clue.clueKey,
           title: clue.title,
           description: clue.description,
           visibility: "public",
           discoveredNodeId: node.id
+        }))
+      }),
+      this.prisma.worldStateSnapshot.create({
+        data: {
+          runId,
+          nodeId: node.id,
+          chapterIndex: 1,
+          stateJson: { dangerLevel: 1, currentNode: node.title },
+          factsJson: { publicFacts: [template.hook] }
         }
-      });
-    }
+      }),
+      this.prisma.storyRole.findMany({ where: { runId }, orderBy: { createdAt: "asc" } })
+    ]);
 
-    await this.prisma.worldStateSnapshot.create({
-      data: {
-        runId,
-        nodeId: node.id,
-        chapterIndex: 1,
-        stateJson: { dangerLevel: 1, currentNode: node.title },
-        factsJson: { publicFacts: [template.hook] }
-      }
-    });
-
-    const createdRoles = await this.prisma.storyRole.findMany({
-      where: { runId },
-      orderBy: { createdAt: "asc" }
-    });
+    const roleIds = createdRoles.map((role) => role.id);
     const publicFactKeys = ["world_hook", ...template.initialClues.map((clue) => ["clue", clue.clueKey].join("_"))];
-    await this.prisma.canonFact.upsert({
-      where: { runId_factKey: { runId, factKey: "world_hook" } },
-      update: {},
-      create: {
+    const publicFacts = [
+      {
         runId,
         sourceNodeId: node.id,
         factKey: "world_hook",
@@ -1071,13 +1074,9 @@ export class StoryService {
         visibility: "public",
         sourceEventIdsJson: [],
         sourceActionIdsJson: [],
-        knownByRoleIdsJson: createdRoles.map((role) => role.id)
-      }
-    });
-    await Promise.all(template.initialClues.map((clue) => this.prisma.canonFact.upsert({
-      where: { runId_factKey: { runId, factKey: ["clue", clue.clueKey].join("_") } },
-      update: {},
-      create: {
+        knownByRoleIdsJson: roleIds
+      },
+      ...template.initialClues.map((clue) => ({
         runId,
         sourceNodeId: node.id,
         factKey: ["clue", clue.clueKey].join("_"),
@@ -1086,64 +1085,57 @@ export class StoryService {
         visibility: "public",
         sourceEventIdsJson: [],
         sourceActionIdsJson: [],
-        knownByRoleIdsJson: createdRoles.map((role) => role.id)
-      }
-    })));
-    await this.prisma.storyThread.upsert({
-      where: { runId_threadKey: { runId, threadKey: "main_pressure" } },
-      update: {},
-      create: {
+        knownByRoleIdsJson: roleIds
+      }))
+    ];
+    const privateFacts = createdRoles.flatMap((role) => {
+      const knownInfo = this.stringList(role.knownInfoJson);
+      const knownFacts = knownInfo.map((content, index) => ({
         runId,
-        threadKey: "main_pressure",
-        title: "主线压力",
-        status: "active",
-        tension: 1,
-        deadlineNodeIndex: mode === "room" || mode === "ai-trio" ? 7 : 5,
-        sourceFactKeysJson: publicFactKeys,
-        stateJson: { currentNodeId: node.id, currentQuestion: node.nodeGoal }
-      }
+        sourceNodeId: node.id,
+        factKey: ["role", role.roleKey, "known", index + 1].join("_"),
+        content,
+        status: "confirmed",
+        visibility: "role_private",
+        sourceEventIdsJson: [],
+        sourceActionIdsJson: [],
+        knownByRoleIdsJson: [role.id]
+      }));
+      return role.hiddenSecret ? [...knownFacts, {
+        runId,
+        sourceNodeId: node.id,
+        factKey: ["role", role.roleKey, "secret"].join("_"),
+        content: role.hiddenSecret,
+        status: "confirmed",
+        visibility: "role_private",
+        sourceEventIdsJson: [],
+        sourceActionIdsJson: [],
+        knownByRoleIdsJson: [role.id]
+      }] : knownFacts;
     });
-    await Promise.all(createdRoles.map(async (role) => {
+    const roleState = createdRoles.map((role) => {
       const roleFactKeys = this.stringList(role.knownInfoJson).map((_, index) => ["role", role.roleKey, "known", index + 1].join("_"));
       const secretKey = ["role", role.roleKey, "secret"].join("_");
-      const knownInfo = this.stringList(role.knownInfoJson);
-      await Promise.all(knownInfo.map((content, index) => this.prisma.canonFact.upsert({
-        where: { runId_factKey: { runId, factKey: roleFactKeys[index] } },
-        update: {},
-        create: {
-          runId,
-          sourceNodeId: node.id,
-          factKey: roleFactKeys[index],
-          content,
-          status: "confirmed",
-          visibility: "role_private",
-          sourceEventIdsJson: [],
-          sourceActionIdsJson: [],
-          knownByRoleIdsJson: [role.id]
-        }
-      })));
-      if (role.hiddenSecret) {
-        await this.prisma.canonFact.upsert({
-          where: { runId_factKey: { runId, factKey: secretKey } },
-          update: {},
-          create: {
-            runId,
-            sourceNodeId: node.id,
-            factKey: secretKey,
-            content: role.hiddenSecret,
-            status: "confirmed",
-            visibility: "role_private",
-            sourceEventIdsJson: [],
-            sourceActionIdsJson: [],
-            knownByRoleIdsJson: [role.id]
-          }
-        });
-      }
       const confirmedFactKeys = [...publicFactKeys, ...roleFactKeys, ...(role.hiddenSecret ? [secretKey] : [])];
-      await this.prisma.characterMind.upsert({
-        where: { roleId: role.id },
-        update: {},
-        create: {
+      return { role, confirmedFactKeys };
+    });
+
+    await Promise.all([
+      this.prisma.canonFact.createMany({ data: [...publicFacts, ...privateFacts] }),
+      this.prisma.storyThread.create({
+        data: {
+          runId,
+          threadKey: "main_pressure",
+          title: "主线压力",
+          status: "active",
+          tension: 1,
+          deadlineNodeIndex: mode === "room" || mode === "ai-trio" ? 7 : 5,
+          sourceFactKeysJson: publicFactKeys,
+          stateJson: { currentNodeId: node.id, currentQuestion: node.nodeGoal }
+        }
+      }),
+      this.prisma.characterMind.createMany({
+        data: roleState.map(({ role, confirmedFactKeys }) => ({
           runId,
           roleId: role.id,
           confirmedFactKeysJson: confirmedFactKeys,
@@ -1151,42 +1143,45 @@ export class StoryService {
           activeGoalsJson: [role.personalGoal],
           knowledgeBoundaryJson: { cannotDo: this.stringList(role.cannotDoJson), roleKey: role.roleKey },
           lastNodeId: node.id
-        }
-      });
-      await this.prisma.sceneSnapshot.create({
-        data: {
-          runId,
-          nodeId: node.id,
-          roleId: role.id,
-          scope: "role_private",
-          stateJson: { dangerLevel: 1, currentNode: node.title, roleKey: role.roleKey },
-          knownFactKeysJson: confirmedFactKeys,
-          activeThreadKeysJson: ["main_pressure"]
-        }
-      });
-    }));
-    await this.prisma.sceneSnapshot.create({
-      data: {
-        runId,
-        nodeId: node.id,
-        scope: "public",
-        stateJson: { dangerLevel: 1, currentNode: node.title },
-        knownFactKeysJson: publicFactKeys,
-        activeThreadKeysJson: ["main_pressure"]
-      }
-    });
-    await this.prisma.narrativeEntry.create({
-      data: {
-        runId,
-        nodeId: node.id,
-        entryType: "scene_open",
-        visibility: "public",
-        content: node.publicNarration,
-        factKeysJson: publicFactKeys,
-        threadKeysJson: ["main_pressure"],
-        sourceEventIdsJson: []
-      }
-    });
+        }))
+      }),
+      this.prisma.sceneSnapshot.createMany({
+        data: [
+          ...roleState.map(({ role, confirmedFactKeys }) => ({
+            runId,
+            nodeId: node.id,
+            roleId: role.id,
+            scope: "role_private",
+            stateJson: { dangerLevel: 1, currentNode: node.title, roleKey: role.roleKey },
+            knownFactKeysJson: confirmedFactKeys,
+            activeThreadKeysJson: ["main_pressure"]
+          })),
+          {
+            runId,
+            nodeId: node.id,
+            roleId: null,
+            scope: "public",
+            stateJson: { dangerLevel: 1, currentNode: node.title },
+            knownFactKeysJson: publicFactKeys,
+            activeThreadKeysJson: ["main_pressure"]
+          }
+        ]
+      }),
+      publishSeedNarrative
+        ? this.prisma.narrativeEntry.create({
+          data: {
+            runId,
+            nodeId: node.id,
+            entryType: "scene_open",
+            visibility: "public",
+            content: node.publicNarration,
+            factKeysJson: publicFactKeys,
+            threadKeysJson: ["main_pressure"],
+            sourceEventIdsJson: []
+          }
+        })
+        : Promise.resolve(null)
+    ]);
   }
 
   private async ensureNode(runId: string, chapterIndex: number, nodeIndex: number, templateId: string, mode = "invite") {

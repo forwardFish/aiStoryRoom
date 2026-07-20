@@ -1,0 +1,205 @@
+.mw-transition-screen {
+  --transition-ink: #11184c;
+  --transition-purple: #6845ec;
+  --transition-purple-deep: #4e2fd2;
+  --transition-muted: #6e7594;
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 32px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(119, 85, 244, .12), transparent 28%),
+    radial-gradient(circle at 82% 78%, rgba(107, 188, 235, .12), transparent 30%),
+    linear-gradient(145deg, #fff 0%, #fbfaff 48%, #f5f3ff 100%);
+  color: var(--transition-ink);
+  font-family: "MW Inter", Inter, "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+.mw-transition-screen::before,
+.mw-transition-screen::after {
+  position: absolute;
+  z-index: -1;
+  width: 340px;
+  height: 340px;
+  border: 1px solid rgba(104, 69, 236, .09);
+  border-radius: 50%;
+  content: "";
+}
+
+.mw-transition-screen::before { top: -170px; left: -100px; box-shadow: 0 0 0 44px rgba(104, 69, 236, .025); }
+.mw-transition-screen::after { right: -130px; bottom: -190px; box-shadow: 0 0 0 56px rgba(90, 176, 226, .025); }
+
+.mw-transition-card {
+  width: min(610px, calc(100vw - 32px));
+  padding: 34px 58px 46px;
+  border: 1px solid rgba(104, 69, 236, .14);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 28px 80px rgba(48, 39, 111, .13), inset 0 1px 0 rgba(255, 255, 255, .95);
+  backdrop-filter: blur(16px);
+}
+
+.mw-transition-brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 9px;
+  color: var(--transition-purple-deep);
+  text-decoration: none;
+}
+
+.mw-transition-brand strong { font: 700 17px/1.2 Georgia, "Times New Roman", serif; }
+.mw-transition-brand small { color: var(--transition-muted); font-size: 10px; font-weight: 600; }
+
+.mw-transition-orbit {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  display: grid;
+  place-items: center;
+  margin: 35px auto 30px;
+  border: 1px solid rgba(104, 69, 236, .25);
+  border-radius: 50%;
+  box-shadow: 0 0 0 9px rgba(104, 69, 236, .045), 0 16px 40px rgba(91, 57, 210, .13);
+  animation: mw-transition-breathe 2.2s ease-in-out infinite;
+}
+
+.mw-transition-orbit::before {
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed rgba(104, 69, 236, .28);
+  border-radius: inherit;
+  content: "";
+  animation: mw-transition-spin 9s linear infinite;
+}
+
+.mw-transition-mark {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 23px;
+  background: linear-gradient(145deg, #7c5cff, #5432d9);
+  box-shadow: 0 12px 28px rgba(77, 45, 202, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+  color: #fff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.mw-transition-orbit > i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #7858f2;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+.mw-transition-orbit > i:nth-of-type(1) { top: -5px; }
+.mw-transition-orbit > i:nth-of-type(2) { right: -5px; bottom: 25px; }
+.mw-transition-orbit > i:nth-of-type(3) { bottom: 14px; left: 2px; }
+
+.mw-transition-eyebrow {
+  margin: 0 0 12px;
+  color: var(--transition-purple);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .2em;
+}
+
+.mw-transition-card h1 {
+  margin: 0;
+  color: var(--transition-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(38px, 5vw, 54px);
+  line-height: 1.06;
+  letter-spacing: -.035em;
+}
+
+.mw-transition-description {
+  max-width: 455px;
+  margin: 18px auto 0;
+  color: var(--transition-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.mw-transition-progress {
+  width: min(280px, 80%);
+  height: 5px;
+  margin: 30px auto 17px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ece9fb;
+}
+
+.mw-transition-progress span {
+  width: 44%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5f3de3, #9475ff, #65bfe7);
+  animation: mw-transition-progress 1.55s ease-in-out infinite;
+}
+
+.mw-transition-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #505878;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.mw-transition-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6b48e8;
+  box-shadow: 0 0 0 5px rgba(107, 72, 232, .1);
+  animation: mw-transition-dot 1.4s ease-in-out infinite;
+}
+
+.mw-transition-screen.is-inline {
+  min-height: 100%;
+  padding: 24px;
+  background: transparent;
+}
+
+.mw-transition-screen.is-inline::before,
+.mw-transition-screen.is-inline::after { display: none; }
+.mw-transition-screen.is-inline .mw-transition-card { width: min(540px, 100%); padding: 28px 40px 36px; }
+.mw-transition-screen.is-inline .mw-transition-orbit { width: 92px; height: 92px; margin: 25px auto 22px; }
+.mw-transition-screen.is-inline .mw-transition-mark { width: 56px; height: 56px; border-radius: 18px; font-size: 18px; }
+.mw-transition-screen.is-inline .mw-transition-card h1 { font-size: clamp(30px, 4vw, 42px); }
+
+body:has(standard-page-header) .mw-transition-screen { min-height: calc(100vh - 82px); }
+
+@keyframes mw-transition-spin { to { transform: rotate(360deg); } }
+@keyframes mw-transition-breathe { 50% { transform: translateY(-3px) scale(1.025); } }
+@keyframes mw-transition-progress { 0% { transform: translateX(-110%); } 55%, 100% { transform: translateX(240%); } }
+@keyframes mw-transition-dot { 50% { opacity: .45; transform: scale(.82); } }
+
+@media (max-width: 680px) {
+  .mw-transition-screen { padding: 16px; }
+  .mw-transition-card { padding: 28px 23px 36px; border-radius: 24px; }
+  .mw-transition-brand { display: grid; gap: 2px; }
+  .mw-transition-orbit { width: 104px; height: 104px; margin: 28px auto 25px; }
+  .mw-transition-card h1 { font-size: clamp(34px, 11vw, 45px); }
+  .mw-transition-description { font-size: 14px; }
+  body:has(standard-page-header) .mw-transition-screen { min-height: calc(100vh - 72px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mw-transition-orbit,
+  .mw-transition-orbit::before,
+  .mw-transition-progress span,
+  .mw-transition-status i { animation: none; }
+  .mw-transition-progress span { width: 64%; transform: none; }
+}

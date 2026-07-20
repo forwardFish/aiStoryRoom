@@ -10,8 +10,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@ai-story/shared": ["packages/shared/src"],
-      "@ai-story/templates": ["packages/templates/src"]
+      "@ai-story/shared": ["packages/shared/src/index.ts"],
+      "@ai-story/templates": ["packages/templates/src/index.ts"]
     }
   }
 }

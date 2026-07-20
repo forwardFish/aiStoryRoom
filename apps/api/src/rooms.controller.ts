@@ -4,7 +4,7 @@ import { AuthGuard } from "./auth/auth.guard";
 import { CurrentUser, type AuthenticatedUser } from "./auth/current-user.decorator";
 import { RoomsService } from "./rooms.service";
 import { PresenceHeartbeatRateLimitGuard } from "./api-transport";
-import type { ControlCommandV1, HeartbeatCommandV1, LayoutCommandV1, SlotCommandV1 } from "@ai-story/shared";
+import type { ControlCommandV1, HeartbeatCommandV1, LayoutCommandV1, SlotCommandV1, TurnDecisionCommandV2 } from "@ai-story/shared";
 
 @UseGuards(AuthGuard)
 @Controller("v4/rooms")
@@ -13,12 +13,15 @@ export class RoomsController {
   @Get() list(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.list(worldId, user); }
   @Get("mine") mine(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.mine(user, worldId); }
   @Post() create(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; title?: string; visibility?: string; maxPlayers?: number; idempotencyKey?: string }) { return this.rooms.create(user, body); }
-  @Post("solo") createSolo(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; roleKey?: string; idempotencyKey?: string }) { return this.rooms.createSolo(user, body); }
+  @Post("solo") createSolo(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; roleKey?: string; idempotencyKey?: string; resumeExisting?: boolean }) { return this.rooms.createSolo(user, body); }
   @Post("join-by-code") join(@CurrentUser() user: AuthenticatedUser, @Body() body: { inviteCode?: string; code?: string }) { return this.rooms.joinByCode(user, String(body.inviteCode || body.code || "")); }
   @Get(":roomId/game") game(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.game(user, roomId); }
   @Get(":roomId/result") result(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.result(user, roomId); }
   @Post(":roomId/game/action") action(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) { return this.rooms.submitGameAction(user, roomId, body); }
   @Post(":roomId/game/actions/main") main(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: SlotCommandV1) { return this.rooms.submitMain(user, roomId, body); }
+  @Post(":roomId/game/turns/:turnId/decision") turnDecision(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("turnId") turnId: string, @Body() body: TurnDecisionCommandV2) { return this.rooms.submitTurnDecision(user, roomId, turnId, body); }
+  @Post(":roomId/game/generation/retry") @HttpCode(202) retryGeneration(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.retryTurnGeneration(user, roomId); }
+  @Post(":roomId/interactions/:interactionId/reply") interactionReply(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("interactionId") interactionId: string, @Body() body: TurnDecisionCommandV2) { return this.rooms.replyToInteraction(user, roomId, interactionId, body); }
   @Post(":roomId/game/actions/maneuver") maneuver(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: SlotCommandV1) { return this.rooms.submitManeuver(user, roomId, body); }
   @Post(":roomId/game/events/:eventId/reaction") reaction(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("eventId") eventId: string, @Body() body: SlotCommandV1) { return this.rooms.submitReaction(user, roomId, eventId, body); }
   @Post(":roomId/game/layout/done") done(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: LayoutCommandV1) { return this.rooms.layoutDone(user, roomId, body); }

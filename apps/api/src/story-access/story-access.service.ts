@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma.service";
 import { ReferralsService } from "../referrals/referrals.service";
 import { ActionWindowService } from "../continuous-strategy/action-window.service";
 import { MemberProjectionService } from "../continuous-strategy/member-projection.service";
-import { CONTINUOUS_ENGINE_VERSION, type UnlockResponseV1 } from "@ai-story/shared";
+import { CONTINUOUS_ENGINE_VERSION, CONTINUOUS_STORY_ENGINE_VERSION } from "@ai-story/shared";
 
 @Injectable()
 export class StoryAccessService {
@@ -23,9 +23,7 @@ export class StoryAccessService {
       try {
         return await operation();
       } catch (error: any) {
-        const message = String(error?.message || error || "");
-        const transient = error?.code === "P2034" || /40P01|40001|deadlock detected|write conflict/i.test(message);
-        if (!transient || attempt === 3) throw error;
+        if (!isTransientTransactionError(error) || attempt === 3) throw error;
         // Two rooms owned by the same player can reach the shared credit
         // wallet at the same instant. Retrying the whole idempotent unlock
         // transaction is required by PostgreSQL Serializable isolation.
@@ -60,7 +58,7 @@ export class StoryAccessService {
     // serializable transactions, the one which records a newly opened free
     // round can transiently conflict with the other two read/update paths.
     // The update is idempotent, so retrying the whole transaction is safe.
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
       try {
         const result = await this.prisma.$transaction(async (tx) => {
           const run = await tx.storyRun.findUnique({ where: { id: runId } });
@@ -79,12 +77,12 @@ export class StoryAccessService {
           });
           if (advanced.count) await tx.eventLog.create({ data: { userId: user.id, runId, eventName: "free_room_round_started", source: "story-access", payload: { currentRound, freeRounds: access.freeRounds } } });
           return { completedFreeRound: Boolean(advanced.count), access: { ...access, freeRoundsUsed: currentRound } };
-        });
+        }, { maxWait: 10_000, timeout: 30_000 });
         if (result.completedFreeRound && currentRound >= 2) await this.referrals.qualifyReferral(user.id, runId);
         return result.access;
       } catch (error: any) {
-        if (error?.code !== "P2034" || attempt === 2) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+        if (!isTransientTransactionError(error) || attempt === 3) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1) ** 2));
       }
     }
     throw new Error("unreachable serialization retry state");
@@ -107,7 +105,7 @@ export class StoryAccessService {
     return { ...result, run: undefined };
   }
 
-  async unlock(user: AuthenticatedUser, runId: string, command: { idempotencyKey?: string } = {}): Promise<UnlockResponseV1> {
+  async unlock(user: AuthenticatedUser, runId: string, command: { idempotencyKey?: string } = {}) {
     const requestedKey = String(command.idempotencyKey || `world-unlock:${runId}`).trim();
     if (requestedKey.length < 8 || requestedKey.length > 160) throw new HttpException({ code: "INVALID_COMMAND", message: "A valid idempotencyKey is required" }, HttpStatus.BAD_REQUEST);
     const cost = Number(process.env.CREDIT_STANDARD_WORLD_COST || 100);
@@ -119,14 +117,29 @@ export class StoryAccessService {
         const existing = await tx.worldUnlock.findUnique({ where: { runId } });
         if (existing?.status === "COMMITTED") {
           if (run.engineVersion === CONTINUOUS_ENGINE_VERSION) await this.actionWindows.resumeAfterUnlock(tx, runId, user.id);
-          return { alreadyUnlocked: true, creditsCharged: 0, payerUserId: existing.paidByUserId };
+          return { alreadyUnlocked: true, creditsCharged: 0, payerUserId: existing.paidByUserId, engineVersion: run.engineVersion };
         }
         const ledger = await this.credits.spendCredits({ userId: user.id, amount: cost, reason: "WORLD_UNLOCK", idempotencyKey: `world-unlock:${runId}`, externalRef: runId, metadata: { runId, templateKey: run.templateKey }, tx });
         const unlock = await tx.worldUnlock.create({ data: { runId, templateKey: run.templateKey, paidByUserId: user.id, creditsCharged: cost, debitLedgerId: ledger.id } });
         await tx.storyRun.update({ where: { id: runId }, data: { accessLevel: "UNLOCKED", unlockedAt: new Date() } });
         if (run.engineVersion === CONTINUOUS_ENGINE_VERSION) await this.actionWindows.resumeAfterUnlock(tx, runId, user.id);
-        return { alreadyUnlocked: false, creditsCharged: cost, payerUserId: unlock.paidByUserId };
+        return { alreadyUnlocked: false, creditsCharged: cost, payerUserId: unlock.paidByUserId, engineVersion: run.engineVersion };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10_000, timeout: 30_000 }));
+    if (result.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
+      const run = await this.prisma.storyRun.findUniqueOrThrow({ where: { id: runId } });
+      const access = this.roomAccessState(run, run.currentDay);
+      return {
+        unlocked: true,
+        alreadyUnlocked: result.alreadyUnlocked,
+        creditsCharged: result.creditsCharged,
+        payerUserId: result.payerUserId,
+        access: { state: "UNLOCKED", requiredCredits: access.requiredCredits, canCurrentUserUnlock: false, unlockEndpoint: `/v4/story-runs/${runId}/unlock` },
+        // V2 clients refresh their member-scoped independent story after the
+        // shared debit commits. Returning a V1 window projection here would
+        // reintroduce the removed shared-round contract.
+        gameProjection: null
+      };
+    }
     const gameProjection = await this.projections.game(user, runId);
     return {
       unlocked: true,
@@ -137,4 +150,11 @@ export class StoryAccessService {
       gameProjection
     };
   }
+}
+
+function isTransientTransactionError(error: any) {
+  const message = String(error?.message || error || "");
+  return error?.code === "P2034"
+    || error?.code === "P2028"
+    || /40P01|40001|deadlock detected|write conflict|unable to start a transaction in the given time/i.test(message);
 }

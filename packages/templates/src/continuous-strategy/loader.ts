@@ -147,7 +147,7 @@ export function loadGameContinuousStrategyPackage(
   configRoot = defaultGameConfigRoot
 ): ContinuousStrategyPackage {
   const game = getGameDefinition(worldId, configRoot);
-  if (!game.engine.engineVersion.startsWith("continuous_strategy_")) throw new Error(`GAME_ENGINE_NOT_CONTINUOUS:${game.worldId}:${game.engine.engineVersion}`);
+  if (!game.engine.engineVersion.startsWith("continuous_")) throw new Error(`GAME_ENGINE_NOT_CONTINUOUS:${game.worldId}:${game.engine.engineVersion}`);
   if (!game.engine.strategyRegistryPath) throw new Error(`GAME_STRATEGY_REGISTRY_MISSING:${game.worldId}`);
   const resolvedVersion = strategyVersion || game.engine.strategyVersion;
   const strategyRoot = safeResolve(configRoot, game.worldId);

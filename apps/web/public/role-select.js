@@ -1,5 +1,6 @@
 import { storyRunStorageKey } from "./api-story-storage.js";
-import { renderRoomSelectionPage, roomRoleArtwork } from "./room-role-selection-view.js?v=20260718-shared-room-v2";
+import { renderRoomSelectionPage, roomRoleArtwork } from "./room-role-selection-view.js?v=20260719-role-cards-v4";
+import { renderTransitionScreen } from "./transition-screen.js";
 
 export function createRoleSelectApp({ root, window: browserWindow = globalThis.window, fetchImpl = browserWindow?.fetch?.bind(browserWindow) } = {}) {
   if (!root) throw new TypeError("createRoleSelectApp requires a root element");
@@ -7,6 +8,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
 
   const params = new URLSearchParams(browserWindow?.location?.search || "");
   const storyId = params.get("story")?.trim() || "";
+  const startFresh = params.get("start") === "new";
   const state = { loading: true, busy: false, error: "", story: null, selectedRoleKey: "" };
 
   async function boot() {
@@ -14,11 +16,11 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
     state.error = "";
     render();
     try {
-      if (!storyId) throw new Error("缺少 story 参数，无法读取角色名册。");
+      if (!storyId) throw new Error("No world was selected, so the role roster cannot be loaded.");
       const response = await fetchImpl(`${apiBase(browserWindow?.location)}/v4/worlds/${encodeURIComponent(storyId)}`, { headers: { accept: "application/json" } });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.id || !Array.isArray(payload.roles)) {
-        throw new Error(payload?.message || `剧本读取失败（HTTP ${response.status}）`);
+        throw new Error(payload?.message || `The role roster could not be loaded (HTTP ${response.status}).`);
       }
       state.story = payload;
       state.selectedRoleKey = payload.roles.find((role) => role.playableSolo !== false)?.key || payload.roles[0]?.key || "";
@@ -50,11 +52,11 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
         method: "POST",
         credentials: "include",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ worldId: state.story.id, roleKey: role.key, idempotencyKey })
+        body: JSON.stringify({ worldId: state.story.id, roleKey: role.key, idempotencyKey, resumeExisting: !startFresh })
       });
       const payload = await response.json().catch(() => null);
       const runId = payload?.id || payload?.runId || payload?.roomId;
-      if (!response.ok || !runId) throw new Error(payload?.message || `创建故事局失败（HTTP ${response.status}）`);
+      if (!response.ok || !runId) throw new Error(payload?.message || `The story could not be started (HTTP ${response.status}).`);
       storage?.removeItem?.(pendingKey);
       browserWindow.localStorage?.setItem(storyRunStorageKey, runId);
       const override = apiOverride(browserWindow?.location);
@@ -68,11 +70,16 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
 
   function render() {
     if (state.loading) {
-      root.innerHTML = `<section class="role-loading"><div class="seal-mark">局</div><p>正在展开角色名册……</p></section>`;
+      root.innerHTML = renderTransitionScreen({
+        eyebrow: "CHOOSE YOUR ROLE",
+        title: "Opening the Role Roster",
+        description: "Preparing the available roles, private perspectives, and the world you are about to enter.",
+        status: "Preparing available roles..."
+      });
       return;
     }
     if (!state.story) {
-      root.innerHTML = `<section class="role-loading role-error"><div class="seal-mark">局</div><h1>角色名册暂不可用</h1><p>${escapeHtml(state.error || "请确认 API 服务已经启动。")}</p><button id="retryRole">重新连接</button><a href="/">返回大厅</a></section>`;
+      root.innerHTML = `<section class="role-loading role-error"><div class="seal-mark">MW</div><h1>The role roster is unavailable</h1><p>${escapeHtml(state.error || "Please make sure the story service is available.")}</p><button id="retryRole">Reconnect</button><a href="/">Back to home</a></section>`;
       root.querySelector("#retryRole")?.addEventListener("click", boot);
       return;
     }
@@ -99,7 +106,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
       statusLabel: `1 player  ·  AI controls ${Math.max(0, roomRoles.length - 1)} other roles  ·  ${story.durationLabel || "40–60 minutes"}`,
       infoText: "Choose your role first. The AI will control the rest of the cast.",
       footerMessage: "You will begin alone. The AI will play every remaining role.",
-      backHref: `/worlds/${encodeURIComponent(story.id)}`,
+      backHref: "/",
       busy: state.busy
     });
     if (state.error) root.querySelector(".mw-room-footer")?.insertAdjacentHTML("beforebegin", `<div class="role-alert" role="alert">${escapeHtml(state.error)}</div>`);

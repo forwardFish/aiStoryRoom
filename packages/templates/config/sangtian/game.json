@@ -27,7 +27,7 @@
     "maxHumanPlayers": 6
   },
   "engine": {
-    "engineVersion": "continuous_strategy_v1_1",
+    "engineVersion": "continuous_story_v2",
     "strategyVersion": "sangtian_v1_2",
     "strategyRegistryPath": "strategy-registry.json",
     "fixedRules": {
@@ -56,7 +56,7 @@
       "roleName": "浙江总督",
       "identity": "统筹浙江军政的封疆大吏",
       "publicInfo": "你必须在皇权、财政、民心与海防之间稳住全局。",
-      "hiddenSecret": "你掌握一条尚未公开的田契暗账线索。",
+      "hiddenSecret": "县令密信原件已由你亲自看过并锁在内厅小匣中；信中只暗示县册改痕可能牵出一条尚未公开的田契暗账线索，你手里仍没有暗账、抄件或田契实物。",
       "personalGoal": "稳住浙江并避免皇帝认定你欺瞒。",
       "currentState": "粮价不稳，巡抚越级，京师催报。",
       "abilityText": "可调度总督衙门、密奏与赈济资源。",

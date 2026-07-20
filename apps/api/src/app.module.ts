@@ -16,9 +16,10 @@ import { StoryTaskOutboxService } from "./story-task-outbox.service";
 import { ResultSharingModule } from "./result-sharing/result-sharing.module";
 import { ContinuousStrategyModule } from "./continuous-strategy/continuous-strategy.module";
 import { PresenceHeartbeatRateLimitGuard } from "./api-transport";
+import { ContinuousStoryV2Module } from "./continuous-story-v2/continuous-story-v2.module";
 
 @Module({
-  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ResultSharingModule],
+  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, ResultSharingModule],
   controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController],
   providers: [
     StoryService,

@@ -1,5 +1,6 @@
 import {
   CONTINUOUS_ENGINE_VERSION,
+  CONTINUOUS_STORY_ENGINE_VERSION,
   LEGACY_ENGINE_VERSION,
   LEGACY_STRATEGY_VERSION
 } from "@ai-story/shared";
@@ -117,7 +118,7 @@ export function selectRunVersions(input: {
   const game = findGameDefinition(input.templateKey);
   const continuous = input.enabledForNewRooms
     && game?.status === "playable"
-    && game.engine.engineVersion === CONTINUOUS_ENGINE_VERSION
+    && [CONTINUOUS_ENGINE_VERSION, CONTINUOUS_STORY_ENGINE_VERSION].includes(game.engine.engineVersion as typeof CONTINUOUS_ENGINE_VERSION | typeof CONTINUOUS_STORY_ENGINE_VERSION)
     && input.mode === "room"
     && input.maxPlayers >= game.modes.minHumanPlayers
     && input.maxPlayers <= Math.min(game.modes.maxHumanPlayers, game.roles.length);

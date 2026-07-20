@@ -26,12 +26,12 @@ assert.equal(normalizeRoleAgentAttemptTimeoutMs(10_000), 4_500);
 assert.equal(normalizeRoleAgentAttemptTimeoutMs("invalid"), 4_500);
 
 assert.deepEqual(selectRunVersions({ templateKey: "sangtian", mode: "room", maxPlayers: 3, enabledForNewRooms: true }), {
-  engineVersion: "continuous_strategy_v1_1",
+  engineVersion: "continuous_story_v2",
   strategyVersion: "sangtian_v1_2"
 });
 for (const maxPlayers of [1, 2, 4, 5, 6]) {
   assert.deepEqual(selectRunVersions({ templateKey: "sangtian", mode: "room", maxPlayers, enabledForNewRooms: true }), {
-    engineVersion: "continuous_strategy_v1_1",
+    engineVersion: "continuous_story_v2",
     strategyVersion: "sangtian_v1_2"
   });
 }
