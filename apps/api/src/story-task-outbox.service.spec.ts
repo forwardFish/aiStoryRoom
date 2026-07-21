@@ -339,13 +339,20 @@ async function sequenceOrderingWaitDoesNotConsumeTheGenerationRetryBudget() {
 async function terminalV2ResultRecoveryRepairsACompensationInterruptedByPoolPressure() {
   const recovered: Array<[string, string]> = [];
   const prisma = {
+    actionResolution: {
+      findMany: async (args: any) => {
+        assert.deepEqual(args.where, { qualityStatus: "GENERATING" });
+        assert.equal(args.take, 50);
+        return [{ id: "stranded-resolution" }];
+      }
+    },
     storyTaskOutbox: {
       findFirst: async (args: any) => {
         assert.deepEqual(args.where, {
           taskType: "ACTOR_RESULT_V2",
           status: "FAILED",
           outcome: null,
-          inputRefId: { not: null }
+          inputRefId: { in: ["stranded-resolution"] }
         });
         return { id: "stranded-result-task" };
       }

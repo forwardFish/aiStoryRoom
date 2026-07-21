@@ -152,12 +152,19 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
     // compensation can lose a race for a small database pool after a long
     // provider call, so every worker sweep repairs one durable terminal task
     // before claiming more continuation work.
+    const generatingResults = await this.prisma.actionResolution.findMany({
+      where: { qualityStatus: "GENERATING" },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+      take: 50
+    });
+    if (!generatingResults.length) return { recovered: false };
     const strandedResult = await this.prisma.storyTaskOutbox.findFirst({
       where: {
         taskType: "ACTOR_RESULT_V2",
         status: "FAILED",
         outcome: null,
-        inputRefId: { not: null }
+        inputRefId: { in: generatingResults.map((result) => result.id) }
       },
       orderBy: { updatedAt: "asc" },
       select: { id: true }
