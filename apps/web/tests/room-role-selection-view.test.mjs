@@ -26,7 +26,9 @@ test("solo and multiplayer render the same shared room role-selection skeleton",
   assert.match(solo, /id="enterRole"/);
   assert.doesNotMatch(solo, /mw-room-roster/);
   assert.match(multiplayer, /mw-room-roster/);
-  assert.match(multiplayer, /Invite code/);
+  assert.match(multiplayer, /Invite Code/);
+  assert.match(multiplayer, /mw-room-invite-emblem/);
+  assert.match(multiplayer, /mw-room-invite-label/);
   assert.match(multiplayer, /data-action="share-invite"/);
   assert.match(multiplayer, /data-action="ready"/);
   assert.match(multiplayer, /data-action="start-game"/);
@@ -220,4 +222,13 @@ test("both six-role multiplayer worlds keep compact cards beside the side panels
     assert.match(html, /class="mw-room-current-choice"/);
     assert.equal((html.match(/class="mw-room-role-card/g) || []).length, 6);
   }
+});
+
+test("the invite code stays a compact card and does not restyle its button label", async () => {
+  const css = await readFile(new URL("../public/room-role-selection.css", import.meta.url), "utf8");
+  assert.match(css, /\.mw-room-invite-card\s*\{[^}]*width:\s*220px;[^}]*min-height:\s*202px;/s);
+  assert.match(css, /\.mw-room-invite-label\s*\{/);
+  assert.match(css, /\.mw-room-invite-card \.mw-room-button > span\s*\{[^}]*margin:\s*0;/s);
+  assert.match(css, /\.mw-room-invite-card strong\s*\{[^}]*font-family:[^}]*sans-serif;[^}]*font-variant-numeric:\s*lining-nums tabular-nums;[^}]*font-feature-settings:\s*"lnum" 1, "tnum" 1;/s);
+  assert.doesNotMatch(css, /\.mw-room-invite-card span\s*\{/);
 });

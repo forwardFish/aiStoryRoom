@@ -42,6 +42,10 @@ test("Create Room requires an explicit playable multiplayer world", async () => 
   assert.match(dialog, /JSON\.stringify\(\{ worldId, idempotencyKey \}\)/);
   assert.match(dialog, /many-worlds:create-room:/);
   assert.match(dialog, /localStorage\.removeItem\(idempotencyStorageKey\)/);
+  assert.match(dialog, /worldUsesActiveActionBilling\(world\)/);
+  assert.match(dialog, /availableWorlds\.find/);
+  assert.match(dialog, /This world uses its legacy unlock policy/);
+  assert.match(dialog, /does not use the 20-Credit active-action fee/);
   assert.match(action, /openCreateRoomDialog\(\)/);
   assert.doesNotMatch(action, /\|\| "caesar"/);
 });

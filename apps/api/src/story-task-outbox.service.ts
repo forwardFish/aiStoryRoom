@@ -11,6 +11,8 @@ import { WindowLifecycleService } from "./continuous-strategy/window-lifecycle.s
 import { WindowResolutionService } from "./continuous-strategy/window-resolution.service";
 import { RoleAgentTaskService } from "./continuous-strategy/role-agent-task.service";
 import { ContinuousStoryV2Service } from "./continuous-story-v2/continuous-story-v2.service";
+import { readCreditConsumptionConfig } from "./config/credit-consumption.config";
+import { SoloStoryEngineService } from "./solo-story-engine/solo-story-engine.service";
 
 const LEASE_MS = normalizeStoryTaskLeaseMs(process.env.STORY_TASK_LEASE_MS);
 const POLL_MS = 250;
@@ -22,12 +24,35 @@ export function requiresOutboxHeartbeat(taskType: string) {
   return taskType !== "RESOLVE_WINDOW";
 }
 
-const V2_TASK_TYPES = ["ACTOR_OPENING_V2", "ACTOR_AGENT_TURN_V2", "ACTOR_RESULT_V2", "ACTOR_IMPACT_V2", "CONDITIONAL_ACTION_V2"];
+const V2_TASK_TYPES = ["ACTOR_OPENING_V2", "ACTOR_AGENT_TURN_V2", "ACTOR_RESULT_V2", "ACTOR_IMPACT_V2", "CONDITIONAL_ACTION_V2", "SOLO_AI_WORLD_TICK_V1", "SOLO_PUBLISH_RECOVERY_V1"];
 function isV2Task(taskType: string) { return V2_TASK_TYPES.includes(taskType); }
 function pendingStatus(taskType: string) { return isV2Task(taskType) ? "PENDING" : "pending"; }
 function runningStatus(taskType: string) { return isV2Task(taskType) ? "RUNNING" : "running"; }
 function completedStatus(taskType: string) { return isV2Task(taskType) ? "COMPLETED" : "completed"; }
 function failedStatus(taskType: string) { return isV2Task(taskType) ? "FAILED" : "failed"; }
+
+const NON_RETRYABLE_STORY_GENERATION_CODES = new Set([
+  "STORY_GENERATION_REJECTED",
+  "OPENING_STORY_GENERATION_REJECTED"
+]);
+
+/**
+ * Publication-gate failures are deterministic for the same context and model
+ * output. Re-enqueuing the identical actor action only pays for the same full
+ * generation again and can keep the player on RESOLVING for minutes. Only
+ * transient provider/transport failures are allowed to use the outbox retry
+ * budget; a quality rejection must stop after its first execution.
+ */
+export function isNonRetryableStoryTaskError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const getResponse = (error as { getResponse?: unknown }).getResponse;
+  if (typeof getResponse !== "function") return false;
+  const response = (getResponse as () => unknown).call(error);
+  if (!response || typeof response !== "object") return false;
+  const payload = response as { code?: unknown; recoverable?: unknown };
+  const code = typeof payload.code === "string" ? payload.code : "";
+  return NON_RETRYABLE_STORY_GENERATION_CODES.has(code) && payload.recoverable === false;
+}
 
 @Injectable()
 export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
@@ -45,7 +70,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
     @Inject(WindowLifecycleService) private readonly lifecycle: WindowLifecycleService,
     @Inject(WindowResolutionService) private readonly continuousResolution: WindowResolutionService,
     @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService,
-    @Inject(ContinuousStoryV2Service) private readonly continuousStoryV2: ContinuousStoryV2Service
+    @Inject(ContinuousStoryV2Service) private readonly continuousStoryV2: ContinuousStoryV2Service,
+    @Inject(SoloStoryEngineService) private readonly soloStoryEngine: SoloStoryEngineService
   ) {}
 
   onModuleInit() {
@@ -143,10 +169,14 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         orderBy: { createdAt: "asc" }
       });
       if (!first) return;
-      const limit = Math.max(1, Math.min(ROLE_AGENT_TASK_CONCURRENCY, Math.trunc(roleAgentConcurrency || 1)));
-      // V1 provider waits may overlap. V2 actor turns intentionally remain
-      // single-file here because each one advances the authoritative world
-      // sequence and the supported remote pool is deliberately small.
+      const creditConfig = readCreditConsumptionConfig();
+      const requestedLimit = Math.max(1, Math.trunc(roleAgentConcurrency || 1));
+      const limit = creditConfig.aiBatchingEnabled
+        ? Math.min(creditConfig.aiBatchMaxSize, Math.max(ROLE_AGENT_TASK_CONCURRENCY, requestedLimit))
+        : Math.min(ROLE_AGENT_TASK_CONCURRENCY, requestedLimit);
+      // Provider selection may overlap and batch. V2 still commits each
+      // ActorTurn through its fenced worldSequence transaction, so concurrent
+      // selection never turns into a shared publication barrier.
       const candidates = first.taskType === "ROLE_AGENT_DECISION" && limit > 1
         ? await this.prisma.storyTaskOutbox.findMany({
             where: {
@@ -161,6 +191,17 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
             orderBy: { createdAt: "asc" },
             take: limit
           })
+        : first.taskType === "ACTOR_AGENT_TURN_V2" && creditConfig.aiBatchingEnabled && limit > 1
+          ? await this.prisma.storyTaskOutbox.findMany({
+              where: {
+                status: "PENDING",
+                nextRetryAt: { lte: now },
+                taskType: "ACTOR_AGENT_TURN_V2",
+                runId: first.runId
+              },
+              orderBy: { createdAt: "asc" },
+              take: limit
+            })
         : [first];
       const claimedTaskIds: string[] = [];
       for (const candidate of candidates) {
@@ -256,7 +297,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       const message = error instanceof Error ? error.message : String(error);
       // attempt is already incremented by the successful claim and was read
       // again above. Exhaust exactly on maxAttempts, not one attempt early.
-      const exhausted = task.attempt >= task.maxAttempts;
+      const nonRetryable = isNonRetryableStoryTaskError(error);
+      const exhausted = nonRetryable || task.attempt >= task.maxAttempts;
       const delayMs = Math.min(30_000, 500 * 2 ** Math.max(0, task.attempt - 1));
       const recorded = await this.prisma.storyTaskOutbox.updateMany({
         where: {
@@ -275,7 +317,28 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         return;
       }
       if (exhausted && task.taskType === "resolve_node") await this.prisma.storyRun.updateMany({ where: { id: task.runId, status: "resolving" }, data: { status: "playing" } });
-      this.logger.warn(`Story task ${task.id} attempt ${task.attempt} failed: ${message}`);
+      if (exhausted && task.taskType === "ACTOR_RESULT_V2") {
+        try {
+          await this.continuousStoryV2.failReservedResultTask(task.id, nonRetryable ? "QUALITY_REJECTED" : "GENERATION_RETRY_EXHAUSTED");
+        } catch (releaseError) {
+          this.logger.error(`Failed to release terminal V2 credit reservation for task ${task.id}: ${releaseError instanceof Error ? releaseError.message : String(releaseError)}`);
+        }
+      }
+      if (exhausted && task.taskType === "RESOLVE_WINDOW" && task.windowId) {
+        try {
+          await this.continuousResolution.releaseWindowCharges(String(task.windowId), nonRetryable ? "WINDOW_RESOLUTION_REJECTED" : "WINDOW_RESOLUTION_RETRY_EXHAUSTED");
+        } catch (releaseError) {
+          this.logger.error(`Failed to release terminal window credit reservations for task ${task.id}: ${releaseError instanceof Error ? releaseError.message : String(releaseError)}`);
+        }
+      }
+      if (exhausted && task.taskType === "SOLO_PUBLISH_RECOVERY_V1") {
+        try {
+          await this.soloStoryEngine.failPublishRecoveryTask(task.id, nonRetryable ? "SOLO_PUBLISH_REJECTED" : "SOLO_PUBLISH_RETRY_EXHAUSTED");
+        } catch (releaseError) {
+          this.logger.error(`Failed to compensate terminal Solo publish recovery ${task.id}: ${releaseError instanceof Error ? releaseError.message : String(releaseError)}`);
+        }
+      }
+      this.logger.warn(`Story task ${task.id} attempt ${task.attempt} failed${nonRetryable ? " without automatic retry" : ""}: ${message}`);
     } finally {
       if (heartbeat) clearInterval(heartbeat);
     }
@@ -297,6 +360,10 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         return this.continuousStoryV2.executeImpactTask(task.id, fence);
       case "CONDITIONAL_ACTION_V2":
         return this.continuousStoryV2.executeConditionalTask(task.id, fence);
+      case "SOLO_AI_WORLD_TICK_V1":
+        return this.soloStoryEngine.executeAiWorldTickTask(task.id, fence);
+      case "SOLO_PUBLISH_RECOVERY_V1":
+        return this.soloStoryEngine.executePublishRecoveryTask(task.id, fence);
       case "resolve_node":
         return this.story.resolveNode(task.nodeId);
       default:

@@ -11,6 +11,9 @@ import {
 } from "@ai-story/shared";
 import type { AuthenticatedUser } from "../auth/current-user.decorator";
 import { CreditsService } from "../credits/credits.service";
+import { CreditConsumptionService } from "../credits/credit-consumption.service";
+import { readCreditConsumptionConfig } from "../config/credit-consumption.config";
+import { parseRunBilling } from "../credits/credit-policy";
 import { PrismaService } from "../prisma.service";
 import { ContinuousStrategyContentService } from "./content.service";
 
@@ -19,6 +22,7 @@ export class MemberProjectionService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CreditsService) private readonly credits: CreditsService,
+    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService,
     @Inject(ContinuousStrategyContentService) private readonly content: ContinuousStrategyContentService
   ) {}
 
@@ -118,10 +122,17 @@ export class MemberProjectionService {
     const reaction = pendingRequest ? gameContent.reaction(stageIndex, membership.role.roleKey) : undefined;
     const freeRounds = Number(process.env.CREDIT_FREE_DECISION_LIMIT || 3);
     const requiredCredits = Number(process.env.CREDIT_STANDARD_WORLD_COST || 100);
-    const unlocked = run.accessLevel === "UNLOCKED";
-    const requiresUnlock = !unlocked && stageIndex > freeRounds;
+    const creditConfig = readCreditConsumptionConfig();
+    const billing = parseRunBilling(run, creditConfig.prices);
+    const activeActionBilling = billing.policyVersion === "active_action_v1";
+    const unlocked = activeActionBilling || run.accessLevel === "UNLOCKED";
+    const requiresUnlock = !activeActionBilling && !unlocked && stageIndex > freeRounds;
     const accessState = unlocked ? "UNLOCKED" : requiresUnlock ? "REQUIRES_UNLOCK" : "FREE";
-    const balance = requiresUnlock ? await this.credits.getBalance(user.id) : null;
+    const [balance, creditAvailability, sponsorshipRequest] = await Promise.all([
+      requiresUnlock ? this.credits.getBalance(user.id) : Promise.resolve(null),
+      this.creditConsumption.availableForRun(run.id, user.id),
+      (this.prisma as any).sponsorshipRequest.findFirst({ where: { runId: run.id, beneficiaryUserId: user.id }, orderBy: { createdAt: "desc" } })
+    ]);
     const resultReady = run.status === "chapter_generated" && Boolean(latestPublicResult && latestPersonalResult);
     const projection: GameProjectionV1 = {
       schemaVersion: GAME_PROJECTION_SCHEMA_VERSION,
@@ -237,10 +248,23 @@ export class MemberProjectionService {
       } : null,
       access: {
         state: accessState,
-        requiredCredits,
+        requiresUnlock,
+        requiredCredits: activeActionBilling ? 0 : requiredCredits,
         canCurrentUserUnlock: requiresUnlock && Number(balance?.available || 0) >= requiredCredits,
         ...(unlocked && run.worldUnlock?.paidByUserId ? { payerUserId: run.worldUnlock.paidByUserId } : {}),
-        unlockEndpoint: `/api/v4/story-runs/${run.id}/unlock`
+        unlockEndpoint: activeActionBilling ? null : `/api/v4/story-runs/${run.id}/unlock`
+      },
+      creditControl: {
+        policyVersion: billing.policyVersion,
+        meteringMode: creditConfig.meteringMode,
+        available: creditAvailability.available,
+        personalAvailable: creditAvailability.personalAvailable,
+        runAllowanceAvailable: creditAvailability.runAllowanceAvailable,
+        minimumActionCost: billing.prices.standardAction,
+        standardActionCost: billing.prices.standardAction,
+        customActionCost: billing.prices.customAction,
+        canRequestSponsor: activeActionBilling && run.ownerUserId !== user.id && !resultReady,
+        sponsorshipRequestStatus: sponsorshipRequest?.status || "NONE"
       },
       resultReady,
       resultUrl: resultReady ? `/game/result?runId=${encodeURIComponent(run.id)}` : null

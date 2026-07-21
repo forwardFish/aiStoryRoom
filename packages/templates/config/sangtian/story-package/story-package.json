@@ -1,0 +1,265 @@
+{
+  "schemaVersion": "runtime_story_package_v1",
+  "worldId": "sangtian",
+  "packageId": "sangtian_solo_runtime_v1",
+  "packageVersion": "2026-07-21.v3",
+  "sourceMapSha256": "af2e0056372a744e2d3c8a042b4f23522dfe6b0d28c883892b856c415ea9ff7b",
+  "roles": [
+    {
+      "roleKey": "zhejiang_governor",
+      "visibleCardIds": [
+        "card_role_governor",
+        "card_location_governor_office",
+        "card_institution_governor_yamen",
+        "card_pressure_reform_deadline",
+        "card_pressure_grain_market",
+        "card_material_county_secret_letter",
+        "card_evidence_archive_seal_order"
+      ],
+      "hiddenCardIds": [
+        "card_truth_xunfu_shadow_ledger"
+      ],
+      "visibleLatentTruthIds": [],
+      "blockedLatentTruthIds": [
+        "truth_xunfu_shadow_ledger"
+      ]
+    },
+    {
+      "roleKey": "xunfu",
+      "visibleCardIds": [
+        "card_role_xunfu",
+        "card_pressure_reform_deadline",
+        "card_pressure_grain_market",
+        "card_truth_xunfu_shadow_ledger"
+      ],
+      "hiddenCardIds": [],
+      "visibleLatentTruthIds": [
+        "truth_xunfu_shadow_ledger"
+      ],
+      "blockedLatentTruthIds": []
+    }
+  ],
+  "cards": [
+    {
+      "cardId": "card_role_governor",
+      "kind": "role",
+      "title": "浙江总督的权限边界",
+      "summary": "你能调度总督衙门、密奏渠道与赈济资源，但不能跳过朝廷程序替皇帝改写国策，也不能凭空指控任何人有罪。",
+      "sourceIds": ["src_role_governor_acl"],
+      "visibility": "role_scoped",
+      "visibleToRoleKeys": ["zhejiang_governor"],
+      "relatedNodeIds": ["node_governor_opening"],
+      "tags": ["acl", "role", "governor"]
+    },
+    {
+      "cardId": "card_role_xunfu",
+      "kind": "role",
+      "title": "巡抚的即时处境",
+      "summary": "巡抚必须赶在朝廷追责前交出执行政绩，同时避免地方账目与商会往来反噬自己。",
+      "sourceIds": ["src_role_xunfu_acl"],
+      "visibility": "role_scoped",
+      "visibleToRoleKeys": ["xunfu"],
+      "relatedNodeIds": ["node_governor_opening", "node_county_registers"],
+      "tags": ["role", "xunfu"]
+    },
+    {
+      "cardId": "card_location_governor_office",
+      "kind": "location",
+      "title": "杭州总督府内厅",
+      "summary": "总督府内厅是当前决策现场。密信原件与县册副本暂未公开，任何公开动作都可能立刻惊动巡抚与书吏。",
+      "sourceIds": ["src_scene_office"],
+      "visibility": "public",
+      "visibleToRoleKeys": [],
+      "relatedNodeIds": ["node_governor_opening", "node_county_registers"],
+      "tags": ["scene", "office"]
+    },
+    {
+      "cardId": "card_institution_governor_yamen",
+      "kind": "institution",
+      "title": "总督衙门与密奏渠道",
+      "summary": "总督可以以总督令牌、封缄公文和亲随差遣启动调查，但若没有可核验样本，就无法把怀疑直接转成可裁决事实。",
+      "sourceIds": ["src_institution_yamen"],
+      "visibility": "public",
+      "visibleToRoleKeys": [],
+      "relatedNodeIds": ["node_governor_opening", "node_county_registers"],
+      "tags": ["institution", "governor"]
+    },
+    {
+      "cardId": "card_pressure_reform_deadline",
+      "kind": "pressure",
+      "title": "三日复核期限",
+      "summary": "朝廷催办改桑，要求总督在三日内交出能被复核的执行方案与责任边界。",
+      "sourceIds": ["src_pressure_deadline"],
+      "visibility": "public",
+      "visibleToRoleKeys": [],
+      "relatedNodeIds": ["node_governor_opening", "node_county_registers"],
+      "tags": ["deadline", "pressure"]
+    },
+    {
+      "cardId": "card_pressure_grain_market",
+      "kind": "pressure",
+      "title": "杭州粮价持续上扬",
+      "summary": "米行陆续闭门，百姓已开始聚集在粮铺之外。若执行继续拖延，民心与粮价会同时转坏。",
+      "sourceIds": ["src_pressure_grain"],
+      "visibility": "public",
+      "visibleToRoleKeys": [],
+      "relatedNodeIds": ["node_governor_opening", "node_county_registers"],
+      "tags": ["grain", "people", "pressure"]
+    },
+    {
+      "cardId": "card_material_county_secret_letter",
+      "kind": "material",
+      "title": "清流县令密信",
+      "summary": "密信只证明县册可能存在改痕，并暗示清流县田契档房与一条未公开的暗账线索有关；它并不等于暗账原件本身。",
+      "sourceIds": ["src_secret_letter"],
+      "visibility": "role_scoped",
+      "visibleToRoleKeys": ["zhejiang_governor"],
+      "relatedNodeIds": ["node_governor_opening"],
+      "tags": ["secret-letter", "evidence"]
+    },
+    {
+      "cardId": "card_evidence_archive_seal_order",
+      "kind": "evidence",
+      "title": "总督封缄令牌",
+      "summary": "总督令牌能让亲随先行封存清流县档房并记录现场，但它只能开始因果链，不能提前替调查写出结果。",
+      "sourceIds": ["src_archive_order"],
+      "visibility": "role_scoped",
+      "visibleToRoleKeys": ["zhejiang_governor"],
+      "relatedNodeIds": ["node_governor_opening", "node_county_registers"],
+      "tags": ["order", "custody"]
+    },
+    {
+      "cardId": "card_truth_xunfu_shadow_ledger",
+      "kind": "latent_truth",
+      "title": "巡抚幕僚与商会存在账外往来",
+      "summary": "这条真相尚未对浙江总督公开触发。它只能通过县册差异、商会仓单或人证路径被逐步逼近。",
+      "sourceIds": ["src_truth_shadow_ledger"],
+      "visibility": "hidden_until_revealed",
+      "visibleToRoleKeys": ["xunfu"],
+      "relatedNodeIds": ["node_county_registers"],
+      "tags": ["latent-truth", "shadow-ledger"]
+    }
+  ],
+  "mainlineQuestions": [
+    {
+      "questionId": "mq_execution_boundary",
+      "prompt": "谁来定义改桑急令的执行边界与复核程序，谁就能先一步决定责任归属。",
+      "resolutionSignals": ["joint_review_order_established", "xunfu_defines_boundary_unilaterally"],
+      "sourceIds": ["src_mainline_boundary"]
+    },
+    {
+      "questionId": "mq_hidden_ledger_chain",
+      "prompt": "清流县县册、田契档房与商会粮路是否会指向一条真正可被核验的暗账因果链。",
+      "resolutionSignals": ["county_registers_sealed", "ledger_chain_publicly_denied"],
+      "sourceIds": ["src_mainline_ledger"]
+    }
+  ],
+  "latentTruths": [
+    {
+      "truthId": "truth_xunfu_shadow_ledger",
+      "title": "巡抚并不只在追速度",
+      "statement": "巡抚幕僚已经和商会做过账外安排，所以他既怕县册被封，也怕总督掌握复核入口。",
+      "sourceIds": ["src_truth_shadow_ledger"],
+      "revealWhen": ["county_register_samples_match_shadow_ledger", "merchant_route_witness_links_xunfu"],
+      "visibility": "hidden_until_revealed",
+      "visibleToRoleKeys": ["xunfu"]
+    }
+  ],
+  "pressures": [
+    {
+      "pressureId": "pressure_deadline",
+      "label": "三日复核期限",
+      "summary": "若三日内拿不出可核验的程序，总督将被定义为拖延或欺瞒。",
+      "urgency": "high",
+      "sourceIds": ["src_pressure_deadline"],
+      "relatedNodeIds": ["node_governor_opening", "node_county_registers"]
+    },
+    {
+      "pressureId": "pressure_grain",
+      "label": "粮价与民心同步受压",
+      "summary": "越拖，粮价越涨，县里越容易把田契与征收风险转嫁到百姓身上。",
+      "urgency": "high",
+      "sourceIds": ["src_pressure_grain"],
+      "relatedNodeIds": ["node_governor_opening", "node_county_registers"]
+    }
+  ],
+  "floorPolicy": {
+    "recentCanonOverridesDefaults": true,
+    "satisfiedFloorClosesPermanently": true,
+    "preconditionFailureRequiresRetargetOrSilence": true,
+    "maxDirectedBeatsPerTurn": 1
+  },
+  "directedBeatPolicy": {
+    "maxBeatsPerTurn": 1,
+    "mayNotDecideForPlayer": true,
+    "mayNotInventKeyEvidence": true,
+    "mayOnlyMoveNpcOrWorld": true
+  },
+  "floorObligations": [
+    {
+      "obligationId": "floor_county_register_visibility",
+      "dramaticPurpose": "在第一到第二回合之间，玩家必须公平接触清流县县册与档房风险，而不是无限停留在态度表态。",
+      "floorKind": "mainline",
+      "earliestAtTurn": 1,
+      "floorAtTurn": 2,
+      "sourceIds": ["src_floor_county_registers", "src_secret_letter"],
+      "preconditions": ["prefact_county_registers_exist", "prefact_governor_can_dispatch"],
+      "satisfiedByAnyFactKeys": ["fact_joint_review_order_established", "fact_county_registers_sealed"],
+      "directedBeatTemplate": {
+        "beatId": "beat_county_archive_urgent_report_arrives",
+        "externalWorldMove": "清流县驿递送来一封加急公文：田契档房昨夜出现封条破损，县衙尚未查明是否失卷，请浙江总督裁示是否立即封存查验。",
+        "physicalPreconditions": ["prefact_county_registers_exist"],
+        "allowedSourceIds": ["src_floor_county_registers", "src_secret_letter"],
+        "targetNodeId": "node_county_registers"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "nodeId": "node_governor_opening",
+      "title": "改桑急令：浙江总督眼前的难题",
+      "stageKey": "day_1",
+      "perspectiveRoleKey": "zhejiang_governor",
+      "sceneLabel": "嘉靖三十五年五月初八 · 杭州总督府",
+      "situationBoundary": "总督刚在案前坐定，门外的驿铃催了第二遍。你已知道县令密信只证明清流县县册可能动过手脚，却还没有能当场裁决任何人的暗账实物。巡抚在催你先签发放行文书，朝廷则要你在三日内交出可复核的执行边界。",
+      "allowedAdjacentNodeIds": ["node_county_registers"],
+      "publicEntryBeat": "围绕“执行边界与复核权”展开，六方角色共同争夺谁能定义急令的执行节奏。",
+      "relevantCardIds": [
+        "card_role_governor",
+        "card_location_governor_office",
+        "card_institution_governor_yamen",
+        "card_pressure_reform_deadline",
+        "card_pressure_grain_market",
+        "card_material_county_secret_letter",
+        "card_evidence_archive_seal_order"
+      ],
+      "mainlineQuestionIds": ["mq_execution_boundary", "mq_hidden_ledger_chain"],
+      "activePressureIds": ["pressure_deadline", "pressure_grain"],
+      "latentTruthIds": ["truth_xunfu_shadow_ledger"],
+      "floorObligationIds": ["floor_county_register_visibility"]
+    },
+    {
+      "nodeId": "node_county_registers",
+      "title": "没有影子的客人",
+      "stageKey": "day_1",
+      "perspectiveRoleKey": "zhejiang_governor",
+      "sceneLabel": "嘉靖三十五年五月初八 · 杭州总督府内厅",
+      "situationBoundary": "清流县县册与田契档房的风险已经进入浙江总督必须处理的范围，但县册是否已被封存、是否已送达、封条是否破损，只能以 Recent Canon 和已确认事实为准。眼前真正的冲突是：你是否建立一条有见证、有副本、可追溯的复核链，同时承担因此产生的速度与政治代价。",
+      "allowedAdjacentNodeIds": ["node_county_registers"],
+      "publicEntryBeat": "县册风险一旦进入局势，各方都必须面对谁承担速度、谁承担复核、谁承担证据后果；不得假定实物已经到场。",
+      "relevantCardIds": [
+        "card_role_governor",
+        "card_location_governor_office",
+        "card_institution_governor_yamen",
+        "card_pressure_reform_deadline",
+        "card_pressure_grain_market",
+        "card_evidence_archive_seal_order"
+      ],
+      "mainlineQuestionIds": ["mq_execution_boundary", "mq_hidden_ledger_chain"],
+      "activePressureIds": ["pressure_deadline", "pressure_grain"],
+      "latentTruthIds": ["truth_xunfu_shadow_ledger"],
+      "floorObligationIds": ["floor_county_register_visibility"]
+    }
+  ],
+  "openingNodeId": "node_governor_opening"
+}

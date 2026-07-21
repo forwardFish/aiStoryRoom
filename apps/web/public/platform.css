@@ -64,7 +64,21 @@ body:has(.room-top) .mw-nav a.active { border-bottom-color:transparent; color:va
 .auth-divider { display:flex; align-items:center; gap:15px; color:#71788e; margin:29px 0 18px; font-size:14px; }
 .auth-divider::before,.auth-divider::after { content:""; height:1px; flex:1; background:#dfe2e8; }
 .google-divider { margin:20px 0 14px; }
-.google-signin { display:flex; min-height:40px; justify-content:center; }
+.google-signin {
+  width:100%;
+  min-height:var(--google-signin-height,51px);
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  overflow:hidden;
+  border-radius:9px;
+}
+.google-signin > div {
+  flex:0 0 auto;
+  transform:scale(var(--google-signin-scale,1));
+  transform-origin:top center;
+}
+.google-signin iframe { display:block; }
 .google-unavailable { margin:8px 0 0; text-align:center; color:#69728a; font-size:13px; }
 
 /* My Account: full-width profile and real purchase history. */
@@ -445,12 +459,12 @@ body:has(.room-top) .roles-panel .panel-title {
 /* MW-80 INVITE-01 — official invitation modal proportions. */
 .invite-share-dialog {
   position:relative;
-  width:min(876px,calc(100% - 32px));
-  max-width:876px;
-  max-height:none;
-  overflow:hidden;
+  width:min(760px,calc(100% - 32px));
+  max-width:760px;
+  max-height:min(620px,calc(100vh - 64px));
+  overflow:auto;
   margin:auto;
-  padding:39px 37px 20px;
+  padding:28px 28px 18px;
   border:0;
   border-radius:20px;
   background:#fff;
@@ -464,8 +478,8 @@ body:has(.room-top) .roles-panel .panel-title {
 .invite-share-dialog .dialog-close {
   position:absolute;
   z-index:10;
-  top:23px;
-  right:25px;
+  top:18px;
+  right:18px;
   display:grid;
   place-items:center;
   width:34px;
@@ -483,15 +497,15 @@ body:has(.room-top) .roles-panel .panel-title {
 }
 .invite-share-dialog .share-room-head {
   display:grid;
-  grid-template-columns:249px minmax(0,1fr);
-  gap:25px;
+  grid-template-columns:190px minmax(0,1fr);
+  gap:20px;
   align-items:center;
-  height:129px;
-  padding:0 55px 0 0;
+  height:100px;
+  padding:0 46px 0 0;
 }
 .invite-share-dialog .share-room-head img {
-  width:249px;
-  height:129px;
+  width:190px;
+  height:100px;
   border-radius:12px;
   object-fit:cover;
 }
@@ -499,12 +513,12 @@ body:has(.room-top) .roles-panel .panel-title {
 .invite-share-dialog .share-room-head h2 {
   margin:0;
   color:#111a35;
-  font:700 27px/1.16 "MW Inter",Arial,sans-serif;
+  font:700 23px/1.16 "MW Inter",Arial,sans-serif;
   letter-spacing:-.025em;
 }
 .invite-share-dialog .share-room-head p {
   overflow:hidden;
-  margin:7px 0 14px;
+  margin:6px 0 11px;
   color:#69748e;
   font:400 15px/1.35 "MW Inter",Arial,sans-serif;
   text-overflow:ellipsis;
@@ -532,9 +546,9 @@ body:has(.room-top) .roles-panel .panel-title {
 .invite-share-dialog .share-reward-card {
   position:relative;
   display:block;
-  height:204px;
-  margin:26px 0 20px;
-  padding:23px 143px 20px 155px;
+  height:156px;
+  margin:18px 0;
+  padding:18px 118px 16px 118px;
   overflow:hidden;
   border-radius:14px;
   background:linear-gradient(108deg,#8865e9 0%,#5633dc 100%);
@@ -544,30 +558,30 @@ body:has(.room-top) .roles-panel .panel-title {
 .invite-share-dialog .share-reward-card::after { content:none; }
 .invite-share-dialog .share-reward-emblem {
   position:absolute;
-  top:27px;
-  left:25px;
+  top:25px;
+  left:22px;
   display:grid;
   place-items:center;
-  width:105px;
-  height:105px;
+  width:82px;
+  height:82px;
   border:1px solid rgba(255,255,255,.44);
   border-radius:50%;
   background:radial-gradient(circle,rgba(255,255,255,.24),rgba(255,255,255,.08) 62%,rgba(255,255,255,.02));
   color:#fff;
   box-shadow:inset 0 0 24px rgba(255,255,255,.18),0 0 17px rgba(225,214,255,.24);
 }
-.invite-share-dialog .share-reward-emblem .share-ui-icon { width:51px; height:51px; }
+.invite-share-dialog .share-reward-emblem .share-ui-icon { width:39px; height:39px; }
 .invite-share-dialog .share-reward-copy { position:relative; z-index:1; }
 .invite-share-dialog .share-reward-copy p {
-  margin:0 0 15px;
+  margin:0 0 8px;
   color:#fff;
   font:500 14px/1.25 "MW Inter",Arial,sans-serif;
 }
 .invite-share-dialog .share-reward-copy strong {
   display:block;
-  margin:0 0 8px;
+  margin:0 0 6px;
   color:#fff;
-  font:700 29px/1.08 "MW Inter",Arial,sans-serif;
+  font:700 24px/1.08 "MW Inter",Arial,sans-serif;
   letter-spacing:-.025em;
   white-space:nowrap;
 }
@@ -575,14 +589,14 @@ body:has(.room-top) .roles-panel .panel-title {
   display:block;
   max-width:520px;
   color:#fff;
-  font:400 13px/1.42 "MW Inter",Arial,sans-serif;
+  font:400 12px/1.35 "MW Inter",Arial,sans-serif;
 }
 .invite-share-dialog .reward-progress {
   position:relative;
   z-index:1;
   width:100%;
   height:7px;
-  margin:11px 0 7px;
+  margin:8px 0 5px;
   border-radius:999px;
   background:rgba(255,255,255,.30);
 }
@@ -597,30 +611,30 @@ body:has(.room-top) .roles-panel .panel-title {
   display:flex;
   align-items:center;
   gap:6px;
-  margin-top:29px;
+  margin-top:12px;
 }
 .invite-share-dialog .reward-honesty-note .share-ui-icon { width:15px; height:15px; }
 .invite-share-dialog .share-reward-coins {
   position:absolute;
-  right:13px;
-  bottom:17px;
+  right:12px;
+  bottom:12px;
   z-index:0;
-  width:145px;
-  height:116px;
+  width:104px;
+  height:88px;
   object-fit:contain;
 }
 .invite-share-dialog .share-modal-grid {
   display:grid;
   grid-template-columns:minmax(0,1.03fr) minmax(0,.97fr);
-  gap:24px;
-  height:409px;
+  gap:16px;
+  height:330px;
 }
 .invite-share-dialog .share-channels,
 .invite-share-dialog .poster-preview {
   min-width:0;
-  height:409px;
+  height:330px;
   margin:0;
-  padding:20px;
+  padding:16px;
   border:1px solid #dfe3ec;
   border-radius:14px;
   background:#fff;
@@ -635,22 +649,22 @@ body:has(.room-top) .roles-panel .panel-title {
   letter-spacing:-.012em;
 }
 .invite-share-dialog .share-channels > p {
-  margin:0 0 24px;
+  margin:0 0 14px;
   color:#68748f;
   font:400 14px/1.45 "MW Inter",Arial,sans-serif;
 }
 .invite-share-dialog .share-network-row {
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:16px 24px;
+  gap:10px;
 }
 .invite-share-dialog .share-network-row button {
   display:grid;
   place-items:center;
   gap:8px;
   min-width:0;
-  min-height:99px;
-  padding:10px 6px;
+  min-height:74px;
+  padding:8px 5px;
   border:1px solid #dfe3ec;
   border-radius:10px;
   background:#fff;
@@ -685,24 +699,24 @@ body:has(.room-top) .roles-panel .panel-title {
   justify-content:center;
   gap:10px;
   width:100%;
-  min-height:60px;
-  margin-top:18px;
+  min-height:48px;
+  margin-top:12px;
   border-radius:10px;
   font-size:17px;
 }
 .invite-share-dialog .share-native .share-ui-icon { width:23px; height:23px; }
 .invite-share-dialog .poster-preview {
   display:grid;
-  grid-template-rows:auto 270px 43px auto;
-  gap:7px;
+  grid-template-rows:auto 210px 40px auto;
+  gap:6px;
   text-align:center;
 }
 .invite-share-dialog .poster-preview h3 { margin:0; text-align:left; }
 .invite-share-dialog .poster-preview [data-poster-preview] {
   align-self:center;
-  width:306px;
+  width:238px;
   max-width:100%;
-  height:270px;
+  height:210px;
   min-height:0;
   max-height:none;
   margin:0 auto;
@@ -711,14 +725,29 @@ body:has(.room-top) .roles-panel .panel-title {
   object-fit:cover;
   object-position:center 30%;
 }
+.invite-share-dialog .poster-preview [data-poster-preview]:not([src]) {
+  visibility:hidden;
+}
+.invite-share-dialog .poster-preview:has([data-poster-preview]:not([src]))::after {
+  content:"Generating poster…";
+  grid-row:2;
+  align-self:center;
+  justify-self:center;
+  color:#6f6590;
+  font:500 13px/1.4 "MW Inter",Arial,sans-serif;
+}
+.invite-share-dialog .poster-preview:has([data-poster-preview]:not([src])) .btn {
+  pointer-events:none;
+  opacity:.5;
+}
 .invite-share-dialog .poster-preview .btn {
   display:flex;
   align-items:center;
   justify-content:center;
   gap:8px;
-  width:306px;
+  width:238px;
   max-width:100%;
-  min-height:43px;
+  min-height:40px;
   margin:0 auto;
   border-color:#d9cdfc;
   background:#fff;
@@ -735,8 +764,8 @@ body:has(.room-top) .roles-panel .panel-title {
   grid-template-columns:auto minmax(0,1fr) auto;
   align-items:center;
   gap:13px;
-  height:66px;
-  margin:15px 0 0;
+  height:56px;
+  margin:12px 0 0;
   padding:9px 11px 9px 18px;
   border:1px solid #dfe3ec;
   border-radius:10px;
@@ -1647,3 +1676,4 @@ body:has(.rooms-page) .rooms-table-card .room-table {
   .rooms-table-card .world-flourish { display: none; }
   .rooms-table-card .room-action { width: 100%; justify-self: stretch; }
 }
+.create-room-credit-summary{display:grid;gap:6px;margin:16px 0;padding:14px 16px;border:1px solid rgba(101,70,186,.25);border-radius:12px;background:#f8f4ff;color:#30264a}.create-room-credit-summary span{font-weight:600;color:#5d4694}.create-room-credit-summary small{line-height:1.45;color:#6f6680}

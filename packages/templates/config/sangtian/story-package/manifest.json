@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "story_package_manifest_v1",
+  "worldId": "sangtian",
+  "packageId": "sangtian_solo_runtime_v1",
+  "packageVersion": "2026-07-21.v3",
+  "storyPackagePath": "story-package.json",
+  "sourceMapPath": "source-map.json",
+  "storyPackageSha256": "30de6117be303da8a0dc1410c326b1774730910349c908fc9ae3640ea25ea0c4",
+  "sourceMapSha256": "af2e0056372a744e2d3c8a042b4f23522dfe6b0d28c883892b856c415ea9ff7b"
+}

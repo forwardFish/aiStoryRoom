@@ -13,6 +13,7 @@ const BRAND_NAME = "Our Many Worlds";
 const BRAND_TAGLINE = "Real players. Living worlds.";
 let activeRoom = null;
 let roomRefreshTimer = null;
+let lobbyCountdownTimer = null;
 let roomsView = { activeTab: "open", openRooms: [], myRooms: [] };
 let currentAccount = null;
 let accountPurchaseCache = new Map();
@@ -47,6 +48,13 @@ function pendingMutationKey(storageKey) {
   localStorage.setItem(storageKey, generated);
   return generated;
 }
+function lobbyMutationKey(storageKey, prefix) {
+  const existing = localStorage.getItem(storageKey);
+  if (existing) return existing;
+  const generated = `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`}`;
+  localStorage.setItem(storageKey, generated);
+  return generated;
+}
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]); }
 function emailInitial(value) { return String(value || "M").trim().charAt(0).toUpperCase() || "M"; }
 function roomFilterLabel(worldId) { return worldId === "caesar" ? "Rome, 44 BC" : worldId === "sangtian" ? "Ming, 1565" : ""; }
@@ -63,7 +71,7 @@ function safeReturnTo(value) {
   if (typeof value !== "string" || value.includes("\\") || value.startsWith("//")) return "/";
   try {
     const url = new URL(value, "https://manyworlds.invalid");
-    const allowed = new Set(["/", "/account", "/admin/refunds", "/join", "/rooms", "/game", "/game/result", "/credits", "/credits/status", "/credits/cancel", "/credits/failed", "/role-select", "/trio"]);
+    const allowed = new Set(["/", "/account", "/admin/refunds", "/join", "/rooms", "/game", "/game/result", "/credits", "/credits/status", "/credits/cancel", "/credits/failed", "/role-select"]);
     if (url.origin !== "https://manyworlds.invalid" || !(allowed.has(url.pathname) || /^\/rooms\/[A-Za-z0-9_-]+$/.test(url.pathname) || /^\/worlds\/[A-Za-z0-9_-]+$/.test(url.pathname))) return "/";
     return `${url.pathname}${url.search}`;
   } catch { return "/"; }
@@ -111,6 +119,7 @@ function renderStandardPage(content) {
 }
 function appShell(content) {
   if (roomRefreshTimer) { clearInterval(roomRefreshTimer); roomRefreshTimer = null; }
+  if (lobbyCountdownTimer) { clearInterval(lobbyCountdownTimer); lobbyCountdownTimer = null; }
   if (roomDialogRecoveryTimer) { clearInterval(roomDialogRecoveryTimer); roomDialogRecoveryTimer = null; }
   renderStandardPage(content);
   bind();
@@ -127,6 +136,27 @@ function appShell(content) {
     void hydrateSharedRoom(roomMatch[1]);
     roomRefreshTimer = setInterval(() => { if (location.pathname === path) void hydrateSharedRoom(roomMatch[1]); }, 5000);
   }
+}
+function renderLobbyCountdown(room) {
+  if (lobbyCountdownTimer) { clearInterval(lobbyCountdownTimer); lobbyCountdownTimer = null; }
+  const target = root.querySelector("[data-lobby-countdown]");
+  const deadline = Date.parse(String(room?.lobbyDeadlineAt || ""));
+  const serverNow = Date.parse(String(room?.serverNow || ""));
+  if (!target || !Number.isFinite(deadline)) return;
+  const offset = Number.isFinite(serverNow) ? serverNow - Date.now() : 0;
+  const tick = () => {
+    const remaining = Math.max(0, deadline - (Date.now() + offset));
+    const seconds = Math.ceil(remaining / 1000);
+    const minutes = Math.floor(seconds / 60);
+    target.textContent = `Waiting round ${room.waitingRound || 1} · ${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+    if (remaining === 0 && lobbyCountdownTimer) {
+      clearInterval(lobbyCountdownTimer);
+      lobbyCountdownTimer = null;
+      void hydrateSharedRoom(room.id);
+    }
+  };
+  tick();
+  lobbyCountdownTimer = setInterval(tick, 1000);
 }
 function currentRoomPlayer(room) {
   const selectedRole = room?.roles?.find((role) => role.claimedByCurrentUser);
@@ -164,6 +194,7 @@ function renderLobbyControls(room) {
 function bind() {
   renderLobbyControls(activeRoom);
   if (activeRoom) {
+    renderLobbyCountdown(activeRoom);
     const roomStatus = root.querySelector(".room-stat.purple");
     if (roomStatus) roomStatus.textContent = activeRoom.status === "waiting_players"
       ? "◷ Waiting for players"
@@ -197,6 +228,7 @@ function notice(message) { let target = root.querySelector("[data-notice]"); if 
 function clearNotice() { const target = root.querySelector("[data-notice]"); if (target) { target.textContent = ""; target.hidden = true; } }
 
 let googleIdentityLibraryPromise = null;
+let googleSignInResizeObserver = null;
 function googleWebClientId() { return String(globalThis.__MANY_WORLDS_RUNTIME__?.googleWebClientId || "").trim(); }
 function loadGoogleIdentityLibrary() {
   if (globalThis.google?.accounts?.id) return Promise.resolve(globalThis.google);
@@ -211,6 +243,35 @@ function loadGoogleIdentityLibrary() {
     document.head.append(script);
   });
   return googleIdentityLibraryPromise;
+}
+function renderResponsiveGoogleSignInButton(google, target) {
+  googleSignInResizeObserver?.disconnect();
+  let renderedWidth = 0;
+
+  const render = () => {
+    const availableWidth = Math.max(200, Math.round(target.getBoundingClientRect().width || 400));
+    if (availableWidth === renderedWidth) return;
+    renderedWidth = availableWidth;
+
+    const officialWidth = Math.min(400, availableWidth);
+    const scale = availableWidth / officialWidth;
+    target.style.setProperty("--google-signin-scale", scale.toFixed(4));
+    target.style.setProperty("--google-signin-height", `${Math.ceil(40 * scale)}px`);
+    target.replaceChildren();
+    google.accounts.id.renderButton(target, {
+      theme: "outline",
+      size: "large",
+      text: "continue_with",
+      shape: "rectangular",
+      width: officialWidth
+    });
+  };
+
+  render();
+  if (typeof ResizeObserver === "function") {
+    googleSignInResizeObserver = new ResizeObserver(render);
+    googleSignInResizeObserver.observe(target);
+  }
 }
 async function mountGoogleSignIn(returnTo) {
   const target = root.querySelector("[data-google-signin]");
@@ -244,7 +305,7 @@ async function mountGoogleSignIn(returnTo) {
       }
     });
     target.hidden = false;
-    google.accounts.id.renderButton(target, { theme: "outline", size: "large", text: "continue_with", shape: "rectangular", width: 360 });
+    renderResponsiveGoogleSignInButton(google, target);
   } catch (error) {
     if (unavailable) unavailable.hidden = false;
     notice(error.message || "Google sign-in is temporarily unavailable. You can still use email.");
@@ -555,15 +616,24 @@ function worldRoleCards(world) {
 function worldModeCards(world) {
   const worldId = esc(world.worldId);
   const cards = [];
-  if (world.modes?.includes("solo")) cards.push(`<article class="mode-card"><span class="mode-icon">♙</span><div><h2>Play Solo</h2><p>Choose one role and AI controls every unclaimed role.</p></div><button class="btn primary" data-action="world-solo" data-world-id="${worldId}">Choose a Role</button></article>`);
+  if (world.modes?.includes("solo")) cards.push(`<article class="mode-card"><span class="mode-icon">♙</span><div><h2>Play Solo</h2><p>Continue your story or begin this world's official Solo role.</p></div><button class="btn primary" data-action="world-solo" data-world-id="${worldId}">Play Solo</button></article>`);
   if (world.modes?.includes("multiplayer")) cards.push(`<article class="mode-card"><span class="mode-icon">♧</span><div><h2>Play Multiplayer</h2><p>Create or join a room. AI fills every role not claimed by a person.</p></div><button class="btn primary" data-action="world-rooms" data-world-id="${worldId}">Find a Room</button></article>`);
   return cards.join("");
+}
+function worldUsesActiveActionBilling(world) {
+  return world?.billingPolicyVersion === "active_action_v1";
+}
+function worldCostDisclosure(world) {
+  if (!world?.engineVersion) return "Exact Credits policy is shown before you confirm.";
+  if (!worldUsesActiveActionBilling(world)) return "Legacy unlock policy · no 20-Credit active-action creation fee";
+  const runCreateCredits = Number(world.runCreateCredits || 20);
+  return `Create for ${runCreateCredits} World Credits · suggested action 1 · custom action 2 · AI actions 0`;
 }
 function worldDetailMarkup(world) {
   const playable = world.status === "playable";
   const background = world.heroCover || world.presentation?.sceneBackground;
   const roleCards = worldRoleCards(world);
-  return `<section class="page-frame" data-world-detail data-world-id="${esc(world.worldId)}"><div class="world-hero" data-world-id="${esc(world.worldId)}"><div><div class="eyebrow">${esc(world.genre)}</div><h1>${esc(world.title)}</h1><p class="world-lead">${esc(world.subtitle)}</p><p class="world-copy">${esc(world.description)}</p><div class="meta-row"><span class="meta">♧ &nbsp; ${esc(worldPlayerRange(world))}</span><span class="meta">◷ &nbsp; ${esc(world.durationLabel)}</span><span class="meta">♜ &nbsp; ${esc(world.categoryLabel || world.genre)}</span><span class="meta">♙ &nbsp; ${esc(world.roleCount)} Characters</span></div></div><img class="world-image" data-world-background src="${esc(background)}" alt="${esc(world.title)}"></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards || '<p class="muted">Role details will be announced later.</p>'}</div>${playable ? `<div class="mode-grid">${worldModeCards(world)}</div><p class="world-cost">Starts from 20 World Credits</p>` : '<p class="world-coming">Coming Soon</p>'}</section>`;
+  return `<section class="page-frame" data-world-detail data-world-id="${esc(world.worldId)}"><div class="world-hero" data-world-id="${esc(world.worldId)}"><div><div class="eyebrow">${esc(world.genre)}</div><h1>${esc(world.title)}</h1><p class="world-lead">${esc(world.subtitle)}</p><p class="world-copy">${esc(world.description)}</p><div class="meta-row"><span class="meta">♧ &nbsp; ${esc(worldPlayerRange(world))}</span><span class="meta">◷ &nbsp; ${esc(world.durationLabel)}</span><span class="meta">♜ &nbsp; ${esc(world.categoryLabel || world.genre)}</span><span class="meta">♙ &nbsp; ${esc(world.roleCount)} Characters</span></div></div><img class="world-image" data-world-background src="${esc(background)}" alt="${esc(world.title)}"></div><h2 class="role-title">Role Preview</h2><div class="role-preview">${roleCards || '<p class="muted">Role details will be announced later.</p>'}</div>${playable ? `<div class="mode-grid">${worldModeCards(world)}</div><p class="world-cost">${esc(worldCostDisclosure(world))}</p>` : '<p class="world-coming">Coming Soon</p>'}</section>`;
 }
 async function renderWorld() {
   const worldId = worldIdFromPath();
@@ -574,6 +644,9 @@ async function renderWorld() {
   try {
     const world = await request(`/api/v4/worlds/${encodeURIComponent(worldId)}`);
     appShell(worldDetailMarkup(world), "worlds");
+    if (params.get("play") === "solo") {
+      void startSoloFromWorld(worldId, root.querySelector('[data-action="world-solo"]'));
+    }
   } catch (error) {
     if (!fallback) appShell(`<section class="page-frame" data-world-detail-error><h1>World unavailable</h1><p class="muted">${esc(error.message || "This world could not be loaded.")}</p></section>`, "worlds");
   }
@@ -582,7 +655,7 @@ function roomRow(room, index, view = "open") {
   const status = roomStatus(room, view);
   const action = roomAction(room, view);
   const playerCount = Array.isArray(room.players) ? room.players.length : 0;
-  return `<article class="room-table room-row"><div class="world-cell"><img class="thumb" src="${roomWorldImage(room.worldId, index)}" alt=""><strong>${esc(roomWorldLabel(room.worldId))}</strong><span class="world-flourish" aria-hidden="true">❧</span></div><span class="room-name">${esc(roomDisplayTitle(room) || room.title || "Untitled room")}</span><span class="player-count">${playerCount} of ${esc(room.maxPlayers || "—")}</span><span><span class="badge ${status.tone}"><i aria-hidden="true"></i>${status.label}</span></span><span><button class="btn small room-action" ${action.attributes}>${action.label}</button></span></article>`;
+  return `<article class="room-table room-row"><div class="world-cell"><img class="thumb" src="${esc(roomWorldArtwork(room, index))}" alt=""><strong>${esc(roomWorldLabel(room.worldId))}</strong><span class="world-flourish" aria-hidden="true">❧</span></div><span class="room-name">${esc(roomDisplayTitle(room) || room.title || "Untitled room")}</span><span class="player-count">${playerCount} of ${esc(room.maxPlayers || "—")}</span><span><span class="badge ${status.tone}"><i aria-hidden="true"></i>${status.label}</span></span><span><button class="btn small room-action" ${action.attributes}>${action.label}</button></span></article>`;
 }
 function renderRooms() {
   roomsView = { activeTab: "open", openRooms: [], myRooms: [] };
@@ -703,13 +776,14 @@ async function downloadInvitePoster({ title, inviteUrl, code, qr }) {
   ctx.fillStyle = "#e9ddff"; ctx.font = '400 28px "MW Inter", Arial, sans-serif'; ctx.fillText("Scan to choose a role and join the story", 90, 1210); const link = document.createElement("a"); link.download = `many-worlds-${code}-invite.png`; link.href = canvas.toDataURL("image/png"); link.click();
 }
 function wrapPosterText(ctx, text, x, y, maxWidth, lineHeight) { const words = String(text).split(/\s+/); let line = "", offset = 0; words.forEach((word) => { const next = `${line}${line ? " " : ""}${word}`; if (ctx.measureText(next).width > maxWidth && line) { ctx.fillText(line, x, y + offset); line = word; offset += lineHeight; } else line = next; }); if (line) ctx.fillText(line, x, y + offset); }
-async function buildInvitePoster({ title }) {
+async function buildInvitePoster({ title, backgroundUrl }) {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
   canvas.height = 950;
   await document.fonts?.ready;
   const ctx = canvas.getContext("2d");
-  const background = await loadCanvasImage("/assets/poster/invite-promo-background.png");
+  const background = await loadCanvasImage(backgroundUrl || "/assets/poster/invite-background.png")
+    .catch(() => loadCanvasImage("/assets/poster/invite-background.png"));
   const logo = await loadCanvasImage("/assets/brand/many-worlds-logo.png");
   ctx.fillStyle = "#f4efff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -809,13 +883,14 @@ async function loadCanvasImage(src) {
   });
   return image;
 }
-async function buildInvitePosterRefined({ worldTitle, roomTitle, qr }) {
+async function buildInvitePosterRefined({ worldTitle, roomTitle, qr, backgroundUrl }) {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
   canvas.height = 1350;
   await document.fonts?.ready;
   const ctx = canvas.getContext("2d");
-  const background = await loadCanvasImage("/assets/poster/invite-background.png");
+  const background = await loadCanvasImage(backgroundUrl || "/assets/poster/invite-background.png")
+    .catch(() => loadCanvasImage("/assets/poster/invite-background.png"));
   const logo = await loadCanvasImage("/assets/brand/many-worlds-logo.png");
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
   const overlay = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -884,12 +959,13 @@ async function openInviteShareRefined() {
     const displayInviteUrl = `${location.host}/join`;
     const dialog = document.createElement("dialog");
     dialog.className = "share-dialog invite-share-dialog invite-share-dialog-v2";
-    dialog.innerHTML = `<button type="button" class="dialog-close" data-close-share aria-label="Close">×</button><section class="share-room-head"><img src="${roomWorldImage(activeRoom.worldId, 0)}" alt="${esc(worldTitle)}"><div class="share-room-copy"><h2>Shared Story Room</h2><p>${esc(worldTitle)} · ${esc(roomTitle)}</p><div class="share-room-meta"><span class="share-status">${shareUiIcon("clock")}<b>Waiting</b></span><span class="share-player-count">${shareUiIcon("players")}<b>${activeRoom.players?.length || 1} / ${activeRoom.maxPlayers || 3} players</b></span></div></div></section><section class="share-reward-card"><span class="share-reward-emblem">${shareUiIcon("gift")}</span><div class="share-reward-copy"><p>Invite friends & earn rewards</p><strong>Earn up to ${rewardCap * rewardPerInvite} Bonus Credits</strong><span>Get ${rewardPerInvite} Bonus Credits for each new friend who joins and completes the opening.</span><div class="reward-progress"><i style="width:${rewardPercent}%"></i></div><small class="reward-progress-label">${rewarded} of ${rewardCap} rewards unlocked</small><small class="reward-honesty-note">Sharing alone does not grant Credits.</small></div><img class="share-reward-coins" src="/assets/payment/credits-stack-transparent.png" alt=""></section><div class="share-modal-grid"><section class="share-channels"><span class="share-card-accent" aria-hidden="true"></span><h3>Share your invitation</h3><p>Invite friends to join your shared room on ${BRAND_NAME}.</p><div class="share-network-row"><button type="button" data-share-channel="WHATSAPP"><b>${shareUiIcon("whatsapp")}</b>WhatsApp</button><button type="button" data-share-channel="TELEGRAM"><b>${shareUiIcon("telegram")}</b>Telegram</button><button type="button" data-share-channel="DISCORD"><b>${shareUiIcon("discord")}</b>Discord</button><button type="button" data-share-channel="FACEBOOK"><b>${shareUiIcon("facebook")}</b>Facebook</button><button type="button" data-share-channel="X"><b>${shareUiIcon("x")}</b>X</button><button type="button" data-copy-invite><b>${shareUiIcon("copy")}</b>Copy link</button></div><button type="button" class="btn primary share-native" data-native-share>${shareUiIcon("share")}<span>Share invitation</span></button></section><section class="poster-preview"><h3>Invite poster</h3><div class="poster-preview-shell"><img data-poster-preview alt="Invitation poster preview"></div><button type="button" class="btn" data-download-poster>${shareUiIcon("download")}<span>Download poster</span></button><small>Perfect for group chats and social posts.</small></section></div><label class="share-link-label">${shareUiIcon("link")}<input readonly value="${esc(displayInviteUrl)}" data-full-invite-url="${esc(inviteUrl)}" aria-label="Invitation link"><button type="button" data-copy-invite>${shareUiIcon("copy")}<span>Copy link</span></button></label>`;
+    const backgroundUrl = roomWorldArtwork(activeRoom, 0);
+    dialog.innerHTML = `<button type="button" class="dialog-close" data-close-share aria-label="Close">×</button><section class="share-room-head"><img src="${esc(backgroundUrl)}" alt="${esc(worldTitle)}"><div class="share-room-copy"><h2>Shared Story Room</h2><p>${esc(worldTitle)} · ${esc(roomTitle)}</p><div class="share-room-meta"><span class="share-status">${shareUiIcon("clock")}<b>Waiting</b></span><span class="share-player-count">${shareUiIcon("players")}<b>${activeRoom.players?.length || 1} / ${activeRoom.maxPlayers || 3} players</b></span></div></div></section><section class="share-reward-card"><span class="share-reward-emblem">${shareUiIcon("gift")}</span><div class="share-reward-copy"><p>Invite friends & earn rewards</p><strong>Earn up to ${rewardCap * rewardPerInvite} Bonus Credits</strong><span>Get ${rewardPerInvite} Bonus Credits for each new friend who joins and completes the opening.</span><div class="reward-progress"><i style="width:${rewardPercent}%"></i></div><small class="reward-progress-label">${rewarded} of ${rewardCap} rewards unlocked</small><small class="reward-honesty-note">Sharing alone does not grant Credits.</small></div><img class="share-reward-coins" src="/assets/payment/credits-stack-transparent.png" alt=""></section><div class="share-modal-grid"><section class="share-channels"><span class="share-card-accent" aria-hidden="true"></span><h3>Share your invitation</h3><p>Invite friends to join your shared room on ${BRAND_NAME}.</p><div class="share-network-row"><button type="button" data-share-channel="WHATSAPP"><b>${shareUiIcon("whatsapp")}</b>WhatsApp</button><button type="button" data-share-channel="TELEGRAM"><b>${shareUiIcon("telegram")}</b>Telegram</button><button type="button" data-share-channel="DISCORD"><b>${shareUiIcon("discord")}</b>Discord</button><button type="button" data-share-channel="FACEBOOK"><b>${shareUiIcon("facebook")}</b>Facebook</button><button type="button" data-share-channel="X"><b>${shareUiIcon("x")}</b>X</button><button type="button" data-copy-invite><b>${shareUiIcon("copy")}</b>Copy link</button></div><button type="button" class="btn primary share-native" data-native-share>${shareUiIcon("share")}<span>Share invitation</span></button></section><section class="poster-preview"><h3>Invite poster</h3><div class="poster-preview-shell"><img data-poster-preview alt="Invitation poster preview"></div><button type="button" class="btn" data-download-poster>${shareUiIcon("download")}<span>Download poster</span></button><small>Perfect for group chats and social posts.</small></section></div><label class="share-link-label">${shareUiIcon("link")}<input readonly value="${esc(displayInviteUrl)}" data-full-invite-url="${esc(inviteUrl)}" aria-label="Invitation link"><button type="button" data-copy-invite>${shareUiIcon("copy")}<span>Copy link</span></button></label>`;
     document.body.append(dialog);
     dialog.showModal();
     dialog.querySelector("[data-close-share]").addEventListener("click", () => dialog.close());
     const qr = await fetchInviteQr(activeRoom.code);
-    const posterUrl = await buildInvitePosterRefined({ worldTitle, roomTitle, qr });
+    const posterUrl = await buildInvitePosterRefined({ worldTitle, roomTitle, qr, backgroundUrl });
     dialog.querySelector("[data-poster-preview]").src = posterUrl;
     dialog.querySelectorAll("[data-copy-invite]").forEach((button) => button.addEventListener("click", () => copyInviteLink(dialog, inviteUrl)));
     dialog.querySelectorAll("[data-share-channel]").forEach((button) => button.addEventListener("click", async () => {
@@ -940,10 +1016,11 @@ async function openInviteShare() {
     const worldTitle = roomWorldTitle(activeRoom);
     const roomTitle = roomDisplayTitle(activeRoom);
     const displayInviteUrl = `${location.host}/join`;
+    const backgroundUrl = roomWorldArtwork(activeRoom, 0);
     const dialog = document.createElement("dialog"); dialog.className = "share-dialog invite-share-dialog";
-    dialog.innerHTML = `<button type="button" class="dialog-close" data-close-share aria-label="Close">×</button><section class="share-room-head"><img src="${roomWorldImage(activeRoom.worldId, 0)}" alt="${esc(worldTitle)}"><div class="share-room-copy"><h2>Shared Story Room</h2><p>${esc(worldTitle)} · ${esc(roomTitle)}</p><div class="share-room-meta"><span class="share-status">◷ <b>Waiting</b></span><span class="share-player-count">♧ ${activeRoom.players?.length || 1} / ${activeRoom.maxPlayers || 3} players</span></div></div></section><section class="share-reward-card"><span class="share-reward-emblem">${shareUiIcon("gift")}</span><div class="share-reward-copy"><p>Invite friends & earn rewards</p><strong>Earn up to ${rewardCap * rewardPerInvite} Bonus Credits</strong><span>Get ${rewardPerInvite} Bonus Credits for each new friend who joins and completes the opening.</span><div class="reward-progress"><i style="width:${rewardPercent}%"></i></div><small class="reward-progress-label">${rewarded} of ${rewardCap} rewards unlocked</small><small class="reward-honesty-note">ⓘ Sharing alone does not grant Credits.</small></div><img class="share-reward-coins" src="/assets/payment/credits-stack-transparent.png" alt=""></section><div class="share-modal-grid"><section class="share-channels"><h3>Share your invitation</h3><p>Invite friends to this room on ${BRAND_NAME}.</p><div class="share-network-row"><button type="button" data-share-channel="WHATSAPP"><b>${shareUiIcon("whatsapp")}</b>WhatsApp</button><button type="button" data-share-channel="TELEGRAM"><b>${shareUiIcon("telegram")}</b>Telegram</button><button type="button" data-share-channel="DISCORD"><b>${shareUiIcon("discord")}</b>Discord</button><button type="button" data-share-channel="FACEBOOK"><b class="share-letter-icon">f</b>Facebook</button><button type="button" data-share-channel="X"><b class="share-letter-icon share-x-icon">𝕏</b>X</button><button type="button" data-copy-invite><b>${shareUiIcon("copy")}</b>Copy link</button></div><button type="button" class="btn primary share-native" data-native-share>${shareUiIcon("share")}<span>Share invitation</span></button></section><section class="poster-preview"><h3>Invite poster</h3><img data-poster-preview alt="Invitation poster preview"><button type="button" class="btn" data-download-poster>${shareUiIcon("download")}<span>Download poster</span></button><small>Perfect for group chats and social posts.</small></section></div><label class="share-link-label">${shareUiIcon("link")}<input readonly value="${esc(displayInviteUrl)}" data-full-invite-url="${esc(inviteUrl)}" aria-label="Invitation link"><button type="button" data-copy-invite>${shareUiIcon("copy")}<span>Copy link</span></button></label>`;
+    dialog.innerHTML = `<button type="button" class="dialog-close" data-close-share aria-label="Close">×</button><section class="share-room-head"><img src="${esc(backgroundUrl)}" alt="${esc(worldTitle)}"><div class="share-room-copy"><h2>Shared Story Room</h2><p>${esc(worldTitle)} · ${esc(roomTitle)}</p><div class="share-room-meta"><span class="share-status">◷ <b>Waiting</b></span><span class="share-player-count">♧ ${activeRoom.players?.length || 1} / ${activeRoom.maxPlayers || 3} players</span></div></div></section><section class="share-reward-card"><span class="share-reward-emblem">${shareUiIcon("gift")}</span><div class="share-reward-copy"><p>Invite friends & earn rewards</p><strong>Earn up to ${rewardCap * rewardPerInvite} Bonus Credits</strong><span>Get ${rewardPerInvite} Bonus Credits for each new friend who joins and completes the opening.</span><div class="reward-progress"><i style="width:${rewardPercent}%"></i></div><small class="reward-progress-label">${rewarded} of ${rewardCap} rewards unlocked</small><small class="reward-honesty-note">ⓘ Sharing alone does not grant Credits.</small></div><img class="share-reward-coins" src="/assets/payment/credits-stack-transparent.png" alt=""></section><div class="share-modal-grid"><section class="share-channels"><h3>Share your invitation</h3><p>Invite friends to this room on ${BRAND_NAME}.</p><div class="share-network-row"><button type="button" data-share-channel="WHATSAPP"><b>${shareUiIcon("whatsapp")}</b>WhatsApp</button><button type="button" data-share-channel="TELEGRAM"><b>${shareUiIcon("telegram")}</b>Telegram</button><button type="button" data-share-channel="DISCORD"><b>${shareUiIcon("discord")}</b>Discord</button><button type="button" data-share-channel="FACEBOOK"><b class="share-letter-icon">f</b>Facebook</button><button type="button" data-share-channel="X"><b class="share-letter-icon share-x-icon">𝕏</b>X</button><button type="button" data-copy-invite><b>${shareUiIcon("copy")}</b>Copy link</button></div><button type="button" class="btn primary share-native" data-native-share>${shareUiIcon("share")}<span>Share invitation</span></button></section><section class="poster-preview"><h3>Invite poster</h3><img data-poster-preview alt="Invitation poster preview"><button type="button" class="btn" data-download-poster>${shareUiIcon("download")}<span>Download poster</span></button><small>Perfect for group chats and social posts.</small></section></div><label class="share-link-label">${shareUiIcon("link")}<input readonly value="${esc(displayInviteUrl)}" data-full-invite-url="${esc(inviteUrl)}" aria-label="Invitation link"><button type="button" data-copy-invite>${shareUiIcon("copy")}<span>Copy link</span></button></label>`;
     document.body.append(dialog); dialog.showModal(); dialog.querySelector("[data-close-share]").addEventListener("click", () => dialog.close());
-    const posterUrl = await buildInvitePoster({ title:activeRoom.title }); dialog.querySelector("[data-poster-preview]").src = posterUrl;
+    const posterUrl = await buildInvitePoster({ title:activeRoom.title, backgroundUrl }); dialog.querySelector("[data-poster-preview]").src = posterUrl;
     dialog.querySelectorAll("[data-copy-invite]").forEach((button) => button.addEventListener("click", () => copyInviteLink(dialog, inviteUrl)));
     dialog.querySelectorAll("[data-share-channel]").forEach((button) => button.addEventListener("click", async () => { const channel = button.dataset.shareChannel; await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel, runId:activeRoom.id }) }); const channelUrl = `${location.origin}/join?room=${encodeURIComponent(activeRoom.code)}&ref=${encodeURIComponent(referral.code)}&channel=${encodeURIComponent(channel)}`; const encodedUrl = encodeURIComponent(channelUrl); const encodedText = encodeURIComponent(shareText); const links = { WHATSAPP:`https://wa.me/?text=${encodedText}%20${encodedUrl}`, TELEGRAM:`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, DISCORD:"https://discord.com/channels/@me", FACEBOOK:`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, X:`https://x.com/intent/post?text=${encodedText}%20${encodedUrl}` }; if (!window.open(links[channel] || inviteUrl, "_blank", "noopener,noreferrer")) await copyInviteLink(dialog, inviteUrl); }));
     dialog.querySelector("[data-native-share]").addEventListener("click", async () => { await request("/api/v4/referrals/share-events", { method:"POST", body:JSON.stringify({ channel:"NATIVE", runId:activeRoom.id }) }); if (navigator.share) { try { await navigator.share({ title:BRAND_NAME, text:shareText, url:inviteUrl }); } catch {} } else await copyInviteLink(dialog, inviteUrl); });
@@ -968,13 +1045,24 @@ async function openAuthenticatedRoute(returnTo) {
   }
 }
 function requireSession() { if (sessionToken()) return true; location.assign(loginUrl(path + location.search)); return false; }
-async function request(url, options = {}) { const response = await fetch(apiUrl(url), { ...options, credentials: "include", headers: { "content-type":"application/json", ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (response.status === 401) clearSessionHint(); if (!response.ok) { const error = new Error(data.message || data.code || `Request failed: ${response.status}`); error.code = data.code || null; error.status = response.status; throw error; } return data; }
+async function request(url, options = {}) { const response = await fetch(apiUrl(url), { ...options, credentials: "include", headers: { "content-type":"application/json", ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (response.status === 401) clearSessionHint(); if (!response.ok) { const error = new Error(data.message || data.code || `Request failed: ${response.status}`); error.code = data.code || null; error.status = response.status; error.recoverable = data.recoverable === true; throw error; } return data; }
 function roomWorldLabel(worldId) {
   if (worldId === "sangtian") return "Sangtian Edict";
   if (worldId === "caesar") return "Caesar";
   return worldCatalog.find((world) => world.id === worldId)?.title || String(worldId || "World").replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 function roomWorldImage(worldId, index) { return `/assets/bg/${worldId === "sangtian" ? 2 : worldId === "caesar" ? 1 : (index % 5) + 1}.png`; }
+function roomWorldArtwork(room, index = 0) {
+  const candidates = [
+    room?.world?.presentation?.sceneBackground,
+    room?.world?.bannerArtwork,
+    room?.world?.heroCover,
+    room?.presentation?.sceneBackground,
+    room?.bannerArtwork
+  ];
+  const artwork = candidates.find((value) => typeof value === "string" && value.trim());
+  return artwork?.trim() || roomWorldImage(room?.worldId, index);
+}
 function roomStatus(room, view) {
   if (view === "open") return { label: "Open", tone: "open" };
   if (room.status === "playing") return { label: "In Progress", tone: "progress" };
@@ -1036,16 +1124,16 @@ function sharedMultiplayerRoomMarkup(room, { loading = false } = {}) {
   const rolePortraits = new Map(roomRoles.map((role) => [role.id, role.portrait || ""]));
   const selectedRole = roomRoles.find((role) => role.claimedByCurrentUser);
   const currentPlayer = selectedRole ? room?.players?.find((player) => player.roleId === selectedRole.id) : null;
-  const allPlayersReady = Boolean(
-    room?.hostRoleLocked &&
-    room?.players?.length >= room?.minPlayers &&
-    room.players.every((player) => player.roleId && player.ready)
-  );
+  const readyHumanCount = Number(room?.readyHumanCount || 0);
+  const expired = Boolean(room?.expired);
+  const canStart = Boolean(room?.startEnabled);
   let footerMessage = "Choose a role before marking yourself ready.";
   if (currentPlayer?.roleId && !currentPlayer.ready) footerMessage = "Confirm that your role is selected and you are ready to begin.";
   if (currentPlayer?.ready && !room?.isHost) footerMessage = "You are ready. Waiting for the host to start the game.";
-  if (currentPlayer?.ready && room?.isHost && !allPlayersReady) footerMessage = "You are ready. Waiting for every player to be ready.";
-  if (room?.isHost && allPlayersReady) footerMessage = "All players are ready. You can start the game.";
+  if (currentPlayer?.ready && room?.isHost && readyHumanCount < 2 && !room?.deadlineReached) footerMessage = "You are ready. Waiting for one more player to be ready.";
+  if (room?.isHost && canStart) footerMessage = `${readyHumanCount} ready players can start this story now.`;
+  if (room?.isHost && room?.deadlineReached && room?.canPlaySolo) footerMessage = "No other player is ready yet. Continue in Solo Play or wait another 5 minutes.";
+  if (expired) footerMessage = "This room has expired. Create a new room to invite players again.";
   const players = (room?.players || []).map((player, index) => ({
     name: player.nickname,
     ready: player.ready,
@@ -1058,11 +1146,11 @@ function sharedMultiplayerRoomMarkup(room, { loading = false } = {}) {
     mode: "multiplayer",
     worldId: room?.worldId || "",
     title: loading ? "Loading shared room…" : roomWorldTitle(room),
-    bannerArtwork: room?.world?.bannerArtwork || "",
+    bannerArtwork: roomWorldArtwork(room, 0),
     sessionLabel: loading ? "Please wait for the live room details." : roomDisplayTitle(room),
     roles: roomRoles.map((role, index) => {
       const mine = role.claimedByCurrentUser;
-      const available = room.status === "waiting_players" && (role.status === "available" || mine);
+      const available = !expired && room.status === "waiting_players" && (role.status === "available" || mine);
       return {
         id: role.id,
         key: role.roleKey || role.id,
@@ -1079,13 +1167,18 @@ function sharedMultiplayerRoomMarkup(room, { loading = false } = {}) {
     players,
     inviteCode: loading ? "Loading…" : room?.code,
     playerCountLabel: loading ? "Loading players…" : `${room.players.length} / ${room.maxPlayers}`,
-    statusLabel: loading ? "Loading status…" : `${room.players.length} / ${room.maxPlayers} players  ·  Waiting for players`,
-    infoText: loading ? "Loading role guidance…" : room.isHost ? "As the room creator, you choose roles first." : "Choose an available role and mark yourself ready.",
+    statusLabel: loading ? "Loading status…" : expired ? "Room expired" : `${room.players.length} / ${room.maxPlayers} players · ${readyHumanCount} ready`,
+    infoText: loading ? "Loading role guidance…" : expired ? "The room did not start within 30 minutes." : room.isHost ? "As the room creator, you choose roles first." : "Choose an available role and mark yourself ready.",
     footerMessage: loading ? "Loading live room status…" : footerMessage,
     backHref: "/",
     isHost: Boolean(room?.isHost),
-    canReady: Boolean(currentPlayer?.roleId && !currentPlayer?.ready),
-    canStart: allPlayersReady,
+    canReady: !expired && Boolean(currentPlayer?.roleId && !currentPlayer?.ready),
+    canStart: !expired && canStart,
+    startLabel: readyHumanCount === 2 ? "Start with 2 Players" : "Start Game",
+    lobbyDeadlineAt: room?.lobbyDeadlineAt,
+    serverNow: room?.serverNow,
+    canPlaySolo: !expired && Boolean(room?.canPlaySolo),
+    expired,
     readyLabel: currentPlayer?.ready ? "Ready ✓" : "Ready",
     loading
   });
@@ -1162,16 +1255,37 @@ function openCreateRoomDialog(restoredDraft = null) {
   const dialog = document.createElement("dialog");
   dialog.className = "create-room-dialog";
   dialog.setAttribute("aria-labelledby", "create-room-title");
-  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close world selection">×</button><p class="eyebrow">CREATE A SHARED STORY ROOM</p><h2 id="create-room-title">Choose the world you want to play</h2><p class="muted">Every player in this room will enter the same world. Choose before the room is created.</p><div class="create-world-list" data-world-list><p class="create-world-loading">Loading playable worlds…</p></div><p class="create-room-error" role="alert" hidden></p><div class="create-room-actions"><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="button" data-submit disabled>Create Room</button></div>`;
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close world selection">×</button><p class="eyebrow">CREATE A SHARED STORY ROOM</p><h2 id="create-room-title">Create a living world</h2><p class="muted">Choose the world you want to play. Every player in this room will enter that same living world.</p><div class="create-world-list" data-world-list><p class="create-world-loading">Loading playable worlds…</p></div><section class="create-room-credit-summary" data-credit-summary><b>Choose a world to see its World Credits policy.</b><span>Loading your balance…</span><small>The exact charge is shown before you create the room.</small></section><p class="create-room-error" role="alert" hidden></p><div class="create-room-actions"><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="button" data-submit disabled>Create Room</button></div>`;
   document.body.append(dialog);
   const list = dialog.querySelector("[data-world-list]");
   const error = dialog.querySelector(".create-room-error");
   const submit = dialog.querySelector("[data-submit]");
+  const creditSummary = dialog.querySelector("[data-credit-summary]");
+  let creditBalance = null;
+  let availableWorlds = [];
   const close = () => { clearRoomDialogDraft(); dialog.close(); };
   const selectedWorldId = () => dialog.querySelector('input[name="worldId"]:checked')?.value || "";
+  const selectedWorld = () => availableWorlds.find((world) => world.id === selectedWorldId()) || null;
   const syncSubmit = () => {
     const worldId = selectedWorldId();
-    submit.disabled = !worldId;
+    const world = selectedWorld();
+    const activeActionBilling = worldUsesActiveActionBilling(world);
+    const runCreateCredits = Number(world?.runCreateCredits || 20);
+    submit.disabled = !worldId || creditBalance === null;
+    if (world) {
+      if (activeActionBilling) {
+        creditSummary.querySelector("b").textContent = `Creating this Story Run uses ${runCreateCredits} World Credits.`;
+        creditSummary.querySelector("span").textContent = `Your balance: ${creditBalance} Credits · Balance after creation: ${Math.max(0, creditBalance - runCreateCredits)} Credits`;
+        creditSummary.querySelector("small").textContent = "Successful suggested actions use 1 Credit; custom actions use 2. AI-controlled actions do not use a player’s Credits.";
+      } else {
+        creditSummary.querySelector("b").textContent = "This world uses its legacy unlock policy.";
+        creditSummary.querySelector("span").textContent = `Your balance: ${creditBalance} Credits · Creating this room does not use the 20-Credit active-action fee.`;
+        creditSummary.querySelector("small").textContent = "Any legacy unlock price is shown separately before you confirm it.";
+      }
+    }
+    submit.textContent = activeActionBilling && creditBalance !== null && creditBalance < runCreateCredits
+      ? "Add Credits"
+      : activeActionBilling ? `Create Room · ${runCreateCredits} Credits` : "Create Room";
     saveRoomDialogDraft({ type: "create", worldId });
   };
   const create = async () => {
@@ -1179,6 +1293,12 @@ function openCreateRoomDialog(restoredDraft = null) {
     if (!worldId) {
       error.textContent = "Choose a world before creating the room.";
       error.hidden = false;
+      return;
+    }
+    const world = selectedWorld();
+    const runCreateCredits = Number(world?.runCreateCredits || 20);
+    if (worldUsesActiveActionBilling(world) && creditBalance !== null && creditBalance < runCreateCredits) {
+      location.assign(`/credits?intent=RUN_CREATE&returnTo=${encodeURIComponent("/rooms")}`);
       return;
     }
     const idempotencyStorageKey = `many-worlds:create-room:${worldId}`;
@@ -1191,6 +1311,11 @@ function openCreateRoomDialog(restoredDraft = null) {
         clearRoomDialogDraft();
         location.assign(`/rooms/${room.id}`);
       } catch (createError) {
+        if (createError.status === 402 || ["INSUFFICIENT_CREDITS", "INSUFFICIENT_WORLD_CREDITS"].includes(createError.code)) {
+          error.innerHTML = `You need ${runCreateCredits} World Credits to create this Story Run. <a href="/credits?intent=RUN_CREATE&returnTo=${encodeURIComponent("/rooms")}">Add Credits</a>`;
+          error.hidden = false;
+          return;
+        }
         error.textContent = createError.message || "Unable to create this room.";
         error.hidden = false;
       }
@@ -1204,9 +1329,11 @@ function openCreateRoomDialog(restoredDraft = null) {
   dialog.showModal();
   void (async () => {
     try {
-      const data = await request("/api/v4/worlds");
+      const [data, balance] = await Promise.all([request("/api/v4/worlds"), request("/api/v4/credits/balance")]);
+      creditBalance = Number(balance.available || 0);
       const worlds = (Array.isArray(data.worlds) ? data.worlds : []).filter((world) => world.playable && world.modes?.includes("multiplayer"));
       if (!worlds.length) throw new Error("No multiplayer worlds are currently available.");
+      availableWorlds = worlds;
       const preferred = initialWorldId;
       list.innerHTML = worlds.map((world) => {
         const checked = world.id === preferred ? "checked" : "";
@@ -1233,9 +1360,131 @@ async function hydrateSharedRoom(roomId) {
     }
     renderStandardPage(sharedMultiplayerRoomMarkup(room));
     bind();
+    maybeOpenWaitingEndedDialog(room);
   } catch (error) {
     notice(error.message || "Unable to load this room.");
   }
+}
+
+async function startSoloFromWorld(worldId, element) {
+  if (!worldId) return;
+  const returnTo = `/worlds/${encodeURIComponent(worldId)}?play=solo`;
+  if (!sessionToken()) {
+    location.assign(loginUrl(returnTo));
+    return;
+  }
+  try {
+    await request("/api/v4/auth/me");
+  } catch (error) {
+    if (error.status === 401) location.assign(loginUrl(returnTo));
+    else notice(error.message || "Unable to verify your session.");
+    return;
+  }
+  const storageKey = `many-worlds:solo-entry:${worldId}`;
+  const idempotencyKey = lobbyMutationKey(storageKey, "solo-entry");
+  return runMutationOnce(`solo-entry:${worldId}`, element, "Opening story…", async () => {
+    try {
+      const started = await request("/api/v4/rooms/solo", { method:"POST", body:JSON.stringify({ worldId, idempotencyKey, resumeExisting:true }) });
+      const runId = started.id || started.runId || started.roomId;
+      if (!runId) throw new Error("The Solo story did not return a run id.");
+      localStorage.removeItem(storageKey);
+      location.assign(`/game?runId=${encodeURIComponent(runId)}`);
+    } catch (error) {
+      notice(error.message || "Unable to open Solo Play.");
+    }
+  });
+}
+
+function openStartConfirmation(room, trigger) {
+  if (!room || document.querySelector(".start-room-dialog")) return;
+  const readyCount = Number(room.readyHumanCount || 0);
+  if (readyCount < 2 || readyCount > 3) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "join-code-dialog start-room-dialog";
+  const unreadyCount = Math.max(0, Number(room.players?.length || 0) - readyCount);
+  const remainingRoles = Math.max(0, Number(room.roles?.length || 0) - readyCount);
+  dialog.setAttribute("aria-labelledby", "start-room-dialog-title");
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close start confirmation">×</button><p class="eyebrow">START A SHARED STORY</p><h2 id="start-room-dialog-title">${readyCount === 2 ? "Start with 2 players?" : "Start the game?"}</h2><p class="muted">${readyCount} ready players will enter this story.${remainingRoles ? ` ${remainingRoles} remaining role${remainingRoles === 1 ? " will" : "s will"} be controlled by AI.` : ""}${unreadyCount ? ` ${unreadyCount} joined player${unreadyCount === 1 ? " is" : "s are"} not ready and will not enter.` : ""}</p><div class="create-room-actions"><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="button" data-confirm>Start Game</button></div>`;
+  document.body.append(dialog);
+  const close = () => { dialog.close(); trigger?.focus?.(); };
+  dialog.querySelector(".dialog-close")?.addEventListener("click", close);
+  dialog.querySelector("[data-cancel]")?.addEventListener("click", close);
+  dialog.querySelector("[data-confirm]")?.addEventListener("click", () => {
+    close();
+    actions["confirm-start"]?.(null, trigger);
+  });
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.showModal();
+  dialog.querySelector("[data-confirm]")?.focus();
+}
+
+function openWaitingEndedDialog(room, trigger) {
+  if (!room?.isHost || !room.canPlaySolo || document.querySelector(".waiting-ended-dialog")) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "join-code-dialog waiting-ended-dialog";
+  dialog.setAttribute("aria-labelledby", "waiting-ended-dialog-title");
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close waiting options">×</button><p class="eyebrow">WAITING TIME ENDED</p><h2 id="waiting-ended-dialog-title">Still waiting for another player</h2><p class="muted">No other player is ready yet. You can continue this world in Solo Play or keep this room open for another 5 minutes.</p><p class="muted">Playing Solo will close this Multiplayer room. Your Multiplayer role selection will not carry over.</p><div class="create-room-actions"><button class="btn" type="button" data-play-solo>Play Solo</button><button class="btn primary" type="button" data-extend>Wait Another 5 Minutes</button></div>`;
+  document.body.append(dialog);
+  const close = () => { dialog.close(); trigger?.focus?.(); };
+  dialog.querySelector(".dialog-close")?.addEventListener("click", close);
+  dialog.querySelector("[data-play-solo]")?.addEventListener("click", () => { close(); actions["play-solo"]?.(null, trigger); });
+  dialog.querySelector("[data-extend]")?.addEventListener("click", () => { close(); actions["extend-wait"]?.(null, trigger); });
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.showModal();
+  dialog.querySelector("[data-extend]")?.focus();
+}
+
+function openMultiplayerNowReadyDialog(room, trigger) {
+  if (!room?.isHost || document.querySelector(".multiplayer-now-ready-dialog")) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "join-code-dialog multiplayer-now-ready-dialog";
+  dialog.setAttribute("aria-labelledby", "multiplayer-now-ready-dialog-title");
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close room status update">×</button><p class="eyebrow">ROOM STATUS CHANGED</p><h2 id="multiplayer-now-ready-dialog-title">Another player is ready</h2><p class="muted">You now have 2 ready players. You can start Multiplayer, or close this room and continue in Solo Play.</p><div class="create-room-actions"><button class="btn" type="button" data-stay>Stay in Multiplayer</button><button class="btn primary" type="button" data-play-solo-anyway>Play Solo Anyway</button></div>`;
+  document.body.append(dialog);
+  const close = () => { dialog.close(); trigger?.focus?.(); };
+  dialog.querySelector(".dialog-close")?.addEventListener("click", close);
+  dialog.querySelector("[data-stay]")?.addEventListener("click", async () => { close(); await hydrateSharedRoom(room.id).catch(() => {}); });
+  dialog.querySelector("[data-play-solo-anyway]")?.addEventListener("click", (event) => { close(); void actions["play-solo-anyway"]?.(event, trigger); });
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.showModal();
+  dialog.querySelector("[data-stay]")?.focus();
+}
+
+function openStartRetryDialog(room, trigger) {
+  if (!room || document.querySelector(".start-retry-dialog")) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "join-code-dialog start-retry-dialog";
+  dialog.setAttribute("aria-labelledby", "start-retry-dialog-title");
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close story opening notice">×</button><p class="eyebrow">THE STORY IS STILL OPENING</p><h2 id="start-retry-dialog-title">Your room is safe</h2><p class="muted">The opening story is not ready yet. No second room was created.</p><div class="create-room-actions"><button class="btn" type="button" data-back>Back to Room</button><button class="btn primary" type="button" data-retry>Try Again</button></div>`;
+  document.body.append(dialog);
+  const close = () => { dialog.close(); trigger?.focus?.(); };
+  dialog.querySelector(".dialog-close")?.addEventListener("click", close);
+  dialog.querySelector("[data-back]")?.addEventListener("click", async () => { close(); await hydrateSharedRoom(room.id).catch(() => {}); });
+  dialog.querySelector("[data-retry]")?.addEventListener("click", (event) => { close(); void actions["retry-start"]?.(event, trigger); });
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.showModal();
+  dialog.querySelector("[data-retry]")?.focus();
+}
+
+async function transferWaitingRoomToSolo(room, idempotencyKey, confirmReadyPlayersChanged = false) {
+  const started = await request(`/api/v4/rooms/${room.id}/play-solo`, { method:"POST", body:JSON.stringify({ idempotencyKey, expectedLobbyDeadlineAt: room.lobbyDeadlineAt, confirmReadyPlayersChanged }) });
+  const runId = started.id || started.runId || started.roomId;
+  if (!runId) throw new Error("The Solo story did not return a run id.");
+  location.assign(`/game?runId=${encodeURIComponent(runId)}`);
+}
+
+async function startRoomAndEnterGame(roomId) {
+  const started = await request(`/api/v4/rooms/${roomId}/start`, { method:"POST", body:"{}" });
+  const runId = started.runId || started.roomId || roomId;
+  location.assign(`/game?runId=${encodeURIComponent(runId)}`);
+}
+
+function maybeOpenWaitingEndedDialog(room) {
+  if (!room?.isHost || !room?.canPlaySolo) return;
+  const key = `many-worlds:waiting-ended:${room.id}:${room.waitingRound || 1}`;
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, "1");
+  openWaitingEndedDialog(room, root.querySelector('[data-action="extend-wait"]'));
 }
 
 const actions = {
@@ -1247,12 +1496,12 @@ const actions = {
   "view-refund": (_event, element) => openPurchaseStatus(element.dataset.purchaseId),
   "view-dispute": (_event, element) => openPurchaseStatus(element.dataset.purchaseId, true),
   "account-logout": async (_event, element) => { if (element?.disabled) return; element.disabled = true; try { await request("/api/v4/auth/logout", { method:"POST", body:"{}" }); try { globalThis.google?.accounts?.id?.disableAutoSelect?.(); } catch {} clearSessionHint(); location.assign("/"); } catch (error) { element.disabled = false; notice(error.message || "Unable to log out."); } },
-  solo: (_event, element) => runMutationOnce("solo:caesar", element, "Checking login…", () => openAuthenticatedRoute("/role-select?story=caesar")), rooms: () => location.assign("/rooms?worldId=caesar"),
-  "sangtian-solo": (_event, element) => runMutationOnce("solo:sangtian", element, "Checking login…", () => openAuthenticatedRoute("/role-select?story=sangtian")), "sangtian-rooms": () => location.assign("/rooms?worldId=sangtian"),
+  solo: (_event, element) => startSoloFromWorld("caesar", element), rooms: () => location.assign("/rooms?worldId=caesar"),
+  "sangtian-solo": (_event, element) => startSoloFromWorld("sangtian", element), "sangtian-rooms": () => location.assign("/rooms?worldId=sangtian"),
   "world-solo": (_event, element) => {
     const worldId = String(element?.dataset.worldId || "");
     if (!worldId) return;
-    return runMutationOnce(`world-solo:${worldId}`, element, "Checking login…", () => openAuthenticatedRoute(`/role-select?story=${encodeURIComponent(worldId)}`));
+    return startSoloFromWorld(worldId, element);
   },
   "world-rooms": (_event, element) => location.assign(`/rooms?worldId=${encodeURIComponent(element.dataset.worldId)}`),
   "join-code": () => { openJoinCodeDialog(); },
@@ -1282,17 +1531,80 @@ const actions = {
       }
     });
   },
-  "start-game": async (_event, element) => {
+  "start-game": (_event, element) => {
+    if (!activeRoom || !requireSession() || element?.disabled) return;
+    openStartConfirmation(activeRoom, element);
+  },
+  "confirm-start": async (_event, element) => {
     if (!activeRoom || !requireSession() || element?.disabled) return;
     const roomId = activeRoom.id;
     return runMutationOnce(`room:${roomId}:start`, element, "Starting…", async () => {
       try {
-        const started = await request(`/api/v4/rooms/${roomId}/start`, { method:"POST", body:"{}" });
-        const runId = started.runId || started.roomId || roomId;
-        location.assign(`/game?runId=${encodeURIComponent(runId)}`);
+        await startRoomAndEnterGame(roomId);
       } catch (error) {
-        notice(error.message || "Room is not ready to start.");
+        if (error.recoverable) openStartRetryDialog(activeRoom, element);
+        else notice(error.message || "Room is not ready to start.");
         await hydrateSharedRoom(roomId).catch(() => {});
+      }
+    });
+  },
+  "retry-start": async (_event, element) => {
+    if (!activeRoom || !requireSession() || element?.disabled) return;
+    const roomId = activeRoom.id;
+    return runMutationOnce(`room:${roomId}:retry-start`, element, "Starting…", async () => {
+      try {
+        await startRoomAndEnterGame(roomId);
+      } catch (error) {
+        if (error.recoverable) openStartRetryDialog(activeRoom, element);
+        else notice(error.message || "Room is not ready to start.");
+        await hydrateSharedRoom(roomId).catch(() => {});
+      }
+    });
+  },
+  "extend-wait": async (_event, element) => {
+    if (!activeRoom || !requireSession() || element?.disabled) return;
+    const roomId = activeRoom.id;
+    const storageKey = `many-worlds:room-wait:${roomId}:${activeRoom.lobbyDeadlineAt || "current"}`;
+    const idempotencyKey = lobbyMutationKey(storageKey, "room-wait");
+    return runMutationOnce(`room:${roomId}:extend-wait`, element, "Extending…", async () => {
+      try {
+        await request(`/api/v4/rooms/${roomId}/waiting/extend`, { method:"POST", body:JSON.stringify({ idempotencyKey, expectedLobbyDeadlineAt: activeRoom.lobbyDeadlineAt }) });
+        localStorage.removeItem(storageKey);
+        await hydrateSharedRoom(roomId);
+      } catch (error) {
+        notice(error.message || "Unable to extend this waiting round.");
+        await hydrateSharedRoom(roomId).catch(() => {});
+      }
+    });
+  },
+  "play-solo": async (_event, element) => {
+    if (!activeRoom || !requireSession() || element?.disabled) return;
+    const roomId = activeRoom.id;
+    const storageKey = `many-worlds:room-to-solo:${roomId}:${activeRoom.lobbyDeadlineAt || "current"}`;
+    const idempotencyKey = lobbyMutationKey(storageKey, "room-to-solo");
+    return runMutationOnce(`room:${roomId}:play-solo`, element, "Opening Solo…", async () => {
+      try {
+        await transferWaitingRoomToSolo(activeRoom, idempotencyKey);
+        localStorage.removeItem(storageKey);
+      } catch (error) {
+        if (error.code === "MULTIPLAYER_NOW_READY") openMultiplayerNowReadyDialog(activeRoom, element);
+        else notice(error.message || "Unable to continue in Solo Play.");
+        await hydrateSharedRoom(roomId).catch(() => {});
+      }
+    });
+  },
+  "play-solo-anyway": async (_event, element) => {
+    if (!activeRoom || !requireSession() || element?.disabled) return;
+    const room = activeRoom;
+    const storageKey = `many-worlds:room-to-solo:${room.id}:${room.lobbyDeadlineAt || "current"}`;
+    const idempotencyKey = lobbyMutationKey(storageKey, "room-to-solo");
+    return runMutationOnce(`room:${room.id}:play-solo-anyway`, element, "Opening Solo…", async () => {
+      try {
+        await transferWaitingRoomToSolo(room, idempotencyKey, true);
+        localStorage.removeItem(storageKey);
+      } catch (error) {
+        notice(error.message || "Unable to continue in Solo Play.");
+        await hydrateSharedRoom(room.id).catch(() => {});
       }
     });
   },

@@ -17,6 +17,7 @@ test("正式入口只加载唯一 API 客户端，首屏不会白屏", async () 
   assert.match(gameStyles, /\.result-narrative \{[^}]*overflow-y: auto/);
   assert.match(gameStyles, /\.opening-narrative \{[^}]*overflow-y: auto/);
   assert.match(appSource, /rememberResultScroll\(\).*restoreResultScroll\(\)/s);
+  assert.match(gameStyles, /\.kv:has\(> \.kv-icon\)\s*\{[^}]*column-gap:\s*12px;/s);
 
   const harness = setup();
   await harness.app.boot();
@@ -27,6 +28,13 @@ test("正式入口只加载唯一 API 客户端，首屏不会白屏", async () 
   assert.equal(harness.root.querySelector('[data-testid="fatal-error"]'), null);
   assert.match(harness.root.textContent, /第 1 天/);
   assert.match(harness.root.textContent, /0\s*\/ 2/);
+  assert.equal(harness.root.querySelectorAll(".resources-panel .kv-icon").length, 2);
+  assert.equal(harness.root.querySelector('.resources-panel .kv-icon[data-icon="coins"]')?.getAttribute("aria-hidden"), "true");
+  assert.equal(harness.root.querySelector('.resources-panel .kv-icon[data-icon="people"]')?.getAttribute("aria-hidden"), "true");
+  assert.equal(harness.root.querySelectorAll(".risks-panel .kv-icon-alert").length, 2);
+  assert.ok(harness.root.querySelectorAll(".causal-left .panel-heading").length >= 4);
+  assert.equal(harness.root.querySelector(".player .panel-heading__icon")?.getAttribute("viewBox"), "0 0 24 24");
+  assert.equal(harness.root.querySelector(".resources-panel .panel-heading__icon")?.getAttribute("viewBox"), "0 0 24 24");
   assert.deepEqual(harness.api.requests[0].body, { storyId: "sangtian" });
 
   // Query-string debug must never reveal server-private fields.
@@ -205,7 +213,10 @@ test("恢复到 404 时不静默新建，只有用户明确重开才创建", asy
   await harness.app.boot();
 
   assert.ok(harness.root.querySelector('[data-testid="fatal-error"]'));
-  assert.match(harness.root.textContent, /原故事局已不存在/);
+  assert.equal(harness.root.querySelector('[data-testid="fatal-error"]')?.dataset.errorKind, "not-found");
+  assert.match(harness.root.textContent, /This story is no longer available/);
+  assert.equal(harness.root.querySelector("#retryBtn"), null);
+  assert.equal(harness.root.querySelector("#resetBtn")?.textContent.trim(), "Start a new story →");
   assert.equal(harness.api.requests.filter((request) => request.method === "POST" && request.path === "/v4/story-runs").length, 0);
 
   await harness.app.resetRun();

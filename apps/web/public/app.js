@@ -1,4 +1,4 @@
-import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js?v=20260712-3";
+import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js?v=20260721-story-access-error-v4";
 import { renderTransitionScreen } from "./transition-screen.js";
 
 const DAY_DECISIONS = 2;
@@ -23,6 +23,7 @@ export function createStoryApp({
     redirectingToAuth: false,
     busy: false,
     error: "",
+    fatalError: null,
     notice: "",
     guard: null,
     view: null,
@@ -37,6 +38,7 @@ export function createStoryApp({
     debugBuild: debugBuild === true,
     resultStream: null,
     resultScroll: { top: 0, follow: true },
+    panelScroll: { left: 0, right: 0 },
     openingStream: null
   };
 
@@ -49,6 +51,7 @@ export function createStoryApp({
     state.loading = true;
     state.redirectingToAuth = false;
     state.error = "";
+    state.fatalError = null;
     render();
     try {
       const restoredView = await storage.restoreOrCreate();
@@ -63,6 +66,7 @@ export function createStoryApp({
         return;
       }
       state.error = errorMessage(error);
+      state.fatalError = mapStoryAccessError(error);
     } finally {
       state.loading = false;
       if (!state.redirectingToAuth) render();
@@ -123,9 +127,9 @@ export function createStoryApp({
         };
       } else {
         acceptView(result);
-        if (result.roomSession) state.notice = "你的角色决策已提交，正在等待其他玩家。";
+        if (roomSessionForView(result)) state.notice = "你的角色决策已提交，正在等待其他玩家。";
         else if (completedResultKind(previousView, result)) startResultStream(result);
-        else state.notice = "决定已经提交，结果剧情生成后会自动出现。";
+
       }
     } catch (error) {
       if (isVersionConflict(error)) {
@@ -146,8 +150,17 @@ export function createStoryApp({
       ...state.maneuverDraft,
       customText: root.querySelector("#maneuverCustomText")?.value.trim() || state.maneuverDraft.customText.trim()
     };
-    if (draft.maneuverType === "custom" && !draft.customText) {
-      state.maneuverGuard = { reason: "请先写下你要主动推进的一件事。", suggestedRewrite: "派幕僚暗查驿站登记，确认巡抚急奏的经手人员。" };
+    const missingManeuverInput = draft.maneuverType === "contact" && (!draft.targetRoleKey || !draft.customText)
+      ? { reason: !draft.targetRoleKey ? "请先选择要交谈的人物。" : "请写下你准备向此人询问或交涉的具体事情。", suggestedRewrite: "问清他何时得知田契副本被封存，以及消息由谁送到。" }
+      : draft.maneuverType === "investigate" && !draft.intentKey
+        ? { reason: "请先选择一项真实的调查方向。", suggestedRewrite: "选择一项线索，再明确派谁查、查什么原件或经手人。" }
+        : draft.maneuverType === "leverage" && (!draft.leverageKey || !draft.customText)
+          ? { reason: !draft.leverageKey ? "请先选择本次真正要使用的筹码。" : "请写下你准备用这项筹码迫使对方做什么。", suggestedRewrite: "只出示密信落款，要求商会会首交出对应账页并说明经手人。" }
+          : draft.maneuverType === "custom" && !draft.customText
+            ? { reason: "请先写下你要主动推进的一件事。", suggestedRewrite: "派幕僚暗查驿站登记，确认巡抚急奏的经手人员。" }
+            : null;
+    if (missingManeuverInput) {
+      state.maneuverGuard = missingManeuverInput;
       render();
       return;
     }
@@ -158,13 +171,16 @@ export function createStoryApp({
     state.busy = true;
     render();
     try {
+      const previousView = state.view;
       const result = await storage.submitManeuver(state.view, draft);
       if (result.accepted === false) {
         state.maneuverGuard = { reason: result.reason || "这项谋划暂时无法执行。", suggestedRewrite: result.rewriteSuggestion || "" };
       } else {
+        const resultKind = completedResultKind(previousView, result);
         acceptView(result);
         state.maneuverDraft = { maneuverType: "custom", targetRoleKey: "county_magistrate", intentKey: "", leverageKey: "", customText: "" };
-        startManeuverResultStream(result);
+        if (resultKind === "maneuver") startManeuverResultStream(result);
+        else if (resultKind === "decision") startResultStream(result);
       }
     } catch (error) {
       if (isVersionConflict(error)) {
@@ -221,15 +237,16 @@ export function createStoryApp({
     }
   }
 
-  function chooseManeuver(maneuverType, targetRoleKey = "", leverageKey = "") {
+  function chooseManeuver(maneuverType, targetRoleKey = "", leverageKey = "", intentKey = "") {
+    const sameType = state.maneuverDraft.maneuverType === maneuverType;
     state.maneuverGuard = null;
     state.maneuverDraft = {
       ...state.maneuverDraft,
       maneuverType,
       targetRoleKey,
       leverageKey,
-      intentKey: "",
-      customText: maneuverType === "custom" ? state.maneuverDraft.customText : ""
+      intentKey,
+      customText: sameType ? state.maneuverDraft.customText : ""
     };
     render();
   }
@@ -246,13 +263,14 @@ export function createStoryApp({
 
   async function resetRun() {
     if (state.busy) return;
-    if (state.view?.roomSession) {
+    if (roomSessionForView(state.view)) {
       browserWindow.location.assign("/");
       return;
     }
-    if (browserWindow?.confirm && !browserWindow.confirm("确定重开《桑田诏》吗？当前故事局仍会保留在服务端。")) return;
+    if (browserWindow?.confirm && !browserWindow.confirm("Start a new Sangtian story? Your previous story will remain on the server.")) return;
     state.busy = true;
     state.error = "";
+    state.fatalError = null;
     state.notice = "";
     state.guard = null;
     render();
@@ -298,14 +316,15 @@ export function createStoryApp({
   }
 
   async function resolveRoomRound() {
-    if (!state.view?.roomSession?.room?.isHost || !state.view.roomSession.allSubmitted || state.busy || typeof storage.resolveRoomRound !== "function") return;
+    const roomSession = roomSessionForView(state.view);
+    if (!roomSession?.room?.isHost || !roomSession.allSubmitted || state.busy || typeof storage.resolveRoomRound !== "function") return;
     state.busy = true;
     state.error = "";
     state.notice = "三方决策已齐，AI 正在推演共同结果……";
     render();
     try {
       acceptView(await storage.resolveRoomRound());
-      state.notice = state.view?.roomSession?.completed ? "七轮共同决策已经完成。" : "本轮推演完成，下一轮局势已经展开。";
+      state.notice = roomSessionForView(state.view)?.completed ? "七轮共同决策已经完成。" : "本轮推演完成，下一轮局势已经展开。";
     } catch (error) {
       state.error = errorMessage(error);
       state.notice = "";
@@ -454,15 +473,28 @@ export function createStoryApp({
     panel.scrollTop = state.resultScroll.follow ? maxScroll : Math.min(state.resultScroll.top, maxScroll);
   }
 
+  function rememberPanelScroll() {
+    state.panelScroll.left = root.querySelector(".causal-left")?.scrollTop || 0;
+    state.panelScroll.right = root.querySelector(".causal-right")?.scrollTop || 0;
+  }
+
+  function restorePanelScroll() {
+    const left = root.querySelector(".causal-left");
+    const right = root.querySelector(".causal-right");
+    if (left) left.scrollTop = Math.min(state.panelScroll.left, Math.max(0, left.scrollHeight - left.clientHeight));
+    if (right) right.scrollTop = Math.min(state.panelScroll.right, Math.max(0, right.scrollHeight - right.clientHeight));
+  }
+
   function render() {
     rememberResultScroll();
+    rememberPanelScroll();
     root.className = "causal-player-root";
     if (state.loading) {
       root.innerHTML = renderLoading("Restoring your latest story state...");
       return;
     }
     if (!state.view) {
-      root.innerHTML = renderFatalError(state.error || "暂时无法读取故事局。", state.busy);
+      root.innerHTML = renderFatalError(state.fatalError || mapStoryAccessError());
       bindEvents();
       return;
     }
@@ -504,7 +536,7 @@ export function createStoryApp({
         </main>
         <aside class="causal-right" aria-label="${isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
           ${renderManeuverPanel(view, state)}
-          ${view.roomSession ? renderRoomPartyPanel(view, state) : ""}
+          ${roomSessionForView(view) ? renderRoomPartyPanel(view, state) : ""}
           ${state.debugBuild ? renderBuildDiagnostics(view) : ""}
         </aside>
         ${renderCriticalEvent(view, state)}
@@ -513,6 +545,7 @@ export function createStoryApp({
       </div>`;
     bindEvents();
     restoreResultScroll();
+    restorePanelScroll();
     root.querySelector(".result-stream-status")?.remove();
     const stream = root.querySelector("#messageStream");
     if (stream && !state.historyOpen) stream.scrollTop = stream.scrollHeight;
@@ -541,8 +574,7 @@ export function createStoryApp({
     root.querySelector("#criticalDeferredOpenBtn")?.addEventListener("click", () => startCriticalResponse(root.querySelector("#criticalDeferredOpenBtn")?.dataset.eventId));
     root.querySelectorAll("[data-maneuver-type]:not([data-maneuver-direct])").forEach((button) => button.addEventListener("click", () => chooseManeuver(button.dataset.maneuverType, button.dataset.targetRole || "", button.dataset.leverageKey || "")));
     root.querySelectorAll("[data-maneuver-direct]").forEach((button) => button.addEventListener("click", () => {
-      state.maneuverDraft = { ...state.maneuverDraft, maneuverType: button.dataset.maneuverType, targetRoleKey: button.dataset.targetRole || "", leverageKey: button.dataset.leverageKey || "", intentKey: button.dataset.intentKey || "", customText: "" };
-      void submitManeuver();
+      chooseManeuver(button.dataset.maneuverType, button.dataset.targetRole || "", button.dataset.leverageKey || "", button.dataset.intentKey || "");
     }));
     root.querySelector("#maneuverType")?.addEventListener("change", (event) => { state.maneuverDraft.maneuverType = event.target.value; render(); });
     root.querySelector("#maneuverTarget")?.addEventListener("change", (event) => { state.maneuverDraft.targetRoleKey = event.target.value; });
@@ -604,8 +636,45 @@ function renderLoading(text) {
   });
 }
 
-function renderFatalError(message, busy) {
-  return `<section class="boot-screen boot-error shared-room-error" data-testid="fatal-error"><h1>Your story is temporarily unavailable</h1><p>${esc(message)}</p><div class="boot-actions"><button id="retryBtn" ${busy ? "disabled" : ""}>Reconnect</button><button id="resetBtn" ${busy ? "disabled" : ""}>Start a new story</button></div><small>We will never replace an unavailable server story with a local placeholder.</small></section>`;
+function mapStoryAccessError(error) {
+  if (error?.code === "RUN_NOT_FOUND" || Number(error?.status) === 404) {
+    return {
+      kind: "not-found",
+      eyebrow: "STORY NOT FOUND",
+      title: "This story is no longer available",
+      description: "The original story session no longer exists, so we can’t restore it. Start a new story to keep exploring new worlds.",
+      note: "We won’t replace a missing story with a local placeholder.",
+      primaryLabel: "Start a new story",
+      primaryId: "resetBtn",
+      secondaryLabel: "Browse worlds"
+    };
+  }
+
+  return {
+    kind: "connection",
+    eyebrow: "CONNECTION INTERRUPTED",
+    title: "We couldn’t reconnect to your story",
+    description: "Your story may still be available. Please try reconnecting in a moment.",
+    note: "We’ll always restore the server story, never a local placeholder.",
+    primaryLabel: "Reconnect",
+    primaryId: "retryBtn",
+    secondaryLabel: "Browse worlds"
+  };
+}
+
+function renderFatalError(accessError) {
+  const { kind, eyebrow, title, description, note, primaryLabel, primaryId, secondaryLabel } = accessError;
+  return `<section class="boot-screen boot-error shared-room-error story-access-error" data-testid="fatal-error" data-error-kind="${esc(kind)}" aria-labelledby="story-access-error-title">
+    <div class="story-access-error__emblem" aria-hidden="true"><span></span><span></span><span></span></div>
+    <p class="story-access-error__eyebrow">${esc(eyebrow)}</p>
+    <h1 id="story-access-error-title">${esc(title)}</h1>
+    <p class="story-access-error__description">${esc(description)}</p>
+    <div class="boot-actions story-access-error__actions">
+      <button id="${esc(primaryId)}" class="shared-room-reconnect" type="button">${esc(primaryLabel)} <span aria-hidden="true">→</span></button>
+      <a class="room-back-button" href="/worlds"><span class="room-back-label">${esc(secondaryLabel)}</span><span aria-hidden="true">→</span></a>
+    </div>
+    <p class="story-access-error__note">${esc(note)}</p>
+  </section>`;
 }
 
 function renderTopbar(view, state) {
@@ -629,7 +698,7 @@ function renderTopbar(view, state) {
   const remaining = Math.max(0, Number(run.totalDays || FINAL_DAY) - Number(run.currentDay));
   const progress = dayProgress(view);
   const maneuver = view.maneuverState || {};
-  const roomSession = view.roomSession;
+  const roomSession = roomSessionForView(view);
   const en = isEnglish(view);
   const stageLabel = view.presentation?.roundLabel || (en ? "Scene" : "第");
   const finaleLabel = view.presentation?.finaleLabel || (en ? "Finale" : "御前裁决");
@@ -644,7 +713,7 @@ function renderTopbar(view, state) {
       <span class="status-chip">${en ? "Key Decisions" : "主线决策"}&nbsp; <b>${activePromptForView(view) ? progress.completed + 1 : progress.completed} / ${progress.required || 2}</b></span>
       <span class="status-chip maneuver-chip">${roomSession ? `${en ? "Players" : "三人局"}&nbsp; <b>${roomSession.submittedRoleIds.length} / ${roomSession.room.players.filter((player) => player.roleId).length}</b>` : `${en ? "Maneuvers" : "谋划"}&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)} / ${Number(maneuver.maneuverOpportunitiesPerDay ?? 2)}</b>`}<i></i><i></i></span>
     </div>
-    <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; ${en ? "History" : "历史回顾"}</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; ${en ? (view.roomSession ? "Room" : "Settings") : (view.roomSession ? "房间" : "设置")}</button></div></div>
+    <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; ${en ? "History" : "历史回顾"}</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; ${en ? (roomSession ? "Room" : "Settings") : (roomSession ? "房间" : "设置")}</button></div></div>
   </header>`;
 }
 
@@ -674,7 +743,7 @@ function renderPlayer(view) {
   const en = isEnglish(view);
   const portraitClass = "art-game-governor";
   return `<section class="causal-panel player">
-    <h2>${en ? "My Role" : "我的身份"}</h2>
+    <h2 class="panel-heading">${panelHeadingIcon("role")}<span>${en ? "My Role" : "我的身份"}</span></h2>
     <div class="portrait ${portraitClass}" style="${portraitStyle(view)}" aria-hidden="true" role="img" aria-label="${esc(player.roleName || (en ? "Player role" : "浙江总督"))}"></div>
     <h3>${esc(player.roleName || (en ? "Player role" : "浙江总督"))}</h3>
     <p class="player-meta"><strong>${esc(player.name || (en ? "Player" : "郝帅彬"))}</strong><span>${esc(player.rank || (en ? "Role standing" : "从四品"))}</span><span>${esc(player.office || (en ? "Current office" : "兵部侍郎衔"))}</span></p>
@@ -685,7 +754,7 @@ function renderPlayer(view) {
 function renderDayMission(view) {
   const goals = array(view.player?.goals);
   return `<section class="causal-panel day-mission">
-    <h2>${isEnglish(view) ? "Current Objectives" : "当前目标"}</h2>
+    <h2 class="panel-heading">${panelHeadingIcon("target")}<span>${isEnglish(view) ? "Current Objectives" : "当前目标"}</span></h2>
     ${goals.length ? `<ul>${goals.slice(0, 3).map((goal) => `<li>${esc(goal)}</li>`).join("")}</ul>` : `<p>${isEnglish(view) ? "Preserve your position, test the evidence, and keep Rome governable." : "稳定局势，保留证据，并让真正的责任进入可解释的因果链。"}</p>`}
     <span class="decision-progress sr-only" data-testid="day-progress">${dayProgress(view).completed} / ${dayProgress(view).required}</span>
   </section>`;
@@ -694,24 +763,65 @@ function renderDayMission(view) {
 function renderResources(view) {
   const player = view.player || {};
   const resources = array(player.resources);
-  return `<section class="causal-panel resources-panel"><h2>${isEnglish(view) ? "My Standing" : "我的资源"}</h2>${resources.length
+  return `<section class="causal-panel resources-panel"><h2 class="panel-heading">${panelHeadingIcon("resources")}<span>${isEnglish(view) ? "My Standing" : "我的资源"}</span></h2>${resources.length
     ? resources.map((item) => {
         const [key, value] = Array.isArray(item) ? item : [item?.name || item?.key, item?.value];
-        return `<div class="kv"><span>${esc(key)}</span><b>${esc(value)}</b></div>`;
+        return `<div class="kv">${panelMetricIcon(resourceIconKind(key))}<span>${esc(key)}</span><b>${esc(value)}</b></div>`;
       }).join("")
     : `<p>${isEnglish(view) ? "No public standing is available yet." : "暂无可公开资源。"}</p>`}</section>`;
+}
+
+function resourceIconKind(label) {
+  const value = String(label || "").toLowerCase();
+  if (/银|treasury|silver|coin|credit/.test(value)) return "coins";
+  if (/粮|grain|food|supply/.test(value)) return "grain";
+  if (/兵|军|soldier|troop|guard/.test(value)) return "shield";
+  if (/幕僚|顾问|adviser|advisor|staff|people/.test(value)) return "people";
+  if (/密报|情报|信|report|intel|letter/.test(value)) return "report";
+  return "resource";
+}
+
+function panelMetricIcon(kind) {
+  const paths = {
+    coins: '<ellipse cx="12" cy="7" rx="6.5" ry="3"/><path d="M5.5 7v4c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3V7M5.5 11v4c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3v-4"/>',
+    grain: '<path d="M12 21V4M12 8c-3.2 0-5.2-1.8-5.2-4 3.2 0 5.2 1.7 5.2 4Zm0 5c-3.2 0-5.2-1.8-5.2-4 3.2 0 5.2 1.7 5.2 4Zm0 5c-3.2 0-5.2-1.8-5.2-4 3.2 0 5.2 1.7 5.2 4Zm0-7c3.2 0 5.2-1.8 5.2-4-3.2 0-5.2 1.7-5.2 4Zm0 5c3.2 0 5.2-1.8 5.2-4-3.2 0-5.2 1.7-5.2 4Z"/>',
+    shield: '<path d="M12 3 19 6v5c0 4.4-2.7 7.7-7 10-4.3-2.3-7-5.6-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/>',
+    people: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3.5 20c.4-4 2.2-6 5.5-6s5.1 2 5.5 6M14 15c3.8-.6 6 1 6.5 4.5"/>',
+    report: '<path d="M7 3h8l3 3v15H7V3Z"/><path d="M15 3v4h4M10 11h5M10 15h5"/>',
+    alert: '<path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5M12 17.5v.1"/>',
+    resource: '<path d="m12 3 2.2 5.2L19 10l-4.8 1.8L12 17l-2.2-5.2L5 10l4.8-1.8L12 3Z"/>'
+  };
+  const safeKind = Object.hasOwn(paths, kind) ? kind : "resource";
+  return `<svg class="kv-icon kv-icon-${safeKind}" data-icon="${safeKind}" viewBox="0 0 24 24" aria-hidden="true">${paths[safeKind]}</svg>`;
+}
+
+function panelHeadingIcon(kind) {
+  const paths = {
+    role: '<circle cx="12" cy="8" r="4"/><path d="M4.5 21c.8-4.2 3.3-6.3 7.5-6.3s6.7 2.1 7.5 6.3"/>',
+    target: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2"/><path d="m15.5 8.5 4-4m-3.2 0h3.2v3.2"/>',
+    resources: '<ellipse cx="12" cy="7" rx="6.5" ry="3"/><path d="M5.5 7v4c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3V7M5.5 11v4c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3v-4"/>',
+    leverage: '<circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21m-3 0v3m-3-3v2"/>',
+    alert: '<path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5M12 17.5v.1"/>'
+  };
+  const safeKind = Object.hasOwn(paths, kind) ? kind : "resources";
+  return `<svg class="panel-heading__icon panel-heading__icon--${safeKind}" viewBox="0 0 24 24" aria-hidden="true">${paths[safeKind]}</svg>`;
+}
+
+function renderManeuverIntentEditor(draft, placeholder, submitLabel, disabled, guidance, heading = "本次意图") {
+  const value = String(draft.customText || "");
+  return `<div class="maneuver-intent-editor"><div class="maneuver-workbench-head"><span>${esc(heading)}</span><small>${esc(guidance)}</small></div><div class="custom-wrap"><textarea id="maneuverCustomText" maxlength="200" placeholder="${esc(placeholder)}">${esc(value)}</textarea><span>${value.length} / 200</span></div><div class="maneuver-form-row"><button id="maneuverSubmit" type="button" ${disabled ? "disabled" : ""}>${esc(submitLabel)}</button></div></div>`;
 }
 
 function renderLeverage(view) {
   const player = view.player || {};
   const leverage = array(player.leverage);
-  return `<section class="causal-panel leverage-panel"><h2>${isEnglish(view) ? "Leverage" : "我的筹码"}</h2>${leverage.length ? `<ul>${leverage.map((item) => `<li>${esc(typeof item === "string" ? item : item?.title)}</li>`).join("")}</ul>` : `<p>${isEnglish(view) ? "No leverage is available yet." : "尚未获得可用筹码。"}</p>`}</section>`;
+  return `<section class="causal-panel leverage-panel"><h2 class="panel-heading">${panelHeadingIcon("leverage")}<span>${isEnglish(view) ? "Leverage" : "我的筹码"}</span></h2>${leverage.length ? `<ul>${leverage.map((item) => `<li>${esc(typeof item === "string" ? item : item?.title)}</li>`).join("")}</ul>` : `<p>${isEnglish(view) ? "No leverage is available yet." : "尚未获得可用筹码。"}</p>`}</section>`;
 }
 
 function renderManeuverPanel(view, state) {
   if (isEnglish(view)) return renderEnglishManeuverPanel(view, state);
   const maneuver = view.maneuverState || { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 };
-  const disabled = Boolean(view.roomSession) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy || (view.continuousV2 && !view.activePrompt);
+  const disabled = Boolean(roomSessionForView(view)) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy || (view.continuousV2 && !view.activePrompt);
   const draft = state.maneuverDraft;
   const contacts = [["county_magistrate", "卢象升", "县令 · 信任", "art-avatar-county"], ["merchant", "江南商会会首", "商会 · 观望", "art-avatar-merchant"], ["xunfu", "刘瑾", "巡抚 · 敌对", "art-avatar-xunfu"], ["sili_jian", "司礼监织造使", "内廷 · 警惕", "art-avatar-sili"]];
   const types = [["contact", "人物交谈"], ["investigate", "派遣调查"], ["leverage", "使用筹码"], ["custom", "自拟谋划"]];
@@ -724,39 +834,46 @@ function renderManeuverPanel(view, state) {
     : [["田契暗账半页", "land_contract_fragment"], ["清流县令密信", "county_letter"], ["海防军报", "coastal_report"]];
   const activeType = types.find(([key]) => key === draft.maneuverType)?.[1] || "自拟谋划";
   const workbench = draft.maneuverType === "contact"
-    ? `<section class="maneuver-workbench maneuver-contact-workbench" data-testid="maneuver-contact-workbench"><div class="maneuver-workbench-head"><span>可接触人物</span><small>选择一人问询</small></div>${contacts.map(([key, name, action, iconClass]) => `<button class="contact-row ${draft.targetRoleKey === key ? "selected" : ""}" type="button" data-maneuver-type="contact" data-maneuver-direct="true" data-maneuver-contact="${key}" data-target-role="${key}" ${disabled ? "disabled" : ""}><span class="contact-avatar ${iconClass}" aria-hidden="true"></span><span><b>${name}</b><small>${action}</small></span><em>问询</em></button>`).join("")}<button class="see-more" type="button">查看全部人物&nbsp;›</button></section>`
+    ? `<section class="maneuver-workbench maneuver-contact-workbench" data-testid="maneuver-contact-workbench"><div class="maneuver-workbench-head"><span>可接触人物</span><small>选择一人问询</small></div>${contacts.map(([key, name, action, iconClass]) => `<button class="contact-row ${draft.targetRoleKey === key ? "selected" : ""}" type="button" data-maneuver-type="contact" data-maneuver-direct="true" data-maneuver-contact="${key}" data-target-role="${key}" ${disabled ? "disabled" : ""}><span class="contact-avatar ${iconClass}" aria-hidden="true"></span><span><b>${name}</b><small>${action}</small></span><em>选择</em></button>`).join("")}<button class="see-more" type="button">查看全部人物&nbsp;›</button>${renderManeuverIntentEditor(draft, "写下你准备向此人询问或交涉的具体事情……", "开始交谈", disabled, "先选择人物，再由你决定谈什么；不会自动替你提交。")}</section>`
     : draft.maneuverType === "investigate"
-      ? `<section class="maneuver-workbench maneuver-investigate-workbench" data-testid="maneuver-investigate-workbench"><div class="maneuver-workbench-head"><span>调查方向</span><small>选择一项派遣幕僚</small></div><div class="maneuver-choice-list">${investigationChoices.map(([intentKey, title, description]) => `<button class="maneuver-choice-card" type="button" data-maneuver-type="investigate" data-maneuver-direct="true" data-maneuver-investigation="${intentKey}" data-intent-key="${intentKey}" ${disabled ? "disabled" : ""}><b>${title}</b><small>${description}</small><em>派遣调查</em></button>`).join("")}</div></section>`
+      ? `<section class="maneuver-workbench maneuver-investigate-workbench" data-testid="maneuver-investigate-workbench"><div class="maneuver-workbench-head"><span>调查方向</span><small>选择一项派遣幕僚</small></div><div class="maneuver-choice-list">${investigationChoices.map(([intentKey, title, description]) => `<button class="maneuver-choice-card ${draft.intentKey === intentKey ? "selected" : ""}" type="button" data-maneuver-type="investigate" data-maneuver-direct="true" data-maneuver-investigation="${intentKey}" data-intent-key="${intentKey}" ${disabled ? "disabled" : ""}><b>${title}</b><small>${description}</small><em>选择</em></button>`).join("")}</div>${renderManeuverIntentEditor(draft, "可补充你特别要求查清的原件、经手人或时辰……", "派遣调查", disabled, "选择调查方向后再确认；补充要求可以留空。")}</section>`
       : draft.maneuverType === "leverage"
-        ? `<section class="maneuver-workbench maneuver-leverage-workbench" data-testid="maneuver-leverage-workbench"><div class="maneuver-workbench-head"><span>可用筹码</span><small>使用后会留下痕迹</small></div>${leverage.map(([label, key]) => `<div class="leverage-row"><span class="leverage-icon">▣</span><span>${label}</span><button type="button" data-maneuver-type="leverage" data-maneuver-direct="true" data-maneuver-leverage="${key}" data-target-role="merchant" data-leverage-key="${key}" ${disabled ? "disabled" : ""}>使用</button></div>`).join("")}</section>`
-        : `<section class="maneuver-workbench maneuver-custom-workbench" data-testid="maneuver-custom-workbench"><div class="maneuver-workbench-head"><span>自拟谋划</span><small>写下你准备推进的一件事</small></div><div class="custom-wrap"><textarea id="maneuverCustomText" maxlength="200" placeholder="输入你的谋划……">${esc(draft.customText || "")}</textarea><span>${String(draft.customText || "").length} / 200</span></div><div class="maneuver-form-row"><button id="maneuverSubmit" type="button" ${disabled ? "disabled" : ""}>执行谋划</button></div>${state.maneuverGuard ? `<div class="maneuver-guard" data-testid="maneuver-guard"><b>这项谋划暂时不能执行</b><p>${esc(state.maneuverGuard.reason)}</p>${state.maneuverGuard.suggestedRewrite ? `<small>建议：${esc(state.maneuverGuard.suggestedRewrite)}</small>` : ""}</div>` : ""}</section>`;
+        ? `<section class="maneuver-workbench maneuver-leverage-workbench" data-testid="maneuver-leverage-workbench"><div class="maneuver-workbench-head"><span>可用筹码</span><small>使用后会留下痕迹</small></div>${leverage.map(([label, key]) => `<div class="leverage-row"><span class="leverage-icon">▣</span><span>${label}</span><button type="button" class="${draft.leverageKey === key ? "selected" : ""}" data-maneuver-type="leverage" data-maneuver-direct="true" data-maneuver-leverage="${key}" data-target-role="merchant" data-leverage-key="${key}" ${disabled ? "disabled" : ""}>选择</button></div>`).join("")}${renderManeuverIntentEditor(draft, "写下你准备用这项筹码迫使对方做什么……", "使用筹码", disabled, "筹码不会自动消耗；只有确认提交后才进入推演。")}</section>`
+        : `<section class="maneuver-workbench maneuver-custom-workbench" data-testid="maneuver-custom-workbench"><div class="maneuver-workbench-head"><span>自拟谋划</span><small>写下你准备推进的一件事</small></div><div class="custom-wrap"><textarea id="maneuverCustomText" maxlength="200" placeholder="输入你的谋划……">${esc(draft.customText || "")}</textarea><span>${String(draft.customText || "").length} / 200</span></div><div class="maneuver-form-row"><button id="maneuverSubmit" type="button" ${disabled ? "disabled" : ""}>执行谋划</button></div></section>`;
   return `<section class="maneuver-panel" data-testid="maneuver-panel">
     <div class="maneuver-heading"><h2>谋划中枢</h2><button class="help-dot" type="button" title="主动谋划不能替代主线决策">?</button></div>
     <section class="maneuver-usage"><span>今日谋划</span><b>${Number(maneuver.maneuverOpportunitiesRemaining)} / ${Number(maneuver.maneuverOpportunitiesPerDay)}</b><div class="opportunity-dots" aria-label="剩余机会"><i class="${Number(maneuver.maneuverOpportunitiesRemaining) < 2 ? "spent" : ""}"></i><i class="${Number(maneuver.maneuverOpportunitiesRemaining) < 1 ? "spent" : ""}"></i></div><small>剩余机会不结转</small></section>
     <div class="maneuver-type-grid" aria-label="选择谋划类型">${types.map(([key, label]) => `<button type="button" class="${draft.maneuverType === key ? "active" : ""}" data-maneuver-type="${key}" aria-pressed="${draft.maneuverType === key}" ${disabled ? "disabled" : ""}>${label}</button>`).join("")}</div>
     <div class="maneuver-active-label">当前：${activeType}</div>
     ${workbench}
+    ${renderManeuverGuard(state.maneuverGuard)}
     <details class="maneuver-progress"><summary>正在推进 <span>2 项</span></summary><div class="progress-row"><span>查清巡抚与商会旧约</span><b>1 / 3</b></div><div class="progress-row"><span>稳住杭州粮价</span><b class="danger-text">状态：恶化</b></div></details>
   </section>`;
 }
 
+function renderManeuverGuard(guard) {
+  if (!guard) return "";
+  return `<div class="maneuver-guard" data-testid="maneuver-guard"><b>这项谋划暂时不能执行</b><p>${esc(guard.reason)}</p>${guard.suggestedRewrite ? `<small>建议：${esc(guard.suggestedRewrite)}</small>` : ""}</div>`;
+}
+
 function renderEnglishManeuverPanel(view, state) {
   const maneuver = view.maneuverState || { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 };
-  const disabled = Boolean(view.roomSession) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy;
+  const roomSession = roomSessionForView(view);
+  const disabled = Boolean(roomSession) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy;
   const draft = state.maneuverDraft;
-  const currentRoleKey = view.roomSession?.role?.roleKey;
-  const contacts = array(view.roomSession?.room?.roles).filter((role) => role.roleKey !== currentRoleKey).slice(0, 4);
-  const knownInfo = array(view.roomSession?.role?.knownInfo).slice(0, 3);
+  const currentRoleKey = roomSession?.role?.roleKey;
+  const contacts = array(roomSession?.room?.roles).filter((role) => role.roleKey !== currentRoleKey).slice(0, 4);
+  const knownInfo = array(roomSession?.role?.knownInfo).slice(0, 3);
   const types = [["contact", "Contacts"], ["investigate", "Investigate"], ["leverage", "Use Leverage"], ["custom", "Custom Maneuver"]];
   const investigationChoices = (knownInfo.length ? knownInfo : ["Senate records", "Private correspondence", "Military loyalties"]).map((label, index) => [`investigate_${index + 1}`, `Investigate ${label}`, "Trace the records, witnesses, and political interests behind this lead."]);
   const leverage = array(view.player?.leverage).slice(0, 4).map((label, index) => [label, `leverage_${index + 1}`]);
   const activeType = types.find(([key]) => key === draft.maneuverType)?.[1] || "Custom Maneuver";
   const workbench = draft.maneuverType === "contact"
-    ? `<section class="maneuver-workbench maneuver-contact-workbench" data-testid="maneuver-contact-workbench"><div class="maneuver-workbench-head"><span>Contacts</span><small>Choose one person to approach</small></div>${contacts.map((role) => `<button class="contact-row ${draft.targetRoleKey === role.roleKey ? "selected" : ""}" type="button" data-maneuver-type="contact" data-maneuver-direct="true" data-maneuver-contact="${esc(role.roleKey)}" data-target-role="${esc(role.roleKey)}" ${disabled ? "disabled" : ""}><span class="contact-avatar" style="${assetBackgroundStyle(role.portrait)}" aria-hidden="true"></span><span><b>${esc(role.roleName)}</b><small>${esc(role.publicInfo || role.identity)}</small></span><em>Meet</em></button>`).join("")}<button class="see-more" type="button">View all characters&nbsp;›</button></section>`
+    ? `<section class="maneuver-workbench maneuver-contact-workbench" data-testid="maneuver-contact-workbench"><div class="maneuver-workbench-head"><span>Contacts</span><small>Choose one person to approach</small></div>${contacts.map((role) => `<button class="contact-row ${draft.targetRoleKey === role.roleKey ? "selected" : ""}" type="button" data-maneuver-type="contact" data-maneuver-direct="true" data-maneuver-contact="${esc(role.roleKey)}" data-target-role="${esc(role.roleKey)}" ${disabled ? "disabled" : ""}><span class="contact-avatar" style="${assetBackgroundStyle(role.portrait)}" aria-hidden="true"></span><span><b>${esc(role.roleName)}</b><small>${esc(role.publicInfo || role.identity)}</small></span><em>Select</em></button>`).join("")}<button class="see-more" type="button">View all characters&nbsp;›</button>${renderManeuverIntentEditor(draft, "What do you want to ask or negotiate?", "Start conversation", disabled, "Choose a person, then state your real topic before submitting.", "Action intent")}</section>`
     : draft.maneuverType === "investigate"
-      ? `<section class="maneuver-workbench maneuver-investigate-workbench" data-testid="maneuver-investigate-workbench"><div class="maneuver-workbench-head"><span>Lines of Inquiry</span><small>Choose one lead to pursue</small></div><div class="maneuver-choice-list">${investigationChoices.map(([intentKey, title, description]) => `<button class="maneuver-choice-card" type="button" data-maneuver-type="investigate" data-maneuver-direct="true" data-maneuver-investigation="${intentKey}" data-intent-key="${intentKey}" ${disabled ? "disabled" : ""}><b>${esc(title)}</b><small>${esc(description)}</small><em>Probe</em></button>`).join("")}</div></section>`
+      ? `<section class="maneuver-workbench maneuver-investigate-workbench" data-testid="maneuver-investigate-workbench"><div class="maneuver-workbench-head"><span>Lines of Inquiry</span><small>Choose one lead to pursue</small></div><div class="maneuver-choice-list">${investigationChoices.map(([intentKey, title, description]) => `<button class="maneuver-choice-card ${draft.intentKey === intentKey ? "selected" : ""}" type="button" data-maneuver-type="investigate" data-maneuver-direct="true" data-maneuver-investigation="${intentKey}" data-intent-key="${intentKey}" ${disabled ? "disabled" : ""}><b>${esc(title)}</b><small>${esc(description)}</small><em>Select</em></button>`).join("")}</div>${renderManeuverIntentEditor(draft, "Optional: name a record, witness, or time to verify", "Send investigation", disabled, "Select a line of inquiry, then confirm it.", "Action intent")}</section>`
       : draft.maneuverType === "leverage"
-        ? `<section class="maneuver-workbench maneuver-leverage-workbench" data-testid="maneuver-leverage-workbench"><div class="maneuver-workbench-head"><span>Available Leverage</span><small>Using leverage leaves a trace</small></div>${leverage.map(([label, key]) => `<div class="leverage-row"><span class="leverage-icon">▣</span><span>${esc(label)}</span><button type="button" data-maneuver-type="leverage" data-maneuver-direct="true" data-maneuver-leverage="${key}" data-leverage-key="${key}" ${disabled ? "disabled" : ""}>Use</button></div>`).join("")}</section>`
+        ? `<section class="maneuver-workbench maneuver-leverage-workbench" data-testid="maneuver-leverage-workbench"><div class="maneuver-workbench-head"><span>Available Leverage</span><small>Using leverage leaves a trace</small></div>${leverage.map(([label, key]) => `<div class="leverage-row"><span class="leverage-icon">▣</span><span>${esc(label)}</span><button type="button" class="${draft.leverageKey === key ? "selected" : ""}" data-maneuver-type="leverage" data-maneuver-direct="true" data-maneuver-leverage="${key}" data-leverage-key="${key}" ${disabled ? "disabled" : ""}>Select</button></div>`).join("")}${renderManeuverIntentEditor(draft, "What must the other side do in exchange?", "Use leverage", disabled, "The leverage is spent only after you confirm the action.", "Action intent")}</section>`
         : `<section class="maneuver-workbench maneuver-custom-workbench" data-testid="maneuver-custom-workbench"><div class="maneuver-workbench-head"><span>Custom Maneuver</span><small>Describe one action you want to advance</small></div><div class="custom-wrap"><textarea id="maneuverCustomText" maxlength="200" placeholder="Describe your maneuver…">${esc(draft.customText || "")}</textarea><span>${String(draft.customText || "").length} / 200</span></div><div class="maneuver-form-row"><button id="maneuverSubmit" type="button" ${disabled ? "disabled" : ""}>Execute Maneuver</button></div></section>`;
   const objectives = array(view.player?.goals).slice(0, 2);
   return `<section class="maneuver-panel" data-testid="maneuver-panel">
@@ -916,9 +1033,10 @@ function resolveMainMode({ view, state, showOpening, activePrompt, simulating, o
   if (state.historyOpen) return "history";
   if (simulating) return "simulating";
   if (view?.v2CurrentTurn?.status === "RESOLVING") return "simulating";
-  if (view?.roomSession?.completed) return "room_complete";
-  if (view?.roomSession?.resolving) return "room_resolving";
-  if (view?.roomSession?.ownSubmitted) return "room_waiting";
+  const roomSession = roomSessionForView(view);
+  if (roomSession?.completed) return "room_complete";
+  if (roomSession?.resolving) return "room_resolving";
+  if (roomSession?.ownSubmitted) return "room_waiting";
   if (view?.run?.status === "finished") return "final_judgement";
   if (openingPause) return "opening_stream";
   if (resultPause) return "result_stream";
@@ -1089,9 +1207,9 @@ function renderRelationships(dashboard = {}) {
 function renderRisks(dashboard = {}, view = {}) {
   const risks = array(dashboard.risks);
   if (!risks.length) return "";
-  return `<section class="causal-panel"><h2>${isEnglish(view) ? "Current Risks" : "当前风险"}</h2>${risks.map((item) => {
+  return `<section class="causal-panel risks-panel"><h2 class="panel-heading">${panelHeadingIcon("alert")}<span>${isEnglish(view) ? "Current Risks" : "当前风险"}</span></h2>${risks.map((item) => {
     const [name, level] = Array.isArray(item) ? item : [item?.name || item?.title, item?.level];
-    return `<div class="kv"><span>${esc(name)}</span><b class="risk-${className(level)}">${esc(level)}</b></div>`;
+    return `<div class="kv">${panelMetricIcon("alert")}<span>${esc(name)}</span><b class="risk-${className(level)}">${esc(level)}</b></div>`;
   }).join("")}</section>`;
 }
 
@@ -1133,13 +1251,22 @@ function renderBanner(kind, message) {
 export function dayProgress(view) {
   if (!view?.run) return { completed: 0, required: DAY_DECISIONS };
   if (view.continuousV2 === true) return { completed: 0, required: 1 };
-  if (view.roomSession) return { completed: view.roomSession.ownSubmitted ? 1 : 0, required: 1 };
+  const roomSession = roomSessionForView(view);
+  if (roomSession) return { completed: roomSession.ownSubmitted ? 1 : 0, required: 1 };
   const day = Number(view.run.currentDay || 1);
   if (day >= FINAL_DAY) return { completed: 0, required: 0 };
   const serverProgress = view.dayProgress || view.run.dayProgress;
   const completed = serverProgress?.completed ?? view.run.decisionsCompletedToday ?? array(view.decisionHistory).filter((item) => Number(item.day) === day).length;
   const required = serverProgress?.required ?? view.run.decisionsRequiredToday ?? DAY_DECISIONS;
   return { completed: Math.max(0, number(completed)), required: Math.max(DAY_DECISIONS, number(required)) };
+}
+
+// Solo and multiplayer share the approved layout, not a state machine.
+// Continuous V2 must never enter the legacy wait-for-all/host-resolve flow,
+// even if stale adapter data contains a roomSession-shaped object.
+export function roomSessionForView(view) {
+  if (view?.continuousV2 === true) return null;
+  return view?.roomSession || null;
 }
 
 export function canAdvance(view) {

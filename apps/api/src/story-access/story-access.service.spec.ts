@@ -131,6 +131,29 @@ async function main() {
   assert.equal(retriedAccess.freeRoundsUsed, 1);
   assert.equal(poolRetryAttempts, 3, "P2028 transaction-pool admission failures must retry the idempotent access transaction");
 
+  let activePolicySpendCalls = 0;
+  const activePolicyService = new StoryAccessService(
+    {
+      $transaction: async (operation: (transaction: any) => Promise<unknown>) => operation({
+        storyRun: { findUnique: async () => ({ id: "active-run", ownerUserId: "user-1", billingPolicyVersion: "active_action_v1", accessLevel: "UNLOCKED", freeDecisionsUsed: 0 }) },
+        storyPlayer: { findFirst: async () => null },
+        worldUnlock: { findUnique: async () => null }
+      })
+    } as never,
+    { spendCredits: async () => { activePolicySpendCalls += 1; } } as never,
+    { qualifyReferral: async () => undefined } as never,
+    actionWindows as never,
+    projections as never
+  );
+  const activeAccess = activePolicyService.roomAccessState({ accessLevel: "UNLOCKED", freeDecisionsUsed: 0, billingPolicyVersion: "active_action_v1" }, 12);
+  assert.equal(activeAccess.requiresUnlock, false);
+  assert.equal(activeAccess.requiredCredits, 0);
+  await assert.rejects(
+    () => activePolicyService.unlock({ id: "user-1" } as never, "active-run", { idempotencyKey: "active-policy-unlock" }),
+    (error: any) => error?.getResponse?.()?.code === "BILLING_POLICY_DOES_NOT_REQUIRE_UNLOCK"
+  );
+  assert.equal(activePolicySpendCalls, 0, "active-action runs must never create a WORLD_UNLOCK debit");
+
   console.log("story access concurrent unlock retry: PASS");
 }
 

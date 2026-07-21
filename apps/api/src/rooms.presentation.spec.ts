@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getGameDefinition } from "@ai-story/templates";
 import { CONTINUOUS_STORY_ENGINE_VERSION } from "@ai-story/shared";
-import { RoomsService, compareSoloProgress, sharedRoomRunIdForRequest, shouldResumeExistingSolo, soloCreationResponse, soloRunIdForRequest } from "./rooms.service";
+import { RoomsService, compareSoloProgress, roomTitleForCreate, sharedRoomRunIdForRequest, shouldResumeExistingSolo, soloCreationResponse, soloRunIdForRequest } from "./rooms.service";
 
 const service = new RoomsService(
   {} as never,
@@ -76,6 +76,14 @@ test("shared room creation uses a separate stable database identity", () => {
   assert.equal(roomId, sharedRoomRunIdForRequest("user-1", "room-create:request-1"));
   assert.notEqual(roomId, soloRunIdForRequest("user-1", "room-create:request-1"));
   assert.match(roomId, /^room_[a-f0-9]{32}$/);
+});
+
+test("new rooms use product room labels instead of a story-scene title", () => {
+  assert.equal(roomTitleForCreate(undefined), "Shared Story Room");
+  assert.equal(roomTitleForCreate(""), "Shared Story Room");
+  assert.equal(roomTitleForCreate(undefined, "solo"), "Solo Story");
+  assert.equal(roomTitleForCreate("  The Senate Decides  "), "The Senate Decides");
+  assert.doesNotMatch(roomTitleForCreate(undefined), /没有影子的客人/);
 });
 
 test("Solo creation response exposes every supported run identifier", () => {

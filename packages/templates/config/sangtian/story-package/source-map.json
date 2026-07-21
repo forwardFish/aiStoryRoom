@@ -1,0 +1,249 @@
+{
+  "schemaVersion": "story_source_map_v2",
+  "worldId": "sangtian",
+  "packageId": "sangtian_solo_runtime_v1",
+  "packageVersion": "2026-07-21.v3",
+  "adaptationDecisions": [
+    {
+      "adaptationDecisionId": "ad_player_governor_role",
+      "title": "把胡宗宪的制度处境抽象为浙江总督玩家位",
+      "decision": "玩家使用浙江总督这一职务身份，不复刻胡宗宪已经作出的原著选择；保留其权力边界、朝廷信任、粮食责任和不误国不误民的矛盾。",
+      "rationale": "这样既保留原著人物底色，又把真正的决定权交还玩家。",
+      "basedOnSourceIds": ["t0_governor_position", "t0_governor_accountability", "t0_governor_political_boundary"]
+    },
+    {
+      "adaptationDecisionId": "ad_compressed_governor_opening",
+      "title": "把跨场景压力压缩到杭州总督府开场",
+      "decision": "将朝廷改桑急令、浙江粮食风险、百姓失田风险和总督责任压缩为一个可立即行动的总督府现场。",
+      "rationale": "原著压力发生在多个场景；游戏需要在不预写玩家选择的前提下形成第一幕可行动局势。",
+      "basedOnSourceIds": ["t0_imperial_sang_policy", "t0_land_seizure_risk", "t0_governor_office", "t0_governor_accountability"]
+    },
+    {
+      "adaptationDecisionId": "ad_county_archive_investigation",
+      "title": "新增清流县县册与田契档房调查链",
+      "decision": "清流县、县令密信、县册改痕、田契档房和封缄令牌均为游戏调查结构，不宣称是原著情节或既定真相。",
+      "rationale": "把原著中的土地兼并风险转成玩家能够调查、核验、反制的证据因果链。",
+      "basedOnSourceIds": ["t0_land_seizure_risk", "t0_forced_reform_harm", "t0_governor_office"]
+    },
+    {
+      "adaptationDecisionId": "ad_three_day_review_pressure",
+      "title": "新增三日复核期限",
+      "decision": "三日是游戏节奏期限，不是原著日期事实；它只约束玩家必须建立可核验程序，不预定具体解法。",
+      "rationale": "用清晰但非单一路径的倒计时制造行动压力。",
+      "basedOnSourceIds": ["t0_imperial_sang_policy", "t0_governor_accountability"]
+    },
+    {
+      "adaptationDecisionId": "ad_xunfu_opposition_role",
+      "title": "新增独立巡抚对手位",
+      "decision": "为了多人世界兼容，巡抚被设计为独立角色；Solo 中只作为会回应的 NPC，不自动拥有或泄露暗账真相。",
+      "rationale": "形成制度上的速度与复核冲突，同时不把 NPC 写成等待屏障。",
+      "basedOnSourceIds": ["t0_imperial_sang_policy", "t0_land_seizure_risk", "t0_governor_political_boundary"]
+    },
+    {
+      "adaptationDecisionId": "ad_shadow_ledger_latent_truth",
+      "title": "新增可触发而非既定公开的暗账线",
+      "decision": "巡抚幕僚与商会的账外往来是游戏潜在真相，只能在本局证据条件满足时揭示；模型不得在开场把它写成玩家已知事实。",
+      "rationale": "将原著中官员与富商借改桑兼并土地的风险，转成可被玩家逐步证实或证伪的悬念。",
+      "basedOnSourceIds": ["t0_land_seizure_risk", "t0_forced_reform_harm"]
+    },
+    {
+      "adaptationDecisionId": "ad_dynamic_floor_obligation",
+      "title": "新增动态 Floor 功能债务",
+      "decision": "如果玩家两回合仍未触及县册风险，世界可以让外部信使带来可行动压力；不得替玩家选择调查、公开或压下。",
+      "rationale": "防止剧情停滞，同时保持玩家主权和多路径推进。",
+      "basedOnSourceIds": ["t0_land_seizure_risk", "t0_governor_office"]
+    }
+  ],
+  "entries": [
+    {
+      "sourceId": "t0_imperial_sang_policy",
+      "kind": "t0",
+      "origin": "original_fact",
+      "chapterLabel": "第一章",
+      "excerptLabel": "朝廷提出浙江改田为桑并交胡宗宪办理",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 524, "lineEnd": 540}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "原著事实锚点；运行时只发送压缩事实，不发送原文。"
+    },
+    {
+      "sourceId": "t0_land_seizure_risk",
+      "kind": "t0",
+      "origin": "original_fact",
+      "chapterLabel": "第一章",
+      "excerptLabel": "改桑可能造成兼并、失田和地方大乱",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 740, "lineEnd": 770}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "原著冲突锚点。"
+    },
+    {
+      "sourceId": "t0_forced_reform_harm",
+      "kind": "t0",
+      "origin": "original_fact",
+      "chapterLabel": "第二章",
+      "excerptLabel": "强制改稻为桑已经伤害浙江百姓",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 829, "lineEnd": 843}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "原著后果锚点。"
+    },
+    {
+      "sourceId": "t0_governor_position",
+      "kind": "t0",
+      "origin": "original_fact",
+      "chapterLabel": "第一章",
+      "excerptLabel": "胡宗宪兼任浙直总督与浙江巡抚并受皇帝信任",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 768, "lineEnd": 776}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "玩家角色制度身份的原著锚点。"
+    },
+    {
+      "sourceId": "t0_governor_office",
+      "kind": "t0",
+      "origin": "original_fact",
+      "chapterLabel": "第二章",
+      "excerptLabel": "总督衙门外聚集百姓并形成现场压力",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1215, "lineEnd": 1229}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "总督府场景和百姓压力的原著锚点。"
+    },
+    {
+      "sourceId": "t0_governor_accountability",
+      "kind": "t0",
+      "origin": "original_fact",
+      "chapterLabel": "第二章",
+      "excerptLabel": "总督承担朝廷、粮食与民变三重责任",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1281, "lineEnd": 1307}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "浙江总督目标、资源和责任边界锚点。"
+    },
+    {
+      "sourceId": "t0_governor_political_boundary",
+      "kind": "t0",
+      "origin": "original_fact",
+      "chapterLabel": "第二章",
+      "excerptLabel": "总督既不愿误国误民，也受党争和上级催办牵制",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1612, "lineEnd": 1634}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "角色动机与政治限制锚点。"
+    },
+    {
+      "sourceId": "src_role_governor_acl",
+      "kind": "t3",
+      "origin": "adapted",
+      "chapterLabel": "玩家角色改编",
+      "excerptLabel": "浙江总督权限、目标与认知边界",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 768, "lineEnd": 776}, {"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1281, "lineEnd": 1307}],
+      "adaptationDecisionId": "ad_player_governor_role",
+      "adaptationNote": "保留制度处境，不继承原著人物已经作出的决定。"
+    },
+    {
+      "sourceId": "src_role_xunfu_acl",
+      "kind": "t3",
+      "origin": "invented_for_game",
+      "chapterLabel": "NPC 角色改编",
+      "excerptLabel": "独立巡抚的压力与隐藏风险",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 740, "lineEnd": 770}],
+      "adaptationDecisionId": "ad_xunfu_opposition_role",
+      "adaptationNote": "Solo 中是会回应的 NPC，不是等待屏障。"
+    },
+    {
+      "sourceId": "src_scene_office",
+      "kind": "t2",
+      "origin": "adapted",
+      "chapterLabel": "杭州总督府开场",
+      "excerptLabel": "压缩后的现场与文书位置",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1215, "lineEnd": 1229}],
+      "adaptationDecisionId": "ad_compressed_governor_opening",
+      "adaptationNote": "把跨场景冲突压缩为玩家当前可行动现场。"
+    },
+    {
+      "sourceId": "src_institution_yamen",
+      "kind": "t3",
+      "origin": "adapted",
+      "chapterLabel": "总督衙门资源",
+      "excerptLabel": "令牌、差遣、奏疏和粮食调度边界",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1281, "lineEnd": 1307}],
+      "adaptationDecisionId": "ad_player_governor_role",
+      "adaptationNote": "只提供制度上可行的行动资源，不提供必胜权力。"
+    },
+    {
+      "sourceId": "src_pressure_deadline",
+      "kind": "t3",
+      "origin": "invented_for_game",
+      "chapterLabel": "游戏节奏压力",
+      "excerptLabel": "三日复核期限",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 524, "lineEnd": 540}],
+      "adaptationDecisionId": "ad_three_day_review_pressure",
+      "adaptationNote": "三日为游戏新增期限，不冒充原著日期。"
+    },
+    {
+      "sourceId": "src_pressure_grain",
+      "kind": "t2",
+      "origin": "derived_constraint",
+      "chapterLabel": "粮食与民心压力",
+      "excerptLabel": "改桑必须同时面对粮食来源和百姓生计",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 524, "lineEnd": 534}, {"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1281, "lineEnd": 1307}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "直接压缩原著制度压力。"
+    },
+    {
+      "sourceId": "src_secret_letter",
+      "kind": "t3",
+      "origin": "invented_for_game",
+      "chapterLabel": "调查线改编",
+      "excerptLabel": "清流县令密信只证明县册可能存在改痕",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 740, "lineEnd": 770}],
+      "adaptationDecisionId": "ad_county_archive_investigation",
+      "adaptationNote": "游戏新增证据入口，强度被限制为线索而非定罪证据。"
+    },
+    {
+      "sourceId": "src_archive_order",
+      "kind": "t3",
+      "origin": "invented_for_game",
+      "chapterLabel": "调查线改编",
+      "excerptLabel": "封缄令牌只能启动调查",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1281, "lineEnd": 1307}],
+      "adaptationDecisionId": "ad_county_archive_investigation",
+      "adaptationNote": "不能提前生成调查成功或暗账实物。"
+    },
+    {
+      "sourceId": "src_mainline_boundary",
+      "kind": "t2",
+      "origin": "derived_constraint",
+      "chapterLabel": "动态主线问题",
+      "excerptLabel": "谁定义改桑执行边界与责任",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 524, "lineEnd": 540}, {"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 1612, "lineEnd": 1634}],
+      "adaptationDecisionId": null,
+      "adaptationNote": "只固定冲突问题，不固定玩家解法。"
+    },
+    {
+      "sourceId": "src_mainline_ledger",
+      "kind": "t3",
+      "origin": "invented_for_game",
+      "chapterLabel": "动态调查主线",
+      "excerptLabel": "县册与田契档房能否形成可核验因果链",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 740, "lineEnd": 770}],
+      "adaptationDecisionId": "ad_county_archive_investigation",
+      "adaptationNote": "证据链允许被证实、证伪或转向，不是固定答案。"
+    },
+    {
+      "sourceId": "src_truth_shadow_ledger",
+      "kind": "t3",
+      "origin": "invented_for_game",
+      "chapterLabel": "潜在真相",
+      "excerptLabel": "巡抚幕僚与商会账外往来",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 740, "lineEnd": 754}],
+      "adaptationDecisionId": "ad_shadow_ledger_latent_truth",
+      "adaptationNote": "只在本局因果条件满足时揭示，不属于开场已知事实。"
+    },
+    {
+      "sourceId": "src_floor_county_registers",
+      "kind": "t3",
+      "origin": "invented_for_game",
+      "chapterLabel": "动态主线功能债务",
+      "excerptLabel": "县册风险必须成为可行动压力",
+      "sourceRefs": [{"sourcePath": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt", "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238", "lineStart": 740, "lineEnd": 770}],
+      "adaptationDecisionId": "ad_dynamic_floor_obligation",
+      "adaptationNote": "固定戏剧功能，不固定人物台词、结果或单一路径。"
+    }
+  ]
+}

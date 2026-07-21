@@ -5,11 +5,10 @@ import { JSDOM } from "jsdom";
 import { renderRoomSelectionPage, roomRoleArtwork } from "../public/room-role-selection-view.js";
 
 test("大厅、选角和游戏页形成完整 Web 导航链路", async () => {
-  const [home, roles, game, trio, server] = await Promise.all([
+  const [home, roles, game, server] = await Promise.all([
     readFile(new URL("../public/home.html", import.meta.url), "utf8"),
     readFile(new URL("../public/role-select.html", import.meta.url), "utf8"),
     readFile(new URL("../public/index.html", import.meta.url), "utf8"),
-    readFile(new URL("../public/trio.html", import.meta.url), "utf8"),
     readFile(new URL("../src/server.mjs", import.meta.url), "utf8")
   ]);
 
@@ -22,12 +21,9 @@ test("大厅、选角和游戏页形成完整 Web 导航链路", async () => {
   assert.match(game, /continuous-game\.css/);
   assert.doesNotMatch(game, /<script[^>]+src="app\.js/);
   assert.match(game, /web-game-root/);
-  assert.match(trio, /trio\.js/);
-  assert.match(trio, /trio-root/);
   assert.match(server, /home\.html/);
   assert.match(server, /role-select\.html/);
   assert.match(server, /index\.html/);
-  assert.match(server, /trio\.html/);
   assert.match(server, /legacyRedirects/);
   assert.match(server, /credits-success\.html/);
 });
@@ -106,7 +102,7 @@ test("legacy invite registration cannot authenticate before email verification",
   assert.doesNotMatch(source, /opening|story|room|Caesar/i);
 });
 
-test("room lobby enables Ready per player and Start Game only for a fully ready host", async () => {
+test("room lobby enables Start for a host as soon as two players are Ready", async () => {
   const baseRoom = {
     id: "room-1",
     title: "嘉靖财政危局测试房间",
@@ -114,7 +110,9 @@ test("room lobby enables Ready per player and Start Game only for a fully ready 
     status: "waiting_players",
     code: "TEST123",
     maxPlayers: 3,
-    minPlayers: 3,
+    minPlayers: 2,
+    readyHumanCount: 1,
+    startEnabled: false,
     hostRoleLocked: true,
     players: [
       { userId: "host", nickname: "Host", roleId: "role-1", roleName: "浙江总督", ready: true },
@@ -143,10 +141,13 @@ test("room lobby enables Ready per player and Start Game only for a fully ready 
   waitingHost.ownerDocument.defaultView.close();
 
   const readyHostRoom = structuredClone(waitingHostRoom);
-  readyHostRoom.players.forEach((player) => { player.ready = true; });
+  readyHostRoom.players[1].ready = true;
+  readyHostRoom.readyHumanCount = 2;
+  readyHostRoom.startEnabled = true;
   const readyHost = await renderRoomLobby(readyHostRoom);
   assert.equal(readyHost.querySelector('[data-action="start-game"]').disabled, false);
-  assert.match(readyHost.querySelector(".room-footer p").textContent, /All players are ready/);
+  assert.equal(readyHost.querySelector('[data-action="start-game"] span').textContent, "Start with 2 Players");
+  assert.match(readyHost.querySelector(".room-footer p").textContent, /2 ready players can start/);
   readyHost.ownerDocument.defaultView.close();
 });
 
@@ -159,7 +160,7 @@ test("room lobby uses one component with world title, banner and portraits suppl
       id: `room-${world.id}`,
       title: `${world.title}：没有影子的客人`,
       worldId: world.id,
-      world: { title: world.title, bannerArtwork: world.banner },
+      world: { title: world.title, presentation: { sceneBackground: world.banner } },
       status: "waiting_players",
       code: `${world.id.toUpperCase()}1`,
       maxPlayers: world.id === "caesar" ? 6 : 3,
@@ -239,9 +240,11 @@ test("Open Rooms and My Rooms switch the shared table data and action", async ()
 });
 
 test("the live invitation dialog uses the exact product brand", async () => {
+  const worldBackground = "/assets/game/caesar/room-banner.png";
   const room = {
     id: "room-brand", title: "Brand Room", worldId: "caesar", status: "waiting_players", code: "BRAND1",
-    maxPlayers: 3, minPlayers: 3, isHost: true, hostRoleLocked: true,
+    world: { title: "Caesar: The Last Spring of the Republic", presentation: { sceneBackground: worldBackground } },
+    maxPlayers: 3, minPlayers: 2, isHost: true, hostRoleLocked: true,
     players: [{ userId: "host", nickname: "Host", roleId: "role-1", roleName: "Brutus", ready: true }],
     roles: [{ id: "role-1", roleName: "Brutus", status: "claimed", claimedByCurrentUser: true }]
   };
@@ -259,6 +262,7 @@ test("the live invitation dialog uses the exact product brand", async () => {
   const copy = dialog?.querySelector(".share-channels p")?.textContent || "";
   assert.equal(copy, "Invite friends to this room on Our Many Worlds.");
   assert.equal(dialog?.querySelector(".share-room-head h2")?.textContent, "Shared Story Room");
+  assert.equal(dialog?.querySelector(".share-room-head img")?.getAttribute("src"), worldBackground);
   assert.equal(dialog?.querySelectorAll(".share-network-row button").length, 6);
   assert.ok(dialog?.querySelector(".share-status"));
   assert.ok(dialog?.querySelector(".share-player-count"));
@@ -267,14 +271,35 @@ test("the live invitation dialog uses the exact product brand", async () => {
   assert.ok(dialog?.querySelector(".poster-preview"));
   assert.ok(dialog?.querySelector(".share-link-label"));
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../public/platform.css", import.meta.url), "utf8");
   const posterSource = source.slice(source.indexOf("async function buildInvitePoster"), source.indexOf("async function copyInviteLink"));
   assert.doesNotMatch(posterSource, /Room code:/);
   assert.doesNotMatch(posterSource, /drawImage\(qr\.image/);
   assert.match(posterSource, /canvas\.height = 950/);
   assert.match(posterSource, /Play living story worlds/);
-  assert.match(posterSource, /invite-promo-background\.png/);
+  assert.match(posterSource, /invite-background\.png/);
+  assert.match(posterSource, /backgroundUrl/);
+  assert.doesNotMatch(posterSource, /invite-promo-background\.png/);
   assert.match(posterSource, /ourmanyworlds\.com/);
+  assert.match(styles, /\.invite-share-dialog\s*\{[\s\S]*width:min\(760px,calc\(100% - 32px\)\)/);
+  assert.match(styles, /max-height:min\(620px,calc\(100vh - 64px\)\)/);
+  assert.match(styles, /Generating poster…/);
   window.close();
+});
+
+test("a waiting room visibly shows its ready count and server-timed round", async () => {
+  const room = {
+    id: "room-waiting", title: "Waiting Room", worldId: "caesar", status: "waiting_players", code: "WAIT01",
+    world: { title: "Caesar: The Last Spring of the Republic", presentation: { sceneBackground: "/assets/game/caesar/room-banner.png" } },
+    maxPlayers: 3, minPlayers: 2, isHost: true, hostRoleLocked: true, readyHumanCount: 1, waitingRound: 2,
+    serverNow: new Date().toISOString(), lobbyDeadlineAt: new Date(Date.now() + 4 * 60 * 1000 + 30 * 1000).toISOString(),
+    players: [{ userId: "host", nickname: "Host", roleId: "role-1", roleName: "Brutus", ready: true }],
+    roles: [{ id: "role-1", roleName: "Brutus", status: "claimed", claimedByCurrentUser: true }]
+  };
+  const rendered = await renderRoomLobby(room);
+  assert.match(rendered.querySelector(".mw-room-info")?.textContent || "", /1 \/ 3 players · 1 ready/);
+  assert.match(rendered.querySelector("[data-lobby-countdown]")?.textContent || "", /Waiting round 2 · 04:3[0-9]/);
+  rendered.ownerDocument.defaultView.close();
 });
 
 async function renderRoomsPage(signedIn, responseData = { rooms: [], myRooms: [] }) {

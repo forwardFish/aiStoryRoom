@@ -148,7 +148,10 @@ model StoryRun {
   unlockedAt         DateTime?
   engineVersion      String         @default("legacy_v1")
   strategyVersion    String         @default("legacy_v1")
+  billingPolicyVersion String       @default("world_unlock_v1")
+  billingPriceJson     Json         @default("{}")
   worldSequence      Int            @default(0)
+  reservedWorldSequence Int         @default(0)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -200,6 +203,7 @@ model StoryRun {
   commitmentsV2         CommitmentV2[]
   storyContextSnapshotsV2 StoryContextSnapshotV2[]
   promptExecutionRecords  PromptExecutionRecord[]
+  soloGenerationAttempts  SoloGenerationAttempt[]
 
   @@index([templateId])
   @@index([ownerUserId])
@@ -1093,7 +1097,7 @@ model ActorTurn {
   storyContextSnapshotsV2      StoryContextSnapshotV2[]
   promptExecutionRecords       PromptExecutionRecord[]
 
-  @@unique([threadId, turnIndex])
+  @@unique([threadId, turnIndex, revision])
   @@index([runId, roleId, status])
   @@index([runId, baseWorldSequence])
 }
@@ -1374,6 +1378,48 @@ model PromptExecutionRecord {
   @@index([contextSnapshotId, pipelineStep])
 }
 
+/// One auditable, single-provider-call attempt for the independent Solo story
+/// engine. A failed attempt is never reused for another provider call; an
+/// explicit player retry creates a new row linked through supersedesAttemptId.
+model SoloGenerationAttempt {
+  id                      String    @id @default(cuid())
+  runId                   String
+  actorTurnId             String?
+  submissionId            String?
+  supersedesAttemptId     String?
+  triggerType             String
+  status                  String    @default("ACTION_RESERVED")
+  contextSnapshotId       String?
+  contextSnapshotHash     String?
+  promptContractVersion   String
+  storyPackageVersion     String
+  storyPackageHash        String
+  idempotencyKey          String    @unique
+  leaseOwner              String?
+  leaseExpiresAt          DateTime?
+  providerCallCount       Int       @default(0)
+  providerRequestId       String?
+  confirmedResolutionJson Json?
+  contextReportJson       Json?
+  rawOutput               String?   @db.Text
+  parsedOutput             Json?
+  issueCodesJson          Json
+  failureReason           String?   @db.Text
+  timingsJson             Json?
+  startedAt               DateTime?
+  finishedAt              DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, status, createdAt])
+  @@index([runId, actorTurnId, createdAt])
+  @@index([runId, submissionId])
+  @@index([supersedesAttemptId])
+  @@index([leaseExpiresAt])
+}
+
 model Clue {
   id               String   @id @default(cuid())
   runId            String
@@ -1630,6 +1676,44 @@ enum CreditLedgerReason {
   PURCHASE_REFUND
   DISPUTE
   ADMIN_ADJUSTMENT
+  RUN_CREATE
+  PLAYER_ACTION
+  RUN_SPONSORSHIP
+}
+
+enum CreditChargeType {
+  RUN_CREATE
+  PLAYER_ACTION
+}
+
+enum CreditChargeStatus {
+  SHADOW
+  RESERVED
+  COMMITTED
+  RELEASED
+}
+
+enum CreditChargeAllocationSource {
+  RUN_ALLOWANCE
+  PERSONAL_WALLET
+}
+
+enum RunCreditAllowanceStatus {
+  ACTIVE
+  EXHAUSTED
+  EXPIRED
+}
+
+enum SponsorshipRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  EXPIRED
+}
+
+enum SponsorshipRequestOrigin {
+  FIRST_INSUFFICIENT
+  MANUAL
 }
 
 enum CreemPurchaseStatus {
@@ -1742,6 +1826,88 @@ model CreditSpendAllocation {
 
   @@unique([ledgerId, grantId])
   @@index([grantId])
+}
+
+model CreditCharge {
+  id                     String             @id @default(cuid())
+  runId                  String?
+  beneficiaryUserId      String
+  playerActionId         String?            @unique
+  chargeType             CreditChargeType
+  actionClass            String
+  status                 CreditChargeStatus @default(RESERVED)
+  amount                 Int
+  allowanceAmount        Int                @default(0)
+  walletAmount           Int                @default(0)
+  personalDebitLedgerId  String?            @unique
+  personalRefundLedgerId String?            @unique
+  idempotencyKey         String             @unique
+  requestHash            String
+  failureCode            String?
+  expiresAt              DateTime?
+  committedAt            DateTime?
+  releasedAt             DateTime?
+  metadataJson           Json?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  allocations CreditChargeAllocation[]
+
+  @@index([runId, status, createdAt])
+  @@index([beneficiaryUserId, createdAt])
+  @@index([status, expiresAt])
+}
+
+model CreditChargeAllocation {
+  id            String                       @id @default(cuid())
+  allocationKey String                       @unique
+  chargeId      String
+  source        CreditChargeAllocationSource
+  allowanceId   String?
+  ledgerId      String?
+  amount        Int
+  status        CreditChargeStatus           @default(RESERVED)
+  createdAt     DateTime                     @default(now())
+  updatedAt     DateTime                     @updatedAt
+
+  charge CreditCharge @relation(fields: [chargeId], references: [id], onDelete: Cascade)
+
+  @@index([allowanceId, status])
+}
+
+model RunCreditAllowance {
+  id                String                   @id @default(cuid())
+  runId             String
+  sponsorUserId     String
+  beneficiaryUserId String
+  fundedAmount      Int
+  remainingAmount   Int
+  status            RunCreditAllowanceStatus @default(ACTIVE)
+  fundingLedgerId   String                   @unique
+  idempotencyKey    String                   @unique
+  expiresAt         DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@index([runId, beneficiaryUserId, status, createdAt])
+  @@index([sponsorUserId, createdAt])
+}
+
+model SponsorshipRequest {
+  id                 String                   @id @default(cuid())
+  runId              String
+  hostUserId         String
+  beneficiaryUserId  String
+  status             SponsorshipRequestStatus @default(PENDING)
+  origin             SponsorshipRequestOrigin
+  automaticPromptKey String?                  @unique
+  idempotencyKey     String                   @unique
+  allowanceId        String?                  @unique
+  createdAt          DateTime                 @default(now())
+  resolvedAt         DateTime?
+
+  @@index([runId, hostUserId, status, createdAt])
+  @@index([runId, beneficiaryUserId, createdAt])
 }
 
 model CreemPurchase {

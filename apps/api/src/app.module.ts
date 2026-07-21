@@ -17,10 +17,12 @@ import { ResultSharingModule } from "./result-sharing/result-sharing.module";
 import { ContinuousStrategyModule } from "./continuous-strategy/continuous-strategy.module";
 import { PresenceHeartbeatRateLimitGuard } from "./api-transport";
 import { ContinuousStoryV2Module } from "./continuous-story-v2/continuous-story-v2.module";
+import { SoloStoryEngineModule } from "./solo-story-engine/solo-story-engine.module";
+import { MetricsController } from "./observability/metrics.controller";
 
 @Module({
-  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, ResultSharingModule],
-  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController],
+  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
+  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController],
   providers: [
     StoryService,
     StoryTaskOutboxService,

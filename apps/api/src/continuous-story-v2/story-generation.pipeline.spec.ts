@@ -233,6 +233,23 @@ assert.equal(compactNaturalClient.requests.filter((request) => request.step === 
 assert.equal(compactNaturalClient.requests.length, 1);
 assert.equal(compactNaturalOutput.narrative.resultNarrative, compactNaturalResult);
 
+// Observable action and NPC response are a causal story beat even without a
+// stock connector such as "因此" or "于是". The name sanitizer must also keep
+// the directional phrase "走向那名差役" intact instead of treating 向 as a
+// newly invented surname and corrupting the sentence.
+const observableCausalResult = "总督把原始田册留在封套内，命两名书吏隔案核对经手簿。年轻书吏指出墨色不同，老书吏认出登记时辰被人写早。\n\n总督命书吏分别落纸，把证词与封存田册留在长案上。书吏捧着记录走向那名等在门外的差役，差役收下回文，仍站在帘外等候答复。";
+const observableCausalClient = new ScriptedModelClient([
+  combinedStoryTurn({ ...narrative, resultNarrative: observableCausalResult }, decisionDrafts)
+]);
+const observableCausalOutput = await new StoryGenerationPipelineV2(observableCausalClient).generate({
+  context,
+  actionResolutionId: "resolution-observable-causal",
+  maxQualityAttempts: 1
+});
+assert.equal(observableCausalClient.requests.filter((request) => request.step === "WRITER").length, 1);
+assert.ok(observableCausalOutput.narrative.resultNarrative.includes("走向那名等在门外的差役"));
+assert.ok(!observableCausalOutput.narrative.resultNarrative.includes("走那名等在门外的差役"));
+
 // An unnamed but contextually identifiable group remains grounded when the
 // story and target use natural Chinese word order differently.
 const missingClerkNarrative = {
@@ -643,6 +660,41 @@ assert.ok(!fullOpening.includes("仁和县"));
 assert.ok(!fullOpening.includes("《嘉兴府急催单》"));
 assert.ok(!fullOpening.includes("总督必须决定，是先批复还是先派查"));
 
+const abstractPressureOpening = {
+  ...openingNarrative,
+  nextSituationNarrative: openingNarrative.nextSituationNarrative.replace(
+    "巡抚来使仍在外厅等候",
+    "总督府的复核权争夺尚未有结果，巡抚来使仍在外厅等候"
+  )
+};
+const abstractPressureOutput = await new StoryGenerationPipelineV2(
+  new ScriptedModelClient([abstractPressureOpening, openingDecisionDrafts])
+).generate({ context: openingCompiled.snapshot, actionResolutionId: null });
+assert.ok(!abstractPressureOutput.narrative.nextSituationNarrative.includes("复核权"));
+assert.ok(abstractPressureOutput.narrative.nextSituationNarrative.includes("两份县册的数字仍未核清"));
+
+const countyOpeningContext = {
+  ...openingCompiled.snapshot,
+  audience: { ...openingCompiled.snapshot.audience, roleName: "清流县令", publicIdentity: "清流县令" },
+  items: openingCompiled.snapshot.items.map((item) => {
+    if (item.sourceType === "ROLE_IDENTITY") return { ...item, content: "你是清流县令。" };
+    if (item.sourceType === "CURRENT_SCENE") return { ...item, content: "杭州总督府签押房，案上有两份县册，两册数字冲突；巡抚的催问即将送到。" };
+    return item;
+  })
+};
+const countyOpeningNarrative = {
+  ...openingNarrative,
+  resultNarrative: openingNarrative.resultNarrative.replace(
+    "杭州总督府签押房里，巡抚的催问公文刚被送到案前。",
+    "杭州总督府签押房里，案上左首是清流县呈送的原始田册，巡抚的催问公文刚被送到案前。"
+  )
+};
+await new StoryGenerationPipelineV2(new ScriptedModelClient([countyOpeningNarrative])).generate({
+  context: countyOpeningContext,
+  actionResolutionId: null,
+  generateDecisions: false
+});
+
 // A harmless unsupported waiting duration is deterministically de-quantified
 // instead of paying for another full Writer call. Material counts and stakes
 // still fail the hard gate and require a fresh story draft.
@@ -658,6 +710,57 @@ const exactWaitingOutput = await new StoryGenerationPipelineV2(exactWaitingClien
 assert.equal(exactWaitingClient.requests.filter((request) => request.step === "WRITER").length, 1);
 assert.ok(!exactWaitingOutput.narrative.nextSituationNarrative.includes("一个时辰"));
 assert.ok(exactWaitingOutput.narrative.nextSituationNarrative.includes("等了一阵"));
+
+// A normal opening remains a single remote call even when the Writer adds
+// unsupported comparison figures, uses an unregistered ROLE id for a visible
+// NPC, and offers one invalid special-confidant option. Safe local repair drops
+// the invented figures, normalizes the NPC target, and publishes two verified
+// human-readable strategies without paying for a second model call.
+const singleCallOpening = {
+  ...openingNarrative,
+  resultNarrative: openingNarrative.resultNarrative.replace(
+    "数字却互相冲突",
+    "正本写四百七十亩，副本写四百三十亩"
+  ),
+  decisions: [
+    {
+      ...openingDecisionDrafts.decisions[0],
+      id: "approve_then_investigate",
+      label: "先批照行稳住巡抚，回头再查暗账",
+      objective: "先稳住巡抚并保留查证空间",
+      method: "先给巡抚回文，再沿县令密信留下的线索查证",
+      target: { type: "EVIDENCE", id: "opening-registers", label: "两份田册" }
+    },
+    {
+      ...openingDecisionDrafts.decisions[1],
+      id: "ask_messenger_to_report_conflict",
+      label: "以数字不符为由暂缓回文，要求巡抚协查",
+      target: { type: "ROLE", id: "巡抚来使", label: "巡抚来使" },
+      method: "请外厅来使向巡抚转告县册数字不符，并请求共同核查"
+    },
+    {
+      ...openingDecisionDrafts.decisions[0],
+      id: "invented_confidant",
+      label: "马上派心腹书办去清流县暗查",
+      description: "让新找来的心腹书办赶去清流县暗查，但正文和上下文没有这名特殊亲信。",
+      target: { type: "LOCATION", id: "qingliu", label: "清流县" },
+      method: "派心腹书办去清流县调查"
+    }
+  ]
+};
+const singleCallOpeningClient = new ScriptedModelClient([singleCallOpening]);
+const singleCallOpeningOutput = await new StoryGenerationPipelineV2(singleCallOpeningClient).generate({
+  context: openingCompiled.snapshot,
+  actionResolutionId: null
+});
+assert.equal(singleCallOpeningClient.requests.length, 1);
+assert.deepEqual(singleCallOpeningOutput.decisions.map((decision) => decision.id), [
+  "approve_then_investigate",
+  "ask_messenger_to_report_conflict"
+]);
+assert.ok(!singleCallOpeningOutput.narrative.resultNarrative.includes("四百七十亩"));
+assert.ok(singleCallOpeningOutput.narrative.resultNarrative.includes("正本与副本所载数字并不相同"));
+assert.equal(singleCallOpeningOutput.decisions[1].intentDraft.target.type, "PERSON");
 
 // OPENING cannot invent completed player actions, put an unplaced NPC in the
 // room, or turn a person into an "object". All three are publication failures,
@@ -947,10 +1050,32 @@ try {
 }
 assert.ok(rejectedError);
 assert.equal(rejectedError.code, "NARRATIVE_REJECTED");
-assert.ok(rejectedError.recoverable);
+assert.equal(rejectedError.recoverable, false);
 assert.ok(rejectedError.issueCodes.includes("UNSUPPORTED_SECRET"));
 assert.deepEqual(rejectedClient.requests.map((request) => request.step), ["WRITER", "NARRATIVE_VERIFIER"]);
 assert.equal(rejectedError.promptExecutions.length, 4);
+
+// Exact length is owned by the deterministic hard gate. A remote semantic
+// reviewer may not reject a draft as too short when the measured text already
+// satisfies that gate; semantic evidence such as leaks still remains blocking.
+const falseLengthReview = {
+  ...narrativePass,
+  status: "FAIL",
+  issueCodes: ["NEXT_SITUATION_TOO_SHORT"],
+  rewriteInstructions: ["NEXT_SITUATION_TOO_SHORT"]
+};
+const falseLengthClient = new ScriptedModelClient([
+  combinedStoryTurn(narrative, decisionDrafts),
+  falseLengthReview,
+  decisionPass
+]);
+const falseLengthOutput = await new StoryGenerationPipelineV2(falseLengthClient, { remoteSemanticReview: true }).generate({
+  context,
+  actionResolutionId: "resolution-false-remote-length",
+  maxQualityAttempts: 1
+});
+assert.equal(falseLengthOutput.narrative.nextSituationNarrative, narrative.nextSituationNarrative);
+assert.deepEqual(falseLengthClient.requests.map((request) => request.step), ["WRITER", "NARRATIVE_VERIFIER", "DECISION_VERIFIER"]);
 
 // A transient stage failure retries only that stage against the same context; earlier stages and rules are not repeated.
 const retryClient = new ScriptedModelClient([new Error("transient writer timeout"), combinedStoryTurn(narrative, decisionDrafts)]);

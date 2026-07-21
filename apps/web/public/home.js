@@ -15,7 +15,7 @@ const faqItems = [
   ["Can I play by myself?", "Yes. Start Solo and AI-controlled characters fill the remaining roles, so you can explore the world at your own pace."],
   ["Can I invite real people into my world?", "Yes. Invite your group to take different roles. Everyone sees what their role would realistically know and contributes to one shared outcome."],
   ["What does the AI do during a run?", "The AI responds to decisions, simulates the other roles when needed, and helps the world evolve without forcing a fixed storyline."],
-  ["What are World Credits?", "World Credits are stored in your account and used for eligible paid features. You will always see the exact Credit cost before confirming any use."],
+  ["What are World Credits?", "Under the active-action policy, World Credits pay for successful player-directed story actions: 20 Credits to create a run, 1 for a suggested action, and 2 for a custom or complex action. Reading, AI-controlled actions, system progress, retries, and failed generations cost 0 Credits. A world still using the legacy unlock policy shows that policy before you create its room."],
   ["How can I get World Credits?", "You can buy 300 World Credits for $7.99 or 650 World Credits for $14.99. New accounts receive 50 World Credits, and eligible referrals can earn 25 World Credits."],
   ["Can I create a room for my group?", "Yes. Open a world, create a shared room, and invite people to take different roles. AI can support any roles your group does not fill."]
 ];
@@ -55,7 +55,7 @@ export function createHomeApp({ root, window: browserWindow = globalThis.window,
     const configuredApiBase = new URLSearchParams(String(browserWindow.location?.search || "")).get("apiBase");
     const apiBase = configuredApiBase || (local ? "/api" : "");
     const api = apiBase ? `&apiBase=${encodeURIComponent(apiBase)}` : "";
-    browserWindow.location.href = `/role-select?story=caesar${api}`;
+    browserWindow.location.href = `/worlds/caesar?play=solo${api}`;
   };
   const gotoWorld = () => { browserWindow.location.href = "/worlds"; };
   const pauseCarousel = () => {

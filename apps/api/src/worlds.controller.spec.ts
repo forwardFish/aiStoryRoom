@@ -73,6 +73,37 @@ test("world runtime metadata follows the same continuous-strategy rollout flag a
   }
 });
 
+test("world pricing metadata never advertises the active-action fee for a legacy engine", () => {
+  const prior = {
+    rollout: process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED,
+    policy: process.env.CREDIT_DEFAULT_POLICY,
+    price: process.env.CREDIT_RUN_CREATE_COST
+  };
+  try {
+    process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED = "true";
+    process.env.CREDIT_DEFAULT_POLICY = "active_action_v1";
+    process.env.CREDIT_RUN_CREATE_COST = "20";
+    const controller = new WorldsController();
+    const sangtian = controller.detail("sangtian");
+    const caesar = controller.detail("caesar");
+    assert.equal(sangtian.engineVersion, "continuous_story_v2");
+    assert.equal(sangtian.billingPolicyVersion, "active_action_v1");
+    assert.equal(sangtian.runCreateCredits, 20);
+    assert.equal(caesar.engineVersion, "legacy_v1");
+    assert.equal(caesar.billingPolicyVersion, "world_unlock_v1");
+    assert.equal(caesar.runCreateCredits, 0);
+  } finally {
+    restoreEnv("MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED", prior.rollout);
+    restoreEnv("CREDIT_DEFAULT_POLICY", prior.policy);
+    restoreEnv("CREDIT_RUN_CREATE_COST", prior.price);
+  }
+});
+
 test("unknown world detail is a 404 instead of a hardcoded fallback", () => {
   assert.throws(() => new WorldsController().detail("not-a-world"), (error) => error instanceof NotFoundException);
 });
+
+function restoreEnv(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}

@@ -140,7 +140,7 @@ export type GenerateStoryPipelineResultV2 = {
 };
 
 export class StoryGenerationErrorV2 extends Error {
-  readonly recoverable = true;
+  readonly recoverable: boolean;
 
   constructor(
     readonly code:
@@ -155,6 +155,12 @@ export class StoryGenerationErrorV2 extends Error {
   ) {
     super(message);
     this.name = "StoryGenerationErrorV2";
+    // A provider/network failure or malformed JSON may succeed when the same
+    // authoritative context is retried. A story that reached us successfully
+    // but failed the publication contract must not trigger another paid model
+    // call automatically; it needs an explicit retry after the cause is
+    // visible. This keeps the normal Solo path to one Writer call.
+    this.recoverable = ["MODEL_CALL_FAILED", "INVALID_MODEL_OUTPUT", "CONTEXT_SUPERSEDED"].includes(code);
   }
 }
 
@@ -210,7 +216,7 @@ const WRITER_SYSTEM_PROMPT = `<role>
 正文中不得出现规则键、状态报告、审计语言、A/B/C 菜单或“你要怎么做”的列表。绝不能写“他需要决定：是……还是……”“可以先……或……”或列出任何候选方向，即使把菜单伪装成正文句子也不允许；只写外部催促和可观察事实，然后停在总督尚未回应的动作上。
 先把 resultNarrative、nextSituationNarrative 和 endingState 全部写完，正文写作时不得预设候选菜单。只有正文完整结束后，才允许依据你刚写出的 nextSituationNarrative 末态生成下一步 decisions；决策不得反向改写、铺垫或污染正文。若请求明确是最终回合，decisions 必须为空数组。
 
-每个 decision 的 label 必须让普通玩家一眼看懂“对谁或什么做哪件事”，像人会当场说出的行动，不得写成公文标题、制度摘要或 AI 分析。每项只保留一个主要动作；对象、方法、权限、成本和可能反制必须来自 Actor Boundary、正文末态与当前角色权限。不得重复正文中已经发生的行动，不得预告结果，不得把线索当成已经到手的物证，不得发明人物、地点或执行人。
+每个 decision 的 label 必须让普通玩家一眼看懂“对谁或什么采取什么策略”，像人会当场说出的行动，不得写成公文标题、制度摘要或 AI 分析。默认只生成 2 个真正不同、都能立即执行的决定；只有确实存在第三条同样真实且不重复的方向时才生成 3 个，绝不能为了凑数发明人物、地点、证据或执行渠道。每项只保留一个即时目标；可以包含服务于同一目标的回文、派查、封存等配套步骤，但不得把目标不同或彼此冲突的决定硬捆成一项。对象、方法、权限、成本和可能反制必须来自 Actor Boundary、正文末态与当前角色权限。不得重复正文中已经发生的行动，不得预告结果，不得把线索当成已经到手的物证，不得发明人物、地点或特殊亲信。角色姓名未在上下文明确给出时，正文落款只写官职，不得自行补写姓氏或姓名。
 
 OPENING 时 resultNarrative 和 nextSituationNarrative 各写 110 至 220 个中文字符，每部分 1 至 2 段；其他回合的 resultNarrative 写 100 至 240 个中文字符，nextSituationNarrative 写 120 至 260 个中文字符，每部分 2 至 3 段。不要为了凑长度添加道具、动作、人物或菜单；总长度必须克制，只推进一个故事节拍。
 不能只罗列动作；必须写清楚“因为前一件事，所以人物采取下一动作，但新的阻力又怎样出现”的因果转折。
@@ -257,15 +263,15 @@ const DECISION_DESIGNER_SYSTEM_PROMPT = `<role>
 必须读到最终通过审核的下一局势正文最后一个字，确定角色此刻的位置、在场人物、权限、
 已知事实、真正已经到手的证据、持有资源、期限和自由行动能力。只从这个最终末态向前设计恰好 3 个行动。线索被提及不等于证据已经到手；人物在某处被提及也不等于已经来到玩家面前。若上下文明确写“手里没有暗账、抄件或田契实物”，绝不能生成“翻暗账”“查看暗账抄件”“封存田契原件”等把线索当实物使用的选项。正文描述这个边界时也必须说清楚缺少的是暗账、抄件或田契实物，不能含混写成“手里没有任何实物”，因为角色明明持有县册、公文和县令密信。
 每项必须有具体动词、对象、方法和即时目的；在保护的利益、代价、风险、承诺程度或信息价值上真正不同。
-label 会被单独显示给普通玩家，因此只读 label 也必须立刻明白“我要对谁或什么做哪件具体事情”。label 必须像玩家当场说出的行动，不是公文标题、制度摘要、分析报告或 AI 的策略说明。优先写成“先查……”“马上派人……”“当面问……”“把……留下”“给……递一封信”这样的口语行动句；一项只保留一个主要动作，原因、权限、步骤和风险放进 description；
-一项决定不能把两件本可分别选择的行动捆在一起。label 中不得出现“……，并派人……”“……，同时再查……”“先读一遍，然后烧掉”这类双重命令；“再、然后、接着、随后”连接的第二个动作也必须拆开。如有配套步骤，只能写入 description，并且必须服务于同一个主要动作。
+label 会被单独显示给普通玩家，因此只读 label 也必须立刻明白“我要对谁或什么采取什么具体策略”。label 必须像玩家当场说出的行动，不是公文标题、制度摘要、分析报告或 AI 的策略说明。优先写成“先查……”“马上派人……”“当面问……”“把……留下”“给……递一封信”这样的口语行动句；一项只保留一个即时目标，原因、权限、配套步骤和风险放进 description。
+一项决定可以包含服务于同一个即时目标的协调步骤，例如“一面暂缓回文，一面核对县册”；但不能把目标不同或彼此冲突的决定捆在一起，例如“先读密信，然后烧掉”。判断标准是普通人能否用一句话说明这整套做法只想解决哪一个眼前问题，而不是机械统计动词数量。
 不得用“推进方案、优化机制、控制口径、协调资源、保留政治抓手”一类后台总结代替人会说的行动。
 不得把“设立联合复核程序”“纳入统一控制”“强化证据链”“以某章程为由预先拒绝”这类抽象官话直接当 label。比如：
 - 不写“立即派出总督衙门书办与刑名幕友驰赴清流县，封存田契档房并勘验空白契纸”，改写为“马上派人去清流县，把田契档房封起来”；
 - 不写“以联合复核章程需协商一致为由，预先拒绝巡抚从外县调派新书吏”，改写为“先告诉巡抚：未经双方点名，不准再换书吏”。
 description 再用正常人能读懂的语言补充怎么做、凭什么能做和要承担什么，不能承担替 label 解释含义的责任。
 最终正文中已经发生的每一道命令、派遣、传话、调查或承诺都属于历史，绝不能再次当成候选项。不得重复上一行动或上一轮已拒绝方向；不得预告成功失败、暗示成功率、替其他角色回答。若玩家可以选择对外撒谎，label 必须明确写“声称、假称或隐瞒”，不能把尚未发生的执行进度当成真事写给玩家；不得把尚未证实的“阻挠、贪墨、勾结、包庇、造假”直接写成上奏指控，除非 label 明确说是在提出怀疑或请求查明；
-不得引入正文和上下文中不存在的人物、地点或事实。每个对象所在地点、证据是否已持有、谁能接触它，都必须与最终正文逐字一致；不得为了让选项方便而瞬移人物、提前取得文书或把“正在调查”写成“已经拿到”。正文没有给出亲信家丁、心腹书办、幕僚或亲兵时，不得临时发明这些执行人；只写“派人”或使用上下文已经存在的渠道。内部行动能力只是边界，不是固定菜单。
+不得引入正文和上下文中不存在的人物、地点或事实。每个对象所在地点、证据是否已持有、谁能接触它，都必须与最终正文逐字一致；不得为了让选项方便而瞬移人物、提前取得文书或把“正在调查”写成“已经拿到”。角色权限允许时，可以用不具名的差役、书吏、幕僚或“派人”作为普通执行渠道；不得凭空声称某人是“心腹、亲信、可靠家丁”，也不得临时发明亲兵、钦差、锦衣卫等特殊执行力量。内部行动能力只是边界，不是固定菜单。
 输出前在内部逐项复核：label 与 method 指向同一个对象；target 确实出现在正文末态；description 没有夹带第二个越权动作；行动所需路程和等待时间能否赶上眼前期限。若暗查需要连夜赶路，就不能声称能在当天日落回文前拿到结果。不要输出这段复核过程。
 target.type 为 ROLE 时，target.id 必须逐字复制 Actor Boundary 中角色名称后方方括号里的真实 id，target.label 必须是同一个角色的名称；
 不得自行缩写 id，也绝不能拿另一个已有角色的 id 冒充正文中的行动对象。正文中出现、但 Actor Boundary 没有登记的人物（例如巡按御史、乡绅、书办）必须用 PERSON，id 与 label 都沿用正文里的明确称呼。其他类型的 target.label 也必须已经出现在最终正文或 Actor Boundary 中。
@@ -380,7 +386,7 @@ export class StoryGenerationPipelineV2 {
         issueCodes: unique([...hardNarrativeIssues, ...narrativeReview.issueCodes])
       });
       if (narrativeReview.status === "PASS" && this.remoteSemanticReviewEnabled()) {
-        narrativeReview = await this.executeJsonStep({
+        const remoteNarrativeReview = await this.executeJsonStep({
           input,
           records,
           attempt: stageAttempt,
@@ -396,6 +402,7 @@ export class StoryGenerationPipelineV2 {
             slowLane: true
           }
         }, parseNarrativeReview);
+        narrativeReview = reconcileRemoteNarrativeReview(remoteNarrativeReview, hardNarrativeIssues);
       }
       narrativeIssueCodes = unique([...hardNarrativeIssues, ...narrativeReview.issueCodes]);
       if (hardNarrativeIssues.length === 0 && narrativeReview.status === "PASS") break;
@@ -450,7 +457,9 @@ export class StoryGenerationPipelineV2 {
             temperature: 0.3,
             metadata: { storyTextHash: finalStoryTextHash, finalStoryAtPromptTail: true, qualityAttempt: qualityAttempt + 1, recoveryCall: true }
           }, parseDecisionDrafts);
-      decisions = decisionDrafts.map((draft) => toDecisionCandidate(draft, input.context));
+      decisions = decisionDrafts
+        .map((draft) => toDecisionCandidate(draft, input.context))
+        .map((candidate) => normalizeGroundedNpcRoleTarget(candidate, input.context, finalDecisionStory));
       const hardDecisionIssues = reviewDecisionHardRules(decisions, input.rejectedPreviousDirections ?? [], input.context, finalDecisionStory, narrative.endingState.presentEntities);
       const decisionVerifierPrompt = buildDecisionVerifierUserPrompt(input.context, finalDecisionStory, decisions, hardDecisionIssues);
       decisionReview = localDecisionReview(hardDecisionIssues);
@@ -1090,6 +1099,33 @@ function toDecisionCandidate(draft: DecisionDraftV2, context: StoryContextSnapsh
     intentDraft
   };
 }
+
+function normalizeGroundedNpcRoleTarget(
+  candidate: DecisionCandidateV2,
+  context: StoryContextSnapshotV2,
+  finalStory: string
+): DecisionCandidateV2 {
+  const target = candidate.intentDraft.target;
+  if (target.type !== "ROLE") return candidate;
+  const registeredRoleIds = new Set<string>([context.identity.roleId]);
+  for (const item of context.items.filter((entry) => entry.sourceType === "ACTION_AFFORDANCE")) {
+    for (const match of item.content.matchAll(/\[([^\]\r\n]{3,160})\]/g)) registeredRoleIds.add(match[1].trim());
+  }
+  if (registeredRoleIds.has(target.id)) return candidate;
+  const groundingCorpus = `${finalStory}\n${context.items.flatMap((item) => [item.title, item.content]).join("\n")}`;
+  if (!isGroundedTargetLabel(target.label, groundingCorpus)) return candidate;
+  const normalizedTarget: PlayerIntentV2["target"] = {
+    type: "PERSON",
+    id: `person:${hashStoryTextV2(target.label).slice(0, 16)}`,
+    label: target.label
+  };
+  return {
+    ...candidate,
+    targetRoleId: null,
+    targetRoleName: null,
+    intentDraft: { ...candidate.intentDraft, target: normalizedTarget }
+  };
+}
 function sanitizeNarrativeDraft(narrative: StoryNarrativeDraftV2, context: StoryContextSnapshotV2): StoryNarrativeDraftV2 {
   const specificityCorpus = buildAllowedSpecificityCorpus(context);
   const allowedNameCorpus = buildAllowedNameCorpus(context);
@@ -1111,11 +1147,25 @@ function sanitizeNarrativeDraft(narrative: StoryNarrativeDraftV2, context: Story
         .replace(/(?:手中|手里)(?:仍|尚|并)?(?:没有|无)(?:任何)?实物(?:凭证)?/g, "手中仍没有暗账、抄件或田契实物")
         .replace(/暗账线索但(?:仍|尚|并)?无实物/g, "暗账线索但尚无暗账、抄件或田契实物")
     : value;
-  const cleanSpecificity = (value: string) => clarifyEvidencePossession(removeUnsupportedSpecificity(
-    clarifyAnonymousIdentities(replaceUnsupportedNamedCharacters(value, unsupportedNames), identityCorpus),
-    specificityCorpus,
-    allowedNameCorpus
-  ));
+  const cleanSpecificity = (value: string) => {
+    let cleaned = removeUnsupportedSpecificity(
+      clarifyAnonymousIdentities(replaceUnsupportedNamedCharacters(value, unsupportedNames), identityCorpus),
+      specificityCorpus,
+      allowedNameCorpus
+    );
+    cleaned = dequantifyUnsupportedConflict(cleaned, specificityCorpus);
+    cleaned = stripHarmlessUnsupportedPropSentences(cleaned, context);
+    cleaned = cleaned
+      .replace(/(?:总督府的)?复核权争夺尚未有结果/g, "两份县册的数字仍未核清")
+      .replace(/复核权/g, "核清县册的责任")
+      .replace(/执行边界/g, "谁能下令")
+      .replace(/执行节奏/g, "催办时限")
+      .replace(/复核程序/g, "核验县册的步骤");
+    if (context.purpose === "OPENING") {
+      cleaned = stripHarmlessInventedOpeningPriorAction(cleaned, context);
+    }
+    return clarifyEvidencePossession(cleaned);
+  };
   const clean = (value: string) => ensureNarrativeParagraphs(cleanSpecificity(value));
   const cleanNextSituation = (value: string) => ensureNarrativeParagraphs(
     stripEmbeddedDecisionMenu(cleanSpecificity(value))
@@ -1186,7 +1236,8 @@ function collectUnsupportedNamedCharacters(text: string, allowedNameCorpus: stri
   const collected: UnsupportedNamedCharacter[] = [];
   const add = (fullText: string, role: string, name: string, fullReplacement: string) => {
     const obviousNonPerson = /(?:册|簿|印|函|文|帖|令|房|府|县|州|局|账|银|粮|船|田|契|钥匙)$/.test(name);
-    if (!name || name.endsWith("的") || obviousNonPerson || allowedNameCorpus.includes(name)) return;
+    const directionalPhrase = /^(?:向|往|对|给)(?:那|这)(?:名|位)?$/.test(name);
+    if (!name || name.endsWith("的") || obviousNonPerson || directionalPhrase || allowedNameCorpus.includes(name)) return;
     collected.push({ name, fullText, fullReplacement, bareReplacement: naturalAnonymousRole(role) });
   };
   const roleThenSurname = new RegExp(`(?:那|这)?(?:名|位)?(${SUPPORTING_NPC_ROLES})姓([${COMMON_CHINESE_SURNAMES}])`, "gu");
@@ -1271,6 +1322,52 @@ function removeUnsupportedSpecificity(text: string, contextCorpus: string, allow
   });
   return output;
 }
+
+function dequantifyUnsupportedConflict(text: string, contextCorpus: string): string {
+  const sentences = text.match(/[^。！？]+(?:[。！？](?:[”》】])?|$)/g) ?? [text];
+  return sentences.map((sentence) => {
+    const unsupported = introducedExactQuantities(sentence, contextCorpus);
+    if (unsupported.length < 2) return sentence;
+    if (!sentence.includes("正本") || !sentence.includes("副本")) return sentence;
+    if (!/(?:数字|田亩|亩数|桑株|改桑)/.test(sentence)) return sentence;
+    const located = unsupported
+      .map((quantity) => ({ quantity, index: sentence.indexOf(quantity) }))
+      .filter((entry) => entry.index >= 0)
+      .sort((left, right) => left.index - right.index);
+    if (located.length < 2) return sentence;
+    const start = sentence.lastIndexOf("正本", located[0].index);
+    const last = located.at(-1)!;
+    const end = last.index + last.quantity.length;
+    if (start < 0 || end <= start) return sentence;
+    return `${sentence.slice(0, start)}正本与副本所载数字并不相同${sentence.slice(end)}`;
+  }).join("").trim();
+}
+
+function stripHarmlessUnsupportedPropSentences(text: string, context: StoryContextSnapshotV2): string {
+  const sentences = text.match(/[^。！？]+(?:[。！？](?:[”》】])?|$)/g) ?? [text];
+  const kept = sentences.filter((sentence) => {
+    if (!introducedUnsupportedProps(sentence, context).length) return true;
+    // Only delete short atmospheric business. A key, seal, weapon or other
+    // object used as evidence/leverage remains a hard failure rather than being
+    // silently rewritten into a different fact.
+    if (sentence.length > 42) return true;
+    return /(?:证据|线索|发现|查验|核对|交出|递给|藏起|封存|开锁|钥匙|佩刀|玉佩)/.test(sentence);
+  });
+  return kept.length ? kept.join("").trim() : text.trim();
+}
+
+function stripHarmlessInventedOpeningPriorAction(text: string, context: StoryContextSnapshotV2): string {
+  const sentences = text.match(/[^。！？]+(?:[。！？](?:[”》】])?|$)/g) ?? [text];
+  return sentences.filter((sentence) => {
+    if (!containsInventedOpeningPriorAction(sentence)) return true;
+    if (sentence.length > 48) return true;
+    if (introducedUnsupportedProps(sentence, context).length) return true;
+    if (containsUnsupportedCertainty(sentence, context)) return true;
+    if (introducedOpeningActors(sentence, context).length) return true;
+    return false;
+  }).join("").trim();
+}
+
 function sanitizeEndingTime(value: string, contextCorpus: string, narrativeCorpus: string): string {
   const cleaned = removeUnsupportedSpecificity(value, contextCorpus, contextCorpus);
   if (!introducedExactQuantities(cleaned, contextCorpus).length) return cleaned;
@@ -1286,6 +1383,23 @@ function ensureNarrativeParagraphs(text: string): string {
   const splitAt = Math.max(1, Math.ceil(sentences.length / 2));
   return `${sentences.slice(0, splitAt).join("")}\n\n${sentences.slice(splitAt).join("")}`;
 }
+
+function hasObservableCausalProgression(text: string, field: "RESULT" | "NEXT_SITUATION"): boolean {
+  if (/(?:因此|于是|却|反而|迫使|让|使得|与此同时|由于|因而|故而|以致|从而|若|一旦|否则|但|既然|便|而)/.test(text)) {
+    return true;
+  }
+  const sentences = text.match(/[^。！？]+(?:[。！？](?:[”》】])?|$)/g)?.filter((sentence) => sentence.trim()) ?? [];
+  if (sentences.length < 2) return false;
+  if (field === "RESULT") {
+    const playerActionObserved = /(?:你|总督)[^。！？\n]{0,80}(?:写|提笔|盖印|交予|递给|吩咐|命|派|问|答|留|封|查|取|放|收)/.test(text);
+    const externalResponseObserved = /(?:书吏|差役|幕僚|来使|证人|会首|县令|巡抚|对方)[^。！？\n]{0,80}(?:接过|领命|收下|答|道|说|问|退|走|停|等|回|呈|递|点头|摇头)/.test(text);
+    return playerActionObserved && externalResponseObserved;
+  }
+  const pressureChanges = /(?:又|仍|再|尚未|继续|追问|催问|不肯|没有离开|未曾离开|等候|停在|留下|逼近)/.test(text);
+  const observableResponse = /(?:书吏|差役|幕僚|来使|证人|会首|县令|巡抚|对方)[^。！？\n]{0,80}(?:答|道|说|问|退|走|停|等|回|呈|递|点头|摇头)/.test(text);
+  return pressureChanges && observableResponse;
+}
+
 function reviewNarrativeHardRules(narrative: StoryNarrativeDraftV2, context: StoryContextSnapshotV2): string[] {
   const issues: string[] = [];
   const allowedNameCorpus = buildAllowedNameCorpus(context);
@@ -1298,9 +1412,9 @@ function reviewNarrativeHardRules(narrative: StoryNarrativeDraftV2, context: Sto
     if (text.length < minimumLength) issues.push(`${field}_TOO_SHORT`);
     if (text.length > maximumLength) issues.push(`${field}_TOO_LONG`);
     if (text.split(/\n\n+/).filter((paragraph) => paragraph.trim()).length < 2) issues.push(`${field}_NOT_HUMAN_READABLE_PROSE`);
-    if (!(context.purpose === "OPENING" && field === "NEXT_SITUATION") && !/(?:因此|于是|却|反而|迫使|让|使得|与此同时|由于|因而|故而|以致|从而|若|一旦|否则|但|既然|便|而)/.test(text)) {
-      issues.push(`${field}_CAUSAL_LINK_MISSING`);
-    }
+    // Causality is a writing objective, not a deterministic publication fact.
+    // Keyword/shape heuristics routinely reject readable prose while missing
+    // genuine hallucinations, so they are kept out of the blocking gate.
     if (/(?:^|\n)\s*(?:[ABC]|[1-4])[.、)）]\s*/m.test(text) || /你要怎么做|请选择(?:你的)?决定/.test(text)) issues.push(`${field}_CONTAINS_MENU`);
     if (/\b(?:actionKey|factKey|effectKey|nextStateKey|worldSequence|deterministicSafetyDraft)\b/i.test(text)) issues.push(`${field}_LEAKED_ENGINE_TOKEN`);
     if (/(?:玩家|候选项|候选方向|选项)/.test(text)) issues.push(`${field}_LEAKED_PLAYER_INTERFACE`);
@@ -1314,7 +1428,7 @@ function reviewNarrativeHardRules(narrative: StoryNarrativeDraftV2, context: Sto
       issues.push(`${field}_INTRODUCED_CHARACTER_BACKSTORY`);
     }
     if (introducedNamedCharacters(text, allowedNameCorpus).length) issues.push(`${field}_INTRODUCED_NAMED_CHARACTER`);
-    if (introducedExactQuantities(text, contextCorpus).length) issues.push(`${field}_INTRODUCED_EXACT_QUANTITY`);
+    if (introducedMaterialExactQuantities(text, contextCorpus).length) issues.push(`${field}_INTRODUCED_EXACT_QUANTITY`);
     if (introducedNamedLocationsOrDocuments(text, allowedGroundingCorpus).length) issues.push(`${field}_INTRODUCED_NAMED_LOCATION_OR_DOCUMENT`);
     if (contextDeniesPhysicalLedgerEvidence(context) && containsUnheldLedgerEvidence(text)) issues.push(`${field}_CONTRADICTS_EVIDENCE_POSSESSION`);
     if (containsMalformedPersonAsEvidence(text)) issues.push(`${field}_MALFORMED_PERSON_AS_EVIDENCE`);
@@ -1338,10 +1452,32 @@ function reviewNarrativeHardRules(narrative: StoryNarrativeDraftV2, context: Sto
     narrative.endingState.unresolvedPressure
   ].join("\n");
   const contextCorpus = buildAllowedSpecificityCorpus(context);
-  if (introducedExactQuantities(endingStateText, contextCorpus).length) issues.push("ENDING_STATE_INTRODUCED_EXACT_QUANTITY");
+  if (introducedMaterialExactQuantities(endingStateText, contextCorpus).length) issues.push("ENDING_STATE_INTRODUCED_EXACT_QUANTITY");
   if (introducedNamedLocationsOrDocuments(endingStateText, allowedGroundingCorpus).length) issues.push("ENDING_STATE_INTRODUCED_NAMED_LOCATION_OR_DOCUMENT");
   if (contextDeniesPhysicalLedgerEvidence(context) && containsUnheldLedgerEvidence(endingStateText)) issues.push(`ENDING_STATE_CONTRADICTS_EVIDENCE_POSSESSION`);
   return unique(issues);
+}
+
+function reconcileRemoteNarrativeReview(
+  review: NarrativeVerifierResultV2,
+  hardIssueCodes: string[]
+): NarrativeVerifierResultV2 {
+  // Length is an exact property of the already-parsed draft. A semantic model
+  // can still review facts, leakage and unsupported claims, but it must not
+  // overturn the deterministic measurement with a hallucinated length error.
+  const isMechanicalLengthIssue = (code: string) => /^(?:RESULT|NEXT_SITUATION)_(?:TOO_SHORT|TOO_LONG)$/.test(code);
+  const issueCodes = review.issueCodes.filter((code) => !isMechanicalLengthIssue(code) || hardIssueCodes.includes(code));
+  const rewriteInstructions = review.rewriteInstructions.filter((instruction) => !isMechanicalLengthIssue(instruction) || hardIssueCodes.includes(instruction));
+  const hasSemanticEvidence = issueCodes.length > 0
+    || review.unsupportedClaims.length > 0
+    || review.leakedFacts.length > 0
+    || review.missingAnchors.length > 0;
+  return {
+    ...review,
+    status: review.status === "FAIL" && !hasSemanticEvidence ? "PASS" : review.status,
+    issueCodes,
+    rewriteInstructions
+  };
 }
 
 function buildNarrativeRepairFeedback(
@@ -1419,7 +1555,7 @@ function containsMalformedPersonAsEvidence(text: string): boolean {
 
 function introducedUnsupportedProps(text: string, context: StoryContextSnapshotV2): string[] {
   const contextCorpus = context.items.flatMap((item) => [item.title, item.content]).join("\n");
-  const props = text.match(/玉佩|茶盏|炭盆|钥匙|烛火|佩刀|香炉|折扇/g) ?? [];
+  const props = text.match(/玉佩|茶盏|炭盆|钥匙|烛火|佩刀|香炉|折扇|风铃|铁马|镇纸|漏壶|朱砂/g) ?? [];
   return unique(props.filter((prop) => !contextCorpus.includes(prop)));
 }
 
@@ -1488,9 +1624,13 @@ function introducedNamedLocationsOrDocuments(text: string, allowedCorpus: string
   const documentCandidates = [...text.matchAll(/《[^》\n]{2,40}》/g)].map((match) => match[0]);
   const plausibleLocations = locationCandidates.filter((candidate) => !/[把将让被由与的了向从在到去来赴进出看听说合放翻拿摊压份本册]/.test(candidate.slice(0, -1)));
   const allowedLocations = [...allowedCorpus.matchAll(/(?=([\p{Script=Han}]{2,10}(?:府|县|州|镇)(?!令|册|官|丞|境|治)))/gmu)].map((match) => match[1]);
-  return unique([...plausibleLocations, ...documentCandidates].filter((candidate) => candidate
-    && !allowedCorpus.includes(candidate)
-    && !allowedLocations.some((allowed) => candidate.endsWith(allowed))));
+  return unique([...plausibleLocations, ...documentCandidates].filter((candidate) => {
+    const normalizedCandidate = candidate.replace(/^(?:左首是|右首是|你是|他是|她是|这是)/u, "");
+    return candidate
+      && !allowedCorpus.includes(candidate)
+      && !allowedCorpus.includes(normalizedCandidate)
+      && !allowedLocations.some((allowed) => candidate.endsWith(allowed));
+  }));
 }
 
 function introducedExactQuantities(text: string, contextCorpus: string): string[] {
@@ -1502,6 +1642,17 @@ function introducedExactQuantities(text: string, contextCorpus: string): string[
   const countedPeople = text.match(/(?:\d+|[一二三四五六七八九十百千万两半余]+)(?:个|名|位)(?:人|差役|书吏|亲兵|幕僚|长随|乡绅|管事)/g) ?? [];
   const countedHours = text.match(/(?:\d+|[一二三四五六七八九十百千万两半余]+)个时辰/g) ?? [];
   return unique([...plainQuantities, ...countedPeople, ...countedHours].filter((quantity) => !quantityIsGrounded(quantity, contextCorpus)));
+}
+
+function introducedMaterialExactQuantities(text: string, contextCorpus: string): string[] {
+  return introducedExactQuantities(text, contextCorpus).filter((quantity) => {
+    // Resource totals and geographic/administrative scale change the durable
+    // world state. Anonymous head-counts and short scene timing are narrative
+    // texture and must not make an otherwise readable story fail publication.
+    if (/(?:石|两|亩|户|艘)$/.test(quantity)) return true;
+    const escaped = quantity.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`${escaped}[^。！？\\n]{0,12}(?:期限|限期|必须|账期|时限)`).test(text);
+  });
 }
 
 function quantityIsGrounded(quantity: string, contextCorpus: string): boolean {
@@ -1516,12 +1667,13 @@ function endsWithTruncationMarker(text: string) {
 }
 
 function containsSequencedPrimaryActions(label: string): boolean {
-  const actionVerbs = label.match(/(?:取出|调阅|读|烧掉|烧毁|毁掉|封存|传唤|召来|询问|盘问|回文|答复|批复|写信|递信|派人|调查|查验|核对|扣留|放走|公开|隐瞒|交出|送走|带回|监视|上奏|密奏|请求)/g) ?? [];
-  return actionVerbs.length >= 2 && /(?:然后|接着|随后|再)/.test(label);
+  return /(?:取出|打开|翻开|读|查看|核对)[^。；]{0,40}(?:烧掉|烧毁|毁掉|销毁|交出|送走)/.test(label)
+    || /(?:烧掉|烧毁|毁掉|销毁)[^，。；]{0,24}(?:然后|接着|随后|再)[^，。；]{0,12}(?:上奏|公开|交出)/.test(label)
+    || /(?:，|,|；|;)(?:并|同时)(?:派|让|命)/.test(label);
 }
 
 function introducedDecisionExecutors(text: string, groundingCorpus: string): string[] {
-  const executors = text.match(/亲信家丁|心腹书办|亲信|书办|亲兵|幕僚|长随|家丁|巡按御史|钦差|锦衣卫/g) ?? [];
+  const executors = text.match(/亲信家丁|心腹书办|亲信幕僚|可靠家丁|可信书吏|亲信|心腹|亲兵|巡按御史|钦差|锦衣卫/g) ?? [];
   return unique(executors.filter((executor) => !groundingCorpus.includes(executor)));
 }
 
@@ -1574,14 +1726,12 @@ function reviewDecisionHardRules(
     if (decision.label.length < 6 || decision.label.length > 32) issues.push(`DECISION_LABEL_LENGTH_INVALID:${decision.id}`);
     if (decision.description.length < 20 || decision.description.length > 160) issues.push(`DECISION_DESCRIPTION_LENGTH_INVALID:${decision.id}`);
     if (/(?:设立|建立|推进|优化|强化|纳入|统筹|协调)(?:[^，。；]{0,8})(?:程序|机制|方案|体系|章程|控制|闭环|证据链)/.test(decision.label)
-      || /以[^，。；]{2,24}为由/.test(decision.label)
       || /(?:权限|风险|代价|执行边界|复核权|归属|口径)同时纳入/.test(decision.label)) {
       issues.push(`DECISION_LABEL_NOT_PLAIN_SPEECH:${decision.id}`);
     }
     if ((decision.label.match(/[，,；;：:]/g) ?? []).length > 2) issues.push(`DECISION_LABEL_COMPOUND_REPORT:${decision.id}`);
     if (/捅上去|搞定|盯死|拿捏|摊牌|硬刚|开摆/.test(decision.label)) issues.push(`DECISION_LABEL_MODERN_SLANG:${decision.id}`);
-    if (/(?:，|,|；|;).*(?:并|同时|再|又|还)(?:派|让|命|查|问|催|封|扣|送|留|递|调|盯|传|写|召)/.test(decision.label)
-      || containsSequencedPrimaryActions(decision.label)) {
+    if (containsSequencedPrimaryActions(decision.label)) {
       issues.push(`DECISION_MULTIPLE_PRIMARY_ACTIONS:${decision.id}`);
     }
     if (/必定|保证成功|一定成功|结果是|最终会/.test(`${decision.label}${decision.description}`)) issues.push("DECISION_PREVIEWS_RESULT");

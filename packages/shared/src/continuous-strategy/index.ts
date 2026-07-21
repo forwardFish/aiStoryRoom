@@ -6,3 +6,4 @@ export * from "./projection.schemas";
 export * from "./story-v2.schemas";
 export * from "./command.schemas";
 export * from "./event.schemas";
+export * from "./credit-control.schemas";

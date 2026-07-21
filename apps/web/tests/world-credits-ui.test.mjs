@@ -35,9 +35,11 @@ test("World Credits page exposes a wallet balance, two real packs, rewards and s
   assert.doesNotMatch(credits, /100 Credits/i);
 });
 
-test("World Credits script preserves room return routing without advertising an unconfirmed room price", () => {
+test("World Credits script preserves safe action-metering return routing", () => {
   const script = read("js/credits.js");
   assert.match(script, /WORLD_UNLOCK/);
+  assert.match(script, /RUN_CREATE/);
+  assert.match(script, /PLAYER_RECLAIM/);
   assert.match(script, /authUrl\(key\)/);
   assert.match(script, /location\.assign\(authUrl\(key\)\)/);
   assert.match(script, /selectedPack && !getToken\(\)/);
@@ -48,11 +50,42 @@ test("World Credits script preserves room return routing without advertising an 
   assert.doesNotMatch(script, /You are unlocking/);
   assert.doesNotMatch(script, /Round \$\{/);
   assert.match(script, /canonicalReturn = intent === "WORLD_UNLOCK" && runId/);
-  assert.match(script, /returnTo = intent === "WORLD_UNLOCK" && runId \? safeRequestedReturn : "\/"/);
+  assert.match(script, /returnTo = intent !== "WALLET" \? safeRequestedReturn : "\/"/);
+  assert.match(script, /PLAYER_ACTION: "Player action"/);
+  assert.match(script, /RUN_SPONSORSHIP: "Run sponsorship"/);
+  assert.match(script, /RUN_ALLOWANCE_USAGE: "Run allowance action"/);
+  assert.match(script, /transactions\.allowanceUsages/);
+  assert.match(script, /Charge \$\{shortId\(trace\.charge\.id\)\}/);
   assert.match(script, /document\.querySelectorAll\("\[data-return-link\], \[data-return-bottom\]"\)/);
   assert.doesNotMatch(script, /by\("\[data-return-link\]"\)\.href/);
   assert.match(script, /else \{\s*setContext\(\);\s*render\(\);\s*await Promise\.all/s);
   assert.match(script, /Return to story/);
+});
+
+test("all public disclosure entry points explain the active-action charging schedule", () => {
+  const credits = read("credits.html");
+  const home = read("home.js");
+  const rooms = read("platform.js");
+  const terms = read("legal/terms-of-service.md");
+  for (const source of [credits, home, terms]) {
+    assert.match(source, /20 (?:World )?Credits?/i);
+    assert.match(source, /suggested action/i);
+    assert.match(source, /custom (?:or complex )?action|custom action/i);
+    assert.match(source, /AI(?:-controlled)? actions?|AI control/i);
+  }
+  assert.match(rooms, /runCreateCredits/);
+  assert.match(rooms, /suggested action/i);
+  assert.match(rooms, /custom action/i);
+  assert.match(rooms, /AI-controlled actions/i);
+  assert.match(credits, /Pay for successful story actions, not AI requests/);
+  assert.match(credits, /legacy unlock policy/);
+  assert.match(rooms, /Creating this Story Run uses \$\{runCreateCredits\} World Credits/);
+  assert.match(rooms, /Create Room · \$\{runCreateCredits\} Credits/);
+  assert.match(rooms, /This world uses its legacy unlock policy/);
+  assert.match(rooms, /does not use the 20-Credit active-action fee/);
+  assert.match(home, /Reading, AI-controlled actions, system progress, retries, and failed generations cost 0 Credits/);
+  assert.match(terms, /becomes final only after the requested run or action is successfully published/);
+  assert.match(terms, /not for the number of AI-provider calls, tokens, retries, or internal processing steps/);
 });
 
 test("success page delegates credit authority to checkout status polling", () => {

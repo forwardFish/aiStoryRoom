@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { normalizeStoryTaskLeaseMs, requiresOutboxHeartbeat, ROLE_AGENT_TASK_CONCURRENCY, StoryTaskOutboxService } from "./story-task-outbox.service";
+import { isNonRetryableStoryTaskError, normalizeStoryTaskLeaseMs, requiresOutboxHeartbeat, ROLE_AGENT_TASK_CONCURRENCY, StoryTaskOutboxService } from "./story-task-outbox.service";
 
 function futureLease() {
   return new Date(Date.now() + 60_000);
@@ -37,7 +37,7 @@ function task(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function serviceWith(prisma: any, story: any = {}, resolution: any = {}, roleAgents: any = {}, continuousStoryV2: any = {}) {
+function serviceWith(prisma: any, story: any = {}, resolution: any = {}, roleAgents: any = {}, continuousStoryV2: any = {}, soloStoryEngine: any = {}) {
   const service = new StoryTaskOutboxService(
     prisma as any,
     { resolveNode: async () => ({ outcome: "LEGACY" }), ...story } as any,
@@ -47,7 +47,14 @@ function serviceWith(prisma: any, story: any = {}, resolution: any = {}, roleAge
     {
       executeAgentTask: async () => ({ outcome: "ACTOR_TURN_RESOLVED" }),
       executeConditionalTask: async () => ({ outcome: "CONDITION_RESOLVED" }),
+      failReservedResultTask: async () => undefined,
       ...continuousStoryV2
+    } as any,
+    {
+      executeAiWorldTickTask: async () => ({ outcome: "SOLO_AI_TURN_PUBLISHED" }),
+      executePublishRecoveryTask: async () => ({ outcome: "SOLO_ACTION_RECOVERED" }),
+      failPublishRecoveryTask: async () => ({ released: true }),
+      ...soloStoryEngine
     } as any
   );
   return { service, workerId: (service as any).workerId as string };
@@ -223,6 +230,79 @@ async function roleAgentProviderWaitsRunConcurrently() {
   assert.deepEqual(executed.sort(), candidates.map((entry) => entry.id).sort());
 }
 
+async function qualityRejectionNeverRepeatsTheFullModelCall() {
+  const updates: any[] = [];
+  let resultExecutions = 0;
+  const current = task({
+    taskType: "ACTOR_RESULT_V2",
+    status: "RUNNING",
+    attempt: 1,
+    maxAttempts: 5
+  });
+  const rejection = Object.assign(new Error("Generated story failed the publication quality gate"), {
+    getResponse: () => ({
+      code: "STORY_GENERATION_REJECTED",
+      recoverable: false,
+      issueCodes: ["NEXT_SITUATION_UNSUPPORTED_PROP"]
+    })
+  });
+  const prisma = {
+    storyTaskOutbox: {
+      findUnique: async () => current,
+      updateMany: async (args: any) => { updates.push(args); return { count: 1 }; }
+    },
+    storyRun: { updateMany: async () => ({ count: 0 }) }
+  };
+  const { service, workerId } = serviceWith(prisma, {}, {}, {}, {
+    executeResultTask: async () => {
+      resultExecutions += 1;
+      throw rejection;
+    }
+  });
+  current.leaseOwner = workerId;
+
+  await (service as any).process(current.id);
+
+  assert.equal(resultExecutions, 1, "a quality rejection must execute the full result pipeline exactly once");
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].data.status, "FAILED");
+  assert.equal(updates[0].data.nextRetryAt, undefined, "a quality rejection must not be re-enqueued");
+  assert.equal(isNonRetryableStoryTaskError(rejection), true);
+  assert.equal(isNonRetryableStoryTaskError(Object.assign(new Error("timeout"), {
+    getResponse: () => ({ code: "STORY_GENERATION_RETRYABLE", recoverable: true })
+  })), false, "provider failures may still use the bounded retry budget");
+}
+
+async function exhaustedSoloPublishRecoveryCompensatesTheReservedCharge() {
+  const updates: any[] = [];
+  const compensated: Array<[string, string]> = [];
+  const current = task({
+    taskType: "SOLO_PUBLISH_RECOVERY_V1",
+    status: "RUNNING",
+    attempt: 5,
+    maxAttempts: 5,
+    inputRefId: "solo-attempt-1"
+  });
+  const prisma = {
+    storyTaskOutbox: {
+      findUnique: async () => current,
+      updateMany: async (args: any) => { updates.push(args); return { count: 1 }; }
+    },
+    storyRun: { updateMany: async () => ({ count: 0 }) }
+  };
+  const { service, workerId } = serviceWith(prisma, {}, {}, {}, {}, {
+    executePublishRecoveryTask: async () => { throw new Error("publish storage unavailable"); },
+    failPublishRecoveryTask: async (taskId: string, reason: string) => { compensated.push([taskId, reason]); return { released: true }; }
+  });
+  current.leaseOwner = workerId;
+
+  await (service as any).process(current.id);
+
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].data.status, "FAILED");
+  assert.deepEqual(compensated, [["task-1", "SOLO_PUBLISH_RETRY_EXHAUSTED"]]);
+}
+
 async function roleAgentLeaseLossNeverCompletesTheOutboxTask() {
   const updates: any[] = [];
   const current = task({ taskType: "ROLE_AGENT_DECISION", inputRefId: "decision-lease-lost" });
@@ -261,11 +341,16 @@ async function v2TasksNeverFallBackToLegacyResolution() {
   let conditionCalls = 0;
   let resultCalls = 0;
   let impactCalls = 0;
+  let soloCalls = 0;
+  let soloRecoveryCalls = 0;
   const { service } = serviceWith({}, { resolveNode: async () => { legacyCalls += 1; } }, {}, {}, {
     executeAgentTask: async () => { v2Calls += 1; return { outcome: "ACTOR_TURN_RESOLVED" }; },
     executeConditionalTask: async () => { conditionCalls += 1; return { outcome: "CONDITION_RESOLVED" }; },
     executeResultTask: async () => { resultCalls += 1; return { outcome: "ACTOR_RESULT_PUBLISHED" }; },
     executeImpactTask: async () => { impactCalls += 1; return { outcome: "ACTOR_IMPACT_PUBLISHED" }; }
+  }, {
+    executeAiWorldTickTask: async () => { soloCalls += 1; return { outcome: "SOLO_AI_TURN_PUBLISHED" }; },
+    executePublishRecoveryTask: async () => { soloRecoveryCalls += 1; return { outcome: "SOLO_ACTION_RECOVERED" }; }
   });
   const fence = { taskId: "v2-task", leaseOwner: "worker", leaseVersion: 1 };
   const result = await (service as any).executeTask({ id: "v2-task", nodeId: "node-1", windowId: null, taskType: "ACTOR_AGENT_TURN_V2" }, fence);
@@ -281,6 +366,12 @@ async function v2TasksNeverFallBackToLegacyResolution() {
   const impactTask = await (service as any).executeTask({ id: "impact-task", nodeId: "node-1", windowId: null, taskType: "ACTOR_IMPACT_V2" }, fence);
   assert.equal(impactTask.outcome, "ACTOR_IMPACT_PUBLISHED");
   assert.equal(impactCalls, 1);
+  const soloTask = await (service as any).executeTask({ id: "solo-task", nodeId: "node-1", windowId: null, taskType: "SOLO_AI_WORLD_TICK_V1" }, fence);
+  assert.equal(soloTask.outcome, "SOLO_AI_TURN_PUBLISHED");
+  assert.equal(soloCalls, 1);
+  const soloRecoveryTask = await (service as any).executeTask({ id: "solo-recovery-task", nodeId: "node-1", windowId: null, taskType: "SOLO_PUBLISH_RECOVERY_V1" }, fence);
+  assert.equal(soloRecoveryTask.outcome, "SOLO_ACTION_RECOVERED");
+  assert.equal(soloRecoveryCalls, 1);
   assert.equal(legacyCalls, 0);
   await assert.rejects(
     () => (service as any).executeTask({ id: "future-task", nodeId: "node-1", windowId: null, taskType: "FUTURE_TASK" }, fence),
@@ -333,6 +424,8 @@ async function run() {
   await v2ActorContinuationIsNotBlockedByLegacyBacklog();
   await claimUsesPostClaimFence();
   await retryBoundaryUsesIncrementedAttempt();
+  await qualityRejectionNeverRepeatsTheFullModelCall();
+  await exhaustedSoloPublishRecoveryCompensatesTheReservedCharge();
   await staleLeaseCannotRecordFailure();
   await injectedExitLeavesLeaseUntouched();
   await roleAgentLeaseLossNeverCompletesTheOutboxTask();

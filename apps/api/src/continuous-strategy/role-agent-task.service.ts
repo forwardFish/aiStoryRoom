@@ -16,6 +16,8 @@ import {
   ROLE_AGENT_PROVIDER_ATTEMPTS
 } from "../config/continuous-strategy.config";
 import { roomSerializableTransaction } from "./room-transaction";
+import { readCreditConsumptionConfig } from "../config/credit-consumption.config";
+import { operationalMetrics } from "../observability/operational-metrics";
 
 export type RoleAgentTaskFence = {
   taskId: string;
@@ -25,9 +27,35 @@ export type RoleAgentTaskFence = {
 
 type Tx = Prisma.TransactionClient;
 
+type RoleAgentSelection = {
+  decision: RoleAgentDecisionV1;
+  provider: string;
+  model: string;
+  attempts: number;
+  responseHash: string;
+  fallback: boolean;
+  errorSummary: string | null;
+};
+
+type PendingRoleAgentBatchItem = {
+  content: BoundContinuousStrategyContent;
+  roleKey: string;
+  stageIndex: number;
+  context: RoleAgentDecisionValidationContext;
+  projection: Record<string, unknown>;
+  resolve: (selection: RoleAgentSelection) => void;
+};
+
+type PendingRoleAgentBatch = {
+  items: PendingRoleAgentBatchItem[];
+  timer: ReturnType<typeof setTimeout>;
+  flushing: boolean;
+};
+
 @Injectable()
 export class RoleAgentTaskService {
   private readonly logger = new Logger(RoleAgentTaskService.name);
+  private readonly pendingBatches = new Map<string, PendingRoleAgentBatch>();
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -148,7 +176,14 @@ export class RoleAgentTaskService {
       ownedLeverageKeys: stringArray(projection.ownedLeverageKeys),
       visibleFactIds: stringArray(projection.visibleFactIds)
     };
-    const selected = await this.choose(gameContent, decisionRecord.role.roleKey, decisionRecord.window.node.nodeIndex, validationContext, projection);
+    const selected = await this.choose(
+      gameContent,
+      decisionRecord.role.roleKey,
+      decisionRecord.window.node.nodeIndex,
+      validationContext,
+      projection,
+      `${decisionRecord.runId}:${decisionRecord.windowId}:${decisionRecord.actionSlot}`
+    );
     maybeInjectRoleAgentFault("PROVIDER_RETURNED", taskId);
     const sealed = await roomSerializableTransaction(this.prisma, decisionRecord.runId, async (tx) => {
       // This is deliberately the first statement in the sealing transaction.
@@ -318,12 +353,22 @@ export class RoleAgentTaskService {
     };
   }
 
-  private async choose(content: BoundContinuousStrategyContent, roleKey: string, stageIndex: number, context: RoleAgentDecisionValidationContext, projection: Record<string, unknown>) {
+  private async choose(
+    content: BoundContinuousStrategyContent,
+    roleKey: string,
+    stageIndex: number,
+    context: RoleAgentDecisionValidationContext,
+    projection: Record<string, unknown>,
+    batchKey: string
+  ): Promise<RoleAgentSelection> {
     const fallback = this.fallbackDecision(content, roleKey, stageIndex, context);
     const provider = String(process.env.ROLE_AGENT_PROVIDER || (process.env.DEEPSEEK_API_KEY ? "deepseek" : "rules"));
     const model = provider === "deepseek" ? String(process.env.ROLE_AGENT_MODEL || process.env.DEEPSEEK_MODEL || "deepseek-chat") : "deterministic-rules-v1";
     if (provider !== "deepseek" || !process.env.DEEPSEEK_API_KEY) {
       return { decision: fallback, provider: "rules", model, attempts: 0, responseHash: sha256Canonical(fallback), fallback: false, errorSummary: null };
+    }
+    if (readCreditConsumptionConfig().aiBatchingEnabled) {
+      return this.enqueueBatchedChoice(batchKey, { content, roleKey, stageIndex, context, projection });
     }
     let errors: string[] = [];
     let attempts = 0;
@@ -349,6 +394,145 @@ export class RoleAgentTaskService {
     }
     this.logger.warn(`Role Agent fell back for ${context.taskDedupeKey}: ${errors.join("|")}`);
     return { decision: fallback, provider: "deepseek", model, attempts, responseHash: sha256Canonical(fallback), fallback: true, errorSummary: (errors.join("|") || "PROVIDER_VALIDATION_FAILED").slice(0, 1_000) };
+  }
+
+  private enqueueBatchedChoice(
+    batchKey: string,
+    input: Omit<PendingRoleAgentBatchItem, "resolve">
+  ): Promise<RoleAgentSelection> {
+    const config = readCreditConsumptionConfig();
+    return new Promise<RoleAgentSelection>((resolve) => {
+      let batch = this.pendingBatches.get(batchKey);
+      if (!batch) {
+        batch = {
+          items: [],
+          flushing: false,
+          timer: setTimeout(() => void this.flushRoleAgentBatch(batchKey), config.aiBatchMaxWaitMs)
+        };
+        batch.timer.unref?.();
+        this.pendingBatches.set(batchKey, batch);
+      }
+      batch.items.push({ ...input, resolve });
+      if (batch.items.length >= config.aiBatchMaxSize) void this.flushRoleAgentBatch(batchKey);
+    });
+  }
+
+  private async flushRoleAgentBatch(batchKey: string) {
+    const batch = this.pendingBatches.get(batchKey);
+    if (!batch || batch.flushing) return;
+    batch.flushing = true;
+    clearTimeout(batch.timer);
+    this.pendingBatches.delete(batchKey);
+    const items = batch.items;
+    operationalMetrics.set("ai_batch_size", { engine: "continuous_strategy_v1_1" }, items.length);
+    const model = String(process.env.ROLE_AGENT_MODEL || process.env.DEEPSEEK_MODEL || "deepseek-chat");
+    try {
+      const candidates = await this.deepSeekDecisionBatch(items, normalizeRoleAgentAttemptTimeoutMs(process.env.ROLE_AGENT_TIMEOUT_MS));
+      const byKey = new Map(candidates.map((candidate) => [String(candidate?.taskDedupeKey || ""), candidate]));
+      for (const item of items) {
+        const candidate = byKey.get(item.context.taskDedupeKey);
+        const validation = validateRoleAgentDecisionV1(candidate, item.context);
+        if (validation.ok) {
+          item.resolve({
+            decision: validation.value,
+            provider: "deepseek",
+            model,
+            attempts: 1,
+            responseHash: sha256Canonical(validation.value),
+            fallback: false,
+            errorSummary: null
+          });
+          continue;
+        }
+        const fallback = this.fallbackDecision(item.content, item.roleKey, item.stageIndex, item.context);
+        item.resolve({
+          decision: fallback,
+          provider: "deepseek",
+          model,
+          attempts: 1,
+          responseHash: sha256Canonical(fallback),
+          fallback: true,
+          errorSummary: `BATCH_OUTPUT_INVALID:${validation.errors.join("|")}`.slice(0, 1_000)
+        });
+      }
+      this.logger.log(`AI batch completed engine=continuous_strategy_v1_1 batchSize=${items.length} providerAttempts=1`);
+    } catch (error) {
+      const errorSummary = error instanceof Error ? error.message : String(error);
+      for (const item of items) {
+        const fallback = this.fallbackDecision(item.content, item.roleKey, item.stageIndex, item.context);
+        item.resolve({
+          decision: fallback,
+          provider: "deepseek",
+          model,
+          attempts: 1,
+          responseHash: sha256Canonical(fallback),
+          fallback: true,
+          errorSummary: `BATCH_PROVIDER_FAILED:${errorSummary}`.slice(0, 1_000)
+        });
+      }
+      this.logger.warn(`AI batch fallback engine=continuous_strategy_v1_1 batchSize=${items.length}: ${errorSummary}`);
+    }
+  }
+
+  private async deepSeekDecisionBatch(items: PendingRoleAgentBatchItem[], timeoutMs: number): Promise<any[]> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(250, Math.trunc(timeoutMs)));
+    try {
+      const response = await fetch(deepSeekChatCompletionsUrl(process.env.DEEPSEEK_BASE_URL), {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}` },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: String(process.env.ROLE_AGENT_MODEL || process.env.DEEPSEEK_MODEL || "deepseek-chat"),
+          response_format: { type: "json_object" },
+          temperature: 0.2,
+          messages: [
+            {
+              role: "system",
+              content: "Choose independently for each bounded game role. Keep every role's knowledge isolated. Return JSON {decisions:[...]}; never invent facts, payments, outcomes, or actions outside each contract."
+            },
+            {
+              role: "user",
+              content: JSON.stringify({
+                batchSchemaVersion: "room_ai_batch_v1",
+                decisions: items.map((item) => ({
+                  roleKey: item.roleKey,
+                  stageIndex: item.stageIndex,
+                  contract: item.context,
+                  projection: item.projection,
+                  outputConstraints: {
+                    exactSchemaVersion: ROLE_AGENT_DECISION_SCHEMA_VERSION,
+                    exactTaskDedupeKey: item.context.taskDedupeKey,
+                    chosenActionKeyMustBeOneOf: item.context.availableActionKeys,
+                    targetRoleIdMustBeNullOrOneOf: item.context.authorizedTargetRoleIds,
+                    leverageKeyMustBeNullOrOneOf: item.context.ownedLeverageKeys,
+                    visibleFactIdsMustBeSubsetOf: item.context.visibleFactIds
+                  }
+                }))
+              })
+            }
+          ]
+        })
+      });
+      if (!response.ok) throw new Error(`ROLE_AGENT_BATCH_PROVIDER_HTTP_${response.status}`);
+      const payload = await response.json() as any;
+      const raw = String(payload?.choices?.[0]?.message?.content || "");
+      const parsed = JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+      if (!Array.isArray(parsed?.decisions)) throw new Error("ROLE_AGENT_BATCH_DECISIONS_REQUIRED");
+      operationalMetrics.providerAttempt({
+        engine: "continuous_strategy_v1_1",
+        batchType: "ROOM_AI_BATCH_V1",
+        result: "success",
+        inputTokens: Number(payload?.usage?.prompt_tokens || 0),
+        outputTokens: Number(payload?.usage?.completion_tokens || 0)
+      });
+      return parsed.decisions;
+    } catch (error) {
+      operationalMetrics.providerAttempt({ engine: "continuous_strategy_v1_1", batchType: "ROOM_AI_BATCH_V1", result: "failure" });
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private async deepSeekDecision(roleKey: string, stageIndex: number, context: RoleAgentDecisionValidationContext, projection: Record<string, unknown>, priorErrors: string[], timeoutMs: number) {
@@ -388,7 +572,18 @@ export class RoleAgentTaskService {
       if (!response.ok) throw new Error(`ROLE_AGENT_PROVIDER_HTTP_${response.status}`);
       const payload = await response.json() as any;
       const content = String(payload?.choices?.[0]?.message?.content || "");
-      return JSON.parse(content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+      const parsed = JSON.parse(content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+      operationalMetrics.providerAttempt({
+        engine: "continuous_strategy_v1_1",
+        batchType: "ROLE_AGENT_DECISION",
+        result: "success",
+        inputTokens: Number(payload?.usage?.prompt_tokens || 0),
+        outputTokens: Number(payload?.usage?.completion_tokens || 0)
+      });
+      return parsed;
+    } catch (error) {
+      operationalMetrics.providerAttempt({ engine: "continuous_strategy_v1_1", batchType: "ROLE_AGENT_DECISION", result: "failure" });
+      throw error;
     } finally { clearTimeout(timer); }
   }
 

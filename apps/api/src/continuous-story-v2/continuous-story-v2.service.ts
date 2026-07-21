@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { Prisma, type ActorTurn, type StoryRole } from "@prisma/client";
 import {
   CONTINUOUS_STORY_ENGINE_VERSION,
@@ -20,6 +20,9 @@ import { ContinuousStrategyContentService } from "../continuous-strategy/content
 import { ContinuousEventDeliveryService } from "../continuous-strategy/event-delivery.service";
 import { PrismaService } from "../prisma.service";
 import { StoryAccessService } from "../story-access/story-access.service";
+import { readCreditConsumptionConfig } from "../config/credit-consumption.config";
+import { CreditConsumptionService } from "../credits/credit-consumption.service";
+import { classifyCreditAction, parseRunBilling, priceForCreditAction } from "../credits/credit-policy";
 import { gamePageProjection } from "../game-page-projection";
 import { assetDisplayName } from "./asset-language";
 import {
@@ -47,6 +50,7 @@ import {
 import { StoryContextComposerV2 } from "./story-context.composer";
 import { StoryGenerationErrorV2 } from "./story-generation.pipeline";
 import { StoryNarrativeProvider } from "./story-narrative.provider";
+import { operationalMetrics } from "../observability/operational-metrics";
 
 type Tx = Prisma.TransactionClient;
 
@@ -85,7 +89,8 @@ export class ContinuousStoryV2Service {
     @Inject(ContinuousEventDeliveryService) private readonly deliveries: ContinuousEventDeliveryService,
     @Inject(StoryAccessService) private readonly access: StoryAccessService,
     @Inject(StoryContextComposerV2) private readonly storyContexts: StoryContextComposerV2,
-    @Inject(StoryNarrativeProvider) private readonly narrator: StoryNarrativeProvider
+    @Inject(StoryNarrativeProvider) private readonly narrator: StoryNarrativeProvider,
+    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never
   ) {}
 
   async start(user: AuthenticatedUser, roomId: string) {
@@ -415,11 +420,18 @@ export class ContinuousStoryV2Service {
     ]));
     const decisionCandidates = asDecisionCandidates(turn?.decisionSet?.candidatesJson);
     const access = this.access.roomAccessState(run, turn?.stageIndex || run.currentDay);
+    const creditConfig = readCreditConsumptionConfig();
+    const billing = parseRunBilling(run, creditConfig.prices);
+    const [creditAvailability, sponsorshipRequest] = await Promise.all([
+      this.creditConsumption.availableForRun(run.id, user.id),
+      (this.prisma as any).sponsorshipRequest.findFirst({ where: { runId: run.id, beneficiaryUserId: user.id }, orderBy: { createdAt: "desc" } })
+    ]);
+    const activeActionBilling = billing.policyVersion === "active_action_v1";
     const projection: GameProjectionV2 = {
       schemaVersion: GAME_PROJECTION_V2_SCHEMA_VERSION,
       generatedAt: new Date().toISOString(),
       worldSequence: run.worldSequence,
-      room: { id: run.id, title: run.title, worldId: run.templateKey, status: run.status, mode: run.maxPlayers === 1 ? "solo" : "multiplayer" },
+      room: { id: run.id, title: run.title, worldId: run.templateKey, status: run.status, mode: run.maxPlayers === 1 ? "solo" : "multiplayer", ownerUserId: run.ownerUserId },
       world: gamePageProjection(run.templateKey),
       player: {
         userId: user.id,
@@ -524,13 +536,26 @@ export class ContinuousStoryV2Service {
         createdAt: entry.createdAt.toISOString()
       })),
       access: {
-        state: access.unlocked ? "UNLOCKED" : access.requiresUnlock ? "REQUIRES_UNLOCK" : "FREE",
-        requiredCredits: access.requiredCredits,
-        canCurrentUserUnlock: access.requiresUnlock,
-        unlockEndpoint: `/v4/story-runs/${run.id}/unlock`
+        state: activeActionBilling ? "UNLOCKED" : access.unlocked ? "UNLOCKED" : access.requiresUnlock ? "REQUIRES_UNLOCK" : "FREE",
+        requiresUnlock: activeActionBilling ? false : access.requiresUnlock,
+        requiredCredits: activeActionBilling ? 0 : access.requiredCredits,
+        canCurrentUserUnlock: activeActionBilling ? false : access.requiresUnlock,
+        unlockEndpoint: activeActionBilling ? null : `/v4/story-runs/${run.id}/unlock`
       },
-      completed: !turn,
-      resultUrl: !turn ? `/rooms/${run.id}/result` : null
+      creditControl: {
+        policyVersion: billing.policyVersion,
+        meteringMode: creditConfig.meteringMode,
+        available: creditAvailability.available,
+        personalAvailable: creditAvailability.personalAvailable,
+        runAllowanceAvailable: creditAvailability.runAllowanceAvailable,
+        minimumActionCost: billing.prices.standardAction,
+        standardActionCost: billing.prices.standardAction,
+        customActionCost: billing.prices.customAction,
+        canRequestSponsor: activeActionBilling && run.ownerUserId !== user.id && !["chapter_generated", "closed", "failed"].includes(run.status),
+        sponsorshipRequestStatus: sponsorshipRequest?.status || "NONE"
+      },
+      completed: actorThread?.status === "COMPLETED",
+      resultUrl: actorThread?.status === "COMPLETED" ? `/rooms/${run.id}/result` : null
     };
     const validation = validateGameProjectionV2(projection);
     if (!validation.ok) throw new Error(`GAME_PROJECTION_V2_INVALID:${validation.errors.join("|")}`);
@@ -543,6 +568,40 @@ export class ContinuousStoryV2Service {
       select: { roleId: true }
     });
     if (!membership?.roleId) throw new ForbiddenException({ code: "ROOM_MEMBERSHIP_REQUIRED", message: "A claimed room role is required" });
+    const openingTurn = await this.prisma.actorTurn.findFirst({
+      where: { runId: roomId, roleId: membership.roleId, status: "GENERATING" },
+      orderBy: { turnIndex: "desc" },
+      select: { id: true }
+    });
+    if (openingTurn) {
+      const openingTask = await this.prisma.storyTaskOutbox.findUnique({
+        where: { dedupeKey: `ACTOR_OPENING_V2:${openingTurn.id}` }
+      });
+      if (!openingTask) throw new ServiceUnavailableException({ code: "OPENING_TASK_MISSING", message: "The opening story task has not been created yet. Please try again shortly.", recoverable: true });
+      if (openingTask.status === "FAILED") {
+        const reset = await this.prisma.storyTaskOutbox.updateMany({
+          where: { id: openingTask.id, status: "FAILED" },
+          data: {
+            status: "PENDING",
+            attempt: 0,
+            nextRetryAt: new Date(),
+            leaseOwner: null,
+            leaseExpiresAt: null,
+            startedAt: null,
+            completedAt: null,
+            outcome: null,
+            lastError: null
+          }
+        });
+        return { scheduled: reset.count === 1, status: reset.count === 1 ? "REQUEUED" : "MOVED", taskId: openingTask.id, kind: "OPENING" };
+      }
+      return {
+        scheduled: openingTask.status === "PENDING" || openingTask.status === "RUNNING",
+        status: openingTask.status,
+        taskId: openingTask.id,
+        kind: "OPENING"
+      };
+    }
     const resolution = await this.prisma.actionResolution.findFirst({
       where: { runId: roomId, roleId: membership.roleId, qualityStatus: "GENERATING" },
       orderBy: { appliedWorldSequence: "desc" },
@@ -686,36 +745,87 @@ export class ContinuousStoryV2Service {
 
   async reclaim(user: AuthenticatedUser, roomId: string, command: ControlCommandV1) {
     validateControlCommand(command);
-    await this.serializable(async (tx) => {
+    const outcome = await this.serializable(async (tx) => {
       const context = await this.controlContext(tx, user, roomId);
       const replay = await tx.roleControlTransition.findUnique({ where: { idempotencyKey: command.idempotencyKey } });
       if (replay) {
-        if (replay.roleControlId !== context.control.id || replay.fromEpoch !== command.expectedControlEpoch || replay.toMode !== "HUMAN_ACTIVE") throw idempotencyReused();
-        return;
+        if (replay.roleControlId !== context.control.id || replay.fromEpoch !== command.expectedControlEpoch || !["HUMAN_ACTIVE", "HUMAN_RECLAIM_PENDING"].includes(replay.toMode)) throw idempotencyReused();
+        return { kind: "replay" as const, mode: replay.toMode, epoch: replay.toEpoch };
       }
       if (context.control.humanPlayerId !== context.player.id) throw new ForbiddenException({ code: "ROLE_FORBIDDEN", message: "Only the original player can reclaim this role" });
       if (context.control.epoch !== command.expectedControlEpoch || context.control.mode !== "AI_ACTIVE") throw controlChanged();
+      const billing = parseRunBilling(context.run, readCreditConsumptionConfig().prices);
+      if (billing.policyVersion === "active_action_v1") {
+        const available = await this.creditConsumption.availableForRun(roomId, user.id, tx);
+        if (available.available < billing.prices.standardAction) {
+          return {
+            kind: "insufficient" as const,
+            requiredCredits: billing.prices.standardAction,
+            availableCredits: available.available,
+            runAllowanceAvailable: available.runAllowanceAvailable,
+            personalAvailable: available.personalAvailable
+          };
+        }
+      }
+      const aiAlreadySealed = context.turn ? await tx.playerAction.findFirst({
+        where: {
+          runId: roomId,
+          roleId: context.role.id,
+          actionSlot: `TURN:${context.turn.id}`,
+          actorKind: "AI_TAKEOVER",
+          sealedAt: { not: null },
+          status: { in: ["accepted", "resolved"] }
+        }
+      }) : null;
+      const immediate = !aiAlreadySealed;
       const nextEpoch = context.control.epoch + 1;
-      await tx.roleControl.update({ where: { id: context.control.id }, data: { mode: "HUMAN_ACTIVE", epoch: nextEpoch, reason: "PLAYER_RECLAIMED", takeoverAt: null, lastHeartbeatAt: new Date() } });
-      await tx.storyRole.update({ where: { id: context.role.id }, data: { isAiControlled: false, status: "claimed" } });
+      const toMode = immediate ? "HUMAN_ACTIVE" : "HUMAN_RECLAIM_PENDING";
+      await tx.roleControl.update({ where: { id: context.control.id }, data: { mode: toMode, epoch: nextEpoch, reason: immediate ? "PLAYER_RECLAIMED" : "PLAYER_RECLAIM_SCHEDULED", takeoverAt: immediate ? null : context.control.takeoverAt, lastHeartbeatAt: new Date() } });
+      await tx.storyRole.update({ where: { id: context.role.id }, data: { isAiControlled: !immediate, status: immediate ? "claimed" : "ai_controlled" } });
       await tx.roleControlTransition.create({
         data: {
-          roleControlId: context.control.id, fromMode: context.control.mode, toMode: "HUMAN_ACTIVE",
-          fromEpoch: context.control.epoch, toEpoch: nextEpoch, reason: "PLAYER_RECLAIMED",
-          initiatedByUserId: user.id, effectiveSlot: context.turn ? `TURN:${context.turn.id}` : "STORY_COMPLETED",
+          roleControlId: context.control.id, fromMode: context.control.mode, toMode,
+          fromEpoch: context.control.epoch, toEpoch: nextEpoch, reason: immediate ? "PLAYER_RECLAIMED" : "PLAYER_RECLAIM_SCHEDULED",
+          initiatedByUserId: user.id, effectiveSlot: immediate ? (context.turn ? `TURN:${context.turn.id}` : "STORY_COMPLETED") : "NEXT_ACTOR_TURN",
           idempotencyKey: command.idempotencyKey
         }
       });
-      await tx.storyTaskOutbox.updateMany({
-        where: { runId: roomId, roleId: context.role.id, taskType: "ACTOR_AGENT_TURN_V2", status: { in: ["PENDING", "RUNNING"] } },
-        data: {
-          status: "COMPLETED", outcome: "CONTROL_RECLAIMED", completedAt: new Date(),
-          leaseOwner: null, leaseExpiresAt: null, leaseVersion: { increment: 1 }, lastError: null
-        }
-      });
+      if (immediate) {
+        await tx.storyTaskOutbox.updateMany({
+          where: { runId: roomId, roleId: context.role.id, taskType: "ACTOR_AGENT_TURN_V2", status: { in: ["PENDING", "RUNNING"] } },
+          data: {
+            status: "COMPLETED", outcome: "CONTROL_RECLAIMED", completedAt: new Date(),
+            leaseOwner: null, leaseExpiresAt: null, leaseVersion: { increment: 1 }, lastError: null
+          }
+        });
+      }
       await tx.storyRun.update({ where: { id: roomId }, data: { version: { increment: 1 } } });
-      await this.publishControlChange(tx, context, user.id, command.idempotencyKey, "HUMAN", nextEpoch);
+      if (immediate) {
+        await this.publishControlChange(tx, context, user.id, command.idempotencyKey, "HUMAN", nextEpoch);
+      } else {
+        await this.deliveries.publish(tx, {
+          runId: roomId, nodeId: context.run.currentNodeId || undefined, day: context.turn?.stageIndex || context.run.currentDay,
+          type: "ROLE_RECLAIM_SCHEDULED_V2", visibility: "PRIVATE", audienceType: "MEMBER",
+          audienceUserIds: [user.id], audienceRoleIds: [context.role.id],
+          payload: { roleId: context.role.id, epoch: nextEpoch, effectiveFromSlot: "NEXT_ACTOR_TURN" },
+          dedupeKey: `ROLE_RECLAIM_SCHEDULED_V2:${command.idempotencyKey}`
+        });
+      }
+      return { kind: "reclaimed" as const, mode: toMode, epoch: nextEpoch };
     });
+    if (outcome.kind === "insufficient") {
+      operationalMetrics.increment("credit_reclaim_total", { result: "insufficient" });
+      throw new HttpException({
+        code: "PLAYER_CREDITS_REQUIRED",
+        message: "At least one available World Credit is required before reclaiming this role",
+        requiredCredits: outcome.requiredCredits,
+        availableCredits: outcome.availableCredits,
+        runAllowanceAvailable: outcome.runAllowanceAvailable,
+        personalAvailable: outcome.personalAvailable,
+        canRequestSponsor: true
+      }, HttpStatus.PAYMENT_REQUIRED);
+    }
+    operationalMetrics.increment("credit_reclaim_total", { result: outcome.mode === "HUMAN_RECLAIM_PENDING" ? "pending" : outcome.kind });
     return { accepted: true, gameProjection: await this.game(user, roomId) };
   }
 
@@ -854,6 +964,10 @@ export class ContinuousStoryV2Service {
         contextRecordId: persistedContext.recordId,
         actionResolutionId: null,
         generateDecisions: true,
+        // One publication-gate repair is cheaper and safer than exposing a
+        // broken opening or making the player repeatedly restart the task.
+        // Provider attempts remain observable and never change Credits cost.
+        maxQualityAttempts: 2,
         getCurrentIdentity: async () => {
           const [latestTurn, latestRun, latestControl] = await Promise.all([
             this.prisma.actorTurn.findUnique({ where: { id: turn.id } }),
@@ -872,10 +986,13 @@ export class ContinuousStoryV2Service {
       });
     } catch (error) {
       if (error instanceof StoryGenerationErrorV2) {
+        const retryable = error.recoverable;
         throw new ServiceUnavailableException({
-          code: "OPENING_STORY_GENERATION_RETRYABLE",
-          message: "真实开场剧情仍在生成，系统没有发布模板故事或固定选项。",
-          recoverable: true,
+          code: retryable ? "OPENING_STORY_GENERATION_RETRYABLE" : "OPENING_STORY_GENERATION_REJECTED",
+          message: retryable
+            ? "真实开场剧情仍在生成，系统没有发布模板故事或固定选项。"
+            : "本次开场正文没有通过事实与叙事门禁，系统未发布它，也不会自动重复调用模型。",
+          recoverable: retryable,
           issueCodes: error.issueCodes
         });
       }
@@ -1390,6 +1507,27 @@ export class ContinuousStoryV2Service {
       if (resolution.qualityStatus !== "GENERATING" || resolution.turn.status !== "RESOLVING") {
         throw new ConflictException({ code: "RESULT_RESERVATION_MOVED", message: "Reserved action result is no longer generatable" });
       }
+      if (resolution.appliedWorldSequence !== resolution.run.worldSequence + 1) {
+        throw new ServiceUnavailableException({
+          code: "RESULT_SEQUENCE_WAIT",
+          message: "An earlier independent actor result must publish before this reserved result can be generated",
+          recoverable: true
+        });
+      }
+      if (resolution.baseWorldSequence !== resolution.run.worldSequence) {
+        await this.prisma.actionResolution.update({
+          where: { id: resolution.id },
+          data: {
+            baseWorldSequence: resolution.run.worldSequence,
+            statePatchJson: {
+              ...jsonRecord(resolution.statePatchJson),
+              baseWorldSequence: resolution.run.worldSequence,
+              nextWorldSequence: resolution.appliedWorldSequence
+            } as Prisma.InputJsonValue
+          }
+        });
+        resolution.baseWorldSequence = resolution.run.worldSequence;
+      }
       const [control, facts, impacts, allRoles, stageTurnOrdinal, assets] = await Promise.all([
         this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: resolution.runId, roleId: resolution.roleId } } }),
         this.prisma.canonFact.findMany({ where: { runId: resolution.runId, status: "confirmed" }, orderBy: { createdAt: "asc" } }),
@@ -1474,6 +1612,115 @@ export class ContinuousStoryV2Service {
     }
   }
 
+  async failReservedResultTask(taskId: string, failureCode: string) {
+    return this.serializable(async (tx) => {
+      const task = await tx.storyTaskOutbox.findUnique({ where: { id: taskId } });
+      if (!task?.inputRefId || task.taskType !== "ACTOR_RESULT_V2") return { released: false, reason: "TASK_NOT_APPLICABLE" };
+      const resolution = await tx.actionResolution.findUnique({
+        where: { id: task.inputRefId },
+        include: { run: true, playerAction: true, submission: true, turn: { include: { decisionSet: true } } }
+      });
+      if (!resolution || resolution.qualityStatus === "PASS") return { released: false, reason: "RESULT_ALREADY_PUBLISHED" };
+      if (resolution.qualityStatus === "FAIL") return { released: true, reason: "ALREADY_RELEASED" };
+
+      const failedSequence = resolution.appliedWorldSequence;
+      const later = await tx.actionResolution.findMany({
+        where: { runId: resolution.runId, qualityStatus: "GENERATING", appliedWorldSequence: { gt: failedSequence } },
+        orderBy: { appliedWorldSequence: "asc" }
+      });
+      await tx.actionResolution.update({
+        where: { id: resolution.id },
+        data: {
+          appliedWorldSequence: -(10_000_000 + failedSequence),
+          qualityStatus: "FAIL",
+          statePatchJson: { ...jsonRecord(resolution.statePatchJson), failedBeforePublish: true, failureCode } as Prisma.InputJsonValue
+        }
+      });
+      for (const pending of later) {
+        await tx.actionResolution.update({ where: { id: pending.id }, data: { appliedWorldSequence: -(20_000_000 + pending.appliedWorldSequence) } });
+      }
+      for (const pending of later) {
+        const nextSequence = pending.appliedWorldSequence - 1;
+        await tx.actionResolution.update({
+          where: { id: pending.id },
+          data: {
+            appliedWorldSequence: nextSequence,
+            statePatchJson: { ...jsonRecord(pending.statePatchJson), nextWorldSequence: nextSequence } as Prisma.InputJsonValue
+          }
+        });
+      }
+      await tx.playerAction.update({
+        where: { id: resolution.playerActionId },
+        data: { status: "failed", auditStatus: "generation_failed", resolvedJson: { storyGenerationStatus: "FAIL", failureCode } as Prisma.InputJsonValue, resolvedAt: new Date() }
+      });
+      await tx.decisionSubmission.update({ where: { id: resolution.submissionId }, data: { status: "FAILED", resolvedAt: new Date() } });
+      await tx.actorTurn.update({ where: { id: resolution.turnId }, data: { status: "FAILED", qualityStatus: "FAIL", resolvedAt: new Date() } });
+
+      const replacementRevision = resolution.turn.revision + 1;
+      const replacementKey = `actor-turn-retry:${resolution.turn.id}:${replacementRevision}`;
+      let replacement = await tx.actorTurn.findUnique({ where: { dedupeKey: replacementKey } });
+      if (!replacement) {
+        replacement = await tx.actorTurn.create({
+          data: {
+            runId: resolution.runId,
+            threadId: resolution.turn.threadId,
+            roleId: resolution.turn.roleId,
+            stageIndex: resolution.turn.stageIndex,
+            turnIndex: resolution.turn.turnIndex,
+            status: "OPEN",
+            baseWorldSequence: resolution.run.worldSequence,
+            revision: replacementRevision,
+            situationTitle: resolution.turn.situationTitle,
+            situationNarrative: resolution.turn.situationNarrative,
+            visibleFactKeysJson: resolution.turn.visibleFactKeysJson as Prisma.InputJsonValue,
+            activeThreadKeysJson: resolution.turn.activeThreadKeysJson as Prisma.InputJsonValue,
+            contextJson: { ...jsonRecord(resolution.turn.contextJson), retryOfTurnId: resolution.turn.id, failureCode } as Prisma.InputJsonValue,
+            qualityStatus: "PASS",
+            dedupeKey: replacementKey
+          }
+        });
+        if (resolution.turn.decisionSet) {
+          await tx.decisionSet.create({
+            data: {
+              runId: resolution.runId,
+              turnId: replacement.id,
+              roleId: resolution.turn.roleId,
+              contextHash: resolution.turn.decisionSet.contextHash,
+              framing: resolution.turn.decisionSet.framing,
+              candidatesJson: resolution.turn.decisionSet.candidatesJson as Prisma.InputJsonValue,
+              qualityStatus: resolution.turn.decisionSet.qualityStatus,
+              qualityJson: resolution.turn.decisionSet.qualityJson as Prisma.InputJsonValue,
+              revision: resolution.turn.decisionSet.revision + 1
+            }
+          });
+        }
+      }
+      const nextReserved = Math.max(resolution.run.worldSequence, Number((resolution.run as any).reservedWorldSequence || resolution.run.worldSequence) - 1);
+      await (tx.storyRun as any).update({ where: { id: resolution.runId }, data: { status: "playing", reservedWorldSequence: nextReserved, version: { increment: 1 } } });
+      const charge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: resolution.playerActionId } });
+      if (charge?.status === "RESERVED") await this.creditConsumption.releaseCharge(charge.id, failureCode, tx);
+
+      const control = await tx.roleControl.findUnique({ where: { runId_roleId: { runId: resolution.runId, roleId: resolution.roleId } } });
+      if (control?.mode === "AI_ACTIVE") {
+        await tx.storyTaskOutbox.create({
+          data: {
+            runId: resolution.runId,
+            nodeId: task.nodeId,
+            roleId: resolution.roleId,
+            inputRefId: replacement.id,
+            actionSlot: "ACTOR_TURN",
+            controlEpoch: control.epoch,
+            taskType: "ACTOR_AGENT_TURN_V2",
+            status: "PENDING",
+            dedupeKey: `ACTOR_AGENT_TURN_V2:${replacement.id}`,
+            maxAttempts: 3
+          }
+        });
+      }
+      return { released: true, replacementTurnId: replacement.id };
+    });
+  }
+
   private async executeReservedResultInline(taskId: string) {
     const leaseOwner = `inline-result-${process.pid}-${Date.now().toString(36)}`;
     const leaseMs = 90_000;
@@ -1537,16 +1784,14 @@ export class ContinuousStoryV2Service {
       return result;
     } catch (error) {
       if (!leaseLost) {
-        await this.prisma.storyTaskOutbox.updateMany({
+        const permanent = isPermanentStoryGenerationFailure(error);
+        const recorded = await this.prisma.storyTaskOutbox.updateMany({
           where: { id: taskId, status: "RUNNING", leaseOwner, leaseVersion: task.leaseVersion },
-          data: {
-            status: "PENDING",
-            leaseOwner: null,
-            leaseExpiresAt: null,
-            nextRetryAt: new Date(Date.now() + 500),
-            lastError: error instanceof Error ? error.message : String(error)
-          }
+          data: permanent
+            ? { status: "FAILED", leaseOwner: null, leaseExpiresAt: null, lastError: error instanceof Error ? error.message : String(error) }
+            : { status: "PENDING", leaseOwner: null, leaseExpiresAt: null, nextRetryAt: new Date(Date.now() + 500), lastError: error instanceof Error ? error.message : String(error) }
         });
+        if (permanent && recorded.count === 1) await this.failReservedResultTask(taskId, "QUALITY_REJECTED");
       }
       if (error instanceof AgentLeaseLostError) {
         throw new ServiceUnavailableException({
@@ -1600,7 +1845,7 @@ export class ContinuousStoryV2Service {
     const role = run.roles.find((candidate) => candidate.id === player.roleId);
     const control = run.roleControls.find((candidate) => candidate.roleId === player.roleId);
     if (!role || !control) throw new ConflictException({ code: "ROLE_CONTROL_NOT_READY", message: "Role control is not ready" });
-    const turn = await tx.actorTurn.findFirst({ where: { runId: roomId, roleId: role.id, status: "OPEN" }, orderBy: { turnIndex: "desc" } });
+    const turn = await tx.actorTurn.findFirst({ where: { runId: roomId, roleId: role.id, status: { in: ["OPEN", "RESOLVING"] } }, orderBy: [{ turnIndex: "desc" }, { revision: "desc" }] });
     return { run, player, role, control, turn, memberUserIds: run.players.map((candidate) => candidate.userId).filter((id): id is string => Boolean(id)) };
   }
 
@@ -1766,10 +2011,13 @@ export class ContinuousStoryV2Service {
     } catch (error) {
       if (error instanceof StoryGenerationErrorV2 && error.code === "CONTEXT_SUPERSEDED") throw new DecisionContextMovedError();
       if (error instanceof StoryGenerationErrorV2) {
+        const retryable = error.recoverable;
         throw new ServiceUnavailableException({
-          code: "STORY_GENERATION_RETRYABLE",
-          message: "本次行动的真实结果剧情仍在生成，系统没有发布模板故事或固定选项。请稍后重试。",
-          recoverable: true,
+          code: retryable ? "STORY_GENERATION_RETRYABLE" : "STORY_GENERATION_REJECTED",
+          message: retryable
+            ? "本次行动的真实结果剧情仍在生成，系统没有发布模板故事或固定选项。请稍后重试。"
+            : "本次结果正文没有通过事实与叙事门禁，系统未发布它，也不会自动重复调用模型。",
+          recoverable: retryable,
           issueCodes: error.issueCodes
         });
       }
@@ -1880,7 +2128,7 @@ export class ContinuousStoryV2Service {
     actorKind: "HUMAN" | "AI";
     agentFence?: { taskId: string; leaseOwner: string; leaseVersion: number };
   }) {
-    return this.serializable(async (tx) => {
+    const outcome = await this.serializable(async (tx) => {
       const [run, turn, control] = await Promise.all([
         tx.storyRun.findUnique({ where: { id: input.context.run.id } }),
         tx.actorTurn.findUnique({ where: { id: input.context.turn.id }, include: { decisionSet: true, thread: true } }),
@@ -1906,7 +2154,71 @@ export class ContinuousStoryV2Service {
       if (!control || control.epoch !== input.command.controlEpoch || !allowedModes.includes(control.mode)) {
         throw new ConflictException({ code: "ROLE_CONTROL_CHANGED", message: "Role control changed" });
       }
-      const appliedSequence = run.worldSequence + 1;
+      let creditChargeId: string | null = null;
+      if (input.actorKind === "HUMAN") {
+        const config = readCreditConsumptionConfig();
+        const billing = parseRunBilling(run, config.prices);
+        if (billing.policyVersion === "active_action_v1") {
+          const actionClass = classifyCreditAction({
+            actorKind: "HUMAN",
+            candidateId: input.command.candidateId,
+            customAction: input.command.customAction,
+            decisionForm: input.command.decisionForm,
+            operation: "TURN"
+          });
+          const amount = priceForCreditAction(actionClass, billing.prices);
+          const reserved = await this.creditConsumption.reserveCharge({
+            runId: run.id,
+            beneficiaryUserId: String(input.context.membership.userId),
+            chargeType: "PLAYER_ACTION",
+            actionClass,
+            amount,
+            idempotencyKey: `player-action:${run.id}:${input.context.membership.userId}:${input.command.idempotencyKey}`,
+            requestHash: input.requestHash,
+            metadata: { engine: CONTINUOUS_STORY_ENGINE_VERSION, policyVersion: billing.policyVersion, turnId: turn.id, decisionForm: input.command.decisionForm || "STORY_CHOICE" },
+            meteringMode: config.meteringMode,
+            tx
+          });
+          if (reserved.kind === "insufficient") {
+            const nextEpoch = control.epoch + 1;
+            await tx.roleControl.update({
+              where: { id: control.id },
+              data: { mode: "AI_ACTIVE", epoch: nextEpoch, reason: "CREDITS_INSUFFICIENT", takeoverAt: new Date(), offlineSince: null }
+            });
+            await tx.roleControlTransition.create({
+              data: {
+                roleControlId: control.id,
+                fromMode: control.mode,
+                toMode: "AI_ACTIVE",
+                fromEpoch: control.epoch,
+                toEpoch: nextEpoch,
+                reason: "CREDITS_INSUFFICIENT",
+                initiatedByUserId: input.context.membership.userId,
+                effectiveSlot: `TURN:${turn.id}`,
+                idempotencyKey: `credits-insufficient:${run.id}:${turn.id}:${control.epoch}`
+              }
+            });
+            await tx.storyTaskOutbox.create({
+              data: {
+                runId: run.id,
+                nodeId: run.currentNodeId!,
+                roleId: turn.roleId,
+                inputRefId: turn.id,
+                actionSlot: "ACTOR_TURN",
+                controlEpoch: nextEpoch,
+                taskType: "ACTOR_AGENT_TURN_V2",
+                status: "PENDING",
+                dedupeKey: `ACTOR_AGENT_TURN_V2:${turn.id}`,
+                maxAttempts: 3
+              }
+            });
+            await tx.eventLog.create({ data: { userId: input.context.membership.userId, runId: run.id, eventName: "role_control_changed", source: "credits", payload: { roleId: turn.roleId, fromMode: control.mode, toMode: "AI_ACTIVE", epoch: nextEpoch, reason: "CREDITS_INSUFFICIENT" } } });
+            return { insufficient: reserved, control: { mode: "AI_ACTIVE", epoch: nextEpoch } } as const;
+          }
+          creditChargeId = reserved.charge?.id || null;
+        }
+      }
+      const appliedSequence = Math.max(run.worldSequence, Number((run as any).reservedWorldSequence || run.worldSequence)) + 1;
       const nodeId = run.currentNodeId;
       if (!nodeId) throw new ConflictException({ code: "CURRENT_NODE_REQUIRED", message: "The run has no causal node" });
       const playerAction = await tx.playerAction.create({
@@ -1948,6 +2260,7 @@ export class ContinuousStoryV2Service {
           resolvedAt: new Date()
         }
       });
+      if (creditChargeId) await this.creditConsumption.attachPlayerAction(creditChargeId, playerAction.id, tx);
       const submission = await tx.decisionSubmission.create({
         data: {
           runId: run.id,
@@ -1978,10 +2291,14 @@ export class ContinuousStoryV2Service {
           submissionId: submission.id,
           roleId: turn.roleId,
           playerActionId: playerAction.id,
-          baseWorldSequence: input.context.observedWorldSequence,
+          baseWorldSequence: run.worldSequence,
           appliedWorldSequence: appliedSequence,
           outcomeJson: { receipt: input.action.receiptText, factKeys: input.action.effectFactKeys, influenceEdges: input.action.influenceEdges } as Prisma.InputJsonValue,
           statePatchJson: {
+            schemaVersion: "pending_world_mutation_v1",
+            baseWorldSequence: run.worldSequence,
+            nextWorldSequence: appliedSequence,
+            interactionId: input.command.interactionId || null,
             nextStateKey: input.action.nextStateKey,
             fromStageIndex: turn.stageIndex,
             toStageIndex: input.stageProgress.nextStageIndex,
@@ -1995,117 +2312,12 @@ export class ContinuousStoryV2Service {
           qualityStatus: "GENERATING"
         }
       });
-      await this.applyLeverageMutations(tx, run.id, input.context.role.id, input.action, playerAction.id);
-      if (input.command.interactionId) {
-        const response = await tx.interactionRequestV2.updateMany({
-          where: { id: input.command.interactionId, runId: run.id, targetRoleId: turn.roleId, status: "OPEN" },
-          data: { status: "RESPONDED", responseTurnId: turn.id, respondedAt: new Date() }
-        });
-        if (response.count !== 1) throw new ConflictException({ code: "INTERACTION_MOVED", message: "这项回应请求已经失效或不属于当前角色。" });
-      }
-      if (input.action.normalizedIntent.condition) {
-        await tx.conditionalActionV2.create({
-          data: {
-            runId: run.id,
-            ownerThreadId: turn.threadId,
-            sourceSubmissionId: submission.id,
-            rawConditionJson: input.action.normalizedIntent.condition as unknown as Prisma.InputJsonValue,
-            normalizedCommandJson: {
-              intent: {
-                ...input.action.normalizedIntent,
-                method: input.action.normalizedIntent.fallback?.method || input.action.normalizedIntent.method,
-                condition: null
-              }
-            } as unknown as Prisma.InputJsonValue,
-            expiresAtStage: input.action.normalizedIntent.condition.expiresAtStage || null,
-            dedupeKey: `condition-v2:${submission.id}`
-          }
-        });
-      }
-      if (input.action.targetRoleId && /承诺|答应|保证|立誓|允诺|约定|交换条件/.test(`${input.action.normalizedIntent.objective} ${input.action.normalizedIntent.method}`)) {
-        await tx.commitmentV2.create({
-          data: {
-            runId: run.id,
-            sourceResolutionId: resolution.id,
-            issuerRoleId: turn.roleId,
-            receiverRoleId: input.action.targetRoleId,
-            content: `${input.context.role.roleName}向${input.action.targetRoleName || "对方"}承诺：${input.action.normalizedIntent.objective}；执行方式为${input.action.normalizedIntent.method}`,
-            visibility: input.action.visibility,
-            expiresAtStage: input.action.normalizedIntent.condition?.expiresAtStage || Math.min(input.context.run.totalDays, turn.stageIndex + 2),
-            dedupeKey: `commitment-v2:${resolution.id}:${input.action.targetRoleId}`
-          }
-        });
-      }
-      if (!isSoloNpcRun(run) && input.action.requiresTargetResponse && input.action.targetRoleId) {
-        await tx.interactionRequestV2.create({
-          data: {
-            runId: run.id,
-            sourceResolutionId: resolution.id,
-            sourceRoleId: turn.roleId,
-            targetRoleId: input.action.targetRoleId,
-            requestKind: input.action.interactionRequestKind || "REQUEST_RESPONSE",
-            pressureJson: {
-              objective: input.action.normalizedIntent.objective,
-              method: input.action.normalizedIntent.method,
-              sourceRoleName: input.context.role.roleName,
-              targetRoleName: input.action.targetRoleName,
-              fallback: input.action.normalizedIntent.fallback
-            } as Prisma.InputJsonValue,
-            observableTraceJson: input.action.observableTraceText ? { content: input.action.observableTraceText } as Prisma.InputJsonValue : Prisma.JsonNull,
-            dedupeKey: `interaction-v2:${resolution.id}:${input.action.targetRoleId}`
-          }
-        });
-      }
-      await tx.conditionalActionV2.updateMany({
-        where: { runId: run.id, status: "ARMED", expiresAtStage: { lt: turn.stageIndex } },
-        data: { status: "EXPIRED", expiredAt: new Date() }
-      });
-      await tx.commitmentV2.updateMany({
-        where: { runId: run.id, status: "ACTIVE", expiresAtStage: { lt: turn.stageIndex } },
-        data: { status: "EXPIRED", expiredAt: new Date() }
-      });
-      const allRoleIds = input.context.allRoles.map((role) => role.id);
-      for (const factKey of input.action.effectFactKeys) {
-        const factVisibility = input.context.situationInput.stage.factCatalog.find((fact) => fact.factKey === factKey)?.visibility || input.action.visibility;
-        const affectedRoleKeys = new Set(input.action.influenceEdges.map((edge) => edge.affectedRoleKey));
-        const affectedRoleIds = input.context.allRoles.filter((role) => affectedRoleKeys.has(role.roleKey)).map((role) => role.id);
-        const knownBy = factAudience(factVisibility, input.action, turn.roleId, allRoleIds, affectedRoleIds);
-        const factContent = factVisibility === "OBSERVABLE"
-          ? input.action.observableTraceText || `有人在${input.context.situationInput.stage.title}留下了可核验但尚不能确认来源的行动痕迹。`
-          : input.action.receiptText;
-        const existingFact = await tx.canonFact.findUnique({ where: { runId_factKey: { runId: run.id, factKey } } });
-        if (existingFact) {
-          await tx.canonFact.update({
-            where: { id: existingFact.id },
-            data: {
-              content: factContent,
-              status: "confirmed",
-              visibility: factVisibility.toLowerCase(),
-              sourceActionIdsJson: uniqueStrings([...stringList(existingFact.sourceActionIdsJson), playerAction.id]),
-              knownByRoleIdsJson: uniqueStrings([...stringList(existingFact.knownByRoleIdsJson), ...knownBy])
-            }
-          });
-        } else {
-          await tx.canonFact.create({
-            data: {
-              runId: run.id,
-              sourceNodeId: nodeId,
-              factKey,
-              content: factContent,
-              status: "confirmed",
-              visibility: factVisibility.toLowerCase(),
-              sourceEventIdsJson: [],
-              sourceActionIdsJson: [playerAction.id],
-              knownByRoleIdsJson: knownBy
-            }
-          });
-        }
-      }
-      const resultingStageIndex = input.stageProgress.nextStageIndex || turn.stageIndex;
-      await this.ensureStageAssets(tx, run.id, resultingStageIndex, input.context.allRoles);
-      await tx.storyRun.update({
+      // All authoritative world mutations are deliberately deferred until the
+      // generated result passes the publication gate. Only a reservation
+      // counter advances here; it is not exposed as world state.
+      await (tx.storyRun as any).update({
         where: { id: run.id },
-        data: { worldSequence: appliedSequence, currentDay: Math.max(run.currentDay, resultingStageIndex), version: { increment: 1 } }
+        data: { reservedWorldSequence: appliedSequence }
       });
       await tx.actorTurn.update({
         where: { id: turn.id },
@@ -2131,30 +2343,180 @@ export class ContinuousStoryV2Service {
           } as unknown as Prisma.InputJsonValue
         }
       });
-      await this.publishCrossImpacts(tx, {
-        runId: run.id,
-        nodeId,
-        sourceRole: input.context.role,
-        action: input.action,
-        stageIndex: turn.stageIndex,
-        appliedSequence,
-        playerActionId: playerAction.id,
-        allRoles: input.context.allRoles,
-        soloNpcMode: isSoloNpcRun(run)
-      });
-      await this.enqueueMatchingConditionTasks(tx, {
-        runId: run.id,
-        nodeId,
-        sourceSubmissionId: submission.id,
-        actorRoleId: input.context.role.id,
-        triggeringAction: input.action
-      });
       return {
         resolutionId: resolution.id,
         taskId: resultTask.id,
         appliedWorldSequence: appliedSequence,
         submissionId: submission.id
       };
+    });
+    if ("insufficient" in outcome && outcome.insufficient) {
+      const insufficient = outcome.insufficient;
+      throw new HttpException({
+        code: "PLAYER_CREDITS_REQUIRED",
+        message: "Not enough World Credits to submit this action; the character is continuing under AI control",
+        requiredCredits: insufficient.required,
+        availableCredits: insufficient.available,
+        canRequestSponsor: true,
+        control: { ...outcome.control, reason: "CREDITS_INSUFFICIENT" },
+        purchaseUrl: `/credits?intent=PLAYER_RECLAIM&runId=${encodeURIComponent(input.context.run.id)}&returnTo=${encodeURIComponent(`/game?runId=${input.context.run.id}`)}`
+      }, HttpStatus.PAYMENT_REQUIRED);
+    }
+    return outcome;
+  }
+
+  private async applyReservedWorldMutation(
+    tx: Tx,
+    input: {
+      resolution: any;
+      context: Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>;
+      action: PlannedIntentAction;
+      stageProgress: StageProgressDecision;
+    }
+  ) {
+    const { resolution, context, action, stageProgress } = input;
+    const run = resolution.run;
+    const turn = resolution.turn;
+    const submission = resolution.submission;
+    const playerAction = resolution.playerAction;
+    const plan = jsonRecord(resolution.statePatchJson);
+    if (plan.schemaVersion !== "pending_world_mutation_v1"
+      || Number(plan.baseWorldSequence) !== resolution.baseWorldSequence
+      || Number(plan.nextWorldSequence) !== resolution.appliedWorldSequence) {
+      throw new ConflictException({ code: "PENDING_WORLD_MUTATION_INVALID", message: "Reserved action is missing its immutable world mutation plan" });
+    }
+    const advanced = await tx.storyRun.updateMany({
+      where: { id: run.id, worldSequence: resolution.baseWorldSequence },
+      data: {
+        worldSequence: resolution.appliedWorldSequence,
+        currentDay: Math.max(run.currentDay, stageProgress.nextStageIndex || turn.stageIndex),
+        version: { increment: 1 }
+      }
+    });
+    if (advanced.count !== 1) throw new DecisionContextMovedError();
+
+    const nodeId = run.currentNodeId;
+    if (!nodeId) throw new ConflictException({ code: "CURRENT_NODE_REQUIRED", message: "The run has no causal node" });
+    await this.applyLeverageMutations(tx, run.id, context.role.id, action, playerAction.id);
+    const interactionId = typeof plan.interactionId === "string" ? plan.interactionId : null;
+    if (interactionId) {
+      const response = await tx.interactionRequestV2.updateMany({
+        where: { id: interactionId, runId: run.id, targetRoleId: turn.roleId, status: "OPEN" },
+        data: { status: "RESPONDED", responseTurnId: turn.id, respondedAt: new Date() }
+      });
+      if (response.count !== 1) throw new ConflictException({ code: "INTERACTION_MOVED", message: "这项回应请求已经失效或不属于当前角色。" });
+    }
+    if (action.normalizedIntent.condition) {
+      await tx.conditionalActionV2.create({
+        data: {
+          runId: run.id,
+          ownerThreadId: turn.threadId,
+          sourceSubmissionId: submission.id,
+          rawConditionJson: action.normalizedIntent.condition as unknown as Prisma.InputJsonValue,
+          normalizedCommandJson: {
+            intent: {
+              ...action.normalizedIntent,
+              method: action.normalizedIntent.fallback?.method || action.normalizedIntent.method,
+              condition: null
+            }
+          } as unknown as Prisma.InputJsonValue,
+          expiresAtStage: action.normalizedIntent.condition.expiresAtStage || null,
+          dedupeKey: `condition-v2:${submission.id}`
+        }
+      });
+    }
+    if (action.targetRoleId && /承诺|答应|保证|立誓|允诺|约定|交换条件/.test(`${action.normalizedIntent.objective} ${action.normalizedIntent.method}`)) {
+      await tx.commitmentV2.create({
+        data: {
+          runId: run.id,
+          sourceResolutionId: resolution.id,
+          issuerRoleId: turn.roleId,
+          receiverRoleId: action.targetRoleId,
+          content: `${context.role.roleName}向${action.targetRoleName || "对方"}承诺：${action.normalizedIntent.objective}；执行方式为${action.normalizedIntent.method}`,
+          visibility: action.visibility,
+          expiresAtStage: action.normalizedIntent.condition?.expiresAtStage || Math.min(run.totalDays, turn.stageIndex + 2),
+          dedupeKey: `commitment-v2:${resolution.id}:${action.targetRoleId}`
+        }
+      });
+    }
+    if (!isSoloNpcRun(run) && action.requiresTargetResponse && action.targetRoleId) {
+      await tx.interactionRequestV2.create({
+        data: {
+          runId: run.id,
+          sourceResolutionId: resolution.id,
+          sourceRoleId: turn.roleId,
+          targetRoleId: action.targetRoleId,
+          requestKind: action.interactionRequestKind || "REQUEST_RESPONSE",
+          pressureJson: {
+            objective: action.normalizedIntent.objective,
+            method: action.normalizedIntent.method,
+            sourceRoleName: context.role.roleName,
+            targetRoleName: action.targetRoleName,
+            fallback: action.normalizedIntent.fallback
+          } as Prisma.InputJsonValue,
+          observableTraceJson: action.observableTraceText ? { content: action.observableTraceText } as Prisma.InputJsonValue : Prisma.JsonNull,
+          dedupeKey: `interaction-v2:${resolution.id}:${action.targetRoleId}`
+        }
+      });
+    }
+    await tx.conditionalActionV2.updateMany({ where: { runId: run.id, status: "ARMED", expiresAtStage: { lt: turn.stageIndex } }, data: { status: "EXPIRED", expiredAt: new Date() } });
+    await tx.commitmentV2.updateMany({ where: { runId: run.id, status: "ACTIVE", expiresAtStage: { lt: turn.stageIndex } }, data: { status: "EXPIRED", expiredAt: new Date() } });
+
+    const allRoleIds = context.allRoles.map((role) => role.id);
+    for (const factKey of action.effectFactKeys) {
+      const factVisibility = context.situationInput.stage.factCatalog.find((fact) => fact.factKey === factKey)?.visibility || action.visibility;
+      const affectedRoleKeys = new Set(action.influenceEdges.map((edge) => edge.affectedRoleKey));
+      const affectedRoleIds = context.allRoles.filter((role) => affectedRoleKeys.has(role.roleKey)).map((role) => role.id);
+      const knownBy = factAudience(factVisibility, action, turn.roleId, allRoleIds, affectedRoleIds);
+      const factContent = factVisibility === "OBSERVABLE"
+        ? action.observableTraceText || `有人在${context.situationInput.stage.title}留下了可核验但尚不能确认来源的行动痕迹。`
+        : action.receiptText;
+      const existingFact = await tx.canonFact.findUnique({ where: { runId_factKey: { runId: run.id, factKey } } });
+      if (existingFact) {
+        await tx.canonFact.update({
+          where: { id: existingFact.id },
+          data: {
+            content: factContent,
+            status: "confirmed",
+            visibility: factVisibility.toLowerCase(),
+            sourceActionIdsJson: uniqueStrings([...stringList(existingFact.sourceActionIdsJson), playerAction.id]),
+            knownByRoleIdsJson: uniqueStrings([...stringList(existingFact.knownByRoleIdsJson), ...knownBy])
+          }
+        });
+      } else {
+        await tx.canonFact.create({
+          data: {
+            runId: run.id,
+            sourceNodeId: nodeId,
+            factKey,
+            content: factContent,
+            status: "confirmed",
+            visibility: factVisibility.toLowerCase(),
+            sourceEventIdsJson: [],
+            sourceActionIdsJson: [playerAction.id],
+            knownByRoleIdsJson: knownBy
+          }
+        });
+      }
+    }
+    await this.ensureStageAssets(tx, run.id, stageProgress.nextStageIndex || turn.stageIndex, context.allRoles);
+    await this.publishCrossImpacts(tx, {
+      runId: run.id,
+      nodeId,
+      sourceRole: context.role,
+      action,
+      stageIndex: turn.stageIndex,
+      appliedSequence: resolution.appliedWorldSequence,
+      playerActionId: playerAction.id,
+      allRoles: context.allRoles,
+      soloNpcMode: isSoloNpcRun(run)
+    });
+    await this.enqueueMatchingConditionTasks(tx, {
+      runId: run.id,
+      nodeId,
+      sourceSubmissionId: submission.id,
+      actorRoleId: context.role.id,
+      triggeringAction: action
     });
   }
 
@@ -2194,6 +2556,8 @@ export class ContinuousStoryV2Service {
       if (!leasedTask) throw new AgentLeaseLostError();
       if (!resolution) throw new ConflictException({ code: "RESULT_RESERVATION_MISSING", message: "Reserved result no longer exists" });
       if (resolution.qualityStatus === "PASS") {
+        const existingCharge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: resolution.playerActionId } });
+        if (existingCharge?.status === "RESERVED") await this.creditConsumption.commitCharge(existingCharge.id, tx);
         return {
           id: resolution.id,
           submissionId: resolution.submissionId,
@@ -2211,6 +2575,7 @@ export class ContinuousStoryV2Service {
       const playerAction = resolution.playerAction;
       const nodeId = run.currentNodeId;
       if (!nodeId) throw new ConflictException({ code: "CURRENT_NODE_REQUIRED", message: "The run has no causal node" });
+      await this.applyReservedWorldMutation(tx, { resolution, context: input.context, action: input.action, stageProgress: input.stageProgress });
       await tx.actionResolution.update({
         where: { id: resolution.id },
         data: {
@@ -2228,7 +2593,9 @@ export class ContinuousStoryV2Service {
         data: {
           provider: input.draft.provider,
           modelName: input.draft.modelName,
-          resolvedJson: { appliedWorldSequence: resolution.appliedWorldSequence, storyGenerationStatus: "PASS" } as Prisma.InputJsonValue
+          resolvedJson: { appliedWorldSequence: resolution.appliedWorldSequence, storyGenerationStatus: "PASS" } as Prisma.InputJsonValue,
+          status: "resolved",
+          resolvedAt: new Date()
         }
       });
       await tx.decisionSubmission.update({
@@ -2255,6 +2622,9 @@ export class ContinuousStoryV2Service {
         }
       });
 
+      const postActionControl = input.actorKind === "AI"
+        ? await tx.roleControl.findUnique({ where: { runId_roleId: { runId: run.id, roleId: turn.roleId } } })
+        : null;
       let nextTurnId: string | null = null;
       if (input.draft.nextSituation && input.nextInput && input.nextStoryReview && input.nextDecisionReview) {
         const nextTurn = await tx.actorTurn.create({
@@ -2318,7 +2688,7 @@ export class ContinuousStoryV2Service {
         });
         await this.writeReview(tx, run.id, turn.roleId, nextTurn.id, "SITUATION", nextTurn.id, input.draft.nextSituation.situationNarrative, input.nextStoryReview, input.draft.provider, input.draft.modelName);
         await this.writeReview(tx, run.id, turn.roleId, nextTurn.id, "DECISION_SET", nextDecisionSet.id, input.draft.nextSituation.decisions, input.nextDecisionReview, input.draft.provider, input.draft.modelName);
-        if (input.actorKind === "AI") {
+        if (input.actorKind === "AI" && postActionControl?.mode === "AI_ACTIVE") {
           await tx.storyTaskOutbox.create({
             data: {
               runId: run.id,
@@ -2326,7 +2696,7 @@ export class ContinuousStoryV2Service {
               roleId: turn.roleId,
               inputRefId: nextTurn.id,
               actionSlot: "ACTOR_TURN",
-              controlEpoch: input.controlEpoch,
+              controlEpoch: postActionControl.epoch,
               taskType: "ACTOR_AGENT_TURN_V2",
               status: "PENDING",
               dedupeKey: `ACTOR_AGENT_TURN_V2:${nextTurn.id}`,
@@ -2365,6 +2735,44 @@ export class ContinuousStoryV2Service {
         });
         await this.writeReview(tx, run.id, turn.roleId, turn.id, "ENDING", endingEntry.id, endingContent, endingReview, input.draft.provider, input.draft.modelName);
       }
+      if (postActionControl?.mode === "HUMAN_RECLAIM_PENDING") {
+        const originalPlayer = postActionControl.humanPlayerId
+          ? await tx.storyPlayer.findUnique({ where: { id: postActionControl.humanPlayerId } })
+          : null;
+        await tx.roleControl.update({
+          where: { id: postActionControl.id },
+          data: { mode: "HUMAN_ACTIVE", reason: "RECLAIM_EFFECTIVE_NEXT_ACTOR_TURN", takeoverAt: null, lastHeartbeatAt: new Date() }
+        });
+        await tx.storyRole.update({ where: { id: turn.roleId }, data: { isAiControlled: false, status: "claimed" } });
+        await tx.roleControlTransition.upsert({
+          where: { idempotencyKey: `v2-reclaim-effective:${turn.id}:${postActionControl.epoch}` },
+          update: {},
+          create: {
+            roleControlId: postActionControl.id,
+            fromMode: "HUMAN_RECLAIM_PENDING",
+            toMode: "HUMAN_ACTIVE",
+            fromEpoch: postActionControl.epoch,
+            toEpoch: postActionControl.epoch,
+            reason: "RECLAIM_EFFECTIVE_NEXT_ACTOR_TURN",
+            initiatedByUserId: originalPlayer?.userId || null,
+            effectiveSlot: nextTurnId ? `TURN:${nextTurnId}` : "STORY_COMPLETED",
+            idempotencyKey: `v2-reclaim-effective:${turn.id}:${postActionControl.epoch}`
+          }
+        });
+        if (originalPlayer?.userId) {
+          const memberUserIds = (await tx.storyPlayer.findMany({ where: { runId: run.id, status: "active", userId: { not: null } }, select: { userId: true } }))
+            .map((player) => player.userId)
+            .filter((id): id is string => Boolean(id));
+          await this.deliveries.publish(tx, {
+            runId: run.id, nodeId, day: turn.stageIndex,
+            type: "ROLE_CONTROL_CHANGED_V2", visibility: "PUBLIC", audienceType: "ALL_MEMBERS",
+            audienceUserIds: memberUserIds, audienceRoleIds: [turn.roleId],
+            payload: { roleId: turn.roleId, controllerKind: "HUMAN", epoch: postActionControl.epoch, independentActorThread: true, initiatedByUserId: originalPlayer.userId },
+            dedupeKey: `ROLE_CONTROL_CHANGED_V2:v2-reclaim-effective:${turn.id}:${postActionControl.epoch}`
+          });
+        }
+        operationalMetrics.increment("credit_reclaim_total", { result: "effective" });
+      }
       await this.writeReview(tx, run.id, turn.roleId, turn.id, "RESULT", resolution.id, input.draft.resultNarrative, input.resultReview, input.draft.provider, input.draft.modelName);
       const actorUserId = (await tx.storyPlayer.findFirst({ where: { runId: run.id, roleId: turn.roleId, playerType: "human" } }))?.userId;
       if (actorUserId) {
@@ -2394,6 +2802,8 @@ export class ContinuousStoryV2Service {
       if (!nextTurnId && otherActive === 0) {
         await tx.storyRun.update({ where: { id: run.id }, data: { status: "chapter_generated", completedNodeCount: run.totalDays, chapterCount: 1 } });
       }
+      const charge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: playerAction.id } });
+      if (charge?.status === "RESERVED") await this.creditConsumption.commitCharge(charge.id, tx);
       return {
         id: resolution.id,
         submissionId: submission.id,
@@ -3448,6 +3858,14 @@ function exceptionResponseCode(error: unknown): string | null {
   return typeof response === "object" && response !== null && typeof (response as { code?: unknown }).code === "string"
     ? String((response as { code: string }).code)
     : null;
+}
+
+function isPermanentStoryGenerationFailure(error: unknown) {
+  if (!error || typeof (error as { getResponse?: unknown }).getResponse !== "function") return false;
+  const response = (error as { getResponse: () => unknown }).getResponse();
+  if (!response || typeof response !== "object") return false;
+  const payload = response as { code?: unknown; recoverable?: unknown };
+  return payload.recoverable === false && ["STORY_GENERATION_REJECTED", "OPENING_STORY_GENERATION_REJECTED"].includes(String(payload.code || ""));
 }
 
 function privateFactAnchors(content: string) {

@@ -5,7 +5,7 @@ const SCHEMA = "continuous_game_projection_v1";
 export function createContinuousGameApp({ root, window: win = globalThis.window, runId, initialProjection, fetchImpl = win?.fetch?.bind(win), navigate = (url) => win?.location?.assign?.(url) } = {}) {
   if (!root || !runId || typeof fetchImpl !== "function") throw new TypeError("continuous game app requires root, runId and fetch");
   const presence = loadPresence(win, runId, initialProjection?.player?.userId);
-  const state = { projection: null, result: null, busy: false, error: "", notice: "", connected: false, selectedMain: "", selectedManeuver: "", mainDraftContext: null, maneuverDraftContext: null, afterDeliverySequence: Number(presence.lastAppliedDeliverySequence || 0), events: [], destroyed: false, accessFailure: "" };
+  const state = { projection: null, result: null, busy: false, error: "", notice: "", connected: false, selectedMain: "", selectedManeuver: "", mainDraftContext: null, maneuverDraftContext: null, afterDeliverySequence: Number(presence.lastAppliedDeliverySequence || 0), events: [], destroyed: false, accessFailure: "", creditRequired: null, sponsorshipRequests: [] };
   let streamAbort, streamRetryTimer, heartbeatTimer, refreshTimer, noticeTimer;
 
   async function request(path, options = {}) {
@@ -13,7 +13,7 @@ export function createContinuousGameApp({ root, window: win = globalThis.window,
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(payload.message || payload.code || `请求失败（HTTP ${response.status}）`);
-      Object.assign(error, { code: payload.code, status: response.status, retryAfterMs: payload.retryAfterMs });
+      Object.assign(error, payload, { code: payload.code, status: response.status, retryAfterMs: payload.retryAfterMs });
       throw error;
     }
     return payload;
@@ -127,7 +127,7 @@ export function createContinuousGameApp({ root, window: win = globalThis.window,
 
   async function boot() {
     if (!applyProjection(initialProjection || await request(`/api/v4/rooms/${encodeURIComponent(runId)}/game`), true)) throw new Error("无法应用初始房间投影");
-    render(); startHeartbeat(); startEvents();
+    render(); startHeartbeat(); startEvents(); void refreshSponsorshipRequests();
     refreshTimer = win.setInterval(() => void refresh(true), 8_000);
     win.addEventListener("pagehide", destroy, { once: true });
     if (win.location.pathname === "/game/result" || state.projection.resultReady) await loadResult();
@@ -148,6 +148,7 @@ export function createContinuousGameApp({ root, window: win = globalThis.window,
     try {
       const projection = await request(`/api/v4/rooms/${encodeURIComponent(runId)}/game`);
       if (applyProjection(projection) || !silent) render();
+      void refreshSponsorshipRequests();
       if (projection.resultReady) await loadResult();
     } catch (error) { if (!handleAccessFailure(error) && !silent) showError(error); }
   }
@@ -161,6 +162,12 @@ export function createContinuousGameApp({ root, window: win = globalThis.window,
       state.notice = success; clearNoticeLater();
     } catch (error) {
       if (handleAccessFailure(error)) return;
+      if (isCreditRequired(error)) {
+        clearDraft("MAIN"); clearDraft("MANEUVER");
+        state.creditRequired = error;
+        await refresh(true);
+        return;
+      }
       if (["WINDOW_MOVED", "WINDOW_CLOSED", "SLOT_SEALED", "ROLE_CONTROL_CHANGED"].includes(error.code)) { await refresh(true); state.notice = "局势刚刚变化，已刷新到最新状态"; }
       else state.error = friendlyError(error);
     } finally { state.busy = false; render(); }
@@ -189,6 +196,48 @@ export function createContinuousGameApp({ root, window: win = globalThis.window,
   }
   function reclaim() { return command(`/api/v4/rooms/${encodeURIComponent(runId)}/game/control/reclaim`, { idempotencyKey: key("reclaim"), expectedControlEpoch: state.projection.myControl.epoch }, "接管申请已确认；页面会显示实际生效的安全槽位"); }
   function unlock() { return command(state.projection.access.unlockEndpoint, { idempotencyKey: key("unlock") }, "共享世界已解锁，三名玩家继续同一个房间"); }
+
+  async function requestHostSupport() {
+    if (state.busy) return;
+    state.busy = true; render();
+    try {
+      const storageKey = `many-worlds:sponsor-request:${runId}`;
+      let idempotencyKey = win.localStorage?.getItem(storageKey);
+      if (!idempotencyKey) { idempotencyKey = `sponsor-${runId}-${uuid()}`; win.localStorage?.setItem(storageKey, idempotencyKey); }
+      await request(`/api/v4/story-runs/${encodeURIComponent(runId)}/sponsorship-requests`, { method: "POST", body: JSON.stringify({ idempotencyKey, origin: "FIRST_INSUFFICIENT" }) });
+      state.creditRequired = null;
+      state.notice = "The host has received one support request. Your character continues under AI control.";
+      clearNoticeLater();
+    } catch (error) { state.error = friendlyError(error); }
+    finally { state.busy = false; render(); }
+  }
+
+  function addCredits() {
+    const returnTo = `${win.location.pathname}${win.location.search || `?runId=${encodeURIComponent(runId)}`}`;
+    navigate(`/credits?intent=PLAYER_RECLAIM&runId=${encodeURIComponent(runId)}&returnTo=${encodeURIComponent(returnTo)}`);
+  }
+
+  async function refreshSponsorshipRequests() {
+    const p = state.projection;
+    if (!p || String(p.roomSummary?.ownerUserId || "") !== String(p.player?.userId || "")) return;
+    try {
+      const requests = await request(`/api/v4/story-runs/${encodeURIComponent(runId)}/sponsorship-requests`);
+      state.sponsorshipRequests = Array.isArray(requests) ? requests.filter((item) => item.status === "PENDING") : [];
+      render();
+    } catch {}
+  }
+
+  async function decideSponsorship(requestId, approve) {
+    if (state.busy) return;
+    state.busy = true; render();
+    try {
+      await request(`/api/v4/story-runs/${encodeURIComponent(runId)}/sponsorship-requests/${encodeURIComponent(requestId)}/${approve ? "approve" : "decline"}`, { method: "POST", body: "{}" });
+      state.sponsorshipRequests = state.sponsorshipRequests.filter((item) => item.id !== requestId);
+      state.notice = approve ? "10 World Credits are now available to this player in this Story Run." : "The support request was declined; AI control continues.";
+      clearNoticeLater();
+    } catch (error) { state.error = friendlyError(error); }
+    finally { state.busy = false; render(); }
+  }
 
   async function loadResult() {
     if (!state.projection?.resultReady || state.result || state.destroyed) return;
@@ -324,7 +373,8 @@ export function createContinuousGameApp({ root, window: win = globalThis.window,
   function showError(error) { state.error = friendlyError(error); render(); }
   function clearNoticeLater() { if (noticeTimer) win.clearTimeout(noticeTimer); noticeTimer = win.setTimeout(() => { state.notice = ""; render(); }, 4_000); }
   const handlers = {
-    refresh: () => refresh(false), submitMain, submitManeuver, submitReaction, finishLayout, handoff, reclaim, unlock,
+    refresh: () => refresh(false), submitMain, submitManeuver, submitReaction, finishLayout, handoff, reclaim, unlock, addCredits, requestHostSupport,
+    continueWithAi: () => { state.creditRequired = null; render(); }, approveSponsorship: (id) => decideSponsorship(id, true), declineSponsorship: (id) => decideSponsorship(id, false),
     selectMain: (value) => selectDraft("MAIN", value), selectManeuver: (value) => selectDraft("MANEUVER", value),
     dismissError: () => { state.error = ""; render(); }, showResult: () => { win.location.href = state.projection.resultUrl; }
   };
@@ -340,9 +390,10 @@ export function createContinuousGameApp({ root, window: win = globalThis.window,
 }
 
 function friendlyError(error) {
-  const labels = { ACCESS_REQUIRES_UNLOCK: "需要先由真人成员解锁共享世界", INSUFFICIENT_CREDITS: "世界点数不足", REACTION_REQUIRED: "请先完成定向回应", HEARTBEAT_RATE_LIMITED: "连接正常，心跳已自动降频", ROLE_FORBIDDEN: "当前账号无权操作这个角色" };
+  const labels = { ACCESS_REQUIRES_UNLOCK: "需要先由真人成员解锁共享世界", INSUFFICIENT_CREDITS: "世界点数不足", INSUFFICIENT_WORLD_CREDITS: "World Credits 不足，角色已由 AI 继续推进", PLAYER_CREDITS_REQUIRED: "World Credits 不足，角色已由 AI 继续推进", REACTION_REQUIRED: "请先完成定向回应", HEARTBEAT_RATE_LIMITED: "连接正常，心跳已自动降频", ROLE_FORBIDDEN: "当前账号无权操作这个角色" };
   return labels[error.code] || error.message || "操作失败，请刷新后重试";
 }
+function isCreditRequired(error) { return error?.status === 402 && ["PLAYER_CREDITS_REQUIRED", "INSUFFICIENT_WORLD_CREDITS"].includes(error?.code); }
 function uuid() { return globalThis.crypto?.randomUUID?.().replace(/-/g, "") || `${Date.now()}${Math.random().toString(16).slice(2)}`; }
 function storageKey(runId, userId) { return `many-worlds:presence:${runId}:${userId || "member"}`; }
 function draftStorageKey(runId, slot) { return `many-worlds:draft:${runId}:${slot}`; }

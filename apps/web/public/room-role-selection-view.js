@@ -35,7 +35,7 @@ export function renderRoomSelectionPage(model = {}) {
 
 function renderInviteCard(model) {
   const code = model.inviteCode || "—";
-  return `<aside class="mw-room-invite-card"><span>Invite code</span><strong>${escapeHtml(code)}</strong><button class="mw-room-button mw-room-button-secondary mw-room-button-compact" type="button" data-action="share-invite" ${disabled(model.loading || model.busy)}>${controlIcon("share")}<span>Share invite</span></button></aside>`;
+  return `<aside class="mw-room-invite-card"><span class="mw-room-invite-emblem" aria-hidden="true"><i></i></span><span class="mw-room-invite-label">Invite Code</span><strong>${escapeHtml(code)}</strong><button class="mw-room-button mw-room-button-secondary mw-room-button-compact" type="button" data-action="share-invite" ${disabled(model.loading || model.busy)}>${controlIcon("share")}<span>Share invite</span></button></aside>`;
 }
 
 function renderSoloCard(model) {
@@ -91,9 +91,16 @@ function renderFooter(mode, model, role) {
     const label = model.footerMessage || "You will begin alone. AI will play every remaining role.";
     return `<footer class="mw-room-footer room-footer mw-room-footer-solo"><p>${escapeHtml(label)}</p><a class="mw-room-button mw-room-button-secondary" href="${escapeAttr(model.backHref || "/")}">${controlIcon("back")}<span>Back</span></a><button class="mw-room-button mw-room-button-primary" id="enterRole" type="button" ${disabled(!role || role.disabled || model.loading || model.busy)}>${controlIcon("confirm")}<span>${model.busy ? "Entering…" : escapeHtml(model.confirmLabel || "Confirm Role and Begin")}</span></button></footer>`;
   }
+  if (model.expired) {
+    return `<footer class="mw-room-footer room-footer mw-room-footer-multiplayer"><p>This room has expired. The room did not start within 30 minutes.</p><div><a class="mw-room-button mw-room-button-secondary" href="/worlds">${controlIcon("back")}<span>Back to Worlds</span></a><a class="mw-room-button mw-room-button-primary" href="/rooms">${controlIcon("start")}<span>Create New Room</span></a></div></footer>`;
+  }
   const readyLabel = model.busy ? "Saving…" : model.readyLabel || "Ready";
   const footerMessage = model.footerMessage || (model.isHost ? "Start when everyone is ready." : "Tell the host when you are ready.");
-  return `<footer class="mw-room-footer room-footer mw-room-footer-multiplayer"><p>${escapeHtml(footerMessage)}</p><div><button class="mw-room-button mw-room-button-secondary" type="button" data-action="ready" ${disabled(!model.canReady || model.loading || model.busy)}>${controlIcon("ready")}<span>${escapeHtml(readyLabel)}</span></button>${model.isHost ? `<button class="mw-room-button mw-room-button-primary" type="button" data-action="start-game" ${disabled(!model.canStart || model.loading || model.busy)}>${controlIcon("start")}<span>Start Game</span></button>` : ""}</div></footer>`;
+  const countdown = model.lobbyDeadlineAt ? `<small class="mw-lobby-countdown" data-lobby-countdown data-deadline="${escapeAttr(model.lobbyDeadlineAt)}" data-server-now="${escapeAttr(model.serverNow || "")}"></small>` : "";
+  const waitingActions = model.isHost && model.canPlaySolo
+    ? `<div class="mw-room-wait-actions"><button class="mw-room-button mw-room-button-secondary" type="button" data-action="play-solo">${controlIcon("ready")}<span>Play Solo</span></button><button class="mw-room-button mw-room-button-primary" type="button" data-action="extend-wait">${controlIcon("start")}<span>Wait Another 5 Minutes</span></button></div>`
+    : "";
+  return `<footer class="mw-room-footer room-footer mw-room-footer-multiplayer"><p>${escapeHtml(footerMessage)}</p>${countdown}<div><button class="mw-room-button mw-room-button-secondary" type="button" data-action="ready" ${disabled(!model.canReady || model.loading || model.busy)}>${controlIcon("ready")}<span>${escapeHtml(readyLabel)}</span></button>${model.isHost ? `<button class="mw-room-button mw-room-button-primary" type="button" data-action="start-game" ${disabled(!model.canStart || model.loading || model.busy)}>${controlIcon("start")}<span>${escapeHtml(model.startLabel || "Start Game")}</span></button>` : ""}</div>${waitingActions}</footer>`;
 }
 
 const CONTROL_ICON_PATHS = {

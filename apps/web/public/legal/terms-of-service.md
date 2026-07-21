@@ -2,13 +2,13 @@
 title: Terms of Service
 description: Terms of Service for Our Many Worlds
 effectiveDate: 2026-07-12
-lastUpdated: 2026-07-12
+lastUpdated: 2026-07-21
 ---
 
 # Terms of Service
 
 **Effective date:** July 12, 2026
-**Last updated:** July 12, 2026
+**Last updated:** July 21, 2026
 
 These Terms of Service (**“Terms”**) govern your access to and use of **Our Many Worlds**, an AI-powered multiplayer storytelling and narrative simulation service available at **ourmanyworlds.com** (the **“Service”**).
 
@@ -140,6 +140,12 @@ Unless clearly stated otherwise:
 - credits and digital access are licensed, not sold as property;
 - credits have no cash value, are not legal tender, and cannot be transferred, resold, or redeemed for cash;
 - bonus or promotional credits may have separate conditions;
+- under the current active-action schedule, creating a playable Solo or Shared run costs 20 Credits, a successful suggested action costs 1 Credit, and a successful custom or complex action costs 2 Credits;
+- reading story content, AI-controlled character actions, system progression, provider retries, and failed or unpublished generations cost 0 Credits;
+- an eligible charge is reserved before work begins and becomes final only after the requested run or action is successfully published; a failed or unpublished result releases the reservation;
+- Credits are charged for the successful player-directed business action, not for the number of AI-provider calls, tokens, retries, or internal processing steps;
+- a host may sponsor a run by spending 10 Credits to create a run-only allowance for the selected participant; unused sponsored allowance is not transferable or redeemable and expires with the run;
+- if a participant lacks enough Credits, their character may continue under AI control without being removed from the world, and the participant may reclaim control at a safe turn boundary;
 - prices and included features will be shown before checkout;
 - taxes may be added or handled by the merchant of record according to your location;
 - purchases may be processed by Creem or another third-party merchant of record or payment provider;

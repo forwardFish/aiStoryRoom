@@ -1,6 +1,8 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma.service";
+import { CreditConsumptionService } from "../credits/credit-consumption.service";
+import { operationalMetrics } from "../observability/operational-metrics";
 import { sha256Canonical } from "./canonical";
 import { ContinuousStrategyContentService, type BoundContinuousStrategyContent } from "./content.service";
 import { ContinuousEventDeliveryService } from "./event-delivery.service";
@@ -19,7 +21,8 @@ export class WindowResolutionService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ContinuousStrategyContentService) private readonly content: ContinuousStrategyContentService,
     @Inject(ContinuousEventDeliveryService) private readonly deliveries: ContinuousEventDeliveryService,
-    @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService
+    @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService,
+    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService
   ) {}
 
   async resolve(windowId: string, fence?: { taskId: string; leaseOwner: string; leaseVersion: number }) {
@@ -33,7 +36,13 @@ export class WindowResolutionService {
         { timeoutMs: RESOLUTION_PHASE_TRANSACTION_TIMEOUT_MS }
       );
       if (result.createdCheckpoint) this.maybeFailAfterCheckpoint(result);
-      if (result.done) return result.summary;
+      if (result.done) {
+        const effectiveReclaims = Number((result.summary as any)?.reclaimEffectiveCount || 0);
+        for (let index = 0; index < effectiveReclaims; index += 1) {
+          operationalMetrics.increment("credit_reclaim_total", { result: "effective" });
+        }
+        return result.summary;
+      }
     }
     throw new Error(`RESOLUTION_CHECKPOINT_LOOP_EXCEEDED:${windowId}`);
   }
@@ -249,6 +258,7 @@ export class WindowResolutionService {
     if (personalEntries.length !== playableRoles.length) throw new Error(`PERSONAL_PROJECTION_COUNT_INVALID:${personalEntries.length}`);
     const publishedDescriptor = { resolutionId: resolution.id, publicEntryId: publicEntry.id, personalEntryIds: personalEntries.map((entry) => entry.id).sort() };
     if (!publishedCheckpoint) {
+      await this.applyPublishedHumanAssetMutations(tx, window.runId, gameContent, window.run.roles, actions);
       if (window.node.status !== "resolved") await tx.sceneNode.update({ where: { id: window.nodeId }, data: { status: "resolved", resolvedAt: new Date(), resolutionId: resolution.id } });
       if (window.status !== "PROJECTING" && window.status !== "RESOLVED") {
         await tx.actionWindow.update({ where: { id: window.id }, data: { status: "PROJECTING", version: { increment: 1 }, projectionVersion: { increment: 1 } } });
@@ -262,6 +272,7 @@ export class WindowResolutionService {
     const terminalCheckpoint = checkpointByKey.get(terminalKey);
     if (!terminalCheckpoint) {
       let terminalDescriptor: Record<string, unknown>;
+      let reclaimEffectiveCount = 0;
       if (stageIndex === finalStageIndex) {
         await this.publishFinalEndings(tx, gameContent, window.runId, window.nodeId, resolution.id, playableRoles, Number(rulesOutput.score || actions.length), finalStageIndex);
         if (window.status !== "RESOLVED") await tx.actionWindow.update({ where: { id: window.id }, data: { status: "RESOLVED", resolvedAt: new Date(), version: { increment: 1 }, projectionVersion: { increment: 1 } } });
@@ -289,6 +300,7 @@ export class WindowResolutionService {
         const freeRoundLimit = Number(process.env.CREDIT_FREE_DECISION_LIMIT || 3);
         const requiresUnlock = window.run.accessLevel !== "UNLOCKED" && nextStageIndex > freeRoundLimit;
         const nextWindow = await this.createNextWindow(tx, gameContent, window, nextNode, nextStageIndex, requiresUnlock);
+        reclaimEffectiveCount = nextWindow.reclaimEffectiveCount;
         if (!requiresUnlock) await this.roleAgents.enqueueForWindow(tx, nextWindow.id);
         if (window.status !== "RESOLVED") await tx.actionWindow.update({ where: { id: window.id }, data: { status: "RESOLVED", resolvedAt: new Date(), version: { increment: 1 }, projectionVersion: { increment: 1 } } });
         await tx.storyRun.update({ where: { id: window.runId }, data: {
@@ -314,15 +326,111 @@ export class WindowResolutionService {
         dedupeKey: `${stageIndex === finalStageIndex ? "RUN_COMPLETED" : "STAGE_RESOLVED"}:${window.id}`
       });
       const created = await this.writeCheckpoint(tx, workflow.id, terminalKey, terminalDescriptor, stageIndex === finalStageIndex ? "STORY_RUN" : "ACTION_WINDOW", stageIndex === finalStageIndex ? window.runId : String(terminalDescriptor.nextWindowId));
+      await this.commitPublishedHumanCharges(tx, actions);
       await tx.resolutionWorkflow.update({ where: { id: workflow.id }, data: { status: "COMPLETED", completedAt: new Date(), version: { increment: 1 } } });
       await this.validateTerminalWorkflow(tx, workflow.id, playableRoles.map((role) => role.id), stageIndex, finalStageIndex, contentPackage.manifest.stageCoverage.length, window.runId, window.id);
-      return this.phaseResult(window, terminalKey, created, true, { runId: window.runId, windowId: window.id, stageIndex, status: terminalKey });
+      return this.phaseResult(window, terminalKey, created, true, {
+        runId: window.runId,
+        windowId: window.id,
+        stageIndex,
+        status: terminalKey,
+        reclaimEffectiveCount
+      });
     }
 
     const terminalDescriptor = await this.readTerminalDescriptor(tx, window.runId, window.id, stageIndex, finalStageIndex);
     this.assertCheckpoint(terminalCheckpoint, terminalDescriptor, stageIndex === finalStageIndex ? "STORY_RUN" : "ACTION_WINDOW", stageIndex === finalStageIndex ? window.runId : String(terminalDescriptor.nextWindowId));
+    await this.commitPublishedHumanCharges(tx, actions);
     await this.validateTerminalWorkflow(tx, workflow.id, playableRoles.map((role) => role.id), stageIndex, finalStageIndex, contentPackage.manifest.stageCoverage.length, window.runId, window.id);
     return this.phaseResult(window, terminalKey, false, true, { runId: window.runId, windowId: window.id, stageIndex, status: terminalKey });
+  }
+
+  /** Releases only uncommitted human-action reservations for a window whose
+   * resolution task has reached a terminal failure. Idempotent by charge. */
+  async releaseWindowCharges(windowId: string, failureCode: string) {
+    const identity = await this.prisma.actionWindow.findUnique({ where: { id: windowId }, select: { runId: true, nodeId: true } });
+    if (!identity) return { released: 0 };
+    return roomSerializableTransaction(this.prisma, identity.runId, async (tx) => {
+      const actionIds = (await tx.playerAction.findMany({
+        where: { nodeId: identity.nodeId, actorKind: "HUMAN" },
+        select: { id: true }
+      })).map((entry) => entry.id);
+      if (!actionIds.length) return { released: 0 };
+      const charges = await (tx as any).creditCharge.findMany({
+        where: { playerActionId: { in: actionIds }, status: "RESERVED" },
+        select: { id: true }
+      });
+      for (const charge of charges) await this.creditConsumption.releaseCharge(charge.id, failureCode, tx);
+      return { released: charges.length };
+    });
+  }
+
+  private async commitPublishedHumanCharges(tx: Tx, actions: Array<{ id: string; actorKind: string | null }>) {
+    const humanActionIds = actions.filter((action) => action.actorKind === "HUMAN").map((action) => action.id);
+    if (!humanActionIds.length) return;
+    const charges = await (tx as any).creditCharge.findMany({
+      where: { playerActionId: { in: humanActionIds }, status: "RESERVED" },
+      select: { id: true }
+    });
+    for (const charge of charges) await this.creditConsumption.commitCharge(charge.id, tx);
+  }
+
+  /** Human leverage changes are authoritative story state. They are validated
+   * when the action is sealed but applied only in the same checkpoint that
+   * publishes the resolved window. A terminal generation failure can therefore
+   * release the CreditCharge without leaving a paid-action side effect behind. */
+  private async applyPublishedHumanAssetMutations(
+    tx: Tx,
+    runId: string,
+    content: BoundContinuousStrategyContent,
+    roles: Array<{ id: string; roleKey: string }>,
+    actions: Array<{ id: string; actorKind: string | null; normalizedJson: Prisma.JsonValue }>
+  ) {
+    const worldActorKey = content.package().contract.worldActorKey;
+    const roleByKey = new Map(roles.map((role) => [role.roleKey, role]));
+    for (const action of actions.filter((entry) => entry.actorKind === "HUMAN")) {
+      const normalized = action.normalizedJson && typeof action.normalizedJson === "object" && !Array.isArray(action.normalizedJson)
+        ? action.normalizedJson as Record<string, any>
+        : {};
+      const mutations = Array.isArray(normalized.assetMutations) ? normalized.assetMutations : [];
+      for (const mutation of mutations) {
+        const assetKey = String(mutation?.assetKey || "");
+        const mutationType = String(mutation?.mutationType || "");
+        const delta = Number(mutation?.delta || 0);
+        if (!assetKey || !mutationType || !Number.isInteger(delta)) throw new Error(`ASSET_MUTATION_INVALID:${action.id}`);
+        const idempotencyKey = `asset:${action.id}:${assetKey}:${mutationType}`;
+        const existing = await tx.roleAssetMutation.findUnique({ where: { idempotencyKey } });
+        if (existing) continue;
+        const asset = await tx.roleAsset.findUnique({ where: { runId_assetKey: { runId, assetKey } } });
+        if (!asset) throw new Error(`PUBLISHED_ASSET_MISSING:${assetKey}`);
+        const targetRoleKey = mutation?.toRoleKey ? String(mutation.toRoleKey) : null;
+        const target = targetRoleKey ? roleByKey.get(targetRoleKey) : null;
+        const toWorldActor = targetRoleKey === worldActorKey;
+        const nextQuantity = asset.quantity + delta;
+        if (nextQuantity < 0) throw new Error(`PUBLISHED_ASSET_NEGATIVE:${assetKey}`);
+        const before = { ownerRoleId: asset.ownerRoleId, ownerActorKey: asset.ownerActorKey, quantity: asset.quantity, state: asset.stateJson };
+        const after = {
+          ownerRoleId: toWorldActor ? null : target?.id ?? asset.ownerRoleId,
+          ownerActorKey: toWorldActor ? worldActorKey : target ? null : asset.ownerActorKey,
+          quantity: nextQuantity,
+          state: asset.stateJson
+        };
+        await tx.roleAsset.update({ where: { id: asset.id }, data: { ownerRoleId: after.ownerRoleId, ownerActorKey: after.ownerActorKey, quantity: nextQuantity, version: { increment: 1 } } });
+        await tx.roleAssetMutation.create({
+          data: {
+            assetId: asset.id,
+            actionId: action.id,
+            mutationType,
+            delta,
+            fromRoleId: asset.ownerRoleId,
+            toRoleId: target?.id,
+            beforeJson: before as Prisma.InputJsonValue,
+            afterJson: after as Prisma.InputJsonValue,
+            idempotencyKey
+          }
+        });
+      }
+    }
   }
 
   private phaseResult(window: { id: string; runId: string; node: { nodeIndex: number } }, checkpointKey: string, createdCheckpoint: boolean, done = false, summary?: Record<string, unknown>, checkpointOrdinal?: number) {
@@ -452,6 +560,7 @@ export class WindowResolutionService {
     const stage = content.stage(stageIndex);
     const timing = timingConfig();
     const now = new Date();
+    let reclaimEffectiveCount = 0;
     const expectedWindow = {
       runId: priorWindow.runId,
       nodeId: node.id,
@@ -522,6 +631,7 @@ export class WindowResolutionService {
           payload: { roleId: role.id, controllerKind: "HUMAN", presence: "ONLINE" },
           dedupeKey: `ROLE_CONTROL_CHANGED:${transitionKey}`
         });
+        reclaimEffectiveCount += 1;
       }
       const policy = content.agentPolicy(stageIndex, roleKey);
       await tx.roleAgentPolicy.upsert({
@@ -592,7 +702,7 @@ export class WindowResolutionService {
         immediateJson: { pressure: systemAction.visiblePressure } as Prisma.InputJsonValue
       }
     });
-    return window;
+    return { ...window, reclaimEffectiveCount };
   }
 
   private async publishFinalEndings(tx: Tx, content: BoundContinuousStrategyContent, runId: string, nodeId: string, resolutionId: string, roles: Array<{ id: string; roleKey: string }>, score: number, stageCount: number) {

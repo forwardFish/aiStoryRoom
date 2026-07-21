@@ -19,6 +19,9 @@ import type {
 } from "@ai-story/shared";
 import { CONTINUOUS_ENGINE_VERSION } from "@ai-story/shared";
 import type { AuthenticatedUser } from "../auth/current-user.decorator";
+import { readCreditConsumptionConfig } from "../config/credit-consumption.config";
+import { CreditConsumptionService } from "../credits/credit-consumption.service";
+import { creditRequestHash, parseRunBilling } from "../credits/credit-policy";
 import { PrismaService } from "../prisma.service";
 import { sha256Canonical } from "./canonical";
 import { ContinuousStrategyContentService, type BoundContinuousStrategyContent } from "./content.service";
@@ -26,6 +29,7 @@ import { ContinuousEventDeliveryService } from "./event-delivery.service";
 import { MemberProjectionService } from "./member-projection.service";
 import { RoleAgentTaskService } from "./role-agent-task.service";
 import { roomSerializableTransaction } from "./room-transaction";
+import { operationalMetrics } from "../observability/operational-metrics";
 
 type Tx = Prisma.TransactionClient;
 type Slot = "MAIN" | "MANEUVER" | "REACTION";
@@ -37,7 +41,8 @@ export class ActionCommandService {
     @Inject(ContinuousStrategyContentService) private readonly content: ContinuousStrategyContentService,
     @Inject(ContinuousEventDeliveryService) private readonly deliveries: ContinuousEventDeliveryService,
     @Inject(MemberProjectionService) private readonly projections: MemberProjectionService,
-    @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService
+    @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService,
+    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService
   ) {}
 
   submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1): Promise<CommandResponseV1> {
@@ -117,17 +122,30 @@ export class ActionCommandService {
   async reclaim(user: AuthenticatedUser, roomId: string, command: ControlCommandV1): Promise<CommandResponseV1> {
     this.requireIdempotencyKey(command.idempotencyKey);
     this.requireEpoch(command.expectedControlEpoch);
-    await this.serializable(roomId, async (tx) => {
+    const outcome = await this.serializable(roomId, async (tx) => {
       const context = await this.context(tx, user, roomId);
       const existing = await tx.roleControlTransition.findUnique({ where: { idempotencyKey: command.idempotencyKey } });
       if (existing) {
         if (existing.roleControlId !== context.control.id || existing.fromEpoch !== command.expectedControlEpoch) throw this.idempotencyReused();
-        return;
+        return { kind: "replay" as const, mode: existing.toMode };
       }
       if (context.control.humanPlayerId !== context.player.id) throw new ForbiddenException({ code: "ROLE_FORBIDDEN", message: "Only the original player can reclaim this role" });
       if (context.control.epoch !== command.expectedControlEpoch) throw this.controlChanged();
       if (context.control.mode !== "AI_ACTIVE" && context.control.mode !== "HUMAN_RECLAIM_PENDING") {
         throw new ConflictException({ code: "ROLE_CONTROL_CHANGED", message: "The role is not currently AI controlled" });
+      }
+      const billing = parseRunBilling(context.run, readCreditConsumptionConfig().prices);
+      if (billing.policyVersion === "active_action_v1") {
+        const available = await this.creditConsumption.availableForRun(roomId, user.id, tx);
+        if (available.available < billing.prices.standardAction) {
+          return {
+            kind: "insufficient" as const,
+            requiredCredits: billing.prices.standardAction,
+            availableCredits: available.available,
+            runAllowanceAvailable: available.runAllowanceAvailable,
+            personalAvailable: available.personalAvailable
+          };
+        }
       }
       const nextSlot = this.nextOpenSlot(context.participant);
       const aiAlreadySealed = await tx.playerAction.findFirst({
@@ -197,7 +215,21 @@ export class ActionCommandService {
           dedupeKey: `ROLE_RECLAIM_PRIVATE:${command.idempotencyKey}`
         });
       }
+      return { kind: "reclaimed" as const, mode: toMode };
     });
+    if (outcome.kind === "insufficient") {
+      operationalMetrics.increment("credit_reclaim_total", { result: "insufficient" });
+      throw new HttpException({
+        code: "PLAYER_CREDITS_REQUIRED",
+        message: "At least one available World Credit is required before reclaiming this role",
+        requiredCredits: outcome.requiredCredits,
+        availableCredits: outcome.availableCredits,
+        runAllowanceAvailable: outcome.runAllowanceAvailable,
+        personalAvailable: outcome.personalAvailable,
+        canRequestSponsor: true
+      }, HttpStatus.PAYMENT_REQUIRED);
+    }
+    operationalMetrics.increment("credit_reclaim_total", { result: outcome.mode === "HUMAN_RECLAIM_PENDING" ? "pending" : outcome.kind });
     return { accepted: true, gameProjection: await this.projections.game(user, roomId) };
   }
 
@@ -313,7 +345,7 @@ export class ActionCommandService {
 
   private async submitSlot(user: AuthenticatedUser, roomId: string, slot: Slot, command: SlotCommandV1, eventId?: string): Promise<CommandResponseV1> {
     this.validateSlotCommand(command);
-    const immediateFeedback = await this.serializable(roomId, async (tx) => {
+    const submission = await this.serializable(roomId, async (tx) => {
       const context = await this.context(tx, user, roomId);
       this.assertWindowAndControl(context, command.windowId, command.controlEpoch);
       this.assertSlotOpen(context, slot, eventId);
@@ -321,7 +353,7 @@ export class ActionCommandService {
       const replay = await tx.playerAction.findUnique({ where: { idempotencyKey: command.idempotencyKey } });
       if (replay) {
         if (replay.userId !== user.id || replay.roleId !== context.role.id || replay.actionSlot !== slot || replay.requestHash !== requestHash) throw this.idempotencyReused();
-        return replay.immediateJson as Record<string, unknown> | undefined;
+        return { kind: "accepted" as const, immediateFeedback: replay.immediateJson as Record<string, unknown> | undefined };
       }
 
       const selected = this.selectConfiguredAction(context.gameContent, context.node.nodeIndex, context.role.roleKey, slot, command.actionKey);
@@ -333,6 +365,42 @@ export class ActionCommandService {
       if (selected.targetRoleKey && targetRole?.roleKey !== selected.targetRoleKey) throw this.invalid("targetRoleId is not allowed for this action");
       if (targetRole?.id === context.role.id) throw this.invalid("a role cannot target itself");
       if (command.leverageKey && !(selected.leverageKeys as readonly string[]).includes(command.leverageKey)) throw this.invalid("leverageKey is not allowed for this action");
+
+      let creditChargeId: string | null = null;
+      const billing = parseRunBilling(context.run, readCreditConsumptionConfig().prices);
+      if (billing.policyVersion === "active_action_v1") {
+        const amount = billing.prices.standardAction;
+        const creditHash = creditRequestHash({
+          runId: roomId,
+          windowId: context.window.id,
+          roleId: context.role.id,
+          slot,
+          actionKey: command.actionKey,
+          eventId: eventId || null,
+          controlEpoch: command.controlEpoch,
+          userId: user.id,
+          amount
+        });
+        const reservation = await this.creditConsumption.reserveCharge({
+          runId: roomId,
+          beneficiaryUserId: user.id,
+          chargeType: "PLAYER_ACTION",
+          actionClass: "STANDARD_CHOICE",
+          amount,
+          idempotencyKey: `player-action:${roomId}:${context.window.id}:${context.role.id}:${slot}:${command.idempotencyKey}`,
+          requestHash: creditHash,
+          metadata: { engine: "continuous_strategy_v1_1", policyVersion: billing.policyVersion, windowId: context.window.id, roleId: context.role.id, slot },
+          expiresAt: context.window.graceClosesAt || context.window.mainClosesAt,
+          tx
+        });
+        if (reservation.kind === "insufficient") {
+          await this.switchToAiForInsufficientCredits(tx, context, command.idempotencyKey, reservation);
+          return reservation;
+        }
+        if (reservation.kind === "reserved" || reservation.kind === "replay" || reservation.kind === "shadow") {
+          creditChargeId = reservation.charge.id;
+        }
+      }
       const now = new Date();
       const action = await tx.playerAction.create({
         data: {
@@ -368,7 +436,8 @@ export class ActionCommandService {
           immediateJson: selected.immediateFeedback as Prisma.InputJsonValue
         }
       });
-      await this.applyAssetMutations(tx, context, action.id, selected.assetMutations);
+      if (creditChargeId) await this.creditConsumption.attachPlayerAction(creditChargeId, action.id, tx);
+      await this.validateAssetMutations(tx, context, selected.assetMutations);
       if (slot === "MAIN") {
         await tx.actionWindowParticipant.update({
           where: { windowId_roleId: { windowId: context.window.id, roleId: context.role.id } },
@@ -413,14 +482,80 @@ export class ActionCommandService {
         payload: { actionId: action.id, slot, actionKey: command.actionKey, feedback: selected.immediateFeedback },
         dedupeKey: `ACTION_RECEIPT:${action.id}`
       });
-      return selected.immediateFeedback;
+      return { kind: "accepted" as const, immediateFeedback: selected.immediateFeedback };
     });
+    if (submission.kind === "insufficient") {
+      throw new HttpException({
+        code: "INSUFFICIENT_WORLD_CREDITS",
+        message: "This role is now AI controlled because no billable action credit is available",
+        required: submission.required,
+        available: submission.available,
+        runAllowanceAvailable: submission.runAllowanceAvailable,
+        personalAvailable: submission.personalAvailable,
+        roleControlMode: "AI_ACTIVE"
+      }, HttpStatus.PAYMENT_REQUIRED);
+    }
     return {
       accepted: true,
       guardDecision: { status: "ok" },
-      immediateFeedback,
+      immediateFeedback: submission.immediateFeedback,
       gameProjection: await this.projections.game(user, roomId)
     };
+  }
+
+  private async switchToAiForInsufficientCredits(
+    tx: Tx,
+    context: Awaited<ReturnType<ActionCommandService["context"]>>,
+    requestIdempotencyKey: string,
+    reservation: { required: number; available: number; runAllowanceAvailable: number; personalAvailable: number }
+  ) {
+    const nextEpoch = context.control.epoch + 1;
+    const transitionKey = `credit-insufficient:${context.run.id}:${context.role.id}:${requestIdempotencyKey}`;
+    const existing = await tx.roleControlTransition.findUnique({ where: { idempotencyKey: transitionKey } });
+    if (!existing) {
+      await tx.roleControl.update({
+        where: { id: context.control.id },
+        data: { mode: "AI_ACTIVE", epoch: nextEpoch, reason: "INSUFFICIENT_WORLD_CREDITS", takeoverAt: new Date(), offlineSince: null }
+      });
+      await tx.roleControlTransition.create({
+        data: {
+          roleControlId: context.control.id,
+          fromMode: context.control.mode,
+          toMode: "AI_ACTIVE",
+          fromEpoch: context.control.epoch,
+          toEpoch: nextEpoch,
+          reason: "INSUFFICIENT_WORLD_CREDITS",
+          initiatedByUserId: context.player.userId,
+          effectiveWindowId: context.window.id,
+          effectiveSlot: this.nextOpenSlot(context.participant),
+          idempotencyKey: transitionKey
+        }
+      });
+      await this.roleAgents.enqueueForWindow(tx, context.window.id, context.role.id);
+      await tx.storyRun.update({ where: { id: context.run.id }, data: { version: { increment: 1 } } });
+      await this.deliveries.publish(tx, {
+        runId: context.run.id,
+        day: context.node.nodeIndex,
+        type: "ROLE_CONTROL_CHANGED",
+        visibility: "PUBLIC",
+        audienceType: "ALL_MEMBERS",
+        audienceUserIds: context.memberUserIds,
+        audienceRoleIds: [context.role.id],
+        payload: { roleId: context.role.id, controllerKind: "AI", presence: "AI_CONTROLLED", reason: "INSUFFICIENT_WORLD_CREDITS" },
+        dedupeKey: `ROLE_CONTROL_CHANGED:${transitionKey}`
+      });
+      await this.deliveries.publish(tx, {
+        runId: context.run.id,
+        day: context.node.nodeIndex,
+        type: "CREDITS_INSUFFICIENT",
+        visibility: "PRIVATE",
+        audienceType: "MEMBER",
+        audienceUserIds: [context.player.userId!],
+        audienceRoleIds: [context.role.id],
+        payload: reservation,
+        dedupeKey: `CREDITS_INSUFFICIENT:${transitionKey}`
+      });
+    }
   }
 
   private async submitLayout(user: AuthenticatedUser, roomId: string, command: LayoutCommandV1, leaveStage: boolean) {
@@ -749,36 +884,23 @@ export class ActionCommandService {
     });
   }
 
-  private async applyAssetMutations(tx: Tx, context: Awaited<ReturnType<ActionCommandService["context"]>>, actionId: string, mutations: Array<{ assetKey: string; mutationType: string; delta: number; toRoleKey: string | null }>) {
+  private async validateAssetMutations(tx: Tx, context: Awaited<ReturnType<ActionCommandService["context"]>>, mutations: Array<{ assetKey: string; mutationType: string; delta: number; toRoleKey: string | null }>) {
+    const pendingActions = await tx.playerAction.findMany({
+      where: { nodeId: context.node.id, actorKind: "HUMAN", status: "accepted" },
+      select: { normalizedJson: true }
+    });
     for (const mutation of mutations) {
       const asset = await tx.roleAsset.findUnique({ where: { runId_assetKey: { runId: context.run.id, assetKey: mutation.assetKey } } });
       if (!asset) throw new ConflictException({ code: "GUARD_REJECTED", message: `Required asset is unavailable: ${mutation.assetKey}` });
-      const target = mutation.toRoleKey ? context.roles.find((role) => role.roleKey === mutation.toRoleKey) : undefined;
-      const nextQuantity = asset.quantity + mutation.delta;
+      const alreadyPlanned = pendingActions.reduce((sum, action) => {
+        const normalized = action.normalizedJson && typeof action.normalizedJson === "object" && !Array.isArray(action.normalizedJson)
+          ? action.normalizedJson as Record<string, any>
+          : {};
+        const planned = Array.isArray(normalized.assetMutations) ? normalized.assetMutations : [];
+        return sum + planned.filter((item: any) => item?.assetKey === mutation.assetKey).reduce((delta: number, item: any) => delta + Number(item.delta || 0), 0);
+      }, 0);
+      const nextQuantity = asset.quantity + alreadyPlanned + mutation.delta;
       if (nextQuantity < 0) throw new ConflictException({ code: "GUARD_REJECTED", message: `Asset quantity would become negative: ${mutation.assetKey}` });
-      const worldActorKey = context.gameContent.package().contract.worldActorKey;
-      const toWorldActor = mutation.toRoleKey === worldActorKey;
-      const before = { ownerRoleId: asset.ownerRoleId, ownerActorKey: asset.ownerActorKey, quantity: asset.quantity, state: asset.stateJson };
-      const after = {
-        ownerRoleId: toWorldActor ? null : target?.id ?? asset.ownerRoleId,
-        ownerActorKey: toWorldActor ? worldActorKey : target ? null : asset.ownerActorKey,
-        quantity: nextQuantity,
-        state: asset.stateJson
-      };
-      await tx.roleAsset.update({ where: { id: asset.id }, data: { ownerRoleId: after.ownerRoleId, ownerActorKey: after.ownerActorKey, quantity: nextQuantity, version: { increment: 1 } } });
-      await tx.roleAssetMutation.create({
-        data: {
-          assetId: asset.id,
-          actionId,
-          mutationType: mutation.mutationType,
-          delta: mutation.delta,
-          fromRoleId: asset.ownerRoleId,
-          toRoleId: target?.id,
-          beforeJson: before as Prisma.InputJsonValue,
-          afterJson: after as Prisma.InputJsonValue,
-          idempotencyKey: `asset:${actionId}:${mutation.assetKey}:${mutation.mutationType}`
-        }
-      });
     }
   }
 

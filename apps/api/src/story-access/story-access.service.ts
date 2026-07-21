@@ -1,4 +1,4 @@
-import { ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { AuthenticatedUser } from "../auth/current-user.decorator";
 import { CreditsService } from "../credits/credits.service";
@@ -33,7 +33,10 @@ export class StoryAccessService {
     throw new Error("unreachable serialization retry state");
   }
 
-  roomAccessState(run: { accessLevel: string; freeDecisionsUsed: number }, currentRound: number) {
+  roomAccessState(run: { accessLevel: string; freeDecisionsUsed: number; billingPolicyVersion?: string }, currentRound: number) {
+    if (run.billingPolicyVersion === "active_action_v1") {
+      return { unlocked: true, freeRounds: 0, freeRoundsUsed: 0, currentRound, requiredCredits: 0, requiresUnlock: false };
+    }
     const freeRounds = Number(process.env.CREDIT_FREE_DECISION_LIMIT || 3);
     const requiredCredits = Number(process.env.CREDIT_STANDARD_WORLD_COST || 100);
     const unlocked = run.accessLevel === "UNLOCKED";
@@ -66,6 +69,7 @@ export class StoryAccessService {
           const participant = run.ownerUserId === user.id || Boolean(await tx.storyPlayer.findFirst({ where: { runId, userId: user.id, status: "active" } }));
           if (!participant) throw new ForbiddenException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only participants can play this run" });
           const access = this.roomAccessState(run, currentRound);
+          if (run.billingPolicyVersion === "active_action_v1") return { completedFreeRound: false, access };
           if (access.unlocked) return { completedFreeRound: false, access };
           if (access.requiresUnlock) {
             throw new HttpException({ code: "WORLD_UNLOCK_REQUIRED", message: "Unlock this shared world to continue", details: { ...access, runId } }, HttpStatus.PAYMENT_REQUIRED);
@@ -94,6 +98,7 @@ export class StoryAccessService {
       if (!run) throw new NotFoundException({ code: "STORY_RUN_NOT_FOUND", message: "Story run not found" });
       const participant = run.ownerUserId === user.id || Boolean(await tx.storyPlayer.findFirst({ where: { runId, userId: user.id, status: "active" } }));
       if (!participant) throw new ForbiddenException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only participants can play this run" });
+      if (run.billingPolicyVersion === "active_action_v1") return { run, completed: false, unlocked: true, freeDecisionsUsed: 0 };
       if (run.accessLevel === "UNLOCKED") return { run, completed: false, unlocked: true, freeDecisionsUsed: run.freeDecisionsUsed };
       const limit = Number(process.env.CREDIT_FREE_DECISION_LIMIT || 3);
       if (run.freeDecisionsUsed >= limit) throw new HttpException({ code: "WORLD_UNLOCK_REQUIRED", message: "Unlock this world to continue", details: { requiredCredits: Number(process.env.CREDIT_STANDARD_WORLD_COST || 100), runId } }, HttpStatus.PAYMENT_REQUIRED);
@@ -114,6 +119,9 @@ export class StoryAccessService {
         if (!run) throw new NotFoundException({ code: "STORY_RUN_NOT_FOUND", message: "Story run not found" });
         const participant = run.ownerUserId === user.id || Boolean(await tx.storyPlayer.findFirst({ where: { runId, userId: user.id, status: "active" } }));
         if (!participant) throw new ForbiddenException({ code: "RUN_PARTICIPANT_REQUIRED", message: "Only participants can unlock this world" });
+        if (run.billingPolicyVersion === "active_action_v1") {
+          throw new ConflictException({ code: "BILLING_POLICY_DOES_NOT_REQUIRE_UNLOCK", message: "This Story Run charges successful active actions and does not use World Unlock" });
+        }
         const existing = await tx.worldUnlock.findUnique({ where: { runId } });
         if (existing?.status === "COMMITTED") {
           if (run.engineVersion === CONTINUOUS_ENGINE_VERSION) await this.actionWindows.resumeAfterUnlock(tx, runId, user.id);

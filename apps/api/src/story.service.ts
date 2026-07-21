@@ -140,7 +140,13 @@ export class StoryService {
   async createRun(
     openid: string,
     input: CreateStoryRunInput,
-    internalVersions: { engineVersion: string; strategyVersion: string; runId?: string } = { engineVersion: "legacy_v1", strategyVersion: "legacy_v1" }
+    internalVersions: {
+      engineVersion: string;
+      strategyVersion: string;
+      runId?: string;
+      billingPolicyVersion?: "world_unlock_v1" | "active_action_v1";
+      billingPriceJson?: Record<string, unknown>;
+    } = { engineVersion: "legacy_v1", strategyVersion: "legacy_v1" }
   ) {
     const owner = await this.ensureUser(openid);
     const template = getTemplate(input.templateId);
@@ -163,7 +169,7 @@ export class StoryService {
         templateId: template.id,
         templateKey: gameDefinition?.worldId || "sangtian",
         ownerUserId: owner.id,
-        title: isAiTrio ? `${template.name}：三人 AI 推演` : `${template.name}：没有影子的客人`,
+        title: isAiTrio ? `${template.name}：三人 AI 推演` : isRoom ? "Shared Story Room" : template.name,
         hook: template.hook,
         mode,
         status: "playing",
@@ -179,7 +185,10 @@ export class StoryService {
         visibility: mode === "single" ? "private" : "link",
         inviteCode,
         engineVersion: internalVersions.engineVersion,
-        strategyVersion: internalVersions.strategyVersion
+        strategyVersion: internalVersions.strategyVersion,
+        billingPolicyVersion: internalVersions.billingPolicyVersion || "world_unlock_v1",
+        billingPriceJson: (internalVersions.billingPriceJson || {}) as any,
+        accessLevel: internalVersions.billingPolicyVersion === "active_action_v1" ? "UNLOCKED" : "FREE_TRIAL"
       }
     });
 

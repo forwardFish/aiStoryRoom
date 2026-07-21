@@ -22,6 +22,8 @@ export interface GrantCreditsInput {
   tx?: Tx;
 }
 
+export type CreditSpendReason = "WORLD_UNLOCK" | "RUN_CREATE" | "PLAYER_ACTION" | "RUN_SPONSORSHIP";
+
 @Injectable()
 export class CreditsService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -92,7 +94,7 @@ export class CreditsService {
   async spendCredits(input: {
     userId: string;
     amount: number;
-    reason: "WORLD_UNLOCK";
+    reason: CreditSpendReason;
     idempotencyKey: string;
     externalRef?: string;
     metadata?: Record<string, unknown>;
@@ -149,8 +151,12 @@ export class CreditsService {
     return ledger;
   }
 
-  async refundSpend(input: { originalLedgerId: string; idempotencyKey: string; reason: "SYSTEM_REFUND" }) {
-    return this.prisma.$transaction(async (tx) => {
+  async refundSpend(input: { originalLedgerId: string; idempotencyKey: string; reason: "SYSTEM_REFUND"; externalRef?: string; tx?: Tx }) {
+    if (input.tx) return this.refundSpendTx(input, input.tx);
+    return this.prisma.$transaction((tx) => this.refundSpendTx(input, tx));
+  }
+
+  private async refundSpendTx(input: Parameters<CreditsService["refundSpend"]>[0], tx: Tx) {
       const existing = await tx.creditLedger.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
       if (existing) return existing;
       const original = await tx.creditLedger.findUniqueOrThrow({ where: { id: input.originalLedgerId }, include: { allocations: { include: { grant: true } } } });
@@ -162,20 +168,145 @@ export class CreditsService {
         else purchased += allocation.amount;
       }
       const ledger = await tx.creditLedger.create({
-        data: { userId: original.userId, reason: input.reason, purchasedDelta: purchased, bonusDelta: bonus, idempotencyKey: input.idempotencyKey, externalRef: input.originalLedgerId }
+        data: { userId: original.userId, reason: input.reason, purchasedDelta: purchased, bonusDelta: bonus, idempotencyKey: input.idempotencyKey, externalRef: input.externalRef || input.originalLedgerId }
       });
       await tx.creditWallet.update({ where: { userId: original.userId }, data: { purchasedBalance: { increment: purchased }, bonusBalance: { increment: bonus }, version: { increment: 1 } } });
       return ledger;
-    });
   }
 
   async listTransactions(userId: string, page = 1, pageSize = 30) {
     const safePage = Math.max(1, Math.floor(page));
     const safeSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
-    const [items, total] = await Promise.all([
-      this.prisma.creditLedger.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, skip: (safePage - 1) * safeSize, take: safeSize }),
-      this.prisma.creditLedger.count({ where: { userId } })
+    const [ledgers, total, allowanceUsages] = await Promise.all([
+      this.prisma.creditLedger.findMany({
+        where: { userId },
+        include: { allocations: { include: { grant: { select: { id: true, kind: true, source: true, expiresAt: true } } } } },
+        orderBy: { createdAt: "desc" },
+        skip: (safePage - 1) * safeSize,
+        take: safeSize
+      }),
+      this.prisma.creditLedger.count({ where: { userId } }),
+      (this.prisma as any).creditCharge.findMany({
+        where: { beneficiaryUserId: userId, allowanceAmount: { gt: 0 }, personalDebitLedgerId: null },
+        include: { allocations: true },
+        orderBy: { createdAt: "desc" },
+        take: safeSize
+      })
     ]);
-    return { items, page: safePage, pageSize: safeSize, total };
+    const ledgerIds = ledgers.map((ledger) => ledger.id);
+    const [charges, allowances] = ledgerIds.length ? await Promise.all([
+      (this.prisma as any).creditCharge.findMany({
+        where: {
+          OR: [
+            { personalDebitLedgerId: { in: ledgerIds } },
+            { personalRefundLedgerId: { in: ledgerIds } }
+          ]
+        },
+        include: { allocations: true }
+      }),
+      (this.prisma as any).runCreditAllowance.findMany({
+        where: { fundingLedgerId: { in: ledgerIds } }
+      })
+    ]) : [[], []];
+    const allowanceIds = allowances.map((allowance: any) => allowance.id);
+    const requests = allowanceIds.length
+      ? await (this.prisma as any).sponsorshipRequest.findMany({ where: { allowanceId: { in: allowanceIds } } })
+      : [];
+    const chargeByLedgerId = new Map<string, any>();
+    for (const charge of charges) {
+      if (charge.personalDebitLedgerId) chargeByLedgerId.set(charge.personalDebitLedgerId, charge);
+      if (charge.personalRefundLedgerId) chargeByLedgerId.set(charge.personalRefundLedgerId, charge);
+    }
+    const allowanceByLedgerId = new Map<string, any>(allowances.map((allowance: any) => [allowance.fundingLedgerId, allowance]));
+    const requestByAllowanceId = new Map<string, any>(requests.map((request: any) => [request.allowanceId, request]));
+    const items = ledgers.map((ledger) => {
+      const charge = chargeByLedgerId.get(ledger.id) || null;
+      const allowance = allowanceByLedgerId.get(ledger.id) || null;
+      const request = allowance ? requestByAllowanceId.get(allowance.id) || null : null;
+      return {
+        ...ledger,
+        trace: {
+          schemaVersion: "credit_trace_v1",
+          ledgerId: ledger.id,
+          runId: charge?.runId || allowance?.runId || metadataString(ledger.metadataJson, "runId"),
+          actionId: charge?.playerActionId || null,
+          charge: charge ? publicChargeTrace(charge) : null,
+          grantAllocations: ledger.allocations.map((allocation) => ({
+            grantId: allocation.grantId,
+            amount: allocation.amount,
+            kind: allocation.grant.kind,
+            source: allocation.grant.source,
+            expiresAt: allocation.grant.expiresAt
+          })),
+          allowance: allowance ? publicAllowanceTrace(allowance) : null,
+          sponsorshipRequest: request ? {
+            id: request.id,
+            status: request.status,
+            origin: request.origin,
+            allowanceId: request.allowanceId
+          } : null
+        }
+      };
+    });
+    return {
+      items,
+      allowanceUsages: allowanceUsages.map((charge: any) => ({
+        id: `allowance-usage:${charge.id}`,
+        reason: "RUN_ALLOWANCE_USAGE",
+        createdAt: charge.createdAt,
+        allowanceDelta: charge.status === "RELEASED" ? 0 : -charge.allowanceAmount,
+        trace: {
+          schemaVersion: "credit_trace_v1",
+          runId: charge.runId,
+          actionId: charge.playerActionId,
+          charge: publicChargeTrace(charge)
+        }
+      })),
+      page: safePage,
+      pageSize: safeSize,
+      total
+    };
   }
+}
+
+function metadataString(value: Prisma.JsonValue | null, key: string) {
+  if (!value || Array.isArray(value) || typeof value !== "object") return null;
+  const candidate = (value as Record<string, Prisma.JsonValue>)[key];
+  return typeof candidate === "string" ? candidate : null;
+}
+
+function publicChargeTrace(charge: any) {
+  return {
+    id: charge.id,
+    type: charge.chargeType,
+    actionClass: charge.actionClass,
+    status: charge.status,
+    amount: charge.amount,
+    allowanceAmount: charge.allowanceAmount,
+    walletAmount: charge.walletAmount,
+    runId: charge.runId,
+    playerActionId: charge.playerActionId,
+    failureCode: charge.failureCode,
+    allocations: Array.isArray(charge.allocations) ? charge.allocations.map((allocation: any) => ({
+      id: allocation.id,
+      source: allocation.source,
+      allowanceId: allocation.allowanceId,
+      ledgerId: allocation.ledgerId,
+      amount: allocation.amount,
+      status: allocation.status
+    })) : []
+  };
+}
+
+function publicAllowanceTrace(allowance: any) {
+  return {
+    id: allowance.id,
+    runId: allowance.runId,
+    sponsorUserId: allowance.sponsorUserId,
+    beneficiaryUserId: allowance.beneficiaryUserId,
+    fundedAmount: allowance.fundedAmount,
+    remainingAmount: allowance.remainingAmount,
+    status: allowance.status,
+    fundingLedgerId: allowance.fundingLedgerId
+  };
 }

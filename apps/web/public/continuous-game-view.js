@@ -16,6 +16,7 @@ export function renderContinuousGame(root, state, handlers) {
     <main class="causal-center continuous-center">${center(p, state)}</main>
     <aside class="causal-right continuous-right" aria-label="${terminal ? "终局摘要" : "共同故事局"}">${terminal ? terminalRail(p, state.result) : `${party(players, controls, p)}${maneuver(p, state)}${control(p, state)}`}</aside>
     ${reaction(p, state)}
+    ${creditUi(p, state)}
     ${state.error ? `<div class="banner error-banner" data-testid="continuous-error"><span>${esc(state.error)}</span><button type="button" data-dismiss-error>×</button></div>` : ""}
     ${state.notice ? `<div class="banner notice-banner" data-testid="continuous-notice"><span>${esc(state.notice)}</span></div>` : ""}
   </div>`;
@@ -31,11 +32,28 @@ function bind(root, h) {
   root.querySelector("[data-layout-done]")?.addEventListener("click", () => h.finishLayout(false));
   root.querySelector("[data-leave-stage]")?.addEventListener("click", () => h.finishLayout(true));
   root.querySelector("[data-handoff]")?.addEventListener("click", h.handoff);
-  root.querySelector("[data-reclaim]")?.addEventListener("click", h.reclaim);
+  root.querySelectorAll("[data-reclaim]").forEach((el) => el.addEventListener("click", h.reclaim));
   root.querySelector("[data-unlock]")?.addEventListener("click", h.unlock);
   root.querySelector("[data-refresh]")?.addEventListener("click", h.refresh);
   root.querySelector("[data-result]")?.addEventListener("click", h.showResult);
   root.querySelector("[data-dismiss-error]")?.addEventListener("click", h.dismissError);
+  root.querySelector("[data-credit-add]")?.addEventListener("click", h.addCredits);
+  root.querySelector("[data-credit-host]")?.addEventListener("click", h.requestHostSupport);
+  root.querySelector("[data-credit-continue]")?.addEventListener("click", h.continueWithAi);
+  root.querySelector("[data-sponsor-approve]")?.addEventListener("click", (event) => h.approveSponsorship(event.currentTarget.dataset.sponsorApprove));
+  root.querySelector("[data-sponsor-decline]")?.addEventListener("click", (event) => h.declineSponsorship(event.currentTarget.dataset.sponsorDecline));
+}
+
+function creditUi(p, state) {
+  const credit = p.creditControl;
+  if (!credit || credit.policyVersion !== "active_action_v1") return "";
+  const aiBanner = !p.myControl || !["HUMAN_ACTIVE", "HUMAN_OFFLINE_GRACE"].includes(p.myControl.mode)
+    ? `<section class="credit-control-banner" data-testid="ai-credit-control-banner"><div><b>AI is currently guiding your character.</b><span>You can keep reading and return to control when you have Credits.</span></div><strong>${credit.available} Credits available</strong><button type="button" data-credit-add>Add Credits</button>${credit.canRequestSponsor ? `<button type="button" data-credit-host>Request support</button>` : ""}<button type="button" data-reclaim>Reclaim character</button></section>`
+    : `<section class="credit-control-strip" data-testid="credit-control-strip"><span>${credit.available} World Credits</span><small>Suggested action ${credit.standardActionCost} · Custom action ${credit.customActionCost} · AI control costs you 0</small></section>`;
+  const required = state.creditRequired ? `<div class="credit-modal-backdrop"><section class="credit-required-modal" role="dialog" aria-modal="true" aria-labelledby="credit-required-title"><h2 id="credit-required-title">Continue controlling your character</h2><p>You don’t currently have enough World Credits to submit another action.</p><p>Your character is still in this world and will continue under AI control. You can return at any time.</p><div><button type="button" class="continuous-primary" data-credit-add>Add Credits</button>${credit.canRequestSponsor ? `<button type="button" data-credit-host>Ask the host</button>` : ""}<button type="button" data-credit-continue>Continue with AI control</button></div></section></div>` : "";
+  const hostRequest = state.sponsorshipRequests?.[0];
+  const sponsor = hostRequest ? `<div class="credit-modal-backdrop"><section class="credit-required-modal" role="dialog" aria-modal="true"><h2>A player needs support to keep controlling their character</h2><p>Without support, their character will continue under AI control.</p><p>Sponsor 10 World Credits for this player in this Story Run only.</p><div><button type="button" class="continuous-primary" data-sponsor-approve="${esc(hostRequest.id)}">Sponsor 10 Credits</button><button type="button" data-sponsor-decline="${esc(hostRequest.id)}">Continue with AI control</button></div></section></div>` : "";
+  return `${aiBanner}${required}${sponsor}`;
 }
 
 function topbar(p, state) {

@@ -1,6 +1,7 @@
 import { Controller, Get, NotFoundException, Param } from "@nestjs/common";
 import { findGameDefinition, listGameDefinitions, type GameDefinition } from "@ai-story/templates";
 import { readContinuousStrategyConfig, selectRunVersions } from "./config/continuous-strategy.config";
+import { policyForNewRun, readCreditConsumptionConfig } from "./config/credit-consumption.config";
 
 function runtimeWorld(game: GameDefinition) {
   const lobby = game.catalog.lobby;
@@ -11,6 +12,8 @@ function runtimeWorld(game: GameDefinition) {
     maxPlayers,
     enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
   });
+  const creditConfig = readCreditConsumptionConfig();
+  const billingPolicyVersion = policyForNewRun(creditConfig.defaultPolicy, versions.engineVersion);
   return {
     id: game.publicId,
     runtimeId: game.worldId,
@@ -35,7 +38,9 @@ function runtimeWorld(game: GameDefinition) {
     playable: game.status === "playable",
     modes: [game.modes.solo ? "solo" : null, game.modes.multiplayer ? "multiplayer" : null].filter(Boolean),
     engineVersion: versions.engineVersion,
-    strategyVersion: versions.strategyVersion
+    strategyVersion: versions.strategyVersion,
+    billingPolicyVersion,
+    runCreateCredits: billingPolicyVersion === "active_action_v1" ? creditConfig.prices.runCreate : 0
   };
 }
 

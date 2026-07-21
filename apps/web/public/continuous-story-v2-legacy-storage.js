@@ -17,9 +17,6 @@ export class ContinuousStoryV2LegacyStorage {
 
   async getRun() {
     this.projection = requireProjection(await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game?projectionTs=${Date.now()}`));
-    if (this.projection.currentTurn?.status === "RESOLVING") {
-      await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game/generation/retry`, { method: "POST" });
-    }
     return adaptProjection(this.projection);
   }
 
@@ -132,7 +129,11 @@ export class ContinuousStoryV2LegacyStorage {
     if (!response.ok) {
       const error = new Error(payload?.message || payload?.code || "故事服务暂时无法完成这次操作。");
       error.code = payload?.code || "STORY_REQUEST_FAILED";
+      error.status = response.status;
       error.details = payload;
+      if (response.status === 402 && ["PLAYER_CREDITS_REQUIRED", "INSUFFICIENT_WORLD_CREDITS"].includes(error.code)) {
+        globalThis.window?.dispatchEvent?.(new CustomEvent("worldcreditsrequired", { detail: { ...payload, runId: this.runId } }));
+      }
       throw error;
     }
     return payload;
@@ -190,7 +191,10 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
       visibility: "player_visible"
     });
   }
-  const completed = Boolean(p.completed || !turn);
+  // A missing turn can mean that the opening is still generating or that its
+  // publication gate stopped it. Only the durable thread completion flag may
+  // send the player to the final page.
+  const completed = Boolean(p.completed);
   const currentStage = turn?.stageIndex || Math.max(1, ...p.otherActors.map((actor) => Number(actor.stageIndex || 1)));
   const currentTurnIndex = turn?.turnIndex || results.length;
   const visibleAssets = p.visibleAssets || [];
@@ -304,15 +308,17 @@ function maneuverCommand(projection, draft) {
 function conversationCommand(projection, draft) {
   const target = resolveRoleTarget(projection, draft.targetRoleKey);
   if (!target) throw new Error("当前剧情中没有可以交谈的人物。");
+  const topic = String(draft.customText || "").trim();
+  if (!topic) throw new Error("请写下你准备向此人询问或交涉的具体事情。");
   const shortName = roleShortName(target.label);
-  const actionText = `单独召见${shortName}，当面问清他亲眼所见、经手过的文书，以及他为何在此刻这样判断。`;
+  const actionText = `单独召见${shortName}，当面提出：${topic}`;
   return {
     decisionForm: "CONVERSATION",
     actionText,
     intent: {
-      objective: `从${shortName}口中核实当前局势的关键事实和他的真实立场`,
+      objective: `围绕“${topic}”核实${shortName}掌握的事实、立场和依据`,
       target: clone(target),
-      method: `${actionText}先让他自行陈述，再拿当前剧情中已经掌握的事实逐项核对；不替他作答，也不预设他会配合。`,
+      method: `${actionText}。先让他自行陈述，再拿当前剧情中已经掌握的事实逐项核对；不替他作答，也不预设他会配合。`,
       leverageKeys: [],
       visibility: "LIMITED",
       riskTolerance: "MEDIUM",
@@ -328,15 +334,17 @@ function investigationCommand(projection, draft) {
     inspect_courier_registry: { pattern: /驿|递|文|令|催|公文|奏/, objective: "查清公文和消息的递送时间、经手人与去向" },
     inspect_grain_store: { pattern: /粮|仓|米|存|封条/, objective: "核清粮仓实存、封条与仓单能否互相印证" }
   };
-  const selected = definitions[draft.intentKey] || definitions.inspect_land_register;
+  const selected = definitions[draft.intentKey];
+  if (!selected) throw new Error("请先选择一项真实的调查方向。");
+  const detail = String(draft.customText || "").trim();
   const target = resolveInvestigationTarget(projection, selected.pattern);
   const targetLabel = target.label;
-  const actionText = `派一名可信幕僚去查验${targetLabel}，只查原件、经手人和时间记录，并把互相矛盾之处分别抄回总督府。`;
+  const actionText = `派一名可信幕僚去查验${targetLabel}，只查原件、经手人和时间记录，并把互相矛盾之处分别抄回总督府${detail ? `；另须查清：${detail}` : ""}。`;
   return {
     decisionForm: "INVESTIGATION",
     actionText,
     intent: {
-      objective: selected.objective,
+      objective: detail ? `${selected.objective}；${detail}` : selected.objective,
       target: clone(target),
       method: `${actionText}调查时不先宣布结论，也不允许幕僚替任何一方补写或销毁记录。`,
       leverageKeys: [],
@@ -351,16 +359,18 @@ function investigationCommand(projection, draft) {
 function leverageCommand(projection, draft) {
   const asset = resolveActiveAsset(projection, draft.leverageKey);
   if (!asset) throw new Error("这项筹码当前并不在你手中，不能作为本次决策使用。");
+  const demand = String(draft.customText || "").trim();
+  if (!demand) throw new Error("请写下你准备用这项筹码迫使对方做什么。");
   const target = resolveRoleTarget(projection, draft.targetRoleKey || "merchant") || publicFrameTarget(projection.currentTurn);
   const targetLabel = roleShortName(target.label);
-  const actionText = `暂不公开${asset.label}，只向${targetLabel}出示其中一处可核验的细节，要求对方在明确期限前交出相应原始凭据。`;
+  const actionText = `暂不公开${asset.label}，只向${targetLabel}出示一处可核验的细节，并提出要求：${demand}`;
   return {
     decisionForm: "LEVERAGE",
     actionText,
     intent: {
-      objective: `用${asset.label}换取${targetLabel}对当前疑点作出可核验的回应`,
+      objective: `用${asset.label}推动${targetLabel}作出可核验的回应：${demand}`,
       target: clone(target),
-      method: `${actionText}若对方拒绝，就收回筹码并让在场见证记下拒绝的内容，不替对方宣布结果。`,
+      method: `${actionText}。若对方拒绝，就收回筹码并让在场见证记下拒绝的内容，不替对方宣布结果。`,
       leverageKeys: [asset.assetKey],
       visibility: "LIMITED",
       riskTolerance: "HIGH",

@@ -3,8 +3,10 @@ import { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import type { DecisionCandidateV2 } from "@ai-story/shared";
 import { PrismaService } from "../prisma.service";
+import { operationalMetrics } from "../observability/operational-metrics";
 import { sha256Canonical } from "../continuous-strategy/canonical";
 import { validateStoryContextFreshnessV2, type StoryContextIdentityV2, type StoryContextSnapshotV2 } from "./story-context";
+import { readCreditConsumptionConfig } from "../config/credit-consumption.config";
 import {
   StoryGenerationErrorV2,
   StoryGenerationPipelineV2,
@@ -16,6 +18,28 @@ import {
   type StoryModelResponseV2
 } from "./story-generation.pipeline";
 
+type AgentDecisionInputV2 = {
+  context: StoryContextSnapshotV2;
+  contextRecordId: string;
+  finalStory: string;
+  candidates: DecisionCandidateV2[];
+  getCurrentIdentity?: () => StoryContextIdentityV2 | Promise<StoryContextIdentityV2>;
+};
+
+type AgentDecisionResultV2 = { candidateId: string; rationale: string };
+
+type PendingAgentDecisionV2 = {
+  input: AgentDecisionInputV2;
+  resolve: (result: AgentDecisionResultV2) => void;
+  reject: (error: unknown) => void;
+};
+
+type PendingAgentBatchV2 = {
+  items: PendingAgentDecisionV2[];
+  timer: ReturnType<typeof setTimeout>;
+  flushing: boolean;
+};
+
 /**
  * Production model adapter for the isolated story pipeline.
  *
@@ -26,6 +50,8 @@ import {
  */
 @Injectable()
 export class StoryNarrativeProvider implements StoryModelClientV2 {
+  private readonly pendingAgentBatches = new Map<string, PendingAgentBatchV2>();
+
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async resolveContext(
@@ -44,14 +70,9 @@ export class StoryNarrativeProvider implements StoryModelClientV2 {
     }
   }
 
-  async decideAgent(input: {
-    context: StoryContextSnapshotV2;
-    contextRecordId: string;
-    finalStory: string;
-    candidates: DecisionCandidateV2[];
-    getCurrentIdentity?: () => StoryContextIdentityV2 | Promise<StoryContextIdentityV2>;
-  }): Promise<{ candidateId: string; rationale: string }> {
+  async decideAgent(input: AgentDecisionInputV2): Promise<AgentDecisionResultV2> {
     if (input.candidates.length < 2) throw new Error("AGENT_DECISION_CANDIDATES_REQUIRED");
+    if (readCreditConsumptionConfig().aiBatchingEnabled) return this.enqueueAgentDecisionBatch(input);
     const systemPrompt = `<role>
 你正在扮演故事中的一个真实角色。你只替这个 Agent 角色选择下一项行动，不写剧情、不生成新选项。
 </role>
@@ -127,6 +148,119 @@ export class StoryNarrativeProvider implements StoryModelClientV2 {
     throw new StoryGenerationErrorV2(code, lastError instanceof Error ? lastError.message : String(lastError), records, [code]);
   }
 
+  private enqueueAgentDecisionBatch(input: AgentDecisionInputV2): Promise<AgentDecisionResultV2> {
+    const config = readCreditConsumptionConfig();
+    const batchKey = input.context.identity.runId;
+    return new Promise<AgentDecisionResultV2>((resolve, reject) => {
+      let batch = this.pendingAgentBatches.get(batchKey);
+      if (!batch) {
+        batch = {
+          items: [],
+          flushing: false,
+          timer: setTimeout(() => void this.flushAgentDecisionBatch(batchKey), config.aiBatchMaxWaitMs)
+        };
+        batch.timer.unref?.();
+        this.pendingAgentBatches.set(batchKey, batch);
+      }
+      batch.items.push({ input, resolve, reject });
+      if (batch.items.length >= config.aiBatchMaxSize) void this.flushAgentDecisionBatch(batchKey);
+    });
+  }
+
+  private async flushAgentDecisionBatch(batchKey: string) {
+    const batch = this.pendingAgentBatches.get(batchKey);
+    if (!batch || batch.flushing) return;
+    batch.flushing = true;
+    clearTimeout(batch.timer);
+    this.pendingAgentBatches.delete(batchKey);
+    const started = Date.now();
+    operationalMetrics.set("ai_batch_size", { engine: "continuous_story_v2" }, batch.items.length);
+    const startedAt = new Date(started).toISOString();
+    const systemPrompt = "Independently choose one legal candidate for each bounded story role. Never transfer private knowledge between roles. Return JSON {decisions:[{turnId,controlEpoch,candidateId,rationale}]}.";
+    const userPrompt = JSON.stringify({
+      batchSchemaVersion: "room_ai_batch_v2",
+      turns: batch.items.map(({ input }) => ({
+        turnId: input.context.identity.actorTurnId,
+        controlEpoch: input.context.identity.controlEpoch,
+        contextSnapshotHash: input.context.identity.snapshotHash,
+        roleContext: input.context.renderedWorkingSet,
+        finalStory: input.finalStory,
+        candidates: input.candidates.map((candidate) => ({
+          id: candidate.id,
+          label: candidate.label,
+          description: candidate.description,
+          objective: candidate.intentDraft.objective,
+          target: candidate.intentDraft.target,
+          method: candidate.intentDraft.method,
+          visibility: candidate.visibility,
+          risk: candidate.risk,
+          concreteCost: candidate.concreteCost,
+          expectedCountermove: candidate.expectedCountermove
+        }))
+      }))
+    });
+    let response: StoryModelResponseV2 | null = null;
+    let parsed: Array<{ turnId: string; controlEpoch: number; candidateId: string; rationale: string }> = [];
+    let providerError: unknown = null;
+    try {
+      response = await this.generate({ step: "AGENT_DECIDER", systemPrompt, userPrompt, responseFormat: "json_object", temperature: 0.35 });
+      parsed = parseAgentDecisionBatch(response.content);
+    } catch (error) {
+      providerError = error;
+    }
+
+    await Promise.all(batch.items.map(async (item) => {
+      const input = item.input;
+      const exact = parsed.find((entry) => entry.turnId === input.context.identity.actorTurnId
+        && entry.controlEpoch === input.context.identity.controlEpoch);
+      const valid = exact && input.candidates.some((candidate) => candidate.id === exact.candidateId)
+        && exact.rationale.length >= 20 && exact.rationale.length <= 240;
+      const result: AgentDecisionResultV2 = valid
+        ? { candidateId: exact!.candidateId, rationale: exact!.rationale }
+        : {
+            candidateId: input.candidates[0]!.id,
+            rationale: "The batch provider did not return a valid isolated choice, so the first reviewed legal action was selected deterministically."
+          };
+      const individualResponse: StoryModelResponseV2 | null = response ? {
+        ...response,
+        content: JSON.stringify(result),
+        tokenUsage: response.tokenUsage ? {
+          promptTokens: divideUsage(response.tokenUsage.promptTokens, batch.items.length),
+          completionTokens: divideUsage(response.tokenUsage.completionTokens, batch.items.length),
+          totalTokens: divideUsage(response.tokenUsage.totalTokens, batch.items.length)
+        } : undefined
+      } : null;
+      const record = agentExecutionRecord({
+        input,
+        attempt: 1,
+        systemPrompt,
+        userPrompt: JSON.stringify({ batchSize: batch.items.length, turnId: input.context.identity.actorTurnId }),
+        response: individualResponse,
+        started,
+        startedAt,
+        status: "SUCCESS",
+        issueCodes: valid ? [] : [providerError ? "BATCH_MODEL_CALL_FAILED_FALLBACK" : "BATCH_INVALID_ROLE_OUTPUT_FALLBACK"]
+      });
+      try {
+        if (input.getCurrentIdentity) {
+          const freshness = validateStoryContextFreshnessV2(input.context, await input.getCurrentIdentity());
+          if (freshness.status !== "CURRENT") {
+            record.status = "SUPERSEDED";
+            record.supersededReason = freshness.reasons.join(",");
+            record.issueCodes = ["CONTEXT_SUPERSEDED", ...freshness.reasons];
+            await this.persistPromptExecutions(input.contextRecordId, [record]);
+            item.reject(new StoryGenerationErrorV2("CONTEXT_SUPERSEDED", "Agent decision context changed before commit", [record], freshness.reasons));
+            return;
+          }
+        }
+        await this.persistPromptExecutions(input.contextRecordId, [record]);
+        item.resolve(result);
+      } catch (error) {
+        item.reject(error);
+      }
+    }));
+  }
+
   async generate(request: StoryModelRequestV2): Promise<StoryModelResponseV2> {
     const configured = String(process.env.STORY_NARRATIVE_PROVIDER || "deepseek").trim().toLowerCase();
     if (["rules", "mock", "none", "disabled"].includes(configured)) throw new Error("STORY_MODEL_PROVIDER_DISABLED");
@@ -136,38 +270,52 @@ export class StoryNarrativeProvider implements StoryModelClientV2 {
     const baseUrl = String(process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/+$/, "");
     const endpoint = baseUrl.endsWith("/chat/completions") ? baseUrl : `${baseUrl}/chat/completions`;
     const modelName = modelForStoryStep(request.step);
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(normalizeTimeout(process.env.STORY_NARRATIVE_TIMEOUT_MS)),
-      body: JSON.stringify({
-        model: modelName,
-        response_format: { type: request.responseFormat },
-        thinking: { type: "disabled" },
-        temperature: request.temperature,
-        max_tokens: maxTokensForStoryStep(request.step),
-        stream: false,
-        messages: [
-          { role: "system", content: request.systemPrompt },
-          { role: "user", content: request.userPrompt }
-        ]
-      })
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(`STORY_PROVIDER_HTTP_${response.status}`);
-    const content = String((body as any).choices?.[0]?.message?.content || "");
-    if (!content.trim()) throw new Error("STORY_PROVIDER_EMPTY_RESPONSE");
-    const usage = (body as any).usage || {};
-    return {
-      content,
-      provider: "deepseek",
-      modelName,
-      tokenUsage: {
-        promptTokens: finiteNumber(usage.prompt_tokens),
-        completionTokens: finiteNumber(usage.completion_tokens),
-        totalTokens: finiteNumber(usage.total_tokens)
-      }
-    };
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(normalizeTimeout(process.env.STORY_NARRATIVE_TIMEOUT_MS)),
+        body: JSON.stringify({
+          model: modelName,
+          response_format: { type: request.responseFormat },
+          thinking: { type: "disabled" },
+          temperature: request.temperature,
+          max_tokens: maxTokensForStoryStep(request.step),
+          stream: false,
+          messages: [
+            { role: "system", content: request.systemPrompt },
+            { role: "user", content: request.userPrompt }
+          ]
+        })
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(`STORY_PROVIDER_HTTP_${response.status}`);
+      const content = String((body as any).choices?.[0]?.message?.content || "");
+      if (!content.trim()) throw new Error("STORY_PROVIDER_EMPTY_RESPONSE");
+      const usage = (body as any).usage || {};
+      const promptTokens = finiteNumber(usage.prompt_tokens);
+      const completionTokens = finiteNumber(usage.completion_tokens);
+      operationalMetrics.providerAttempt({
+        engine: "continuous_story_v2",
+        batchType: request.step,
+        result: "success",
+        inputTokens: promptTokens,
+        outputTokens: completionTokens
+      });
+      return {
+        content,
+        provider: "deepseek",
+        modelName,
+        tokenUsage: {
+          promptTokens,
+          completionTokens,
+          totalTokens: finiteNumber(usage.total_tokens)
+        }
+      };
+    } catch (error) {
+      operationalMetrics.providerAttempt({ engine: "continuous_story_v2", batchType: request.step, result: "failure" });
+      throw error;
+    }
   }
 
   private async persistPromptExecutions(contextSnapshotId: string, records: PromptExecutionRecordV2[]) {
@@ -238,6 +386,24 @@ function parseAgentDecision(raw: string): { candidateId: string; rationale: stri
   return { candidateId, rationale };
 }
 
+function parseAgentDecisionBatch(raw: string): Array<{ turnId: string; controlEpoch: number; candidateId: string; rationale: string }> {
+  const normalized = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const value = JSON.parse(normalized) as unknown;
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("AGENT_BATCH_JSON_REQUIRED");
+  const decisions = (value as Record<string, unknown>).decisions;
+  if (!Array.isArray(decisions)) throw new Error("AGENT_BATCH_DECISIONS_REQUIRED");
+  return decisions.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error("AGENT_BATCH_DECISION_OBJECT_REQUIRED");
+    const record = entry as Record<string, unknown>;
+    const turnId = typeof record.turnId === "string" ? record.turnId.trim() : "";
+    const controlEpoch = Number(record.controlEpoch);
+    const candidateId = typeof record.candidateId === "string" ? record.candidateId.trim() : "";
+    const rationale = typeof record.rationale === "string" ? record.rationale.trim() : "";
+    if (!turnId || !Number.isInteger(controlEpoch) || !candidateId || !rationale) throw new Error("AGENT_BATCH_DECISION_FIELDS_REQUIRED");
+    return { turnId, controlEpoch, candidateId, rationale };
+  });
+}
+
 function agentExecutionRecord(input: {
   input: {
     context: StoryContextSnapshotV2;
@@ -301,4 +467,8 @@ function normalizeTimeout(raw: unknown) {
 function finiteNumber(value: unknown): number | undefined {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+function divideUsage(value: number | undefined, divisor: number): number | undefined {
+  return value === undefined ? undefined : Math.max(0, Math.round(value / Math.max(1, divisor)));
 }

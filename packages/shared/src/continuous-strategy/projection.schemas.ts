@@ -10,6 +10,7 @@ import {
   isOneOf
 } from "./constants";
 import { fail, integerAtLeast, isRecord, nonEmptyString, onlyKeys, pass, type ValidationResult } from "./schema-utils";
+import type { CreditControlProjection } from "./credit-control.schemas";
 
 export type ProjectedActionCardV1 = {
   actionKey: string;
@@ -66,11 +67,13 @@ export type GameProjectionV1 = {
   latestPublicResult: Record<string, unknown> | null;
   access: {
     state: AccessState;
+    requiresUnlock: boolean;
     requiredCredits: number;
     canCurrentUserUnlock: boolean;
     payerUserId?: string;
-    unlockEndpoint: string;
+    unlockEndpoint: string | null;
   };
+  creditControl: CreditControlProjection;
   resultReady: boolean;
   resultUrl: string | null;
 };
@@ -90,7 +93,7 @@ export type ResultProjectionV1 = {
 const gameProjectionKeys = [
   "schemaVersion", "projectionRevision", "appliedThroughDeliverySequence", "generatedAt", "roomSummary", "run", "currentNode", "actionWindow",
   "serverNow", "player", "myControl", "roleControllerStates", "privateBrief", "availableMainActions", "myActions", "availableManeuvers",
-  "pendingReaction", "observableTraces", "observablePlayerStates", "latestPersonalResult", "latestPublicResult", "access", "resultReady", "resultUrl"
+  "pendingReaction", "observableTraces", "observablePlayerStates", "latestPersonalResult", "latestPublicResult", "access", "creditControl", "resultReady", "resultUrl"
 ] as const;
 
 export function validateGameProjectionV1(value: unknown): ValidationResult<GameProjectionV1> {
@@ -100,7 +103,7 @@ export function validateGameProjectionV1(value: unknown): ValidationResult<GameP
   if (!integerAtLeast(value.projectionRevision, 1)) errors.push("projectionRevision must be >= 1");
   if (!integerAtLeast(value.appliedThroughDeliverySequence, 0)) errors.push("appliedThroughDeliverySequence must be >= 0");
   for (const key of ["generatedAt", "serverNow"] as const) if (!nonEmptyString(value[key])) errors.push(`${key} is required`);
-  for (const key of ["roomSummary", "run", "player", "myControl", "access"] as const) if (!isRecord(value[key])) errors.push(`${key} must be an object`);
+  for (const key of ["roomSummary", "run", "player", "myControl", "access", "creditControl"] as const) if (!isRecord(value[key])) errors.push(`${key} must be an object`);
   for (const key of ["roleControllerStates", "availableMainActions", "myActions", "availableManeuvers", "observableTraces", "observablePlayerStates"] as const) if (!Array.isArray(value[key])) errors.push(`${key} must be an array`);
   if (typeof value.resultReady !== "boolean") errors.push("resultReady must be boolean");
   if (value.resultUrl !== null && typeof value.resultUrl !== "string") errors.push("resultUrl must be string or null");

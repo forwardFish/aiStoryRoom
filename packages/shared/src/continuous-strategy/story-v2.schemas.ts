@@ -1,5 +1,6 @@
 import { GAME_PROJECTION_V2_SCHEMA_VERSION } from "./constants";
 import { fail, integerAtLeast, isRecord, nonEmptyString, pass, type ValidationResult } from "./schema-utils";
+import type { CreditControlProjection } from "./credit-control.schemas";
 
 export type IntentTargetTypeV2 = "ROLE" | "PERSON" | "EVIDENCE" | "RESOURCE" | "LOCATION" | "INSTITUTION" | "PUBLIC_FRAME";
 export type IntentVisibilityV2 = "PRIVATE" | "LIMITED" | "OBSERVABLE" | "PUBLIC";
@@ -181,7 +182,7 @@ export type GameProjectionV2 = {
   schemaVersion: typeof GAME_PROJECTION_V2_SCHEMA_VERSION;
   generatedAt: string;
   worldSequence: number;
-  room: { id: string; title: string; worldId: string; status: string; mode: string };
+  room: { id: string; title: string; worldId: string; status: string; mode: string; ownerUserId?: string };
   world?: GamePageWorldProjectionV1;
   player: { userId: string; roleId: string; roleKey: string; roleName: string; identity: string; personalGoal: string };
   control: { mode: string; epoch: number; canHumanAct: boolean };
@@ -194,7 +195,8 @@ export type GameProjectionV2 = {
   armedConditions: ArmedConditionProjectionV2[];
   pendingInteractions: PendingInteractionProjectionV2[];
   observableTraces: ObservableTraceProjectionV2[];
-  access: { state: string; requiredCredits: number; canCurrentUserUnlock: boolean; unlockEndpoint: string };
+  access: { state: string; requiresUnlock: boolean; requiredCredits: number; canCurrentUserUnlock: boolean; unlockEndpoint: string | null };
+  creditControl: CreditControlProjection;
   completed: boolean;
   resultUrl: string | null;
 };
@@ -219,6 +221,12 @@ export type TurnDecisionResponseV2 = {
     nextHook: string;
   };
   gameProjection: GameProjectionV2;
+} | {
+  accepted: false;
+  reason: string;
+  suggestedRewrite: string | null;
+  attemptId: string;
+  gameProjection: GameProjectionV2;
 };
 
 export function validateGameProjectionV2(value: unknown): ValidationResult<GameProjectionV2> {
@@ -227,7 +235,7 @@ export function validateGameProjectionV2(value: unknown): ValidationResult<GameP
   if (value.schemaVersion !== GAME_PROJECTION_V2_SCHEMA_VERSION) errors.push("invalid schemaVersion");
   if (!nonEmptyString(value.generatedAt)) errors.push("generatedAt is required");
   if (!integerAtLeast(value.worldSequence, 0)) errors.push("worldSequence must be >= 0");
-  for (const key of ["room", "player", "control", "access"] as const) if (!isRecord(value[key])) errors.push(`${key} must be an object`);
+  for (const key of ["room", "player", "control", "access", "creditControl"] as const) if (!isRecord(value[key])) errors.push(`${key} must be an object`);
   if (value.currentTurn !== null && !isRecord(value.currentTurn)) errors.push("currentTurn must be an object or null");
   if (!Array.isArray(value.timeline)) errors.push("timeline must be an array");
   if (!Array.isArray(value.otherActors)) errors.push("otherActors must be an array");
