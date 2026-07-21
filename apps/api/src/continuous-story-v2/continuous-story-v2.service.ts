@@ -1636,7 +1636,7 @@ export class ContinuousStoryV2Service {
       if (resolution.qualityStatus === "FAIL") {
         await tx.storyTaskOutbox.updateMany({
           where: { id: task.id, status: "FAILED", outcome: null },
-          data: { outcome: "RESERVATION_RELEASED", completedAt: new Date() }
+          data: { outcome: "NO_OP", completedAt: new Date() }
         });
         return { released: true, reason: "ALREADY_RELEASED" };
       }
@@ -1744,7 +1744,7 @@ export class ContinuousStoryV2Service {
       }
       await tx.storyTaskOutbox.updateMany({
         where: { id: task.id, status: "FAILED", outcome: null },
-        data: { outcome: "RESERVATION_RELEASED", completedAt: new Date() }
+        data: { outcome: "NO_OP", completedAt: new Date() }
       });
       return { released: true, replacementTurnId: replacement.id };
     });
