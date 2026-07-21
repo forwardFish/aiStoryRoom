@@ -22,7 +22,7 @@ test("reconciler commits published work, releases orphans, and keeps reclaimable
         ? { id: where.id, runId: "run-published", nodeId: "node-published", status: "accepted" }
         : { id: where.id, runId: "run-live", nodeId: "node-live", status: "accepted" }
     },
-    actionResolution: { findUnique: async ({ where }: any) => where.playerActionId === "action-published" ? { qualityStatus: "PASSED" } : null },
+    actionResolution: { findUnique: async ({ where }: any) => where.playerActionId === "action-published" ? { qualityStatus: "PASS" } : null },
     actionWindow: { findUnique: async () => null },
     storyTaskOutbox: { findFirst: async ({ where }: any) => where.nodeId === "node-live" ? { id: "task-live", status: "RUNNING", attempt: 1, maxAttempts: 3, leaseExpiresAt: new Date("2026-07-21T04:59:00.000Z") } : null },
     soloGenerationAttempt: { findFirst: async () => null },

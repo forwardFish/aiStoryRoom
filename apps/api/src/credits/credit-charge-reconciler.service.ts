@@ -195,7 +195,7 @@ export class CreditChargeReconcilerService implements OnModuleInit, OnModuleDest
     const action = await db.playerAction.findUnique({ where: { id: charge.playerActionId } });
     if (!action) return { decision: "RELEASE", reason: "PLAYER_ACTION_MISSING" };
     const resolution = await db.actionResolution.findUnique({ where: { playerActionId: action.id } });
-    if (resolution?.qualityStatus === "PASSED" || action.status === "resolved") {
+    if (resolution?.qualityStatus === "PASS" || action.status === "resolved") {
       return { decision: "COMMIT", reason: "ACTION_PUBLISHED" };
     }
     const window = await db.actionWindow.findUnique({ where: { nodeId: action.nodeId } });
