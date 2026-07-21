@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ContinuousStoryV2Service } from "./continuous-story-v2.service";
+import { ContinuousStoryV2Service, nextResolutionParkingSequence } from "./continuous-story-v2.service";
 
 function serviceForOpening(status: "FAILED" | "PENDING" | "RUNNING") {
   const updates: unknown[] = [];
@@ -41,4 +41,10 @@ test("explicit opening recovery observes an existing task without mutating it", 
 
   assert.deepEqual(result, { scheduled: true, status: "RUNNING", taskId: "opening-task-1", kind: "OPENING" });
   assert.equal(updates.length, 0);
+});
+
+test("repeated failures at one reserved world sequence receive distinct parking sequences", () => {
+  assert.equal(nextResolutionParkingSequence(1, 1), -10_000_001);
+  assert.equal(nextResolutionParkingSequence(-10_000_001, 1), -10_000_002);
+  assert.equal(nextResolutionParkingSequence(-20_000_005, 1), -20_000_006);
 });

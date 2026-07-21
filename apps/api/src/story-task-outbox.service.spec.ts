@@ -232,6 +232,7 @@ async function roleAgentProviderWaitsRunConcurrently() {
 
 async function qualityRejectionNeverRepeatsTheFullModelCall() {
   const updates: any[] = [];
+  const released: Array<[string, string]> = [];
   let resultExecutions = 0;
   const current = task({
     taskType: "ACTOR_RESULT_V2",
@@ -257,7 +258,8 @@ async function qualityRejectionNeverRepeatsTheFullModelCall() {
     executeResultTask: async () => {
       resultExecutions += 1;
       throw rejection;
-    }
+    },
+    failReservedResultTask: async (taskId: string, failureCode: string) => { released.push([taskId, failureCode]); }
   });
   current.leaseOwner = workerId;
 
@@ -267,6 +269,7 @@ async function qualityRejectionNeverRepeatsTheFullModelCall() {
   assert.equal(updates.length, 1);
   assert.equal(updates[0].data.status, "FAILED");
   assert.equal(updates[0].data.nextRetryAt, undefined, "a quality rejection must not be re-enqueued");
+  assert.deepEqual(released, [[current.id, "QUALITY_REJECTED"]], "terminal quality rejection must compact the reserved sequence and release its charge");
   assert.equal(isNonRetryableStoryTaskError(rejection), true);
   assert.equal(isNonRetryableStoryTaskError(Object.assign(new Error("timeout"), {
     getResponse: () => ({ code: "STORY_GENERATION_RETRYABLE", recoverable: true })

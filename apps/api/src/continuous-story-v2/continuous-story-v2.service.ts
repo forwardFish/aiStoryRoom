@@ -81,6 +81,18 @@ type ResultTaskPayloadV2 = {
   controlEpoch: number;
 };
 
+/**
+ * Failed result reservations leave the positive world-sequence namespace
+ * before later reservations are compacted. A role may fail repeatedly while
+ * retrying the same positive sequence, so derive the parking value from the
+ * run's current minimum instead of reusing one value per positive sequence.
+ */
+export function nextResolutionParkingSequence(currentMinimum: number | null | undefined, failedSequence: number) {
+  const failedFloor = -(10_000_000 + Math.max(0, Math.trunc(failedSequence)));
+  if (!Number.isFinite(currentMinimum)) return failedFloor;
+  return Math.min(failedFloor, Math.trunc(Number(currentMinimum)) - 1);
+}
+
 @Injectable()
 export class ContinuousStoryV2Service {
   constructor(
@@ -1628,16 +1640,23 @@ export class ContinuousStoryV2Service {
         where: { runId: resolution.runId, qualityStatus: "GENERATING", appliedWorldSequence: { gt: failedSequence } },
         orderBy: { appliedWorldSequence: "asc" }
       });
+      const currentMinimum = await tx.actionResolution.findFirst({
+        where: { runId: resolution.runId },
+        orderBy: { appliedWorldSequence: "asc" },
+        select: { appliedWorldSequence: true }
+      });
+      let parkingSequence = nextResolutionParkingSequence(currentMinimum?.appliedWorldSequence, failedSequence);
       await tx.actionResolution.update({
         where: { id: resolution.id },
         data: {
-          appliedWorldSequence: -(10_000_000 + failedSequence),
+          appliedWorldSequence: parkingSequence,
           qualityStatus: "FAIL",
           statePatchJson: { ...jsonRecord(resolution.statePatchJson), failedBeforePublish: true, failureCode } as Prisma.InputJsonValue
         }
       });
       for (const pending of later) {
-        await tx.actionResolution.update({ where: { id: pending.id }, data: { appliedWorldSequence: -(20_000_000 + pending.appliedWorldSequence) } });
+        parkingSequence -= 1;
+        await tx.actionResolution.update({ where: { id: pending.id }, data: { appliedWorldSequence: parkingSequence } });
       }
       for (const pending of later) {
         const nextSequence = pending.appliedWorldSequence - 1;
