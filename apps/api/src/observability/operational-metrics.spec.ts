@@ -24,4 +24,3 @@ test("Prometheus metrics keep business charges separate from provider attempts",
   assert.match(rendered, /ai_provider_attempt_total\{engine="solo_story_v2",batch_type="SOLO_TURN",result="success"\} 1/);
   assert.match(rendered, /ai_provider_tokens_total\{engine="solo_story_v2",batch_type="SOLO_TURN",token_type="input"\} 100/);
 });
-

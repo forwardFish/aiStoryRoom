@@ -9,4 +9,3 @@ CHECK (
     OR "actionSlot" LIKE 'SOLO:%'
     OR "actionSlot" LIKE 'SOLO_CLARIFICATION:%'
 );
-

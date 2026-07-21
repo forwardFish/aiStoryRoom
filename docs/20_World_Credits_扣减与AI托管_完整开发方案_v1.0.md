@@ -1,10 +1,10 @@
 # Our Many Worlds：World Credits 扣减、AI 托管与房主赞助完整开发方案 v1.0
 
-> 文档状态：可开发方案  
-> 适用仓库：`D:\lyh\agent\agent-frame\aiStoryRoom`  
-> 基线日期：2026-07-21  
-> 目标策略版本：`active_action_v1`  
-> 兼容策略版本：`world_unlock_v1`  
+> 文档状态：可开发方案
+> 适用仓库：`D:\lyh\agent\agent-frame\aiStoryRoom`
+> 基线日期：2026-07-21
+> 目标策略版本：`active_action_v1`
+> 兼容策略版本：`world_unlock_v1`
 
 ---
 

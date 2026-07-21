@@ -179,4 +179,3 @@ function escapeLabel(value: string) {
 }
 
 export const operationalMetrics = new OperationalMetrics();
-

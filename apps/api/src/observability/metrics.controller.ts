@@ -9,4 +9,3 @@ export class MetricsController {
     return operationalMetrics.renderPrometheus();
   }
 }
-
