@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ContinuousStoryV2Service, nextResolutionParkingSequence } from "./continuous-story-v2.service";
+import { ContinuousStoryV2Service, isRetryableSerializableError, nextResolutionParkingSequence } from "./continuous-story-v2.service";
 
 function serviceForOpening(status: "FAILED" | "PENDING" | "RUNNING") {
   const updates: unknown[] = [];
@@ -47,4 +47,11 @@ test("repeated failures at one reserved world sequence receive distinct parking 
   assert.equal(nextResolutionParkingSequence(1, 1), -10_000_001);
   assert.equal(nextResolutionParkingSequence(-10_000_001, 1), -10_000_002);
   assert.equal(nextResolutionParkingSequence(-20_000_005, 1), -20_000_006);
+});
+
+test("transaction-pool start timeouts are safe to retry before durable publication", () => {
+  assert.equal(isRetryableSerializableError({ code: "P2028", message: "Unable to start a transaction in the given time" }), true);
+  assert.equal(isRetryableSerializableError({ code: "P2034" }), true);
+  assert.equal(isRetryableSerializableError({ code: "P2002" }), true);
+  assert.equal(isRetryableSerializableError({ code: "P2025" }), false);
 });

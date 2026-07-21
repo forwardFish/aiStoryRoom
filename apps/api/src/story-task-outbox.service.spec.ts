@@ -306,6 +306,34 @@ async function exhaustedSoloPublishRecoveryCompensatesTheReservedCharge() {
   assert.deepEqual(compensated, [["task-1", "SOLO_PUBLISH_RETRY_EXHAUSTED"]]);
 }
 
+async function terminalV2ResultRecoveryRepairsACompensationInterruptedByPoolPressure() {
+  const recovered: Array<[string, string]> = [];
+  const prisma = {
+    storyTaskOutbox: {
+      findFirst: async (args: any) => {
+        assert.deepEqual(args.where, {
+          taskType: "ACTOR_RESULT_V2",
+          status: "FAILED",
+          outcome: null,
+          inputRefId: { not: null }
+        });
+        return { id: "stranded-result-task" };
+      }
+    }
+  };
+  const { service } = serviceWith(prisma, {}, {}, {}, {
+    failReservedResultTask: async (taskId: string, failureCode: string) => {
+      recovered.push([taskId, failureCode]);
+      return { released: true };
+    }
+  });
+
+  const result = await service.recoverTerminalV2Result();
+
+  assert.deepEqual(recovered, [["stranded-result-task", "TERMINAL_RESULT_RECOVERY"]]);
+  assert.deepEqual(result, { recovered: true, taskId: "stranded-result-task", result: { released: true } });
+}
+
 async function roleAgentLeaseLossNeverCompletesTheOutboxTask() {
   const updates: any[] = [];
   const current = task({ taskType: "ROLE_AGENT_DECISION", inputRefId: "decision-lease-lost" });
@@ -428,6 +456,7 @@ async function run() {
   await claimUsesPostClaimFence();
   await retryBoundaryUsesIncrementedAttempt();
   await qualityRejectionNeverRepeatsTheFullModelCall();
+  await terminalV2ResultRecoveryRepairsACompensationInterruptedByPoolPressure();
   await exhaustedSoloPublishRecoveryCompensatesTheReservedCharge();
   await staleLeaseCannotRecordFailure();
   await injectedExitLeavesLeaseUntouched();

@@ -88,6 +88,7 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       if (this.polling || Date.now() < this.retryAfterMs) return;
       this.polling = true;
       void this.lifecycle.sweep()
+        .then(() => this.recoverTerminalV2Result())
         .then(() => this.drainReadyTasks())
         .then(() => { this.pollFailures = 0; this.retryAfterMs = 0; })
         .catch((error) => {
@@ -135,6 +136,27 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
 
   async drainOne() {
     return this.drainReadyTasks(1);
+  }
+
+  async recoverTerminalV2Result() {
+    // A terminal ACTOR_RESULT_V2 task is not fully compensated until its
+    // reserved positive world sequence has been compacted. The immediate
+    // compensation can lose a race for a small database pool after a long
+    // provider call, so every worker sweep repairs one durable terminal task
+    // before claiming more continuation work.
+    const strandedResult = await this.prisma.storyTaskOutbox.findFirst({
+      where: {
+        taskType: "ACTOR_RESULT_V2",
+        status: "FAILED",
+        outcome: null,
+        inputRefId: { not: null }
+      },
+      orderBy: { updatedAt: "asc" },
+      select: { id: true }
+    });
+    if (!strandedResult) return { recovered: false };
+    const result = await this.continuousStoryV2.failReservedResultTask(strandedResult.id, "TERMINAL_RESULT_RECOVERY");
+    return { recovered: true, taskId: strandedResult.id, result };
   }
 
   async drainReadyTasks(roleAgentConcurrency = ROLE_AGENT_TASK_CONCURRENCY) {

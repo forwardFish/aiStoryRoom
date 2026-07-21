@@ -1633,7 +1633,13 @@ export class ContinuousStoryV2Service {
         include: { run: true, playerAction: true, submission: true, turn: { include: { decisionSet: true } } }
       });
       if (!resolution || resolution.qualityStatus === "PASS") return { released: false, reason: "RESULT_ALREADY_PUBLISHED" };
-      if (resolution.qualityStatus === "FAIL") return { released: true, reason: "ALREADY_RELEASED" };
+      if (resolution.qualityStatus === "FAIL") {
+        await tx.storyTaskOutbox.updateMany({
+          where: { id: task.id, status: "FAILED", outcome: null },
+          data: { outcome: "RESERVATION_RELEASED", completedAt: new Date() }
+        });
+        return { released: true, reason: "ALREADY_RELEASED" };
+      }
 
       const failedSequence = resolution.appliedWorldSequence;
       const later = await tx.actionResolution.findMany({
@@ -1736,6 +1742,10 @@ export class ContinuousStoryV2Service {
           }
         });
       }
+      await tx.storyTaskOutbox.updateMany({
+        where: { id: task.id, status: "FAILED", outcome: null },
+        data: { outcome: "RESERVATION_RELEASED", completedAt: new Date() }
+      });
       return { released: true, replacementTurnId: replacement.id };
     });
   }
@@ -3666,12 +3676,18 @@ export class ContinuousStoryV2Service {
         return await this.prisma.$transaction(operation, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10_000, timeout: 45_000 });
       } catch (error: any) {
         if (error instanceof DecisionContextMovedError) throw error;
-        if ((error?.code !== "P2034" && error?.code !== "P2002") || attempt === 3) throw error;
+        if (!isRetryableSerializableError(error) || attempt === 3) throw error;
         await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
       }
     }
     throw new Error("unreachable serializable retry state");
   }
+}
+
+export function isRetryableSerializableError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = String((error as { code?: unknown }).code || "");
+  return code === "P2034" || code === "P2002" || code === "P2028";
 }
 
 function roleContext(role: StoryRole): StoryRoleContext {
