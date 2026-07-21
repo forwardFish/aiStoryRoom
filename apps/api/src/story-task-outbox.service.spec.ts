@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { isNonRetryableStoryTaskError, normalizeStoryTaskLeaseMs, requiresOutboxHeartbeat, ROLE_AGENT_TASK_CONCURRENCY, StoryTaskOutboxService } from "./story-task-outbox.service";
+import { isNonRetryableStoryTaskError, isResultSequenceWait, normalizeStoryTaskLeaseMs, requiresOutboxHeartbeat, ROLE_AGENT_TASK_CONCURRENCY, StoryTaskOutboxService } from "./story-task-outbox.service";
 
 function futureLease() {
   return new Date(Date.now() + 60_000);
@@ -306,6 +306,36 @@ async function exhaustedSoloPublishRecoveryCompensatesTheReservedCharge() {
   assert.deepEqual(compensated, [["task-1", "SOLO_PUBLISH_RETRY_EXHAUSTED"]]);
 }
 
+async function sequenceOrderingWaitDoesNotConsumeTheGenerationRetryBudget() {
+  const updates: any[] = [];
+  const released: Array<[string, string]> = [];
+  const current = task({ taskType: "ACTOR_RESULT_V2", status: "RUNNING", attempt: 5, maxAttempts: 5 });
+  const sequenceWait = Object.assign(new Error("An earlier independent actor result must publish"), {
+    getResponse: () => ({ code: "RESULT_SEQUENCE_WAIT", recoverable: true })
+  });
+  const prisma = {
+    storyTaskOutbox: {
+      findUnique: async () => current,
+      updateMany: async (args: any) => { updates.push(args); return { count: 1 }; }
+    },
+    storyRun: { updateMany: async () => ({ count: 0 }) }
+  };
+  const { service, workerId } = serviceWith(prisma, {}, {}, {}, {
+    executeResultTask: async () => { throw sequenceWait; },
+    failReservedResultTask: async (taskId: string, reason: string) => { released.push([taskId, reason]); }
+  });
+  current.leaseOwner = workerId;
+
+  await (service as any).process(current.id);
+
+  assert.equal(isResultSequenceWait(sequenceWait), true);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].data.status, "PENDING");
+  assert.deepEqual(updates[0].data.attempt, { decrement: 1 });
+  assert.ok(updates[0].data.nextRetryAt.getTime() - Date.now() >= 900);
+  assert.deepEqual(released, [], "ordering waits must never release or replace the reserved action");
+}
+
 async function terminalV2ResultRecoveryRepairsACompensationInterruptedByPoolPressure() {
   const recovered: Array<[string, string]> = [];
   const prisma = {
@@ -456,6 +486,7 @@ async function run() {
   await claimUsesPostClaimFence();
   await retryBoundaryUsesIncrementedAttempt();
   await qualityRejectionNeverRepeatsTheFullModelCall();
+  await sequenceOrderingWaitDoesNotConsumeTheGenerationRetryBudget();
   await terminalV2ResultRecoveryRepairsACompensationInterruptedByPoolPressure();
   await exhaustedSoloPublishRecoveryCompensatesTheReservedCharge();
   await staleLeaseCannotRecordFailure();

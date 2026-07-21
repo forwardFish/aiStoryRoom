@@ -54,6 +54,14 @@ export function isNonRetryableStoryTaskError(error: unknown): boolean {
   return NON_RETRYABLE_STORY_GENERATION_CODES.has(code) && payload.recoverable === false;
 }
 
+export function isResultSequenceWait(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const getResponse = (error as { getResponse?: unknown }).getResponse;
+  if (typeof getResponse !== "function") return false;
+  const response = (getResponse as () => unknown).call(error);
+  return Boolean(response && typeof response === "object" && (response as { code?: unknown }).code === "RESULT_SEQUENCE_WAIT");
+}
+
 @Injectable()
 export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(StoryTaskOutboxService.name);
@@ -320,7 +328,12 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       // attempt is already incremented by the successful claim and was read
       // again above. Exhaust exactly on maxAttempts, not one attempt early.
       const nonRetryable = isNonRetryableStoryTaskError(error);
-      const exhausted = nonRetryable || task.attempt >= task.maxAttempts;
+      // Waiting for an earlier reserved world sequence is ordering pressure,
+      // not a failed generation attempt. Preserve the task's retry budget so
+      // a slow earlier result cannot create an endless chain of replacement
+      // AI actions behind it.
+      const sequenceWait = task.taskType === "ACTOR_RESULT_V2" && isResultSequenceWait(error);
+      const exhausted = !sequenceWait && (nonRetryable || task.attempt >= task.maxAttempts);
       const delayMs = Math.min(30_000, 500 * 2 ** Math.max(0, task.attempt - 1));
       const recorded = await this.prisma.storyTaskOutbox.updateMany({
         where: {
@@ -332,6 +345,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         },
         data: exhausted
           ? { status: failedStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, lastError: message }
+          : sequenceWait
+            ? { status: pendingStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, attempt: { decrement: 1 }, nextRetryAt: new Date(Date.now() + Math.max(1_000, delayMs)), lastError: message }
           : { status: pendingStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, nextRetryAt: new Date(Date.now() + delayMs), lastError: message }
       });
       if (recorded.count !== 1) {
