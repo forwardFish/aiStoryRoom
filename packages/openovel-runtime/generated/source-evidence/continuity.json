@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "evidence_continuity_v1",
+  "chapters": [
+    {
+      "chapterId": "DM1566-C01",
+      "timeAnchor": "嘉靖三十五年正月十五御前财政会议之后",
+      "activeLocations": [
+        "DM1566-LOC-west-park",
+        "DM1566-LOC-yuwang-residence"
+      ],
+      "characterPositions": [
+        {
+          "characterId": "DM1566-CHAR-jiajing",
+          "locationId": "DM1566-LOC-west-park"
+        },
+        {
+          "characterId": "DM1566-CHAR-zhang-juzheng",
+          "locationId": "DM1566-LOC-yuwang-residence"
+        }
+      ],
+      "objectHolders": [],
+      "knownFactsByCharacter": [
+        {
+          "characterId": "DM1566-CHAR-zhang-juzheng",
+          "claimIds": [
+            "DM1566-C01-CL001",
+            "DM1566-C01-CL002",
+            "DM1566-C01-CL003",
+            "DM1566-C01-CL004"
+          ]
+        }
+      ],
+      "openClaimIds": [
+        "DM1566-C01-CL001",
+        "DM1566-C01-CL003",
+        "DM1566-C01-CL004"
+      ],
+      "unresolvedQuestions": [
+        "改桑方略能否避免失田、缺粮与地方动乱？",
+        "胡宗宪会如何处理朝廷命令与浙江现实之间的冲突？"
+      ],
+      "institutionalDecisions": [
+        "内阁拟定改桑方略并急递胡宗宪办理。"
+      ],
+      "causalChanges": [
+        "浙江改桑从御前讨论转为需要地方执行的制度命令。"
+      ],
+      "nextChapterConstraints": [
+        "不得把张居正的兼并判断直接写成已经证实的地方暗账。",
+        "必须展示政策执行对土地、粮食或百姓的具体影响。"
+      ]
+    },
+    {
+      "chapterId": "DM1566-C02",
+      "timeAnchor": "嘉靖三十五年农历四月浙江改桑执行初期",
+      "activeLocations": [
+        "DM1566-LOC-zhejiang-governor-office",
+        "DM1566-LOC-xinan-river-dike"
+      ],
+      "characterPositions": [
+        {
+          "characterId": "DM1566-CHAR-hu-zongxian",
+          "locationId": "DM1566-LOC-zhejiang-governor-office"
+        },
+        {
+          "characterId": "DM1566-CHAR-tan-lun",
+          "locationId": "DM1566-LOC-zhejiang-governor-office"
+        }
+      ],
+      "objectHolders": [
+        {
+          "objectId": "DM1566-DOC-grand-secretariat-rejection",
+          "holderId": "DM1566-CHAR-hu-zongxian"
+        }
+      ],
+      "knownFactsByCharacter": [
+        {
+          "characterId": "DM1566-CHAR-hu-zongxian",
+          "claimIds": [
+            "DM1566-C02-CL001",
+            "DM1566-C02-CL002",
+            "DM1566-C02-CL003",
+            "DM1566-C02-CL004"
+          ]
+        },
+        {
+          "characterId": "DM1566-CHAR-tan-lun",
+          "claimIds": [
+            "DM1566-C02-CL002",
+            "DM1566-C02-CL003",
+            "DM1566-C02-CL004"
+          ]
+        }
+      ],
+      "openClaimIds": [
+        "DM1566-C01-CL001",
+        "DM1566-C01-CL003",
+        "DM1566-C02-CL003"
+      ],
+      "unresolvedQuestions": [
+        "朝廷是否会接受兼顾粮食和民生的执行节奏？",
+        "地方官员与商人会如何回应总督的约束？"
+      ],
+      "institutionalDecisions": [
+        "胡宗宪已下令放人、开堰灌苗并催调借粮。"
+      ],
+      "causalChanges": [
+        "政策风险已从推演变成可见的百姓受损与官府冲突。",
+        "胡宗宪公开承担浙江执行责任。"
+      ],
+      "nextChapterConstraints": [
+        "命令已发出不等于所有执行结果已经完成。",
+        "胡宗宪私下表态只对在场者可知。",
+        "内阁驳文的完整内容仍不可凭空补写。"
+      ]
+    }
+  ]
+}

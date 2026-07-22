@@ -1,0 +1,31 @@
+{
+  "name": "@ai-story/openovel-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Evidence-grounded Openovel-style shadow context compiler. Deliberately not wired into Solo or multiplayer.",
+  "type": "commonjs",
+  "scripts": {
+    "evidence:build": "node --import tsx src/cli/build-evidence.ts",
+    "evidence:validate": "node --import tsx src/cli/validate-evidence.ts",
+    "evidence:review:init": "node --import tsx src/cli/init-evidence-review.ts",
+    "evidence:review:status": "node --import tsx src/cli/status-evidence-review.ts",
+    "world-bible:build": "node --import tsx src/cli/build-world-bible.ts",
+    "context:compare": "node --import tsx src/cli/compare-contexts.ts",
+    "shadow:turn": "node --import tsx src/cli/run-shadow-turn.ts",
+    "shadow:selected-turn": "node --import tsx src/cli/run-selected-shadow-turn.ts",
+    "shadow:record-approval": "node --import tsx src/cli/record-story-approval.ts",
+    "shadow:land-record-turn": "node --import tsx src/cli/run-land-record-shadow-turn.ts",
+    "shadow:land-record-preflight": "node --import tsx src/cli/inspect-land-record-shadow-turn.ts",
+    "shadow:normalize-latest": "node --import tsx src/cli/normalize-latest-shadow-turn.ts",
+    "shadow:audit": "node --import tsx src/cli/audit-shadow-turn.ts",
+    "shadow:repair-selected": "node --import tsx src/cli/repair-selected-shadow-artifact.ts",
+    "test": "node --import tsx --test tests/*.spec.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "ajv": "^8.20.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

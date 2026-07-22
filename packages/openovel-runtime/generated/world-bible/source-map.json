@@ -1,0 +1,172 @@
+[
+  {
+    "targetType": "HISTORICAL_BASELINE",
+    "targetId": "DM1566-C01-CL002",
+    "sourceClaimIds": [
+      "DM1566-C01-CL002"
+    ],
+    "sourceHashes": [
+      "37accef11f16ae25127706b458f6c2ea940d961cb69730a9359357c26642af1e"
+    ]
+  },
+  {
+    "targetType": "HISTORICAL_BASELINE",
+    "targetId": "DM1566-C02-CL001",
+    "sourceClaimIds": [
+      "DM1566-C02-CL001"
+    ],
+    "sourceHashes": [
+      "eb766478609e61165faf8d09c1a7bba721f39205cd60ee49d9f2cbfc28f17bb9"
+    ]
+  },
+  {
+    "targetType": "HISTORICAL_BASELINE",
+    "targetId": "DM1566-C02-CL002",
+    "sourceClaimIds": [
+      "DM1566-C02-CL002"
+    ],
+    "sourceHashes": [
+      "7ce4cd8db37946af2367fcfa5797de395be312943fa9495f993629145a0c9338"
+    ]
+  },
+  {
+    "targetType": "HISTORICAL_BASELINE",
+    "targetId": "DM1566-C02-CL004",
+    "sourceClaimIds": [
+      "DM1566-C02-CL004"
+    ],
+    "sourceHashes": [
+      "5e0b6c63f716c9cb784ac4afc9bef7168b906065fc2f3134dcad083b5e261a1a"
+    ]
+  },
+  {
+    "targetType": "EPISTEMIC_RECORD",
+    "targetId": "DM1566-C01-CL001",
+    "sourceClaimIds": [
+      "DM1566-C01-CL001"
+    ],
+    "sourceHashes": [
+      "8923dfb80bb843876b5dc376d6cdbca69f6ec249230c26d04edec022858924ba"
+    ]
+  },
+  {
+    "targetType": "EPISTEMIC_RECORD",
+    "targetId": "DM1566-C01-CL003",
+    "sourceClaimIds": [
+      "DM1566-C01-CL003"
+    ],
+    "sourceHashes": [
+      "37e71f4c6708f268ce37f381b2cc6d4125522741eddd8830afbafe44de0ae20f"
+    ]
+  },
+  {
+    "targetType": "EPISTEMIC_RECORD",
+    "targetId": "DM1566-C01-CL004",
+    "sourceClaimIds": [
+      "DM1566-C01-CL004"
+    ],
+    "sourceHashes": [
+      "c4d6510209b282dc99bbf9c762fb8abe72409563f1ead4ed260ec565989ab7f9"
+    ]
+  },
+  {
+    "targetType": "EPISTEMIC_RECORD",
+    "targetId": "DM1566-C02-CL003",
+    "sourceClaimIds": [
+      "DM1566-C02-CL003"
+    ],
+    "sourceHashes": [
+      "3c5503ec64ffdd6d10f0922f379c97d2223f9fe2c3e3a984cde433a9ddd84ed7"
+    ]
+  },
+  {
+    "targetType": "SOURCE_FUTURE",
+    "targetId": "DM1566-C03-CL001",
+    "sourceClaimIds": [
+      "DM1566-C03-CL001"
+    ],
+    "sourceHashes": [
+      "295470c7fe8530d2815502427b4393f727acdb8589f3f55c6155cb8eb4f417c9"
+    ]
+  },
+  {
+    "targetType": "SOURCE_FUTURE",
+    "targetId": "DM1566-C03-CL002",
+    "sourceClaimIds": [
+      "DM1566-C03-CL002"
+    ],
+    "sourceHashes": [
+      "c00d4318782ffd01f37622a782603a5ac982b1b114a33fabdda6c2274ebe4f3f"
+    ]
+  },
+  {
+    "targetType": "RUNTIME_FACT",
+    "targetId": "fact_imperial_reform_order",
+    "sourceClaimIds": [
+      "DM1566-C01-CL002"
+    ],
+    "sourceHashes": [
+      "37accef11f16ae25127706b458f6c2ea940d961cb69730a9359357c26642af1e"
+    ]
+  },
+  {
+    "targetType": "RUNTIME_FACT",
+    "targetId": "fact_county_letter_clue",
+    "sourceClaimIds": [
+      "DM1566-C01-CL003"
+    ],
+    "sourceHashes": [
+      "37e71f4c6708f268ce37f381b2cc6d4125522741eddd8830afbafe44de0ae20f"
+    ]
+  },
+  {
+    "targetType": "RUNTIME_FACT",
+    "targetId": "fact_grain_pressure",
+    "sourceClaimIds": [
+      "DM1566-C02-CL001",
+      "DM1566-C02-CL002",
+      "DM1566-C02-CL003"
+    ],
+    "sourceHashes": [
+      "eb766478609e61165faf8d09c1a7bba721f39205cd60ee49d9f2cbfc28f17bb9",
+      "7ce4cd8db37946af2367fcfa5797de395be312943fa9495f993629145a0c9338",
+      "3c5503ec64ffdd6d10f0922f379c97d2223f9fe2c3e3a984cde433a9ddd84ed7"
+    ]
+  },
+  {
+    "targetType": "RUNTIME_FACT",
+    "targetId": "fact_shadow_ledger_truth",
+    "sourceClaimIds": [
+      "DM1566-C01-CL003"
+    ],
+    "sourceHashes": [
+      "37e71f4c6708f268ce37f381b2cc6d4125522741eddd8830afbafe44de0ae20f"
+    ]
+  },
+  {
+    "targetType": "CONTEXT_CARD",
+    "targetId": "card_role_governor_boundary",
+    "sourceClaimIds": [
+      "DM1566-C01-CL002",
+      "DM1566-C01-CL004"
+    ],
+    "sourceHashes": [
+      "37accef11f16ae25127706b458f6c2ea940d961cb69730a9359357c26642af1e",
+      "c4d6510209b282dc99bbf9c762fb8abe72409563f1ead4ed260ec565989ab7f9"
+    ]
+  },
+  {
+    "targetType": "CONTEXT_CARD",
+    "targetId": "card_policy_harm_boundary",
+    "sourceClaimIds": [
+      "DM1566-C02-CL001",
+      "DM1566-C02-CL002",
+      "DM1566-C02-CL003"
+    ],
+    "sourceHashes": [
+      "eb766478609e61165faf8d09c1a7bba721f39205cd60ee49d9f2cbfc28f17bb9",
+      "7ce4cd8db37946af2367fcfa5797de395be312943fa9495f993629145a0c9338",
+      "3c5503ec64ffdd6d10f0922f379c97d2223f9fe2c3e3a984cde433a9ddd84ed7"
+    ]
+  }
+]

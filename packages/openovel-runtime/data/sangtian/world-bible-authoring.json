@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "world_bible_authoring_v1",
+  "worldId": "sangtian",
+  "evidencePackageId": "dm1566-sangtian-evidence-mvp-v1",
+  "version": "2026-07-22.v1",
+  "startPoint": {
+    "startPointId": "sangtian-shadow-governor-v1",
+    "sourceCutoffChapterId": "DM1566-C02"
+  },
+  "runtimeFacts": [
+    {
+      "factId": "fact_imperial_reform_order",
+      "content": "朝廷已经把浙江改桑执行交到总督体系，必须回应，但原著没有规定玩家只能用一种办法回应。",
+      "visibility": "PUBLIC",
+      "knownByRoleIds": ["ROLE-zhejiang-governor", "ROLE-xunfu"],
+      "priority": "P0",
+      "origin": "T0_EVIDENCE",
+      "sourceClaimIds": ["DM1566-C01-CL002"]
+    },
+    {
+      "factId": "fact_county_letter_clue",
+      "content": "清流县令密信称县册可能有改痕；这只是游戏新增调查入口，不能当成暗账实物或定罪证据。",
+      "visibility": "ROLE_PRIVATE",
+      "knownByRoleIds": ["ROLE-zhejiang-governor"],
+      "priority": "P0",
+      "origin": "T3_ADAPTATION",
+      "sourceClaimIds": ["DM1566-C01-CL003"]
+    },
+    {
+      "factId": "fact_grain_pressure",
+      "content": "原著世界底色说明政策执行必须考虑粮食与民生。堵堰、踏苗和百姓聚集只属于原著历史证据，不表示本局此刻已经发生。",
+      "visibility": "PUBLIC",
+      "knownByRoleIds": ["ROLE-zhejiang-governor", "ROLE-xunfu"],
+      "priority": "P0",
+      "origin": "T0_EVIDENCE",
+      "sourceClaimIds": ["DM1566-C02-CL001", "DM1566-C02-CL002", "DM1566-C02-CL003"]
+    },
+    {
+      "factId": "fact_shadow_ledger_truth",
+      "content": "巡抚幕僚与商会存在账外往来。",
+      "visibility": "ROLE_PRIVATE",
+      "knownByRoleIds": ["ROLE-xunfu"],
+      "priority": "P1",
+      "origin": "T3_ADAPTATION",
+      "sourceClaimIds": ["DM1566-C01-CL003"]
+    }
+  ],
+  "contextCards": [
+    {
+      "cardId": "card_role_governor_boundary",
+      "title": "总督的权限边界",
+      "summary": "可以召见、记录、暂缓落印和建立复核程序；不能凭一封密信直接给任何人定罪。",
+      "tags": ["role", "acl", "adaptation"],
+      "priority": "P1",
+      "groundedFactIds": ["fact_imperial_reform_order", "fact_county_letter_clue"],
+      "origin": "T3_ADAPTATION",
+      "sourceClaimIds": ["DM1566-C01-CL002", "DM1566-C01-CL004"]
+    },
+    {
+      "cardId": "card_policy_harm_boundary",
+      "title": "政策代价必须落到具体人和粮食",
+      "summary": "叙事应呈现官员、粮食和百姓的真实代价，不能只写抽象权谋术语。",
+      "tags": ["pressure", "evidence"],
+      "priority": "P1",
+      "groundedFactIds": ["fact_grain_pressure"],
+      "origin": "T2_DERIVED",
+      "sourceClaimIds": ["DM1566-C02-CL001", "DM1566-C02-CL002", "DM1566-C02-CL003"]
+    }
+  ]
+}

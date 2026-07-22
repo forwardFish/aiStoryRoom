@@ -1,0 +1,275 @@
+[
+  {
+    "chapterId": "DM1566-C01",
+    "ordinal": 1,
+    "title": "第一章",
+    "lineStart": 63,
+    "lineEnd": 825
+  },
+  {
+    "chapterId": "DM1566-C02",
+    "ordinal": 2,
+    "title": "第二章",
+    "lineStart": 826,
+    "lineEnd": 1568
+  },
+  {
+    "chapterId": "DM1566-C03",
+    "ordinal": 3,
+    "title": "第三章",
+    "lineStart": 1569,
+    "lineEnd": 2365
+  },
+  {
+    "chapterId": "DM1566-C04",
+    "ordinal": 4,
+    "title": "第四章",
+    "lineStart": 2366,
+    "lineEnd": 3150
+  },
+  {
+    "chapterId": "DM1566-C05",
+    "ordinal": 5,
+    "title": "第五章",
+    "lineStart": 3151,
+    "lineEnd": 3875
+  },
+  {
+    "chapterId": "DM1566-C06",
+    "ordinal": 6,
+    "title": "第六章",
+    "lineStart": 3876,
+    "lineEnd": 4874
+  },
+  {
+    "chapterId": "DM1566-C07",
+    "ordinal": 7,
+    "title": "第七章",
+    "lineStart": 4875,
+    "lineEnd": 5745
+  },
+  {
+    "chapterId": "DM1566-C08",
+    "ordinal": 8,
+    "title": "第八章",
+    "lineStart": 5746,
+    "lineEnd": 6492
+  },
+  {
+    "chapterId": "DM1566-C09",
+    "ordinal": 9,
+    "title": "第九章",
+    "lineStart": 6493,
+    "lineEnd": 7301
+  },
+  {
+    "chapterId": "DM1566-C10",
+    "ordinal": 10,
+    "title": "第十章",
+    "lineStart": 7302,
+    "lineEnd": 8200
+  },
+  {
+    "chapterId": "DM1566-C11",
+    "ordinal": 11,
+    "title": "第十一章",
+    "lineStart": 8201,
+    "lineEnd": 9243
+  },
+  {
+    "chapterId": "DM1566-C12",
+    "ordinal": 12,
+    "title": "第十二章",
+    "lineStart": 9244,
+    "lineEnd": 10010
+  },
+  {
+    "chapterId": "DM1566-C13",
+    "ordinal": 13,
+    "title": "第十三章",
+    "lineStart": 10011,
+    "lineEnd": 10747
+  },
+  {
+    "chapterId": "DM1566-C14",
+    "ordinal": 14,
+    "title": "第十四章",
+    "lineStart": 10748,
+    "lineEnd": 11676
+  },
+  {
+    "chapterId": "DM1566-C15",
+    "ordinal": 15,
+    "title": "第十五章",
+    "lineStart": 11677,
+    "lineEnd": 12507
+  },
+  {
+    "chapterId": "DM1566-C16",
+    "ordinal": 16,
+    "title": "第十六章",
+    "lineStart": 12508,
+    "lineEnd": 13252
+  },
+  {
+    "chapterId": "DM1566-C17",
+    "ordinal": 17,
+    "title": "第十七章",
+    "lineStart": 13253,
+    "lineEnd": 14219
+  },
+  {
+    "chapterId": "DM1566-C18",
+    "ordinal": 18,
+    "title": "第十八章",
+    "lineStart": 14220,
+    "lineEnd": 14990
+  },
+  {
+    "chapterId": "DM1566-C19",
+    "ordinal": 19,
+    "title": "第十九章",
+    "lineStart": 14991,
+    "lineEnd": 15605
+  },
+  {
+    "chapterId": "DM1566-C20",
+    "ordinal": 20,
+    "title": "第二十章",
+    "lineStart": 15606,
+    "lineEnd": 16206
+  },
+  {
+    "chapterId": "DM1566-C21",
+    "ordinal": 21,
+    "title": "第二十一章",
+    "lineStart": 16207,
+    "lineEnd": 16843
+  },
+  {
+    "chapterId": "DM1566-C22",
+    "ordinal": 22,
+    "title": "第二十二章",
+    "lineStart": 16844,
+    "lineEnd": 17440
+  },
+  {
+    "chapterId": "DM1566-C23",
+    "ordinal": 23,
+    "title": "第二十三章",
+    "lineStart": 17441,
+    "lineEnd": 18235
+  },
+  {
+    "chapterId": "DM1566-C24",
+    "ordinal": 24,
+    "title": "第二十四章",
+    "lineStart": 18236,
+    "lineEnd": 19184
+  },
+  {
+    "chapterId": "DM1566-C25",
+    "ordinal": 25,
+    "title": "第二十五章",
+    "lineStart": 19185,
+    "lineEnd": 19845
+  },
+  {
+    "chapterId": "DM1566-C26",
+    "ordinal": 26,
+    "title": "第二十六章",
+    "lineStart": 19846,
+    "lineEnd": 20946
+  },
+  {
+    "chapterId": "DM1566-C27",
+    "ordinal": 27,
+    "title": "第二十七章",
+    "lineStart": 20947,
+    "lineEnd": 21803
+  },
+  {
+    "chapterId": "DM1566-C28",
+    "ordinal": 28,
+    "title": "第二十八章",
+    "lineStart": 21804,
+    "lineEnd": 22606
+  },
+  {
+    "chapterId": "DM1566-C29",
+    "ordinal": 29,
+    "title": "第二十九章",
+    "lineStart": 22607,
+    "lineEnd": 23359
+  },
+  {
+    "chapterId": "DM1566-C30",
+    "ordinal": 30,
+    "title": "第三十章",
+    "lineStart": 23360,
+    "lineEnd": 24186
+  },
+  {
+    "chapterId": "DM1566-C31",
+    "ordinal": 31,
+    "title": "第三十一章",
+    "lineStart": 24187,
+    "lineEnd": 25013
+  },
+  {
+    "chapterId": "DM1566-C32",
+    "ordinal": 32,
+    "title": "第三十二章",
+    "lineStart": 25014,
+    "lineEnd": 25710
+  },
+  {
+    "chapterId": "DM1566-C33",
+    "ordinal": 33,
+    "title": "第三十三章",
+    "lineStart": 25711,
+    "lineEnd": 26479
+  },
+  {
+    "chapterId": "DM1566-C34",
+    "ordinal": 34,
+    "title": "第三十四章",
+    "lineStart": 26480,
+    "lineEnd": 27306
+  },
+  {
+    "chapterId": "DM1566-C35",
+    "ordinal": 35,
+    "title": "第三十五章",
+    "lineStart": 27307,
+    "lineEnd": 28031
+  },
+  {
+    "chapterId": "DM1566-C36",
+    "ordinal": 36,
+    "title": "第三十六章",
+    "lineStart": 28032,
+    "lineEnd": 28752
+  },
+  {
+    "chapterId": "DM1566-C37",
+    "ordinal": 37,
+    "title": "第三十七章",
+    "lineStart": 28753,
+    "lineEnd": 29463
+  },
+  {
+    "chapterId": "DM1566-C38",
+    "ordinal": 38,
+    "title": "第三十八章",
+    "lineStart": 29464,
+    "lineEnd": 29974
+  },
+  {
+    "chapterId": "DM1566-C39",
+    "ordinal": 39,
+    "title": "第三十九章",
+    "lineStart": 29975,
+    "lineEnd": 30547
+  }
+]

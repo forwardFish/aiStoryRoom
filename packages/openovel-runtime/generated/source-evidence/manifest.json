@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "source_evidence_manifest_v1",
+  "packageId": "dm1566-sangtian-evidence-mvp-v1",
+  "packageVersion": "2026-07-21.v1",
+  "worldId": "sangtian",
+  "compilerVersion": "openovel-evidence-compiler-v1",
+  "source": {
+    "path": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt",
+    "sha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238",
+    "lineCount": 30547,
+    "chapterCount": 39
+  },
+  "coverage": {
+    "chapterIds": [
+      "DM1566-C01",
+      "DM1566-C02",
+      "DM1566-C03"
+    ],
+    "sceneCount": 5,
+    "claimCount": 10
+  },
+  "files": {
+    "chapter-index.json": "165def96fdc6816ca86431196f132528c1e8606dbea9b53e267f556e313265af",
+    "scenes.json": "810d061183257864ba49b2d183afe24974c70413a134831d5be2ea35f3c10316",
+    "claims.jsonl": "56f4cb98bc33fe9b64b144a9a9757010ee439d6cfa4355edc59c119f70c0ca16",
+    "continuity.json": "72fff9626f95641de2abfadd3478f4a3e3c851e6ed4ca51e5fe204b11f3ae970"
+  }
+}

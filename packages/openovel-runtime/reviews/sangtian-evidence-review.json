@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "evidence_review_queue_v1",
+  "packageId": "dm1566-sangtian-evidence-mvp-v1",
+  "packageVersion": "2026-07-21.v1",
+  "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238",
+  "updatedAt": "2026-07-22T02:00:50.057Z",
+  "items": [
+    {
+      "itemId": "DM1566-C01-S06-fiscal-council",
+      "itemKind": "SCENE",
+      "sourceHash": "1915c9d3e44ffe317b36634a6d146877045c3d3f2b8458063a066cf8397843a0",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C01-S09-yuwang-council",
+      "itemKind": "SCENE",
+      "sourceHash": "5fa00d8abacbc0c7ce3ccb304921301a5d88722e0a6eeeef265e5d1b16c4bd5e",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C02-S01-forced-reform",
+      "itemKind": "SCENE",
+      "sourceHash": "9e40f17ad038b0e6aa9c0d7226dbf1ec7209ef49c7860fd15021bf9d6f6d0604",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C02-S04-governor-office",
+      "itemKind": "SCENE",
+      "sourceHash": "0240665dfcc68ba8aa9e76aebb3e082d248cb085975997b440807ea8424a548b",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C03-S01-hu-tan-private-talk",
+      "itemKind": "SCENE",
+      "sourceHash": "9220690400c2e7f8a8b35cb94d1d9d970de641c832965a8ef6a456fe052367b9",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C01-CL001",
+      "itemKind": "CLAIM",
+      "sourceHash": "eeadce308e2246aec78aad46b710ac556814050772df43bd2a6a5c712549dc10",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C01-CL002",
+      "itemKind": "CLAIM",
+      "sourceHash": "a642aa1bb8f2c751b01c7ca69fc9df36fd4c9e548f750e916544aeff99b3f8b9",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C01-CL003",
+      "itemKind": "CLAIM",
+      "sourceHash": "c41755a2b4915cf3b052af84e9d5c77d297e948aa33169a909b8c9cd29e4f8ce",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C01-CL004",
+      "itemKind": "CLAIM",
+      "sourceHash": "e49bd2586b02c129293e8495eb0dc05f9cb7bdc8aa82752b46387b1c7b2d204b",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C02-CL001",
+      "itemKind": "CLAIM",
+      "sourceHash": "197e5dd5a86bbcf8d0fba96d400d8aa22db3114c4534d0810b53a10db96a3dbb",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C02-CL002",
+      "itemKind": "CLAIM",
+      "sourceHash": "46eff2ceb968dab23577ebd2e79ddf6fbe1716927684385f2e04689e07f744f3",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C02-CL003",
+      "itemKind": "CLAIM",
+      "sourceHash": "aa0a8e2faac00d887b99cc17a44c9e5f350caf0568cc02ffbcd5ad808149a705",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C02-CL004",
+      "itemKind": "CLAIM",
+      "sourceHash": "db1b5d6113b5b462730dc547516ca9154ecd17f0c1885d0320b8ed4b9c733cad",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C03-CL001",
+      "itemKind": "CLAIM",
+      "sourceHash": "15377858fbb5f4a13209b60539f3e0111e7d912f4725bd822e886d71931f37e5",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C03-CL002",
+      "itemKind": "CLAIM",
+      "sourceHash": "4d442e8d31ac610b9a395456ff8b311dfa855b0976494ced4b89216eb9c1122e",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C01",
+      "itemKind": "CONTINUITY",
+      "sourceHash": "0d618eccbbc03694c9be8c7f2162269cccb58e1ae14f19b8ad8c7b969847d777",
+      "status": "PENDING"
+    },
+    {
+      "itemId": "DM1566-C02",
+      "itemKind": "CONTINUITY",
+      "sourceHash": "bba9dc7e773d3596f1b30f21dd61a812ea65bc7e99517894cc3f47400f4507a2",
+      "status": "PENDING"
+    }
+  ]
+}

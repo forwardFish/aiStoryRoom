@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/evidence-package.schema.json",
+  "title": "Compiled source evidence package manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "packageId", "packageVersion", "worldId", "compilerVersion", "source", "coverage", "files"],
+  "properties": {
+    "schemaVersion": {"const": "source_evidence_manifest_v1"},
+    "packageId": {"type": "string", "minLength": 1},
+    "packageVersion": {"type": "string", "minLength": 1},
+    "worldId": {"type": "string", "minLength": 1},
+    "compilerVersion": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "lineCount", "chapterCount"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "lineCount": {"type": "integer", "minimum": 1},
+        "chapterCount": {"type": "integer", "minimum": 1}
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chapterIds", "sceneCount", "claimCount"],
+      "properties": {
+        "chapterIds": {"type": "array", "items": {"type": "string"}},
+        "sceneCount": {"type": "integer", "minimum": 1},
+        "claimCount": {"type": "integer", "minimum": 1}
+      }
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+    }
+  }
+}

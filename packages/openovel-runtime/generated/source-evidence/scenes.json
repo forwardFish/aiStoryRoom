@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "evidence_scenes_v1",
+  "scenes": [
+    {
+      "sceneId": "DM1566-C01-S06-fiscal-council",
+      "chapterId": "DM1566-C01",
+      "title": "御前议开源与浙江改桑",
+      "lineStart": 500,
+      "lineEnd": 546,
+      "timeLabel": "嘉靖三十五年正月十五",
+      "locationLabels": [
+        "西苑精舍"
+      ],
+      "presentCharacterIds": [
+        "DM1566-CHAR-jiajing",
+        "DM1566-CHAR-yan-song",
+        "DM1566-CHAR-yan-shifan",
+        "DM1566-CHAR-zhang-juzheng"
+      ],
+      "claimIds": [
+        "DM1566-C01-CL001",
+        "DM1566-C01-CL002"
+      ],
+      "excerptSha256": "e122f3c7ff1c3ade91e2207505e3749f1c098a03cf1261a000e5cdd0af600cbe"
+    },
+    {
+      "sceneId": "DM1566-C01-S09-yuwang-council",
+      "chapterId": "DM1566-C01",
+      "title": "裕王府议改桑风险与胡宗宪",
+      "lineStart": 734,
+      "lineEnd": 780,
+      "timeLabel": "御前财政会议之后",
+      "locationLabels": [
+        "裕王府"
+      ],
+      "presentCharacterIds": [
+        "DM1566-CHAR-yuwang",
+        "DM1566-CHAR-xu-jie",
+        "DM1566-CHAR-gao-gong",
+        "DM1566-CHAR-zhang-juzheng",
+        "DM1566-CHAR-tan-lun"
+      ],
+      "claimIds": [
+        "DM1566-C01-CL003",
+        "DM1566-C01-CL004"
+      ],
+      "excerptSha256": "40914a6ddb7cc921d2531681fe9f14e6601ead5be6abd88d0af3cce0083b7899"
+    },
+    {
+      "sceneId": "DM1566-C02-S01-forced-reform",
+      "chapterId": "DM1566-C02",
+      "title": "新安江堰口强推改稻为桑",
+      "lineStart": 829,
+      "lineEnd": 843,
+      "timeLabel": "农历四月",
+      "locationLabels": [
+        "新安江大堤",
+        "淳安县稻田"
+      ],
+      "presentCharacterIds": [
+        "DM1566-CHAR-ma-ningyuan",
+        "DM1566-CHAR-chang-boxi",
+        "DM1566-CHAR-zhang-zhiliang"
+      ],
+      "claimIds": [
+        "DM1566-C02-CL001"
+      ],
+      "excerptSha256": "eb766478609e61165faf8d09c1a7bba721f39205cd60ee49d9f2cbfc28f17bb9"
+    },
+    {
+      "sceneId": "DM1566-C02-S04-governor-office",
+      "chapterId": "DM1566-C02",
+      "title": "总督衙门外的百姓与粮食责任",
+      "lineStart": 1215,
+      "lineEnd": 1307,
+      "timeLabel": "农历四月",
+      "locationLabels": [
+        "浙江总督衙门"
+      ],
+      "presentCharacterIds": [
+        "DM1566-CHAR-hu-zongxian",
+        "DM1566-CHAR-tan-lun",
+        "DM1566-CHAR-yang-jinshui",
+        "DM1566-CHAR-zheng-michang",
+        "DM1566-CHAR-he-maocai",
+        "DM1566-CHAR-ma-ningyuan"
+      ],
+      "claimIds": [
+        "DM1566-C02-CL002",
+        "DM1566-C02-CL003",
+        "DM1566-C02-CL004"
+      ],
+      "excerptSha256": "64e15594a9baa71cb0355bb561cfb8eeea61a851280bd9c8d26c1481609d7d00"
+    },
+    {
+      "sceneId": "DM1566-C03-S01-hu-tan-private-talk",
+      "chapterId": "DM1566-C03",
+      "title": "胡宗宪向谭纶说明政治边界",
+      "lineStart": 1608,
+      "lineEnd": 1634,
+      "timeLabel": "总督衙门议事之后",
+      "locationLabels": [
+        "浙江总督衙门内室"
+      ],
+      "presentCharacterIds": [
+        "DM1566-CHAR-hu-zongxian",
+        "DM1566-CHAR-tan-lun"
+      ],
+      "claimIds": [
+        "DM1566-C03-CL001",
+        "DM1566-C03-CL002"
+      ],
+      "excerptSha256": "a97b672062d53da193ec51459f46aa68fa340a22e18c1e4f6f9297eb080dc4c0"
+    }
+  ]
+}

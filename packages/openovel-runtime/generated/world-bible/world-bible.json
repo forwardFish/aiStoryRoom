@@ -1,0 +1,452 @@
+{
+  "schemaVersion": "compiled_world_bible_v1",
+  "worldId": "sangtian",
+  "version": "2026-07-22.v1",
+  "sourceEvidence": {
+    "packageId": "dm1566-sangtian-evidence-mvp-v1",
+    "packageVersion": "2026-07-21.v1",
+    "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238"
+  },
+  "reviewGate": "PENDING",
+  "shadowOnly": true,
+  "startPoint": {
+    "startPointId": "sangtian-shadow-governor-v1",
+    "sourceCutoffChapterId": "DM1566-C02"
+  },
+  "historicalBaselineClaimIds": [
+    "DM1566-C01-CL002",
+    "DM1566-C02-CL001",
+    "DM1566-C02-CL002",
+    "DM1566-C02-CL004"
+  ],
+  "epistemicClaimIds": [
+    "DM1566-C01-CL001",
+    "DM1566-C01-CL003",
+    "DM1566-C01-CL004",
+    "DM1566-C02-CL003"
+  ],
+  "sourceFutureClaimIds": [
+    "DM1566-C03-CL001",
+    "DM1566-C03-CL002"
+  ],
+  "entities": {
+    "characterIds": [
+      "DM1566-CHAR-chang-boxi",
+      "DM1566-CHAR-gao-gong",
+      "DM1566-CHAR-he-maocai",
+      "DM1566-CHAR-hu-zongxian",
+      "DM1566-CHAR-jiajing",
+      "DM1566-CHAR-ma-ningyuan",
+      "DM1566-CHAR-tan-lun",
+      "DM1566-CHAR-xu-jie",
+      "DM1566-CHAR-yan-shifan",
+      "DM1566-CHAR-yan-song",
+      "DM1566-CHAR-yang-jinshui",
+      "DM1566-CHAR-yuwang",
+      "DM1566-CHAR-zhang-juzheng",
+      "DM1566-CHAR-zhang-zhiliang",
+      "DM1566-CHAR-zheng-michang"
+    ],
+    "institutionIds": [
+      "DM1566-INST-grand-secretariat",
+      "DM1566-INST-hangzhou-government",
+      "DM1566-INST-zhejiang"
+    ],
+    "locationIds": [
+      "DM1566-LOC-west-park",
+      "DM1566-LOC-xinan-river-dike",
+      "DM1566-LOC-yuwang-residence",
+      "DM1566-LOC-zhejiang-governor-office"
+    ],
+    "objectIds": [
+      "DM1566-DOC-grand-secretariat-rejection"
+    ]
+  },
+  "runtimeFacts": [
+    {
+      "factId": "fact_imperial_reform_order",
+      "content": "朝廷已经把浙江改桑执行交到总督体系，必须回应，但原著没有规定玩家只能用一种办法回应。",
+      "visibility": "PUBLIC",
+      "knownByRoleIds": [
+        "ROLE-zhejiang-governor",
+        "ROLE-xunfu"
+      ],
+      "priority": "P0",
+      "origin": "T0_EVIDENCE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL002"
+      ]
+    },
+    {
+      "factId": "fact_county_letter_clue",
+      "content": "清流县令密信称县册可能有改痕；这只是游戏新增调查入口，不能当成暗账实物或定罪证据。",
+      "visibility": "ROLE_PRIVATE",
+      "knownByRoleIds": [
+        "ROLE-zhejiang-governor"
+      ],
+      "priority": "P0",
+      "origin": "T3_ADAPTATION",
+      "sourceClaimIds": [
+        "DM1566-C01-CL003"
+      ]
+    },
+    {
+      "factId": "fact_grain_pressure",
+      "content": "原著世界底色说明政策执行必须考虑粮食与民生。堵堰、踏苗和百姓聚集只属于原著历史证据，不表示本局此刻已经发生。",
+      "visibility": "PUBLIC",
+      "knownByRoleIds": [
+        "ROLE-zhejiang-governor",
+        "ROLE-xunfu"
+      ],
+      "priority": "P0",
+      "origin": "T0_EVIDENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL001",
+        "DM1566-C02-CL002",
+        "DM1566-C02-CL003"
+      ]
+    },
+    {
+      "factId": "fact_shadow_ledger_truth",
+      "content": "巡抚幕僚与商会存在账外往来。",
+      "visibility": "ROLE_PRIVATE",
+      "knownByRoleIds": [
+        "ROLE-xunfu"
+      ],
+      "priority": "P1",
+      "origin": "T3_ADAPTATION",
+      "sourceClaimIds": [
+        "DM1566-C01-CL003"
+      ]
+    }
+  ],
+  "contextCards": [
+    {
+      "cardId": "card_role_governor_boundary",
+      "title": "总督的权限边界",
+      "summary": "可以召见、记录、暂缓落印和建立复核程序；不能凭一封密信直接给任何人定罪。",
+      "tags": [
+        "role",
+        "acl",
+        "adaptation"
+      ],
+      "priority": "P1",
+      "groundedFactIds": [
+        "fact_imperial_reform_order",
+        "fact_county_letter_clue"
+      ],
+      "origin": "T3_ADAPTATION",
+      "sourceClaimIds": [
+        "DM1566-C01-CL002",
+        "DM1566-C01-CL004"
+      ]
+    },
+    {
+      "cardId": "card_policy_harm_boundary",
+      "title": "政策代价必须落到具体人和粮食",
+      "summary": "叙事应呈现官员、粮食和百姓的真实代价，不能只写抽象权谋术语。",
+      "tags": [
+        "pressure",
+        "evidence"
+      ],
+      "priority": "P1",
+      "groundedFactIds": [
+        "fact_grain_pressure"
+      ],
+      "origin": "T2_DERIVED",
+      "sourceClaimIds": [
+        "DM1566-C02-CL001",
+        "DM1566-C02-CL002",
+        "DM1566-C02-CL003"
+      ]
+    }
+  ],
+  "continuity": [
+    {
+      "chapterId": "DM1566-C01",
+      "timeAnchor": "嘉靖三十五年正月十五御前财政会议之后",
+      "activeLocations": [
+        "DM1566-LOC-west-park",
+        "DM1566-LOC-yuwang-residence"
+      ],
+      "characterPositions": [
+        {
+          "characterId": "DM1566-CHAR-jiajing",
+          "locationId": "DM1566-LOC-west-park"
+        },
+        {
+          "characterId": "DM1566-CHAR-zhang-juzheng",
+          "locationId": "DM1566-LOC-yuwang-residence"
+        }
+      ],
+      "objectHolders": [],
+      "knownFactsByCharacter": [
+        {
+          "characterId": "DM1566-CHAR-zhang-juzheng",
+          "claimIds": [
+            "DM1566-C01-CL001",
+            "DM1566-C01-CL002",
+            "DM1566-C01-CL003",
+            "DM1566-C01-CL004"
+          ]
+        }
+      ],
+      "openClaimIds": [
+        "DM1566-C01-CL001",
+        "DM1566-C01-CL003",
+        "DM1566-C01-CL004"
+      ],
+      "unresolvedQuestions": [
+        "改桑方略能否避免失田、缺粮与地方动乱？",
+        "胡宗宪会如何处理朝廷命令与浙江现实之间的冲突？"
+      ],
+      "institutionalDecisions": [
+        "内阁拟定改桑方略并急递胡宗宪办理。"
+      ],
+      "causalChanges": [
+        "浙江改桑从御前讨论转为需要地方执行的制度命令。"
+      ],
+      "nextChapterConstraints": [
+        "不得把张居正的兼并判断直接写成已经证实的地方暗账。",
+        "必须展示政策执行对土地、粮食或百姓的具体影响。"
+      ]
+    },
+    {
+      "chapterId": "DM1566-C02",
+      "timeAnchor": "嘉靖三十五年农历四月浙江改桑执行初期",
+      "activeLocations": [
+        "DM1566-LOC-zhejiang-governor-office",
+        "DM1566-LOC-xinan-river-dike"
+      ],
+      "characterPositions": [
+        {
+          "characterId": "DM1566-CHAR-hu-zongxian",
+          "locationId": "DM1566-LOC-zhejiang-governor-office"
+        },
+        {
+          "characterId": "DM1566-CHAR-tan-lun",
+          "locationId": "DM1566-LOC-zhejiang-governor-office"
+        }
+      ],
+      "objectHolders": [
+        {
+          "objectId": "DM1566-DOC-grand-secretariat-rejection",
+          "holderId": "DM1566-CHAR-hu-zongxian"
+        }
+      ],
+      "knownFactsByCharacter": [
+        {
+          "characterId": "DM1566-CHAR-hu-zongxian",
+          "claimIds": [
+            "DM1566-C02-CL001",
+            "DM1566-C02-CL002",
+            "DM1566-C02-CL003",
+            "DM1566-C02-CL004"
+          ]
+        },
+        {
+          "characterId": "DM1566-CHAR-tan-lun",
+          "claimIds": [
+            "DM1566-C02-CL002",
+            "DM1566-C02-CL003",
+            "DM1566-C02-CL004"
+          ]
+        }
+      ],
+      "openClaimIds": [
+        "DM1566-C01-CL001",
+        "DM1566-C01-CL003",
+        "DM1566-C02-CL003"
+      ],
+      "unresolvedQuestions": [
+        "朝廷是否会接受兼顾粮食和民生的执行节奏？",
+        "地方官员与商人会如何回应总督的约束？"
+      ],
+      "institutionalDecisions": [
+        "胡宗宪已下令放人、开堰灌苗并催调借粮。"
+      ],
+      "causalChanges": [
+        "政策风险已从推演变成可见的百姓受损与官府冲突。",
+        "胡宗宪公开承担浙江执行责任。"
+      ],
+      "nextChapterConstraints": [
+        "命令已发出不等于所有执行结果已经完成。",
+        "胡宗宪私下表态只对在场者可知。",
+        "内阁驳文的完整内容仍不可凭空补写。"
+      ]
+    }
+  ],
+  "sourceMap": [
+    {
+      "targetType": "HISTORICAL_BASELINE",
+      "targetId": "DM1566-C01-CL002",
+      "sourceClaimIds": [
+        "DM1566-C01-CL002"
+      ],
+      "sourceHashes": [
+        "37accef11f16ae25127706b458f6c2ea940d961cb69730a9359357c26642af1e"
+      ]
+    },
+    {
+      "targetType": "HISTORICAL_BASELINE",
+      "targetId": "DM1566-C02-CL001",
+      "sourceClaimIds": [
+        "DM1566-C02-CL001"
+      ],
+      "sourceHashes": [
+        "eb766478609e61165faf8d09c1a7bba721f39205cd60ee49d9f2cbfc28f17bb9"
+      ]
+    },
+    {
+      "targetType": "HISTORICAL_BASELINE",
+      "targetId": "DM1566-C02-CL002",
+      "sourceClaimIds": [
+        "DM1566-C02-CL002"
+      ],
+      "sourceHashes": [
+        "7ce4cd8db37946af2367fcfa5797de395be312943fa9495f993629145a0c9338"
+      ]
+    },
+    {
+      "targetType": "HISTORICAL_BASELINE",
+      "targetId": "DM1566-C02-CL004",
+      "sourceClaimIds": [
+        "DM1566-C02-CL004"
+      ],
+      "sourceHashes": [
+        "5e0b6c63f716c9cb784ac4afc9bef7168b906065fc2f3134dcad083b5e261a1a"
+      ]
+    },
+    {
+      "targetType": "EPISTEMIC_RECORD",
+      "targetId": "DM1566-C01-CL001",
+      "sourceClaimIds": [
+        "DM1566-C01-CL001"
+      ],
+      "sourceHashes": [
+        "8923dfb80bb843876b5dc376d6cdbca69f6ec249230c26d04edec022858924ba"
+      ]
+    },
+    {
+      "targetType": "EPISTEMIC_RECORD",
+      "targetId": "DM1566-C01-CL003",
+      "sourceClaimIds": [
+        "DM1566-C01-CL003"
+      ],
+      "sourceHashes": [
+        "37e71f4c6708f268ce37f381b2cc6d4125522741eddd8830afbafe44de0ae20f"
+      ]
+    },
+    {
+      "targetType": "EPISTEMIC_RECORD",
+      "targetId": "DM1566-C01-CL004",
+      "sourceClaimIds": [
+        "DM1566-C01-CL004"
+      ],
+      "sourceHashes": [
+        "c4d6510209b282dc99bbf9c762fb8abe72409563f1ead4ed260ec565989ab7f9"
+      ]
+    },
+    {
+      "targetType": "EPISTEMIC_RECORD",
+      "targetId": "DM1566-C02-CL003",
+      "sourceClaimIds": [
+        "DM1566-C02-CL003"
+      ],
+      "sourceHashes": [
+        "3c5503ec64ffdd6d10f0922f379c97d2223f9fe2c3e3a984cde433a9ddd84ed7"
+      ]
+    },
+    {
+      "targetType": "SOURCE_FUTURE",
+      "targetId": "DM1566-C03-CL001",
+      "sourceClaimIds": [
+        "DM1566-C03-CL001"
+      ],
+      "sourceHashes": [
+        "295470c7fe8530d2815502427b4393f727acdb8589f3f55c6155cb8eb4f417c9"
+      ]
+    },
+    {
+      "targetType": "SOURCE_FUTURE",
+      "targetId": "DM1566-C03-CL002",
+      "sourceClaimIds": [
+        "DM1566-C03-CL002"
+      ],
+      "sourceHashes": [
+        "c00d4318782ffd01f37622a782603a5ac982b1b114a33fabdda6c2274ebe4f3f"
+      ]
+    },
+    {
+      "targetType": "RUNTIME_FACT",
+      "targetId": "fact_imperial_reform_order",
+      "sourceClaimIds": [
+        "DM1566-C01-CL002"
+      ],
+      "sourceHashes": [
+        "37accef11f16ae25127706b458f6c2ea940d961cb69730a9359357c26642af1e"
+      ]
+    },
+    {
+      "targetType": "RUNTIME_FACT",
+      "targetId": "fact_county_letter_clue",
+      "sourceClaimIds": [
+        "DM1566-C01-CL003"
+      ],
+      "sourceHashes": [
+        "37e71f4c6708f268ce37f381b2cc6d4125522741eddd8830afbafe44de0ae20f"
+      ]
+    },
+    {
+      "targetType": "RUNTIME_FACT",
+      "targetId": "fact_grain_pressure",
+      "sourceClaimIds": [
+        "DM1566-C02-CL001",
+        "DM1566-C02-CL002",
+        "DM1566-C02-CL003"
+      ],
+      "sourceHashes": [
+        "eb766478609e61165faf8d09c1a7bba721f39205cd60ee49d9f2cbfc28f17bb9",
+        "7ce4cd8db37946af2367fcfa5797de395be312943fa9495f993629145a0c9338",
+        "3c5503ec64ffdd6d10f0922f379c97d2223f9fe2c3e3a984cde433a9ddd84ed7"
+      ]
+    },
+    {
+      "targetType": "RUNTIME_FACT",
+      "targetId": "fact_shadow_ledger_truth",
+      "sourceClaimIds": [
+        "DM1566-C01-CL003"
+      ],
+      "sourceHashes": [
+        "37e71f4c6708f268ce37f381b2cc6d4125522741eddd8830afbafe44de0ae20f"
+      ]
+    },
+    {
+      "targetType": "CONTEXT_CARD",
+      "targetId": "card_role_governor_boundary",
+      "sourceClaimIds": [
+        "DM1566-C01-CL002",
+        "DM1566-C01-CL004"
+      ],
+      "sourceHashes": [
+        "37accef11f16ae25127706b458f6c2ea940d961cb69730a9359357c26642af1e",
+        "c4d6510209b282dc99bbf9c762fb8abe72409563f1ead4ed260ec565989ab7f9"
+      ]
+    },
+    {
+      "targetType": "CONTEXT_CARD",
+      "targetId": "card_policy_harm_boundary",
+      "sourceClaimIds": [
+        "DM1566-C02-CL001",
+        "DM1566-C02-CL002",
+        "DM1566-C02-CL003"
+      ],
+      "sourceHashes": [
+        "eb766478609e61165faf8d09c1a7bba721f39205cd60ee49d9f2cbfc28f17bb9",
+        "7ce4cd8db37946af2367fcfa5797de395be312943fa9495f993629145a0c9338",
+        "3c5503ec64ffdd6d10f0922f379c97d2223f9fe2c3e3a984cde433a9ddd84ed7"
+      ]
+    }
+  ],
+  "manifestHash": "17d7069e975e4333f2b1479517cb641534b3bacee23e51b821d8fb7a559d30f5"
+}

@@ -1,0 +1,247 @@
+{
+  "schemaVersion": "openovel_shadow_fixture_v2",
+  "fixtureId": "sangtian-governor-shadow-turn-001",
+  "evidencePackageId": "dm1566-sangtian-evidence-mvp-v1",
+  "sourceCutoffChapterId": "DM1566-C02",
+  "maxTokenEstimate": 6000,
+  "role": {
+    "roleId": "ROLE-zhejiang-governor",
+    "roleName": "浙江总督",
+    "characterId": "PLAYER-zhejiang-governor",
+    "identity": "你负责在朝廷改桑急令、浙江粮食和百姓生计之间建立能被复核的执行边界。你不是在复演胡宗宪已经作出的原著选择。",
+    "goal": "在不把未经核验的线索写成罪证的前提下，掌握复核入口并防止政策代价被转嫁给百姓。",
+    "permissions": ["调动总督亲随", "召见浙江官员", "签发或暂缓总督文书", "使用密奏渠道"],
+    "knownFactIds": ["fact_imperial_reform_order", "fact_county_letter_clue", "fact_grain_pressure"],
+    "heldLeverageKeys": ["governor_seal", "private_secretary_record"]
+  },
+  "scene": {
+    "sceneId": "node_governor_opening_shadow",
+    "title": "放行文书还没有落印",
+    "timeLabel": "嘉靖三十五年五月初八，戌时",
+    "locationLabel": "杭州总督府内厅",
+    "situation": "巡抚在外厅等候，催你先签发改桑放行文书。案上压着一封清流县令密信，只能证明县册可能有改痕；它不是暗账，也没有证明任何人有罪。本局当前没有确认门外聚集百姓、杭州府已经插牌勘田或任何原著事件正在重复发生。",
+    "presentCharacterIds": ["PLAYER-zhejiang-governor", "NPC-xunfu", "NPC-private-secretary"],
+    "visibleRelationships": ["巡抚受朝廷时限压力，也在争夺地方执行节奏。", "书记直接听命于总督，可形成可复核的问答记录。"],
+    "mainlineQuestion": "谁能定义改桑急令的执行边界与复核程序，谁就先一步决定责任如何归属。",
+    "mainlineQuestionIds": ["mq_execution_boundary", "mq_hidden_ledger_chain"],
+    "directedBeat": null
+  },
+  "recentCanon": [
+    {
+      "entryId": "canon-shadow-000",
+      "chronologicalOrder": 0,
+      "narrative": "内厅的更漏刚过戌时。巡抚送来的放行文书摊在案角，朱砂印泥尚未启封。清流县令的密信压在镇纸下，只写县册页码与旧抄本对不上，没有暗账姓名，也没有指向哪一位官员。门外脚步停住，书记低声禀报：巡抚已经候了两刻钟，仍在催问总督何时落印。"
+    }
+  ],
+  "pendingConsequences": [
+    {
+      "consequenceId": "pending_xunfu_must_answer_on_record",
+      "summary": "巡抚必须对催签理由作出可观察回应；可以回避、施压或给出理由，但不能凭空承认隐藏罪行。",
+      "priority": "P0",
+      "dueLabel": "本轮"
+    }
+  ],
+  "activePressures": [
+    {
+      "pressureId": "pressure_reform_deadline",
+      "summary": "朝廷催办，继续拖延会让总督承担抗命或无能的政治代价。",
+      "priority": "P0"
+    },
+    {
+      "pressureId": "pressure_grain_and_people",
+      "summary": "执行过快可能把缺粮、失田和地方冲突的代价直接压到百姓身上。",
+      "priority": "P0"
+    }
+  ],
+  "actionResolution": {
+    "resolutionId": "resolution-shadow-001",
+    "legality": "LEGAL",
+    "actionType": "CUSTOM",
+    "accepted": true,
+    "acceptedWithCost": true,
+    "actionStarted": "总督暂不落印，命书记在场记录，并请巡抚入内厅说明催签理由。",
+    "immediateObservableResult": ["放行文书仍未盖印。", "书记摊开空白簿册准备记录。", "巡抚被请入内厅，需要回应总督的当面询问。", "清流县密信继续压在镇纸下，没有出示。"],
+    "summary": "行动可以立即开始；代价是把程序分歧公开留痕，巡抚也会意识到总督在建立责任记录。",
+    "costSummary": "暂缓落印会增加朝廷催办压力，并可能促使巡抚改变策略。",
+    "consumedLeverageKeys": ["private_secretary_record"],
+    "pendingConsequences": [],
+    "confirmedEffects": ["总督没有落印。", "书记已经摊开簿册。", "巡抚已经进入内厅并听见质询。", "密信没有被出示。"],
+    "unresolvedEffects": ["巡抚将如何回应催签质询。", "巡抚催签的真实动机。", "县册是否真的被篡改。", "是否存在暗账。", "任何官员是否参与不法交易。"]
+  },
+  "actionBoundary": {
+    "stage": "ACTION_ALREADY_LANDED",
+    "alreadyOccurred": ["总督已经暂缓落印", "书记已经摊开簿册", "巡抚已经进入内厅并听见总督质询"],
+    "firstNewBeat": "巡抚听见质询后的真实反应",
+    "mustNotRestage": ["总督再次完整说出玩家行动", "书记从头重演摊开簿册和记录命令", "巡抚再次进入内厅"],
+    "validationPatterns": [
+      {
+        "code": "ACTION_RESTAGED_PLAYER_ORDER",
+        "pattern": "总督[^。\n]{0,24}[‘“\"](?:我暂不|暂不签|把巡抚请进|让书记)",
+        "description": "正文重新用总督对白演出了已经落地的玩家行动。",
+        "firstCharacters": 180
+      },
+      {
+        "code": "ACTION_RESTAGED_XUNFU_ENTRY",
+        "pattern": "巡抚[^。]{0,24}(?:再次|重新)?(?:进入|走进|步入|跨过门槛)",
+        "description": "巡抚已经在内厅，正文不得再次演出其入场。",
+        "firstCharacters": 220
+      }
+    ]
+  },
+  "stateLocks": {
+    "registers": {
+      "originalGrainRegistersAtGovernorOffice": "unknown",
+      "reformRegistersAtGovernorOffice": "unknown",
+      "anyRegistersPrepared": "unknown",
+      "anyRegistersInTransit": "unknown",
+      "reviewStarted": false,
+      "reviewResultsExist": false,
+      "differencesFound": false
+    },
+    "scene": {
+      "xunfuPresent": true,
+      "privateSecretaryPresent": true,
+      "releaseDocumentStamped": false,
+      "sealPasteOpened": false
+    }
+  },
+  "stateLockAssertions": [
+    {
+      "code": "STATE_LOCK_RELEASE_DOCUMENT_STAMPED",
+      "fieldPath": "scene.releaseDocumentStamped",
+      "blockedWhen": [false, "unknown"],
+      "pattern": "(?:放行文书|文书)[^。]{0,18}(?:已经|已然|已)(?:落印|盖印)",
+      "description": "放行文书尚未落印，不能写成已经盖印。"
+    },
+    {
+      "code": "STATE_LOCK_SEAL_PASTE_OPENED",
+      "fieldPath": "scene.sealPasteOpened",
+      "blockedWhen": [false, "unknown"],
+      "pattern": "印泥[^。]{0,16}(?:已经|已被|已)(?:启封|打开)",
+      "description": "印泥尚未启封，不能写成已经打开。"
+    }
+  ],
+  "npcActionPolicies": {
+    "NPC-xunfu": {
+      "writerOnlyBehavior": true,
+      "publicPosition": "承认朝廷正在催办，但不愿让巡抚衙门单独承担暂缓落印造成的责任。",
+      "immediateGoal": "迫使总督把暂缓落印的根据或责任留下明确记录。",
+      "leverage": ["朝廷催办形成的政治压力", "放行文书仍未落印"],
+      "allowedResponses": ["附条件配合", "要求责任留痕", "反问暂缓依据", "要求总督作出具名承诺"],
+      "mustDo": "采取一个会改变责任或权力关系的具体现场行动。",
+      "mustNotDo": ["只机械复述朝廷正在催办", "只说明需要等待", "凭空承认隐藏罪行"]
+    }
+  },
+  "decisionAccess": {
+    "locationRef": "INSTITUTION-governor-office",
+    "presentEntityRefs": ["NPC-xunfu", "NPC-private-secretary"],
+    "controllableEntityRefs": ["NPC-private-secretary", "RESOURCE-governor-retinue"],
+    "reachableInstitutionRefs": ["INSTITUTION-governor-office"],
+    "availableObjectRefs": ["RESOURCE-release-document", "RESOURCE-governor-seal", "RESOURCE-secretary-ledger", "EVIDENCE-county-letter"]
+  },
+  "playerIntent": {
+    "source": "CUSTOM",
+    "targetId": "NPC-xunfu",
+    "targetLabel": "巡抚",
+    "objective": "在不暴露密信的前提下，让巡抚对催签理由留下可复核记录。",
+    "method": "暂不落印，请巡抚入内厅，由书记逐句记录问答。",
+    "userFacingText": "我暂不签放行文书。把巡抚请进内厅，让书记逐句记下他为何催办；桌上的清流县密信先不出示。",
+    "leverageKeys": ["private_secretary_record"],
+    "immutableIntentHash": "4558d7aa90f78acc213ac8af53fa0e223efda36e785c79c03f880551f9be8f0a"
+  },
+  "availableTargets": [
+    {"type": "PERSON", "id": "NPC-xunfu", "label": "巡抚"},
+    {"type": "PERSON", "id": "NPC-private-secretary", "label": "书记"},
+    {"type": "EVIDENCE", "id": "EVIDENCE-county-letter", "label": "清流县令密信"},
+    {"type": "INSTITUTION", "id": "INSTITUTION-governor-office", "label": "浙江总督衙门"},
+    {"type": "PUBLIC_FRAME", "id": "FRAME-review-procedure", "label": "改桑复核程序"},
+    {"type": "RESOURCE", "id": "RESOURCE-release-document", "label": "放行文书"},
+    {"type": "RESOURCE", "id": "RESOURCE-governor-seal", "label": "总督印"},
+    {"type": "RESOURCE", "id": "RESOURCE-governor-retinue", "label": "总督亲随"},
+    {"type": "RESOURCE", "id": "RESOURCE-secretary-ledger", "label": "书记簿册"}
+  ],
+  "resources": ["尚未启封的总督印", "可逐句记录的书记", "未公开的清流县令密信"],
+  "openThreads": ["巡抚为何要求先签放行文书？", "县册改痕如何通过独立样本核验？", "如何在朝廷时限内建立不伤民的复核程序？"],
+  "styleGuide": ["从 Action Boundary 指定的第一个新反应开始。", "用具体动作、停顿、文书和人物回应表现权谋。", "不要用系统术语或规则摘要代替剧情。", "正文结束后从结构化 endingState 生成恰好三个真实决策。"],
+  "forbiddenDisclosures": ["巡抚幕僚与商会存在账外往来", "暗账原件已经被发现", "清流县令密信已经证明任何官员有罪", "内阁驳文的完整内容"],
+  "allowedTimeConstraints": [],
+  "allowedQuantitativeClaims": [],
+  "currentStateExclusions": [
+    {
+      "code": "SOURCE_HISTORY_TRANSPOSED_TO_CURRENT_CROWD",
+      "description": "不得把原著中的百姓跪衙或聚集移植成本局当前现场。",
+      "pattern": "门外[^。]{0,20}百姓|百姓[^。]{0,20}(?:跪|聚集)"
+    },
+    {
+      "code": "SOURCE_HISTORY_TRANSPOSED_TO_CURRENT_POLICY_ACTION",
+      "description": "不得把原著中的插牌、勘田或踏苗移植成本局当前已发生事件。",
+      "pattern": "(?:杭州府|地方)[^。]{0,24}(?:插牌|勘田|踏苗)"
+    },
+    {
+      "code": "UNCONFIRMED_MESSENGER_EVENT",
+      "description": "本轮没有确认任何新信使抵达、离开或带来期限。",
+      "pattern": "信使[^。]{0,24}(?:到|抵|回禀|离开)"
+    },
+    {
+      "code": "UNCONFIRMED_MARKET_EVENT",
+      "description": "本轮没有确认粮价变化或百姓囤粮。",
+      "pattern": "粮价[^。]{0,12}(?:上涨|上扬|涨)|百姓[^。]{0,12}囤粮"
+    },
+    {
+      "code": "NPC_EXIT_NOT_RESOLVED",
+      "description": "Confirmed Resolution 只允许巡抚进入并回应，不能擅自让巡抚离场。",
+      "pattern": "巡抚(?:(?!没有|并未|未曾)[^。]){0,16}(?:离去|离开|告退)"
+    },
+    {
+      "code": "UNCONFIRMED_COUNTY_READINESS",
+      "description": "本轮没有确认各县已经备册、候文或准备动工。",
+      "pattern": "各(?:属|府)?县[^。]{0,24}(?:等候文书|候文|动工|开工|已备|备妥|调取)"
+    },
+    {
+      "code": "UNCONFIRMED_SCENE_PROP",
+      "description": "本轮不得新增茶盏、座椅、甲叶或佩刀等会参与行动的场景物件。",
+      "pattern": "茶盏|端茶|抿茶|椅|甲叶|佩刀"
+    },
+    {
+      "code": "PLAYER_ACTION_SCOPE_EXPANDED_SEATING",
+      "description": "玩家行动没有命令巡抚落座，Writer 不得替玩家追加示意坐下或赐座。",
+      "pattern": "总督[^。]{0,24}(?:示意[^。]{0,8}(?:坐|落座)|赐座|让[^。]{0,8}(?:坐|落座))"
+    },
+    {
+      "code": "ROLE_TITLE_CONFUSION",
+      "description": "本局玩家是浙江总督，巡抚不得用抚台称呼玩家。",
+      "pattern": "巡抚[^。]{0,30}(?:道|说|问|拱手)[：:]?[‘“\"]?[^。’”\"]{0,30}抚台"
+    }
+  ],
+  "narrativeBoundary": {
+    "turnEndsWhen": "巡抚回答催签理由，并就总督暂缓落印提出一个具体反问或压力；巡抚仍留在内厅，等待玩家下一步决定。",
+    "allowedNpcResponseTopics": ["朝廷正在催办", "地方需要明确执行边界", "要求总督说明暂缓落印的程序依据"],
+    "resultNarrativeForbiddenTerms": ["清流", "县册", "密信", "暗账"],
+    "forbiddenCharacterNames": ["徐阶", "严嵩", "严世蕃", "张居正", "胡宗宪", "谭纶", "高拱", "裕王", "嘉靖帝"],
+    "forbiddenStoryOutcomeTerms": ["上报", "参劾", "弹劾", "告状"]
+  },
+  "narrativeFrame": {
+    "frameId": "frame-shadow-governor-xunfu-answer-v1",
+    "storyIntent": "让巡抚进入内厅后，以符合自身职责和压力的方式回应催签质询，并把总督暂缓落印造成的督抚分歧转化为新的现场局面。",
+    "requiredBeats": [
+      "镜头从巡抚已经进入内厅并听见质询之后开始。",
+      "巡抚必须回应朝廷催办与地方执行问题，可以回避、施压、反问或提出条件。",
+      "书记记录巡抚新提出的条件、承诺或分歧；巡抚仍在内厅。",
+      "现场至少改变责任归属、具名承诺、主动权或信息入口中的一项。"
+    ],
+    "requiredNarrativePatterns": [
+      {"code": "FRAME_SECRETARY_RECORD_MISSING", "pattern": "书记[\\s\\S]{0,30}(?:笔|记录|簿册)", "message": "Narrative must show the secretary preparing or making the record."},
+      {"code": "FRAME_COURT_PRESSURE_MISSING", "pattern": "朝廷[\\s\\S]{0,20}催", "message": "The xunfu response must mention court pressure as a character statement."},
+      {"code": "FRAME_POLITICAL_CONDITION_MISSING", "pattern": "巡抚[\\s\\S]{0,240}(?:具名|担责|责任|经手|落款|押字|记明|写明)", "message": "Narrative must give the xunfu a concrete political condition or responsibility demand."},
+      {"code": "FRAME_RELATIONSHIP_DELTA_MISSING", "pattern": "书记[\\s\\S]{0,120}(?:记下|写下|落笔|入册)[\\s\\S]{0,120}(?:责任|条件|承诺|分歧|具名)", "message": "Narrative must record a new responsibility, condition, commitment, or disagreement."}
+    ],
+    "allowedDescriptiveDetails": ["簿册", "笔", "墨", "放行文书", "未启封的印泥", "镇纸", "脚步", "目光", "更漏声", "纸张轻响", "烛火"],
+    "endingBoundary": "仍在杭州总督府内厅；巡抚已回应、书记已记录、放行文书仍未落印，并出现一个总督可立即处理的新问题。",
+    "decisionPolicy": {
+      "minimum": 3,
+      "maximum": 3,
+      "allowedClasses": ["authority", "responsibility", "evidence_control", "scope_change", "secrecy", "negotiation"],
+      "instruction": "只从正文最终局面提出立即可执行且彼此不同的行动，不预写固定路线。"
+    }
+  }
+}

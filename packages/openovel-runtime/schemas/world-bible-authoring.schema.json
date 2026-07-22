@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/world-bible-authoring.schema.json",
+  "title": "Evidence to World Bible compilation rules",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "worldId", "evidencePackageId", "version", "startPoint", "runtimeFacts", "contextCards"],
+  "properties": {
+    "schemaVersion": {"const": "world_bible_authoring_v1"},
+    "worldId": {"type": "string", "minLength": 1},
+    "evidencePackageId": {"type": "string", "minLength": 1},
+    "version": {"type": "string", "minLength": 1},
+    "startPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startPointId", "sourceCutoffChapterId"],
+      "properties": {
+        "startPointId": {"type": "string", "minLength": 1},
+        "sourceCutoffChapterId": {"type": "string", "pattern": "^DM1566-C[0-9]{2}$"}
+      }
+    },
+    "runtimeFacts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/runtimeFact"}},
+    "contextCards": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/contextCard"}}
+  },
+  "$defs": {
+    "claimIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^DM1566-C[0-9]{2}-CL[0-9]{3}$"}
+    },
+    "runtimeFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factId", "content", "visibility", "knownByRoleIds", "priority", "origin", "sourceClaimIds"],
+      "properties": {
+        "factId": {"type": "string", "pattern": "^fact_[a-z0-9_]+$"},
+        "content": {"type": "string", "minLength": 1},
+        "visibility": {"enum": ["PUBLIC", "ROLE_PRIVATE"]},
+        "knownByRoleIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "priority": {"enum": ["P0", "P1", "P2", "P3"]},
+        "origin": {"enum": ["T0_EVIDENCE", "T2_DERIVED", "T3_ADAPTATION"]},
+        "sourceClaimIds": {"$ref": "#/$defs/claimIds"}
+      }
+    },
+    "contextCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cardId", "title", "summary", "tags", "priority", "groundedFactIds", "origin", "sourceClaimIds"],
+      "properties": {
+        "cardId": {"type": "string", "pattern": "^card_[a-z0-9_]+$"},
+        "title": {"type": "string", "minLength": 1},
+        "summary": {"type": "string", "minLength": 1},
+        "tags": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "priority": {"enum": ["P1", "P2", "P3"]},
+        "groundedFactIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^fact_[a-z0-9_]+$"}},
+        "origin": {"enum": ["T0_EVIDENCE", "T2_DERIVED", "T3_ADAPTATION"]},
+        "sourceClaimIds": {"$ref": "#/$defs/claimIds"}
+      }
+    }
+  }
+}
