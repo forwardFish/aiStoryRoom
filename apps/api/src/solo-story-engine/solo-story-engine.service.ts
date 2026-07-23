@@ -22,6 +22,7 @@ import {
   finalizePartOneSettlement,
   loadPartOneRuntimePackage,
   loadStoryPackage,
+  partOneSceneForSection,
   partOneRuntimeTargets,
   settlePartOneAction,
   type LoadedRuntimeStoryPackage,
@@ -1704,6 +1705,7 @@ export class SoloStoryEngineService {
     const currentPartOneState = (storedPartOne.partId === "PART-01"
       ? structuredClone(storedPartOne)
       : createInitialPartOneState(loadedPartOne.package)) as PartOneState;
+    currentPartOneState.scene ||= partOneSceneForSection(currentPartOneState.sectionId);
     const currentPartOneWorkingSet = buildPartOneRuntimeWorkingSet(
       loadedPartOne.package,
       currentPartOneState,
@@ -1795,7 +1797,6 @@ export class SoloStoryEngineService {
     const director = evaluateStoryPackageDirector(run.templateKey, { currentNodeId, currentTurn: turnIndex, canonFactKeys: factsRows.map((fact) => fact.factKey), recentCanonIds: recentRows.map((entry) => entry.id) });
     const node = loaded.storyPackage.nodes.find((item) => item.nodeId === currentNodeId)!;
     const nextNodeId = director.directedBeat?.targetNodeId || director.allowedAdjacentNodeIds[0] || currentNodeId;
-    const labels = node.sceneLabel.split("·").map((value) => value.trim());
     const facts: StoryFact[] = factsRows.map((fact) => ({
       factId: fact.factKey,
       content: fact.content,
@@ -1813,12 +1814,13 @@ export class SoloStoryEngineService {
       knownFactIds: visibleFactKeys,
       heldLeverageKeys: assets.map((asset) => asset.assetKey)
     };
+    const sceneState = partOneSettlement?.event.sceneBefore || partOneState.scene;
     const scene: StoryScene = {
-      sceneId: partOneWorkingSet.section.sectionId,
+      sceneId: sceneState.sceneId,
       title: partOneWorkingSet.section.title,
-      timeLabel: labels[0] || "嘉靖三十五年五月初八",
-      locationLabel: labels[1] || "杭州总督府",
-      situation: roleView.currentSituationText,
+      timeLabel: sceneState.timeLabel,
+      locationLabel: sceneState.locationLabel,
+      situation: sceneState.situation || roleView.currentSituationText,
       mainlineQuestion: partOneWorkingSet.section.dramaticPurpose,
       mainlineQuestionIds: roleView.mainlineQuestions.map((question) => question.questionId),
       directedBeat: director.directedBeat ? { beatId: director.directedBeat.beatId, summary: director.directedBeat.externalWorldMove } : null
@@ -1841,7 +1843,10 @@ export class SoloStoryEngineService {
     ];
     const recentCanon: RecentCanonEntry[] = recentRows.map((entry, index) => ({ entryId: entry.id, narrative: entry.content, chronologicalOrder: index + 1 }));
     const currentScope = buildNodeActionScope(node, roles, roleView.cards, roleRow.id);
-    const currentTargets = mergeAvailableTargets(currentScope.availableTargets, partOneRuntimeTargets(currentPartOneWorkingSet));
+    const currentTargets = mergeAvailableTargets(
+      currentScope.availableTargets,
+      partOneRuntimeTargets(currentPartOneWorkingSet, currentPartOneState.scene.presentActorRefs)
+    );
     const nextNode = loaded.storyPackage.nodes.find((item) => item.nodeId === nextNodeId) || node;
     const nextRoleView = buildStoryPackageRoleView(run.templateKey, {
       roleKey: roleRow.roleKey,
@@ -1850,7 +1855,13 @@ export class SoloStoryEngineService {
       canonFactKeys: factsRows.map((fact) => fact.factKey)
     });
     const nextScope = buildNodeActionScope(nextNode, roles, nextRoleView.cards, roleRow.id);
-    const nextTargets = mergeAvailableTargets(nextScope.availableTargets, partOneRuntimeTargets(partOneWorkingSet));
+    const nextTargets = mergeAvailableTargets(
+      nextScope.availableTargets,
+      partOneRuntimeTargets(
+        partOneWorkingSet,
+        partOneSettlement?.event.sceneAfter.presentActorRefs || partOneState.scene.presentActorRefs
+      )
+    );
     const duePartOneConsequences: PendingConsequence[] = (partOneSettlement?.dueConsequences || []).map((item) => ({
       consequenceId: item.consequenceId,
       summary: item.summary,
@@ -2101,7 +2112,13 @@ export class SoloStoryEngineService {
             decisionProviderCallCount: failure.attempt.decisionProviderCallCount,
             failedStage: failure.failedStage || null,
             narrator: failure.narratorProvider?.timings || null,
-            decision: failure.decisionProvider?.timings || null
+            decision: failure.decisionProvider?.timings || null,
+            narratorUsage: failure.narratorProvider?.usage || null,
+            decisionUsage: failure.decisionProvider?.usage || null,
+            narratorModel: failure.narratorProvider?.model || null,
+            decisionModel: failure.decisionProvider?.model || null,
+            narratorProviderRequestId: failure.narratorProvider?.providerRequestId || null,
+            decisionProviderRequestId: failure.decisionProvider?.providerRequestId || null
           },
           finishedAt: new Date(),
           leaseOwner: null,

@@ -26,12 +26,14 @@ export function bindStoryTurnReferences(
   const visibleChanges = event
     ? [
         ...event.authoritativeObservableFacts,
-        ...event.authoritativeNpcReactions.map((reaction) => reaction.action)
+        ...event.authoritativeNpcReactions.map((reaction) => reaction.action),
+        ...event.authoritativeWorldMoves.map((move) => move.action)
       ]
     : context.actionResolution.immediateObservableResult;
-  const paidConsequenceIds = context.sections.pendingConsequences.items
-    .filter((consequence) => consequence.priority === "P0")
-    .map((consequence) => consequence.consequenceId);
+  const paidConsequenceIds = event?.authoritativeWorldMoves
+    .filter((move) => move.sourceType === "DUE_CONSEQUENCE" && move.consequenceId)
+    .map((move) => move.consequenceId!)
+    || [];
   const decisions = Array.isArray(output.decisions)
     ? output.decisions.map((decision, index) => bindDecision(decision, index, context))
     : [];
@@ -46,16 +48,16 @@ export function bindStoryTurnReferences(
       observableOutcome: visibleChanges.join("；") || context.actionResolution.summary
     },
     endingState: {
-      timeLabel: scene?.timeLabel || output.endingState?.timeLabel || "",
-      locationLabel: scene?.locationLabel || output.endingState?.locationLabel || "",
-      tension: runtime?.nextDecisionPressure?.summary
+      timeLabel: event?.sceneAfter.timeLabel || scene?.timeLabel || output.endingState?.timeLabel || "",
+      locationLabel: event?.sceneAfter.locationLabel || scene?.locationLabel || output.endingState?.locationLabel || "",
+      tension: event?.narrativePlan.requiredEndChange
+        || runtime?.nextDecisionPressure?.summary
         || scene?.situation
         || output.endingState?.tension
         || "",
-      presentEntityRefs: allowedValues(
-        output.endingState?.presentEntityRefs,
-        context.allowedReferences.entityRefs
-      ),
+      presentEntityRefs: event
+        ? allowedValues(event.sceneAfter.presentActorRefs, context.allowedReferences.entityRefs)
+        : allowedValues(output.endingState?.presentEntityRefs, context.allowedReferences.entityRefs),
       visibleChanges,
       surfacedConsequenceIds: paidConsequenceIds
     },

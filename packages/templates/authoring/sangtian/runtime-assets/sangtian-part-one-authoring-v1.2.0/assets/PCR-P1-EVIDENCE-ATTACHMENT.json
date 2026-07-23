@@ -1,0 +1,132 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-EVIDENCE-ATTACHMENT",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "report.attachmentStrength",
+    "evidence.chainStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "report.attachmentStrength",
+    "evidence.chainStatus"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "附件强度改变京师采信和地方毁证动机",
+      "过早公开会提高证人和保管链风险"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-ATTACHMENT-WEIGHT",
+        "actorRefs": [
+          "actor.qingliu_magistrate",
+          "actor.reform_clerk"
+        ],
+        "action": "县令指出，附件越能追到原件、见证与经手人，入京后越难被一句空话推翻；改桑书吏也因此更清楚自己会被谁问到。",
+        "requiredTermGroups": [
+          [
+            "县令",
+            "清流县令"
+          ],
+          [
+            "附件",
+            "原件"
+          ],
+          [
+            "改桑书吏",
+            "书吏"
+          ]
+        ],
+        "resultCeiling": "只能说明附件分量与人证压力，不得写成京师已经采信。"
+      },
+      {
+        "beatId": "PAYOFF-P1-ATTACHMENT-RISK",
+        "actorRefs": [
+          "actor.reform_clerk",
+          "actor.xunfu_aide"
+        ],
+        "action": "附件范围一旦被更多衙门知道，改桑书吏立即追问谁能接触他的说法；巡抚幕僚则要求同样取得可见材料。",
+        "requiredTermGroups": [
+          [
+            "附件范围",
+            "附件"
+          ],
+          [
+            "改桑书吏",
+            "书吏"
+          ],
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ]
+        ],
+        "resultCeiling": "只能提高证人与保管链风险，不得写成证人已经失踪、改口或受害。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

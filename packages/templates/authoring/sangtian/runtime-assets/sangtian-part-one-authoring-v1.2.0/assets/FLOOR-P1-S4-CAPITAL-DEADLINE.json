@@ -1,0 +1,418 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "FLOOR-P1-S4-CAPITAL-DEADLINE",
+  "assetType": "SECTION_FLOOR_OBLIGATION",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "DK-P1-CAPITAL-CHANNEL"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.xunfu_aide",
+    "actor.jiangnan_merchant_head"
+  ],
+  "stateDependencies": [
+    "reform.executionMode",
+    "review.authority",
+    "evidence.chainStatus",
+    "grain.reliefChannel",
+    "report.firstNarrativeController",
+    "relations.governorXunfu",
+    "merchant.entryStatus",
+    "land.riskLevel"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SEPARATE-XUNFU",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "FLOOR-P1-S4-CAPITAL-DEADLINE",
+    "FLOOR_OBLIGATION",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "REQ-P1-CAPITAL-FRAMING",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "DK-P1-CAPITAL-CHANNEL",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.xunfu_aide",
+    "actor.jiangnan_merchant_head",
+    "reform.executionMode",
+    "review.authority",
+    "evidence.chainStatus",
+    "grain.reliefChannel",
+    "report.firstNarrativeController",
+    "relations.governorXunfu",
+    "merchant.entryStatus",
+    "land.riskLevel"
+  ],
+  "payload": {
+    "targetTurnWindow": {
+      "earliest": 13,
+      "latest": 20
+    },
+    "dramaticPurpose": "把执行、证据、粮食代价和督抚关系压缩为首份可入京且不越过证据边界的政治叙述。",
+    "mayOnlyMoveNpcOrWorld": true,
+    "mayNotDecideForPlayer": true,
+    "mayNotInventEvidence": true,
+    "exitGates": [
+      {
+        "ruleId": "S4-EXIT-CONTROLLER",
+        "statePath": "report.firstNarrativeController",
+        "operator": "NEQ",
+        "expectedValue": "UNDECIDED",
+        "description": "叙述控制者已确定"
+      },
+      {
+        "ruleId": "S4-EXIT-AUTHORSHIP",
+        "statePath": "report.authorshipMode",
+        "operator": "NEQ",
+        "expectedValue": "UNKNOWN",
+        "description": "署名方式已确定"
+      },
+      {
+        "ruleId": "S4-EXIT-ATTACHMENT",
+        "statePath": "report.attachmentStrength",
+        "operator": "NEQ",
+        "expectedValue": "NONE",
+        "description": "附件强度已确定"
+      },
+      {
+        "ruleId": "S4-EXIT-DISPATCH",
+        "statePath": "report.dispatchStatus",
+        "operator": "IN",
+        "expectedValue": [
+          "READY",
+          "DISPATCHED",
+          "SPLIT"
+        ],
+        "description": "首报到达合法末态"
+      }
+    ],
+    "continuationDecisions": [
+      {
+        "continuationDecisionId": "CD-P1-S4-XUNFU-COPY-REQUEST",
+        "basedOnDecisionKernelId": "DK-P1-REPORT-AUTHORSHIP",
+        "worldPressure": {
+          "pressureId": "PRESSURE-P1-S4-XUNFU-ASKS-FOR-COPY",
+          "summary": "首报文字刚定，巡抚幕僚便持正式手本来索取底稿，声称无论联署还是分奏，都必须先核对总督写入京师的那一版事实。",
+          "sourceFloorAssetId": "FLOOR-P1-S4-CAPITAL-DEADLINE"
+        },
+        "options": [
+          {
+            "affordanceTemplateId": "CD-P1-S4-XUNFU-COPY-REQUEST-OPT-01",
+            "title": "交封号摘要",
+            "actionText": "只交一份列明结论、附件名称和封号的摘要，不交证人位置与未核实细节；请巡抚在收讫处具名。",
+            "targetRef": "actor.zhejiang_xunfu",
+            "method": "有限披露并固定收讫",
+            "immediateIntent": "让巡抚知道首报边界，同时保住人证与未核实材料。",
+            "visibleTradeoff": "能减少公开冲突，但巡抚仍可能指责摘要不足并另起奏报",
+            "stateEffects": [
+              "knowledgeTransfers",
+              "relations.governorXunfu"
+            ],
+            "statePatch": {
+              "knowledgeTransfer": {
+                "topic": "first_report_seal_index_summary",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.zhejiang_xunfu",
+                "status": "DELIVERED"
+              },
+              "relations.governorXunfu": {
+                "$delta": 1
+              }
+            },
+            "createsPendingConsequence": true
+          },
+          {
+            "affordanceTemplateId": "CD-P1-S4-XUNFU-COPY-REQUEST-OPT-02",
+            "title": "拒交全文并留案",
+            "actionText": "不交底稿，只以正式回文写明拒交范围、证据保管理由和可复核期限，把幕僚手本一并入档。",
+            "targetRef": "actor.xunfu_aide",
+            "method": "书面拒绝并保存来往文书",
+            "immediateIntent": "防止首报在离开总督府前被改写，同时留下拒交理由。",
+            "visibleTradeoff": "叙述权更集中，但督抚分裂会更早公开，总督也要独担拒绝协作的责任",
+            "stateEffects": [
+              "knowledgeTransfers",
+              "responsibility.governorExposure",
+              "relations.governorXunfu"
+            ],
+            "statePatch": {
+              "knowledgeTransfer": {
+                "topic": "first_report_copy_refusal_record",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.zhejiang_xunfu",
+                "status": "DELIVERED"
+              },
+              "responsibility.governorExposure": {
+                "$delta": 1
+              },
+              "relations.governorXunfu": {
+                "$delta": -1
+              }
+            },
+            "createsPendingConsequence": true
+          }
+        ]
+      },
+      {
+        "continuationDecisionId": "CD-P1-S4-MERCHANT-DAILY-TERMS",
+        "basedOnDecisionKernelId": "DK-P1-RESPONSIBILITY-SCOPE",
+        "worldPressure": {
+          "pressureId": "PRESSURE-P1-S4-MERCHANT-ASKS-FOR-GUARANTEE",
+          "summary": "商会会首得知首报将发，随即要求官府把后续粮船、运价和担保写成一纸长期凭据；若仍逐船议价，他便不肯保证下一批船期。",
+          "sourceFloorAssetId": "FLOOR-P1-S4-CAPITAL-DEADLINE"
+        },
+        "options": [
+          {
+            "affordanceTemplateId": "CD-P1-S4-MERCHANT-DAILY-TERMS-OPT-01",
+            "title": "逐日张榜、逐船具结",
+            "actionText": "令商会每日具结可供粮船、运价和所求权利，在总督府门外张榜后才准新增一船；不得把购田或收丝优先权混入粮约。",
+            "targetRef": "actor.jiangnan_merchant_head",
+            "method": "公开短约替代长期官保",
+            "immediateIntent": "保留商粮弹性，同时让每一日交易条件都能被复核。",
+            "visibleTradeoff": "商会可能少报粮量或抬高运价，官府还要承担每日核验的人力与信用成本",
+            "stateEffects": [
+              "knowledgeTransfers",
+              "responsibility.governorExposure",
+              "responsibility.xunfuExposure"
+            ],
+            "statePatch": {
+              "knowledgeTransfer": {
+                "topic": "merchant_daily_public_terms",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.jiangnan_merchant_head",
+                "status": "DELIVERED"
+              },
+              "responsibility.governorExposure": {
+                "$delta": 1
+              },
+              "responsibility.xunfuExposure": {
+                "$delta": 1
+              }
+            },
+            "createsPendingConsequence": true
+          },
+          {
+            "affordanceTemplateId": "CD-P1-S4-MERCHANT-DAILY-TERMS-OPT-02",
+            "title": "不再加签官保",
+            "actionText": "维持上一节已经定下的商粮边界，新增运粮仍按原条件逐船核销，不给商会另具长期担保。",
+            "targetRef": "actor.jiangnan_merchant_head",
+            "method": "守住既有交易边界",
+            "immediateIntent": "避免首报发出后，商会借粮路再取得一层政策凭据。",
+            "visibleTradeoff": "边界清楚，但商会可能缩减船期，断粮责任将更直接压回总督府",
+            "stateEffects": [
+              "knowledgeTransfers",
+              "responsibility.governorExposure",
+              "relations.governorXunfu"
+            ],
+            "statePatch": {
+              "knowledgeTransfer": {
+                "topic": "merchant_no_additional_guarantee",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.jiangnan_merchant_head",
+                "status": "DELIVERED"
+              },
+              "responsibility.governorExposure": {
+                "$delta": 2
+              },
+              "relations.governorXunfu": {
+                "$delta": -1
+              }
+            },
+            "createsPendingConsequence": true
+          }
+        ]
+      },
+      {
+        "continuationDecisionId": "CD-P1-S4-WITNESS-PROTECTION-ORDER",
+        "basedOnDecisionKernelId": "DK-P1-EVIDENCE-ATTACHMENT",
+        "worldPressure": {
+          "pressureId": "PRESSURE-P1-S4-WITNESS-ASKS-FOR-RULES",
+          "summary": "奏报附件的范围已在衙门间传开，改桑书吏托县令问明：下一次复核由谁传他、谁能在场、他的初始说法是否会被任意抄送。",
+          "sourceFloorAssetId": "FLOOR-P1-S4-CAPITAL-DEADLINE"
+        },
+        "options": [
+          {
+            "affordanceTemplateId": "CD-P1-S4-WITNESS-PROTECTION-ORDER-OPT-01",
+            "title": "另封保护令",
+            "actionText": "另发封缄保护令，限定传唤人、问讯地点和在场见证；任何抄送都须留下收件人与时辰。",
+            "targetRef": "actor.reform_clerk",
+            "method": "以书面权限保护人证",
+            "immediateIntent": "让书吏知道谁有权接触他，并让每次接触都留下记录。",
+            "visibleTradeoff": "保护更强，却会让巡抚认定总督把关键人证收归自己控制",
+            "stateEffects": [
+              "witness.accessStatus",
+              "knowledgeTransfers",
+              "responsibility.governorExposure",
+              "relations.governorXunfu"
+            ],
+            "statePatch": {
+              "witness.accessStatus": "PROTECTED",
+              "knowledgeTransfer": {
+                "topic": "witness_written_protection_order",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.reform_clerk",
+                "status": "DELIVERED"
+              },
+              "responsibility.governorExposure": {
+                "$delta": 1
+              },
+              "relations.governorXunfu": {
+                "$delta": -1
+              }
+            },
+            "createsPendingConsequence": true
+          },
+          {
+            "affordanceTemplateId": "CD-P1-S4-WITNESS-PROTECTION-ORDER-OPT-02",
+            "title": "原地留人、双证问讯",
+            "actionText": "不把书吏移出原保管地，只规定任何问讯必须持书面传票，并由督抚双方见证人在场。",
+            "targetRef": "actor.qingliu_magistrate",
+            "method": "维持原保管地并设置双重门槛",
+            "immediateIntent": "避免私扣人证之名，同时限制任何一方单独改变初始说法。",
+            "visibleTradeoff": "程序更均衡，但消息面扩大，问讯也可能被任一方拖延",
+            "stateEffects": [
+              "knowledgeTransfers",
+              "responsibility.governorExposure",
+              "responsibility.xunfuExposure"
+            ],
+            "statePatch": {
+              "knowledgeTransfer": {
+                "topic": "witness_dual_warrant_threshold",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.qingliu_magistrate",
+                "status": "DELIVERED"
+              },
+              "responsibility.governorExposure": {
+                "$delta": 1
+              },
+              "responsibility.xunfuExposure": {
+                "$delta": 1
+              }
+            },
+            "createsPendingConsequence": true
+          }
+        ]
+      },
+      {
+        "continuationDecisionId": "CD-P1-S4-WAITING-FOR-CAPITAL",
+        "basedOnDecisionKernelId": "DK-P1-CAPITAL-CHANNEL",
+        "worldPressure": {
+          "pressureId": "PRESSURE-P1-S4-XUNFU-WANTS-INTERIM-ORDER",
+          "summary": "首报已经离开浙江，京师回文尚未可知；巡抚却要求总督在等待期间先定一条临时规矩，免得各县借‘候旨’自行扩张或停摆。",
+          "sourceFloorAssetId": "FLOOR-P1-S4-CAPITAL-DEADLINE"
+        },
+        "options": [
+          {
+            "affordanceTemplateId": "CD-P1-S4-WAITING-FOR-CAPITAL-OPT-01",
+            "title": "先守住民田边界",
+            "actionText": "在京师回文前维持既定改桑范围，新的急售田契一律先登记、后复核，不得借候旨扩大购田。",
+            "targetRef": "actor.zhejiang_xunfu",
+            "method": "候旨期间冻结扩张边界",
+            "immediateIntent": "把第二部分首先要查清的卖田风险留在可追踪范围内。",
+            "visibleTradeoff": "民田入口较窄，但粮路、改桑进度和巡抚催办压力都会继续上升",
+            "stateEffects": [
+              "land.safeguardStatus",
+              "knowledgeTransfers",
+              "relations.governorXunfu"
+            ],
+            "statePatch": {
+              "land.safeguardStatus": "ACTIVE",
+              "knowledgeTransfer": {
+                "topic": "interim_land_boundary_pending_capital",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.zhejiang_xunfu",
+                "status": "DELIVERED"
+              },
+              "relations.governorXunfu": {
+                "$delta": -1
+              }
+            },
+            "createsPendingConsequence": true
+          },
+          {
+            "affordanceTemplateId": "CD-P1-S4-WAITING-FOR-CAPITAL-OPT-02",
+            "title": "先保粮路不断",
+            "actionText": "准既有救粮与运输约继续履行，但每日公开到粮、运价和担保，不得趁候旨增加购田或收丝权利。",
+            "targetRef": "actor.zhejiang_xunfu",
+            "method": "维持救粮并逐日公开条件",
+            "immediateIntent": "把第二部分首先要查清的粮路留在不断供、可核对的状态。",
+            "visibleTradeoff": "能减轻断粮风险，但商会仍保有谈判位置，总督要为每日条件变化负责",
+            "stateEffects": [
+              "knowledgeTransfers",
+              "responsibility.governorExposure",
+              "relations.governorXunfu"
+            ],
+            "statePatch": {
+              "knowledgeTransfer": {
+                "topic": "interim_grain_route_pending_capital",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.zhejiang_xunfu",
+                "status": "DELIVERED"
+              },
+              "responsibility.governorExposure": {
+                "$delta": 1
+              },
+              "relations.governorXunfu": {
+                "$delta": 1
+              }
+            },
+            "createsPendingConsequence": true
+          }
+        ]
+      }
+    ]
+  }
+}

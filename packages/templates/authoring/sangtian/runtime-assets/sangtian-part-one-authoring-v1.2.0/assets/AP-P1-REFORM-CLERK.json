@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "AP-P1-REFORM-CLERK",
+  "assetType": "ACTOR_POLICY",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-DISCLOSURE-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "actor.reform_clerk",
+    "ACTOR_POLICY",
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "ARC-P1-CUSTODY-CONTEST",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "payload": {
+    "goal": "在不成为替罪羊的前提下保存自己知道的经手事实。",
+    "allowedMoves": [
+      "只陈述亲手经办内容",
+      "要求保护或见证后再指认",
+      "说明原件、副本和听闻的区别"
+    ],
+    "conditionalReactions": [
+      "遭到公开点名时改口或逃避接触",
+      "获得可信保护时补充经手细节"
+    ],
+    "knowledgeBounded": true,
+    "mayNotWaitPassively": true
+  }
+}

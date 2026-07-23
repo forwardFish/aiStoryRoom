@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-XUNFU-COUNTERMOVE",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide"
+  ],
+  "stateDependencies": [
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide",
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "督抚关系与京师叙事同步变化",
+      "复核权被一方掌握后改变证据可见性"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-XUNFU-COUNTERMOVE",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "巡抚幕僚依照巡抚的立场要求参加下一轮复核，并把总督此前的迟疑记作可能耽误国策的理由。",
+        "requiredTermGroups": [
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ],
+          [
+            "参加复核",
+            "复核"
+          ],
+          [
+            "耽误国策",
+            "迟疑"
+          ]
+        ],
+        "resultCeiling": "只能提出参加与记责要求，不得让巡抚自动取得复核主持权。"
+      },
+      {
+        "beatId": "PAYOFF-P1-XUNFU-VISIBILITY",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "巡抚一方要求先看已经允许披露的材料范围；若仍被排除在外，便要以拒绝协作为由另立自己的叙述。",
+        "requiredTermGroups": [
+          [
+            "巡抚",
+            "巡抚一方"
+          ],
+          [
+            "材料",
+            "披露"
+          ],
+          [
+            "另立",
+            "叙述"
+          ]
+        ],
+        "resultCeiling": "只能形成公开威胁，不得写成另一份奏报已经发出。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

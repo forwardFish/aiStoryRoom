@@ -53,8 +53,17 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
     createItem("action-resolution", "P0", "ACTION_RESOLUTION", input.actionResolution, true),
     ...allSections.pendingConsequences.items.map((item) => createItem(`pending:${item.consequenceId}`, item.priority, "PENDING_CONSEQUENCE", item, item.priority === "P0")),
     ...allSections.currentScene.items.map((item) => createItem(`scene:${item.sceneId}`, "P0", "CURRENT_SCENE", item, true)),
+    ...allSections.recentCanon.items.map((item, index, canonItems) => {
+      const isLatestCanon = index === canonItems.length - 1;
+      return createItem(
+        `canon:${item.entryId}`,
+        isLatestCanon ? "P0" : "P1",
+        "RECENT_CANON",
+        item,
+        isLatestCanon
+      );
+    }),
     ...allSections.roleKnowledge.items.map((item) => createItem(`fact:${item.factId}`, item.priority, "ROLE_KNOWLEDGE", item, item.priority === "P0")),
-    ...allSections.recentCanon.items.map((item) => createItem(`canon:${item.entryId}`, "P1", "RECENT_CANON", item, false)),
     ...allSections.activePressures.items.map((item) => createItem(`pressure:${item.pressureId}`, item.priority, "ACTIVE_PRESSURES", item, item.priority === "P0")),
     ...allSections.relevantScriptCards.items.map((item) => createItem(`card:${item.cardId}`, item.priority, "RELEVANT_SCRIPT_CARDS", item, false)),
     ...allSections.directedBeat.items.map((item) => createItem(`beat:${item.beatId}`, "P1", "THIS_TURN_DIRECTED_BEAT", item, false)),
@@ -234,7 +243,6 @@ function unique(values: string[]) {
 
 function partOnePromptProjection(item: import("@ai-story/templates").PartOneRuntimeWorkingSet) {
   return {
-    partId: item.partId,
     section: {
       sectionId: item.section.sectionId,
       title: item.section.title,
@@ -242,7 +250,6 @@ function partOnePromptProjection(item: import("@ai-story/templates").PartOneRunt
       forbiddenEarlyReveals: item.forbiddenEarlyReveals
     },
     turnNumber: item.turnNumber,
-    stateProjection: item.stateProjection,
     nextDecisionPressure: item.nextDecisionPressure,
     decisionAffordances: item.decisionAffordances.map((option) => ({
       title: option.title,
@@ -252,11 +259,12 @@ function partOnePromptProjection(item: import("@ai-story/templates").PartOneRunt
       immediateIntent: option.immediateIntent,
       visibleTradeoff: option.visibleTradeoff
     })),
-    actorPolicies: item.actorPolicies.map((asset) => asset.payload),
-    institutionCapabilities: item.institutionCapabilities.map((asset) => asset.payload),
-    activeCausalArcs: item.activeCausalArcs.map((asset) => asset.payload),
-    narrativeScenePatterns: (item.narrativeScenePatterns || []).map((asset) => asset.payload),
-    styleProfile: item.styleProfile
+    styleProfile: {
+      registerRules: item.styleProfile.registerRules,
+      sceneConstructionRules: item.styleProfile.sceneConstructionRules,
+      dialogueAndSubtextRules: item.styleProfile.dialogueAndSubtextRules,
+      narrativeBudget: item.styleProfile.narrativeBudget
+    }
   };
 }
 

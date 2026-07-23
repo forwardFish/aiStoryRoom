@@ -111,23 +111,148 @@ test("rejects a tampered Sangtian Part One authoring runtime package", () => {
 test("drives a deterministic twenty-turn Part One state path without advancing by turn number alone", () => {
   const pkg = loadPartOneRuntimePackage("sangtian").package;
   let state = createInitialPartOneState(pkg);
+  assert.match(state.scene.situation, /密信都已由总督拆阅并收持/);
+  assert.doesNotMatch(state.scene.situation, /亲随持密信/);
   let nextAction = {
     source: "RECOMMENDED",
     decisionId: "opening_d2",
-    actionText: "先封档房，再复巡抚"
+    actionText: "将总督封缄令牌交给清流县令亲随，命他向清流县传达封存档房之令；同时当面答复巡抚书吏：暂缓签发，三日内复核。"
   };
   const visited = new Set<string>([state.sectionId]);
   const progressReports = [];
   const offeredAffordanceIds = new Set<string>();
   const offeredActionTexts = new Set<string>();
   const continuationDecisionIds: string[] = [];
+  const firstSectionNpcReactions: string[] = [];
+  const visitedSceneIds = new Set<string>([state.scene.sceneId]);
+  const visitedTimeLabels = new Set<string>([state.scene.timeLabel]);
+  let sectionTransitionMoveCount = 0;
+  let duePayoffMoveCount = 0;
+  let nextPressureMoveCount = 0;
   for (let turn = 1; turn <= 20; turn += 1) {
     const settlement = settlePartOneAction(pkg, state, nextAction, turn);
+    visitedSceneIds.add(settlement.event.sceneAfter.sceneId);
+    visitedTimeLabels.add(settlement.event.sceneAfter.timeLabel);
+    const duePayoffMoves = settlement.event.authoritativeWorldMoves.filter(
+      (move) => move.sourceType === "DUE_CONSEQUENCE"
+    );
+    assert.deepEqual(
+      duePayoffMoves.map((move) => move.consequenceId),
+      settlement.dueConsequences.map((item) => item.consequenceId),
+      `T${turn} may only pay consequences that have an authored visible beat`
+    );
+    assert.equal(
+      duePayoffMoves.every((move) =>
+        move.action.length > 0
+        && move.requiredTermGroups.length > 0
+        && move.resultCeiling.length > 0
+      ),
+      true
+    );
+    duePayoffMoveCount += duePayoffMoves.length;
+    sectionTransitionMoveCount += settlement.event.authoritativeWorldMoves.filter(
+      (move) => move.sourceType === "SECTION_TRANSITION"
+    ).length;
+    nextPressureMoveCount += settlement.event.authoritativeWorldMoves.filter(
+      (move) => move.sourceType === "NEXT_DECISION_PRESSURE"
+    ).length;
+    if (turn <= 3) {
+      firstSectionNpcReactions.push(
+        settlement.event.authoritativeNpcReactions[0]?.action || ""
+      );
+    }
     if (turn === 1) {
       assert.equal(settlement.event.authoritativeNpcReactions.length, 1);
       assert.equal(settlement.event.authoritativeNpcReactions[0].actorRefs.includes("actor.zhejiang_xunfu"), true);
+      assert.match(settlement.event.authoritativeNpcReactions[0].action, /^巡抚书吏按来府前所受交代当场追问/);
       assert.equal(settlement.event.authoritativeObservableFacts.some((fact) => fact.includes("actor.qingliu_magistrate")), false);
       assert.equal(settlement.event.authoritativeObservableFacts.some((fact) => fact.includes("清流县令")), true);
+      assert.equal(settlement.event.authoritativeObservableFacts.some((fact) => fact.includes("已经送达浙江巡抚")), false);
+      assert.equal(
+        settlement.event.authoritativeObservableFacts.some((fact) =>
+          fact.includes("巡抚书吏已代表浙江巡抚当场听明这项答复，无须离场送达")
+        ),
+        true
+      );
+      assert.equal(
+        settlement.event.sceneAfter.objectStates?.find(
+          (item) => item.objectRef === "object.xunfu_reply_box"
+        )?.holderRef,
+        "actor.xunfu_clerk"
+      );
+      assert.equal(
+        settlement.event.sceneAfter.objectStates?.find(
+          (item) => item.objectRef === "object.xunfu_reply_box"
+        )?.contentsState,
+        "EMPTY"
+      );
+      assert.equal(
+        settlement.event.sceneAfter.objectStates?.find(
+          (item) => item.objectRef === "object.xunfu_reply_box"
+        )?.closureState,
+        "CLOSED"
+      );
+      assert.equal(
+        settlement.event.sceneAfter.objectStates?.find(
+          (item) => item.objectRef === "object.governor_seal_token"
+        )?.holderRef,
+        "actor.qingliu_messenger"
+      );
+    }
+    if (turn === 3) {
+      assert.equal(settlement.event.sectionTransitioned, true);
+      assert.match(
+        settlement.event.actionText,
+        /在已经写明的改桑边界之后，补写复核办法与督抚各自责任/
+      );
+      const executionPressure = settlement.event.authoritativeWorldMoves.find(
+        (move) => move.sourceType === "DUE_CONSEQUENCE"
+      );
+      assert.match(executionPressure?.resultCeiling || "", /不得换算为一日一变、每日、每时等频率/);
+      assert.equal(
+        settlement.event.sceneAfter.documentStates?.find(
+          (item) => item.documentRef === "document.qingliu_register_original"
+        )?.accessState,
+        "NOT_PRESENT"
+      );
+      assert.equal(
+        settlement.event.sceneAfter.documentStates?.find(
+          (item) => item.documentRef === "document.reform_execution_record"
+        )?.accessState,
+        "WRITTEN"
+      );
+      const transition = settlement.event.authoritativeWorldMoves.find(
+        (move) => move.sourceType === "SECTION_TRANSITION"
+      );
+      assert.deepEqual(
+        transition?.requiredTermGroups[0],
+        ["嘉靖三十五年五月初九巳时", "五月初九巳时", "次日巳时"]
+      );
+      assert.deepEqual(
+        transition?.requiredTermGroups[1],
+        ["杭州总督府签押房", "签押房"]
+      );
+      assert.match(transition?.resultCeiling || "", /不得声称已经知道这些文书的笔迹、户头、具体内容或真伪/);
+      assert.equal(
+        settlement.event.narrativePlan.narrativeCeiling.some((line) =>
+          line.includes("不复述 Recent Canon 已写过的文书状态")
+        ),
+        true
+      );
+    }
+    if (turn === 4) {
+      assert.deepEqual(
+        settlement.event.narrativePlan.authorizedPlayerSpeech,
+        ["由总督府定复核清单，巡抚和县令只能派见证人参加"]
+      );
+    }
+    if (turn === 5) {
+      assert.equal(
+        settlement.event.narrativePlan.authorizedPlayerSpeech.includes(
+          "原册留在档房，换新封条；总督、县令、巡抚三方各留封样"
+        ),
+        true
+      );
     }
     const paidPendingConsequenceIds = settlement.dueConsequences.map((item) => item.consequenceId);
     const finalized = finalizePartOneSettlement(
@@ -185,6 +310,47 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
   assert.equal(progressReports.every((report) => report.hardValidationStatus === "PASS"), true);
   assert.equal(progressReports.every((report) => report.materialChanges.length > 0), true);
   assert.equal(progressReports.every((report) => report.mainlineContributions.length > 0), true);
+  assert.equal(firstSectionNpcReactions[0].includes("书面回复"), true);
+  assert.equal(firstSectionNpcReactions[1].includes("参与复核"), true);
+  assert.equal(firstSectionNpcReactions[2].includes("联署"), true);
+  assert.equal(new Set(firstSectionNpcReactions).size, 3);
+  assert.equal(visitedSceneIds.size, 4);
+  assert.equal(visitedTimeLabels.size, 4);
+  assert.equal(sectionTransitionMoveCount, 3);
+  assert.equal(duePayoffMoveCount, 19);
+  assert.equal(nextPressureMoveCount, 5);
+});
+
+test("cannot mark a due Part One consequence paid when its visible payoff beat is absent", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian").package;
+  const initial = createInitialPartOneState(pkg);
+  const first = settlePartOneAction(pkg, initial, {
+    source: "RECOMMENDED",
+    decisionId: "opening_d2",
+    actionText: "先封档房，再复巡抚"
+  }, 1);
+  const firstState = finalizePartOneSettlement(first, []).proposedState;
+  const workingSet = buildPartOneRuntimeWorkingSet(pkg, firstState, 1);
+  const option = workingSet.decisionAffordances[0];
+  const second = settlePartOneAction(pkg, firstState, {
+    source: "RECOMMENDED",
+    decisionKernelId: option.decisionKernelId,
+    affordanceTemplateId: option.affordanceTemplateId,
+    label: option.title,
+    actionText: option.actionText,
+    targetRef: option.targetRef
+  }, 2);
+  assert.equal(second.dueConsequences.length, 1);
+  const withoutPayoff = structuredClone(second);
+  withoutPayoff.event.authoritativeWorldMoves = withoutPayoff.event.authoritativeWorldMoves
+    .filter((move) => move.sourceType !== "DUE_CONSEQUENCE");
+  assert.throws(
+    () => finalizePartOneSettlement(
+      withoutPayoff,
+      second.dueConsequences.map((item) => item.consequenceId)
+    ),
+    /PART_ONE_CONSEQUENCE_PAYOFF_NOT_AUTHORIZED/
+  );
 });
 
 test("Part One working-set retrieval returns one legal kernel and approved style as P0 context", () => {

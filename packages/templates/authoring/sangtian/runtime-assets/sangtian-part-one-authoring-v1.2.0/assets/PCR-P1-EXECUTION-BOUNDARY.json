@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-EXECUTION-BOUNDARY",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-THREE-DAY-DEADLINE"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "执行速度改变后续粮食与土地压力",
+      "书面边界决定问责时谁能切割责任"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-EXECUTION-PRESSURE",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "巡抚幕僚把三日限期和眼前粮价一并压到案前，追问为何只准清流县试办、又不许趁急难压价买田，并要总督说明这两条是否仍照办；速度之争由此变成一项可追责的当面催问。",
+        "requiredTermGroups": [
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ],
+          [
+            "三日限期",
+            "三日"
+          ],
+          [
+            "清流县试办",
+            "压价买田",
+            "两条",
+            "照办"
+          ]
+        ],
+        "resultCeiling": "只能形成催问与责任压力；眼前粮价只能定性写成正在上涨或压力在眼前，不得换算为一日一变、每日、每时等频率；不得写成朝廷已经定罪或巡抚已经取得执行权。"
+      },
+      {
+        "beatId": "PAYOFF-P1-EXECUTION-RECORD",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "巡抚幕僚盯住已经写进放行文书的两条边界，要求总督说明由谁具名担责；日后谁想切割责任，都必须先解释这份已经写明的边界。",
+        "requiredTermGroups": [
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ],
+          [
+            "改桑范围",
+            "执行范围",
+            "清流县试办",
+            "清流试办",
+            "何县试办",
+            "划定的范围"
+          ],
+          [
+            "责任",
+            "具名",
+            "切割首尾",
+            "切割干系",
+            "切割干净",
+            "交代"
+          ]
+        ],
+        "resultCeiling": "巡抚幕僚只以巡抚代表身份独自加入现场；不得让巡抚本人或其他随员到场。只能把“清流县试办”和“不得趁急难压价买田”这两项已结算边界带入责任争夺；不得新增乡、里、保、亩数、田地分类、第二份文书或已经完成的签署内容。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

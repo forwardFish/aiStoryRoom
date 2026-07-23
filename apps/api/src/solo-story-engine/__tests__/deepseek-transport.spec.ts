@@ -95,12 +95,12 @@ void (async () => {
   assert.equal(requests.length, 2);
   assert.equal(requests[0].messages.length, 2);
   assert.equal(requests[0].response_format, undefined);
-  assert.equal(requests[0].temperature, 0.78);
+  assert.equal(requests[0].temperature, 0.25);
   assert.equal(requests[0].stream, false);
   assert.equal(requests[1].response_format.type, "json_object");
-  assert.equal(requests[1].temperature, 0.28);
+  assert.equal(requests[1].temperature, 0.2);
   assert.equal(requests[1].stream, false);
-  assert.equal(requests[0].thinking.type, "disabled");
+  assert.equal(requests[0].thinking, undefined);
   assert.equal(narrator.stage, "NARRATOR");
   assert.equal(decision.stage, "DECISION");
   assert.equal(decision.providerRequestId, "req-2");
@@ -147,11 +147,19 @@ void (async () => {
   assert.equal(streamResult.stage, "NARRATOR");
 
   let environmentSelectedModel = "";
+  let environmentUrl = "";
+  let environmentAuthorization = "";
+  let environmentBody: any = null;
   const fromEnvironment = SoloDeepSeekTransport.fromEnv({
-    DEEPSEEK_API_KEY: "test-secret",
-    DEEPSEEK_MODEL: "deepseek-v4-pro"
-  } as NodeJS.ProcessEnv, async (_url, init) => {
-    environmentSelectedModel = JSON.parse(String(init?.body || "{}")).model;
+    DEEPSEEK_API_KEY: "deepseek-secret",
+    SOLO_STORY_API_KEY: "solo-provider-secret",
+    DEEPSEEK_MODEL: "deepseek-v4-pro",
+    SOLO_STORY_THINKING: "enabled"
+  } as NodeJS.ProcessEnv, async (url, init) => {
+    environmentUrl = String(url);
+    environmentAuthorization = new Headers(init?.headers).get("authorization") || "";
+    environmentBody = JSON.parse(String(init?.body || "{}"));
+    environmentSelectedModel = environmentBody.model;
     return new Response(JSON.stringify({
       model: environmentSelectedModel,
       choices: [{ message: { content: validNarratorProse() } }]
@@ -164,6 +172,89 @@ void (async () => {
     context: compiled.context
   });
   assert.equal(environmentSelectedModel, "deepseek-chat");
+  assert.match(environmentUrl, /^https:\/\/api\.deepseek\.com\/v1\/chat\/completions$/);
+  assert.equal(environmentAuthorization, "Bearer deepseek-secret");
+  assert.equal(environmentBody.thinking.type, "enabled");
+  assert.equal(environmentBody.reasoning_effort, "high");
+
+  let relayUrl = "";
+  let relayAuthorization = "";
+  let relayBody: any = null;
+  const relayFromEnvironment = SoloDeepSeekTransport.fromEnv({
+    DEEPSEEK_API_KEY: "deepseek-secret",
+    SOLO_STORY_API_KEY: "solo-provider-secret",
+    SOLO_STORY_BASE_URL: "https://api.siliconflow.cn/v1",
+    SOLO_STORY_MODEL: "Pro/moonshotai/Kimi-K2.6",
+    SOLO_STORY_THINKING: "disabled",
+    SOLO_STORY_THINKING_BUDGET: "512"
+  } as NodeJS.ProcessEnv, async (url, init) => {
+    relayUrl = String(url);
+    relayAuthorization = new Headers(init?.headers).get("authorization") || "";
+    relayBody = JSON.parse(String(init?.body || "{}"));
+    return new Response(JSON.stringify({
+      model: relayBody.model,
+      choices: [{ message: { content: validNarratorProse() } }]
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  });
+  await relayFromEnvironment.generate({
+    attemptId: "attempt-relay-env",
+    stage: "NARRATOR",
+    prompt: narratorPrompt,
+    context: compiled.context
+  });
+  assert.equal(relayUrl, "https://api.siliconflow.cn/v1/chat/completions");
+  assert.equal(relayAuthorization, "Bearer solo-provider-secret");
+  assert.equal(relayBody.model, "Pro/moonshotai/Kimi-K2.6");
+  assert.equal(relayBody.thinking, undefined);
+  assert.equal(relayBody.enable_thinking, false);
+  assert.equal(relayBody.thinking_budget, 512);
+
+  const glmBodies: any[] = [];
+  const glmTransport = new SoloDeepSeekTransport({
+    apiKey: "test-secret",
+    baseUrl: "https://api.siliconflow.com/v1",
+    model: "zai-org/GLM-5.2",
+    timeoutMs: 5_000,
+    maxOutputTokens: 2_400,
+    thinkingBudget: 512,
+    fetchImpl: async (_url, init) => {
+      const body = JSON.parse(String(init?.body || "{}"));
+      glmBodies.push(body);
+      return new Response(JSON.stringify({
+        model: body.model,
+        choices: [{ message: { content: validNarratorProse() } }]
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+  });
+  const glmDeltas: string[] = [];
+  const glmNarrator = await glmTransport.generate({
+    attemptId: "attempt-glm-narrator",
+    stage: "NARRATOR",
+    prompt: narratorPrompt,
+    context: compiled.context,
+    onTextDelta: (delta) => {
+      glmDeltas.push(delta);
+    }
+  });
+  await glmTransport.generate({
+    attemptId: "attempt-glm-decision",
+    stage: "DECISION",
+    prompt: buildSoloDecisionPrompt(compiled.context, draft),
+    context: compiled.context
+  });
+  assert.equal(glmBodies.length, 2);
+  assert.equal(glmBodies[0].stream, false);
+  assert.equal(glmBodies[0].stream_options, undefined);
+  assert.equal(glmBodies[0].max_tokens, 1_600);
+  assert.equal(glmBodies[1].max_tokens, 1_600);
+  assert.equal(glmBodies[0].temperature, 0.2);
+  assert.equal(glmBodies[1].temperature, 0.2);
+  assert.equal(glmDeltas.length, 0);
+  assert.equal(glmNarrator.rawText, validNarratorProse());
+  assert.equal(glmBodies[1].response_format, undefined);
+  assert.equal(glmBodies[1].enable_thinking, false);
+  assert.equal(glmBodies[0].thinking_budget, 512);
+  assert.equal(glmBodies[1].thinking_budget, 512);
 
   console.log("solo story engine DeepSeek two-stage transport: PASS");
 })().catch((error) => {

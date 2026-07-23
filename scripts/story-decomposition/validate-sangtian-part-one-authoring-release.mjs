@@ -2,7 +2,10 @@ import { readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { computeImmutableHash, readJson, repoRoot, validateWithSchema, writeJson } from "./lib/contract-utils.mjs";
 
-const RELEASE_VERSION = "sangtian-part-one-authoring-v1.0.0";
+const RELEASE_VERSION = String(
+  process.env.SANGTIAN_AUTHORING_RELEASE_VERSION
+  || "sangtian-part-one-authoring-v1.2.0"
+).trim();
 const authoringRoot = resolve(repoRoot, "packages/templates/authoring/sangtian");
 const releaseRoot = resolve(authoringRoot, "runtime-assets", RELEASE_VERSION);
 const evidenceRoot = resolve(repoRoot, "docs/剧本/嘉靖财政危局/derived/evidence-v2/published/sangtian-part-one-evidence-v1.0.0");

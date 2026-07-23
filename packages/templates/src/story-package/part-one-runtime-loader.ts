@@ -69,7 +69,14 @@ export function validatePartOneRuntimePackage(raw: unknown, worldId = "sangtian"
   const style = record(value.styleProfile, "styleProfile");
 
   equal(worldStart.sectionId, "SEC-P1-01", "worldStart.sectionId");
-  equal(record(worldStart.state, "worldStart.state").sectionId, "SEC-P1-01", "worldStart.state.sectionId");
+  const worldStartState = record(worldStart.state, "worldStart.state");
+  equal(worldStartState.sectionId, "SEC-P1-01", "worldStart.state.sectionId");
+  const worldStartScene = record(worldStartState.scene, "worldStart.state.scene");
+  text(worldStartScene.sceneId, "worldStart.state.scene.sceneId");
+  text(worldStartScene.timeLabel, "worldStart.state.scene.timeLabel");
+  text(worldStartScene.locationLabel, "worldStart.state.scene.locationLabel");
+  array(worldStartScene.presentActorRefs, "worldStart.state.scene.presentActorRefs");
+  text(worldStartScene.situation, "worldStart.state.scene.situation");
   equal(style.profileId, "STYLE-SANGTIAN-HISTORICAL-NOVEL", "styleProfile.profileId");
   const budget = record(style.narrativeBudget, "styleProfile.narrativeBudget");
   if (number(budget.minCharacters, "minCharacters") < 300 || number(budget.maxCharacters, "maxCharacters") > 1500) {
@@ -110,6 +117,21 @@ export function validatePartOneRuntimePackage(raw: unknown, worldId = "sangtian"
     const row = record(requirement, "requirement");
     array(row.sectionIds, "requirement.sectionIds").forEach((id) => member(String(id), sectionIds, "requirement section"));
     array(row.runtimeAssetIds, "requirement.runtimeAssetIds").forEach((id) => member(String(id), assetIds, "requirement runtime asset"));
+  }
+  for (const consequenceRule of assets.filter((entry) => record(entry, "asset").assetType === "PENDING_CONSEQUENCE_RULE")) {
+    const row = record(consequenceRule, "consequenceRule");
+    const payload = record(row.payload, "consequenceRule.payload");
+    const consequences = array(payload.consequences, "consequenceRule.payload.consequences");
+    const payoffBeats = array(payload.payoffBeats, "consequenceRule.payload.payoffBeats");
+    count(payoffBeats.length, consequences.length, "consequenceRule payoff count");
+    for (const payoff of payoffBeats) {
+      const beat = record(payoff, "consequenceRule.payoffBeat");
+      text(beat.beatId, "consequenceRule.payoffBeat.beatId");
+      text(beat.action, "consequenceRule.payoffBeat.action");
+      array(beat.actorRefs, "consequenceRule.payoffBeat.actorRefs");
+      array(beat.requiredTermGroups, "consequenceRule.payoffBeat.requiredTermGroups");
+      text(beat.resultCeiling, "consequenceRule.payoffBeat.resultCeiling");
+    }
   }
 
   equal(index.schemaVersion, "runtime-story-index-v1", "runtimeIndex.schemaVersion");

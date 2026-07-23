@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-MERCHANT-CONDITIONS",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-MERCHANT-CONDITIONS"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-GRAIN-SOURCE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-GRAIN-SOURCE",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "商会权利扩大后进入粮路、丝路或土地",
+      "拒绝合作会保住边界但放大即时粮食压力"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-MERCHANT-RIGHTS",
+        "actorRefs": [
+          "actor.jiangnan_merchant_head"
+        ],
+        "action": "商会会首把粮船、担保与所求权利捆在一起重新问价，试图把一次救急变成继续进入粮路和政策的凭据。",
+        "requiredTermGroups": [
+          [
+            "商会会首",
+            "会首"
+          ],
+          [
+            "粮船",
+            "粮路"
+          ],
+          [
+            "担保",
+            "权利"
+          ]
+        ],
+        "resultCeiling": "只能提出交易条件，不得让官府自动授予购田、收丝或其他权利。"
+      },
+      {
+        "beatId": "PAYOFF-P1-MERCHANT-WITHDRAWAL",
+        "actorRefs": [
+          "actor.jiangnan_merchant_head"
+        ],
+        "action": "商会会首拒绝无条件承诺后续粮船，明言官府若守住原有边界，就必须自己承担断粮与调运压力。",
+        "requiredTermGroups": [
+          [
+            "商会会首",
+            "会首"
+          ],
+          [
+            "粮船",
+            "断粮"
+          ],
+          [
+            "边界",
+            "调运"
+          ]
+        ],
+        "resultCeiling": "只能缩紧合作意愿，不得写成粮船已经全部撤走或米市已经断粮。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

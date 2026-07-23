@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-REPORT-AUTHORSHIP",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-RESPONSIBILITY-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "内容不同的奏报与具名信件到达京师后可能触发不同政治反应",
+      "署名与经手记录为后续问责提供可追踪材料"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-REPORT-COMPETING-VERSIONS",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "巡抚幕僚要求核对总督将要送出的那版事实，并暗示若署名和内容不能相容，巡抚会保留自己的入京文字。",
+        "requiredTermGroups": [
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ],
+          [
+            "那版事实",
+            "内容"
+          ],
+          [
+            "入京文字",
+            "署名"
+          ]
+        ],
+        "resultCeiling": "只能形成分奏威胁，不得写成巡抚奏报已经发出。"
+      },
+      {
+        "beatId": "PAYOFF-P1-REPORT-HANDLERS",
+        "actorRefs": [
+          "actor.xunfu_aide",
+          "actor.qingliu_magistrate"
+        ],
+        "action": "奏报的署名、附件和经手人被逐项追问，谁碰过哪一版文字开始成为后续问责可以回查的材料。",
+        "requiredTermGroups": [
+          [
+            "奏报",
+            "署名"
+          ],
+          [
+            "附件",
+            "经手人"
+          ],
+          [
+            "问责",
+            "回查"
+          ]
+        ],
+        "resultCeiling": "只能固定经手责任，不得新增附件内容或宣告任何人有罪。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

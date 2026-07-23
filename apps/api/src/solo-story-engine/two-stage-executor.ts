@@ -346,17 +346,19 @@ function buildPublishedOutput(input: {
       affordanceTemplateId: basis?.affordanceTemplateId
     } satisfies StoryDecision;
   });
-  const paidConsequenceIds = context.sections.pendingConsequences.items
-    .filter((consequence) => consequence.priority === "P0")
-    .map((consequence) => consequence.consequenceId);
+  const paidConsequenceIds = event?.authoritativeWorldMoves
+    .filter((move) => move.sourceType === "DUE_CONSEQUENCE" && move.consequenceId)
+    .map((move) => move.consequenceId!)
+    || [];
   const visibleChanges = event
     ? [
         ...event.authoritativeObservableFacts,
-        ...event.authoritativeNpcReactions.map((reaction) => reaction.action)
+        ...event.authoritativeNpcReactions.map((reaction) => reaction.action),
+        ...event.authoritativeWorldMoves.map((move) => move.action)
       ]
     : context.actionResolution.immediateObservableResult;
   const presentEntityRefs = event
-    ? [...new Set(event.authoritativeNpcReactions.flatMap((reaction) => reaction.actorRefs))]
+    ? [...new Set(event.sceneAfter.presentActorRefs)]
       .filter((ref) => context.allowedReferences.entityRefs.includes(ref))
     : [];
 
@@ -374,9 +376,12 @@ function buildPublishedOutput(input: {
       observableOutcome: visibleChanges.join("；") || context.actionResolution.summary
     },
     endingState: {
-      timeLabel: scene?.timeLabel || "",
-      locationLabel: scene?.locationLabel || "",
-      tension: runtime?.nextDecisionPressure?.summary || scene?.situation || "",
+      timeLabel: event?.sceneAfter.timeLabel || scene?.timeLabel || "",
+      locationLabel: event?.sceneAfter.locationLabel || scene?.locationLabel || "",
+      tension: event?.narrativePlan.requiredEndChange
+        || runtime?.nextDecisionPressure?.summary
+        || scene?.situation
+        || "",
       presentEntityRefs,
       visibleChanges,
       surfacedConsequenceIds: paidConsequenceIds

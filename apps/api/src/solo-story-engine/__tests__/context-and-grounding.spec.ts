@@ -48,6 +48,11 @@ const compiled = compileSoloStoryContext({
 });
 assert.equal(compiled.ok, true);
 if (!compiled.ok) throw new Error("compile failed");
+assert.equal(
+  compiled.context.sections.recentCanon.items.at(-1)?.entryId,
+  "canon_1",
+  "the latest formally published canon must never be silently dropped"
+);
 
 for (const target of baseTargets()) {
   assert.ok(compiled.context.allowedReferences.groundingIds.includes(target.id));
@@ -62,8 +67,8 @@ assert.doesNotMatch(narratorPrompt.systemPrompt, /LEGAL_NEXT_DECISION_SEEDS|rout
 assert.doesNotMatch(narratorPrompt.userPrompt, /LEGAL_NEXT_DECISION_SEEDS|routeKey|affordanceTemplateId/);
 assert.ok(!narratorPrompt.userPrompt.includes(resolution.resolutionId));
 assert.ok(!narratorPrompt.userPrompt.includes("fact_archive_breakin"));
-assert.match(narratorPrompt.systemPrompt, /只写故事正文/);
-assert.match(narratorPrompt.systemPrompt, /不要写“你必须决定”/);
+assert.match(narratorPrompt.systemPrompt, /只输出正文纯文本/);
+assert.match(narratorPrompt.systemPrompt, /不得新增事实、证据、人物、承诺或下一步决定/);
 
 const draft = parseNarratorDraft(validNarratorProse());
 const decisionPrompt = buildSoloDecisionPrompt(compiled.context, draft);

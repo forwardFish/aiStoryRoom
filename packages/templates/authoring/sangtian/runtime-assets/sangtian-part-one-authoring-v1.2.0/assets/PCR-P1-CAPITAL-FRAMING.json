@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-CAPITAL-FRAMING",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-CAPITAL-CHANNEL",
+    "DK-P1-REPORT-AUTHORSHIP"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili"
+  ],
+  "stateDependencies": [
+    "report.dispatchStatus",
+    "report.firstNarrativeController",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "REQ-P1-CAPITAL-FRAMING",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-CAPITAL-CHANNEL",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili",
+    "report.dispatchStatus",
+    "report.firstNarrativeController",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "京师先收到的版本形成第一版事实框架",
+      "渠道记录成为后续追责的一部分"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-CAPITAL-FIRST-FRAME",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "首报一经按既定渠道离开总督府，巡抚幕僚便要求确认京师首先会看到哪一版事实；地方争执已经不能再只靠口头收回。",
+        "requiredTermGroups": [
+          [
+            "首报",
+            "京师"
+          ],
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ],
+          [
+            "哪一版事实",
+            "口头收回"
+          ]
+        ],
+        "resultCeiling": "只能确认文书已经按玩家选定的渠道离府，不得写成京师已经收到或裁决。"
+      },
+      {
+        "beatId": "PAYOFF-P1-CAPITAL-CHANNEL-RECORD",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "巡抚幕僚要求把递送渠道、封号与经手责任列入共同案卷，因为这些记录日后本身就会成为问责的一部分。",
+        "requiredTermGroups": [
+          [
+            "递送渠道",
+            "渠道"
+          ],
+          [
+            "封号",
+            "经手责任"
+          ],
+          [
+            "问责",
+            "案卷"
+          ]
+        ],
+        "resultCeiling": "只能要求记录渠道责任，不得凭空生成回执、到达时辰或京师回应。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

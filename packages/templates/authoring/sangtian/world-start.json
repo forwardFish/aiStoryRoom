@@ -13,6 +13,49 @@
     "partId": "PART-01",
     "sectionId": "SEC-P1-01",
     "turnNumber": 0,
+    "scene": {
+      "sceneId": "SCENE-P1-S1-INNER-HALL",
+      "timeLabel": "嘉靖三十五年五月初八辰时",
+      "locationLabel": "杭州总督府内厅",
+      "presentActorRefs": [
+        "actor.zhejiang_governor",
+        "actor.xunfu_clerk",
+        "actor.qingliu_messenger"
+      ],
+      "situation": "巡抚书吏候取回文，清流县令亲随留在厅中等候；催办公文与密信都已由总督拆阅并收持，执行方式、复核起点和首份责任记录尚未定下。",
+      "documentStates": [
+        {
+          "documentRef": "document.xunfu_urging_order",
+          "label": "巡抚催办公文",
+          "accessState": "READ",
+          "holderRef": "actor.zhejiang_governor",
+          "continuityNote": "总督已经读到三日具报的期限，公文留在总督案前。"
+        },
+        {
+          "documentRef": "document.qingliu_secret_letter",
+          "label": "清流县令密信",
+          "accessState": "READ",
+          "holderRef": "actor.zhejiang_governor",
+          "continuityNote": "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。"
+        }
+      ],
+      "objectStates": [
+        {
+          "objectRef": "object.xunfu_reply_box",
+          "label": "巡抚回文匣",
+          "holderRef": "actor.xunfu_clerk",
+          "contentsState": "EMPTY",
+          "closureState": "CLOSED",
+          "continuityNote": "回文匣来时就是空的且匣盖合着，一直捧在巡抚书吏手中；未明确装入回文或开匣前，不得改变分量、内容或开合状态。"
+        },
+        {
+          "objectRef": "object.governor_seal_token",
+          "label": "总督封缄令牌",
+          "holderRef": "actor.zhejiang_governor",
+          "continuityNote": "封缄令牌起初由总督持有；交给清流县令亲随后，持有人必须随结算更新。"
+        }
+      ]
+    },
     "reform": {
       "executionMode": "UNKNOWN",
       "scopeStatus": "UNSET",

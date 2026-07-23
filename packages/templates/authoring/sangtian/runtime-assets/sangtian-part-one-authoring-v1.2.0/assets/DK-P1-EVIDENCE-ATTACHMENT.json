@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-EVIDENCE-ATTACHMENT",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "report.attachmentStrength",
+    "evidence.chainStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "report.attachmentStrength",
+    "evidence.chainStatus"
+  ],
+  "payload": {
+    "availableWhen": [
+      "至少有一种原件、副本、口供、仓单或田契进入证据状态",
+      "附件强度和保管链可被服务端读取"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-01",
+        "title": "附样册与封存记录",
+        "actionText": "附带见证抄出的样册、封条记录和原件保管人名单。",
+        "targetRef": "evidence.qingliu_register_anomaly",
+        "method": "中强度附件",
+        "immediateIntent": "附带见证抄出的样册、封条记录和原件保管人名单。",
+        "visibleTradeoff": "可复核性较高，相关人员和位置也随之暴露",
+        "stateEffects": [
+          "report.attachmentStrength",
+          "evidence.chainStatus",
+          "witness.accessStatus"
+        ],
+        "statePatch": {
+          "report.attachmentStrength": "WITNESSED_COPY_AND_CUSTODY_RECORD",
+          "evidence.chainStatus": "TRACEABLE",
+          "witness.accessStatus": "DISCLOSED_IN_ATTACHMENT"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-02",
+        "title": "只报异常范围",
+        "actionText": "只列田亩数字和日期差异，声明原册仍在复核，不附人名推断。",
+        "targetRef": "evidence.qingliu_register_anomaly",
+        "method": "边界化报告",
+        "immediateIntent": "只列田亩数字和日期差异，声明原册仍在复核，不附人名推断。",
+        "visibleTradeoff": "避免过早定罪，但京师可能认为证据太弱",
+        "stateEffects": [
+          "report.attachmentStrength",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "report.attachmentStrength": "ANOMALY_SCOPE_ONLY",
+          "responsibility.governorExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-03",
+        "title": "先保人证",
+        "actionText": "暂不附书吏供述，只附保管链并说明人证需要保护。",
+        "targetRef": "actor.reform_clerk",
+        "method": "保护性附件",
+        "immediateIntent": "暂不附书吏供述，只附保管链并说明人证需要保护。",
+        "visibleTradeoff": "证人较安全，奏报说服力和速度下降",
+        "stateEffects": [
+          "report.attachmentStrength",
+          "witness.accessStatus"
+        ],
+        "statePatch": {
+          "report.attachmentStrength": "CUSTODY_RECORD_WITHHELD_TESTIMONY",
+          "witness.accessStatus": "PROTECTED_FROM_REPORT"
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

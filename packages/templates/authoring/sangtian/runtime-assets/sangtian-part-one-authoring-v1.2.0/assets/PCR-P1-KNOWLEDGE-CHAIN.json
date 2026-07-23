@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-KNOWLEDGE-CHAIN",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-WITNESS-ACCESS"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-WITNESS-ACCESS",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "不同人物形成不对称知识",
+      "秘密一旦公开便不可恢复为私密状态"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-KNOWLEDGE-ASYMMETRY",
+        "actorRefs": [
+          "actor.reform_clerk",
+          "actor.xunfu_aide"
+        ],
+        "action": "改桑书吏只肯说自己亲手经办的部分，巡抚幕僚却追问总督还掌握了什么；同一件县册疑问在两边形成了不对称的知识。",
+        "requiredTermGroups": [
+          [
+            "改桑书吏",
+            "书吏"
+          ],
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ],
+          [
+            "亲手经办",
+            "掌握"
+          ]
+        ],
+        "resultCeiling": "只能表现知情范围不同，不得让书吏补出未经批准的新证词。"
+      },
+      {
+        "beatId": "PAYOFF-P1-KNOWLEDGE-DISCLOSURE",
+        "actorRefs": [
+          "actor.xunfu_aide",
+          "actor.reform_clerk"
+        ],
+        "action": "已经公开给双方的材料再也收不回私下范围；巡抚幕僚据此要求继续旁听，书吏则更谨慎地区分亲历与听闻。",
+        "requiredTermGroups": [
+          [
+            "公开",
+            "双方"
+          ],
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ],
+          [
+            "亲历",
+            "听闻"
+          ]
+        ],
+        "resultCeiling": "只能使用此前已经披露的范围，不得新增材料、名单或证据。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

@@ -14,7 +14,10 @@ export function parseNarratorDraft(rawText: string): StoryNarratorDraft {
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
-  if (paragraphs.length < 3 || paragraphs.length > 8) {
+  // Dialogue-heavy historical scenes often use short question/answer
+  // paragraphs. Preserve that rhythm instead of forcing the Narrator to merge
+  // speakers into report-like blocks.
+  if (paragraphs.length < 3 || paragraphs.length > 12) {
     throw new SyntaxError("NARRATOR_PARAGRAPH_COUNT_INVALID");
   }
   const nextSituationNarrative = paragraphs.at(-1)!;

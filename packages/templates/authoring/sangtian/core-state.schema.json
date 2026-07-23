@@ -3,11 +3,12 @@
   "$id": "https://our-many-worlds.local/schemas/sangtian-part-one-state.schema.json",
   "title": "Sangtian PartOneState",
   "type": "object",
-  "additionalProperties": false,
+  "additionalProperties": true,
   "required": [
     "partId",
     "sectionId",
     "turnNumber",
+    "scene",
     "reform",
     "review",
     "evidence",
@@ -38,78 +39,141 @@
       "minimum": 0,
       "maximum": 20
     },
-    "reform": {
+    "scene": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "executionMode",
-        "scopeStatus",
-        "progress"
+        "sceneId",
+        "timeLabel",
+        "locationLabel",
+        "presentActorRefs",
+        "situation"
       ],
       "properties": {
-        "executionMode": {
-          "enum": [
-            "UNKNOWN",
-            "PAUSED",
-            "LIMITED",
-            "FULL",
-            "CONDITIONAL"
-          ]
+        "sceneId": {
+          "type": "string",
+          "minLength": 1
         },
-        "scopeStatus": {
-          "enum": [
-            "UNSET",
-            "RECORDED",
-            "CONTESTED"
-          ]
+        "timeLabel": {
+          "type": "string",
+          "minLength": 1
         },
-        "progress": {
-          "enum": [
-            "NOT_STARTED",
-            "ORDERED",
-            "STARTED"
-          ]
+        "locationLabel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "presentActorRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "situation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "documentStates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "documentRef",
+              "label",
+              "accessState",
+              "holderRef",
+              "continuityNote"
+            ],
+            "properties": {
+              "documentRef": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "accessState": {
+                "enum": [
+                  "NOT_PRESENT",
+                  "SEALED",
+                  "OPENED",
+                  "READ",
+                  "WRITTEN"
+                ]
+              },
+              "holderRef": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "contentsState": {
+                "enum": [
+                  "EMPTY",
+                  "UNKNOWN",
+                  "CONTAINS_DOCUMENT"
+                ]
+              },
+              "closureState": {
+                "enum": [
+                  "CLOSED",
+                  "OPEN",
+                  "UNKNOWN"
+                ]
+              },
+              "continuityNote": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "objectStates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "objectRef",
+              "label",
+              "holderRef",
+              "continuityNote"
+            ],
+            "properties": {
+              "objectRef": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "holderRef": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "continuityNote": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
         }
       }
     },
+    "reform": {
+      "$ref": "#/$defs/stringStateObject"
+    },
     "review": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "initiationStatus",
-        "authority",
-        "procedureStatus"
-      ],
-      "properties": {
-        "initiationStatus": {
-          "enum": [
-            "NOT_STARTED",
-            "ORDERED",
-            "ACTIVE",
-            "BLOCKED"
-          ]
-        },
-        "authority": {
-          "enum": [
-            "UNDECIDED",
-            "GOVERNOR",
-            "XUNFU",
-            "JOINT",
-            "COUNTY"
-          ]
-        },
-        "procedureStatus": {
-          "enum": [
-            "UNSET",
-            "RECORDED",
-            "CONTESTED"
-          ]
-        }
-      }
+      "$ref": "#/$defs/stringStateObject"
     },
     "evidence": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": [
         "chainStatus",
         "primaryCustodianRef",
@@ -132,92 +196,29 @@
           ]
         },
         "copyStatus": {
-          "enum": [
-            "NONE",
-            "REQUESTED",
-            "CREATED",
-            "DISPUTED"
-          ]
+          "type": "string"
         },
         "archiveSealStatus": {
-          "enum": [
-            "UNKNOWN",
-            "INTACT",
-            "BROKEN",
-            "RESEALED"
-          ]
+          "type": "string"
         }
       }
     },
     "witness": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "accessStatus"
-      ],
-      "properties": {
-        "accessStatus": {
-          "enum": [
-            "UNKNOWN",
-            "AVAILABLE",
-            "PROTECTED",
-            "MISSING",
-            "CONTROLLED_BY_OTHER"
-          ]
-        }
-      }
+      "$ref": "#/$defs/stringStateObject"
     },
     "grain": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "immediatePressure",
-        "officialStockStatus",
-        "reliefChannel"
-      ],
-      "properties": {
-        "immediatePressure": {
-          "enum": [
-            "STABLE",
-            "RISING",
-            "ACUTE"
-          ]
-        },
-        "officialStockStatus": {
-          "enum": [
-            "UNKNOWN",
-            "INSUFFICIENT",
-            "LIMITED",
-            "AVAILABLE"
-          ]
-        },
-        "reliefChannel": {
-          "enum": [
-            "UNDECIDED",
-            "OFFICIAL",
-            "MERCHANT",
-            "MIXED",
-            "EXTERNAL_TRANSFER"
-          ]
-        }
-      }
+      "$ref": "#/$defs/stringStateObject"
     },
     "merchant": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": [
         "entryStatus",
         "grantedRights"
       ],
       "properties": {
         "entryStatus": {
-          "enum": [
-            "ABSENT",
-            "OFFERED",
-            "REJECTED",
-            "CONDITIONAL",
-            "ACTIVE"
-          ]
+          "type": "string"
         },
         "grantedRights": {
           "type": "array",
@@ -229,80 +230,14 @@
       }
     },
     "land": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "riskLevel",
-        "safeguardStatus"
-      ],
-      "properties": {
-        "riskLevel": {
-          "enum": [
-            "UNKNOWN",
-            "LOW",
-            "RISING",
-            "HIGH"
-          ]
-        },
-        "safeguardStatus": {
-          "enum": [
-            "NONE",
-            "PROPOSED",
-            "ACTIVE",
-            "BYPASSED"
-          ]
-        }
-      }
+      "$ref": "#/$defs/stringStateObject"
     },
     "report": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "authorshipMode",
-        "firstNarrativeController",
-        "attachmentStrength",
-        "dispatchStatus"
-      ],
-      "properties": {
-        "authorshipMode": {
-          "enum": [
-            "UNKNOWN",
-            "JOINT",
-            "GOVERNOR_ONLY",
-            "XUNFU_ONLY",
-            "SPLIT"
-          ]
-        },
-        "firstNarrativeController": {
-          "enum": [
-            "UNDECIDED",
-            "GOVERNOR",
-            "XUNFU",
-            "SHARED"
-          ]
-        },
-        "attachmentStrength": {
-          "enum": [
-            "NONE",
-            "LEAD_ONLY",
-            "PARTIAL",
-            "TRACEABLE"
-          ]
-        },
-        "dispatchStatus": {
-          "enum": [
-            "NOT_STARTED",
-            "DRAFTING",
-            "READY",
-            "DISPATCHED",
-            "SPLIT"
-          ]
-        }
-      }
+      "$ref": "#/$defs/stringStateObject"
     },
     "responsibility": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": [
         "firstRecordStatus",
         "governorExposure",
@@ -310,11 +245,7 @@
       ],
       "properties": {
         "firstRecordStatus": {
-          "enum": [
-            "EMPTY",
-            "RECORDED",
-            "DISPUTED"
-          ]
+          "type": "string"
         },
         "governorExposure": {
           "type": "number"
@@ -326,7 +257,7 @@
     },
     "relations": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": [
         "governorXunfu"
       ],
@@ -347,8 +278,24 @@
     "pendingConsequences": {
       "type": "array",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": [
+          "consequenceId",
+          "causedByEventId",
+          "ruleAssetId",
+          "summary",
+          "payoffBeat",
+          "dueTurn",
+          "priority",
+          "status"
+        ]
       }
+    }
+  },
+  "$defs": {
+    "stringStateObject": {
+      "type": "object",
+      "additionalProperties": true
     }
   }
 }

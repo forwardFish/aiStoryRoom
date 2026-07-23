@@ -3,11 +3,11 @@
   "worldId": "sangtian",
   "partId": "PART-01",
   "perspectiveRoleKey": "zhejiang_governor",
-  "authoringReleaseVersion": "sangtian-part-one-authoring-v1.1.0",
-  "authoringManifestHash": "FA44F43B8E1A771B8F0126E1B672B6BEF95E0A93C8238B0A29804D9D3F012D0D",
+  "authoringReleaseVersion": "sangtian-part-one-authoring-v1.2.0",
+  "authoringManifestHash": "2FC3EDDEF2B6C082F4403CAD94C4219F05CB6B67E7AEE1C0AAEBD1DF5BDE2559",
   "authoringManifest": {
     "schemaVersion": "sangtian-part-one-authoring-release-v1",
-    "releaseVersion": "sangtian-part-one-authoring-v1.1.0",
+    "releaseVersion": "sangtian-part-one-authoring-v1.2.0",
     "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
     "reviewSetHash": "39E8E830FFDB58D41E470BE89F89EA4D93B086629C31B5C5D0A6E8F85F5A2E80",
     "adaptationReviewSetHash": "39E8E830FFDB58D41E470BE89F89EA4D93B086629C31B5C5D0A6E8F85F5A2E80",
@@ -93,7 +93,7 @@
       "DK-P1-MERCHANT-CONDITIONS": "3CF9739A783F71C757296BC9BCB6E3F91C71923CD19F306A9C59D477D10FD0B3",
       "DK-P1-RELIEF-PRIORITY": "9BC23087D9DFF22F98B9FB4988B572E6DAC60D55D8322EBA9507F5A8595683F6",
       "DK-P1-REPORT-AUTHORSHIP": "CD3A8541855E051F30533BA2AC44DB07A3BB0CB9673250498A9A6F70BF7DDC55",
-      "DK-P1-RESPONSIBILITY-RECORD": "7E835C637DF797367442DEA25C2F23CA9D60C25C2E9106A06608C67F9C9FC0C4",
+      "DK-P1-RESPONSIBILITY-RECORD": "49AD5C05A648A960B5EB695B26E227AB201594CE9920562E081B9585FE987DC2",
       "DK-P1-RESPONSIBILITY-SCOPE": "6BF4C02BE650023BE1752C977D03C8CAEFD9091A25E2B74C474674DAD75FDCE0",
       "DK-P1-REVIEW-AUTHORITY": "098C68E5184CF731080E14389FFE50C6921964590C9122E0D1AB9C3219C758FA",
       "DK-P1-REVIEW-INITIATION": "62EC9FC004E21C977518BC45C397A2872994EA3DB23E7D26009E7789B73496AA",
@@ -105,18 +105,18 @@
       "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE": "0043D66AF701CE136C19C64AD3B1E67A23E539C6F4EF5288EFB0619B72B60028",
       "NSP-P1-POLICY-QUESTION-AND-DISPATCH": "27C3FE6B362165175EBA6D8A5455187FC579C13566D49EB544D808AD6D43F435",
       "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY": "79EE33402048DC8451541564A9D848453902744F8818AF5B38254516744ACEEE",
-      "PCR-P1-CAPITAL-FRAMING": "290CF6724E83DFADD6979F869A3490422464101A4EC422E79E7B452497023ACC",
-      "PCR-P1-EVIDENCE-ATTACHMENT": "861488D4F994AFB739D403DF2ECF4BFA85AA295F1549911520C29E8915C92167",
-      "PCR-P1-EXECUTION-BOUNDARY": "D73D04FD0549F9730CC042741AF7C8C629CF4FF5777E6A675A7F1B0E3A056583",
-      "PCR-P1-GRAIN-RELIEF": "E8475B4F2684D936A9829E02A9EA08989DAB1A77D02D2A2911145F9CEE78063C",
-      "PCR-P1-KNOWLEDGE-CHAIN": "81749FEE75B637C0142327DAABB9FA76B99BB34F79117B469A11C0A749F0E9E4",
-      "PCR-P1-LAND-RISK": "51E58A28DB601470C9B21CF55E0E379C6D25D6A1347B4F5634813008DB2AF446",
-      "PCR-P1-MERCHANT-CONDITIONS": "6691C146194636E232F69EEE516F08E52ACDA84F2C989621511B8965CB304592",
-      "PCR-P1-REGISTER-CUSTODY": "EB901B627C08A91C290C53BD7DC0264F715005A81E231618DF5567BA4F976194",
-      "PCR-P1-REPORT-AUTHORSHIP": "D7FF1905BC32B9A10B5C84D4B35C45C7A672799C0882A8F005C55921DF9FCD10",
-      "PCR-P1-RESPONSIBILITY-RECORD": "F347731DF6279CEDC1AD32E85B01B5262C569930B83263BF5F50D830D5E6E131",
-      "PCR-P1-REVIEW-AUTHORITY": "B6220D0C809430A9A24748162DE4A3DAC87DCB8D6216C6C4EBAE0116E1E3B693",
-      "PCR-P1-XUNFU-COUNTERMOVE": "0EA9F2269C0E7E1F2A0192B6FAB55287D7977D81E2F4A7ECCCCDFD76E5576CBE",
+      "PCR-P1-CAPITAL-FRAMING": "AC1B6C74B1BCFB5C1BACDF14C1553B8511D519F6F7D6121EC856A8C6D4428750",
+      "PCR-P1-EVIDENCE-ATTACHMENT": "949BA61299D748163C7709A18203FC4129B9E5E30C187E3556EE88E5443B1B18",
+      "PCR-P1-EXECUTION-BOUNDARY": "22CFEBB134B4D0BF2CC5737F96F090188CD03648A172FF48DFA0DEAE7B3E5ADC",
+      "PCR-P1-GRAIN-RELIEF": "EAD639FE2D313E422FFEFE2A541419E71BAFDB220B09A3A0910F99D6F2A45E3E",
+      "PCR-P1-KNOWLEDGE-CHAIN": "86803311C8F296CB1211DAAF727D02399E9F9F14E802E3CFA91C415FA55E4186",
+      "PCR-P1-LAND-RISK": "5E01156A8C4D766028096B61884309058788A96754E7010266DA27FF2015D9FF",
+      "PCR-P1-MERCHANT-CONDITIONS": "99E4B4A899A86B59170BC2E44BA6F3FD926234584BCAAB7D757EFC627DC1B890",
+      "PCR-P1-REGISTER-CUSTODY": "9B464ACE62F6E48532EE313D327537A324FE001C8DAD7BD28B8056E5FDD4022E",
+      "PCR-P1-REPORT-AUTHORSHIP": "082B9C05FA30B6F63621356F64BF52E71AACEC453B549ADCCD4BB556F97F1D57",
+      "PCR-P1-RESPONSIBILITY-RECORD": "D1AA84C0DE06CECCD53A9FF01582D58C716C1F342E2D2B0F1D2F2CC55E0F0C24",
+      "PCR-P1-REVIEW-AUTHORITY": "6934FBCCBD3B3792B8873480EC6F48B648D8D4DC806D811976259778B3B6CA53",
+      "PCR-P1-XUNFU-COUNTERMOVE": "B534470D3CEB7D77290AB68D9824031CAC4129CF60EC7F4345463CF3BB5D3179",
       "RTA-P1-CAPITAL-FRAMING": "522E4B92291055A5D912885341BA49D34FC8D75DB5D2B69DFA265B713CA55B07",
       "RTA-P1-EVIDENCE-ATTACHMENT": "EE6F4D44B40843154ACFB18B9BF0EAB20E8B5F0A53C23B6F4C7AC4B2E87983EE",
       "RTA-P1-EXECUTION-BOUNDARY": "62B375B19C652A92D12E3301B6A80D24AEBFAA3A22476FBC433C0CDBDCC7501E",
@@ -133,7 +133,7 @@
     },
     "runtimeIndexHash": "B1EABED2C10DC1E7573D3F95E5C982558D744CE54CC6C9A75A3A180E35B81B08",
     "requirementSetHash": "4449154CDD3BC8A542FD8C9231CB79CC01AB4BE878777AB40BDFA0CCDE8267EA",
-    "immutableHash": "FA44F43B8E1A771B8F0126E1B672B6BEF95E0A93C8238B0A29804D9D3F012D0D"
+    "immutableHash": "2FC3EDDEF2B6C082F4403CAD94C4219F05CB6B67E7AEE1C0AAEBD1DF5BDE2559"
   },
   "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
   "contentCounts": {
@@ -161,6 +161,49 @@
       "partId": "PART-01",
       "sectionId": "SEC-P1-01",
       "turnNumber": 0,
+      "scene": {
+        "sceneId": "SCENE-P1-S1-INNER-HALL",
+        "timeLabel": "嘉靖三十五年五月初八辰时",
+        "locationLabel": "杭州总督府内厅",
+        "presentActorRefs": [
+          "actor.zhejiang_governor",
+          "actor.xunfu_clerk",
+          "actor.qingliu_messenger"
+        ],
+        "situation": "巡抚书吏候取回文，清流县令亲随留在厅中等候；催办公文与密信都已由总督拆阅并收持，执行方式、复核起点和首份责任记录尚未定下。",
+        "documentStates": [
+          {
+            "documentRef": "document.xunfu_urging_order",
+            "label": "巡抚催办公文",
+            "accessState": "READ",
+            "holderRef": "actor.zhejiang_governor",
+            "continuityNote": "总督已经读到三日具报的期限，公文留在总督案前。"
+          },
+          {
+            "documentRef": "document.qingliu_secret_letter",
+            "label": "清流县令密信",
+            "accessState": "READ",
+            "holderRef": "actor.zhejiang_governor",
+            "continuityNote": "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。"
+          }
+        ],
+        "objectStates": [
+          {
+            "objectRef": "object.xunfu_reply_box",
+            "label": "巡抚回文匣",
+            "holderRef": "actor.xunfu_clerk",
+            "contentsState": "EMPTY",
+            "closureState": "CLOSED",
+            "continuityNote": "回文匣来时就是空的且匣盖合着，一直捧在巡抚书吏手中；未明确装入回文或开匣前，不得改变分量、内容或开合状态。"
+          },
+          {
+            "objectRef": "object.governor_seal_token",
+            "label": "总督封缄令牌",
+            "holderRef": "actor.zhejiang_governor",
+            "continuityNote": "封缄令牌起初由总督持有；交给清流县令亲随后，持有人必须随结算更新。"
+          }
+        ]
+      },
       "reform": {
         "executionMode": "UNKNOWN",
         "scopeStatus": "UNSET",
@@ -2720,12 +2763,69 @@
           "执行速度改变后续粮食与土地压力",
           "书面边界决定问责时谁能切割责任"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-EXECUTION-PRESSURE",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚幕僚把三日限期和眼前粮价一并压到案前，追问为何只准清流县试办、又不许趁急难压价买田，并要总督说明这两条是否仍照办；速度之争由此变成一项可追责的当面催问。",
+            "requiredTermGroups": [
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "三日限期",
+                "三日"
+              ],
+              [
+                "清流县试办",
+                "压价买田",
+                "两条",
+                "照办"
+              ]
+            ],
+            "resultCeiling": "只能形成催问与责任压力；眼前粮价只能定性写成正在上涨或压力在眼前，不得换算为一日一变、每日、每时等频率；不得写成朝廷已经定罪或巡抚已经取得执行权。"
+          },
+          {
+            "beatId": "PAYOFF-P1-EXECUTION-RECORD",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚幕僚盯住已经写进放行文书的两条边界，要求总督说明由谁具名担责；日后谁想切割责任，都必须先解释这份已经写明的边界。",
+            "requiredTermGroups": [
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "改桑范围",
+                "执行范围",
+                "清流县试办",
+                "清流试办",
+                "何县试办",
+                "划定的范围"
+              ],
+              [
+                "责任",
+                "具名",
+                "切割首尾",
+                "切割干系",
+                "切割干净",
+                "交代"
+              ]
+            ],
+            "resultCeiling": "巡抚幕僚只以巡抚代表身份独自加入现场；不得让巡抚本人或其他随员到场。只能把“清流县试办”和“不得趁急难压价买田”这两项已结算边界带入责任争夺；不得新增乡、里、保、亩数、田地分类、第二份文书或已经完成的签署内容。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -2895,12 +2995,59 @@
           "京师按最先到达且证据最完整的文书形成初步定性",
           "未具名者获得切割责任的空间"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-RESPONSIBILITY-SIGNATURE",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚一方当面追问谁肯在首份责任记录上具名，并把没有具名的人仍可推卸责任这一点公开摆到桌面。",
+            "requiredTermGroups": [
+              [
+                "巡抚",
+                "巡抚一方"
+              ],
+              [
+                "责任记录",
+                "责任"
+              ],
+              [
+                "具名",
+                "署名"
+              ]
+            ],
+            "resultCeiling": "只能争夺既有责任记录的署名，不得替任何一方完成签署。"
+          },
+          {
+            "beatId": "PAYOFF-P1-RESPONSIBILITY-FIRST-FRAME",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚幕僚明言，最先送到京师且附件齐全的那份文字会先定下责任名分，督抚双方都不能再把首份记录当作内厅私议。",
+            "requiredTermGroups": [
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "京师",
+                "入京"
+              ],
+              [
+                "首份记录",
+                "责任名分"
+              ]
+            ],
+            "resultCeiling": "只能提出政治后果，不得写成京师已经收到或已经作出判断。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -3067,12 +3214,59 @@
           "督抚关系与京师叙事同步变化",
           "复核权被一方掌握后改变证据可见性"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-XUNFU-COUNTERMOVE",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚幕僚依照巡抚的立场要求参加下一轮复核，并把总督此前的迟疑记作可能耽误国策的理由。",
+            "requiredTermGroups": [
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "参加复核",
+                "复核"
+              ],
+              [
+                "耽误国策",
+                "迟疑"
+              ]
+            ],
+            "resultCeiling": "只能提出参加与记责要求，不得让巡抚自动取得复核主持权。"
+          },
+          {
+            "beatId": "PAYOFF-P1-XUNFU-VISIBILITY",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚一方要求先看已经允许披露的材料范围；若仍被排除在外，便要以拒绝协作为由另立自己的叙述。",
+            "requiredTermGroups": [
+              [
+                "巡抚",
+                "巡抚一方"
+              ],
+              [
+                "材料",
+                "披露"
+              ],
+              [
+                "另立",
+                "叙述"
+              ]
+            ],
+            "resultCeiling": "只能形成公开威胁，不得写成另一份奏报已经发出。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -3260,12 +3454,62 @@
           "保管链强弱决定证据能否随奏报进入问责",
           "多份材料可能使单点销毁不能抹除全部线索"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-CUSTODY-CHAIN",
+            "actorRefs": [
+              "actor.qingliu_magistrate",
+              "actor.reform_clerk"
+            ],
+            "action": "清流县令与改桑书吏只能按现有保管记录逐项对答；原件由谁看守、副本由谁经手，开始成为任何人都绕不过去的证据链。",
+            "requiredTermGroups": [
+              [
+                "清流县令",
+                "县令"
+              ],
+              [
+                "改桑书吏",
+                "书吏"
+              ],
+              [
+                "原件",
+                "副本",
+                "证据链"
+              ]
+            ],
+            "resultCeiling": "只能确认保管责任进入核对，不得新增县册差异或暗账内容。"
+          },
+          {
+            "beatId": "PAYOFF-P1-CUSTODY-REDUNDANCY",
+            "actorRefs": [
+              "actor.qingliu_magistrate",
+              "actor.reform_clerk"
+            ],
+            "action": "县令指出，原件、见证记录与已经存在的抄件若分由不同经手人保管，任何一处出问题都不能悄然抹去其余线索。",
+            "requiredTermGroups": [
+              [
+                "县令",
+                "清流县令"
+              ],
+              [
+                "原件",
+                "抄件"
+              ],
+              [
+                "经手人",
+                "见证"
+              ]
+            ],
+            "resultCeiling": "只能说明多点保管的效果，不得写成某处已经毁损或失窃。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -3439,12 +3683,61 @@
           "主持权改变谁先接触材料和谁写结论",
           "程序可信度影响第一份奏报的分量"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-REVIEW-ACCESS",
+            "actorRefs": [
+              "actor.xunfu_aide",
+              "actor.qingliu_magistrate"
+            ],
+            "action": "巡抚幕僚与清流县令围绕谁先开册、谁能在场、谁写第一轮结论当面对质，复核主持权立即变成材料入口之争。",
+            "requiredTermGroups": [
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "清流县令",
+                "县令"
+              ],
+              [
+                "复核主持权",
+                "先开册"
+              ]
+            ],
+            "resultCeiling": "只能争夺程序入口，不得写出开册后发现了什么。"
+          },
+          {
+            "beatId": "PAYOFF-P1-REVIEW-CREDIBILITY",
+            "actorRefs": [
+              "actor.xunfu_aide",
+              "actor.qingliu_magistrate"
+            ],
+            "action": "双方都要求把在场见证与经手方式先说清，因为这套程序日后会直接决定首份奏报能否被京师复核。",
+            "requiredTermGroups": [
+              [
+                "见证",
+                "经手"
+              ],
+              [
+                "首份奏报",
+                "奏报"
+              ],
+              [
+                "京师复核",
+                "复核"
+              ]
+            ],
+            "resultCeiling": "只能让程序可信度成为压力，不得写成奏报已经被京师采信。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -3624,12 +3917,61 @@
           "不同人物形成不对称知识",
           "秘密一旦公开便不可恢复为私密状态"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-KNOWLEDGE-ASYMMETRY",
+            "actorRefs": [
+              "actor.reform_clerk",
+              "actor.xunfu_aide"
+            ],
+            "action": "改桑书吏只肯说自己亲手经办的部分，巡抚幕僚却追问总督还掌握了什么；同一件县册疑问在两边形成了不对称的知识。",
+            "requiredTermGroups": [
+              [
+                "改桑书吏",
+                "书吏"
+              ],
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "亲手经办",
+                "掌握"
+              ]
+            ],
+            "resultCeiling": "只能表现知情范围不同，不得让书吏补出未经批准的新证词。"
+          },
+          {
+            "beatId": "PAYOFF-P1-KNOWLEDGE-DISCLOSURE",
+            "actorRefs": [
+              "actor.xunfu_aide",
+              "actor.reform_clerk"
+            ],
+            "action": "已经公开给双方的材料再也收不回私下范围；巡抚幕僚据此要求继续旁听，书吏则更谨慎地区分亲历与听闻。",
+            "requiredTermGroups": [
+              [
+                "公开",
+                "双方"
+              ],
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "亲历",
+                "听闻"
+              ]
+            ],
+            "resultCeiling": "只能使用此前已经披露的范围，不得新增材料、名单或证据。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -3799,12 +4141,63 @@
           "救急渠道形成债务和责任",
           "粮食不足会压迫百姓出售土地"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-GRAIN-DEBT",
+            "actorRefs": [
+              "actor.qingliu_magistrate",
+              "actor.jiangnan_merchant_head"
+            ],
+            "action": "县令与商会会首把救粮由谁垫付、由谁担保、由谁日后偿还摆到案前；粮一旦入局，债务和责任也随之有了经手人。",
+            "requiredTermGroups": [
+              [
+                "县令",
+                "清流县令"
+              ],
+              [
+                "商会会首",
+                "会首"
+              ],
+              [
+                "垫付",
+                "担保",
+                "偿还"
+              ]
+            ],
+            "resultCeiling": "只能确定救粮会产生债务责任，不得新增具体粮数、银数或价格。"
+          },
+          {
+            "beatId": "PAYOFF-P1-GRAIN-LAND-PRESSURE",
+            "actorRefs": [
+              "actor.qingliu_magistrate",
+              "actor.jiangnan_merchant_head"
+            ],
+            "action": "清流县令警告，粮若仍不能及时接上，百姓以田换粮的询价就会增加；商会会首没有否认，只追问官府肯给什么边界。",
+            "requiredTermGroups": [
+              [
+                "清流县令",
+                "县令"
+              ],
+              [
+                "以田换粮",
+                "田",
+                "粮"
+              ],
+              [
+                "商会会首",
+                "会首"
+              ]
+            ],
+            "resultCeiling": "只能表现卖田风险正在逼近，不得写成大规模卖田已经发生。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -3980,12 +4373,59 @@
           "商会权利扩大后进入粮路、丝路或土地",
           "拒绝合作会保住边界但放大即时粮食压力"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-MERCHANT-RIGHTS",
+            "actorRefs": [
+              "actor.jiangnan_merchant_head"
+            ],
+            "action": "商会会首把粮船、担保与所求权利捆在一起重新问价，试图把一次救急变成继续进入粮路和政策的凭据。",
+            "requiredTermGroups": [
+              [
+                "商会会首",
+                "会首"
+              ],
+              [
+                "粮船",
+                "粮路"
+              ],
+              [
+                "担保",
+                "权利"
+              ]
+            ],
+            "resultCeiling": "只能提出交易条件，不得让官府自动授予购田、收丝或其他权利。"
+          },
+          {
+            "beatId": "PAYOFF-P1-MERCHANT-WITHDRAWAL",
+            "actorRefs": [
+              "actor.jiangnan_merchant_head"
+            ],
+            "action": "商会会首拒绝无条件承诺后续粮船，明言官府若守住原有边界，就必须自己承担断粮与调运压力。",
+            "requiredTermGroups": [
+              [
+                "商会会首",
+                "会首"
+              ],
+              [
+                "粮船",
+                "断粮"
+              ],
+              [
+                "边界",
+                "调运"
+              ]
+            ],
+            "resultCeiling": "只能缩紧合作意愿，不得写成粮船已经全部撤走或米市已经断粮。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -4162,12 +4602,61 @@
           "粮食与执行选择改变抵押、卖田和兼并风险",
           "土地保护会增加财政或改桑进度压力"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-LAND-INQUIRY",
+            "actorRefs": [
+              "actor.qingliu_magistrate",
+              "actor.jiangnan_merchant_head"
+            ],
+            "action": "清流县令把灾民询问抵押、卖田的风险当面摆出，商会会首则要求官府明确哪些交易仍可进行；粮食决定开始挤压土地边界。",
+            "requiredTermGroups": [
+              [
+                "清流县令",
+                "县令"
+              ],
+              [
+                "抵押",
+                "卖田"
+              ],
+              [
+                "商会会首",
+                "会首"
+              ]
+            ],
+            "resultCeiling": "只能显示风险和交易争执，不得宣告土地兼并已经完成。"
+          },
+          {
+            "beatId": "PAYOFF-P1-LAND-COST",
+            "actorRefs": [
+              "actor.xunfu_aide",
+              "actor.qingliu_magistrate"
+            ],
+            "action": "巡抚幕僚追问土地保护会拖慢多少改桑进度，县令则把可能增加的赈济责任推回总督府；保田的代价由此公开化。",
+            "requiredTermGroups": [
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "土地保护",
+                "保田"
+              ],
+              [
+                "赈济责任",
+                "改桑进度"
+              ]
+            ],
+            "resultCeiling": "只能公开政策代价，不得新增未经授权的进度数字或财政金额。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -4347,12 +4836,60 @@
           "内容不同的奏报与具名信件到达京师后可能触发不同政治反应",
           "署名与经手记录为后续问责提供可追踪材料"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-REPORT-COMPETING-VERSIONS",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚幕僚要求核对总督将要送出的那版事实，并暗示若署名和内容不能相容，巡抚会保留自己的入京文字。",
+            "requiredTermGroups": [
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "那版事实",
+                "内容"
+              ],
+              [
+                "入京文字",
+                "署名"
+              ]
+            ],
+            "resultCeiling": "只能形成分奏威胁，不得写成巡抚奏报已经发出。"
+          },
+          {
+            "beatId": "PAYOFF-P1-REPORT-HANDLERS",
+            "actorRefs": [
+              "actor.xunfu_aide",
+              "actor.qingliu_magistrate"
+            ],
+            "action": "奏报的署名、附件和经手人被逐项追问，谁碰过哪一版文字开始成为后续问责可以回查的材料。",
+            "requiredTermGroups": [
+              [
+                "奏报",
+                "署名"
+              ],
+              [
+                "附件",
+                "经手人"
+              ],
+              [
+                "问责",
+                "回查"
+              ]
+            ],
+            "resultCeiling": "只能固定经手责任，不得新增附件内容或宣告任何人有罪。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -4526,12 +5063,61 @@
           "附件强度改变京师采信和地方毁证动机",
           "过早公开会提高证人和保管链风险"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-ATTACHMENT-WEIGHT",
+            "actorRefs": [
+              "actor.qingliu_magistrate",
+              "actor.reform_clerk"
+            ],
+            "action": "县令指出，附件越能追到原件、见证与经手人，入京后越难被一句空话推翻；改桑书吏也因此更清楚自己会被谁问到。",
+            "requiredTermGroups": [
+              [
+                "县令",
+                "清流县令"
+              ],
+              [
+                "附件",
+                "原件"
+              ],
+              [
+                "改桑书吏",
+                "书吏"
+              ]
+            ],
+            "resultCeiling": "只能说明附件分量与人证压力，不得写成京师已经采信。"
+          },
+          {
+            "beatId": "PAYOFF-P1-ATTACHMENT-RISK",
+            "actorRefs": [
+              "actor.reform_clerk",
+              "actor.xunfu_aide"
+            ],
+            "action": "附件范围一旦被更多衙门知道，改桑书吏立即追问谁能接触他的说法；巡抚幕僚则要求同样取得可见材料。",
+            "requiredTermGroups": [
+              [
+                "附件范围",
+                "附件"
+              ],
+              [
+                "改桑书吏",
+                "书吏"
+              ],
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ]
+            ],
+            "resultCeiling": "只能提高证人与保管链风险，不得写成证人已经失踪、改口或受害。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -4714,12 +5300,59 @@
           "京师先收到的版本形成第一版事实框架",
           "渠道记录成为后续追责的一部分"
         ],
+        "payoffBeats": [
+          {
+            "beatId": "PAYOFF-P1-CAPITAL-FIRST-FRAME",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "首报一经按既定渠道离开总督府，巡抚幕僚便要求确认京师首先会看到哪一版事实；地方争执已经不能再只靠口头收回。",
+            "requiredTermGroups": [
+              [
+                "首报",
+                "京师"
+              ],
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "哪一版事实",
+                "口头收回"
+              ]
+            ],
+            "resultCeiling": "只能确认文书已经按玩家选定的渠道离府，不得写成京师已经收到或裁决。"
+          },
+          {
+            "beatId": "PAYOFF-P1-CAPITAL-CHANNEL-RECORD",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚幕僚要求把递送渠道、封号与经手责任列入共同案卷，因为这些记录日后本身就会成为问责的一部分。",
+            "requiredTermGroups": [
+              [
+                "递送渠道",
+                "渠道"
+              ],
+              [
+                "封号",
+                "经手责任"
+              ],
+              [
+                "问责",
+                "案卷"
+              ]
+            ],
+            "resultCeiling": "只能要求记录渠道责任，不得凭空生成回执、到达时辰或京师回应。"
+          }
+        ],
         "mustRecord": [
           "consequenceId",
           "causedByEventId",
           "dueWindow",
           "priority",
-          "status"
+          "status",
+          "payoffBeat"
         ],
         "allowedTransitions": [
           "PENDING",
@@ -6304,10 +6937,10 @@
           {
             "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
             "title": "要求联署",
-            "actionText": "把执行范围、复核办法和粮食责任逐项写明，请巡抚一同具名。",
+            "actionText": "在已经写明的改桑边界之后，补写复核办法与督抚各自责任，请巡抚一同具名。",
             "targetRef": "actor.zhejiang_xunfu",
             "method": "共同具名",
-            "immediateIntent": "把执行范围、复核办法和粮食责任逐项写明，请巡抚一同具名。",
+            "immediateIntent": "在已经写明的改桑边界之后，补写复核办法与督抚各自责任，请巡抚一同具名。",
             "visibleTradeoff": "共同承担能换来合作，也会模糊日后分歧",
             "stateEffects": [
               "responsibility.firstRecordStatus",
@@ -6348,10 +6981,10 @@
           {
             "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
             "title": "记明异议",
-            "actionText": "暂准执行，却在文书中逐字记下督抚分歧和各自承担的事项。",
+            "actionText": "在现有公文上批明暂准放行，并在同一份回文中逐项写明督抚分歧和各自承担的事项。",
             "targetRef": "actor.zhejiang_xunfu",
             "method": "分项责任记录",
-            "immediateIntent": "暂准执行，却在文书中逐字记下督抚分歧和各自承担的事项。",
+            "immediateIntent": "在现有公文上批明暂准放行，并在同一份回文中逐项写明督抚分歧和各自承担的事项。",
             "visibleTradeoff": "关系转冷，但后续不易互相改口",
             "stateEffects": [
               "responsibility.firstRecordStatus",
@@ -10973,5 +11606,5 @@
       ]
     }
   },
-  "immutableHash": "56EFB206E8256E7D5BB353467EB8BE069F5CDED3D3FF2A33E0FBB0063E477DF2"
+  "immutableHash": "3EEF0AE19DFF404BF93B84C40F7FAC81D0101E5D510BA448AE2B2A62B4071700"
 }

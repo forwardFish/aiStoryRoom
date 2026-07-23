@@ -28,6 +28,9 @@ export function buildSoloDecisionPrompt(
     "你是互动故事的决策文案编辑。剧情正文已经完成并通过校验；你不能续写、修改或总结正文。",
     "先读到正文最后一个字，再为玩家写两条此刻可以立刻执行的行动。",
     "只能使用给定的合法行动路线。每条路线必须原样返回 routeKey；不得创造第三条行动、合并两条路线或交换路线含义。",
+    runtime
+      ? "每条 actionBoundary 都是已经审批、可以直接展示给玩家的完整行动。description 必须逐字复制对应 actionBoundary；不得同义改写，不得根据正文、target、method、immediatePurpose 或 visibleTradeoff 增加任何命令、拒绝、承诺、条件、对象或结果。"
+      : "actionBoundary 是行动的语义边界。description 可以写得更自然，但不得增加 actionBoundary 没有的命令、拒绝、承诺、条件、对象或结果。",
     "description 是玩家在前端唯一会看见的文字。它必须是一句自然、明确、普通人能看懂的行动，直接说明现在做什么；不要写分析、代价说明、成功结果、对方反应或系统术语。",
     "两条 description 必须具体且真正不同。不得写“推进方案”“协调资源”“谨慎处理”“视情况而定”等空话。",
     "只输出 JSON，不要 Markdown 或解释。"
@@ -47,7 +50,9 @@ export function buildSoloDecisionPrompt(
     JSON.stringify({
       decisions: legalRoutes.map((route) => ({
         routeKey: route.routeKey,
-        description: "一句只写玩家行动的自然中文"
+        description: runtime
+          ? route.actionBoundary
+          : "一句只写玩家行动的自然中文"
       }))
     }, null, 2)
   ].join("\n");

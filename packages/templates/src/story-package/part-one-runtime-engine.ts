@@ -1,11 +1,15 @@
 import { createHash } from "node:crypto";
 import type {
   PartOneActionSettlement,
+  PartOneAuthoritativeWorldMove,
   PartOneCommittedEvent,
+  PartOneConsequencePayoffBeat,
+  PartOneNarrativePlan,
   PartOnePendingConsequenceState,
   PartOneRuntimeAffordance,
   PartOneRuntimeAsset,
   PartOneRuntimePackage,
+  PartOneSceneState,
   PartOneRuntimeTarget,
   PartOneRuntimeWorkingSet,
   PartOneSectionContract,
@@ -44,6 +48,113 @@ const TARGETS: Record<string, PartOneRuntimeTarget> = {
   "resource.official_document_channel": { type: "RESOURCE", id: "resource.official_document_channel", label: "总督行文与递奏渠道" },
 };
 
+const SECTION_SCENES: Record<string, PartOneSceneState> = {
+  "SEC-P1-01": {
+    sceneId: "SCENE-P1-S1-INNER-HALL",
+    timeLabel: "嘉靖三十五年五月初八辰时",
+    locationLabel: "杭州总督府内厅",
+    presentActorRefs: [
+      "actor.zhejiang_governor",
+      "actor.xunfu_clerk",
+      "actor.qingliu_messenger"
+    ],
+    situation: "巡抚书吏候取回文，清流县令亲随留在厅中等候；催办公文与密信都已由总督拆阅并收持，执行方式、复核起点和首份责任记录尚未定下。",
+    documentStates: [
+      {
+        documentRef: "document.xunfu_urging_order",
+        label: "巡抚催办公文",
+        accessState: "READ",
+        holderRef: "actor.zhejiang_governor",
+        continuityNote: "总督已经读到三日具报的期限，公文留在总督案前。"
+      },
+      {
+        documentRef: "document.qingliu_secret_letter",
+        label: "清流县令密信",
+        accessState: "READ",
+        holderRef: "actor.zhejiang_governor",
+        continuityNote: "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。"
+      }
+    ],
+    objectStates: [
+      {
+        objectRef: "object.xunfu_reply_box",
+        label: "巡抚回文匣",
+        holderRef: "actor.xunfu_clerk",
+        contentsState: "EMPTY",
+        closureState: "CLOSED",
+        continuityNote: "回文匣来时就是空的且匣盖合着，一直捧在巡抚书吏手中；未明确装入回文或开匣前，不得改变分量、内容或开合状态。"
+      },
+      {
+        objectRef: "object.governor_seal_token",
+        label: "总督封缄令牌",
+        holderRef: "actor.zhejiang_governor",
+        continuityNote: "封缄令牌起初由总督持有；交给清流县令亲随后，持有人必须随结算更新。"
+      }
+    ]
+  },
+  "SEC-P1-02": {
+    sceneId: "SCENE-P1-S2-SIGNING-ROOM",
+    timeLabel: "嘉靖三十五年五月初九巳时",
+    locationLabel: "杭州总督府签押房",
+    presentActorRefs: [
+      "actor.zhejiang_governor",
+      "actor.qingliu_magistrate",
+      "actor.reform_clerk",
+      "actor.xunfu_aide"
+    ],
+    situation: "清流县册的保管、书吏的接触方式和复核主持权进入同一场核验；县册原件和副本尚未呈到签押房，各方先要决定谁能接触、谁来见证。",
+    documentStates: [
+      {
+        documentRef: "document.qingliu_register_original",
+        label: "清流县册原件",
+        accessState: "NOT_PRESENT",
+        holderRef: null,
+        continuityNote: "原件尚未呈到签押房，不得写成已经摆在案上、封条完好、已经翻阅或已经鉴定真伪。"
+      },
+      {
+        documentRef: "document.qingliu_register_copy",
+        label: "清流县册副本",
+        accessState: "NOT_PRESENT",
+        holderRef: null,
+        continuityNote: "副本尚未制作或呈到，不得为了方便核验而临时补出样册、抄件或底簿。"
+      }
+    ]
+  },
+  "SEC-P1-03": {
+    sceneId: "SCENE-P1-S3-GRAIN-HEARING",
+    timeLabel: "嘉靖三十五年五月初九申时",
+    locationLabel: "杭州总督府仪门内厅",
+    presentActorRefs: [
+      "actor.zhejiang_governor",
+      "actor.qingliu_magistrate",
+      "actor.jiangnan_merchant_head",
+      "actor.xunfu_aide"
+    ],
+    situation: "粮食救急已经不能再停留在纸面；官粮、商粮、救济先后和民田边界必须在同一场议事中落到可执行条件。"
+  },
+  "SEC-P1-04": {
+    sceneId: "SCENE-P1-S4-REPORT-ROOM",
+    timeLabel: "嘉靖三十五年五月初十卯后",
+    locationLabel: "杭州总督府签押房",
+    presentActorRefs: [
+      "actor.zhejiang_governor",
+      "actor.xunfu_aide",
+      "actor.qingliu_magistrate",
+      "actor.reform_clerk",
+      "actor.jiangnan_merchant_head"
+    ],
+    situation: "第一份入京叙述即将定稿；谁署名、附什么、由谁担责、走哪条渠道，会把地方分歧变成京师首先看到的事实。"
+  }
+};
+
+const PRESSURE_WORLD_MOVE_ACTORS: Record<string, string[]> = {
+  "PRESSURE-P1-S3-FIRST-RELIEF-DELIVERY": ["actor.qingliu_magistrate"],
+  "PRESSURE-P1-S4-XUNFU-ASKS-FOR-COPY": ["actor.xunfu_aide"],
+  "PRESSURE-P1-S4-MERCHANT-ASKS-FOR-GUARANTEE": ["actor.jiangnan_merchant_head"],
+  "PRESSURE-P1-S4-WITNESS-ASKS-FOR-RULES": ["actor.qingliu_magistrate", "actor.reform_clerk"],
+  "PRESSURE-P1-S4-XUNFU-WANTS-INTERIM-ORDER": ["actor.xunfu_aide"]
+};
+
 const OPENING_PATCHES: Record<string, { kernelId: string; patch: Record<string, unknown>; targetRef: string }> = {
   opening_d1: {
     kernelId: "DK-P1-REVIEW-INITIATION",
@@ -55,6 +166,8 @@ const OPENING_PATCHES: Record<string, { kernelId: string; patch: Record<string, 
         topic: "governor_holds_document_for_review",
         senderRef: "actor.zhejiang_governor",
         recipientRef: "actor.zhejiang_xunfu",
+        representativeRef: "actor.xunfu_clerk",
+        deliveryMode: "IN_PERSON_REPRESENTATIVE",
         status: "DELIVERED"
       },
       "responsibility.governorExposure": { $delta: 1 }
@@ -72,6 +185,8 @@ const OPENING_PATCHES: Record<string, { kernelId: string; patch: Record<string, 
         topic: "governor_seal_order_and_review_delay",
         senderRef: "actor.zhejiang_governor",
         recipientRef: "actor.zhejiang_xunfu",
+        representativeRef: "actor.xunfu_clerk",
+        deliveryMode: "IN_PERSON_REPRESENTATIVE",
         status: "DELIVERED"
       },
       "relations.governorXunfu": { $delta: -1 }
@@ -81,6 +196,7 @@ const OPENING_PATCHES: Record<string, { kernelId: string; patch: Record<string, 
 
 export function createInitialPartOneState(pkg: PartOneRuntimePackage): PartOneState {
   const state = clone(pkg.worldStart.state);
+  state.scene = normalizeSceneState(state.scene, state.sectionId);
   state.completedKernelIds = [];
   state.sectionTurnNumber = 0;
   state.causalArcStages = Object.fromEntries(
@@ -91,6 +207,10 @@ export function createInitialPartOneState(pkg: PartOneRuntimePackage): PartOneSt
   return state;
 }
 
+export function partOneSceneForSection(sectionId: string): PartOneSceneState {
+  return sceneForSection(sectionId);
+}
+
 export function settlePartOneAction(
   pkg: PartOneRuntimePackage,
   currentState: PartOneState,
@@ -98,7 +218,9 @@ export function settlePartOneAction(
   turnNumber: number
 ): PartOneActionSettlement {
   const beforeState = clone(currentState);
+  beforeState.scene = normalizeSceneState(beforeState.scene, beforeState.sectionId);
   const proposedState = clone(currentState);
+  proposedState.scene = normalizeSceneState(proposedState.scene, proposedState.sectionId);
   proposedState.turnNumber = turnNumber;
   proposedState.pendingConsequences = Array.isArray(proposedState.pendingConsequences) ? proposedState.pendingConsequences : [];
   const dueConsequences = proposedState.pendingConsequences
@@ -124,11 +246,26 @@ export function settlePartOneAction(
   const createdPendingConsequences: PartOnePendingConsequenceState[] = [];
   if (pendingRule) {
     const consequences = asStringArray(pendingRule.payload.consequences);
+    const payoffBeats = Array.isArray(pendingRule.payload.payoffBeats)
+      ? pendingRule.payload.payoffBeats
+      : [];
+    const consequenceIndex = consequenceIndexFor(action, appliedAffordance, consequences.length);
+    const summary = consequences[consequenceIndex]
+      || appliedAffordance?.visibleTradeoff
+      || "这道命令引起的反制必须在下一回合兑现。";
+    const payoffTemplate = payoffBeats[consequenceIndex]
+      || fallbackPayoffBeat(pendingRule.assetId, summary, pendingRule.actorRefs);
+    const consequenceId = `PC-P1-${String(turnNumber).padStart(2, "0")}-${digest(`${eventId}:${pendingRule.assetId}`).slice(0, 12)}`;
     const consequence: PartOnePendingConsequenceState = {
-      consequenceId: `PC-P1-${String(turnNumber).padStart(2, "0")}-${digest(`${eventId}:${pendingRule.assetId}`).slice(0, 12)}`,
+      consequenceId,
       causedByEventId: eventId,
       ruleAssetId: pendingRule.assetId,
-      summary: consequences[turnNumber % Math.max(1, consequences.length)] || appliedAffordance?.visibleTradeoff || "这道命令引起的反制必须在下一回合兑现。",
+      summary,
+      payoffBeat: {
+        ...clone(payoffTemplate),
+        beatId: `${payoffTemplate.beatId}-${digest(consequenceId).slice(0, 8)}`,
+        consequenceId
+      },
       dueTurn: turnNumber + 1,
       priority: "P0",
       status: "PENDING"
@@ -137,9 +274,17 @@ export function settlePartOneAction(
     createdPendingConsequences.push(consequence);
   }
 
-  const sectionBefore = proposedState.sectionId;
+  const sectionBefore = beforeState.sectionId;
+  const sceneBefore = clone(beforeState.scene);
   const sectionTransitioned = advanceSectionWhenGatesPass(pkg, proposedState, turnNumber);
   const sectionAfter = proposedState.sectionId;
+  const sceneAfter = sectionTransitioned
+    ? sceneForSection(sectionAfter)
+    : clone(sceneBefore);
+  applySceneCustodyEffects(sceneAfter, action);
+  proposedState.scene = sceneAfter;
+  if (sectionBefore !== sectionAfter) changedStatePaths.push("sectionId");
+  if (!deepEqual(sceneBefore, sceneAfter)) changedStatePaths.push("scene");
   proposedState.sectionTurnNumber = sectionTransitioned ? 0 : Number(proposedState.sectionTurnNumber || 0) + 1;
   proposedState.lastCommittedEventId = eventId;
   if (sectionAfter === "SEC-P1-04" && turnNumber >= 20 && sectionExitPassed(pkg, proposedState, sectionAfter)) {
@@ -155,6 +300,32 @@ export function settlePartOneAction(
     targetRef,
     statePatch
   });
+  const nextWorkingSet = buildPartOneRuntimeWorkingSet(pkg, proposedState, turnNumber);
+  const authoritativeWorldMoves = buildAuthoritativeWorldMoves({
+    dueConsequences,
+    nextWorkingSet,
+    sectionTransitioned,
+    sectionBefore,
+    sectionAfter,
+    sceneBefore,
+    sceneAfter
+  });
+  sceneAfter.presentActorRefs = unique([
+    ...sceneAfter.presentActorRefs,
+    ...authoritativeWorldMoves.flatMap((move) => move.actorRefs)
+  ]);
+  proposedState.scene = sceneAfter;
+  if (!deepEqual(sceneBefore, sceneAfter)) changedStatePaths.push("scene");
+  const narrativePlan = buildNarrativePlan({
+    action,
+    section: requireSection(pkg, sectionAfter),
+    sceneBefore,
+    sceneAfter,
+    sectionTransitioned,
+    authoritativeObservableFacts,
+    authoritativeNpcReactions,
+    authoritativeWorldMoves
+  });
 
   const event: PartOneCommittedEvent = {
     schemaVersion: "sangtian-part-one-event-v1",
@@ -168,11 +339,15 @@ export function settlePartOneAction(
     actionText: action.actionText,
     targetRef,
     statePatch,
-    changedStatePaths,
+    changedStatePaths: unique(changedStatePaths),
     createdPendingConsequenceIds: createdPendingConsequences.map((item) => item.consequenceId),
     duePendingConsequenceIds: dueConsequences.map((item) => item.consequenceId),
     authoritativeObservableFacts,
     authoritativeNpcReactions,
+    sceneBefore,
+    sceneAfter,
+    authoritativeWorldMoves,
+    narrativePlan,
     sectionTransitioned
   };
   return { beforeState, proposedState, event, appliedAffordance, dueConsequences };
@@ -182,6 +357,15 @@ export function finalizePartOneSettlement(
   settlement: PartOneActionSettlement,
   paidPendingConsequenceIds: string[]
 ): PartOneActionSettlement {
+  const authorizedPaid = new Set(
+    settlement.event.authoritativeWorldMoves
+      .filter((move) => move.sourceType === "DUE_CONSEQUENCE" && move.consequenceId)
+      .map((move) => move.consequenceId!)
+  );
+  const unauthorized = paidPendingConsequenceIds.find((id) => !authorizedPaid.has(id));
+  if (unauthorized) {
+    throw new Error(`PART_ONE_CONSEQUENCE_PAYOFF_NOT_AUTHORIZED:${unauthorized}`);
+  }
   const paid = new Set(paidPendingConsequenceIds);
   const proposedState = clone(settlement.proposedState);
   proposedState.pendingConsequences = proposedState.pendingConsequences.map((item) =>
@@ -448,7 +632,7 @@ function adaptAffordanceForCurrentState(
   // G00 can already issue the seal order. If the player chose it, asking them
   // to "seal the archive first" again on the very next screen is a false
   // choice. Preserve the same strategic endpoint (continue the pause and own
-  // its cost), but advance the order to a bounded wait for a reviewable list.
+  // its cost), but do not invent a new list or repeat an order already issued.
   if (
     affordance.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-03"
     && state.evidence?.archiveSealStatus === "SEAL_ORDERED"
@@ -456,13 +640,18 @@ function adaptAffordanceForCurrentState(
     return {
       ...affordance,
       title: "维持暂缓",
-      actionText: "维持暂不签发，限清流县在三日期限内交出可复核清单，并把延误责任暂记自己名下。",
-      immediateIntent: "不重复下达封档命令，在等待封存回报期间固定复核期限和责任。",
-      method: "限期候报",
+      actionText: "继续暂缓签发，待清流县回报封存结果后再议；三日限期内的延误责任由本督承担。",
+      targetRef: "actor.zhejiang_xunfu",
+      target: runtimeTargetFor("actor.zhejiang_xunfu"),
+      immediateIntent: "不重复下达封档命令，等待既有命令的回报，并由总督承担眼前延误责任。",
+      method: "候报担责",
       visibleTradeoff: "保留查证窗口，但朝廷与粮价压力继续上升",
+      stateEffects: [
+        "reform.executionMode",
+        "responsibility.governorExposure"
+      ],
       statePatch: {
         "reform.executionMode": "TEMPORARILY_PAUSED",
-        "review.procedureStatus": "AWAITING_SEAL_REPORT_WITH_DEADLINE",
         "responsibility.governorExposure": { $delta: 1 }
       }
     };
@@ -470,10 +659,14 @@ function adaptAffordanceForCurrentState(
   return affordance;
 }
 
-export function partOneRuntimeTargets(workingSet: PartOneRuntimeWorkingSet) {
+export function partOneRuntimeTargets(
+  workingSet: PartOneRuntimeWorkingSet,
+  extraActorRefs: string[] = []
+) {
   return uniqueTargets([
     ...workingSet.decisionAffordances.map((item) => item.target),
     ...workingSet.section.foregroundActorRefs.map(runtimeTargetFor),
+    ...extraActorRefs.map(runtimeTargetFor),
     { type: "PUBLIC_FRAME", id: "public_frame", label: "当前局势" }
   ]);
 }
@@ -494,12 +687,417 @@ export function sectionExitPassed(pkg: PartOneRuntimePackage, state: PartOneStat
   return section.exitGates.every((rule) => evaluatePartOneRule(state, rule));
 }
 
-function buildAuthoritativeObservableFacts(
+function consequenceIndexFor(
   action: PartOneIncomingAction,
+  appliedAffordance: PartOneRuntimeAffordance | null,
+  consequenceCount: number
+) {
+  if (consequenceCount <= 1) return 0;
+  const routeId = appliedAffordance?.affordanceTemplateId
+    || action.affordanceTemplateId
+    || action.decisionId
+    || "";
+  const optionNumber = Number(routeId.match(/(?:OPT-|opening_d)(\d+)$/i)?.[1] || 1);
+  return Math.max(0, optionNumber - 1) % consequenceCount;
+}
+
+function fallbackPayoffBeat(
+  ruleAssetId: string,
+  summary: string,
+  actorRefs: string[]
+): Omit<PartOneConsequencePayoffBeat, "consequenceId"> {
+  return {
+    beatId: `PAYOFF-${ruleAssetId}`,
+    actorRefs: actorRefs.slice(0, 2),
+    action: summary,
+    requiredTermGroups: requiredTermGroupsFor(summary),
+    resultCeiling: "只让这项后果进入眼前局势，不得借此确认幕后主使、补造证据或替玩家作出下一步决定。"
+  };
+}
+
+function buildAuthoritativeWorldMoves(input: {
+  dueConsequences: PartOnePendingConsequenceState[];
+  nextWorkingSet: PartOneRuntimeWorkingSet;
+  sectionTransitioned: boolean;
+  sectionBefore: string;
+  sectionAfter: string;
+  sceneBefore: PartOneSceneState;
+  sceneAfter: PartOneSceneState;
+}): PartOneAuthoritativeWorldMove[] {
+  const moves: PartOneAuthoritativeWorldMove[] = input.dueConsequences.map((consequence) => {
+    const payoff = consequence.payoffBeat
+      || fallbackPayoffBeat(consequence.ruleAssetId, consequence.summary, []);
+    return {
+      beatId: payoff.beatId,
+      sourceType: "DUE_CONSEQUENCE",
+      sourceId: consequence.ruleAssetId,
+      actorRefs: [...payoff.actorRefs],
+      action: payoff.action,
+      requiredTermGroups: clone(payoff.requiredTermGroups),
+      resultCeiling: payoff.resultCeiling,
+      consequenceId: consequence.consequenceId
+    };
+  });
+  if (input.sectionTransitioned) {
+    const presentActorLabels = input.sceneAfter.presentActorRefs
+      .map((ref) => runtimeTargetFor(ref).label);
+    const absentDocuments = (input.sceneAfter.documentStates || [])
+      .filter((document) => document.accessState === "NOT_PRESENT")
+      .map((document) => document.label);
+    moves.push({
+      beatId: `TRANSITION-${input.sectionBefore}-${input.sectionAfter}`,
+      sourceType: "SECTION_TRANSITION",
+      sourceId: input.sectionAfter,
+      actorRefs: [...input.sceneAfter.presentActorRefs],
+      action: `议事转到${input.sceneAfter.timeLabel}的${input.sceneAfter.locationLabel}；${input.sceneAfter.situation}`,
+      requiredTermGroups: [
+        timeLabelVariants(input.sceneAfter.timeLabel, input.sceneBefore.timeLabel),
+        locationLabelVariants(input.sceneAfter.locationLabel)
+      ],
+      resultCeiling: [
+        `只能从${input.sceneBefore.locationLabel}推进到${input.sceneAfter.locationLabel}这一处已批准场景，不得另加途中事件。`,
+        `新场只允许${presentActorLabels.join("、")}到场，其他人物及随员不得出现。`,
+        absentDocuments.length
+          ? `${absentDocuments.join("、")}都尚未呈到，不得写成已经在案、已经启封或已经鉴定；新场人物只能争接触、见证和主持程序，不得声称已经知道这些文书的笔迹、户头、具体内容或真伪。`
+          : ""
+      ].filter(Boolean).join("")
+    });
+  }
+  const pressure = input.nextWorkingSet.nextDecisionPressure;
+  if (pressure) {
+    moves.push({
+      beatId: pressure.pressureId,
+      sourceType: "NEXT_DECISION_PRESSURE",
+      sourceId: pressure.sourceFloorAssetId,
+      actorRefs: [...(PRESSURE_WORLD_MOVE_ACTORS[pressure.pressureId] || [])],
+      action: pressure.summary,
+      requiredTermGroups: requiredTermGroupsFor(pressure.summary),
+      resultCeiling: "只把这项新压力带到玩家面前；不得替玩家答复，也不得提前写出两条可选行动的结果。"
+    });
+  }
+  return moves;
+}
+
+function buildNarrativePlan(input: {
+  action: PartOneIncomingAction;
+  section: PartOneSectionContract;
+  sceneBefore: PartOneSceneState;
+  sceneAfter: PartOneSceneState;
+  sectionTransitioned: boolean;
+  authoritativeObservableFacts: string[];
+  authoritativeNpcReactions: PartOneCommittedEvent["authoritativeNpcReactions"];
+  authoritativeWorldMoves: PartOneAuthoritativeWorldMove[];
+}): PartOneNarrativePlan {
+  const actorRefsAtSceneStart = new Set(input.sceneBefore.presentActorRefs);
+  const actorRefsAtSceneEnd = new Set(input.sceneAfter.presentActorRefs);
+  const sceneStartActorLabels = input.sceneBefore.presentActorRefs
+    .map((ref) => runtimeTargetFor(ref).label);
+  const sceneEndActorLabels = input.sceneAfter.presentActorRefs
+    .map((ref) => runtimeTargetFor(ref).label);
+  const authorizedActorArrivals = input.sceneAfter.presentActorRefs
+    .filter((ref) => !actorRefsAtSceneStart.has(ref))
+    .map((ref) => runtimeTargetFor(ref).label);
+  const authorizedActorDepartures = input.sectionTransitioned
+    ? []
+    : input.sceneBefore.presentActorRefs
+      .filter((ref) => !actorRefsAtSceneEnd.has(ref))
+      .map((ref) => runtimeTargetFor(ref).label);
+  const departureBeats: PartOneNarrativePlan["sceneBeats"] = authorizedActorDepartures.map(
+    (label, index) => ({
+      beatId: `SCENE-DEPARTURE-${index + 1}`,
+      sourceType: "WORLD_MOVE" as const,
+      action: `${label}完成本轮获批的现场动作后领命退出${input.sceneBefore.locationLabel}；只写离场，不得写已经抵达目的地、完成封存或带回结果。`,
+      requiredTermGroups: [
+        [label],
+        [
+          "领命退出",
+          "领命退下",
+          "退出内厅",
+          "离开内厅",
+          "退了出去",
+          "转身出门",
+          "推门出去",
+          "便出去了",
+          "走了出去",
+          "出了厅门",
+          "步出内厅",
+          "侧身而出",
+          "走向厅门",
+          "跨过门槛",
+          "脚步声往甬道",
+          "领命而去"
+        ]
+      ],
+      resultCeiling: "只允许把已在场人物写出当前房间，不得补写赶路、抵达、封存完成或场外回报。",
+      mustAppear: true
+    })
+  );
+  const sceneBeats: PartOneNarrativePlan["sceneBeats"] = [
+    {
+      beatId: "PLAYER-ACTION",
+      sourceType: "PLAYER_ACTION",
+      action: input.action.actionText,
+      requiredTermGroups: requiredTermGroupsFor(input.action.actionText),
+      mustAppear: true
+    },
+    ...departureBeats,
+    ...input.authoritativeObservableFacts.map((fact, index) => ({
+      beatId: `CONFIRMED-EFFECT-${index + 1}`,
+      sourceType: "CONFIRMED_EFFECT" as const,
+      action: fact,
+      requiredTermGroups: requiredTermGroupsFor(fact),
+      mustAppear: false
+    })),
+    ...input.authoritativeNpcReactions.map((reaction) => ({
+      beatId: reaction.reactionEventId,
+      sourceType: "NPC_REACTION" as const,
+      action: reaction.action,
+      requiredTermGroups: requiredTermGroupsFor(reaction.action),
+      mustAppear: true
+    })),
+    ...input.authoritativeWorldMoves.map((move) => ({
+      beatId: move.beatId,
+      sourceType: "WORLD_MOVE" as const,
+      action: move.action,
+      requiredTermGroups: clone(move.requiredTermGroups),
+      resultCeiling: move.resultCeiling,
+      mustAppear: true
+    }))
+  ];
+  const lastMove = input.authoritativeWorldMoves.at(-1)?.action
+    || input.authoritativeNpcReactions.at(-1)?.action
+    || input.authoritativeObservableFacts.at(-1)
+    || input.action.actionText;
+  return {
+    sceneStart: clone(input.sceneBefore),
+    sceneEnd: clone(input.sceneAfter),
+    presentActorLabels: unique([...sceneStartActorLabels, ...sceneEndActorLabels]),
+    sceneStartActorLabels,
+    sceneEndActorLabels,
+    transitionAllowed: input.sectionTransitioned,
+    authorizedActorArrivals,
+    authorizedActorDepartures,
+    dramaticTask: input.section.dramaticPurpose,
+    actionAlreadyOccurred: input.action.actionText,
+    authorizedPlayerSpeech: extractAuthorizedPlayerSpeech(
+      input.action.actionText,
+      input.sceneBefore.documentStates || []
+    ),
+    confirmedEffects: [...input.authoritativeObservableFacts],
+    unresolvedFacts: [
+      "密信和异常只能证明需要复核，不能直接证明巡抚、商会或任何个人有罪。",
+      ...input.section.forbiddenEarlyReveals
+    ],
+    npcAgenda: input.authoritativeNpcReactions.map((reaction) => reaction.action),
+    sceneBlocking: input.sectionTransitioned
+      ? [
+          `先在${input.sceneBefore.locationLabel}完成玩家行动及其即时回应。`,
+          `只有写完已授权的世界行动后，才转到${input.sceneAfter.timeLabel}的${input.sceneAfter.locationLabel}。`,
+          `转场后的现场只允许${input.sceneAfter.presentActorRefs.map((ref) => runtimeTargetFor(ref).label).join("、")}在场；其他人物、随员和未呈到的文书不得随转场出现。`,
+          ...(input.sceneAfter.documentStates || [])
+            .filter((document) => document.accessState === "NOT_PRESENT")
+            .map((document) => document.continuityNote)
+        ]
+      : [
+          `本轮始于并结束于${input.sceneBefore.timeLabel}的${input.sceneBefore.locationLabel}。`,
+          authorizedActorArrivals.length
+            ? `只允许${authorizedActorArrivals.join("、")}按已列世界行动加入现场；其上级、随员和其他人物不得随同到场。`
+            : "本轮没有获批的新人物入场。",
+          authorizedActorDepartures.length
+            ? `${authorizedActorDepartures.join("、")}完成本轮现场动作后必须领命离场；只能写出门，不得写抵达或场外办理结果。`
+            : "本轮没有必须离场的人物。",
+          "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+          "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。"
+        ],
+    sceneBeats,
+    requiredEndChange: lastMove,
+    narrativeCeiling: [
+      "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+      "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+      "不得替玩家追加第二个行动或提前回答下一组决策。",
+      ...(input.sectionTransitioned
+        ? [
+            "转场前只写本轮玩家新增的动作、明确列出的 NPC 回应和到期后果，不复述 Recent Canon 已写过的文书状态、比喻或压力句。",
+            "转场后只建立新场人物与程序争点；未呈到的文书不能成为任何人物陈述笔迹、户头、具体内容、真伪或经手事实的依据。"
+          ]
+        : []),
+      "未知保持未知，禁止提前确认幕后主使或暗账全貌。"
+    ]
+  };
+}
+
+function extractAuthorizedPlayerSpeech(
+  actionText: string,
+  documentStates: PartOneSceneState["documentStates"] = []
+) {
+  const candidates = [
+    ...[...actionText.matchAll(/[“"]([^”"]{2,80})[”"]/g)].map((match) => match[1]),
+    ...[...actionText.matchAll(/[：:]([^；。！？]{2,80})(?=[；。！？]|$)/g)].map((match) => match[1])
+  ];
+  const normalizedAction = actionText
+    .trim()
+    .replace(/^[，。；：、“”‘’！？\s]+|[，。；：、“”‘’！？\s]+$/g, "");
+  if (
+    candidates.length === 0
+    && normalizedAction.length <= 80
+    && /^(?:由|先由|准|允许|不得|不许|继续|暂|限|命|令|要求|拒绝)/.test(
+      normalizedAction
+    )
+  ) {
+    candidates.push(normalizedAction);
+  }
+  const actionTargetsAbsentDocument = documentStates.some((document) => {
+    if (document.accessState !== "NOT_PRESENT") return false;
+    if (actionText.includes(document.label)) return true;
+    if (document.label.includes("原件") && /(?:原册|原件)/.test(actionText)) return true;
+    if (document.label.includes("副本") && /(?:副本|抄本)/.test(actionText)) return true;
+    return false;
+  });
+  if (actionTargetsAbsentDocument && normalizedAction.length <= 80) {
+    candidates.push(normalizedAction);
+  }
+  if (
+    actionText.includes("交给清流县令亲随")
+    && actionText.includes("封存档房")
+  ) {
+    candidates.push("持此去清流，封存档房");
+  }
+  return unique(
+    candidates
+      .map((candidate) => candidate.trim().replace(/^[，。；：、“”‘’！？\s]+|[，。；：、“”‘’！？\s]+$/g, ""))
+      .filter(Boolean)
+  );
+}
+
+function requiredTermGroupsFor(text: string): string[][] {
+  const groups: string[][] = [];
+  const candidates: Array<[RegExp, string[]]> = [
+    [/封存档房/, ["封存档房", "档房封存", "封住档房"]],
+    [/三日内复核/, ["三日内复核", "三日期限内复核"]],
+    [/暂缓签发|暂不签发/, ["暂缓签发", "暂不签发", "扣下不签"]],
+    [
+      /只准清流县先办一批|清流县先办一批|限定试办/,
+      ["只准清流县先办一批", "清流县先办一批", "清流县试办", "清流试办", "限定试办"]
+    ],
+    [/清流县试办|清流试办|执行范围/, ["清流县试办", "清流试办", "执行范围"]],
+    [/写进(?:放行)?文书|写入(?:放行)?文书/, ["写进放行文书", "写入放行文书", "落进放行文书", "写进回文", "落进回文", "写在文书上"]],
+    [/压价买田|买田|购田/, ["压价买田", "低价买田", "趁急难买田", "购田"]],
+    [/巡抚幕僚|幕僚/, ["巡抚幕僚", "幕僚"]],
+    [/巡抚书吏|书吏/, ["巡抚书吏", "书吏"]],
+    [/清流县令|县令/, ["清流县令", "县令"]],
+    [/改桑书吏/, ["改桑书吏", "书吏"]],
+    [/商会会首|会首/, ["商会会首", "会首"]],
+    [/首批救粮|救粮/, ["首批救粮", "救粮"]],
+    [/县册|册页|原册/, ["县册", "册页", "原册"]],
+    [/封存|封条/, ["封存", "封条", "封缄"]],
+    [/复核/, ["复核"]],
+    [/奏报|首报|入京/, ["奏报", "首报", "入京"]],
+    [/粮|米行|开仓/, ["粮", "米", "仓"]],
+    [/民田|卖田|购田|买田|田契/, ["民田", "卖田", "购田", "买田", "田契"]],
+    [/具名|署名|联署/, ["具名", "署名", "联署"]],
+    [/底稿|摘要/, ["底稿", "摘要"]],
+    [/担保|官保/, ["担保", "官保"]],
+    [/保护令|传唤|问讯/, ["保护", "传唤", "问讯"]]
+  ];
+  for (const [pattern, terms] of candidates) {
+    if (pattern.test(text)) groups.push(terms);
+  }
+  if (!groups.length) {
+    const key = text.replace(/[，。；：、“”‘’！？\s]/g, "").slice(0, 4);
+    if (key) groups.push([key]);
+  }
+  return groups;
+}
+
+function normalizeSceneState(
+  scene: PartOneSceneState | undefined,
+  sectionId: string
+): PartOneSceneState {
+  const fallback = sceneForSection(sectionId);
+  if (!scene || !scene.sceneId || !scene.timeLabel || !scene.locationLabel) return fallback;
+  return {
+    sceneId: String(scene.sceneId),
+    timeLabel: String(scene.timeLabel),
+    locationLabel: String(scene.locationLabel),
+    presentActorRefs: unique(Array.isArray(scene.presentActorRefs) ? scene.presentActorRefs.map(String) : fallback.presentActorRefs),
+    situation: String(scene.situation || fallback.situation),
+    documentStates: Array.isArray(scene.documentStates)
+      ? clone(scene.documentStates)
+      : clone(fallback.documentStates || []),
+    objectStates: Array.isArray(scene.objectStates)
+      ? clone(scene.objectStates)
+      : clone(fallback.objectStates || [])
+  };
+}
+
+function applySceneCustodyEffects(
+  scene: PartOneSceneState,
+  action: PartOneIncomingAction
+) {
+  scene.objectStates = clone(scene.objectStates || []);
+  if (
+    action.actionText.includes("总督封缄令牌")
+    && action.actionText.includes("交给清流县令亲随")
+  ) {
+    const token = scene.objectStates.find(
+      (item) => item.objectRef === "object.governor_seal_token"
+    );
+    if (token) {
+      token.holderRef = "actor.qingliu_messenger";
+      token.continuityNote = "总督已经把封缄令牌交给清流县令亲随；除非后续明确结算交还，不得再写回总督手中。";
+    }
+    if (/(?:传达|回县|封存档房)/.test(action.actionText)) {
+      scene.presentActorRefs = scene.presentActorRefs.filter(
+        (actorRef) => actorRef !== "actor.qingliu_messenger"
+      );
+    }
+  }
+
+  if (
+    /放行文书|附条件命令|现有公文|同一份回文|逐项写明|补写复核办法|补写[^。；]{0,12}责任/.test(
+      action.actionText
+    )
+  ) {
+    scene.documentStates = clone(scene.documentStates || []);
+    const existing = scene.documentStates.find(
+      (item) => item.documentRef === "document.reform_execution_record"
+    );
+    const writtenRecord = {
+      documentRef: "document.reform_execution_record",
+      label: "改桑执行回文",
+      accessState: "WRITTEN" as const,
+      holderRef: "actor.zhejiang_governor",
+      continuityNote: "本轮只延续已经写入的改桑范围、复核办法与督抚责任；不得另造第二份文书或增加未经结算的条款。"
+    };
+    if (existing) Object.assign(existing, writtenRecord);
+    else scene.documentStates.push(writtenRecord);
+  }
+}
+
+function timeLabelVariants(timeLabel: string, previousTimeLabel = "") {
+  const withoutReignYear = timeLabel.replace(/^嘉靖三十五年/, "");
+  const relativeNextDay = previousTimeLabel.includes("五月初八")
+    && timeLabel.includes("五月初九")
+    ? `次日${timeLabel.slice(timeLabel.indexOf("巳时"))}`
+    : "";
+  return unique([timeLabel, withoutReignYear, relativeNextDay].filter(Boolean));
+}
+
+function locationLabelVariants(locationLabel: string) {
+  const shortLabel = locationLabel.replace(/^杭州总督府/, "");
+  return unique([locationLabel, shortLabel]);
+}
+
+function sceneForSection(sectionId: string): PartOneSceneState {
+  return clone(SECTION_SCENES[sectionId] || SECTION_SCENES["SEC-P1-01"]);
+}
+
+function buildAuthoritativeObservableFacts(
+  _action: PartOneIncomingAction,
   statePatch: Record<string, unknown>,
   stateAfter: PartOneState
 ) {
-  const facts = [`浙江总督已经发出并开始执行这道命令：${action.actionText}`];
+  const facts: string[] = [];
   const labels: Record<string, string> = {
     "reform.executionMode": "改桑执行方式",
     "reform.scopeStatus": "改桑范围",
@@ -553,7 +1151,14 @@ function buildAuthoritativeObservableFacts(
   if (isRecord(transfer)) {
     const status = String(transfer.status || "SENT");
     const recipient = runtimeTargetFor(String(transfer.recipientRef || "public_frame")).label;
-    facts.push(status === "DELIVERED" ? `本轮口信或文书已经送达${recipient}` : `本轮口信或文书已经开始递往${recipient}`);
+    const representativeRef = String(transfer.representativeRef || "");
+    const deliveryMode = String(transfer.deliveryMode || "COURIER");
+    if (status === "DELIVERED" && deliveryMode === "IN_PERSON_REPRESENTATIVE" && representativeRef) {
+      const representative = runtimeTargetFor(representativeRef).label;
+      facts.push(`${representative}已代表${recipient}当场听明这项答复，无须离场送达`);
+    } else {
+      facts.push(status === "DELIVERED" ? `本轮口信或文书已经送达${recipient}` : `本轮口信或文书已经开始递往${recipient}`);
+    }
   }
   return unique(facts);
 }
@@ -591,16 +1196,33 @@ function buildAuthoritativeNpcReactions(
         ]
       : [...likelyCountermoves, ...conditionalReactions, ...allowedMoves];
     if (!moves.length) return [];
-    const selector = input.decisionKernelId === "DK-P1-REVIEW-INITIATION"
-      ? 0
-      : Number.parseInt(digest(`${input.eventId}:${policy.assetId}`).slice(0, 8), 16) % moves.length;
-    const selectedMove = moves[selector]
+    // These three kernels can occur in immediate succession while the same
+    // clerk is still in the room. Bind each one to the policy move that
+    // answers the newly settled player action; a hash selector can otherwise
+    // repeat the same demand on consecutive turns and make the scene appear
+    // to have forgotten what was just said.
+    const preferredMove = input.decisionKernelId === "DK-P1-REVIEW-INITIATION"
+      ? allowedMoves.find((move) => move.includes("书面回复"))
+      : input.decisionKernelId === "DK-P1-EXECUTION-SCOPE"
+        ? allowedMoves.find((move) => move.includes("参与复核"))
+        : input.decisionKernelId === "DK-P1-RESPONSIBILITY-RECORD"
+          ? allowedMoves.find((move) => move.includes("联署"))
+          : null;
+    const selector = Number.parseInt(
+      digest(`${input.eventId}:${policy.assetId}`).slice(0, 8),
+      16
+    ) % moves.length;
+    const selectedMove = (preferredMove || moves[selector])
       .replace("依据改编后的巡抚权限", "通过巡抚衙门正式催办");
     const renderedMove = selectedMove.includes("催办") && selectedMove.includes("书面回复")
       ? "正式催办总督，催问为何暂缓签发，并要求在三日期限内书面回复，写明复核的范围与方式"
       : selectedMove;
+    const representativeRef = String(transfer?.representativeRef || "");
+    const deliveryMode = String(transfer?.deliveryMode || "");
     const xunfuReaction = policy.actorRefs.includes("actor.zhejiang_xunfu")
-      ? `浙江巡抚通过巡抚书吏传话：${renderedMove}`
+      ? representativeRef === "actor.xunfu_clerk" && deliveryMode === "IN_PERSON_REPRESENTATIVE"
+        ? `巡抚书吏按来府前所受交代当场追问：${renderedMove}`
+        : `浙江巡抚通过巡抚书吏传话：${renderedMove}`
       : renderedMove;
     return [{
       reactionEventId: `NPC-${digest(`${input.eventId}:${policy.assetId}:${xunfuReaction}`).slice(0, 18)}`,
@@ -637,6 +1259,10 @@ function applyStatePatch(state: PartOneState, patch: Record<string, unknown>, ev
         topic: String(row.topic || "unspecified"),
         senderRef: String(row.senderRef || "unknown"),
         recipientRef: String(row.recipientRef || "unknown"),
+        representativeRef: row.representativeRef ? String(row.representativeRef) : undefined,
+        deliveryMode: row.deliveryMode
+          ? String(row.deliveryMode) as "DIRECT" | "IN_PERSON_REPRESENTATIVE" | "COURIER"
+          : undefined,
         causedByEventId: eventId,
         status: String(row.status || "SENT") as "SENT" | "DELIVERED" | "BLOCKED"
       });

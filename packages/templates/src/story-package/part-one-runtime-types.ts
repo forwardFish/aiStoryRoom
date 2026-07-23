@@ -34,9 +34,85 @@ export type PartOnePendingConsequenceState = {
   causedByEventId: string;
   ruleAssetId: string;
   summary: string;
+  payoffBeat: PartOneConsequencePayoffBeat;
   dueTurn: number;
   priority: "P0" | "P1";
   status: "PENDING" | "DUE" | "PAID" | "DEFERRED_WITH_REASON" | "TRANSFORMED";
+};
+
+export type PartOneSceneState = {
+  sceneId: string;
+  timeLabel: string;
+  locationLabel: string;
+  presentActorRefs: string[];
+  situation: string;
+  documentStates?: PartOneSceneDocumentState[];
+  objectStates?: PartOneSceneObjectState[];
+};
+
+export type PartOneSceneDocumentState = {
+  documentRef: string;
+  label: string;
+  accessState: "NOT_PRESENT" | "SEALED" | "OPENED" | "READ" | "WRITTEN";
+  holderRef: string | null;
+  continuityNote: string;
+};
+
+export type PartOneSceneObjectState = {
+  objectRef: string;
+  label: string;
+  holderRef: string | null;
+  contentsState?: "EMPTY" | "UNKNOWN" | "CONTAINS_DOCUMENT";
+  closureState?: "CLOSED" | "OPEN" | "UNKNOWN";
+  continuityNote: string;
+};
+
+export type PartOneConsequencePayoffBeat = {
+  beatId: string;
+  consequenceId?: string;
+  actorRefs: string[];
+  action: string;
+  requiredTermGroups: string[][];
+  resultCeiling: string;
+};
+
+export type PartOneAuthoritativeWorldMove = {
+  beatId: string;
+  sourceType: "DUE_CONSEQUENCE" | "NEXT_DECISION_PRESSURE" | "SECTION_TRANSITION";
+  sourceId: string;
+  actorRefs: string[];
+  action: string;
+  requiredTermGroups: string[][];
+  resultCeiling: string;
+  consequenceId?: string;
+};
+
+export type PartOneNarrativePlan = {
+  sceneStart: PartOneSceneState;
+  sceneEnd: PartOneSceneState;
+  presentActorLabels: string[];
+  sceneStartActorLabels: string[];
+  sceneEndActorLabels: string[];
+  transitionAllowed: boolean;
+  authorizedActorArrivals: string[];
+  authorizedActorDepartures: string[];
+  dramaticTask: string;
+  actionAlreadyOccurred: string;
+  authorizedPlayerSpeech: string[];
+  confirmedEffects: string[];
+  unresolvedFacts: string[];
+  npcAgenda: string[];
+  sceneBlocking: string[];
+  sceneBeats: Array<{
+    beatId: string;
+    sourceType: "PLAYER_ACTION" | "CONFIRMED_EFFECT" | "NPC_REACTION" | "WORLD_MOVE";
+    action: string;
+    requiredTermGroups: string[][];
+    resultCeiling?: string;
+    mustAppear: boolean;
+  }>;
+  requiredEndChange: string;
+  narrativeCeiling: string[];
 };
 
 export type PartOneKnowledgeTransfer = {
@@ -44,6 +120,8 @@ export type PartOneKnowledgeTransfer = {
   topic: string;
   senderRef: string;
   recipientRef: string;
+  representativeRef?: string;
+  deliveryMode?: "DIRECT" | "IN_PERSON_REPRESENTATIVE" | "COURIER";
   causedByEventId: string;
   status: "SENT" | "DELIVERED" | "BLOCKED";
 };
@@ -52,6 +130,7 @@ export type PartOneState = {
   partId: "PART-01";
   sectionId: string;
   turnNumber: number;
+  scene: PartOneSceneState;
   reform: { executionMode: string; scopeStatus: string; progress: string };
   review: { initiationStatus: string; authority: string; procedureStatus: string };
   evidence: { chainStatus: string; primaryCustodianRef: string | null; copyStatus: string; archiveSealStatus: string };
@@ -114,6 +193,7 @@ export type PartOneRuntimeAsset = {
   payload: Record<string, unknown> & {
     options?: PartOneAffordanceTemplate[];
     continuationDecisions?: PartOneContinuationDecisionTemplate[];
+    payoffBeats?: Array<Omit<PartOneConsequencePayoffBeat, "consequenceId">>;
     exitGateRules?: PartOneStateRule[];
     targetTurnWindow?: { earliest: number; latest: number };
   };
@@ -227,6 +307,10 @@ export type PartOneCommittedEvent = {
     action: string;
     policyAssetId: string;
   }>;
+  sceneBefore: PartOneSceneState;
+  sceneAfter: PartOneSceneState;
+  authoritativeWorldMoves: PartOneAuthoritativeWorldMove[];
+  narrativePlan: PartOneNarrativePlan;
   sectionTransitioned: boolean;
 };
 

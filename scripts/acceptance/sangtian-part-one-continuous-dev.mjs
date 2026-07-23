@@ -14,6 +14,13 @@ const mailSink = resolve(process.env.AUTH_MAIL_SINK_FILE || "apps/api/.auth-mail
 const chromePath = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const cdpPort = Number(process.env.SANGTIAN_CDP_PORT || 9365);
 const turnLimit = Number(process.env.SANGTIAN_TURN_LIMIT || 20);
+const playerChoiceIndices = parsePlayerChoiceIndices(
+  process.env.SANGTIAN_PLAYER_CHOICE_INDICES,
+  turnLimit
+);
+const selectionMode = playerChoiceIndices
+  ? "CODEX_PLAYER_PLAN"
+  : "ENGINEERING_ALTERNATING";
 const stamp = `sangtian-part-one-dev-${Date.now()}-${randomBytes(3).toString("hex")}`;
 const email = `${stamp}@example.test`;
 const password = `Sangtian-${randomBytes(18).toString("base64url")}!`;
@@ -30,6 +37,22 @@ await mkdir(outDir, { recursive: true });
 
 function digest(value) {
   return createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
+}
+
+function parsePlayerChoiceIndices(raw, expectedTurns) {
+  if (!String(raw || "").trim()) return null;
+  const values = String(raw)
+    .split(",")
+    .map((value) => Number(value.trim()));
+  if (
+    values.length !== expectedTurns
+    || values.some((value) => !Number.isInteger(value) || value < 0)
+  ) {
+    throw new Error(
+      `SANGTIAN_PLAYER_CHOICE_INDICES must contain exactly ${expectedTurns} non-negative comma-separated integers`
+    );
+  }
+  return values;
 }
 
 async function request(path, options = {}, expected = [200, 201]) {
@@ -70,6 +93,15 @@ async function waitForJson(url, timeoutMs = 15_000) {
     await sleep(100);
   }
   throw new Error(`Timed out waiting for ${url}`);
+}
+
+async function endpointAlreadyResponds(url) {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(1_000) });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 class Cdp {
@@ -129,43 +161,44 @@ class Cdp {
 }
 
 async function databaseSnapshot(runId) {
-  const [run, attempts, submissions, actions, resolutions, decisionSets] = await Promise.all([
-    prisma.storyRun.findUnique({
-      where: { id: runId },
-      select: { id: true, status: true, currentDay: true, worldSequence: true, stateJson: true, updatedAt: true }
-    }),
-    prisma.soloGenerationAttempt.findMany({
-      where: { runId, triggerType: { not: "OPENING" } },
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true, triggerType: true, status: true, providerCallCount: true, issueCodesJson: true,
-        failureReason: true, contextSnapshotHash: true, timingsJson: true, createdAt: true, finishedAt: true
-      }
-    }),
-    prisma.decisionSubmission.findMany({
-      where: { runId },
-      orderBy: { submittedAt: "asc" },
-      select: { id: true, turnId: true, candidateId: true, immutableIntentHash: true, status: true, submittedAt: true, resolvedAt: true }
-    }),
-    prisma.playerAction.findMany({
-      where: { runId },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, actionType: true, targetType: true, targetId: true, targetText: true, method: true, intent: true, status: true }
-    }),
-    prisma.actionResolution.findMany({
-      where: { runId },
-      orderBy: { resolvedAt: "asc" },
-      select: {
-        id: true, turnId: true, playerActionId: true, appliedWorldSequence: true, resultNarrative: true,
-        nextHook: true, qualityStatus: true, outcomeJson: true, statePatchJson: true, resolvedAt: true
-      }
-    }),
-    prisma.decisionSet.findMany({
-      where: { runId },
-      orderBy: { generatedAt: "asc" },
-      select: { turnId: true, framing: true, candidatesJson: true, qualityStatus: true, generatedAt: true }
-    })
-  ]);
+  // The shared test database has a small session-mode pool. Keep the evidence
+  // readback deterministic and low-pressure: one Prisma query at a time instead
+  // of opening six concurrent sessions after every visible turn.
+  const run = await prisma.storyRun.findUnique({
+    where: { id: runId },
+    select: { id: true, status: true, currentDay: true, worldSequence: true, stateJson: true, updatedAt: true }
+  });
+  const attempts = await prisma.soloGenerationAttempt.findMany({
+    where: { runId, triggerType: { not: "OPENING" } },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true, triggerType: true, status: true, providerCallCount: true, issueCodesJson: true,
+      failureReason: true, contextSnapshotHash: true, timingsJson: true, createdAt: true, finishedAt: true
+    }
+  });
+  const submissions = await prisma.decisionSubmission.findMany({
+    where: { runId },
+    orderBy: { submittedAt: "asc" },
+    select: { id: true, turnId: true, candidateId: true, immutableIntentHash: true, status: true, submittedAt: true, resolvedAt: true }
+  });
+  const actions = await prisma.playerAction.findMany({
+    where: { runId },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, actionType: true, targetType: true, targetId: true, targetText: true, method: true, intent: true, status: true }
+  });
+  const resolutions = await prisma.actionResolution.findMany({
+    where: { runId },
+    orderBy: { resolvedAt: "asc" },
+    select: {
+      id: true, turnId: true, playerActionId: true, appliedWorldSequence: true, resultNarrative: true,
+      nextHook: true, qualityStatus: true, outcomeJson: true, statePatchJson: true, resolvedAt: true
+    }
+  });
+  const decisionSets = await prisma.decisionSet.findMany({
+    where: { runId },
+    orderBy: { generatedAt: "asc" },
+    select: { turnId: true, framing: true, candidatesJson: true, qualityStatus: true, generatedAt: true }
+  });
   return { run, attempts, submissions, actions, resolutions, decisionSets };
 }
 
@@ -178,7 +211,12 @@ function validatePrefix(snapshot, expectedTurn) {
     exactActionPrefix: snapshot.actions.length === expectedTurn,
     exactResolutionPrefix: snapshot.resolutions.length === expectedTurn,
     allAttemptsPublished: snapshot.attempts.every((item) => item.status === "PUBLISHED"),
-    exactlyOneProviderCallPerTurn: snapshot.attempts.every((item) => item.providerCallCount === 1),
+    exactlyOneNarratorAndDecisionCallPerTurn: snapshot.attempts.every((item) =>
+      item.providerCallCount === 2
+      && item.timingsJson?.providerCallCount === 2
+      && item.timingsJson?.narrationProviderCallCount === 1
+      && item.timingsJson?.decisionProviderCallCount === 1
+    ),
     allSubmissionsResolved: snapshot.submissions.every((item) => item.status === "RESOLVED"),
     allActionsResolved: snapshot.actions.every((item) => String(item.status).toLowerCase() === "resolved"),
     allResolutionsPassed: snapshot.resolutions.every((item) => item.qualityStatus === "PASSED"),
@@ -197,6 +235,12 @@ function serializableSnapshot(snapshot) {
     resolutions: snapshot.resolutions,
     decisionSets: snapshot.decisionSets
   };
+}
+
+if (await endpointAlreadyResponds(`http://127.0.0.1:${cdpPort}/json/version`)) {
+  throw new Error(
+    `SANGTIAN_CDP_PORT ${cdpPort} is already in use; refusing to attach to a stale authenticated browser`
+  );
 }
 
 await request("/v4/auth/register", {
@@ -318,30 +362,52 @@ try {
   await screenshot("G00-opening.png");
   await evaluate("document.querySelector('#beginStoryBtn').click(); true");
   await wait("Boolean(document.querySelector('#continueStoryBtn'))", "opening situation", 15_000);
+  const g00Situation = await visibleCheckpoint("G00-SITUATION");
+  if (g00Situation.resultNarrative.length < 120) {
+    throw new Error(`G00 opening situation is too short: ${g00Situation.resultNarrative.length}`);
+  }
+  await screenshot("G00-situation.png");
+  await writeFile(
+    join(outDir, "G00-situation-player-visible.json"),
+    `${JSON.stringify(g00Situation, null, 2)}\n`
+  );
   await evaluate("document.querySelector('#continueStoryBtn').click(); true");
   await wait("Boolean(document.querySelector('#submitDecision')) && document.querySelectorAll('input[name=\"decision\"]').length >= 2", "G00 decisions", 15_000);
   const g00 = await visibleCheckpoint("G00");
   if (g00.decisions.length < 2) throw new Error(`G00 has fewer than two visible decisions: ${JSON.stringify(g00.decisions)}`);
   await screenshot("G00-decisions.png");
   await writeFile(join(outDir, "G00-player-visible.json"), `${JSON.stringify(g00, null, 2)}\n`);
-  checkpoints.push({ checkpointId: "G00", playerVisible: g00 });
+  checkpoints.push({
+    checkpointId: "G00",
+    openingSituation: g00Situation,
+    playerVisible: g00
+  });
 
   for (let turnNumber = 1; turnNumber <= turnLimit; turnNumber += 1) {
     const checkpointBefore = turnNumber === 1 ? g00 : checkpoints.at(-1).nextPlayerVisible;
     const decisions = checkpointBefore?.decisions || [];
     if (decisions.length < 2) throw new Error(`A${String(turnNumber).padStart(2, "0")} has fewer than two visible decisions`);
 
-    // This path is deliberately deterministic and is only the engineering soak.
-    // The formal Codex player run must choose naturally after reading each scene.
-    const selectedIndex = turnNumber % 2 === 1 ? decisions.length - 1 : 0;
-    const selected = decisions[selectedIndex];
     const actionId = `A${String(turnNumber).padStart(2, "0")}`;
+    const selectedIndex = playerChoiceIndices
+      ? playerChoiceIndices[turnNumber - 1]
+      : turnNumber % 2 === 1 ? decisions.length - 1 : 0;
+    if (selectedIndex >= decisions.length) {
+      throw new Error(
+        `${actionId} player choice index ${selectedIndex} exceeds ${decisions.length} visible decisions`
+      );
+    }
+    const selected = decisions[selectedIndex];
     const checkpointId = `T${String(turnNumber).padStart(2, "0")}`;
     const actionRecord = {
       actionId,
       selectedDecisionId: selected.id,
       selectedVisibleText: selected.visibleText,
-      engineeringSelectionRule: turnNumber % 2 === 1 ? "last-visible-option" : "first-visible-option",
+      selectionMode,
+      selectedIndex,
+      selectionRule: playerChoiceIndices
+        ? "pre-reviewed coherent governor policy; every generated result still requires post-run player reading"
+        : turnNumber % 2 === 1 ? "last-visible-option" : "first-visible-option",
       sourceCheckpointId: turnNumber === 1 ? "G00" : `T${String(turnNumber - 1).padStart(2, "0")}`,
       sourceViewHash: checkpointBefore.viewHash
     };
@@ -419,7 +485,12 @@ try {
     oneSubmissionPerTurn: finalSnapshot.submissions.length === turnLimit,
     oneActionPerTurn: finalSnapshot.actions.length === turnLimit,
     oneResolutionPerTurn: finalSnapshot.resolutions.length === turnLimit,
-    exactlyOneProviderCallPerTurn: finalSnapshot.attempts.every((item) => item.providerCallCount === 1),
+    exactlyOneNarratorAndDecisionCallPerTurn: finalSnapshot.attempts.every((item) =>
+      item.providerCallCount === 2
+      && item.timingsJson?.providerCallCount === 2
+      && item.timingsJson?.narrationProviderCallCount === 1
+      && item.timingsJson?.decisionProviderCallCount === 1
+    ),
     noRetriesOrFallbacks: finalSnapshot.attempts.every((item) => item.status === "PUBLISHED" && !item.failureReason),
     noRuntimeExceptions: cdp.exceptions.length === 0,
     noFailedRequests: cdp.failedRequests.filter((item) => !item.canceled).length === 0
@@ -436,8 +507,11 @@ try {
   const report = {
     schemaVersion: "sangtian-part-one-continuous-dev-v1",
     status: allExecutedChecksPass ? "ENGINEERING_PASS" : "REPAIR_REQUIRED",
-    formalPlayerAcceptance: "NOT_PERFORMED",
-    warning: "This deterministic branch soak is not the Codex blind-player G00-T20 acceptance run.",
+    formalPlayerAcceptance: playerChoiceIndices ? "PENDING_POST_RUN_PLAYER_REVIEW" : "NOT_PERFORMED",
+    selectionMode,
+    warning: playerChoiceIndices
+      ? "The coherent player path completed, but every visible checkpoint still requires Codex player review before acceptance."
+      : "This deterministic branch soak is not the Codex blind-player G00-T20 acceptance run.",
     runId,
     route: `${webBase}/role-select?story=sangtian&start=new`,
     requestedTurns: turnLimit,
@@ -462,7 +536,8 @@ try {
   const failure = {
     schemaVersion: "sangtian-part-one-continuous-dev-v1",
     status: "FAILED",
-    formalPlayerAcceptance: "NOT_PERFORMED",
+    formalPlayerAcceptance: playerChoiceIndices ? "FAILED_BEFORE_PLAYER_REVIEW" : "NOT_PERFORMED",
+    selectionMode,
     runId,
     message: error instanceof Error ? error.stack || error.message : String(error),
     checkpoints,
@@ -481,5 +556,6 @@ try {
   try { await cdp?.send("Browser.close"); } catch {}
   cdp?.close();
   if (chrome.exitCode === null) chrome.kill();
+  chrome.unref();
   await rm(profile, { recursive: true, force: true }).catch(() => {});
 }
