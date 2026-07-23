@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-KNOWLEDGE-CHAIN",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-WITNESS-ACCESS"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-WITNESS-ACCESS",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "不同人物形成不对称知识",
+      "秘密一旦公开便不可恢复为私密状态"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C01-POLICY-COUNCIL",
+  "currentDateAndTime": "嘉靖四十年正月十五御前财政会议",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-POSITION-1",
+      "subjectRef": "source.jiajing",
+      "statement": "source.jiajing 在 place.xiyuan_jinshen_jingshe 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-POSITION-2",
+      "subjectRef": "source.yan_song",
+      "statement": "source.yan_song 在 place.xiyuan_jinshen_jingshe 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-POSITION-3",
+      "subjectRef": "source.yan_shifan",
+      "statement": "source.yan_shifan 在 place.xiyuan_jinshen_jingshe 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-POSITION-4",
+      "subjectRef": "source.zhang_juzheng",
+      "statement": "source.zhang_juzheng 在 place.xiyuan_jinshen_jingshe 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    }
+  ],
+  "characterKnowledge": [],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-GOAL-1",
+      "subjectRef": "source.jiajing",
+      "statement": "嘉靖命内阁回去详议方略，再给胡宗宪下急递，并说此事还得靠胡宗宪去办。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-DECISION-1",
+      "subjectRef": "source.jiajing",
+      "statement": "嘉靖命内阁回去详议方略，再给胡宗宪下急递，并说此事还得靠胡宗宪去办。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-PROMISE-1",
+      "subjectRef": "source.jiajing",
+      "statement": "嘉靖命内阁回去详议方略，再给胡宗宪下急递，并说此事还得靠胡宗宪去办。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-ARC-1",
+      "subjectRef": "source.yan_shifan",
+      "statement": "严世蕃当面说工部有责任，自己也有责任。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-ARC-2",
+      "subjectRef": "source.grand_secretariat",
+      "statement": "严嵩称内阁的意思是把浙江现有农田的一半改成桑田；当嘉靖追问口粮时，他答从外省增调粮食。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-ARC-3",
+      "subjectRef": "source.jiajing",
+      "statement": "嘉靖追问农田改桑后浙江百姓吃粮、调粮价格与桑农是否愿意。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-POLICY-COUNCIL-ARC-4",
+      "subjectRef": "source.jiajing",
+      "statement": "嘉靖命内阁回去详议方略，再给胡宗宪下急递，并说此事还得靠胡宗宪去办。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C01-POLICY-COUNCIL-ARTIFACT-R1",
+    "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+  ]
+}

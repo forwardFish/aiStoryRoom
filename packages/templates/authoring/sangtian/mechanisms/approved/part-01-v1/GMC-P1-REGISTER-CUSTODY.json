@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-REGISTER-CUSTODY",
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+    "DM1566-C13-LEDGERS-BURNED",
+    "DM1566-C13-OTHER-LEDGER-BOXES-HELD",
+    "DM1566-C23-TESTIMONY-SEALED"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+  ],
+  "candidateType": "CUSTODY_RULE",
+  "dramaticFunction": "原件、副本、封条和经手人能被追踪与争夺",
+  "preconditions": [
+    "县册、田契、抄件或封条已经以事件进入房间",
+    "行动者具有接触、封存或抄录的合法路径"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "封存原件并记录见证人",
+    "制作带经手记录的副本",
+    "限制接触范围",
+    "把材料移交另一保管人"
+  ],
+  "likelyCountermoves": [
+    "拒绝交出原件",
+    "抢先抄录或替换",
+    "破坏封条",
+    "毁灭某一份实物"
+  ],
+  "immediateStateEffects": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "delayedConsequences": [
+    "保管链强弱决定证据能否随奏报进入问责",
+    "多份材料可能使单点销毁不能抹除全部线索"
+  ],
+  "invariantsToPreserve": [
+    "原件、副本、听闻内容和推断必须区分",
+    "后续原著焚账只提供机制参考，不能提前发生"
+  ],
+  "evidenceStrength": "EXPLICIT",
+  "limitations": [
+    "清流县册异常是 Adaptation",
+    "不能从同样四箱推定原副本关系"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-QINGLIU-COUNTY",
+  "status": "APPROVED_FOR_T3"
+}

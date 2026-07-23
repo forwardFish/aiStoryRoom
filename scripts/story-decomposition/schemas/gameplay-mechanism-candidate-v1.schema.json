@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/gameplay-mechanism-candidate-v1.schema.json",
+  "title": "gameplay-mechanism-candidate-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "gameplay-mechanism-candidate-v1"
+    },
+    "mechanismCandidateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "sourceSceneIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "sourceClaimIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "candidateType": {
+      "type": "string",
+      "enum": [
+        "CONFLICT_MECHANISM",
+        "ACTOR_POLICY",
+        "INSTITUTION_CAPABILITY",
+        "DECISION_KERNEL",
+        "CAUSAL_RULE",
+        "RESOURCE_CONSTRAINT",
+        "KNOWLEDGE_RULE",
+        "CUSTODY_RULE",
+        "ADAPTATION_GAP"
+      ]
+    },
+    "dramaticFunction": {
+      "type": "string",
+      "minLength": 1
+    },
+    "preconditions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "actorRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "authorityOrResourceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "allowedMoves": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "likelyCountermoves": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "immediateStateEffects": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "delayedConsequences": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "invariantsToPreserve": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "evidenceStrength": {
+      "type": "string",
+      "enum": [
+        "EXPLICIT",
+        "STRONG_INFERENCE",
+        "WEAK_INFERENCE"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "proposedAdaptationGapId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "CANDIDATE_ONLY",
+        "APPROVED_FOR_T3",
+        "REJECTED"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "mechanismCandidateId",
+    "requirementIds",
+    "sourceSceneIds",
+    "sourceClaimIds",
+    "candidateType",
+    "dramaticFunction",
+    "preconditions",
+    "actorRefs",
+    "authorityOrResourceRefs",
+    "allowedMoves",
+    "likelyCountermoves",
+    "immediateStateEffects",
+    "delayedConsequences",
+    "invariantsToPreserve",
+    "evidenceStrength",
+    "limitations",
+    "proposedAdaptationGapId",
+    "status"
+  ]
+}

@@ -9,7 +9,8 @@ import type {
   StoryActionTarget,
   StoryRole,
   StoryScene,
-  StoryTurnTransport
+  StoryTurnTransport,
+  StoryTurnTransportRequest
 } from "../types";
 import { normalizePlayerIntent } from "../player-intent";
 
@@ -116,17 +117,55 @@ export function baseCards(): ScriptCard[] {
   ];
 }
 
-export function transportWith(output: string, calls: { count: number }): StoryTurnTransport {
+export function transportWith(
+  output: {
+    narrator?: string;
+    decision?: string;
+    byRequest?: (request: StoryTurnTransportRequest) => string;
+  },
+  calls: { count: number; stages?: string[] }
+): StoryTurnTransport {
   return {
-    async generate() {
+    async generate(request) {
       calls.count += 1;
+      calls.stages?.push(request.stage);
       return {
-        rawText: output,
+        stage: request.stage,
+        rawText: output.byRequest?.(request)
+          || (request.stage === "NARRATOR"
+            ? output.narrator || validNarratorProse()
+            : output.decision || validDecisionOutput()),
         model: "deepseek-test",
         usage: { inputTokens: 1200, outputTokens: 800 }
       };
     }
   };
+}
+
+export function validNarratorProse() {
+  return [
+    "总督把公文压在案角，没有落印，只命门外亲随即刻去清流县查看档房。亲随接过令牌，问清只看封存情形、不许擅动册页，便转身出了内厅。",
+    "巡抚书吏听见这道吩咐，仍捧着原来的公文站在屏风外。他没有阻拦，只把巡抚催办的三日期限又说了一遍，随后问总督府准备给一个怎样的书面答复。",
+    "廊下脚步渐远，书吏把公文匣往前托了半寸，垂手等着。内厅里无人替他接话，他也不肯空手回去。"
+  ].join("\n\n");
+}
+
+export function validDecisionOutput(routeKeys = [
+  "target:ROLE:xunfu:1",
+  "target:LOCATION:archive_room:2"
+]) {
+  return JSON.stringify({
+    decisions: [
+      {
+        routeKey: routeKeys[0],
+        description: "留下巡抚书吏，当面核对这份催办公文的经手记录。"
+      },
+      {
+        routeKey: routeKeys[1],
+        description: "再派一名亲随赶往清流县，只查看档房封存是否完好。"
+      }
+    ]
+  });
 }
 
 export function buildExecuteInput(rawAction: RawPlayerAction, transport: StoryTurnTransport): ExecuteSoloStoryTurnInput {

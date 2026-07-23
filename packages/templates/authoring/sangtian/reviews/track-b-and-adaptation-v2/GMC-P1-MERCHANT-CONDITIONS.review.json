@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-MERCHANT-CONDITIONS",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.1.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "0D0E8A7591CBFAE0A60C3EEBE68F051F79E4BC881197E261E02B111F08AF4CAA",
+  "candidateHash": "A1D44B201F299E9BF998C3B568DA5FA995D70574B15E54714312864E51339D7B",
+  "requirementIds": [
+    "REQ-P1-MERCHANT-CONDITIONS"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:40:09.369Z",
+  "immutableHash": "EF0CA0A5CCAC5C0A1CB11CAE0616F55A041A54347BE361AE0D66D11DA789D2CD"
+}

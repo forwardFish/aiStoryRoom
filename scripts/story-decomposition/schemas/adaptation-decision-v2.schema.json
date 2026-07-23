@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/adaptation-decision-v2.schema.json",
+  "title": "adaptation-decision-v2",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "adaptation-decision-v2"
+    },
+    "adaptationDecisionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceEntityOrArcIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "operation": {
+      "type": "string",
+      "enum": [
+        "preserve",
+        "compress",
+        "merge",
+        "split",
+        "rename",
+        "relocate",
+        "invent_for_gameplay"
+      ]
+    },
+    "targetIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "invariantsToPreserve": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "intentionalDifferences": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "reviewStatus": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "APPROVED",
+        "REJECTED"
+      ]
+    },
+    "approvedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "approvedAt": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "adaptationDecisionId",
+    "sourceEntityOrArcIds",
+    "operation",
+    "targetIds",
+    "rationale",
+    "invariantsToPreserve",
+    "intentionalDifferences",
+    "reviewStatus",
+    "approvedBy",
+    "approvedAt"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "reviewStatus": {
+            "const": "APPROVED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "approvedBy": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approvedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  ]
+}

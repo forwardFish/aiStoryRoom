@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-MERCHANT-CONDITIONS",
+  "requirementIds": [
+    "REQ-P1-MERCHANT-CONDITIONS"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C01-LAND-RISK-COUNCIL",
+    "DM1566-C06-LAND-PRICE-DEBATE",
+    "DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "candidateType": "ACTOR_POLICY",
+  "dramaticFunction": "商会能提供短期有效资源并提出可见交换条件",
+  "preconditions": [
+    "官府需要粮、银或运输能力",
+    "商会拥有可验证但非无限的资源"
+  ],
+  "actorRefs": [
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_grain",
+    "resource.merchant_grain_route"
+  ],
+  "allowedMoves": [
+    "提出开仓或垫付",
+    "索取优先收丝权",
+    "要求低价购田或官府担保",
+    "以账目内情换取合作"
+  ],
+  "likelyCountermoves": [
+    "接受限制条款后缩减资源",
+    "绕过总督接触巡抚",
+    "把短期救急和个人前程绑定"
+  ],
+  "immediateStateEffects": [
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel"
+  ],
+  "delayedConsequences": [
+    "商会权利扩大后进入粮路、丝路或土地",
+    "拒绝合作会保住边界但放大即时粮食压力"
+  ],
+  "invariantsToPreserve": [
+    "商会方案短期必须真实有效",
+    "商人不是纯反派，也不能无条件救济"
+  ],
+  "evidenceStrength": "STRONG_INFERENCE",
+  "limitations": [
+    "江南商会为合成组织",
+    "不能把沈一石的具体罪责直接移植给商会会首"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-MERCHANT-GUILD",
+  "status": "CANDIDATE_ONLY"
+}

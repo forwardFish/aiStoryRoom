@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "GMC-P1-MERCHANT-CONDITIONS",
+  "kind": "MECHANISM",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:42:13.632Z",
+  "completedAt": "2026-07-22T18:42:14.004Z",
+  "httpStatus": 200,
+  "inputHash": "1DF63DFFD7ABEB15E63395E9EA3B115FA5485A2CDDD5B59E8507526275E1DA56",
+  "rawOutputHash": "BFEBAC14B1ACC5E47A476BE4595B2E78297B7281DA1B8447EEC7F538A410A131",
+  "rawText": "{\n  \"verdict\": \"PASS\",\n  \"issues\": []\n}",
+  "usage": {
+    "prompt_tokens": 5232,
+    "completion_tokens": 16,
+    "total_tokens": 5248,
+    "prompt_tokens_details": {
+      "cached_tokens": 1536
+    },
+    "prompt_cache_hit_tokens": 1536,
+    "prompt_cache_miss_tokens": 3696
+  }
+}

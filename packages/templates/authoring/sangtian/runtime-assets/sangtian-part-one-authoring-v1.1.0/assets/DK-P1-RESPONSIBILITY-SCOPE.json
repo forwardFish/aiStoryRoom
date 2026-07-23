@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-RESPONSIBILITY-SCOPE",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-RESPONSIBILITY-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "payload": {
+    "availableWhen": [
+      "存在一份需要形成、修改或决定是否联署的地方奏报",
+      "玩家掌握至少一项可写入的执行、民生或证据事实"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-01",
+        "title": "总督担全责",
+        "actionText": "奏报写明执行与复核均由总督裁定，不把责任推给县令。",
+        "targetRef": "institution.zhejiang_governor_yamen",
+        "method": "集中责任",
+        "immediateIntent": "奏报写明执行与复核均由总督裁定，不把责任推给县令。",
+        "visibleTradeoff": "保护下属和程序，自己成为主要问责对象",
+        "stateEffects": [
+          "responsibility.governorExposure",
+          "responsibility.xunfuExposure"
+        ],
+        "statePatch": {
+          "responsibility.governorExposure": {
+            "$delta": 3
+          },
+          "responsibility.xunfuExposure": 0
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-02",
+        "title": "督抚分项负责",
+        "actionText": "改桑进度由巡抚具名，复核和赈济由总督具名。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "按事项分责",
+        "immediateIntent": "改桑进度由巡抚具名，复核和赈济由总督具名。",
+        "visibleTradeoff": "责任清楚，但对立被正式写入奏报",
+        "stateEffects": [
+          "responsibility.governorExposure",
+          "responsibility.xunfuExposure",
+          "relations.governorXunfu"
+        ],
+        "statePatch": {
+          "responsibility.governorExposure": {
+            "$delta": 1
+          },
+          "responsibility.xunfuExposure": {
+            "$delta": 2
+          },
+          "relations.governorXunfu": {
+            "$delta": -1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-03",
+        "title": "如实列出经手人",
+        "actionText": "把县令、书吏和各级经手事项列清，只陈事实不先定罪。",
+        "targetRef": "actor.qingliu_magistrate",
+        "method": "经手链责任",
+        "immediateIntent": "把县令、书吏和各级经手事项列清，只陈事实不先定罪。",
+        "visibleTradeoff": "保留事实边界，却把更多人暴露在问责与报复之下",
+        "stateEffects": [
+          "responsibility.firstRecordStatus",
+          "witness.accessStatus",
+          "evidence.chainStatus"
+        ],
+        "statePatch": {
+          "responsibility.firstRecordStatus": "HANDLER_CHAIN_LISTED_WITHOUT_CONVICTION",
+          "witness.accessStatus": "NAMED_AS_HANDLER",
+          "evidence.chainStatus": "TRACEABLE"
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

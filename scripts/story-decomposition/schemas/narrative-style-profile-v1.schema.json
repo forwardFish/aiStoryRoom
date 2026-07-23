@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/narrative-style-profile-v1.schema.json",
+  "title": "narrative-style-profile-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "narrative-style-profile-v1"
+    },
+    "profileId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pointOfView": {
+      "type": "string",
+      "minLength": 1
+    },
+    "registerRules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "sceneConstructionRules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "characterVoiceAnchors": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minItems": 1
+      }
+    },
+    "dialogueAndSubtextRules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "terminologyRules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "forbiddenModernPhrases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "forbiddenSystemPhrases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "forbiddenAiSummaryPatterns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "narrativeBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minCharacters": {
+          "type": "integer",
+          "minimum": 300
+        },
+        "maxCharacters": {
+          "type": "integer",
+          "minimum": 500
+        }
+      },
+      "required": [
+        "minCharacters",
+        "maxCharacters"
+      ]
+    },
+    "reviewerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approvedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "profileId",
+    "version",
+    "pointOfView",
+    "registerRules",
+    "sceneConstructionRules",
+    "characterVoiceAnchors",
+    "dialogueAndSubtextRules",
+    "terminologyRules",
+    "forbiddenModernPhrases",
+    "forbiddenSystemPhrases",
+    "forbiddenAiSummaryPatterns",
+    "narrativeBudget",
+    "reviewerId",
+    "approvedAt"
+  ]
+}

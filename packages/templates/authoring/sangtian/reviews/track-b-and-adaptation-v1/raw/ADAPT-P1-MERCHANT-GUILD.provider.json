@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "ADAPT-P1-MERCHANT-GUILD",
+  "kind": "ADAPTATION",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:36:18.332Z",
+  "completedAt": "2026-07-22T18:36:18.459Z",
+  "httpStatus": 200,
+  "inputHash": "D8F396E3B3070AED0484EFD27ACB821FFD2F9C1F8CD316F0A3F1CC9B58F68FC0",
+  "rawOutputHash": "BFEBAC14B1ACC5E47A476BE4595B2E78297B7281DA1B8447EEC7F538A410A131",
+  "rawText": "{\n  \"verdict\": \"PASS\",\n  \"issues\": []\n}",
+  "usage": {
+    "prompt_tokens": 9485,
+    "completion_tokens": 16,
+    "total_tokens": 9501,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 9485
+  }
+}

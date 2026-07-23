@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "part-contract-v1",
+  "partId": "PART-03",
+  "title": "毁证与弹劾",
+  "foregroundPowers": [
+    "证据控制权",
+    "问责对象选择权",
+    "京师政治定性权"
+  ],
+  "irreversibleDecisions": [
+    "公开什么证据",
+    "保护或牺牲谁",
+    "向谁提出弹劾"
+  ],
+  "entryStatePaths": [
+    "evidence.chainStatus",
+    "witness.accessStatus",
+    "report.firstNarrativeController"
+  ],
+  "exitStatePaths": [
+    "evidence.publicRecordStatus",
+    "accountability.primaryTarget",
+    "capital.framingStatus"
+  ],
+  "forbiddenEarlyReveals": [
+    "皇帝最终裁决",
+    "唯一正史叙述"
+  ],
+  "handoffPartIds": [
+    "PART-04"
+  ],
+  "implementationScope": "FORBIDDEN_REVEALS_ONLY"
+}

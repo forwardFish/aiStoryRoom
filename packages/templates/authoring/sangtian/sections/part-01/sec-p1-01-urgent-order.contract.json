@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "section-contract-v1",
+  "sectionId": "SEC-P1-01",
+  "partId": "PART-01",
+  "title": "急令压案",
+  "dramaticPurpose": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+  "targetTurnWindow": {
+    "earliest": 1,
+    "latest": 5
+  },
+  "entryRequirements": [
+    {
+      "ruleId": "ENTRY-P1-S1",
+      "statePath": "sectionId",
+      "operator": "EQ",
+      "expectedValue": "SEC-P1-01",
+      "description": "固定开场进入第一节"
+    }
+  ],
+  "requiredRequirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "activeDecisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "activeCausalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "foregroundActorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_clerk",
+    "actor.qingliu_messenger"
+  ],
+  "mustEstablish": [
+    {
+      "ruleId": "S1-MUST-EXECUTION",
+      "statePath": "reform.executionMode",
+      "operator": "NEQ",
+      "expectedValue": "UNKNOWN",
+      "description": "改桑进入具体执行状态"
+    },
+    {
+      "ruleId": "S1-MUST-REVIEW",
+      "statePath": "review.initiationStatus",
+      "operator": "NEQ",
+      "expectedValue": "NOT_STARTED",
+      "description": "复核已启动或形成正式阻断"
+    },
+    {
+      "ruleId": "S1-MUST-RESPONSIBILITY",
+      "statePath": "responsibility.firstRecordStatus",
+      "operator": "NEQ",
+      "expectedValue": "EMPTY",
+      "description": "第一份责任记录可追踪"
+    },
+    {
+      "ruleId": "S1-MUST-PENDING",
+      "statePath": "pendingConsequences",
+      "operator": "ANY_PENDING",
+      "expectedValue": true,
+      "description": "至少一个督抚相关后果待兑现"
+    }
+  ],
+  "requiredMaterialChangeClasses": [
+    "EXECUTION_MODE",
+    "REVIEW_INITIATION",
+    "RESPONSIBILITY_RECORD",
+    "NPC_COUNTERMOVE"
+  ],
+  "forbiddenEarlyReveals": [
+    "巡抚被确认是幕后主使",
+    "完整暗账被确认",
+    "大规模土地兼并已经完成",
+    "正式御前裁决已经发生",
+    "暗账实物出现",
+    "完整商会链条被证明"
+  ],
+  "allowedNextSectionIds": [
+    "SEC-P1-02"
+  ],
+  "exitGates": [
+    {
+      "ruleId": "S1-EXIT-EXECUTION",
+      "statePath": "reform.executionMode",
+      "operator": "NEQ",
+      "expectedValue": "UNKNOWN",
+      "description": "执行模式已确定"
+    },
+    {
+      "ruleId": "S1-EXIT-REVIEW",
+      "statePath": "review.initiationStatus",
+      "operator": "NEQ",
+      "expectedValue": "NOT_STARTED",
+      "description": "复核已启动"
+    },
+    {
+      "ruleId": "S1-EXIT-RECORD",
+      "statePath": "responsibility.firstRecordStatus",
+      "operator": "NEQ",
+      "expectedValue": "EMPTY",
+      "description": "责任记录已形成"
+    },
+    {
+      "ruleId": "S1-EXIT-PENDING",
+      "statePath": "pendingConsequences",
+      "operator": "ANY_PENDING",
+      "expectedValue": true,
+      "description": "存在督抚相关待兑现后果"
+    }
+  ],
+  "floorObligationIds": [
+    "FLOOR-P1-S1-XUNFU-RESPONSE"
+  ],
+  "handoffStatePaths": [
+    "reform.executionMode",
+    "review.initiationStatus",
+    "responsibility.firstRecordStatus",
+    "relations.governorXunfu"
+  ]
+}

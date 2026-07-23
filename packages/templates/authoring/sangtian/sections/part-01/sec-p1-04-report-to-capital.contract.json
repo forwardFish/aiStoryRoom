@@ -1,0 +1,140 @@
+{
+  "schemaVersion": "section-contract-v1",
+  "sectionId": "SEC-P1-04",
+  "partId": "PART-01",
+  "title": "一纸入京",
+  "dramaticPurpose": "把执行、证据、粮食代价和督抚关系压缩为首份可入京且不越过证据边界的政治叙述。",
+  "targetTurnWindow": {
+    "earliest": 13,
+    "latest": 20
+  },
+  "entryRequirements": [
+    {
+      "ruleId": "ENTRY-P1-S4",
+      "statePath": "grain.reliefChannel",
+      "operator": "NEQ",
+      "expectedValue": "UNDECIDED",
+      "description": "粮食方案已有决断"
+    }
+  ],
+  "requiredRequirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "activeDecisionKernelIds": [
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "DK-P1-CAPITAL-CHANNEL"
+  ],
+  "activeCausalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "foregroundActorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.xunfu_aide",
+    "actor.jiangnan_merchant_head"
+  ],
+  "mustEstablish": [
+    {
+      "ruleId": "S4-MUST-CONTROLLER",
+      "statePath": "report.firstNarrativeController",
+      "operator": "NEQ",
+      "expectedValue": "UNDECIDED",
+      "description": "首报叙述控制者明确"
+    },
+    {
+      "ruleId": "S4-MUST-AUTHORSHIP",
+      "statePath": "report.authorshipMode",
+      "operator": "NEQ",
+      "expectedValue": "UNKNOWN",
+      "description": "署名方式明确"
+    },
+    {
+      "ruleId": "S4-MUST-ATTACHMENT",
+      "statePath": "report.attachmentStrength",
+      "operator": "NEQ",
+      "expectedValue": "NONE",
+      "description": "附件强度已按证据计算"
+    },
+    {
+      "ruleId": "S4-MUST-DISPATCH",
+      "statePath": "report.dispatchStatus",
+      "operator": "IN",
+      "expectedValue": [
+        "READY",
+        "DISPATCHED",
+        "SPLIT"
+      ],
+      "description": "首报已可送出或已经分裂送出"
+    }
+  ],
+  "requiredMaterialChangeClasses": [
+    "REPORT_AUTHORSHIP",
+    "EVIDENCE_ATTACHMENT",
+    "RESPONSIBILITY_SCOPE",
+    "CAPITAL_CHANNEL",
+    "PART_TWO_HANDOFF"
+  ],
+  "forbiddenEarlyReveals": [
+    "巡抚被确认是幕后主使",
+    "完整暗账被确认",
+    "大规模土地兼并已经完成",
+    "正式御前裁决已经发生",
+    "京师已经完成最终定性",
+    "皇帝已经裁决浙江危局"
+  ],
+  "allowedNextSectionIds": [
+    "PART-02-HANDOFF"
+  ],
+  "exitGates": [
+    {
+      "ruleId": "S4-EXIT-CONTROLLER",
+      "statePath": "report.firstNarrativeController",
+      "operator": "NEQ",
+      "expectedValue": "UNDECIDED",
+      "description": "叙述控制者已确定"
+    },
+    {
+      "ruleId": "S4-EXIT-AUTHORSHIP",
+      "statePath": "report.authorshipMode",
+      "operator": "NEQ",
+      "expectedValue": "UNKNOWN",
+      "description": "署名方式已确定"
+    },
+    {
+      "ruleId": "S4-EXIT-ATTACHMENT",
+      "statePath": "report.attachmentStrength",
+      "operator": "NEQ",
+      "expectedValue": "NONE",
+      "description": "附件强度已确定"
+    },
+    {
+      "ruleId": "S4-EXIT-DISPATCH",
+      "statePath": "report.dispatchStatus",
+      "operator": "IN",
+      "expectedValue": [
+        "READY",
+        "DISPATCHED",
+        "SPLIT"
+      ],
+      "description": "首报到达合法末态"
+    }
+  ],
+  "floorObligationIds": [
+    "FLOOR-P1-S4-CAPITAL-DEADLINE"
+  ],
+  "handoffStatePaths": [
+    "reform.executionMode",
+    "review.authority",
+    "evidence.chainStatus",
+    "grain.reliefChannel",
+    "report.firstNarrativeController",
+    "relations.governorXunfu",
+    "merchant.entryStatus",
+    "land.riskLevel"
+  ]
+}

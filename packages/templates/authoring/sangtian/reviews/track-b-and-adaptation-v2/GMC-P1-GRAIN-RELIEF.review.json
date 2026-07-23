@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-GRAIN-RELIEF",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.1.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "C9579F39FD058D01D4C69ED68621579A437E6B918510926057BE669541C00186",
+  "candidateHash": "EE436BE9813F9D44160A507BB7E40CD7707B00569DB049208FA234EC60473355",
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:40:05.265Z",
+  "immutableHash": "AEABE0A0D8DBED9198696312D2E0ACFF77F261C1143B4C4A9723F4E54124C2B3"
+}

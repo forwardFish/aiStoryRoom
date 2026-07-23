@@ -7,6 +7,7 @@ import {
 } from "@ai-story/shared";
 import { gamePageProjection } from "../game-page-projection";
 import type { CreditControlProjection } from "@ai-story/shared";
+import { buildActionAvailability, type SoloActionAffordances } from "./action-availability";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -21,14 +22,14 @@ export type SoloProjectionSource = {
   narratives: any[];
   facts: any[];
   assets: any[];
-  roles: any[];
-  latestAttempt?: any | null;
+  prologueNarrative?: string;
   creditControl: CreditControlProjection;
 };
 
 export function buildSoloStoryProjection(source: SoloProjectionSource): GameProjectionV2 {
   const { run, player, role, control, thread, turn, decisionSet } = source;
   const world = gamePageProjection(run.templateKey);
+  applyPartOneStatusMetrics(world, run);
   const timeline = source.narratives
     .map(toTimelineEntry)
     .filter((entry): entry is StoryTimelineEntryV2 => Boolean(entry))
@@ -39,29 +40,50 @@ export function buildSoloStoryProjection(source: SoloProjectionSource): GameProj
     .map((fact) => ({ factKey: String(fact.factKey), content: String(fact.content) }));
   const context = asRecord(turn?.contextJson);
   const availableTargets = readTargets(context.availableTargets);
-  const decisions = readDecisions(decisionSet?.candidatesJson);
   const completed = run.status === "chapter_generated" || thread?.status === "COMPLETED";
+  const terminalHandoff = asRecord(asRecord(asRecord(run?.stateJson).soloStory).terminalHandoff);
+  const terminalDecisions = readDecisions(terminalHandoff.decisions);
+  const decisions = completed && terminalDecisions.length
+    ? terminalDecisions
+    : readDecisions(decisionSet?.candidatesJson);
   const canHumanAct = !completed && ["HUMAN_ACTIVE", "HUMAN_OFFLINE_GRACE"].includes(String(control?.mode || "HUMAN_ACTIVE"));
+  const turnStatus = completed && terminalDecisions.length ? "COMPLETED" : normalizeTurnStatus(turn?.status);
+  const actionAffordances = readActionAffordances(context.actionAffordances);
+  const actionAvailability = buildActionAvailability({
+    turnStatus,
+    canHumanAct,
+    completed,
+    storyPublished: Boolean(String(turn?.situationNarrative || "").trim()),
+    decisions,
+    availableTargets,
+    activeAssetKeys: source.assets
+      .filter((asset) => String(asset.status) === "ACTIVE" && Number(asset.quantity) > 0)
+      .map((asset) => String(asset.assetKey)),
+    affordances: actionAffordances,
+    storyChoiceOnly: context.partId === "PART-01"
+  });
   const currentTurn = turn ? {
-    id: String(turn.id),
+    id: completed && terminalDecisions.length ? `${String(turn.id)}:part-one-handoff` : String(turn.id),
     revision: Number(turn.revision || 1),
     stageIndex: Number(turn.stageIndex || 1),
     turnIndex: Number(turn.turnIndex || 1),
     baseWorldSequence: Number(turn.baseWorldSequence || 0),
-    status: normalizeTurnStatus(turn.status),
-    title: String(turn.situationTitle || "眼前的局势"),
-    narrative: String(turn.situationNarrative || ""),
+    status: turnStatus,
+    title: String(completed && terminalDecisions.length ? terminalHandoff.title : turn.situationTitle || "眼前的局势"),
+    narrative: String(completed && terminalDecisions.length ? terminalHandoff.narrative : turn.situationNarrative || ""),
     visibleFacts,
-    framing: String(decisionSet?.framing || context.framing || "在这个情境里，你准备怎么做？"),
+    framing: String(completed && terminalDecisions.length ? terminalHandoff.framing : decisionSet?.framing || context.framing || "在这个情境里，你准备怎么做？"),
     decisions,
     availableTargets,
-    customActionAllowed: true
+    actionAvailability,
+    customActionAllowed: actionAvailability.customPlan.state === "AVAILABLE"
   } satisfies GameProjectionV2["currentTurn"] : null;
 
   return {
     schemaVersion: GAME_PROJECTION_V2_SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
     worldSequence: Number(run.worldSequence || 0),
+    prologueNarrative: source.prologueNarrative,
     room: {
       id: String(run.id),
       title: String(run.title),
@@ -86,11 +108,11 @@ export function buildSoloStoryProjection(source: SoloProjectionSource): GameProj
     },
     currentTurn,
     timeline,
-    otherActors: source.roles.map((other) => ({
-      roleId: String(other.id),
+    otherActors: world.roles.map((other) => ({
+      roleId: other.roleKey === role.roleKey ? String(role.id) : String(other.roleKey),
       roleName: String(other.roleName),
-      controllerKind: other.id === role.id && canHumanAct ? "HUMAN" as const : "AI" as const,
-      stageIndex: other.id === role.id ? Number(thread?.currentStageIndex || 1) : Number(run.currentDay || 1)
+      controllerKind: other.roleKey === role.roleKey && canHumanAct ? "HUMAN" as const : "AI" as const,
+      stageIndex: other.roleKey === role.roleKey ? Number(thread?.currentStageIndex || 1) : Number(run.currentDay || 1)
     })),
     visibleAssets: source.assets.map((asset) => ({
       assetKey: String(asset.assetKey),
@@ -177,6 +199,36 @@ function readTargets(value: unknown) {
   return value
     .filter((item) => item && typeof item === "object")
     .map((item: any) => ({ type: String(item.type) as IntentTargetTypeV2, id: String(item.id), label: String(item.label) }));
+}
+
+function applyPartOneStatusMetrics(
+  world: ReturnType<typeof gamePageProjection>,
+  run: any
+) {
+  if (String(run?.templateKey || "") !== "sangtian") return;
+  const partOne = asRecord(asRecord(run?.stateJson).partOne);
+  if (String(partOne.partId || "") !== "PART-01") return;
+  const reform = asRecord(partOne.reform);
+  const progress = String(reform.progress || "NOT_STARTED");
+  const executionMode = String(reform.executionMode || "UNKNOWN");
+  const visibleProgress = progress === "STARTED" || executionMode === "PROVISIONAL_RELEASE"
+    ? 20
+    : executionMode === "LIMITED_TRIAL"
+      ? 10
+      : 0;
+  world.presentation.statusMetrics = world.presentation.statusMetrics.map((metric) =>
+    metric.key === "reform_progress" ? { ...metric, value: visibleProgress } : metric
+  );
+}
+
+function readActionAffordances(value: unknown): SoloActionAffordances {
+  const source = asRecord(value);
+  return {
+    conversationTargetIds: readStringArray(source.conversationTargetIds),
+    investigationTargetIds: readStringArray(source.investigationTargetIds),
+    leverageAssetKeys: readStringArray(source.leverageAssetKeys),
+    customPlanPressureIds: readStringArray(source.customPlanPressureIds)
+  };
 }
 
 function readStringArray(value: unknown): string[] {

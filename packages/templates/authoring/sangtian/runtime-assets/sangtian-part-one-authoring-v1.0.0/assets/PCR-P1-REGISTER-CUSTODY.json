@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-REGISTER-CUSTODY",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "REQ-P1-REGISTER-CUSTODY",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "保管链强弱决定证据能否随奏报进入问责",
+      "多份材料可能使单点销毁不能抹除全部线索"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

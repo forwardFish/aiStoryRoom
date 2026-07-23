@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C01-LAND-RISK-COUNCIL",
+  "currentDateAndTime": "御前财政会议之后",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-POSITION-1",
+      "subjectRef": "source.yuwang",
+      "statement": "source.yuwang 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-POSITION-2",
+      "subjectRef": "source.xu_jie",
+      "statement": "source.xu_jie 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-POSITION-3",
+      "subjectRef": "source.gao_gong",
+      "statement": "source.gao_gong 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-POSITION-4",
+      "subjectRef": "source.zhang_juzheng",
+      "statement": "source.zhang_juzheng 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-POSITION-5",
+      "subjectRef": "source.tan_lun",
+      "statement": "source.tan_lun 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    }
+  ],
+  "characterKnowledge": [],
+  "activeGoals": [],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [],
+  "unresolvedPromises": [],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-ARC-1",
+      "subjectRef": "source.zhang_juzheng",
+      "statement": "张居正判断改桑可能被严党与富商利用来兼并农田，并预见失田与动乱风险；这仍是人物判断，不是已经发生的事实。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-ARC-2",
+      "subjectRef": "source.tan_lun",
+      "statement": "谭纶说明官商若同时控制桑田、蚕丝和织造，可以减少买丝环节并扩大收益。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C01-LAND-RISK-COUNCIL-ARC-3",
+      "subjectRef": "source.zhang_juzheng",
+      "statement": "张居正称胡宗宪兼总督与巡抚、受皇帝信任，也深受严嵩提携，因此既有地方权力又受政治关系约束。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C01-LAND-RISK-COUNCIL-ARTIFACT-R1",
+    "DM1566-C01-CL-LAND-RISK-PREDICTION",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C01-CL-GOVERNOR-POLITICAL-POSITION"
+  ]
+}

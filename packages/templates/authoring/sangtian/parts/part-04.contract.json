@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "part-contract-v1",
+  "partId": "PART-04",
+  "title": "御前裁决",
+  "foregroundPowers": [
+    "官方叙述权",
+    "财政代价分配权",
+    "政治责任分配权"
+  ],
+  "irreversibleDecisions": [
+    "哪一版事实进入正式记录",
+    "谁承担财政与政治代价"
+  ],
+  "entryStatePaths": [
+    "capital.framingStatus",
+    "evidence.publicRecordStatus",
+    "accountability.primaryTarget"
+  ],
+  "exitStatePaths": [
+    "ending.treasury",
+    "ending.people",
+    "ending.land",
+    "ending.officials",
+    "ending.playerCost"
+  ],
+  "forbiddenEarlyReveals": [],
+  "handoffPartIds": [],
+  "implementationScope": "FINAL_DIMENSIONS_ONLY"
+}

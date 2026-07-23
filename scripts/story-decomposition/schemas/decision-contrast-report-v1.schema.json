@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/decision-contrast-report-v1.schema.json",
+  "title": "decision-contrast-report-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "decision-contrast-report-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checkpoint": {
+      "enum": [
+        "G00",
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "playerVisibleViewHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "optionBindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "visibleOrdinal": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "decisionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "affordanceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "semanticDimensions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "consequenceDimensions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "visibleOrdinal",
+          "decisionId",
+          "affordanceId",
+          "semanticDimensions",
+          "consequenceDimensions"
+        ]
+      },
+      "minItems": 2
+    },
+    "pairResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "leftVisibleOrdinal": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "rightVisibleOrdinal": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "differingSemanticDimensions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "differingConsequenceDimensions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "verdict": {
+            "enum": [
+              "PASS",
+              "FAIL"
+            ]
+          }
+        },
+        "required": [
+          "leftVisibleOrdinal",
+          "rightVisibleOrdinal",
+          "differingSemanticDimensions",
+          "differingConsequenceDimensions",
+          "verdict"
+        ]
+      },
+      "minItems": 1
+    },
+    "allPairsPass": {
+      "type": "boolean"
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "checkpoint",
+    "playerVisibleViewHash",
+    "optionBindings",
+    "pairResults",
+    "allPairsPass",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

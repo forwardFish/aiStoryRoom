@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "sangtian-narrative-style-review-v1",
+  "reviewerVersion": "sangtian-narrative-style-review-v1.0.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "9C3190DF338A13A3A62C7BB87E256128F736829E6FA33CB801102D77D062BCA0",
+  "draftProfileHash": "C3732A922E8C32CA6136B64EEDAF99EF437C5E5D4C7128DEF220E079B2DEB0A9",
+  "anchorSceneIds": [
+    "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+    "DM1566-C04-JOINT-REPORT-CONTEST",
+    "DM1566-C06-LAND-PRICE-DEBATE",
+    "DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:44:26.597Z",
+  "immutableHash": "29D53F76351FFCC32D7853228A8B8506EB7D74453B6CF086803871586ACF04DC"
+}

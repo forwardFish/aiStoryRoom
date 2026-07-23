@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-REPORT-AUTHORSHIP",
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+    "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+    "DM1566-C04-JOINT-REPORT-CONTEST",
+    "DM1566-C04-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "candidateType": "DECISION_KERNEL",
+  "dramaticFunction": "玩家能决定共同、单方或分裂奏报",
+  "preconditions": [
+    "地方必须形成第一份入京叙述",
+    "玩家掌握至少一项可写入的执行、民生或证据事实"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "督抚共同奏报",
+    "总督单独奏报",
+    "允许巡抚先报并附异议",
+    "形成相互矛盾的分裂奏报"
+  ],
+  "likelyCountermoves": [
+    "拒绝联署",
+    "另递密信",
+    "删去延缓或民生内容",
+    "抢先送达京师"
+  ],
+  "immediateStateEffects": [
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "delayedConsequences": [
+    "最先到达的版本塑造京师初步定性",
+    "署名模式决定后续问责和盟友关系"
+  ],
+  "invariantsToPreserve": [
+    "奏报内容只能使用当前已知事实",
+    "共同署名不能消除真实分歧"
+  ],
+  "evidenceStrength": "EXPLICIT",
+  "limitations": [
+    "独立巡抚角色来自 Adaptation",
+    "不能预写皇帝最终裁决"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-SEPARATE-XUNFU",
+  "status": "CANDIDATE_ONLY"
+}

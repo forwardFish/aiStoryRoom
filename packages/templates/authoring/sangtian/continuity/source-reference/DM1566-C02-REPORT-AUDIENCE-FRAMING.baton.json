@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+  "currentDateAndTime": "严府商议奏疏时",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-POSITION-1",
+      "subjectRef": "source.yan_song",
+      "statement": "source.yan_song 在 place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-POSITION-2",
+      "subjectRef": "source.yan_shifan",
+      "statement": "source.yan_shifan 在 place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-POSITION-3",
+      "subjectRef": "source.luo_longwen",
+      "statement": "source.luo_longwen 在 place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-KNOWLEDGE-1",
+      "subjectRef": "source.yan_song",
+      "statement": "严嵩命严世蕃把奏疏送司礼监，请吕芳到裕王府后当面交给皇帝，让皇帝当时给旨。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    }
+  ],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-GOAL-1",
+      "subjectRef": "source.yan_song",
+      "statement": "严嵩命严世蕃把奏疏送司礼监，请吕芳到裕王府后当面交给皇帝，让皇帝当时给旨。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-DECISION-1",
+      "subjectRef": "source.yan_song",
+      "statement": "严嵩命严世蕃把奏疏送司礼监，请吕芳到裕王府后当面交给皇帝，让皇帝当时给旨。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-PROMISE-1",
+      "subjectRef": "source.yan_song",
+      "statement": "严嵩命严世蕃把奏疏送司礼监，请吕芳到裕王府后当面交给皇帝，让皇帝当时给旨。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-ARC-1",
+      "subjectRef": "source.yan_song",
+      "statement": "严嵩命严世蕃把奏疏送司礼监，请吕芳到裕王府后当面交给皇帝，让皇帝当时给旨。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-AUDIENCE-FRAMING-ARC-2",
+      "subjectRef": "source.luo_longwen",
+      "statement": "罗龙文称，当着裕王呈递，无论皇帝给什么旨意都可减少后患；裕王若当时不说，日后也难再说。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C02-REPORT-AUDIENCE-FRAMING-ARTIFACT-R1",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+  ]
+}

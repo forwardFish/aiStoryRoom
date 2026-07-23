@@ -1,0 +1,161 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C06-LAND-PRICE-DEBATE",
+  "currentDateAndTime": "浙江地方议定以改兼赈方案时",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-POSITION-1",
+      "subjectRef": "source.gao_hanwen",
+      "statement": "source.gao_hanwen 在 place.zhejiang_government_hall 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-POSITION-2",
+      "subjectRef": "source.zheng_michang",
+      "statement": "source.zheng_michang 在 place.zhejiang_government_hall 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-POSITION-3",
+      "subjectRef": "source.he_maocai",
+      "statement": "source.he_maocai 在 place.zhejiang_government_hall 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-POSITION-4",
+      "subjectRef": "source.hai_rui",
+      "statement": "source.hai_rui 在 place.zhejiang_government_hall 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-POSITION-5",
+      "subjectRef": "source.wang_yongji",
+      "statement": "source.wang_yongji 在 place.zhejiang_government_hall 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    }
+  ],
+  "characterKnowledge": [],
+  "activeGoals": [],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [],
+  "unresolvedPromises": [],
+  "openThreats": [
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-THREAT-1",
+      "subjectRef": "source.he_maocai",
+      "statement": "何茂才以官仓赈粮不足五日反制田价限制，把眼前饥饿与长期失田风险置于冲突。",
+      "status": "OPEN_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    }
+  ],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-ARC-1",
+      "subjectRef": "source.gao_hanwen",
+      "statement": "高翰文指出议案只要求丝绸大户尽快买田，却没有规定压价买田和灾民明年生计的处理办法。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-ARC-2",
+      "subjectRef": "source.gao_hanwen",
+      "statement": "高翰文主张灾县田价不得低于三十石一亩，并质疑为何全部改桑指标必须压在两个灾县。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-ARC-3",
+      "subjectRef": "source.he_maocai",
+      "statement": "何茂才以官仓赈粮不足五日反制田价限制，把眼前饥饿与长期失田风险置于冲突。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C06-LAND-PRICE-DEBATE-ARC-4",
+      "subjectRef": "source.zheng_michang",
+      "statement": "高翰文、海瑞与王用汲先后请免职后，郑泌昌说议案当然可以再议，要求他们了解粮、丝、买田资金等情形，并定在后天上午再议。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C06-LAND-PRICE-DEBATE-ARTIFACT-R1",
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+  ]
+}

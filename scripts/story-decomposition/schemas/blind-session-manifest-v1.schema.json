@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/blind-session-manifest-v1.schema.json",
+  "title": "blind-session-manifest-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "blind-session-manifest-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "blindContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "initialBlindContextHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "allowedResources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "allowedTools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "forbiddenResources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "inheritedDevelopmentContext": {
+      "const": false
+    },
+    "playerRoleDeclaration": {
+      "const": "BLIND_REAL_PLAYER"
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "blindContextId",
+    "initialBlindContextHash",
+    "allowedResources",
+    "allowedTools",
+    "forbiddenResources",
+    "inheritedDevelopmentContext",
+    "playerRoleDeclaration",
+    "sealedAt",
+    "immutableHash"
+  ]
+}

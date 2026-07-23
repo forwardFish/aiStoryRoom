@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "RTA-P1-REGISTER-CUSTODY",
+  "assetType": "CUSTODY_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "REQ-P1-REGISTER-CUSTODY",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "payload": {
+    "dramaticFunction": "原件、副本、封条和经手人能被追踪与争夺",
+    "preconditions": [
+      "县册、田契、抄件或封条已经以事件进入房间",
+      "行动者具有接触、封存或抄录的合法路径"
+    ],
+    "allowedMoves": [
+      "封存原件并记录见证人",
+      "制作带经手记录的副本",
+      "限制接触范围",
+      "把材料移交另一保管人"
+    ],
+    "likelyCountermoves": [
+      "拒绝交出原件",
+      "抢先抄录或替换",
+      "破坏封条",
+      "毁灭某一份实物"
+    ],
+    "immediateStateEffects": [
+      "evidence.chainStatus",
+      "evidence.primaryCustodianRef",
+      "evidence.copyStatus",
+      "evidence.archiveSealStatus"
+    ],
+    "delayedConsequences": [
+      "保管链强弱决定证据能否随奏报进入问责",
+      "多份材料可能使单点销毁不能抹除全部线索"
+    ],
+    "invariantsToPreserve": [
+      "原件、副本、听闻内容和推断必须区分",
+      "后续原著焚账只提供机制参考，不能提前发生"
+    ],
+    "limitations": [
+      "清流县册异常是 Adaptation",
+      "不能从同样四箱推定原副本关系"
+    ],
+    "evidenceStrength": "EXPLICIT"
+  }
+}

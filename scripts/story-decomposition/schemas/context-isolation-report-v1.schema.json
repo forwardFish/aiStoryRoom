@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/context-isolation-report-v1.schema.json",
+  "title": "context-isolation-report-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "context-isolation-report-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "blindContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "auditorContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "initialBlindContextHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "computedFromPrincipalAccessLogHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "differentContexts": {
+      "const": true
+    },
+    "all21PlayerReviewContextIdsMatchBlindContext": {
+      "const": true
+    },
+    "blindHiddenReadCount": {
+      "const": 0
+    },
+    "auditResultsDeliveredToBlindCount": {
+      "const": 0
+    },
+    "orchestratorControlSignalsOnly": {
+      "const": true
+    },
+    "verdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "blindContextId",
+    "auditorContextId",
+    "initialBlindContextHash",
+    "computedFromPrincipalAccessLogHash",
+    "differentContexts",
+    "all21PlayerReviewContextIdsMatchBlindContext",
+    "blindHiddenReadCount",
+    "auditResultsDeliveredToBlindCount",
+    "orchestratorControlSignalsOnly",
+    "verdict",
+    "sealedAt",
+    "validatorVersion",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

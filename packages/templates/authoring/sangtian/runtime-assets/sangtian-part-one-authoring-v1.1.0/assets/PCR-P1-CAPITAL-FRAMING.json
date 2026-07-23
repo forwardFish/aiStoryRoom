@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-CAPITAL-FRAMING",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-CAPITAL-CHANNEL",
+    "DK-P1-REPORT-AUTHORSHIP"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili"
+  ],
+  "stateDependencies": [
+    "report.dispatchStatus",
+    "report.firstNarrativeController",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "REQ-P1-CAPITAL-FRAMING",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-CAPITAL-CHANNEL",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili",
+    "report.dispatchStatus",
+    "report.firstNarrativeController",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "京师先收到的版本形成第一版事实框架",
+      "渠道记录成为后续追责的一部分"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/turn-progress-report-v1.schema.json",
+  "title": "turn-progress-report-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "turn-progress-report-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "turnNumber": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "partId": {
+      "const": "PART-01"
+    },
+    "sectionBefore": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sectionAfter": {
+      "type": "string",
+      "minLength": 1
+    },
+    "playerActionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "consumedAffordanceId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "materialChanges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "statePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "before": {},
+          "after": {},
+          "sourceEventId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "statePath",
+          "before",
+          "after",
+          "sourceEventId"
+        ]
+      },
+      "minItems": 1
+    },
+    "npcReactionEventIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "advancedRequirementIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "advancedDecisionKernelIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "causalArcTransitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arcId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fromStage": {
+            "type": "string",
+            "minLength": 1
+          },
+          "toStage": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "arcId",
+          "fromStage",
+          "toStage"
+        ]
+      },
+      "minItems": 0
+    },
+    "paidPendingConsequenceIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "mainlineContributions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "ADVANCE_GATE",
+          "ESCALATE_PRESSURE",
+          "REVEAL_EVIDENCE",
+          "CONTEST_EVIDENCE",
+          "PAY_CONSEQUENCE",
+          "TRANSFORM_ARC"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "sectionExitGateDelta": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "hardValidationStatus": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "strength": {
+      "type": "string",
+      "enum": [
+        "STRONG",
+        "BRIDGE",
+        "FAIL"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "turnNumber",
+    "partId",
+    "sectionBefore",
+    "sectionAfter",
+    "playerActionId",
+    "consumedAffordanceId",
+    "materialChanges",
+    "npcReactionEventIds",
+    "advancedRequirementIds",
+    "advancedDecisionKernelIds",
+    "causalArcTransitions",
+    "paidPendingConsequenceIds",
+    "mainlineContributions",
+    "sectionExitGateDelta",
+    "hardValidationStatus",
+    "strength"
+  ]
+}

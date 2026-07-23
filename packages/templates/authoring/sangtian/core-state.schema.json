@@ -1,0 +1,354 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/sangtian-part-one-state.schema.json",
+  "title": "Sangtian PartOneState",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "partId",
+    "sectionId",
+    "turnNumber",
+    "reform",
+    "review",
+    "evidence",
+    "witness",
+    "grain",
+    "merchant",
+    "land",
+    "report",
+    "responsibility",
+    "relations",
+    "knowledgeTransfers",
+    "pendingConsequences"
+  ],
+  "properties": {
+    "partId": {
+      "const": "PART-01"
+    },
+    "sectionId": {
+      "enum": [
+        "SEC-P1-01",
+        "SEC-P1-02",
+        "SEC-P1-03",
+        "SEC-P1-04"
+      ]
+    },
+    "turnNumber": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20
+    },
+    "reform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executionMode",
+        "scopeStatus",
+        "progress"
+      ],
+      "properties": {
+        "executionMode": {
+          "enum": [
+            "UNKNOWN",
+            "PAUSED",
+            "LIMITED",
+            "FULL",
+            "CONDITIONAL"
+          ]
+        },
+        "scopeStatus": {
+          "enum": [
+            "UNSET",
+            "RECORDED",
+            "CONTESTED"
+          ]
+        },
+        "progress": {
+          "enum": [
+            "NOT_STARTED",
+            "ORDERED",
+            "STARTED"
+          ]
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initiationStatus",
+        "authority",
+        "procedureStatus"
+      ],
+      "properties": {
+        "initiationStatus": {
+          "enum": [
+            "NOT_STARTED",
+            "ORDERED",
+            "ACTIVE",
+            "BLOCKED"
+          ]
+        },
+        "authority": {
+          "enum": [
+            "UNDECIDED",
+            "GOVERNOR",
+            "XUNFU",
+            "JOINT",
+            "COUNTY"
+          ]
+        },
+        "procedureStatus": {
+          "enum": [
+            "UNSET",
+            "RECORDED",
+            "CONTESTED"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chainStatus",
+        "primaryCustodianRef",
+        "copyStatus",
+        "archiveSealStatus"
+      ],
+      "properties": {
+        "chainStatus": {
+          "enum": [
+            "UNKNOWN",
+            "TRACEABLE",
+            "FRAGILE",
+            "COMPROMISED"
+          ]
+        },
+        "primaryCustodianRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "copyStatus": {
+          "enum": [
+            "NONE",
+            "REQUESTED",
+            "CREATED",
+            "DISPUTED"
+          ]
+        },
+        "archiveSealStatus": {
+          "enum": [
+            "UNKNOWN",
+            "INTACT",
+            "BROKEN",
+            "RESEALED"
+          ]
+        }
+      }
+    },
+    "witness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accessStatus"
+      ],
+      "properties": {
+        "accessStatus": {
+          "enum": [
+            "UNKNOWN",
+            "AVAILABLE",
+            "PROTECTED",
+            "MISSING",
+            "CONTROLLED_BY_OTHER"
+          ]
+        }
+      }
+    },
+    "grain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immediatePressure",
+        "officialStockStatus",
+        "reliefChannel"
+      ],
+      "properties": {
+        "immediatePressure": {
+          "enum": [
+            "STABLE",
+            "RISING",
+            "ACUTE"
+          ]
+        },
+        "officialStockStatus": {
+          "enum": [
+            "UNKNOWN",
+            "INSUFFICIENT",
+            "LIMITED",
+            "AVAILABLE"
+          ]
+        },
+        "reliefChannel": {
+          "enum": [
+            "UNDECIDED",
+            "OFFICIAL",
+            "MERCHANT",
+            "MIXED",
+            "EXTERNAL_TRANSFER"
+          ]
+        }
+      }
+    },
+    "merchant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entryStatus",
+        "grantedRights"
+      ],
+      "properties": {
+        "entryStatus": {
+          "enum": [
+            "ABSENT",
+            "OFFERED",
+            "REJECTED",
+            "CONDITIONAL",
+            "ACTIVE"
+          ]
+        },
+        "grantedRights": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "land": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "riskLevel",
+        "safeguardStatus"
+      ],
+      "properties": {
+        "riskLevel": {
+          "enum": [
+            "UNKNOWN",
+            "LOW",
+            "RISING",
+            "HIGH"
+          ]
+        },
+        "safeguardStatus": {
+          "enum": [
+            "NONE",
+            "PROPOSED",
+            "ACTIVE",
+            "BYPASSED"
+          ]
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorshipMode",
+        "firstNarrativeController",
+        "attachmentStrength",
+        "dispatchStatus"
+      ],
+      "properties": {
+        "authorshipMode": {
+          "enum": [
+            "UNKNOWN",
+            "JOINT",
+            "GOVERNOR_ONLY",
+            "XUNFU_ONLY",
+            "SPLIT"
+          ]
+        },
+        "firstNarrativeController": {
+          "enum": [
+            "UNDECIDED",
+            "GOVERNOR",
+            "XUNFU",
+            "SHARED"
+          ]
+        },
+        "attachmentStrength": {
+          "enum": [
+            "NONE",
+            "LEAD_ONLY",
+            "PARTIAL",
+            "TRACEABLE"
+          ]
+        },
+        "dispatchStatus": {
+          "enum": [
+            "NOT_STARTED",
+            "DRAFTING",
+            "READY",
+            "DISPATCHED",
+            "SPLIT"
+          ]
+        }
+      }
+    },
+    "responsibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "firstRecordStatus",
+        "governorExposure",
+        "xunfuExposure"
+      ],
+      "properties": {
+        "firstRecordStatus": {
+          "enum": [
+            "EMPTY",
+            "RECORDED",
+            "DISPUTED"
+          ]
+        },
+        "governorExposure": {
+          "type": "number"
+        },
+        "xunfuExposure": {
+          "type": "number"
+        }
+      }
+    },
+    "relations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "governorXunfu"
+      ],
+      "properties": {
+        "governorXunfu": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100
+        }
+      }
+    },
+    "knowledgeTransfers": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "pendingConsequences": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

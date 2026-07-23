@@ -1,0 +1,667 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/formal-run-integrity-v1.schema.json",
+  "title": "formal-run-integrity-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "formal-run-integrity-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runManifestHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "gitCommitSha": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{40}$"
+    },
+    "packageHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "promptHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "styleProfileHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "modelAndConfigHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "blindContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "initialBlindContextHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "auditorContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contextIsolationVerified": {
+      "const": true
+    },
+    "contextIsolationReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "allPlayerReviewContextIdsMatchBlindContext": {
+      "const": true
+    },
+    "blindAllowedResources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "blindAllowedTools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "blindForbiddenResources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "principalAccessLogHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "accessLogThroughSequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "blindHiddenReadCount": {
+      "const": 0
+    },
+    "auditResultsDeliveredToBlindCount": {
+      "const": 0
+    },
+    "orchestratorControlSignalsOnly": {
+      "const": true
+    },
+    "checkpointSequence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "checkpoint": {
+            "enum": [
+              "G00",
+              "T01",
+              "T02",
+              "T03",
+              "T04",
+              "T05",
+              "T06",
+              "T07",
+              "T08",
+              "T09",
+              "T10",
+              "T11",
+              "T12",
+              "T13",
+              "T14",
+              "T15",
+              "T16",
+              "T17",
+              "T18",
+              "T19",
+              "T20"
+            ]
+          },
+          "machineIntegrityReportGeneratedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewSealedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "choiceSealedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hiddenAuditOpenedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hiddenAuditSealedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hiddenAdjudicationHash": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "hiddenAdjudicationVerdict": {
+            "const": "PASS"
+          },
+          "choiceSubmittedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextPlayerActionAcceptedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "choiceBindingVerifiedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "testIntegritySliceGeneratedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "checkpointAcceptanceGateGeneratedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nextProviderCallStartedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "checkpoint",
+          "machineIntegrityReportGeneratedAt",
+          "reviewSealedAt",
+          "choiceSealedAt",
+          "hiddenAuditOpenedAt",
+          "hiddenAuditSealedAt",
+          "hiddenAdjudicationHash",
+          "hiddenAdjudicationVerdict",
+          "choiceSubmittedAt",
+          "nextPlayerActionAcceptedAt",
+          "choiceBindingVerifiedAt",
+          "testIntegritySliceGeneratedAt",
+          "checkpointAcceptanceGateGeneratedAt",
+          "nextProviderCallStartedAt"
+        ]
+      },
+      "minItems": 21,
+      "maxItems": 21
+    },
+    "generationAttemptCountTotalByTurn": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "T01": {
+          "const": 1
+        },
+        "T02": {
+          "const": 1
+        },
+        "T03": {
+          "const": 1
+        },
+        "T04": {
+          "const": 1
+        },
+        "T05": {
+          "const": 1
+        },
+        "T06": {
+          "const": 1
+        },
+        "T07": {
+          "const": 1
+        },
+        "T08": {
+          "const": 1
+        },
+        "T09": {
+          "const": 1
+        },
+        "T10": {
+          "const": 1
+        },
+        "T11": {
+          "const": 1
+        },
+        "T12": {
+          "const": 1
+        },
+        "T13": {
+          "const": 1
+        },
+        "T14": {
+          "const": 1
+        },
+        "T15": {
+          "const": 1
+        },
+        "T16": {
+          "const": 1
+        },
+        "T17": {
+          "const": 1
+        },
+        "T18": {
+          "const": 1
+        },
+        "T19": {
+          "const": 1
+        },
+        "T20": {
+          "const": 1
+        }
+      },
+      "required": [
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "providerCallCountTotalByTurn": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "T01": {
+          "const": 2
+        },
+        "T02": {
+          "const": 2
+        },
+        "T03": {
+          "const": 2
+        },
+        "T04": {
+          "const": 2
+        },
+        "T05": {
+          "const": 2
+        },
+        "T06": {
+          "const": 2
+        },
+        "T07": {
+          "const": 2
+        },
+        "T08": {
+          "const": 2
+        },
+        "T09": {
+          "const": 2
+        },
+        "T10": {
+          "const": 2
+        },
+        "T11": {
+          "const": 2
+        },
+        "T12": {
+          "const": 2
+        },
+        "T13": {
+          "const": 2
+        },
+        "T14": {
+          "const": 2
+        },
+        "T15": {
+          "const": 2
+        },
+        "T16": {
+          "const": 2
+        },
+        "T17": {
+          "const": 2
+        },
+        "T18": {
+          "const": 2
+        },
+        "T19": {
+          "const": 2
+        },
+        "T20": {
+          "const": 2
+        }
+      },
+      "required": [
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "narrationProviderCallCountByTurn": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "T01": {
+          "const": 1
+        },
+        "T02": {
+          "const": 1
+        },
+        "T03": {
+          "const": 1
+        },
+        "T04": {
+          "const": 1
+        },
+        "T05": {
+          "const": 1
+        },
+        "T06": {
+          "const": 1
+        },
+        "T07": {
+          "const": 1
+        },
+        "T08": {
+          "const": 1
+        },
+        "T09": {
+          "const": 1
+        },
+        "T10": {
+          "const": 1
+        },
+        "T11": {
+          "const": 1
+        },
+        "T12": {
+          "const": 1
+        },
+        "T13": {
+          "const": 1
+        },
+        "T14": {
+          "const": 1
+        },
+        "T15": {
+          "const": 1
+        },
+        "T16": {
+          "const": 1
+        },
+        "T17": {
+          "const": 1
+        },
+        "T18": {
+          "const": 1
+        },
+        "T19": {
+          "const": 1
+        },
+        "T20": {
+          "const": 1
+        }
+      },
+      "required": [
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "decisionProviderCallCountByTurn": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "T01": {
+          "const": 1
+        },
+        "T02": {
+          "const": 1
+        },
+        "T03": {
+          "const": 1
+        },
+        "T04": {
+          "const": 1
+        },
+        "T05": {
+          "const": 1
+        },
+        "T06": {
+          "const": 1
+        },
+        "T07": {
+          "const": 1
+        },
+        "T08": {
+          "const": 1
+        },
+        "T09": {
+          "const": 1
+        },
+        "T10": {
+          "const": 1
+        },
+        "T11": {
+          "const": 1
+        },
+        "T12": {
+          "const": 1
+        },
+        "T13": {
+          "const": 1
+        },
+        "T14": {
+          "const": 1
+        },
+        "T15": {
+          "const": 1
+        },
+        "T16": {
+          "const": 1
+        },
+        "T17": {
+          "const": 1
+        },
+        "T18": {
+          "const": 1
+        },
+        "T19": {
+          "const": 1
+        },
+        "T20": {
+          "const": 1
+        }
+      },
+      "required": [
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "providerSwitchCount": {
+      "const": 0
+    },
+    "regenerateCount": {
+      "const": 0
+    },
+    "fallbackCount": {
+      "const": 0
+    },
+    "manualEditCount": {
+      "const": 0
+    },
+    "directApiOrDbBypassCount": {
+      "const": 0
+    },
+    "checkpointEvidenceMerkleRoot": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "runManifestHash",
+    "gitCommitSha",
+    "packageHash",
+    "promptHash",
+    "styleProfileHash",
+    "modelAndConfigHash",
+    "blindContextId",
+    "initialBlindContextHash",
+    "auditorContextId",
+    "contextIsolationVerified",
+    "contextIsolationReportHash",
+    "allPlayerReviewContextIdsMatchBlindContext",
+    "blindAllowedResources",
+    "blindAllowedTools",
+    "blindForbiddenResources",
+    "principalAccessLogHash",
+    "accessLogThroughSequence",
+    "blindHiddenReadCount",
+    "auditResultsDeliveredToBlindCount",
+    "orchestratorControlSignalsOnly",
+    "checkpointSequence",
+    "generationAttemptCountTotalByTurn",
+    "providerCallCountTotalByTurn",
+    "narrationProviderCallCountByTurn",
+    "decisionProviderCallCountByTurn",
+    "providerSwitchCount",
+    "regenerateCount",
+    "fallbackCount",
+    "manualEditCount",
+    "directApiOrDbBypassCount",
+    "checkpointEvidenceMerkleRoot",
+    "sealedAt",
+    "validatorVersion",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

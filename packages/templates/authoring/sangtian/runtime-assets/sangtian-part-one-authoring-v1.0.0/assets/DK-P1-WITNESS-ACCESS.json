@@ -1,0 +1,160 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-WITNESS-ACCESS",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-WITNESS-ACCESS"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "DK-P1-WITNESS-ACCESS",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "actor.zhejiang_xunfu",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "payload": {
+    "availableWhen": [
+      "县册、田契、抄件或封条已经以事件进入房间",
+      "行动者具有接触、封存或抄录的合法路径",
+      "信息通过在场、有限口述或可追踪文书中的一种路径出现",
+      "接收者、发送者和渠道可由事件记录"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-WITNESS-ACCESS-OPT-01",
+        "title": "秘密保护",
+        "actionText": "以核对公文为名把书吏带到总督府，不公开其证人身份。",
+        "targetRef": "actor.reform_clerk",
+        "method": "秘密转移保护",
+        "immediateIntent": "以核对公文为名把书吏带到总督府，不公开其证人身份。",
+        "visibleTradeoff": "证人较安全，但巡抚可能指责总督私扣经手人",
+        "stateEffects": [
+          "witness.accessStatus",
+          "relations.governorXunfu"
+        ],
+        "statePatch": {
+          "witness.accessStatus": "PROTECTED_SECRETLY",
+          "relations.governorXunfu": {
+            "$delta": -1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-WITNESS-ACCESS-OPT-02",
+        "title": "共同问话",
+        "actionText": "让督抚双方各派一人在场，当面对照书吏说法和样册。",
+        "targetRef": "actor.reform_clerk",
+        "method": "共同询问",
+        "immediateIntent": "让督抚双方各派一人在场，当面对照书吏说法和样册。",
+        "visibleTradeoff": "证词程序更强，却会把线索同时暴露给对方",
+        "stateEffects": [
+          "witness.accessStatus",
+          "knowledgeTransfers",
+          "evidence.chainStatus"
+        ],
+        "statePatch": {
+          "witness.accessStatus": "JOINTLY_QUESTIONED",
+          "evidence.chainStatus": "TRACEABLE",
+          "knowledgeTransfer": {
+            "topic": "clerk_testimony_scope",
+            "senderRef": "actor.reform_clerk",
+            "recipientRef": "actor.zhejiang_xunfu",
+            "status": "DELIVERED"
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-WITNESS-ACCESS-OPT-03",
+        "title": "先取密供",
+        "actionText": "让县令先收一份封缄书面供述，再决定是否传人。",
+        "targetRef": "actor.qingliu_magistrate",
+        "method": "书面密供",
+        "immediateIntent": "让县令先收一份封缄书面供述，再决定是否传人。",
+        "visibleTradeoff": "保留初始说法，但真实性和自愿性仍需复核",
+        "stateEffects": [
+          "witness.accessStatus",
+          "evidence.copyStatus"
+        ],
+        "statePatch": {
+          "witness.accessStatus": "SEALED_STATEMENT_HELD",
+          "evidence.copyStatus": "SEALED_STATEMENT_ONLY"
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

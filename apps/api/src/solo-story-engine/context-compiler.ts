@@ -44,7 +44,9 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
     relevantScriptCards: { items: input.relevantScriptCards, tokenEstimate: estimateJsonTokens(input.relevantScriptCards) },
     activePressures: { items: input.activePressures, tokenEstimate: estimateJsonTokens(input.activePressures) },
     pendingConsequences: { items: pendingConsequences, tokenEstimate: estimateJsonTokens(pendingConsequences) },
-    directedBeat: { items: input.scene.directedBeat ? [input.scene.directedBeat] : [], tokenEstimate: estimateJsonTokens(input.scene.directedBeat ? [input.scene.directedBeat] : []) }
+    directedBeat: { items: input.scene.directedBeat ? [input.scene.directedBeat] : [], tokenEstimate: estimateJsonTokens(input.scene.directedBeat ? [input.scene.directedBeat] : []) },
+    partOneRuntime: { items: input.partOneRuntime ? [input.partOneRuntime] : [], tokenEstimate: estimateJsonTokens(input.partOneRuntime ? [input.partOneRuntime] : []) },
+    partOneSettlement: { items: input.partOneSettlement ? [input.partOneSettlement.event] : [], tokenEstimate: estimateJsonTokens(input.partOneSettlement ? [input.partOneSettlement.event] : []) }
   };
 
   const items: ContextSourceItem[] = [
@@ -56,6 +58,13 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
     ...allSections.activePressures.items.map((item) => createItem(`pressure:${item.pressureId}`, item.priority, "ACTIVE_PRESSURES", item, item.priority === "P0")),
     ...allSections.relevantScriptCards.items.map((item) => createItem(`card:${item.cardId}`, item.priority, "RELEVANT_SCRIPT_CARDS", item, false)),
     ...allSections.directedBeat.items.map((item) => createItem(`beat:${item.beatId}`, "P1", "THIS_TURN_DIRECTED_BEAT", item, false)),
+    ...allSections.partOneRuntime.items.map((item) => ({
+      ...createItem(`part-one-runtime:${item.retrievalTrace.decisionKernelId}`, "P0", "PART_ONE_RUNTIME", item, true),
+      // The provider prompt receives the explicit projection below, not the
+      // audit-only source/adaptation arrays retained on the in-memory object.
+      tokenEstimate: estimateJsonTokens(partOnePromptProjection(item))
+    })),
+    ...allSections.partOneSettlement.items.map((item) => createItem(`part-one-event:${item.eventId}`, "P0", "PART_ONE_SETTLEMENT", item, true)),
     createItem(
       input.playerIntent ? `player:${input.playerIntent.immutableIntentHash.slice(0, 16)}` : `opening:${input.openingTrigger!.triggerId}`,
       "P0",
@@ -105,7 +114,9 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
     relevantScriptCards: filterSection(allSections.relevantScriptCards, (item) => includedIds.has(`card:${item.cardId}`)),
     activePressures: filterSection(allSections.activePressures, (item) => includedIds.has(`pressure:${item.pressureId}`)),
     pendingConsequences: filterSection(allSections.pendingConsequences, (item) => includedIds.has(`pending:${item.consequenceId}`)),
-    directedBeat: filterSection(allSections.directedBeat, (item) => includedIds.has(`beat:${item.beatId}`))
+    directedBeat: filterSection(allSections.directedBeat, (item) => includedIds.has(`beat:${item.beatId}`)),
+    partOneRuntime: filterSection(allSections.partOneRuntime, (item) => includedIds.has(`part-one-runtime:${item.retrievalTrace.decisionKernelId}`)),
+    partOneSettlement: filterSection(allSections.partOneSettlement, (item) => includedIds.has(`part-one-event:${item.eventId}`))
   };
 
   const allowedReferences = {
@@ -123,7 +134,10 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
     entityRefs: input.availableTargets.map((target) => target.id),
     assetKeys: [...input.role.heldLeverageKeys],
     pendingConsequenceIds: sections.pendingConsequences.items.map((item) => item.consequenceId),
-    directedBeatIds: sections.directedBeat.items.map((item) => item.beatId)
+    directedBeatIds: sections.directedBeat.items.map((item) => item.beatId),
+    runtimeAssetIds: unique(sections.partOneRuntime.items.flatMap((item) => item.retrievalTrace.selectedAssetIds)),
+    decisionKernelIds: unique(sections.partOneRuntime.items.map((item) => item.retrievalTrace.decisionKernelId)),
+    affordanceTemplateIds: unique(sections.partOneRuntime.items.flatMap((item) => item.decisionAffordances.map((option) => option.affordanceTemplateId)))
   };
 
   const renderedWorkingSet = renderWorkingSet({
@@ -136,6 +150,8 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
     pendingConsequences: sections.pendingConsequences.items,
     directedBeat: sections.directedBeat.items,
     actionResolution: input.actionResolution,
+    partOneRuntime: sections.partOneRuntime.items[0] || null,
+    partOneSettlement: sections.partOneSettlement.items[0] || null,
     playerAction: input.playerIntent,
     openingTrigger: input.openingTrigger || null
   });
@@ -216,6 +232,34 @@ function unique(values: string[]) {
   return [...new Set(values)];
 }
 
+function partOnePromptProjection(item: import("@ai-story/templates").PartOneRuntimeWorkingSet) {
+  return {
+    partId: item.partId,
+    section: {
+      sectionId: item.section.sectionId,
+      title: item.section.title,
+      dramaticPurpose: item.section.dramaticPurpose,
+      forbiddenEarlyReveals: item.forbiddenEarlyReveals
+    },
+    turnNumber: item.turnNumber,
+    stateProjection: item.stateProjection,
+    nextDecisionPressure: item.nextDecisionPressure,
+    decisionAffordances: item.decisionAffordances.map((option) => ({
+      title: option.title,
+      actionText: option.actionText,
+      target: option.target,
+      method: option.method,
+      immediateIntent: option.immediateIntent,
+      visibleTradeoff: option.visibleTradeoff
+    })),
+    actorPolicies: item.actorPolicies.map((asset) => asset.payload),
+    institutionCapabilities: item.institutionCapabilities.map((asset) => asset.payload),
+    activeCausalArcs: item.activeCausalArcs.map((asset) => asset.payload),
+    narrativeScenePatterns: (item.narrativeScenePatterns || []).map((asset) => asset.payload),
+    styleProfile: item.styleProfile
+  };
+}
+
 function renderWorkingSet(input: {
   role: StoryRole;
   scene: StoryScene;
@@ -226,6 +270,8 @@ function renderWorkingSet(input: {
   pendingConsequences: PendingConsequence[];
   directedBeat: DirectedBeat[];
   actionResolution: unknown;
+  partOneRuntime: import("@ai-story/templates").PartOneRuntimeWorkingSet | null;
+  partOneSettlement: import("@ai-story/templates").PartOneCommittedEvent | null;
   playerAction: { userFacingText: string } | null;
   openingTrigger: { triggerId: string; summary: string } | null;
 }) {
@@ -239,6 +285,8 @@ function renderWorkingSet(input: {
     `【当前压力】\n${input.activePressures.map((item) => `- ${item.summary}`).join("\n")}`,
     `【待兑现后果】\n${input.pendingConsequences.map((item) => `- ${item.summary}`).join("\n")}`,
     input.directedBeat.length ? `【本轮外部推进】\n${input.directedBeat.map((item) => `- ${item.summary}`).join("\n")}` : "【本轮外部推进】无",
+    input.partOneSettlement ? `【本轮确定性事件】${JSON.stringify(input.partOneSettlement)}` : "【本轮确定性事件】无",
+    input.partOneRuntime ? `【第一部分运行工作集】${JSON.stringify({ section: input.partOneRuntime.section, stateProjection: input.partOneRuntime.stateProjection, nextDecisionPressure: input.partOneRuntime.nextDecisionPressure, decisionKernel: input.partOneRuntime.openDecisionKernel.assetId, retrievalTrace: input.partOneRuntime.retrievalTrace })}` : "【第一部分运行工作集】无",
     `【本地裁决】${JSON.stringify(input.actionResolution)}`,
     input.playerAction
       ? `【玩家行动】${input.playerAction.userFacingText}`

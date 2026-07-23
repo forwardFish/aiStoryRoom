@@ -1,0 +1,186 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD",
+  "currentDateAndTime": "原著后续，仅作证据保管机制参考",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-POSITION-1",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "source.yang_jinshui 在 place.yang_jinshui_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    },
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-POSITION-2",
+      "subjectRef": "source.jinyiwei",
+      "statement": "source.jinyiwei 在 place.yang_jinshui_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-KNOWLEDGE-1",
+      "subjectRef": "source.yang_jinshui_residence",
+      "statement": "杨金水家里另有同样四口木箱，装着沈一石二十年来所有的账册；原文没有判定这些账册与被烧账册的原副本关系。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    },
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-KNOWLEDGE-2",
+      "subjectRef": "source.jinyiwei",
+      "statement": "锦衣卫提出打开账册查看，由杨金水决定哪些送上去、哪些销毁。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    }
+  ],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-GOAL-1",
+      "subjectRef": "source.jinyiwei",
+      "statement": "锦衣卫提出打开账册查看，由杨金水决定哪些送上去、哪些销毁。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-CUSTODY-1",
+      "subjectRef": "source.yang_jinshui_residence",
+      "statement": "杨金水家里另有同样四口木箱，装着沈一石二十年来所有的账册；原文没有判定这些账册与被烧账册的原副本关系。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    },
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-CUSTODY-2",
+      "subjectRef": "source.jinyiwei",
+      "statement": "锦衣卫提出打开账册查看，由杨金水决定哪些送上去、哪些销毁。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    }
+  ],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-DECISION-1",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "杨金水说这四箱账册不能看，更不能销毁，一定要送进宫里交给老祖宗，让皇上知道。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    },
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-DECISION-2",
+      "subjectRef": "source.jinyiwei",
+      "statement": "锦衣卫提出打开账册查看，由杨金水决定哪些送上去、哪些销毁。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-PROMISE-1",
+      "subjectRef": "source.jinyiwei",
+      "statement": "锦衣卫提出打开账册查看，由杨金水决定哪些送上去、哪些销毁。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-ARC-1",
+      "subjectRef": "source.yang_jinshui_residence",
+      "statement": "杨金水家里另有同样四口木箱，装着沈一石二十年来所有的账册；原文没有判定这些账册与被烧账册的原副本关系。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    },
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-ARC-2",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "杨金水说这四箱账册不能看，更不能销毁，一定要送进宫里交给老祖宗，让皇上知道。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    },
+    {
+      "stateId": "DM1566-C13-OTHER-LEDGER-BOXES-HELD-ARC-3",
+      "subjectRef": "source.jinyiwei",
+      "statement": "锦衣卫提出打开账册查看，由杨金水决定哪些送上去、哪些销毁。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+        "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C13-OTHER-LEDGER-BOXES-HELD-ARTIFACT-R1",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C13-CL-YANG-REFUSES-LOCAL-INSPECTION-DESTRUCTION",
+    "DM1566-C13-CL-JINYIWEI-PROPOSES-SORTING-LEDGERS"
+  ]
+}

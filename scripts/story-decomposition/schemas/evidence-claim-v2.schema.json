@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/evidence-claim-v2.schema.json",
+  "title": "evidence-claim-v2",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "dm1566_evidence_claim_v2"
+    },
+    "claimId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "chapterId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sceneId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claimType": {
+      "type": "string",
+      "enum": [
+        "objective_event",
+        "objective_state",
+        "character_statement",
+        "character_belief",
+        "character_intention",
+        "rumor",
+        "document_claim",
+        "narrator_inference",
+        "analyst_inference",
+        "unknown"
+      ]
+    },
+    "subjectRef": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "predicate": {
+      "type": "string",
+      "minLength": 1
+    },
+    "object": {},
+    "statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "speakerRef": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "truthStatus": {
+      "type": "string",
+      "enum": [
+        "supported",
+        "unverified",
+        "contested",
+        "unknown"
+      ]
+    },
+    "epistemicStatus": {
+      "type": "string",
+      "enum": [
+        "objective",
+        "asserted",
+        "believed",
+        "suspected",
+        "rumored",
+        "inferred"
+      ]
+    },
+    "knownBy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "characterRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "known",
+              "believed",
+              "suspected",
+              "rumored"
+            ]
+          },
+          "acquiredAtSceneId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "viaEventOrClaimId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "characterRef",
+          "state",
+          "acquiredAtSceneId",
+          "viaEventOrClaimId"
+        ]
+      },
+      "minItems": 0
+    },
+    "validFromSceneId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validUntilSceneId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "runtimeAvailability": {
+      "type": "string",
+      "enum": [
+        "BASELINE",
+        "PLANNER_ONLY",
+        "EVIDENCE_ONLY",
+        "DISABLED_AFTER_DIVERGENCE"
+      ]
+    },
+    "contradictsClaimIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "sourceRefs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sourceId": {
+            "const": "dm1566-liuheping"
+          },
+          "sourceSha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "chapterId": {
+            "type": "string",
+            "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+          },
+          "paragraphStartId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paragraphEndId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lineStart": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lineEnd": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "textSpanSha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "sourceId",
+          "sourceSha256",
+          "chapterId",
+          "paragraphStartId",
+          "paragraphEndId",
+          "lineStart",
+          "lineEnd",
+          "textSpanSha256"
+        ]
+      },
+      "minItems": 1
+    },
+    "certainty": {
+      "type": "string",
+      "enum": [
+        "explicit",
+        "strong_inference",
+        "weak_inference",
+        "unknown"
+      ]
+    },
+    "mustNotBeTreatedAsObjectiveFact": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "claimId",
+    "chapterId",
+    "sceneId",
+    "claimType",
+    "subjectRef",
+    "predicate",
+    "object",
+    "statement",
+    "speakerRef",
+    "truthStatus",
+    "epistemicStatus",
+    "knownBy",
+    "validFromSceneId",
+    "validUntilSceneId",
+    "runtimeAvailability",
+    "contradictsClaimIds",
+    "sourceRefs",
+    "certainty",
+    "mustNotBeTreatedAsObjectiveFact"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "claimType": {
+            "enum": [
+              "character_statement",
+              "character_belief",
+              "character_intention"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "speakerRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mustNotBeTreatedAsObjectiveFact": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claimType": {
+            "not": {
+              "enum": [
+                "objective_event",
+                "objective_state"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "mustNotBeTreatedAsObjectiveFact": {
+            "const": true
+          }
+        }
+      }
+    }
+  ]
+}

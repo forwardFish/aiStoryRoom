@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-EXECUTION-BOUNDARY",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-THREE-DAY-DEADLINE"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "执行速度改变后续粮食与土地压力",
+      "书面边界决定问责时谁能切割责任"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "GMC-P1-REVIEW-AUTHORITY",
+  "kind": "MECHANISM",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:40:14.572Z",
+  "completedAt": "2026-07-22T18:40:14.945Z",
+  "httpStatus": 200,
+  "inputHash": "508A126A3A107ABF397DA4BD6469E5408EA14EED33B5F30D67F7CA4F991B4590",
+  "rawOutputHash": "BFEBAC14B1ACC5E47A476BE4595B2E78297B7281DA1B8447EEC7F538A410A131",
+  "rawText": "{\n  \"verdict\": \"PASS\",\n  \"issues\": []\n}",
+  "usage": {
+    "prompt_tokens": 5461,
+    "completion_tokens": 16,
+    "total_tokens": 5477,
+    "prompt_tokens_details": {
+      "cached_tokens": 256
+    },
+    "prompt_cache_hit_tokens": 256,
+    "prompt_cache_miss_tokens": 5205
+  }
+}

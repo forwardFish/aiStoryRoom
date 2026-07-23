@@ -1,0 +1,322 @@
+{
+  "schemaVersion": "narrative-scene-pattern-set-v1",
+  "worldId": "sangtian",
+  "scopeId": "PART-01/SEC-P1-01",
+  "version": "1.0.0-section-01",
+  "patterns": [
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+      "sourceSceneId": "DM1566-C01-POLICY-COUNCIL",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C01",
+          "paragraphStartId": "DM1566-C01-P0219",
+          "paragraphEndId": "DM1566-C01-P0240",
+          "lineStart": 500,
+          "lineEnd": 542,
+          "textSpanSha256": "21B514BD7AE999A5FE625C31DC224D44D583A7958F46995EB170FBEAB4CD5C9F"
+        }
+      ],
+      "sectionIds": ["SEC-P1-01"],
+      "requirementIds": ["REQ-P1-EXECUTION-BOUNDARY", "REQ-P1-RESPONSIBILITY-RECORD"],
+      "decisionKernelIds": ["DK-P1-EXECUTION-SCOPE", "DK-P1-REVIEW-INITIATION", "DK-P1-RESPONSIBILITY-RECORD"],
+      "actorRefs": ["source.jiajing", "source.yan_song", "source.yan_shifan", "source.zhang_juzheng"],
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ],
+      "dramaticFunction": "让一项看似能填补亏空的政策，在连续追问百姓口粮与执行责任后仍被迅速定为急务；冲突由人物问答和权力落槌完成，不由旁白解释。",
+      "openingPressure": "先有人主动揽下一部分责任，权力中心随后把抽象财政策略追问成具体民生问题。",
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "先被追责的政策支持者",
+          "observableMove": "先当众承认自己和所属衙门负有责任，以主动认责换取继续发言的资格。",
+          "sceneFunction": "把责任从抽象亏空落到在场人物身上。",
+          "reactionCue": "掌权者态度缓和，允许议题继续。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "提出办法的政策主持者",
+          "observableMove": "提出把浙江农田转作桑田，并用增调外省粮食回答口粮缺口。",
+          "sceneFunction": "给出行政上可说通、现实中仍有代价的办法。",
+          "reactionCue": "权力中心不接受概括，继续追问粮价与百姓是否愿意。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "拥有最终裁定权的人",
+          "observableMove": "用一连串短问逼出政策遗漏的现实代价，随后又亲自补上一条税赋限制。",
+          "sceneFunction": "让掌权者既显得看见风险，又保留最终裁定权。",
+          "reactionCue": "提案者立刻把限制解释成百姓会拥护政策的理由。"
+        },
+        {
+          "ordinal": 4,
+          "actorRole": "拥有最终裁定权的人",
+          "observableMove": "在争论尚未彻底解决时结束会议，命内阁形成方略并向浙江急递。",
+          "sceneFunction": "把未解风险转成地方官必须接住的时限和责任。",
+          "reactionCue": "在场人物只能领命，真正代价被推向浙江。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "拥有最终裁定权的人",
+          "surfaceMove": "不用长篇议论，只连续追问百姓吃什么、调粮是否更贵、桑农是否愿意。",
+          "hiddenRisk": "既不能让提案显得毫无漏洞，也不愿放弃填补亏空的新来源。",
+          "cadenceRule": "短问紧逼，得到答案后突然收束并下令。"
+        },
+        {
+          "actorRole": "提出办法的政策主持者",
+          "surfaceMove": "每次只回答眼前一问，把土地、粮食与收益都说成可由衙门调度的问题。",
+          "hiddenRisk": "不能让政策在御前显出会伤民或无法执行。",
+          "cadenceRule": "回答迅速、句子完整，不主动展开代价。"
+        }
+      ],
+      "blockingPrinciples": [
+        "发言权随问答转移：谁被点名，谁必须立刻接住问题。",
+        "裁定发生后才允许掌权者离座或移动，用身体动作标示议题已经结束。",
+        "其他人的目光与抢话只显示政治站位，不替旁白解释派系关系。"
+      ],
+      "objectPowerMoves": [],
+      "transferableTechniques": [
+        "把宏观政策拆成一个人物一次只问一个的具体问题。",
+        "让对手用看似可执行的办法回避深层代价，而不是自认阴谋。",
+        "用急递、具名和领命把争论转成下一场的实际压力。"
+      ],
+      "forbiddenFlattening": [
+        "不得把场景概括成执行边界、证据限制或政策利弊说明。",
+        "不得由旁白宣布谁对谁错；让问题、回答、沉默和命令暴露立场。",
+        "不得在正文末尾替玩家总结成是执行还是拖延的二选一。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "codex-source-scene-mechanism-review-v1",
+      "approvedAt": "2026-07-23T18:30:00+08:00"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+      "sourceSceneId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C02",
+          "paragraphStartId": "DM1566-C02-P0198",
+          "paragraphEndId": "DM1566-C02-P0241",
+          "lineStart": 1221,
+          "lineEnd": 1307,
+          "textSpanSha256": "C2DE1D80210AC35EF7ECD0392ED3B2CCEDD3298F672EC98FAC812EFC91428115"
+        }
+      ],
+      "sectionIds": ["SEC-P1-01"],
+      "requirementIds": ["REQ-P1-EXECUTION-BOUNDARY", "REQ-P1-RESPONSIBILITY-RECORD", "REQ-P1-XUNFU-COUNTERMOVE"],
+      "decisionKernelIds": ["DK-P1-EXECUTION-SCOPE", "DK-P1-REVIEW-INITIATION", "DK-P1-RESPONSIBILITY-RECORD"],
+      "actorRefs": ["source.hu_zongxian", "source.tan_lun", "source.zheng_michang", "source.he_maocai", "source.ma_ningyuan", "source.yang_jinshui"],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF"
+      ],
+      "dramaticFunction": "先让百姓与官场冲突堵在总督眼前，再由下属互相推责；总督通过连续追问粮源确认事实，主动承担责任后才发出命令。",
+      "openingPressure": "衙门前的可见人群和堂内官员的相互指责同时逼迫主政者表态。",
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "承担全局责任的地方主政者",
+          "observableMove": "先看见无法回避的民生现场，却不立刻用抓人或表态消除它。",
+          "sceneFunction": "让后续官员说法始终受眼前现实反证。",
+          "reactionCue": "随员急于指定责任人，其他官员等总督表态。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "急于寻找问责对象的执法官员",
+          "observableMove": "把危局解释成有人抗命，主张先抓人再查。",
+          "sceneFunction": "给出对官府最省事、对百姓和证据最危险的处理方式。",
+          "reactionCue": "众人把目光转向总督，逼他接受这一归因。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "承担全局责任的地方主政者",
+          "observableMove": "不接指控，转而逐项追问米行借粮和外省调粮究竟到了什么程度。",
+          "sceneFunction": "用可核实事实夺回议程，不在空泛立场上争吵。",
+          "reactionCue": "负责官员只能承认粮源不足。"
+        },
+        {
+          "ordinal": 4,
+          "actorRole": "承担全局责任的地方主政者",
+          "observableMove": "公开把朝廷降罪和百姓怨责揽到自己名下，再指出无粮强改会把民生问题变成治安危机。",
+          "sceneFunction": "先固定责任归属，才使后续命令具有政治分量。",
+          "reactionCue": "堂上沉默，原先逼责的人失去继续发难的立足点。"
+        },
+        {
+          "ordinal": 5,
+          "actorRole": "承担全局责任的地方主政者",
+          "observableMove": "连续下达释放、保苗、催粮和具保的命令，把代价落实到官署和自己身上。",
+          "sceneFunction": "让人物原则转化为可执行且会留下责任的行动。",
+          "reactionCue": "被点名者不得不领命，仍有利益受损者准备继续反制。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "承担全局责任的地方主政者",
+          "surfaceMove": "先用极短的事实问题打断定罪，再在事实齐备后说一段承担责任的话。",
+          "hiddenRisk": "必须同时防止抗旨、断粮和民变被算到自己头上。",
+          "cadenceRule": "短问、短答、停顿、长句定责，最后用极短命令收束。"
+        },
+        {
+          "actorRole": "负责执行而试图说明困难的属官",
+          "surfaceMove": "用缺粮、调不来和上级追责说明自己为何无法完成差事。",
+          "hiddenRisk": "不愿承认地方执行和粮食准备本身有责任。",
+          "cadenceRule": "解释具体困难，但每句话都把责任推向米行、外省或上级。"
+        },
+        {
+          "actorRole": "急于寻找问责对象的执法官员",
+          "surfaceMove": "把复杂危局缩成抓谁、查谁、谁在抗命。",
+          "hiddenRisk": "需要尽快找到可承担责任的人，避免自己成为问责对象。",
+          "cadenceRule": "先提高声量、先定性，再要求对方当场说清。"
+        }
+      ],
+      "blockingPrinciples": [
+        "先给玩家一个无法用旁白替代的可见后果，再让官员在同一现场解释。",
+        "主政者的沉默必须造成他人抢话和暴露，不是空坐思考。",
+        "每次追问都改变谁掌握议程；命令下达后必须出现领命、迟疑或沉默的反应。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "总督衙门",
+          "observableUse": "原本象征威严的入口被百姓占满，主政者无法照常进入。",
+          "powerMeaning": "空间本身证明官府秩序已经失效，不能只靠定性恢复。"
+        },
+        {
+          "objectLabel": "官府借据与总督印信",
+          "observableUse": "主政者愿意用自己的官署信用为借粮承担责任。",
+          "powerMeaning": "印信不是万能道具，而是把未来追责锁到具名者身上的筹码。"
+        }
+      ],
+      "transferableTechniques": [
+        "先让现实后果进入场景，再让人物争夺解释权。",
+        "用连续事实问题替代后台说明，让玩家亲眼看见哪些办法已经失灵。",
+        "人物只有在承担责任或付出资源后，才有资格作强硬决定。"
+      ],
+      "forbiddenFlattening": [
+        "不得把粮食、百姓、执行责任列成并列压力清单。",
+        "不得写成总督必须在国策与民生之间作出选择的判断题。",
+        "不得让 NPC 轮流解释背景；每句话必须争责任、夺议程或逼出行动。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "codex-source-scene-mechanism-review-v1",
+      "approvedAt": "2026-07-23T18:30:00+08:00"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+      "sourceSceneId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C03",
+          "paragraphStartId": "DM1566-C03-P0020",
+          "paragraphEndId": "DM1566-C03-P0039",
+          "lineStart": 1608,
+          "lineEnd": 1646,
+          "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+        }
+      ],
+      "sectionIds": ["SEC-P1-01"],
+      "requirementIds": ["REQ-P1-EXECUTION-BOUNDARY", "REQ-P1-XUNFU-COUNTERMOVE", "REQ-P1-RESPONSIBILITY-RECORD"],
+      "decisionKernelIds": ["DK-P1-EXECUTION-SCOPE", "DK-P1-REVIEW-INITIATION", "DK-P1-RESPONSIBILITY-RECORD"],
+      "actorRefs": ["source.hu_zongxian", "source.tan_lun"],
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ],
+      "dramaticFunction": "把盟友之间的同一目标写成政治距离：劝说者越靠近，主政者的行动越容易被定成党争；文书是否被观看本身改变双方的知识与责任。",
+      "openingPressure": "两个人表面站在同一边，却必须先确认彼此的靠近会不会毁掉原本还能转圜的空间。",
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "受到政治归类威胁的地方主政者",
+          "observableMove": "用短而冷的拒绝否定对方来意，迫使对方暴露失望与政治期待。",
+          "sceneFunction": "先制造人物关系裂缝，不急着解释全部理由。",
+          "reactionCue": "来客受到刺痛，转而质疑主政者究竟站在哪一边。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "受到政治归类威胁的地方主政者",
+          "observableMove": "在对方被逼问后才说明自己的原则、未来罪名和渐进执行空间。",
+          "sceneFunction": "让人物立场从个人名节、政治归属和现实后果同时长出来。",
+          "reactionCue": "来客从愤怒转为迷惘，不再能用原来的清流立场概括他。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "受到政治归类威胁的地方主政者",
+          "observableMove": "把被驳回的公文和持续催办的书信拿到对方面前，让政治边界变成可触摸的材料。",
+          "sceneFunction": "用物件传递证据和责任，而不是旁白讲解权力结构。",
+          "reactionCue": "来客只看必要的一份，面对更多材料时停住。"
+        },
+        {
+          "ordinal": 4,
+          "actorRole": "带着同盟期待而来的劝说者",
+          "observableMove": "主动拒绝继续阅读，以少知道来保护对方仍可否认的行动空间。",
+          "sceneFunction": "让拒绝知情成为联盟动作，而不是信息缺失。",
+          "reactionCue": "主政者的防备松动，关系在没有公开承诺的情况下发生变化。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "受到政治归类威胁的地方主政者",
+          "surfaceMove": "先用一字一顿的短句推开对方，随后才用较长的话解释政治后果。",
+          "hiddenRisk": "接受帮助会让自己的每个决定都被重新定性为党争。",
+          "cadenceRule": "拒绝极短，解释渐长；展示文书后再次把话压短。"
+        },
+        {
+          "actorRole": "带着同盟期待而来的劝说者",
+          "surfaceMove": "先以失望逼问，听清后改用拒绝知情回应。",
+          "hiddenRisk": "知道得越多，越可能成为对方受清流指使的证据。",
+          "cadenceRule": "问题少而直接，真正转折由不接文书或不再追问完成。"
+        }
+      ],
+      "blockingPrinciples": [
+        "两人对谈必须有目光、转身、递与不接等可见动作承载关系变化。",
+        "解释不在开场一次说完；先让一句拒绝造成伤害，再逐层揭出理由。",
+        "知识边界通过文书的出示、接过、看完或拒绝发生改变。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "驳回公文",
+          "observableUse": "主政者把已经遭遇的政治后果递给对方亲眼查看。",
+          "powerMeaning": "公文证明上级如何定性地方行动，也让阅读者承担知情责任。"
+        },
+        {
+          "objectLabel": "持续催办的公文与书信",
+          "observableUse": "更多材料被拿出，却被来客主动拒绝阅读。",
+          "powerMeaning": "不接材料保留了双方的政治距离，也保护后续行动不被轻易串联。"
+        }
+      ],
+      "transferableTechniques": [
+        "让关系变化通过递交或拒绝一件有政治含义的物件完成。",
+        "同盟人物也要有互相伤害和误解，不能只交换正确观点。",
+        "人物长篇解释必须由前面的拒绝、误判或物证逼出来。"
+      ],
+      "forbiddenFlattening": [
+        "不得把人物关系概括成合作或不合作、信任上升或下降。",
+        "不得把知识边界写成角色知道或不知道的后台清单。",
+        "不得让角色直接说出自己代表哪一派以及剧情需要什么。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "codex-source-scene-mechanism-review-v1",
+      "approvedAt": "2026-07-23T18:30:00+08:00"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "GMC-P1-GRAIN-RELIEF",
+  "kind": "MECHANISM",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:40:04.897Z",
+  "completedAt": "2026-07-22T18:40:05.265Z",
+  "httpStatus": 200,
+  "inputHash": "E0F6F86C2368FA209F7A9B02D9B275F16C923D97A9F59C95BB8ABE11CC4C3A32",
+  "rawOutputHash": "BFEBAC14B1ACC5E47A476BE4595B2E78297B7281DA1B8447EEC7F538A410A131",
+  "rawText": "{\n  \"verdict\": \"PASS\",\n  \"issues\": []\n}",
+  "usage": {
+    "prompt_tokens": 4728,
+    "completion_tokens": 16,
+    "total_tokens": 4744,
+    "prompt_tokens_details": {
+      "cached_tokens": 256
+    },
+    "prompt_cache_hit_tokens": 256,
+    "prompt_cache_miss_tokens": 4472
+  }
+}

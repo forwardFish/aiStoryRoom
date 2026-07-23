@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-LAND-RISK",
+  "requirementIds": [
+    "REQ-P1-LAND-RISK"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C01-LAND-RISK-COUNCIL",
+    "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+    "DM1566-C06-LAND-PRICE-DEBATE",
+    "DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-RISK-PREDICTION",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "candidateType": "CAUSAL_RULE",
+  "dramaticFunction": "粮食与改桑选择能改变抵押、卖田和兼并风险",
+  "preconditions": [
+    "改桑范围、粮食缺口或购田方案至少一项已经确定",
+    "百姓生计和田价仍受地方政策影响"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.jiangnan_merchant_head",
+    "actor.qingliu_magistrate"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "设置田价底线",
+    "限制灾期购田",
+    "把指标分散到多县",
+    "允许以田换粮但记录债务"
+  ],
+  "likelyCountermoves": [
+    "以粮食期限压低保护标准",
+    "通过代持或多家商号规避限制",
+    "把失田包装成未来雇佣"
+  ],
+  "immediateStateEffects": [
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "delayedConsequences": [
+    "粮食与执行选择改变抵押、卖田和兼并风险",
+    "土地保护会增加财政或改桑进度压力"
+  ],
+  "invariantsToPreserve": [
+    "第一部分只能建立风险和入口，不能直接完成大规模兼并",
+    "田价主张必须保留说话人和适用边界"
+  ],
+  "evidenceStrength": "EXPLICIT",
+  "limitations": [
+    "具体商会和清流县交易来自 Adaptation",
+    "不能把张居正预判写成已发生事实"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-MERCHANT-GUILD",
+  "status": "CANDIDATE_ONLY"
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "GMC-P1-KNOWLEDGE-CHAIN",
+  "kind": "MECHANISM",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:35:56.457Z",
+  "completedAt": "2026-07-22T18:35:56.581Z",
+  "httpStatus": 200,
+  "inputHash": "8C6C233393482BB625B61A95082F9286E42F6D18316A0C1C630BC599B66FC031",
+  "rawOutputHash": "8DE36000A3123698695F2BABEA070F2F65823B2C66F02D651BD9F0D1A01921BB",
+  "rawText": "{\n  \"verdict\": \"FAIL\",\n  \"issues\": [\n    {\n      \"issueType\": \"claim_type_mismatch\",\n      \"severity\": \"HIGH\",\n      \"reason\": \"候选机制依赖的6个Claim中，有4个是character_statement（人物说法），其truthStatus为unverified，且mustNotBeTreatedAsObjectiveFact为true。但机制将allowedMoves、countermoves等设计为无条件规则，未区分客观事实与人物说法，违反了mustNotAssume中'人物说法等于客观事实'的要求。\"\n    },\n    {\n      \"issueType\": \"evidence_strength_overclaim\",\n      \"severity\": \"HIGH\",\n      \"reason\": \"候选机制声明evidenceStrength为EXPLICIT，但实际支持的Claim中，只有2个是objective_event（客观事件），其余4个是unverified的人物说法。机制整体证据强度不足以支撑EXPLICIT，应降级为INFERRED或明确标注为Adaptation Gap。\"\n    },\n    {\n      \"issueType\": \"precondition_unsupported\",\n      \"severity\": \"MEDIUM\",\n      \"reason\": \"preconditions要求'信息通过在场、口述、文书、密报或审讯中的一种路径出现'，但Claim中仅覆盖了在场、口述、文书三种路径，密报和审讯路径无任何Claim支持，属于弱推断。\"\n    },\n    {\n      \"issueType\": \"invariant_unsupported\",\n      \"severity\": \"MEDIUM\",\n      \"reason\": \"invariantsToPreserve中'角色说法不能升级为客观事实'是合理的元规则，但机制本身并未提供任何机制来强制执行该规则，仅作为声明存在，缺乏可操作约束。\"\n    }\n  ]\n}",
+  "usage": {
+    "prompt_tokens": 5719,
+    "completion_tokens": 374,
+    "total_tokens": 6093,
+    "prompt_tokens_details": {
+      "cached_tokens": 256
+    },
+    "prompt_cache_hit_tokens": 256,
+    "prompt_cache_miss_tokens": 5463
+  }
+}

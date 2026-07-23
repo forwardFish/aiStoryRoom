@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-EVIDENCE-ATTACHMENT",
+  "requirementIds": [
+    "REQ-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+    "DM1566-C13-LEDGERS-BURNED",
+    "DM1566-C13-OTHER-LEDGER-BOXES-HELD",
+    "DM1566-C23-TESTIMONY-SEALED",
+    "DM1566-C23-URGENT-DISPATCH-AT-GATE"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "candidateType": "CUSTODY_RULE",
+  "dramaticFunction": "玩家能决定首报附什么证据并诚实标注强度",
+  "preconditions": [
+    "至少有一种原件、副本、口供、仓单或田契进入证据状态",
+    "附件强度和保管链可被服务端读取"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "附原件并保留副本",
+    "附副本并声明原件保管人",
+    "只报异常不下定论",
+    "暂不附证据以保护证人"
+  ],
+  "likelyCountermoves": [
+    "质疑副本来源",
+    "抢夺或毁坏原件",
+    "要求公开证人",
+    "利用附件不足压低奏报可信度"
+  ],
+  "immediateStateEffects": [
+    "report.attachmentStrength",
+    "evidence.chainStatus"
+  ],
+  "delayedConsequences": [
+    "附件强度改变京师采信和地方毁证动机",
+    "过早公开会提高证人和保管链风险"
+  ],
+  "invariantsToPreserve": [
+    "证据类型和证明边界必须明确",
+    "后续原著封缄机制不能当作本房间已发生事实"
+  ],
+  "evidenceStrength": "EXPLICIT",
+  "limitations": [
+    "县册异常和暗账入口依赖 Adaptation",
+    "密信本身不能替代原册或暗账"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-REGISTER-ALTERATION",
+  "status": "APPROVED_FOR_T3"
+}

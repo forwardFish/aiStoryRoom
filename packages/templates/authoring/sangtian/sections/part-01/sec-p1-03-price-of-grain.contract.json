@@ -1,0 +1,142 @@
+{
+  "schemaVersion": "section-contract-v1",
+  "sectionId": "SEC-P1-03",
+  "partId": "PART-01",
+  "title": "一仓米的价钱",
+  "dramaticPurpose": "让粮食救急成为短期有效但会改变土地风险、商会筹码和各方责任的真实交易。",
+  "targetTurnWindow": {
+    "earliest": 8,
+    "latest": 15
+  },
+  "entryRequirements": [
+    {
+      "ruleId": "ENTRY-P1-S3",
+      "statePath": "evidence.chainStatus",
+      "operator": "IN",
+      "expectedValue": [
+        "TRACEABLE",
+        "FRAGILE",
+        "COMPROMISED"
+      ],
+      "description": "证据链已有现实状态"
+    }
+  ],
+  "requiredRequirementIds": [
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK"
+  ],
+  "activeDecisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY"
+  ],
+  "activeCausalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "foregroundActorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "actor.xunfu_aide"
+  ],
+  "mustEstablish": [
+    {
+      "ruleId": "S3-MUST-CHANNEL",
+      "statePath": "grain.reliefChannel",
+      "operator": "NEQ",
+      "expectedValue": "UNDECIDED",
+      "description": "粮食救急渠道已决定"
+    },
+    {
+      "ruleId": "S3-MUST-MERCHANT",
+      "statePath": "merchant.entryStatus",
+      "operator": "IN",
+      "expectedValue": [
+        "REJECTED",
+        "CONDITIONAL",
+        "ACTIVE"
+      ],
+      "description": "商会入口状态明确"
+    },
+    {
+      "ruleId": "S3-MUST-LAND",
+      "statePath": "land.riskLevel",
+      "operator": "NEQ",
+      "expectedValue": "UNKNOWN",
+      "description": "土地风险已被识别"
+    },
+    {
+      "ruleId": "S3-MUST-PENDING",
+      "statePath": "pendingConsequences",
+      "operator": "ANY_PENDING",
+      "expectedValue": true,
+      "description": "至少一个粮食或交易后果待兑现"
+    }
+  ],
+  "requiredMaterialChangeClasses": [
+    "GRAIN_PRESSURE",
+    "RELIEF_CHANNEL",
+    "MERCHANT_ENTRY",
+    "LAND_RISK"
+  ],
+  "forbiddenEarlyReveals": [
+    "巡抚被确认是幕后主使",
+    "完整暗账被确认",
+    "大规模土地兼并已经完成",
+    "正式御前裁决已经发生",
+    "全县卖田已经完成",
+    "商会控制全部丝粮路线",
+    "最终土地结局"
+  ],
+  "allowedNextSectionIds": [
+    "SEC-P1-04"
+  ],
+  "exitGates": [
+    {
+      "ruleId": "S3-EXIT-CHANNEL",
+      "statePath": "grain.reliefChannel",
+      "operator": "NEQ",
+      "expectedValue": "UNDECIDED",
+      "description": "救急渠道确定"
+    },
+    {
+      "ruleId": "S3-EXIT-MERCHANT",
+      "statePath": "merchant.entryStatus",
+      "operator": "IN",
+      "expectedValue": [
+        "REJECTED",
+        "CONDITIONAL",
+        "ACTIVE"
+      ],
+      "description": "商会入口确定"
+    },
+    {
+      "ruleId": "S3-EXIT-LAND",
+      "statePath": "land.riskLevel",
+      "operator": "NEQ",
+      "expectedValue": "UNKNOWN",
+      "description": "土地风险确定"
+    },
+    {
+      "ruleId": "S3-EXIT-PENDING",
+      "statePath": "pendingConsequences",
+      "operator": "ANY_PENDING",
+      "expectedValue": true,
+      "description": "粮食或交易后果进入队列"
+    }
+  ],
+  "floorObligationIds": [
+    "FLOOR-P1-S3-GRAIN-PRICE-MOVE"
+  ],
+  "handoffStatePaths": [
+    "grain.immediatePressure",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "merchant.entryStatus",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ]
+}

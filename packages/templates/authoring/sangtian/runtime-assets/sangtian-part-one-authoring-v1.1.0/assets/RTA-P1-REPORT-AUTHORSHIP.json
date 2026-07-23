@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "RTA-P1-REPORT-AUTHORSHIP",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-RESPONSIBILITY-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "payload": {
+    "dramaticFunction": "玩家能决定共同、单方或分裂奏报",
+    "preconditions": [
+      "存在一份需要形成、修改或决定是否联署的地方奏报",
+      "玩家掌握至少一项可写入的执行、民生或证据事实"
+    ],
+    "allowedMoves": [
+      "提议督抚共同奏报并逐项确认内容",
+      "依据可玩总督 Adaptation 单独具名奏报",
+      "允许巡抚拒绝联署并附送有具名的异议文书",
+      "保留两份内容不同且各自可追踪的地方文书"
+    ],
+    "likelyCountermoves": [
+      "拒绝联署",
+      "另递具名信件",
+      "要求删去延缓或民生内容",
+      "通过另一合法渠道送达"
+    ],
+    "immediateStateEffects": [
+      "report.authorshipMode",
+      "report.firstNarrativeController",
+      "responsibility.governorExposure",
+      "responsibility.xunfuExposure"
+    ],
+    "delayedConsequences": [
+      "内容不同的奏报与具名信件到达京师后可能触发不同政治反应",
+      "署名与经手记录为后续问责提供可追踪材料"
+    ],
+    "invariantsToPreserve": [
+      "奏报内容只能使用当前已知事实",
+      "共同署名不能消除真实分歧"
+    ],
+    "limitations": [
+      "总督玩家的自由行动来自 ADAPT-P1-PLAYABLE-GOVERNOR，独立巡抚与分立署名来自 ADAPT-P1-SEPARATE-XUNFU",
+      "具体选项必须经运行时 Institution Capability 检查，不能预写皇帝最终裁决"
+    ],
+    "evidenceStrength": "STRONG_INFERENCE"
+  }
+}

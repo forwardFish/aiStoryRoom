@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C02-REPORT-SUPPRESSION-RISK",
+  "currentDateAndTime": "谭纶来信到达裕王府时",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C02-REPORT-SUPPRESSION-RISK-POSITION-1",
+      "subjectRef": "source.yuwang",
+      "statement": "source.yuwang 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-SUPPRESSION-RISK-POSITION-2",
+      "subjectRef": "source.xu_jie",
+      "statement": "source.xu_jie 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-SUPPRESSION-RISK-POSITION-3",
+      "subjectRef": "source.gao_gong",
+      "statement": "source.gao_gong 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-SUPPRESSION-RISK-POSITION-4",
+      "subjectRef": "source.zhang_juzheng",
+      "statement": "source.zhang_juzheng 在 place.yuwang_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C02-REPORT-SUPPRESSION-RISK-KNOWLEDGE-1",
+      "subjectRef": "source.gao_gong",
+      "statement": "高拱担心胡宗宪同时上的多道奏疏中，真正重要的一道可能被压下，只把其他奏疏呈给皇帝；这是人物的风险判断。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+      ]
+    }
+  ],
+  "activeGoals": [],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [],
+  "unresolvedPromises": [],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C02-REPORT-SUPPRESSION-RISK-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C02-REPORT-SUPPRESSION-RISK-ARC-1",
+      "subjectRef": "source.gao_gong",
+      "statement": "高拱担心胡宗宪同时上的多道奏疏中，真正重要的一道可能被压下，只把其他奏疏呈给皇帝；这是人物的风险判断。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-SUPPRESSION-RISK-ARC-2",
+      "subjectRef": "source.gao_gong",
+      "statement": "高拱认为徐阶若直接持奏疏见严嵩，严嵩便不能不给他看，渠道中有见证就更难做手脚；这仍是高拱的判断。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C02-REPORT-SUPPRESSION-RISK-ARTIFACT-R1",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C02-CL-REPORT-WITNESS-CHANNEL-CRITIQUE"
+  ]
+}

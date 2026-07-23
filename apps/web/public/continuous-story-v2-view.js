@@ -5,7 +5,7 @@ export function renderContinuousStoryV2(root, state) {
   const turn = p.currentTurn;
   root.innerHTML = `<div class="causal-shell continuous-game-shell story-v2-shell" data-testid="continuous-story-v2-shell">
     <header class="causal-topbar"><a class="mw-brand" href="/">Our Many Worlds</a><div class="top-day">${turn ? `宏观阶段 ${turn.stageIndex} · ${esc(turn.title)}` : "我的故事已经完成"}</div><div class="top-actions"><span>世界事件 #${p.worldSequence}</span><a href="/">返回主页</a></div></header>
-    <div class="status-strip continuous-status-strip"><span>我的角色 <b>${esc(p.player.roleName)}</b></span><span>宏观剧情阶段 <b>${turn?.stageIndex || 7} / 7</b></span><span>本角色第 <b>${turn?.turnIndex || "—"}</b> 次行动</span><span class="metric-gold">行动后立即单独推演</span></div>
+    <div class="status-strip continuous-status-strip"><span>我的角色 <b>${esc(p.player.roleName)}</b></span><span>宏观剧情阶段 <b>${turn?.stageIndex || 7} / 7</b></span><span>本角色第 <b>${turn?.turnIndex || "—"}</b> 次行动</span></div>
     <aside class="causal-left">${identity(p)}${facts(turn)}${holdings(p)}${timeline(p.timeline)}</aside>
     <main class="causal-center continuous-center">${center(p, state)}</main>
     <aside class="causal-right continuous-right">${actors(p)}${commitments(p)}${conditions(p)}${control(p, state)}</aside>
@@ -82,7 +82,7 @@ function control(p, state) {
 }
 
 function decisionCard(value, index, selected, locked) {
-  return `<button type="button" data-v2-decision="${esc(value.id)}" class="continuous-action-card ${selected === value.id ? "selected" : ""}" ${locked ? "disabled" : ""}><b>${String.fromCharCode(65 + index)}</b><span><strong>${esc(value.label)}</strong><small>${esc(value.description)}</small><em>${value.targetRoleName ? `对象：${esc(value.targetRoleName)} · ` : ""}风险：${risk(value.risk)} · 公开度：${visibility(value.visibility)} · 依据：${esc(value.authorityBasis)}</em><i>想得到：${esc(value.intendedOutcome || value.intent)}</i><i>实际代价：${esc(value.concreteCost || "行动会留下可追查的责任")}</i><i>对方可能：${esc(value.expectedCountermove || "根据自己的处境回应")}</i></span></button>`;
+  return `<button type="button" data-v2-decision="${esc(value.id)}" class="continuous-action-card ${selected === value.id ? "selected" : ""}" ${locked ? "disabled" : ""}><b>${String.fromCharCode(65 + index)}</b><span class="decision-action-text">${esc(value.description || value.label)}</span></button>`;
 }
 
 function interactionRequests(p, locked) {

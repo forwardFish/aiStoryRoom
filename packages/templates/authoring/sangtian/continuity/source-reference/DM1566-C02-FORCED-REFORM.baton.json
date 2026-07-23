@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C02-FORCED-REFORM",
+  "currentDateAndTime": "农历四月改桑执行初期",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C02-FORCED-REFORM-POSITION-1",
+      "subjectRef": "source.ma_ningyuan",
+      "statement": "source.ma_ningyuan 在 place.xinan_river_dike、place.chunan_fields 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-FORCED-REFORM-ACTION",
+        "DM1566-C02-CL-FORCED-REFORM-COST"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-FORCED-REFORM-POSITION-2",
+      "subjectRef": "source.chang_boxi",
+      "statement": "source.chang_boxi 在 place.xinan_river_dike、place.chunan_fields 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-FORCED-REFORM-ACTION",
+        "DM1566-C02-CL-FORCED-REFORM-COST"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-FORCED-REFORM-POSITION-3",
+      "subjectRef": "source.zhang_zhiliang",
+      "statement": "source.zhang_zhiliang 在 place.xinan_river_dike、place.chunan_fields 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-FORCED-REFORM-ACTION",
+        "DM1566-C02-CL-FORCED-REFORM-COST"
+      ]
+    }
+  ],
+  "characterKnowledge": [],
+  "activeGoals": [],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [],
+  "unresolvedPromises": [],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C02-FORCED-REFORM-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-FORCED-REFORM-ACTION",
+        "DM1566-C02-CL-FORCED-REFORM-COST"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C02-FORCED-REFORM-ARC-1",
+      "subjectRef": "source.hangzhou_government",
+      "statement": "地方官员以士兵和衙役堵堰、踏毁青苗并插下桑田木牌，强制推进改稻为桑。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-FORCED-REFORM-ACTION",
+        "DM1566-C02-CL-FORCED-REFORM-COST"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-FORCED-REFORM-ARC-2",
+      "subjectRef": "source.chunan_farmers",
+      "statement": "强制执行立即损害秧苗与灌溉，使抽象国策变成百姓眼前的生计损失。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-FORCED-REFORM-ACTION",
+        "DM1566-C02-CL-FORCED-REFORM-COST"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C02-FORCED-REFORM-ARTIFACT-R1",
+    "DM1566-C02-CL-FORCED-REFORM-ACTION",
+    "DM1566-C02-CL-FORCED-REFORM-COST"
+  ]
+}

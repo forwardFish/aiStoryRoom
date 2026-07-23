@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-REVIEW-AUTHORITY",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.0.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "E1227D8F6FBC6E7F5AE7E492EE7B5FC664EE5D0DC07BABE03DEDA8BE2B9C787D",
+  "candidateHash": "D4A2CFBE42B39EE4733C69435DEAE7C8C1ECA72615FDDA1A0D1F805E047DA956",
+  "requirementIds": [
+    "REQ-P1-REVIEW-AUTHORITY"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:36:07.732Z",
+  "immutableHash": "56EA747F0741E4FA2155EC5017EA60998C86A0E723B0A77A658B11E0718492B8"
+}

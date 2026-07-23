@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/checkpoint-player-gate-v1.schema.json",
+  "title": "checkpoint-player-gate-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "checkpoint-player-gate-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checkpoint": {
+      "enum": [
+        "G00",
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "playerReviewHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "reviewQualityStatus": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "experienceAverage": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "decisionAverage": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "computedVerdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "checkpoint",
+    "playerReviewHash",
+    "reviewQualityStatus",
+    "experienceAverage",
+    "decisionAverage",
+    "computedVerdict",
+    "validatorVersion",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

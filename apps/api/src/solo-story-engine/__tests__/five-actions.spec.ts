@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { executeSoloStoryTurn } from "../single-call-executor";
-import { buildExecuteInput, consequenceIdFor, resolutionIdFor, transportWith, validModelOutput } from "./helpers";
+import { executeSoloStoryTurn } from "../two-stage-executor";
+import { buildExecuteInput, transportWith } from "./helpers";
 
 const actions = [
   {
@@ -39,25 +39,36 @@ const actions = [
 ];
 
 for (const action of actions) {
-  test(`${action.source} 独立行动只调用一次模型并返回下一剧情和下一组决策`, async () => {
-    const calls = { count: 0 };
-    const result = await executeSoloStoryTurn(buildExecuteInput(action, transportWith(validModelOutput(resolutionIdFor(action), ["pending_1", consequenceIdFor(action)]), calls)));
+  test(`${action.source} 独立行动依次调用 Narrator 和 Decision`, async () => {
+    const calls = { count: 0, stages: [] as string[] };
+    const result = await executeSoloStoryTurn(buildExecuteInput(
+      action,
+      transportWith({}, calls)
+    ));
     assert.equal(result.ok, true, `${action.source} should close the same chain`);
     if (!result.ok) return;
-    assert.equal(result.attempt.providerCallCount, 1);
-    assert.equal(calls.count, 1);
+    assert.equal(result.attempt.providerCallCount, 2);
+    assert.equal(result.attempt.narrationProviderCallCount, 1);
+    assert.equal(result.attempt.decisionProviderCallCount, 1);
+    assert.equal(calls.count, 2);
+    assert.deepEqual(calls.stages, ["NARRATOR", "DECISION"]);
     assert.ok(result.context.renderedWorkingSet.endsWith(`【玩家行动】${result.playerIntent.userFacingText}`));
     assert.equal(result.actionResolution.actionType, action.source);
     assert.equal(result.output.resultType, "PUBLISHED_TURN");
     if (result.output.resultType !== "PUBLISHED_TURN") return;
     assert.ok(result.output.story.resultNarrative.length >= 80, "must return a readable action result story");
-    assert.ok(result.output.story.nextSituationNarrative.length >= 80, "must return the next situation story");
-    assert.ok(result.output.decisions.length >= 2 && result.output.decisions.length <= 4, "must return 2-4 next decisions");
-    assert.equal(new Set(result.output.decisions.map((decision) => decision.label)).size, result.output.decisions.length, "next decisions must not repeat");
+    assert.ok(result.output.story.nextSituationNarrative.length >= 30, "must return a concrete next situation scene");
+    assert.equal(result.output.decisions.length, 2, "must return exactly two next decisions");
+    assert.equal(new Set(result.output.decisions.map((decision) => decision.description)).size, 2, "next decisions must not repeat");
     for (const decision of result.output.decisions) {
-      assert.ok(decision.label.length >= 8, "next decision must be readable rather than a generic token");
+      assert.ok(decision.description.length >= 8, "the only player-facing copy must be readable");
       assert.ok(decision.method.length >= 8, "next decision must describe a concrete method");
       assert.ok(decision.concreteCost.length >= 6, "next decision must carry a concrete cost");
     }
+    assert.equal(
+      `${result.output.story.resultNarrative}\n\n${result.output.story.nextSituationNarrative}`,
+      result.narratorProvider.rawText,
+      "the server must publish the narrator prose without rewriting it"
+    );
   });
 }

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-XUNFU-COUNTERMOVE",
+  "requirementIds": [
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+    "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+    "DM1566-C04-JOINT-REPORT-CONTEST"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE"
+  ],
+  "candidateType": "ACTOR_POLICY",
+  "dramaticFunction": "巡抚会主动争夺速度、复核权和解释权",
+  "preconditions": [
+    "玩家行动触及执行速度、复核权或责任归属",
+    "巡抚已经通过合法或半公开渠道得知该行动"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "催办并要求限时回复",
+    "派幕僚参加复核",
+    "提出边办边查",
+    "抢先形成地方奏报"
+  ],
+  "likelyCountermoves": [
+    "接受共同承担责任以换取速度",
+    "把争议公开成阻挠国策问题",
+    "转移证人或经手人"
+  ],
+  "immediateStateEffects": [
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "delayedConsequences": [
+    "督抚关系与京师叙事同步变化",
+    "复核权被一方掌握后改变证据可见性"
+  ],
+  "invariantsToPreserve": [
+    "巡抚必须有自己的目标和行动能力",
+    "不能因为是对手就预设其已犯罪"
+  ],
+  "evidenceStrength": "STRONG_INFERENCE",
+  "limitations": [
+    "由原著地方官僚自保机制强推断",
+    "独立巡抚及幕僚为经批准改编后才能发布"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-SEPARATE-XUNFU",
+  "status": "CANDIDATE_ONLY"
+}

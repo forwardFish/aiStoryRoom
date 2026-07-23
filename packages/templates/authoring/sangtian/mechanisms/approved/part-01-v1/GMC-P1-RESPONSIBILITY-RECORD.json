@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-RESPONSIBILITY-RECORD",
+  "requirementIds": [
+    "REQ-P1-RESPONSIBILITY-RECORD"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C01-POLICY-COUNCIL",
+    "DM1566-C04-JOINT-REPORT-CONTEST"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+  ],
+  "candidateType": "CAUSAL_RULE",
+  "dramaticFunction": "玩家能决定谁在正式文书上留下具名责任",
+  "preconditions": [
+    "存在待签或待修改的正式文书",
+    "至少两方对文书内容或署名有不同利益"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "单独具名",
+    "要求联署",
+    "记录异议后附条件签发",
+    "拒签并另行成文"
+  ],
+  "likelyCountermoves": [
+    "对方拒绝署名",
+    "对方先发另一版本奏报",
+    "把延误责任写入公文"
+  ],
+  "immediateStateEffects": [
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "delayedConsequences": [
+    "京师按最先到达且证据最完整的文书形成初步定性",
+    "未具名者获得切割责任的空间"
+  ],
+  "invariantsToPreserve": [
+    "口头同意不能自动等于已形成正式责任记录",
+    "谁主张、谁署名、谁经手必须分别记录"
+  ],
+  "evidenceStrength": "EXPLICIT",
+  "limitations": [
+    "不能仅凭立场推定最终问责",
+    "具体巡抚角色位来自 Adaptation"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-PLAYABLE-GOVERNOR",
+  "status": "APPROVED_FOR_T3"
+}

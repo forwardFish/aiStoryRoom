@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "GMC-P1-LAND-RISK",
+  "kind": "MECHANISM",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:42:11.505Z",
+  "completedAt": "2026-07-22T18:42:11.895Z",
+  "httpStatus": 200,
+  "inputHash": "B96020291FF6A457A691DBBEA37A9963C1FD1EE5099CE9A6CCBAE94D9DC4D0A4",
+  "rawOutputHash": "BFEBAC14B1ACC5E47A476BE4595B2E78297B7281DA1B8447EEC7F538A410A131",
+  "rawText": "{\n  \"verdict\": \"PASS\",\n  \"issues\": []\n}",
+  "usage": {
+    "prompt_tokens": 7553,
+    "completion_tokens": 16,
+    "total_tokens": 7569,
+    "prompt_tokens_details": {
+      "cached_tokens": 1664
+    },
+    "prompt_cache_hit_tokens": 1664,
+    "prompt_cache_miss_tokens": 5889
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-GRAIN-RELIEF",
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+    "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+    "DM1566-C06-LAND-PRICE-DEBATE"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+  ],
+  "candidateType": "RESOURCE_CONSTRAINT",
+  "dramaticFunction": "官粮不足时玩家仍有多种真实救急渠道",
+  "preconditions": [
+    "官仓或可调用粮源不足以同时满足全部需要",
+    "粮价或灾民压力已经可见"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_grain",
+    "resource.merchant_grain_route",
+    "institution.zhejiang_governor_yamen"
+  ],
+  "allowedMoves": [
+    "调官仓",
+    "向邻省借粮",
+    "让商人垫粮",
+    "按人群和地区确定赈济优先级"
+  ],
+  "likelyCountermoves": [
+    "以粮源不足反对土地保护",
+    "商人要求担保或优先权",
+    "地方截留或延迟运输"
+  ],
+  "immediateStateEffects": [
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure"
+  ],
+  "delayedConsequences": [
+    "救急渠道形成债务和责任",
+    "粮食不足会压迫百姓出售土地"
+  ],
+  "invariantsToPreserve": [
+    "救粮方案必须有来源、数量约束和代价",
+    "不能用一句开仓就消除粮荒"
+  ],
+  "evidenceStrength": "EXPLICIT",
+  "limitations": [
+    "原著支持多渠道求粮但不提供本房间精确库存",
+    "数值必须来自运行时状态而非模型猜测"
+  ],
+  "proposedAdaptationGapId": null,
+  "status": "CANDIDATE_ONLY"
+}

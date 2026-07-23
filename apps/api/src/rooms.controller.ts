@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Sse, UseGuards, type MessageEvent } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpException, Inject, Logger, Param, Post, Query, Res, Sse, UseGuards, type MessageEvent } from "@nestjs/common";
 import type { Observable } from "rxjs";
 import { AuthGuard } from "./auth/auth.guard";
 import { CurrentUser, type AuthenticatedUser } from "./auth/current-user.decorator";
@@ -9,6 +9,8 @@ import type { ControlCommandV1, HeartbeatCommandV1, LayoutCommandV1, SlotCommand
 @UseGuards(AuthGuard)
 @Controller("v4/rooms")
 export class RoomsController {
+  private readonly logger = new Logger(RoomsController.name);
+
   constructor(@Inject(RoomsService) private readonly rooms: RoomsService) {}
   @Get() list(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.list(worldId, user); }
   @Get("mine") mine(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.mine(user, worldId); }
@@ -22,6 +24,37 @@ export class RoomsController {
   @Post(":roomId/game/action") action(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) { return this.rooms.submitGameAction(user, roomId, body); }
   @Post(":roomId/game/actions/main") main(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: SlotCommandV1) { return this.rooms.submitMain(user, roomId, body); }
   @Post(":roomId/game/turns/:turnId/decision") turnDecision(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("turnId") turnId: string, @Body() body: TurnDecisionCommandV2) { return this.rooms.submitTurnDecision(user, roomId, turnId, body); }
+  @Post(":roomId/game/turns/:turnId/decision/stream")
+  async turnDecisionStream(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("roomId") roomId: string,
+    @Param("turnId") turnId: string,
+    @Body() body: TurnDecisionCommandV2,
+    @Res() response: any
+  ) {
+    response.status(200);
+    response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
+    response.setHeader("cache-control", "no-store, no-transform");
+    response.setHeader("x-accel-buffering", "no");
+    response.flushHeaders?.();
+    writeNdjson(response, { type: "start" });
+    try {
+      const payload = await this.rooms.submitTurnDecisionStream(user, roomId, turnId, body, (preview) => {
+        writeNdjson(response, { type: "story_preview", preview });
+      });
+      writeNdjson(response, { type: "result", payload });
+    } catch (error) {
+      if (!(error instanceof HttpException)) {
+        this.logger.error(
+          `Turn decision stream failed for room ${roomId}, turn ${turnId}: ${error instanceof Error ? error.message : String(error)}`,
+          error instanceof Error ? error.stack : undefined
+        );
+      }
+      writeNdjson(response, { type: "error", error: streamError(error) });
+    } finally {
+      response.end();
+    }
+  }
   @Post(":roomId/game/generation/retry") @HttpCode(202) retryGeneration(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.retryTurnGeneration(user, roomId); }
   @Post(":roomId/interactions/:interactionId/reply") interactionReply(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("interactionId") interactionId: string, @Body() body: TurnDecisionCommandV2) { return this.rooms.replyToInteraction(user, roomId, interactionId, body); }
   @Post(":roomId/game/actions/maneuver") maneuver(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: SlotCommandV1) { return this.rooms.submitManeuver(user, roomId, body); }
@@ -42,4 +75,29 @@ export class RoomsController {
   @Post(":roomId/ready") ready(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { ready?: boolean }) { return this.rooms.ready(user, roomId, body.ready !== false); }
   @Post(":roomId/start") start(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.start(user, roomId); }
   @Post(":roomId/close") close(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.close(user, roomId); }
+}
+
+function writeNdjson(response: any, value: unknown) {
+  if (response.writableEnded || response.destroyed) return;
+  response.write(`${JSON.stringify(value)}\n`);
+}
+
+function streamError(error: unknown) {
+  if (error instanceof HttpException) {
+    const status = error.getStatus();
+    const response = error.getResponse();
+    const details = typeof response === "object" && response ? response as Record<string, unknown> : {};
+    return {
+      status,
+      code: String(details.code || `HTTP_${status}`),
+      message: String(details.message || error.message || "The story request could not be completed."),
+      details
+    };
+  }
+  return {
+    status: 500,
+    code: "INTERNAL_ERROR",
+    message: "The story request could not be completed.",
+    details: {}
+  };
 }

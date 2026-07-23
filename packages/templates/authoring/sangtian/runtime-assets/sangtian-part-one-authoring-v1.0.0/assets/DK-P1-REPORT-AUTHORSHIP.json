@@ -1,0 +1,163 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-REPORT-AUTHORSHIP",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-REPORT-AUTHORSHIP"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili"
+  ],
+  "stateDependencies": [
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure",
+    "report.dispatchStatus",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-CAPITAL-FRAMING",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili",
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure",
+    "report.dispatchStatus",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "availableWhen": [
+      "存在一份需要形成、修改或决定是否联署的地方奏报",
+      "玩家掌握至少一项可写入的执行、民生或证据事实",
+      "正式或非正式文书已经进入递送渠道",
+      "渠道中介、署名和附件状态可追踪"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-REPORT-AUTHORSHIP-OPT-01",
+        "title": "督抚联署",
+        "actionText": "逐项写明执行、复核和粮食分歧，双方确认后共同具名入京。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "共同奏报",
+        "immediateIntent": "逐项写明执行、复核和粮食分歧，双方确认后共同具名入京。",
+        "visibleTradeoff": "分量较重，但为达成文本可能弱化争议",
+        "stateEffects": [
+          "report.authorshipMode",
+          "responsibility.governorExposure",
+          "responsibility.xunfuExposure"
+        ],
+        "statePatch": {
+          "report.authorshipMode": "JOINT",
+          "report.firstNarrativeController": "GOVERNOR_AND_XUNFU",
+          "responsibility.governorExposure": {
+            "$delta": 1
+          },
+          "responsibility.xunfuExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-REPORT-AUTHORSHIP-OPT-02",
+        "title": "总督单奏",
+        "actionText": "由总督独自具名，把巡抚催办和拒签文书一并列为附件。",
+        "targetRef": "institution.zhejiang_governor_yamen",
+        "method": "单方奏报",
+        "immediateIntent": "由总督独自具名，把巡抚催办和拒签文书一并列为附件。",
+        "visibleTradeoff": "叙述完整可控，也把主要责任集中到总督",
+        "stateEffects": [
+          "report.authorshipMode",
+          "report.firstNarrativeController",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "report.authorshipMode": "GOVERNOR_SOLE",
+          "report.firstNarrativeController": "GOVERNOR",
+          "responsibility.governorExposure": {
+            "$delta": 2
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-REPORT-AUTHORSHIP-OPT-03",
+        "title": "各自上报",
+        "actionText": "允许巡抚另报，总督同时送出自己的复核结果和异议。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "分裂奏报",
+        "immediateIntent": "允许巡抚另报，总督同时送出自己的复核结果和异议。",
+        "visibleTradeoff": "京师会更早看见公开冲突，双方都难再退回私下妥协",
+        "stateEffects": [
+          "report.authorshipMode",
+          "report.firstNarrativeController",
+          "relations.governorXunfu"
+        ],
+        "statePatch": {
+          "report.authorshipMode": "SPLIT",
+          "report.firstNarrativeController": "CONTESTED",
+          "relations.governorXunfu": {
+            "$delta": -2
+          }
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

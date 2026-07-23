@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-REGISTER-CUSTODY",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.0.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "4E3B629D4E0C8463DB3D5870C964E2579B928481E189EE6FD99BB95AC1C77271",
+  "candidateHash": "7E73241D667D017422487D33649CE24E92CF2AA6D54CFBC09D4C54BF82FE591F",
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:36:02.480Z",
+  "immutableHash": "3C54D9AF892BC37B6EB203BA75336C0AFEDEFB1F94D657F88BABD472ED9F4EE2"
+}

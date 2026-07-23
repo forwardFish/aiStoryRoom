@@ -17,6 +17,12 @@ Copy-Item -Recurse `
 - `template_world_actor`：规则控制的世界角色；它不占玩家席位。
 - `template_role_01` 至 `template_role_06`：玩家角色 ID。
 
+主游戏页面不需要复制或修改页面代码。请在 `game.json` 中填写：
+
+- `presentation.locale`、`locationLabel`、`sceneBackground` 和五项 `statusMetrics`；
+- 每个角色的头像及 `gameplayProfile`（姓名、身份、职位、命运问题、目标、资源、筹码）；
+- 运行时会通过统一房间接口把这些字段投影给同一套主游戏页面。
+
 ## 固定目录合同
 
 ```text

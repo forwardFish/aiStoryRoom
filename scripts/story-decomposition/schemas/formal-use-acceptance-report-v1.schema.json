@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/formal-use-acceptance-report-v1.schema.json",
+  "title": "formal-use-acceptance-report-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "formal-use-acceptance-report-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generatedBy": {
+      "const": "RELEASE_GATE_VALIDATOR"
+    },
+    "runManifestHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "codexFinalPlayerReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "finalHiddenAuditHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "formalRunIntegrityHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "principalAccessLogHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "artifactHashManifestHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "contextIsolationReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "openingTechnicalAuditHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "turnHiddenAdjudicationHashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "T01": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T02": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T03": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T04": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T05": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T06": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T07": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T08": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T09": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T10": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T11": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T12": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T13": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T14": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T15": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T16": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T17": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T18": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T19": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "T20": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "checkpointMachineIntegrityReportHashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Fa-f0-9]{64}$"
+      },
+      "minItems": 21,
+      "maxItems": 21,
+      "uniqueItems": true
+    },
+    "checkpointTestIntegritySliceHashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Fa-f0-9]{64}$"
+      },
+      "minItems": 21,
+      "maxItems": 21,
+      "uniqueItems": true
+    },
+    "testIntegrityReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "checkpointPlayerGateHashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Fa-f0-9]{64}$"
+      },
+      "minItems": 21,
+      "maxItems": 21,
+      "uniqueItems": true
+    },
+    "checkpointAcceptanceGateHashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Fa-f0-9]{64}$"
+      },
+      "minItems": 21,
+      "maxItems": 21,
+      "uniqueItems": true
+    },
+    "choiceBindingProofHashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Fa-f0-9]{64}$"
+      },
+      "minItems": 20,
+      "maxItems": 20,
+      "uniqueItems": true
+    },
+    "releaseVerdict": {
+      "type": "string",
+      "enum": [
+        "PART_ONE_FORMAL_USE_READY",
+        "FAIL"
+      ]
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "generatedBy",
+    "runManifestHash",
+    "codexFinalPlayerReportHash",
+    "finalHiddenAuditHash",
+    "formalRunIntegrityHash",
+    "principalAccessLogHash",
+    "artifactHashManifestHash",
+    "contextIsolationReportHash",
+    "openingTechnicalAuditHash",
+    "turnHiddenAdjudicationHashes",
+    "checkpointMachineIntegrityReportHashes",
+    "checkpointTestIntegritySliceHashes",
+    "testIntegrityReportHash",
+    "checkpointPlayerGateHashes",
+    "checkpointAcceptanceGateHashes",
+    "choiceBindingProofHashes",
+    "releaseVerdict",
+    "generatedAt",
+    "validatorSignature"
+  ]
+}

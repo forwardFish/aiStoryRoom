@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-REVIEW-AUTHORITY",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REVIEW-AUTHORITY"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-REVIEW-AUTHORITY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate"
+  ],
+  "stateDependencies": [
+    "review.authority",
+    "review.procedureStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "DK-P1-REVIEW-AUTHORITY",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "review.authority",
+    "review.procedureStatus"
+  ],
+  "payload": {
+    "availableWhen": [
+      "复核对象和程序争议已经进入正式议程",
+      "参与者只能在自身官职权限和文书渠道内行动"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-REVIEW-AUTHORITY-OPT-01",
+        "title": "总督主持",
+        "actionText": "由总督府定复核清单，巡抚和县令只能派见证人参加。",
+        "targetRef": "institution.zhejiang_governor_yamen",
+        "method": "总督主持复核",
+        "immediateIntent": "由总督府定复核清单，巡抚和县令只能派见证人参加。",
+        "visibleTradeoff": "解释权集中，越权与拖延指责随之上升",
+        "stateEffects": [
+          "review.authority",
+          "review.procedureStatus",
+          "relations.governorXunfu"
+        ],
+        "statePatch": {
+          "review.authority": "GOVERNOR",
+          "review.procedureStatus": "GOVERNOR_LED_WITH_WITNESSES",
+          "relations.governorXunfu": {
+            "$delta": -1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-REVIEW-AUTHORITY-OPT-02",
+        "title": "督抚共审",
+        "actionText": "设共同复核案，每次开册和抄录都须双方经手人同时具名。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "共同主持",
+        "immediateIntent": "设共同复核案，每次开册和抄录都须双方经手人同时具名。",
+        "visibleTradeoff": "程序互相制约，但任何一步都可能被对方拖住",
+        "stateEffects": [
+          "review.authority",
+          "review.procedureStatus"
+        ],
+        "statePatch": {
+          "review.authority": "JOINT",
+          "review.procedureStatus": "DUAL_SIGNATURE_REQUIRED"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-REVIEW-AUTHORITY-OPT-03",
+        "title": "县级初核",
+        "actionText": "先由县令按总督列出的项目初核，督抚只审其结果和原件。",
+        "targetRef": "actor.qingliu_magistrate",
+        "method": "分层复核",
+        "immediateIntent": "先由县令按总督列出的项目初核，督抚只审其结果和原件。",
+        "visibleTradeoff": "节省时间，却给县衙留下整理材料的空间",
+        "stateEffects": [
+          "review.authority",
+          "review.procedureStatus",
+          "evidence.chainStatus"
+        ],
+        "statePatch": {
+          "review.authority": "COUNTY_FIRST",
+          "review.procedureStatus": "LAYERED_REVIEW",
+          "evidence.chainStatus": "FRAGILE"
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

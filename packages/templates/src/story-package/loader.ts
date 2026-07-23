@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, isAbsolute, resolve, sep } from "node:path";
 import type { LoadedRuntimeStoryPackage, RuntimeStoryPackage, StoryPackageManifest, StoryPackageSourceMap } from "./types";
-import { validateRuntimeStoryPackage, validateStoryPackageManifest, validateStoryPackageSourceMap } from "./validation";
+import {
+  validateRuntimeStoryPackage,
+  validateStoryPackageManifest,
+  validateStoryPackageSourceBindings,
+  validateStoryPackageSourceMap
+} from "./validation";
 
 export const defaultStoryPackageConfigRoot = resolve(__dirname, "../../config");
 const storyPackageCache = new Map<string, LoadedRuntimeStoryPackage>();
@@ -71,6 +76,7 @@ export function loadStoryPackage(worldId: string, configRoot = defaultStoryPacka
   if (storyPackage.packageId !== manifest.packageId || sourceMap.packageId !== manifest.packageId) throw new Error(`STORY_PACKAGE_MANIFEST_MISMATCH:${worldId}:packageId`);
   if (storyPackage.packageVersion !== manifest.packageVersion || sourceMap.packageVersion !== manifest.packageVersion) throw new Error(`STORY_PACKAGE_MANIFEST_MISMATCH:${worldId}:packageVersion`);
   if (storyPackage.sourceMapSha256 !== manifest.sourceMapSha256) throw new Error(`STORY_SOURCE_MAP_HASH_MISMATCH:${worldId}:package-reference`);
+  validateStoryPackageSourceBindings(storyPackage, sourceMap);
   const loaded = { manifest, storyPackage, sourceMap, storyPackageSha256, sourceMapSha256 };
   storyPackageCache.set(cacheKey, loaded);
   return loaded;

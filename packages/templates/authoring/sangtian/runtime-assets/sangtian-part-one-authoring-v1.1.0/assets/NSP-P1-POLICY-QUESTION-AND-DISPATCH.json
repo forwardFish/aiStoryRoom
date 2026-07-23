@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+  "assetType": "NARRATIVE_SCENE_PATTERN",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "source.jiajing",
+    "source.yan_song",
+    "source.yan_shifan",
+    "source.zhang_juzheng"
+  ],
+  "stateDependencies": [],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "DM1566-C01-POLICY-COUNCIL",
+    "NARRATIVE_SCENE_PATTERN",
+    "PLAYER_VISIBLE_PROSE_GRAMMAR",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "source.jiajing",
+    "source.yan_song",
+    "source.yan_shifan",
+    "source.zhang_juzheng"
+  ],
+  "payload": {
+    "schemaVersion": "narrative-scene-pattern-v1",
+    "patternId": "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+    "sourceSceneId": "DM1566-C01-POLICY-COUNCIL",
+    "dramaticFunction": "让一项看似能填补亏空的政策，在连续追问百姓口粮与执行责任后仍被迅速定为急务；冲突由人物问答和权力落槌完成，不由旁白解释。",
+    "openingPressure": "先有人主动揽下一部分责任，权力中心随后把抽象财政策略追问成具体民生问题。",
+    "orderedBeats": [
+      {
+        "ordinal": 1,
+        "actorRole": "先被追责的政策支持者",
+        "observableMove": "先当众承认自己和所属衙门负有责任，以主动认责换取继续发言的资格。",
+        "sceneFunction": "把责任从抽象亏空落到在场人物身上。",
+        "reactionCue": "掌权者态度缓和，允许议题继续。"
+      },
+      {
+        "ordinal": 2,
+        "actorRole": "提出办法的政策主持者",
+        "observableMove": "提出把浙江农田转作桑田，并用增调外省粮食回答口粮缺口。",
+        "sceneFunction": "给出行政上可说通、现实中仍有代价的办法。",
+        "reactionCue": "权力中心不接受概括，继续追问粮价与百姓是否愿意。"
+      },
+      {
+        "ordinal": 3,
+        "actorRole": "拥有最终裁定权的人",
+        "observableMove": "用一连串短问逼出政策遗漏的现实代价，随后又亲自补上一条税赋限制。",
+        "sceneFunction": "让掌权者既显得看见风险，又保留最终裁定权。",
+        "reactionCue": "提案者立刻把限制解释成百姓会拥护政策的理由。"
+      },
+      {
+        "ordinal": 4,
+        "actorRole": "拥有最终裁定权的人",
+        "observableMove": "在争论尚未彻底解决时结束会议，命内阁形成方略并向浙江急递。",
+        "sceneFunction": "把未解风险转成地方官必须接住的时限和责任。",
+        "reactionCue": "在场人物只能领命，真正代价被推向浙江。"
+      }
+    ],
+    "dialogueTactics": [
+      {
+        "actorRole": "拥有最终裁定权的人",
+        "surfaceMove": "不用长篇议论，只连续追问百姓吃什么、调粮是否更贵、桑农是否愿意。",
+        "hiddenRisk": "既不能让提案显得毫无漏洞，也不愿放弃填补亏空的新来源。",
+        "cadenceRule": "短问紧逼，得到答案后突然收束并下令。"
+      },
+      {
+        "actorRole": "提出办法的政策主持者",
+        "surfaceMove": "每次只回答眼前一问，把土地、粮食与收益都说成可由衙门调度的问题。",
+        "hiddenRisk": "不能让政策在御前显出会伤民或无法执行。",
+        "cadenceRule": "回答迅速、句子完整，不主动展开代价。"
+      }
+    ],
+    "blockingPrinciples": [
+      "发言权随问答转移：谁被点名，谁必须立刻接住问题。",
+      "裁定发生后才允许掌权者离座或移动，用身体动作标示议题已经结束。",
+      "其他人的目光与抢话只显示政治站位，不替旁白解释派系关系。"
+    ],
+    "objectPowerMoves": [],
+    "transferableTechniques": [
+      "把宏观政策拆成一个人物一次只问一个的具体问题。",
+      "让对手用看似可执行的办法回避深层代价，而不是自认阴谋。",
+      "用急递、具名和领命把争论转成下一场的实际压力。"
+    ],
+    "forbiddenFlattening": [
+      "不得把场景概括成执行边界、证据限制或政策利弊说明。",
+      "不得由旁白宣布谁对谁错；让问题、回答、沉默和命令暴露立场。",
+      "不得在正文末尾替玩家总结成是执行还是拖延的二选一。"
+    ],
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "reviewStatus": "APPROVED",
+    "reviewerId": "codex-source-scene-mechanism-review-v1",
+    "approvedAt": "2026-07-23T18:30:00+08:00"
+  }
+}

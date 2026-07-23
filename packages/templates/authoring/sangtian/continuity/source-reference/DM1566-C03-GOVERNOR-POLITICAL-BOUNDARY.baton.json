@@ -1,0 +1,201 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+  "currentDateAndTime": "总督衙门议事之后",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-POSITION-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "source.hu_zongxian 在 place.zhejiang_governor_office_inner_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    },
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-POSITION-2",
+      "subjectRef": "source.tan_lun",
+      "statement": "source.tan_lun 在 place.zhejiang_governor_office_inner_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-KNOWLEDGE-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪向谭纶出示内阁驳回奏疏的回文，并展示持续催办改桑的公文与书信。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    }
+  ],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-GOAL-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪表明无论谭纶是否到来，他都不愿改桑造成大规模失田与内乱；这是人物公开意图，不保证所有行动成功。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-CUSTODY-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪向谭纶出示内阁驳回奏疏的回文，并展示持续催办改桑的公文与书信。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    },
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-CUSTODY-2",
+      "subjectRef": "source.tan_lun",
+      "statement": "谭纶主动拒绝阅读更多私下公文，明确知识越多可能越损害胡宗宪的行动空间。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    }
+  ],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-DECISION-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪表明无论谭纶是否到来，他都不愿改桑造成大规模失田与内乱；这是人物公开意图，不保证所有行动成功。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    },
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-DECISION-2",
+      "subjectRef": "source.tan_lun",
+      "statement": "谭纶主动拒绝阅读更多私下公文，明确知识越多可能越损害胡宗宪的行动空间。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-PROMISE-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪表明无论谭纶是否到来，他都不愿改桑造成大规模失田与内乱；这是人物公开意图，不保证所有行动成功。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-ARC-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪表明无论谭纶是否到来，他都不愿改桑造成大规模失田与内乱；这是人物公开意图，不保证所有行动成功。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    },
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-ARC-2",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪称原可把一年改桑方案改为三年完成，说明地方执行存在节奏与范围上的政策空间。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    },
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-ARC-3",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪向谭纶出示内阁驳回奏疏的回文，并展示持续催办改桑的公文与书信。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    },
+    {
+      "stateId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-ARC-4",
+      "subjectRef": "source.tan_lun",
+      "statement": "谭纶主动拒绝阅读更多私下公文，明确知识越多可能越损害胡宗宪的行动空间。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-ARTIFACT-R1",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+  ]
+}

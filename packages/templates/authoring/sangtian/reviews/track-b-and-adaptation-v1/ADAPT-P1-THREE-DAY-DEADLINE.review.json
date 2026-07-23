@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "ADAPT-P1-THREE-DAY-DEADLINE",
+  "kind": "ADAPTATION",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.0.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "AF1F977566B8715DADDA377F9D3A79EA1413E83D3CF7F7DF7855E8FACF38A7E9",
+  "candidateHash": "653DC0244010344DC07195891214D8468508211FEBA57BC4D7ECC65700C81184",
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:36:15.246Z",
+  "immutableHash": "E73B4B84FAACE3B42968DB4D99EE6A9FA1102F4DEEDF53742A167C6439924E70"
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/auditor-session-manifest-v1.schema.json",
+  "title": "auditor-session-manifest-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "auditor-session-manifest-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "auditorContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hiddenResourceAcl": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "allowedOutputTargets": {
+      "type": "array",
+      "const": [
+        "ORCHESTRATOR_CONTROL"
+      ]
+    },
+    "forbiddenDeliveryTargets": {
+      "type": "array",
+      "const": [
+        "BLIND_PLAYER"
+      ]
+    },
+    "allowedControlSignals": {
+      "type": "array",
+      "const": [
+        "CONTINUE",
+        "STOP"
+      ]
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "auditorContextId",
+    "hiddenResourceAcl",
+    "allowedOutputTargets",
+    "forbiddenDeliveryTargets",
+    "allowedControlSignals",
+    "sealedAt",
+    "immutableHash"
+  ]
+}

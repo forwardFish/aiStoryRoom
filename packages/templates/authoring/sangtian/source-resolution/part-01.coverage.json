@@ -1,0 +1,4593 @@
+{
+  "schemaVersion": "source-requirement-resolution-set-v1",
+  "runId": "sangtian-part-one-source-resolution-v1",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+  "requirementCount": 12,
+  "resolutionIds": [
+    "RESOLVE-REQ-P1-EXECUTION-BOUNDARY",
+    "RESOLVE-REQ-P1-RESPONSIBILITY-RECORD",
+    "RESOLVE-REQ-P1-XUNFU-COUNTERMOVE",
+    "RESOLVE-REQ-P1-REGISTER-CUSTODY",
+    "RESOLVE-REQ-P1-REVIEW-AUTHORITY",
+    "RESOLVE-REQ-P1-KNOWLEDGE-CHAIN",
+    "RESOLVE-REQ-P1-GRAIN-RELIEF",
+    "RESOLVE-REQ-P1-MERCHANT-CONDITIONS",
+    "RESOLVE-REQ-P1-LAND-RISK",
+    "RESOLVE-REQ-P1-REPORT-AUTHORSHIP",
+    "RESOLVE-REQ-P1-EVIDENCE-ATTACHMENT",
+    "RESOLVE-REQ-P1-CAPITAL-FRAMING"
+  ],
+  "reviewerStatusCounts": {
+    "PENDING": 12
+  },
+  "resolutions": [
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-EXECUTION-BOUNDARY",
+      "requirementId": "REQ-P1-EXECUTION-BOUNDARY",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-PUBLISHED-01",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0219",
+              "paragraphEndId": "DM1566-C01-P0240",
+              "lineStart": 500,
+              "lineEnd": 542,
+              "textSpanSha256": "21B514BD7AE999A5FE625C31DC224D44D583A7958F46995EB170FBEAB4CD5C9F"
+            }
+          ],
+          "matchedMechanisms": [
+            "国策形成",
+            "地方执行责任",
+            "拖延与抗命边界"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-PUBLISHED-02",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0020",
+              "paragraphEndId": "DM1566-C03-P0039",
+              "lineStart": 1608,
+              "lineEnd": 1646,
+              "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+            }
+          ],
+          "matchedMechanisms": [
+            "国策形成",
+            "地方执行责任",
+            "拖延与抗命边界"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-PUBLISHED-03",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0074",
+              "paragraphEndId": "DM1566-C04-P0110",
+              "lineStart": 2513,
+              "lineEnd": 2585,
+              "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+            }
+          ],
+          "matchedMechanisms": [
+            "国策形成",
+            "地方执行责任",
+            "拖延与抗命边界"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-01",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0287",
+              "paragraphEndId": "DM1566-C03-P0295",
+              "lineStart": 2142,
+              "lineEnd": 2158,
+              "textSpanSha256": "77C9E9F44ED4ED6A5127354F6CB1610EB2D9FDBC7275DECA57EC28957ADF26E1"
+            }
+          ],
+          "matchedMechanisms": [
+            "改稻为桑",
+            "总督"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 改稻为桑、总督 in DM1566-C03-P0287—DM1566-C03-P0295; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-02",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0129",
+              "paragraphEndId": "DM1566-C03-P0135",
+              "lineStart": 1826,
+              "lineEnd": 1838,
+              "textSpanSha256": "B0753D85A081D285C109E8DACE5B813C3EDBCEA6A70FF31985701B12B754B333"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C03-P0129—DM1566-C03-P0135; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-03",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0132",
+              "paragraphEndId": "DM1566-C02-P0141",
+              "lineStart": 1089,
+              "lineEnd": 1107,
+              "textSpanSha256": "0DACA7BAB491C3664C832FB8FD3A727535571BFC8C7D1DEAD4F2A3134837FA62"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C02-P0132—DM1566-C02-P0141; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-04",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0193",
+              "paragraphEndId": "DM1566-C02-P0204",
+              "lineStart": 1211,
+              "lineEnd": 1233,
+              "textSpanSha256": "3ECFC362ACF02B9B412909C012C094FE21A8BB0997B0B39E3EFB164F2828120A"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C02-P0193—DM1566-C02-P0204; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-05",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0251",
+              "paragraphEndId": "DM1566-C03-P0258",
+              "lineStart": 2070,
+              "lineEnd": 2084,
+              "textSpanSha256": "A3A22FD23B0732A9832C35C8B83D33970461973BB45CB062702FF48FA5B70BA0"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C03-P0251—DM1566-C03-P0258; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-06",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0350",
+              "paragraphEndId": "DM1566-C03-P0361",
+              "lineStart": 2268,
+              "lineEnd": 2290,
+              "textSpanSha256": "77ACD0DA714B58832C2B9067C4817646C49F2AAD3F94EEE0B2B2F13A3B3975CB"
+            }
+          ],
+          "matchedMechanisms": [
+            "改稻为桑"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 改稻为桑 in DM1566-C03-P0350—DM1566-C03-P0361; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-07",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0352",
+              "paragraphEndId": "DM1566-C01-P0359",
+              "lineStart": 766,
+              "lineEnd": 780,
+              "textSpanSha256": "CBB6F8BE83070344B7823EC53A2936E7A9AE8A1368ACE87178ADD49BFF4F7773"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C01-P0352—DM1566-C01-P0359; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-08",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0323",
+              "paragraphEndId": "DM1566-C03-P0328",
+              "lineStart": 2214,
+              "lineEnd": 2224,
+              "textSpanSha256": "16CF39C4077C198D61E6FCD4B18B7AA3330F4D86F25D20EBF13978E69FC09048"
+            }
+          ],
+          "matchedMechanisms": [
+            "改稻为桑"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 改稻为桑 in DM1566-C03-P0323—DM1566-C03-P0328; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-09",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0356",
+              "paragraphEndId": "DM1566-C02-P0361",
+              "lineStart": 1537,
+              "lineEnd": 1547,
+              "textSpanSha256": "4204E5F50D61A5E74C30BF13E2238551697A94FAEE6756FA21CAC3E3972EE654"
+            }
+          ],
+          "matchedMechanisms": [
+            "改稻为桑"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 改稻为桑 in DM1566-C02-P0356—DM1566-C02-P0361; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-10",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0002",
+              "paragraphEndId": "DM1566-C02-P0005",
+              "lineStart": 829,
+              "lineEnd": 835,
+              "textSpanSha256": "D147EE81DA7237AB699AFBD79415BD9E69CB2793EAACF788D2E2EF42C8C837E4"
+            }
+          ],
+          "matchedMechanisms": [
+            "改稻为桑"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 改稻为桑 in DM1566-C02-P0002—DM1566-C02-P0005; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-11",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0002",
+              "paragraphEndId": "DM1566-C03-P0004",
+              "lineStart": 1572,
+              "lineEnd": 1576,
+              "textSpanSha256": "898B65841CB008FD87822BACF6960EFC4F90510CE1117670C5C95ACD34671E9A"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C03-P0002—DM1566-C03-P0004; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EXECUTION-BOUNDARY-CAND-12",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0006",
+              "paragraphEndId": "DM1566-C03-P0010",
+              "lineStart": 1580,
+              "lineEnd": 1588,
+              "textSpanSha256": "0A3D2F282F729A12A4252F724E8B0395E204E54C5DA91FB42ED03B5F535DB116"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C03-P0006—DM1566-C03-P0010; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "国策形成",
+        "地方执行责任",
+        "拖延与抗命边界"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-THREE-DAY-DEADLINE"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-RESPONSIBILITY-RECORD",
+      "requirementId": "REQ-P1-RESPONSIBILITY-RECORD",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-RESPONSIBILITY-RECORD-PUBLISHED-01",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0219",
+              "paragraphEndId": "DM1566-C01-P0240",
+              "lineStart": 500,
+              "lineEnd": 542,
+              "textSpanSha256": "21B514BD7AE999A5FE625C31DC224D44D583A7958F46995EB170FBEAB4CD5C9F"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏",
+            "票拟",
+            "公文",
+            "催办",
+            "责任切割"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-RESPONSIBILITY-RECORD-PUBLISHED-02",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0074",
+              "paragraphEndId": "DM1566-C04-P0110",
+              "lineStart": 2513,
+              "lineEnd": 2585,
+              "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏",
+            "票拟",
+            "公文",
+            "催办",
+            "责任切割"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-RESPONSIBILITY-RECORD-CAND-01",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0029",
+              "paragraphEndId": "DM1566-C03-P0036",
+              "lineStart": 1626,
+              "lineEnd": 1640,
+              "textSpanSha256": "4D5F7E6C18EAC975B953857CEC655D1B59C8ED242A4BB6F1D42D456EA8E127DD"
+            }
+          ],
+          "matchedMechanisms": [
+            "公文"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 公文 in DM1566-C03-P0029—DM1566-C03-P0036; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-RESPONSIBILITY-RECORD-CAND-02",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0217",
+              "paragraphEndId": "DM1566-C01-P0221",
+              "lineStart": 496,
+              "lineEnd": 504,
+              "textSpanSha256": "3B3F95D15A940F10455D4BB7ACB40C6473FE04B5586A7ADA5BF9D71DF1059794"
+            }
+          ],
+          "matchedMechanisms": [
+            "责任"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 责任 in DM1566-C01-P0217—DM1566-C01-P0221; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-RESPONSIBILITY-RECORD-CAND-03",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0242",
+              "paragraphEndId": "DM1566-C02-P0247",
+              "lineStart": 1309,
+              "lineEnd": 1319,
+              "textSpanSha256": "986477E7F088456548958F2C3CAE11BA1BDC8DE86EEF36A5C34779B150CABB64"
+            }
+          ],
+          "matchedMechanisms": [
+            "公文"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 公文 in DM1566-C02-P0242—DM1566-C02-P0247; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-RESPONSIBILITY-RECORD-CAND-04",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0131",
+              "paragraphEndId": "DM1566-C01-P0135",
+              "lineStart": 324,
+              "lineEnd": 332,
+              "textSpanSha256": "F85C2A0A4261DB0619AA8AC55F24F6855B08A92305EFC453F9653622CCB8FD97"
+            }
+          ],
+          "matchedMechanisms": [
+            "责任"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 责任 in DM1566-C01-P0131—DM1566-C01-P0135; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-RESPONSIBILITY-RECORD-CAND-05",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0263",
+              "paragraphEndId": "DM1566-C02-P0267",
+              "lineStart": 1351,
+              "lineEnd": 1359,
+              "textSpanSha256": "563316B2CF74BAD728E2028D3FEE86D75B54382BF843F0A3F3467B761CB1A2D3"
+            }
+          ],
+          "matchedMechanisms": [
+            "责任"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 责任 in DM1566-C02-P0263—DM1566-C02-P0267; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-RESPONSIBILITY-RECORD-CAND-06",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0367",
+              "paragraphEndId": "DM1566-C02-P0369",
+              "lineStart": 1559,
+              "lineEnd": 1563,
+              "textSpanSha256": "F9B49F8EAE2D8ACD237D5F1D4DB22A52893413F066143308EF7281625C3C248D"
+            }
+          ],
+          "matchedMechanisms": [
+            "公文"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 公文 in DM1566-C02-P0367—DM1566-C02-P0369; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "奏疏",
+        "票拟",
+        "公文",
+        "催办",
+        "责任切割"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-XUNFU-COUNTERMOVE",
+      "requirementId": "REQ-P1-XUNFU-COUNTERMOVE",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-PUBLISHED-01",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0020",
+              "paragraphEndId": "DM1566-C03-P0039",
+              "lineStart": 1608,
+              "lineEnd": 1646,
+              "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+            }
+          ],
+          "matchedMechanisms": [
+            "地方官僚自保",
+            "执行压力",
+            "责任转移"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-PUBLISHED-02",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0074",
+              "paragraphEndId": "DM1566-C04-P0110",
+              "lineStart": 2513,
+              "lineEnd": 2585,
+              "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+            }
+          ],
+          "matchedMechanisms": [
+            "地方官僚自保",
+            "执行压力",
+            "责任转移"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-PUBLISHED-03",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0111",
+              "paragraphEndId": "DM1566-C04-P0120",
+              "lineStart": 2587,
+              "lineEnd": 2605,
+              "textSpanSha256": "9E9D54D0C28352B6632BA4E51C82265F8868C309DB40305611873D4F687FFE23"
+            }
+          ],
+          "matchedMechanisms": [
+            "地方官僚自保",
+            "执行压力",
+            "责任转移"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-01",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0369",
+              "paragraphEndId": "DM1566-C04-P0374",
+              "lineStart": 3103,
+              "lineEnd": 3113,
+              "textSpanSha256": "3C806609154ADC6B14BF18307B3DB708DCFCC12E57B9375D7AB3A48BE0B5BC9F"
+            }
+          ],
+          "matchedMechanisms": [
+            "巡抚",
+            "总督",
+            "改稻为桑"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 巡抚、总督、改稻为桑 in DM1566-C04-P0369—DM1566-C04-P0374; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-02",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0072",
+              "paragraphEndId": "DM1566-C04-P0086",
+              "lineStart": 2509,
+              "lineEnd": 2537,
+              "textSpanSha256": "3DD4DB8143937C4B744415CFD2021655037FDBDC71E4592FA174615871B55C6E"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "改稻为桑"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、改稻为桑 in DM1566-C04-P0072—DM1566-C04-P0086; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-03",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0287",
+              "paragraphEndId": "DM1566-C03-P0295",
+              "lineStart": 2142,
+              "lineEnd": 2158,
+              "textSpanSha256": "77C9E9F44ED4ED6A5127354F6CB1610EB2D9FDBC7275DECA57EC28957ADF26E1"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "改稻为桑"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、改稻为桑 in DM1566-C03-P0287—DM1566-C03-P0295; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-04",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0316",
+              "paragraphEndId": "DM1566-C04-P0328",
+              "lineStart": 2997,
+              "lineEnd": 3021,
+              "textSpanSha256": "23478AE0F206B112E386C9FF5DCA9BD491E1079D20E8FD2D272450990FCF51DD"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "改稻为桑"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、改稻为桑 in DM1566-C04-P0316—DM1566-C04-P0328; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-05",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0031",
+              "paragraphEndId": "DM1566-C03-P0035",
+              "lineStart": 1630,
+              "lineEnd": 1638,
+              "textSpanSha256": "43644C813244452F0FD5F87596BA2527ADEFCAA0AE388B98E3C5D87AE40FFEB7"
+            }
+          ],
+          "matchedMechanisms": [
+            "催",
+            "改稻为桑"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 催、改稻为桑 in DM1566-C03-P0031—DM1566-C03-P0035; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-06",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0099",
+              "paragraphEndId": "DM1566-C02-P0103",
+              "lineStart": 1023,
+              "lineEnd": 1031,
+              "textSpanSha256": "1F3A277678CC507ABED7F4361D82C6CB730A4033CCC5728A0F120DA817E2A103"
+            }
+          ],
+          "matchedMechanisms": [
+            "巡抚",
+            "总督"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 巡抚、总督 in DM1566-C02-P0099—DM1566-C02-P0103; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-07",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0208",
+              "paragraphEndId": "DM1566-C04-P0212",
+              "lineStart": 2781,
+              "lineEnd": 2789,
+              "textSpanSha256": "D8BB1B94B519CFE559D44A9FEF558DC8485B675208526E3C780CB732C1C1A667"
+            }
+          ],
+          "matchedMechanisms": [
+            "巡抚",
+            "总督"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 巡抚、总督 in DM1566-C04-P0208—DM1566-C04-P0212; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-08",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0232",
+              "paragraphEndId": "DM1566-C02-P0236",
+              "lineStart": 1289,
+              "lineEnd": 1297,
+              "textSpanSha256": "93DDD378F341924F7CBC38596F004DA3CE82C73FEE1554067A602B53296614CC"
+            }
+          ],
+          "matchedMechanisms": [
+            "巡抚",
+            "总督"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 巡抚、总督 in DM1566-C02-P0232—DM1566-C02-P0236; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-09",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0239",
+              "paragraphEndId": "DM1566-C02-P0243",
+              "lineStart": 1303,
+              "lineEnd": 1311,
+              "textSpanSha256": "03B7A493611CDCF4F2922D015E7B9B68A4151D662A58DB46E7DA493EA6069ACF"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "催"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、催 in DM1566-C02-P0239—DM1566-C02-P0243; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-10",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0361",
+              "paragraphEndId": "DM1566-C04-P0365",
+              "lineStart": 3087,
+              "lineEnd": 3095,
+              "textSpanSha256": "0A152F1D8878FD6D5B3948B78AF50982BA0B1D7695ADF2454D4DAF72A8B2E710"
+            }
+          ],
+          "matchedMechanisms": [
+            "巡抚",
+            "总督"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 巡抚、总督 in DM1566-C04-P0361—DM1566-C04-P0365; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-11",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0121",
+              "paragraphEndId": "DM1566-C04-P0132",
+              "lineStart": 2607,
+              "lineEnd": 2629,
+              "textSpanSha256": "282368E22455A6487CE5C51E7D3F22C2C1E359847D9EC5B15196D2E892461171"
+            }
+          ],
+          "matchedMechanisms": [
+            "改稻为桑"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 改稻为桑 in DM1566-C04-P0121—DM1566-C04-P0132; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-XUNFU-COUNTERMOVE-CAND-12",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0129",
+              "paragraphEndId": "DM1566-C03-P0135",
+              "lineStart": 1826,
+              "lineEnd": 1838,
+              "textSpanSha256": "B0753D85A081D285C109E8DACE5B813C3EDBCEA6A70FF31985701B12B754B333"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C03-P0129—DM1566-C03-P0135; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "地方官僚自保",
+        "执行压力",
+        "责任转移"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-REGISTER-CUSTODY",
+      "requirementId": "REQ-P1-REGISTER-CUSTODY",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-PUBLISHED-01",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0074",
+              "paragraphEndId": "DM1566-C07-P0110",
+              "lineStart": 5022,
+              "lineEnd": 5094,
+              "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册",
+            "田契",
+            "文书保管",
+            "抄录",
+            "封存"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-PUBLISHED-02",
+          "chapterId": "DM1566-C13",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C13",
+              "paragraphStartId": "DM1566-C13-P0247",
+              "paragraphEndId": "DM1566-C13-P0265",
+              "lineStart": 10504,
+              "lineEnd": 10540,
+              "textSpanSha256": "05B220471EB8FB6530894B6AF59B01A5326EA75B25952C6534F7D61A16EE0C75"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册",
+            "田契",
+            "文书保管",
+            "抄录",
+            "封存"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-PUBLISHED-03",
+          "chapterId": "DM1566-C13",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C13",
+              "paragraphStartId": "DM1566-C13-P0266",
+              "paragraphEndId": "DM1566-C13-P0273",
+              "lineStart": 10542,
+              "lineEnd": 10556,
+              "textSpanSha256": "E6D06E3CC0400766879F0912DCC7B6F055C3BE83AA3E7D6BA15074D482173A02"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册",
+            "田契",
+            "文书保管",
+            "抄录",
+            "封存"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-PUBLISHED-04",
+          "chapterId": "DM1566-C23",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C23",
+              "paragraphStartId": "DM1566-C23-P0125",
+              "paragraphEndId": "DM1566-C23-P0147",
+              "lineStart": 17690,
+              "lineEnd": 17734,
+              "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册",
+            "田契",
+            "文书保管",
+            "抄录",
+            "封存"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-01",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0277",
+              "paragraphEndId": "DM1566-C04-P0286",
+              "lineStart": 2919,
+              "lineEnd": 2937,
+              "textSpanSha256": "9EB8595439083934174F687E61C5676F0A59B55D662810C8500092DB602EDB60"
+            }
+          ],
+          "matchedMechanisms": [
+            "封",
+            "抄"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封、抄 in DM1566-C04-P0277—DM1566-C04-P0286; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-02",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0110",
+              "paragraphEndId": "DM1566-C05-P0123",
+              "lineStart": 3370,
+              "lineEnd": 3396,
+              "textSpanSha256": "D743B4D6E752DEAC330B57077AF9F95757490227711252468529E019A42A0333"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C05-P0110—DM1566-C05-P0123; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-03",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0191",
+              "paragraphEndId": "DM1566-C05-P0198",
+              "lineStart": 3532,
+              "lineEnd": 3546,
+              "textSpanSha256": "6FC5CF2DFB9E1744A472A0BAC7A0C55F6AD9C81C3800C9AB8064F94D6037ABC2"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C05-P0191—DM1566-C05-P0198; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-04",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0261",
+              "paragraphEndId": "DM1566-C02-P0269",
+              "lineStart": 1347,
+              "lineEnd": 1363,
+              "textSpanSha256": "906BBDA24304CEBE4A5F6120BE024FFF684952B8ADA6B4C831A784DD61BD9E01"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C02-P0261—DM1566-C02-P0269; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-05",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0028",
+              "paragraphEndId": "DM1566-C03-P0033",
+              "lineStart": 1624,
+              "lineEnd": 1634,
+              "textSpanSha256": "C00D4318782FFD01F37622A782603A5AC982B1B114A33FABDDA6C2274EBE4F3F"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C03-P0028—DM1566-C03-P0033; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-06",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0166",
+              "paragraphEndId": "DM1566-C05-P0171",
+              "lineStart": 3482,
+              "lineEnd": 3492,
+              "textSpanSha256": "687BFBACE189ABD79CA72D531D8B3DCB66A67221AD4EDC5387817D2BCB5258D4"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C05-P0166—DM1566-C05-P0171; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-07",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0241",
+              "paragraphEndId": "DM1566-C02-P0249",
+              "lineStart": 1307,
+              "lineEnd": 1323,
+              "textSpanSha256": "7326BDF62F7BD7444D1C5E06A357046C56AF355B62E20DA7A69B9846F59B493C"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C02-P0241—DM1566-C02-P0249; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-08",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0252",
+              "paragraphEndId": "DM1566-C02-P0256",
+              "lineStart": 1329,
+              "lineEnd": 1337,
+              "textSpanSha256": "2DD64C46FBB854DAAE3331A07C1A29D9C4573D8030F64956D80B2D3A5F1D9A31"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C02-P0252—DM1566-C02-P0256; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-09",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0320",
+              "paragraphEndId": "DM1566-C04-P0324",
+              "lineStart": 3005,
+              "lineEnd": 3013,
+              "textSpanSha256": "97C99983491D8E5072097963BF37B8ACB38C566EDC2D5658C225A028664E2841"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C04-P0320—DM1566-C04-P0324; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-10",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0364",
+              "paragraphEndId": "DM1566-C02-P0369",
+              "lineStart": 1553,
+              "lineEnd": 1563,
+              "textSpanSha256": "B3BFCBDC6E3CAE91F43DC4C519DF517CC306A7DFD089DDD2997FF2936770D0D3"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C02-P0364—DM1566-C02-P0369; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-11",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0002",
+              "paragraphEndId": "DM1566-C03-P0004",
+              "lineStart": 1572,
+              "lineEnd": 1576,
+              "textSpanSha256": "898B65841CB008FD87822BACF6960EFC4F90510CE1117670C5C95ACD34671E9A"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C03-P0002—DM1566-C03-P0004; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REGISTER-CUSTODY-CAND-12",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0109",
+              "paragraphEndId": "DM1566-C04-P0113",
+              "lineStart": 2583,
+              "lineEnd": 2591,
+              "textSpanSha256": "E9812E84AE76F80646C389537254818B528B335312AC56C740FFC0246ADC88C6"
+            }
+          ],
+          "matchedMechanisms": [
+            "封"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 封 in DM1566-C04-P0109—DM1566-C04-P0113; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "账册",
+        "田契",
+        "文书保管",
+        "抄录",
+        "封存"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-REGISTER-ALTERATION"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-REVIEW-AUTHORITY",
+      "requirementId": "REQ-P1-REVIEW-AUTHORITY",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-PUBLISHED-01",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0020",
+              "paragraphEndId": "DM1566-C03-P0039",
+              "lineStart": 1608,
+              "lineEnd": 1646,
+              "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督巡抚知府知县的制度权限",
+            "核验程序",
+            "文书渠道"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-PUBLISHED-02",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0074",
+              "paragraphEndId": "DM1566-C04-P0110",
+              "lineStart": 2513,
+              "lineEnd": 2585,
+              "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督巡抚知府知县的制度权限",
+            "核验程序",
+            "文书渠道"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-PUBLISHED-03",
+          "chapterId": "DM1566-C23",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C23",
+              "paragraphStartId": "DM1566-C23-P0125",
+              "paragraphEndId": "DM1566-C23-P0147",
+              "lineStart": 17690,
+              "lineEnd": 17734,
+              "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督巡抚知府知县的制度权限",
+            "核验程序",
+            "文书渠道"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-01",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0232",
+              "paragraphEndId": "DM1566-C02-P0243",
+              "lineStart": 1289,
+              "lineEnd": 1311,
+              "textSpanSha256": "B0E23BA645B9297A0D5C7A6D774266F56C192A5F96269F7697CEA79A64F143AE"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "巡抚",
+            "知县"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、巡抚、知县 in DM1566-C02-P0232—DM1566-C02-P0243; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-02",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0099",
+              "paragraphEndId": "DM1566-C02-P0103",
+              "lineStart": 1023,
+              "lineEnd": 1031,
+              "textSpanSha256": "1F3A277678CC507ABED7F4361D82C6CB730A4033CCC5728A0F120DA817E2A103"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "巡抚"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、巡抚 in DM1566-C02-P0099—DM1566-C02-P0103; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-03",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0208",
+              "paragraphEndId": "DM1566-C04-P0212",
+              "lineStart": 2781,
+              "lineEnd": 2789,
+              "textSpanSha256": "D8BB1B94B519CFE559D44A9FEF558DC8485B675208526E3C780CB732C1C1A667"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "巡抚"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、巡抚 in DM1566-C04-P0208—DM1566-C04-P0212; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-04",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0307",
+              "paragraphEndId": "DM1566-C04-P0312",
+              "lineStart": 2979,
+              "lineEnd": 2989,
+              "textSpanSha256": "B2C43DD224A8CD10F03EB6D3F9A6F131D6473EED38CE4539B9C199B505AE0CEE"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "知县"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、知县 in DM1566-C04-P0307—DM1566-C04-P0312; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-05",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0361",
+              "paragraphEndId": "DM1566-C04-P0365",
+              "lineStart": 3087,
+              "lineEnd": 3095,
+              "textSpanSha256": "0A152F1D8878FD6D5B3948B78AF50982BA0B1D7695ADF2454D4DAF72A8B2E710"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "巡抚"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、巡抚 in DM1566-C04-P0361—DM1566-C04-P0365; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-06",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0369",
+              "paragraphEndId": "DM1566-C04-P0373",
+              "lineStart": 3103,
+              "lineEnd": 3111,
+              "textSpanSha256": "61CB165738A02909115771C2427EF33CEC1BD23AF12F5D80A2A48FE7D759062E"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督",
+            "巡抚"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督、巡抚 in DM1566-C04-P0369—DM1566-C04-P0373; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-07",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0129",
+              "paragraphEndId": "DM1566-C03-P0135",
+              "lineStart": 1826,
+              "lineEnd": 1838,
+              "textSpanSha256": "B0753D85A081D285C109E8DACE5B813C3EDBCEA6A70FF31985701B12B754B333"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C03-P0129—DM1566-C03-P0135; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-08",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0132",
+              "paragraphEndId": "DM1566-C02-P0141",
+              "lineStart": 1089,
+              "lineEnd": 1107,
+              "textSpanSha256": "0DACA7BAB491C3664C832FB8FD3A727535571BFC8C7D1DEAD4F2A3134837FA62"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C02-P0132—DM1566-C02-P0141; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-09",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0193",
+              "paragraphEndId": "DM1566-C02-P0204",
+              "lineStart": 1211,
+              "lineEnd": 1233,
+              "textSpanSha256": "3ECFC362ACF02B9B412909C012C094FE21A8BB0997B0B39E3EFB164F2828120A"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C02-P0193—DM1566-C02-P0204; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-10",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0251",
+              "paragraphEndId": "DM1566-C03-P0258",
+              "lineStart": 2070,
+              "lineEnd": 2084,
+              "textSpanSha256": "A3A22FD23B0732A9832C35C8B83D33970461973BB45CB062702FF48FA5B70BA0"
+            }
+          ],
+          "matchedMechanisms": [
+            "总督"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 总督 in DM1566-C03-P0251—DM1566-C03-P0258; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-11",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0002",
+              "paragraphEndId": "DM1566-C02-P0005",
+              "lineStart": 829,
+              "lineEnd": 835,
+              "textSpanSha256": "D147EE81DA7237AB699AFBD79415BD9E69CB2793EAACF788D2E2EF42C8C837E4"
+            }
+          ],
+          "matchedMechanisms": [
+            "知县"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知县 in DM1566-C02-P0002—DM1566-C02-P0005; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REVIEW-AUTHORITY-CAND-12",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0013",
+              "paragraphEndId": "DM1566-C02-P0018",
+              "lineStart": 851,
+              "lineEnd": 861,
+              "textSpanSha256": "F2924AD895FB646F4327D90BD04A9FF30EBC5839B40311F534B5B5733AD8D2DC"
+            }
+          ],
+          "matchedMechanisms": [
+            "知县"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知县 in DM1566-C02-P0013—DM1566-C02-P0018; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "总督巡抚知府知县的制度权限",
+        "核验程序",
+        "文书渠道"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-KNOWLEDGE-CHAIN",
+      "requirementId": "REQ-P1-KNOWLEDGE-CHAIN",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-PUBLISHED-01",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0243",
+              "paragraphEndId": "DM1566-C02-P0251",
+              "lineStart": 1311,
+              "lineEnd": 1327,
+              "textSpanSha256": "FC3D2D0A1D3B6764867EB5C44A8D6434CD55B3B797E181759E33F3D9BC6C523A"
+            }
+          ],
+          "matchedMechanisms": [
+            "密报",
+            "口供",
+            "文书送达",
+            "解释权"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-PUBLISHED-02",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0020",
+              "paragraphEndId": "DM1566-C03-P0039",
+              "lineStart": 1608,
+              "lineEnd": 1646,
+              "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+            }
+          ],
+          "matchedMechanisms": [
+            "密报",
+            "口供",
+            "文书送达",
+            "解释权"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-PUBLISHED-03",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0111",
+              "paragraphEndId": "DM1566-C04-P0120",
+              "lineStart": 2587,
+              "lineEnd": 2605,
+              "textSpanSha256": "9E9D54D0C28352B6632BA4E51C82265F8868C309DB40305611873D4F687FFE23"
+            }
+          ],
+          "matchedMechanisms": [
+            "密报",
+            "口供",
+            "文书送达",
+            "解释权"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-PUBLISHED-04",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0074",
+              "paragraphEndId": "DM1566-C07-P0110",
+              "lineStart": 5022,
+              "lineEnd": 5094,
+              "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+            }
+          ],
+          "matchedMechanisms": [
+            "密报",
+            "口供",
+            "文书送达",
+            "解释权"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-PUBLISHED-05",
+          "chapterId": "DM1566-C23",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C23",
+              "paragraphStartId": "DM1566-C23-P0125",
+              "paragraphEndId": "DM1566-C23-P0147",
+              "lineStart": 17690,
+              "lineEnd": 17734,
+              "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+            }
+          ],
+          "matchedMechanisms": [
+            "密报",
+            "口供",
+            "文书送达",
+            "解释权"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-PUBLISHED-06",
+          "chapterId": "DM1566-C23",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C23",
+              "paragraphStartId": "DM1566-C23-P0155",
+              "paragraphEndId": "DM1566-C23-P0163",
+              "lineStart": 17750,
+              "lineEnd": 17766,
+              "textSpanSha256": "EDA444DD8DF6D6B4806BBA43A339B4DF8334A467AC810D9DAF69CF8F6AF482B0"
+            }
+          ],
+          "matchedMechanisms": [
+            "密报",
+            "口供",
+            "文书送达",
+            "解释权"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-01",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0270",
+              "paragraphEndId": "DM1566-C02-P0278",
+              "lineStart": 1365,
+              "lineEnd": 1381,
+              "textSpanSha256": "AC53EF0CFF90FE11779DE44C2AAA340CC0918A8B9DB26D5B984B070AF5366287"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道",
+            "送到"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道、送到 in DM1566-C02-P0270—DM1566-C02-P0278; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-02",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0002",
+              "paragraphEndId": "DM1566-C03-P0008",
+              "lineStart": 1572,
+              "lineEnd": 1584,
+              "textSpanSha256": "B59EF30FD356D65A7C13A9A4A79B62CEAA1AEE4449DCA81BB06605ABEE4BA94A"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道",
+            "听说"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道、听说 in DM1566-C03-P0002—DM1566-C03-P0008; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-03",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0027",
+              "paragraphEndId": "DM1566-C01-P0040",
+              "lineStart": 116,
+              "lineEnd": 142,
+              "textSpanSha256": "C8ED2A1A4F351049A7149301ADF45CECEEDC83D46220D5860596DB45C4B5F360"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道",
+            "听说"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道、听说 in DM1566-C01-P0027—DM1566-C01-P0040; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-04",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0032",
+              "paragraphEndId": "DM1566-C03-P0040",
+              "lineStart": 1632,
+              "lineEnd": 1648,
+              "textSpanSha256": "D937E9EAD088B1B88C57CB8B00F638AA88BE5EE4B3C688E1A856D65F0F59B9EB"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道",
+            "文书"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道、文书 in DM1566-C03-P0032—DM1566-C03-P0040; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-05",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0171",
+              "paragraphEndId": "DM1566-C01-P0177",
+              "lineStart": 404,
+              "lineEnd": 416,
+              "textSpanSha256": "99FF7D735F1EB4A02A09A979F59315F1EEE9F9BB438A27D85B66095F14760035"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道",
+            "听说"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道、听说 in DM1566-C01-P0171—DM1566-C01-P0177; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-06",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0282",
+              "paragraphEndId": "DM1566-C02-P0287",
+              "lineStart": 1389,
+              "lineEnd": 1399,
+              "textSpanSha256": "3423DA1B0EFA2EBFFF02384C41721BA64D02862E371EBCBFA1934ED657E1BEEB"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道",
+            "送到"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道、送到 in DM1566-C02-P0282—DM1566-C02-P0287; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-07",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0283",
+              "paragraphEndId": "DM1566-C03-P0289",
+              "lineStart": 2134,
+              "lineEnd": 2146,
+              "textSpanSha256": "CAC0E7B391D0422AE2E5C8CFA7ECFBCF3F6BD3F603DC3B94625408673F175F0D"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道",
+            "听说"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道、听说 in DM1566-C03-P0283—DM1566-C03-P0289; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-08",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0158",
+              "paragraphEndId": "DM1566-C01-P0169",
+              "lineStart": 378,
+              "lineEnd": 400,
+              "textSpanSha256": "D11AA093813DBFA009DD2C44606B64C93E918D233D38EC5620280DB8B019A10E"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道 in DM1566-C01-P0158—DM1566-C01-P0169; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-09",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0168",
+              "paragraphEndId": "DM1566-C03-P0175",
+              "lineStart": 1904,
+              "lineEnd": 1918,
+              "textSpanSha256": "50E4EDA706CB2929FC28E0658306A7EAFC26255650161A31A45DC2A8F848A0C4"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道 in DM1566-C03-P0168—DM1566-C03-P0175; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-10",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0229",
+              "paragraphEndId": "DM1566-C04-P0238",
+              "lineStart": 2823,
+              "lineEnd": 2841,
+              "textSpanSha256": "8DAEFA79F73E21E26FC4DF5B015ED77F00EFEAD9BA2822B229EC3A785D8AD79C"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道 in DM1566-C04-P0229—DM1566-C04-P0238; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-11",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0251",
+              "paragraphEndId": "DM1566-C03-P0257",
+              "lineStart": 2070,
+              "lineEnd": 2082,
+              "textSpanSha256": "F685D7C720786A031839DC8FEF7BD9CDB5F9E693859962B2567BD5976B7FDAB1"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道 in DM1566-C03-P0251—DM1566-C03-P0257; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-KNOWLEDGE-CHAIN-CAND-12",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0257",
+              "paragraphEndId": "DM1566-C01-P0262",
+              "lineStart": 576,
+              "lineEnd": 586,
+              "textSpanSha256": "D702AD81A27F1BC8E01708C15A1B2AD84D4F17DC9D14F9A607E19687D9DA0AB7"
+            }
+          ],
+          "matchedMechanisms": [
+            "知道"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 知道 in DM1566-C01-P0257—DM1566-C01-P0262; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "密报",
+        "口供",
+        "文书送达",
+        "解释权"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-GRAIN-RELIEF",
+      "requirementId": "REQ-P1-GRAIN-RELIEF",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-PUBLISHED-01",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0198",
+              "paragraphEndId": "DM1566-C02-P0241",
+              "lineStart": 1221,
+              "lineEnd": 1307,
+              "textSpanSha256": "C2DE1D80210AC35EF7ECD0392ED3B2CCEDD3298F672EC98FAC812EFC91428115"
+            }
+          ],
+          "matchedMechanisms": [
+            "官仓",
+            "借粮",
+            "调粮",
+            "以改兼赈"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-PUBLISHED-02",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0308",
+              "paragraphEndId": "DM1566-C05-P0325",
+              "lineStart": 3766,
+              "lineEnd": 3800,
+              "textSpanSha256": "57B19E869B868C3E6A8548F2241AB0F3314F31E09C0E2A7885BDCB6BC45EF27D"
+            }
+          ],
+          "matchedMechanisms": [
+            "官仓",
+            "借粮",
+            "调粮",
+            "以改兼赈"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-PUBLISHED-03",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0133",
+              "paragraphEndId": "DM1566-C06-P0173",
+              "lineStart": 4141,
+              "lineEnd": 4221,
+              "textSpanSha256": "3B024661F040A870A74A73AA7B59BA64DD226EF1BBC8BB670A1DA0BC2A9DF99F"
+            }
+          ],
+          "matchedMechanisms": [
+            "官仓",
+            "借粮",
+            "调粮",
+            "以改兼赈"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-01",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0299",
+              "paragraphEndId": "DM1566-C05-P0311",
+              "lineStart": 3748,
+              "lineEnd": 3772,
+              "textSpanSha256": "1DCD9AE76DCB270EA01643D3906A0D3EB2457585E5EAE72804960390D1173553"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "仓",
+            "赈"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、仓、赈 in DM1566-C05-P0299—DM1566-C05-P0311; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-02",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0030",
+              "paragraphEndId": "DM1566-C05-P0044",
+              "lineStart": 3210,
+              "lineEnd": 3238,
+              "textSpanSha256": "A0142AEDD2B48D32ED6559743328C4E6A97409987C6D3DB1F343DCC349F388AF"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "赈",
+            "调粮"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、赈、调粮 in DM1566-C05-P0030—DM1566-C05-P0044; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-03",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0340",
+              "paragraphEndId": "DM1566-C03-P0345",
+              "lineStart": 2248,
+              "lineEnd": 2258,
+              "textSpanSha256": "1F89A3A25F45B57A7205DDE6B169AF21708DA446FE9928B61E713AC3BE8BAEEF"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "仓",
+            "赈"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、仓、赈 in DM1566-C03-P0340—DM1566-C03-P0345; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-04",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0069",
+              "paragraphEndId": "DM1566-C05-P0079",
+              "lineStart": 3288,
+              "lineEnd": 3308,
+              "textSpanSha256": "826CCDEAF928E6CC93BF5D1AC60BEC8552ABF91D052FC5695619D0DE050E9F28"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "赈",
+            "借粮"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、赈、借粮 in DM1566-C05-P0069—DM1566-C05-P0079; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-05",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0158",
+              "paragraphEndId": "DM1566-C06-P0165",
+              "lineStart": 4191,
+              "lineEnd": 4205,
+              "textSpanSha256": "02CBFF63D680D7A61BE06F8C69A24863D6BD6663F6BF4BB23DE39BFC327251BA"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "仓",
+            "赈"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、仓、赈 in DM1566-C06-P0158—DM1566-C06-P0165; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-06",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0273",
+              "paragraphEndId": "DM1566-C07-P0277",
+              "lineStart": 5420,
+              "lineEnd": 5428,
+              "textSpanSha256": "6A8ED1324662BC7DA7E0713AF95E6FB075652AC42309F8FD8D2CFF8E341057AE"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "仓",
+            "赈"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、仓、赈 in DM1566-C07-P0273—DM1566-C07-P0277; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-07",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0289",
+              "paragraphEndId": "DM1566-C03-P0293",
+              "lineStart": 2146,
+              "lineEnd": 2154,
+              "textSpanSha256": "10E7ECED780DE8135128856123E2CA81D1E09153877B6488F80B67304164A916"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "赈",
+            "调粮"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、赈、调粮 in DM1566-C03-P0289—DM1566-C03-P0293; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-08",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0392",
+              "paragraphEndId": "DM1566-C03-P0396",
+              "lineStart": 2352,
+              "lineEnd": 2360,
+              "textSpanSha256": "ED1D35028D73C47410D50CD7CD2DBE0E70FF3F3EC93553BDF43B27064CA4DE0E"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "仓",
+            "赈"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、仓、赈 in DM1566-C03-P0392—DM1566-C03-P0396; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-09",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0049",
+              "paragraphEndId": "DM1566-C06-P0059",
+              "lineStart": 3973,
+              "lineEnd": 3993,
+              "textSpanSha256": "7CD6BF566B58A7DDA7206E5634BE3A47FF9CEF69A71FBE12983577B10811A012"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "赈"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、赈 in DM1566-C06-P0049—DM1566-C06-P0059; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-10",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0081",
+              "paragraphEndId": "DM1566-C04-P0086",
+              "lineStart": 2527,
+              "lineEnd": 2537,
+              "textSpanSha256": "F2E98E231499BED9BB2B7860E9623B9482A6B98AA573ED4CC36AAF451BD98B4B"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "调粮"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、调粮 in DM1566-C04-P0081—DM1566-C04-P0086; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-11",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0102",
+              "paragraphEndId": "DM1566-C03-P0107",
+              "lineStart": 1772,
+              "lineEnd": 1782,
+              "textSpanSha256": "E0045589B4C6318EC7E62C9C246BF0D7BA0810B9E8DB3CC5040E35E65575EE42"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "仓"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、仓 in DM1566-C03-P0102—DM1566-C03-P0107; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-GRAIN-RELIEF-CAND-12",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0141",
+              "paragraphEndId": "DM1566-C06-P0152",
+              "lineStart": 4157,
+              "lineEnd": 4179,
+              "textSpanSha256": "C9EF874BB46A7849F32C4B757345C5181C57BD7D6A199361148B05C1E1582A5B"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "赈"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、赈 in DM1566-C06-P0141—DM1566-C06-P0152; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "官仓",
+        "借粮",
+        "调粮",
+        "以改兼赈"
+      ],
+      "missingMechanisms": [],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-MERCHANT-CONDITIONS",
+      "requirementId": "REQ-P1-MERCHANT-CONDITIONS",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-PUBLISHED-01",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0339",
+              "paragraphEndId": "DM1566-C01-P0359",
+              "lineStart": 740,
+              "lineEnd": 780,
+              "textSpanSha256": "17F0F1031C3DDD1B203F91D65DCD6A67D8B9A07F435715136DE2D44FF71592C1"
+            }
+          ],
+          "matchedMechanisms": [
+            "商人粮路",
+            "银子",
+            "丝路",
+            "官商合作"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-PUBLISHED-02",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0133",
+              "paragraphEndId": "DM1566-C06-P0173",
+              "lineStart": 4141,
+              "lineEnd": 4221,
+              "textSpanSha256": "3B024661F040A870A74A73AA7B59BA64DD226EF1BBC8BB670A1DA0BC2A9DF99F"
+            }
+          ],
+          "matchedMechanisms": [
+            "商人粮路",
+            "银子",
+            "丝路",
+            "官商合作"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-PUBLISHED-03",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0074",
+              "paragraphEndId": "DM1566-C07-P0110",
+              "lineStart": 5022,
+              "lineEnd": 5094,
+              "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+            }
+          ],
+          "matchedMechanisms": [
+            "商人粮路",
+            "银子",
+            "丝路",
+            "官商合作"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-01",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0149",
+              "paragraphEndId": "DM1566-C06-P0165",
+              "lineStart": 4173,
+              "lineEnd": 4205,
+              "textSpanSha256": "1337D59C56CE7B6592A58EA7D0A328FD9D04BE700D2A41799BCE38599E2587FB"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "银子",
+            "丝绸",
+            "买田"
+          ],
+          "relevance": "HIGH",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、银子、丝绸、买田 in DM1566-C06-P0149—DM1566-C06-P0165; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-02",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0299",
+              "paragraphEndId": "DM1566-C05-P0327",
+              "lineStart": 3748,
+              "lineEnd": 3804,
+              "textSpanSha256": "033AB3EF05D7D8D782BDF54C8FC2F64258CD0018F31783D427C0573FD9DFEE2A"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "丝绸",
+            "买田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、丝绸、买田 in DM1566-C05-P0299—DM1566-C05-P0327; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-03",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0143",
+              "paragraphEndId": "DM1566-C06-P0147",
+              "lineStart": 4161,
+              "lineEnd": 4169,
+              "textSpanSha256": "21CEE3706C24BF99DBE867523A8E1A6539E373E30BF58ECDAD53C2AF2E8B1E1D"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "丝绸",
+            "买田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、丝绸、买田 in DM1566-C06-P0143—DM1566-C06-P0147; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-04",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0022",
+              "paragraphEndId": "DM1566-C07-P0028",
+              "lineStart": 4918,
+              "lineEnd": 4930,
+              "textSpanSha256": "93915BB833D314E5535F9E8804148B4FA8FF9DA9AB3FBB6B00900E9342D1541B"
+            }
+          ],
+          "matchedMechanisms": [
+            "银子",
+            "丝绸",
+            "买田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 银子、丝绸、买田 in DM1566-C07-P0022—DM1566-C07-P0028; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-05",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0072",
+              "paragraphEndId": "DM1566-C03-P0078",
+              "lineStart": 1712,
+              "lineEnd": 1724,
+              "textSpanSha256": "5DE7C5FFBE7DFC8F763206CA6010D0F0E4B9DE377C3537CCD2E1FC58E062F863"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "丝绸",
+            "买田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、丝绸、买田 in DM1566-C03-P0072—DM1566-C03-P0078; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-06",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0081",
+              "paragraphEndId": "DM1566-C04-P0091",
+              "lineStart": 2527,
+              "lineEnd": 2547,
+              "textSpanSha256": "BFE9E1FBD777A8509C351F48DE583C9B36CC7961D1073C92B63E1CCC74BF54ED"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "丝绸"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、丝绸 in DM1566-C04-P0081—DM1566-C04-P0091; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-07",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0102",
+              "paragraphEndId": "DM1566-C03-P0107",
+              "lineStart": 1772,
+              "lineEnd": 1782,
+              "textSpanSha256": "E0045589B4C6318EC7E62C9C246BF0D7BA0810B9E8DB3CC5040E35E65575EE42"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "买田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、买田 in DM1566-C03-P0102—DM1566-C03-P0107; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-08",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0171",
+              "paragraphEndId": "DM1566-C06-P0175",
+              "lineStart": 4217,
+              "lineEnd": 4225,
+              "textSpanSha256": "C42A30B0FD2F8536EFB4F990EAB7186B3613DCAC6192BD2E6724AB0C5E226A96"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "丝绸"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、丝绸 in DM1566-C06-P0171—DM1566-C06-P0175; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-09",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0250",
+              "paragraphEndId": "DM1566-C06-P0265",
+              "lineStart": 4375,
+              "lineEnd": 4405,
+              "textSpanSha256": "DD3B7FFD80AECE72D8F4BB1D21D2E8E1F3F52BA0D2C110593E205E947D3DC046"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "银子"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、银子 in DM1566-C06-P0250—DM1566-C06-P0265; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-10",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0308",
+              "paragraphEndId": "DM1566-C06-P0319",
+              "lineStart": 4491,
+              "lineEnd": 4513,
+              "textSpanSha256": "F78E683A54C4876468DC5EC7013C258E79B1000766C8109FFA6F00EA22EA8C31"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "丝绸"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、丝绸 in DM1566-C06-P0308—DM1566-C06-P0319; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-11",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0030",
+              "paragraphEndId": "DM1566-C05-P0044",
+              "lineStart": 3210,
+              "lineEnd": 3238,
+              "textSpanSha256": "A0142AEDD2B48D32ED6559743328C4E6A97409987C6D3DB1F343DCC349F388AF"
+            }
+          ],
+          "matchedMechanisms": [
+            "粮",
+            "丝绸"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 粮、丝绸 in DM1566-C05-P0030—DM1566-C05-P0044; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-MERCHANT-CONDITIONS-CAND-12",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0041",
+              "paragraphEndId": "DM1566-C03-P0051",
+              "lineStart": 1650,
+              "lineEnd": 1670,
+              "textSpanSha256": "5DA95B5655A204DFCD779A3B81DD3533E546D13BE484807EA03E442555554291"
+            }
+          ],
+          "matchedMechanisms": [
+            "商人",
+            "丝绸"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 商人、丝绸 in DM1566-C03-P0041—DM1566-C03-P0051; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "商人粮路",
+        "银子",
+        "丝路",
+        "官商合作"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-LAND-RISK",
+      "requirementId": "REQ-P1-LAND-RISK",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-LAND-RISK-PUBLISHED-01",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0339",
+              "paragraphEndId": "DM1566-C01-P0359",
+              "lineStart": 740,
+              "lineEnd": 780,
+              "textSpanSha256": "17F0F1031C3DDD1B203F91D65DCD6A67D8B9A07F435715136DE2D44FF71592C1"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "田价",
+            "抵押",
+            "兼并风险"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-PUBLISHED-02",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0308",
+              "paragraphEndId": "DM1566-C05-P0325",
+              "lineStart": 3766,
+              "lineEnd": 3800,
+              "textSpanSha256": "57B19E869B868C3E6A8548F2241AB0F3314F31E09C0E2A7885BDCB6BC45EF27D"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "田价",
+            "抵押",
+            "兼并风险"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-PUBLISHED-03",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0133",
+              "paragraphEndId": "DM1566-C06-P0173",
+              "lineStart": 4141,
+              "lineEnd": 4221,
+              "textSpanSha256": "3B024661F040A870A74A73AA7B59BA64DD226EF1BBC8BB670A1DA0BC2A9DF99F"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "田价",
+            "抵押",
+            "兼并风险"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-PUBLISHED-04",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0074",
+              "paragraphEndId": "DM1566-C07-P0110",
+              "lineStart": 5022,
+              "lineEnd": 5094,
+              "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "田价",
+            "抵押",
+            "兼并风险"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-01",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0151",
+              "paragraphEndId": "DM1566-C06-P0165",
+              "lineStart": 4177,
+              "lineEnd": 4205,
+              "textSpanSha256": "44D794B28EBFEA63E6E98607115CF633286B2B500C959BFA0E57DA37A30F4AB9"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "卖田",
+            "桑田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 买田、卖田、桑田 in DM1566-C06-P0151—DM1566-C06-P0165; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-02",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0143",
+              "paragraphEndId": "DM1566-C06-P0147",
+              "lineStart": 4161,
+              "lineEnd": 4169,
+              "textSpanSha256": "21CEE3706C24BF99DBE867523A8E1A6539E373E30BF58ECDAD53C2AF2E8B1E1D"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "卖田",
+            "田价"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 买田、卖田、田价 in DM1566-C06-P0143—DM1566-C06-P0147; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-03",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0317",
+              "paragraphEndId": "DM1566-C05-P0327",
+              "lineStart": 3784,
+              "lineEnd": 3804,
+              "textSpanSha256": "4BDA4AE447D58F63AEBEF2A4EFC78805C008E15BA89F5B8C0ED55AB09EA9E3F7"
+            }
+          ],
+          "matchedMechanisms": [
+            "卖田",
+            "田价",
+            "桑田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 卖田、田价、桑田 in DM1566-C05-P0317—DM1566-C05-P0327; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-04",
+          "chapterId": "DM1566-C05",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C05",
+              "paragraphStartId": "DM1566-C05-P0306",
+              "paragraphEndId": "DM1566-C05-P0314",
+              "lineStart": 3762,
+              "lineEnd": 3778,
+              "textSpanSha256": "FDC5A04C1414F957F1FCB24AC20E2702CD7CA99A76A42FBDCB41DBE98B5D3B05"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "田价"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 买田、田价 in DM1566-C05-P0306—DM1566-C05-P0314; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-05",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0067",
+              "paragraphEndId": "DM1566-C03-P0081",
+              "lineStart": 1702,
+              "lineEnd": 1730,
+              "textSpanSha256": "C2B776367929118088338F2967B93DC0EBD57AD023242C1414E9F8B857983566"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "桑田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 买田、桑田 in DM1566-C03-P0067—DM1566-C03-P0081; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-06",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0337",
+              "paragraphEndId": "DM1566-C01-P0347",
+              "lineStart": 736,
+              "lineEnd": 756,
+              "textSpanSha256": "0D041E13552E8C19D842C739ACBEA9E64EAFED26E46D90C40557514B9B6E92AC"
+            }
+          ],
+          "matchedMechanisms": [
+            "兼并",
+            "桑田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 兼并、桑田 in DM1566-C01-P0337—DM1566-C01-P0347; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-07",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0106",
+              "paragraphEndId": "DM1566-C07-P0112",
+              "lineStart": 5086,
+              "lineEnd": 5098,
+              "textSpanSha256": "EDA25648C4C49FB6C21683119A626D37CDFC1496EC73BA91FA12A9FA643D33B7"
+            }
+          ],
+          "matchedMechanisms": [
+            "卖田",
+            "桑田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 卖田、桑田 in DM1566-C07-P0106—DM1566-C07-P0112; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-08",
+          "chapterId": "DM1566-C06",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C06",
+              "paragraphStartId": "DM1566-C06-P0096",
+              "paragraphEndId": "DM1566-C06-P0100",
+              "lineStart": 4067,
+              "lineEnd": 4075,
+              "textSpanSha256": "10E643A398F6FB083005F514DBCD1DABCD583EECD7B9642D885579A09F1FD7C6"
+            }
+          ],
+          "matchedMechanisms": [
+            "买田",
+            "卖田"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 买田、卖田 in DM1566-C06-P0096—DM1566-C06-P0100; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-09",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0232",
+              "paragraphEndId": "DM1566-C02-P0236",
+              "lineStart": 1289,
+              "lineEnd": 1297,
+              "textSpanSha256": "93DDD378F341924F7CBC38596F004DA3CE82C73FEE1554067A602B53296614CC"
+            }
+          ],
+          "matchedMechanisms": [
+            "桑田",
+            "口粮"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 桑田、口粮 in DM1566-C02-P0232—DM1566-C02-P0236; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-10",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0039",
+              "paragraphEndId": "DM1566-C07-P0049",
+              "lineStart": 4952,
+              "lineEnd": 4972,
+              "textSpanSha256": "51D9E3B7800999C3BCE16351DD273A0E14E9F123DA2EE69A366A6361F2AC0B51"
+            }
+          ],
+          "matchedMechanisms": [
+            "卖田"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 卖田 in DM1566-C07-P0039—DM1566-C07-P0049; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-11",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0215",
+              "paragraphEndId": "DM1566-C02-P0224",
+              "lineStart": 1255,
+              "lineEnd": 1273,
+              "textSpanSha256": "1F119EAA829044313B8A3528A9009E0B861EDF57997D3422B2E57CD17930BB65"
+            }
+          ],
+          "matchedMechanisms": [
+            "桑田"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 桑田 in DM1566-C02-P0215—DM1566-C02-P0224; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-LAND-RISK-CAND-12",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0229",
+              "paragraphEndId": "DM1566-C01-P0239",
+              "lineStart": 520,
+              "lineEnd": 540,
+              "textSpanSha256": "A613CE0B545FCCE6CB3728F47575701ABD38A7AEA27C87DBDBB001708A5D529F"
+            }
+          ],
+          "matchedMechanisms": [
+            "桑田"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 桑田 in DM1566-C01-P0229—DM1566-C01-P0239; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "买田",
+        "田价",
+        "抵押",
+        "兼并风险"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-REPORT-AUTHORSHIP",
+      "requirementId": "REQ-P1-REPORT-AUTHORSHIP",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-PUBLISHED-01",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0243",
+              "paragraphEndId": "DM1566-C02-P0251",
+              "lineStart": 1311,
+              "lineEnd": 1327,
+              "textSpanSha256": "FC3D2D0A1D3B6764867EB5C44A8D6434CD55B3B797E181759E33F3D9BC6C523A"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏渠道",
+            "署名",
+            "官员责任"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-PUBLISHED-02",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0261",
+              "paragraphEndId": "DM1566-C02-P0271",
+              "lineStart": 1347,
+              "lineEnd": 1367,
+              "textSpanSha256": "D4E559DBB74D4DB551A3B3459070D6E4FAF37B197B373D7A5AB35AA87A64F900"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏渠道",
+            "署名",
+            "官员责任"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-PUBLISHED-03",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0074",
+              "paragraphEndId": "DM1566-C04-P0110",
+              "lineStart": 2513,
+              "lineEnd": 2585,
+              "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏渠道",
+            "署名",
+            "官员责任"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-PUBLISHED-04",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0111",
+              "paragraphEndId": "DM1566-C04-P0120",
+              "lineStart": 2587,
+              "lineEnd": 2605,
+              "textSpanSha256": "9E9D54D0C28352B6632BA4E51C82265F8868C309DB40305611873D4F687FFE23"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏渠道",
+            "署名",
+            "官员责任"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-01",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0027",
+              "paragraphEndId": "DM1566-C01-P0038",
+              "lineStart": 116,
+              "lineEnd": 138,
+              "textSpanSha256": "D010AED06EF30B16D74AFE7B586399C64433413C9B5E2A0C8459784AD041A3A4"
+            }
+          ],
+          "matchedMechanisms": [
+            "上报"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 上报 in DM1566-C01-P0027—DM1566-C01-P0038; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-02",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0104",
+              "paragraphEndId": "DM1566-C04-P0120",
+              "lineStart": 2573,
+              "lineEnd": 2605,
+              "textSpanSha256": "F543604C965D493277DCA3214EA7904177E607F3C2CCD70567F1EDDD16C84B33"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C04-P0104—DM1566-C04-P0120; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-03",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0239",
+              "paragraphEndId": "DM1566-C02-P0250",
+              "lineStart": 1303,
+              "lineEnd": 1325,
+              "textSpanSha256": "63AE42F8FE68CD097F35C70569FFD315AAF3F4241B9988E43A034C00DB0A5B76"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C02-P0239—DM1566-C02-P0250; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-04",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0261",
+              "paragraphEndId": "DM1566-C02-P0286",
+              "lineStart": 1347,
+              "lineEnd": 1397,
+              "textSpanSha256": "C2D87A0BAF6D252DB6A247DF12472AE8E8C2C0AAFBDD3C5292A828956441509C"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C02-P0261—DM1566-C02-P0286; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-05",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0364",
+              "paragraphEndId": "DM1566-C02-P0369",
+              "lineStart": 1553,
+              "lineEnd": 1563,
+              "textSpanSha256": "B3BFCBDC6E3CAE91F43DC4C519DF517CC306A7DFD089DDD2997FF2936770D0D3"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C02-P0364—DM1566-C02-P0369; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-06",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0002",
+              "paragraphEndId": "DM1566-C03-P0005",
+              "lineStart": 1572,
+              "lineEnd": 1578,
+              "textSpanSha256": "CD6357F91269C663ABD1C03C751F36917FD6F5D3A62E919CBF33922F966E447C"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C03-P0002—DM1566-C03-P0005; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-07",
+          "chapterId": "DM1566-C03",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C03",
+              "paragraphStartId": "DM1566-C03-P0026",
+              "paragraphEndId": "DM1566-C03-P0032",
+              "lineStart": 1620,
+              "lineEnd": 1632,
+              "textSpanSha256": "659BC3338B009530AD1C83C2830D5FA7F9A61D9CDF94D515E997047C6699BAE1"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C03-P0026—DM1566-C03-P0032; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-08",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0072",
+              "paragraphEndId": "DM1566-C04-P0078",
+              "lineStart": 2509,
+              "lineEnd": 2521,
+              "textSpanSha256": "F1D430C569D7DBC4FA210F69AEB2172DDA179DC4A0F142BB918F8092EE38547A"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C04-P0072—DM1566-C04-P0078; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-09",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0133",
+              "paragraphEndId": "DM1566-C04-P0138",
+              "lineStart": 2631,
+              "lineEnd": 2641,
+              "textSpanSha256": "FFC3F7DB92097E154D44E60EB6E30E341EC4B848EF24A8EC8A069D6D5CFBE606"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C04-P0133—DM1566-C04-P0138; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-10",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0252",
+              "paragraphEndId": "DM1566-C02-P0256",
+              "lineStart": 1329,
+              "lineEnd": 1337,
+              "textSpanSha256": "2DD64C46FBB854DAAE3331A07C1A29D9C4573D8030F64956D80B2D3A5F1D9A31"
+            }
+          ],
+          "matchedMechanisms": [
+            "奏疏"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 奏疏 in DM1566-C02-P0252—DM1566-C02-P0256; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-11",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0002",
+              "paragraphEndId": "DM1566-C01-P0005",
+              "lineStart": 66,
+              "lineEnd": 72,
+              "textSpanSha256": "33CE2E3B32687ED4F3D7553F51143862A9F49819362816845C4F70FED6FE36E3"
+            }
+          ],
+          "matchedMechanisms": [
+            "联署"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 联署 in DM1566-C01-P0002—DM1566-C01-P0005; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-REPORT-AUTHORSHIP-CAND-12",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0041",
+              "paragraphEndId": "DM1566-C01-P0045",
+              "lineStart": 144,
+              "lineEnd": 152,
+              "textSpanSha256": "2DBE30D2EEAFC60371F77AF43507C4BC47A700B42482192A9C2961C30814293C"
+            }
+          ],
+          "matchedMechanisms": [
+            "上报"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 上报 in DM1566-C01-P0041—DM1566-C01-P0045; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "奏疏渠道",
+        "署名",
+        "官员责任"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-EVIDENCE-ATTACHMENT",
+      "requirementId": "REQ-P1-EVIDENCE-ATTACHMENT",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-PUBLISHED-01",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0074",
+              "paragraphEndId": "DM1566-C07-P0110",
+              "lineStart": 5022,
+              "lineEnd": 5094,
+              "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+            }
+          ],
+          "matchedMechanisms": [
+            "原册",
+            "副本",
+            "口供",
+            "仓单",
+            "田契的证明边界"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-PUBLISHED-02",
+          "chapterId": "DM1566-C13",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C13",
+              "paragraphStartId": "DM1566-C13-P0247",
+              "paragraphEndId": "DM1566-C13-P0265",
+              "lineStart": 10504,
+              "lineEnd": 10540,
+              "textSpanSha256": "05B220471EB8FB6530894B6AF59B01A5326EA75B25952C6534F7D61A16EE0C75"
+            }
+          ],
+          "matchedMechanisms": [
+            "原册",
+            "副本",
+            "口供",
+            "仓单",
+            "田契的证明边界"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-PUBLISHED-03",
+          "chapterId": "DM1566-C13",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C13",
+              "paragraphStartId": "DM1566-C13-P0266",
+              "paragraphEndId": "DM1566-C13-P0273",
+              "lineStart": 10542,
+              "lineEnd": 10556,
+              "textSpanSha256": "E6D06E3CC0400766879F0912DCC7B6F055C3BE83AA3E7D6BA15074D482173A02"
+            }
+          ],
+          "matchedMechanisms": [
+            "原册",
+            "副本",
+            "口供",
+            "仓单",
+            "田契的证明边界"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-PUBLISHED-04",
+          "chapterId": "DM1566-C23",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C23",
+              "paragraphStartId": "DM1566-C23-P0125",
+              "paragraphEndId": "DM1566-C23-P0147",
+              "lineStart": 17690,
+              "lineEnd": 17734,
+              "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+            }
+          ],
+          "matchedMechanisms": [
+            "原册",
+            "副本",
+            "口供",
+            "仓单",
+            "田契的证明边界"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-PUBLISHED-05",
+          "chapterId": "DM1566-C23",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C23",
+              "paragraphStartId": "DM1566-C23-P0155",
+              "paragraphEndId": "DM1566-C23-P0163",
+              "lineStart": 17750,
+              "lineEnd": 17766,
+              "textSpanSha256": "EDA444DD8DF6D6B4806BBA43A339B4DF8334A467AC810D9DAF69CF8F6AF482B0"
+            }
+          ],
+          "matchedMechanisms": [
+            "原册",
+            "副本",
+            "口供",
+            "仓单",
+            "田契的证明边界"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-CAND-01",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0080",
+              "paragraphEndId": "DM1566-C07-P0088",
+              "lineStart": 5034,
+              "lineEnd": 5050,
+              "textSpanSha256": "994D9D42FE9D218D1CEB86E8B293A40185475BD4B74C18E0EA7DE63BDFD4A2B8"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册",
+            "封存"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 账册、封存 in DM1566-C07-P0080—DM1566-C07-P0088; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-CAND-02",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0102",
+              "paragraphEndId": "DM1566-C01-P0107",
+              "lineStart": 266,
+              "lineEnd": 276,
+              "textSpanSha256": "327B4AA0BEF79C1834BE34E4F3724C752F97A7E7B2F5618FCD1345CED327C5E2"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 账册 in DM1566-C01-P0102—DM1566-C01-P0107; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-CAND-03",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0119",
+              "paragraphEndId": "DM1566-C01-P0128",
+              "lineStart": 300,
+              "lineEnd": 318,
+              "textSpanSha256": "021EE4A7344C51B79C6A8EEA85CDDDAA81AB5A3C14A689135B4F210A7C4DCD6F"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 账册 in DM1566-C01-P0119—DM1566-C01-P0128; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-CAND-04",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0072",
+              "paragraphEndId": "DM1566-C07-P0078",
+              "lineStart": 5018,
+              "lineEnd": 5030,
+              "textSpanSha256": "9F5C8571A81270FD8B02854F2E317C1605C507354C2B10BFDC9257D230F2A5F2"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 账册 in DM1566-C07-P0072—DM1566-C07-P0078; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-CAND-05",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0092",
+              "paragraphEndId": "DM1566-C01-P0096",
+              "lineStart": 246,
+              "lineEnd": 254,
+              "textSpanSha256": "035FB80C7A78B66B08C95AD84197B665C3CC7EC250B9B851ED496F868DF4A2B4"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 账册 in DM1566-C01-P0092—DM1566-C01-P0096; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-CAND-06",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0077",
+              "paragraphEndId": "DM1566-C01-P0081",
+              "lineStart": 216,
+              "lineEnd": 224,
+              "textSpanSha256": "D7ABE5AD189D657B2036606AB73DE9785B52B9068A15DF438FA258F0FEE910D7"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 账册 in DM1566-C01-P0077—DM1566-C01-P0081; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-EVIDENCE-ATTACHMENT-CAND-07",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0112",
+              "paragraphEndId": "DM1566-C01-P0116",
+              "lineStart": 286,
+              "lineEnd": 294,
+              "textSpanSha256": "220F81270494DCF6F4641F458D573BC225E16311AAD64B05960C06993B68AEB0"
+            }
+          ],
+          "matchedMechanisms": [
+            "账册"
+          ],
+          "relevance": "LOW",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 账册 in DM1566-C01-P0112—DM1566-C01-P0116; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "原册",
+        "副本",
+        "口供",
+        "仓单",
+        "田契的证明边界"
+      ],
+      "missingMechanisms": [
+        "具体游戏实体或时限需由已批准 Adaptation Decision 提供"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [
+        "ADAPT-P1-REGISTER-ALTERATION",
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+      ],
+      "reviewerStatus": "PASS"
+    },
+    {
+      "schemaVersion": "source-requirement-resolution-v1",
+      "resolutionId": "RESOLVE-REQ-P1-CAPITAL-FRAMING",
+      "requirementId": "REQ-P1-CAPITAL-FRAMING",
+      "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+      "queryVersion": "sangtian-requirement-resolver-v1.0.0",
+      "searchedSectionIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "candidateScenes": [
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-PUBLISHED-01",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0243",
+              "paragraphEndId": "DM1566-C02-P0251",
+              "lineStart": 1311,
+              "lineEnd": 1327,
+              "textSpanSha256": "FC3D2D0A1D3B6764867EB5C44A8D6434CD55B3B797E181759E33F3D9BC6C523A"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "织造体系",
+            "政治定性"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-PUBLISHED-02",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0261",
+              "paragraphEndId": "DM1566-C02-P0271",
+              "lineStart": 1347,
+              "lineEnd": 1367,
+              "textSpanSha256": "D4E559DBB74D4DB551A3B3459070D6E4FAF37B197B373D7A5AB35AA87A64F900"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "织造体系",
+            "政治定性"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-PUBLISHED-03",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0272",
+              "paragraphEndId": "DM1566-C02-P0276",
+              "lineStart": 1369,
+              "lineEnd": 1377,
+              "textSpanSha256": "5EF53D8D32019E67F85DFDB053E1EF97F5F21AFBBCD09999078AA205BC62EB51"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "织造体系",
+            "政治定性"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-PUBLISHED-04",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0111",
+              "paragraphEndId": "DM1566-C04-P0120",
+              "lineStart": 2587,
+              "lineEnd": 2605,
+              "textSpanSha256": "9E9D54D0C28352B6632BA4E51C82265F8868C309DB40305611873D4F687FFE23"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "织造体系",
+            "政治定性"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-PUBLISHED-05",
+          "chapterId": "DM1566-C23",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C23",
+              "paragraphStartId": "DM1566-C23-P0155",
+              "paragraphEndId": "DM1566-C23-P0163",
+              "lineStart": 17750,
+              "lineEnd": 17766,
+              "textSpanSha256": "EDA444DD8DF6D6B4806BBA43A339B4DF8334A467AC810D9DAF69CF8F6AF482B0"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "织造体系",
+            "政治定性"
+          ],
+          "relevance": "HIGH",
+          "selection": "SELECTED",
+          "reason": "Selected from sangtian-part-one-evidence-v1.0.0; source/hash/schema validation and independent DeepSeek review passed."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-01",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0238",
+              "paragraphEndId": "DM1566-C02-P0259",
+              "lineStart": 1301,
+              "lineEnd": 1343,
+              "textSpanSha256": "AB264DC717E0AC1275F49E8BF9C0C067CB526D4440F111B3227E8A7659380184"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "织造",
+            "皇上"
+          ],
+          "relevance": "HIGH",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、司礼监、织造、皇上 in DM1566-C02-P0238—DM1566-C02-P0259; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-02",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0261",
+              "paragraphEndId": "DM1566-C02-P0290",
+              "lineStart": 1347,
+              "lineEnd": 1405,
+              "textSpanSha256": "0DEF5A17C418DF9BF19210798C4D2013A19DF16AA73AFE09732EC7FAFD1CF6B4"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "织造",
+            "皇上"
+          ],
+          "relevance": "HIGH",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、司礼监、织造、皇上 in DM1566-C02-P0261—DM1566-C02-P0290; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-03",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0058",
+              "paragraphEndId": "DM1566-C01-P0077",
+              "lineStart": 178,
+              "lineEnd": 216,
+              "textSpanSha256": "7022E4C14B01C4C3E7046F9F1638EA7D4ADCE2B9689C0AD90A721F06EB98EA4E"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、司礼监、皇上 in DM1566-C01-P0058—DM1566-C01-P0077; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-04",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0002",
+              "paragraphEndId": "DM1566-C01-P0006",
+              "lineStart": 66,
+              "lineEnd": 74,
+              "textSpanSha256": "C21041641E64D5C169BE23FB052E9CBBAE35A46F4E859D57DE3AFE4938672B67"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、司礼监、皇上 in DM1566-C01-P0002—DM1566-C01-P0006; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-05",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0013",
+              "paragraphEndId": "DM1566-C01-P0051",
+              "lineStart": 88,
+              "lineEnd": 164,
+              "textSpanSha256": "904A616364209D7160452B038D537F19C32D588F8338CF70BC7B9D1F28B5E61C"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、司礼监、皇上 in DM1566-C01-P0013—DM1566-C01-P0051; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-06",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0125",
+              "paragraphEndId": "DM1566-C01-P0139",
+              "lineStart": 312,
+              "lineEnd": 340,
+              "textSpanSha256": "3821C59A42CCB1B1501A05952949852ABA8DB6464247A44A83FBA1A71625FDA0"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、司礼监、皇上 in DM1566-C01-P0125—DM1566-C01-P0139; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-07",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0367",
+              "paragraphEndId": "DM1566-C01-P0373",
+              "lineStart": 796,
+              "lineEnd": 808,
+              "textSpanSha256": "3F86908FDFBF79231994808F46F7B3DECB47C1C1F5FD024FC5E197D2273EC905"
+            }
+          ],
+          "matchedMechanisms": [
+            "司礼监",
+            "织造",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 司礼监、织造、皇上 in DM1566-C01-P0367—DM1566-C01-P0373; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-08",
+          "chapterId": "DM1566-C07",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C07",
+              "paragraphStartId": "DM1566-C07-P0082",
+              "paragraphEndId": "DM1566-C07-P0090",
+              "lineStart": 5038,
+              "lineEnd": 5054,
+              "textSpanSha256": "508B123BA781908437DD64F06D94DC1582D8549815FB639CFF81FF833245A2D8"
+            }
+          ],
+          "matchedMechanisms": [
+            "司礼监",
+            "织造",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 司礼监、织造、皇上 in DM1566-C07-P0082—DM1566-C07-P0090; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-09",
+          "chapterId": "DM1566-C04",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C04",
+              "paragraphStartId": "DM1566-C04-P0369",
+              "paragraphEndId": "DM1566-C04-P0377",
+              "lineStart": 3103,
+              "lineEnd": 3119,
+              "textSpanSha256": "30E481DEE62674600CECDD361A7D413CC8BF0F4E62F2F56A0C5620A2AD12ECCB"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "织造",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、织造、皇上 in DM1566-C04-P0369—DM1566-C04-P0377; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-10",
+          "chapterId": "DM1566-C02",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C02",
+              "paragraphStartId": "DM1566-C02-P0218",
+              "paragraphEndId": "DM1566-C02-P0222",
+              "lineStart": 1261,
+              "lineEnd": 1269,
+              "textSpanSha256": "5E9790BE7E54F3332EFFE02B58F3C9030ED88439955016106C877A0D7A5D8BAC"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "织造",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、织造、皇上 in DM1566-C02-P0218—DM1566-C02-P0222; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-11",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0236",
+              "paragraphEndId": "DM1566-C01-P0243",
+              "lineStart": 534,
+              "lineEnd": 548,
+              "textSpanSha256": "C85B918C5C6BE6392F61D6B0FB8F27F04F4BCE61D2208DFF39F1A65D9BD93524"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、司礼监、皇上 in DM1566-C01-P0236—DM1566-C01-P0243; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        },
+        {
+          "candidateId": "REQ-P1-CAPITAL-FRAMING-CAND-12",
+          "chapterId": "DM1566-C01",
+          "sourceRefs": [
+            {
+              "sourceId": "dm1566-liuheping",
+              "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+              "chapterId": "DM1566-C01",
+              "paragraphStartId": "DM1566-C01-P0247",
+              "paragraphEndId": "DM1566-C01-P0254",
+              "lineStart": 556,
+              "lineEnd": 570,
+              "textSpanSha256": "EF1E2026241B1FF8C6CBF0729944820906C9F3D5A3EE005568CC7733DB5D019A"
+            }
+          ],
+          "matchedMechanisms": [
+            "内阁",
+            "司礼监",
+            "皇上"
+          ],
+          "relevance": "MEDIUM",
+          "selection": "REJECTED",
+          "reason": "Deterministic keyword recall only. Matched 内阁、司礼监、皇上 in DM1566-C01-P0247—DM1566-C01-P0254; an independent reviewer must read the source span before selection. Not selected after reviewed evidence binding."
+        }
+      ],
+      "coveredMechanisms": [
+        "内阁",
+        "司礼监",
+        "织造体系",
+        "政治定性"
+      ],
+      "missingMechanisms": [],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "recommendedAdaptationGaps": [],
+      "reviewerStatus": "PASS"
+    }
+  ]
+}

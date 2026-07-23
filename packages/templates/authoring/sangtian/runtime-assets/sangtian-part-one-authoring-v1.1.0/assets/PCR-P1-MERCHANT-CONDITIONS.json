@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-MERCHANT-CONDITIONS",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-MERCHANT-CONDITIONS"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-GRAIN-SOURCE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-GRAIN-SOURCE",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "商会权利扩大后进入粮路、丝路或土地",
+      "拒绝合作会保住边界但放大即时粮食压力"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

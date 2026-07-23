@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "GMC-P1-REPORT-AUTHORSHIP",
+  "kind": "MECHANISM",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:36:03.272Z",
+  "completedAt": "2026-07-22T18:36:03.383Z",
+  "httpStatus": 200,
+  "inputHash": "12BC51A989FAAFB1CD53543DCB286BC343A8FC2903EE50FA27F8E8C0690D7F5D",
+  "rawOutputHash": "E7E28817ECBA0057C6782568F2FF4186025A58403F7C9634EA772CF04B2AA305",
+  "rawText": "{\n  \"verdict\": \"FAIL\",\n  \"issues\": [\n    {\n      \"issueType\": \"weak_inference\",\n      \"severity\": \"HIGH\",\n      \"reason\": \"precondition '地方必须形成第一份入京叙述' 无任何 claim 支持；原著中奏疏由胡宗宪主导形成，但玩家作为总督能否决定第一份叙述未在 claim 中体现。\"\n    },\n    {\n      \"issueType\": \"missing_evidence\",\n      \"severity\": \"HIGH\",\n      \"reason\": \"allowedMoves '总督单独奏报' 和 '允许巡抚先报并附异议' 无原著 claim 支持；原著中胡宗宪是总督，但巡抚角色来自 adaptation，且无证据表明总督可单独奏报或巡抚可先报。\"\n    },\n    {\n      \"issueType\": \"weak_inference\",\n      \"severity\": \"MEDIUM\",\n      \"reason\": \"delayedConsequences '最先到达的版本塑造京师初步定性' 基于原著中严嵩安排奏疏在裕王府呈递，但该 claim 为人物说法（unverified），不能作为客观规则。\"\n    },\n    {\n      \"issueType\": \"weak_inference\",\n      \"severity\": \"MEDIUM\",\n      \"reason\": \"delayedConsequences '署名模式决定后续问责和盟友关系' 无直接 claim 支持；原著中杨金水拒绝署名，但未说明署名模式如何决定问责。\"\n    }\n  ]\n}",
+  "usage": {
+    "prompt_tokens": 6153,
+    "completion_tokens": 316,
+    "total_tokens": 6469,
+    "prompt_tokens_details": {
+      "cached_tokens": 256
+    },
+    "prompt_cache_hit_tokens": 256,
+    "prompt_cache_miss_tokens": 5897
+  }
+}

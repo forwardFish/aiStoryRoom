@@ -1,0 +1,146 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "ARC-P1-FIRST-REPORT-FRAMING",
+  "assetType": "CAUSAL_ARC",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "DK-P1-CAPITAL-CHANNEL"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.xunfu_aide",
+    "actor.jiangnan_merchant_head"
+  ],
+  "stateDependencies": [
+    "reform.executionMode",
+    "review.authority",
+    "evidence.chainStatus",
+    "grain.reliefChannel",
+    "report.firstNarrativeController",
+    "relations.governorXunfu",
+    "merchant.entryStatus",
+    "land.riskLevel"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SEPARATE-XUNFU",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "ACTIVE_CAUSAL_ARC",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "REQ-P1-CAPITAL-FRAMING",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "DK-P1-CAPITAL-CHANNEL",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.xunfu_aide",
+    "actor.jiangnan_merchant_head",
+    "reform.executionMode",
+    "review.authority",
+    "evidence.chainStatus",
+    "grain.reliefChannel",
+    "report.firstNarrativeController",
+    "relations.governorXunfu",
+    "merchant.entryStatus",
+    "land.riskLevel"
+  ],
+  "payload": {
+    "initialStage": "OPEN",
+    "allowedStages": [
+      "OPEN",
+      "PRESSURED",
+      "ESCALATED",
+      "RESOLVED",
+      "FAILED",
+      "TRANSFORMED"
+    ],
+    "transitionsMustReferenceCommittedEvents": true,
+    "exitGateRules": [
+      {
+        "ruleId": "S4-EXIT-CONTROLLER",
+        "statePath": "report.firstNarrativeController",
+        "operator": "NEQ",
+        "expectedValue": "UNDECIDED",
+        "description": "叙述控制者已确定"
+      },
+      {
+        "ruleId": "S4-EXIT-AUTHORSHIP",
+        "statePath": "report.authorshipMode",
+        "operator": "NEQ",
+        "expectedValue": "UNKNOWN",
+        "description": "署名方式已确定"
+      },
+      {
+        "ruleId": "S4-EXIT-ATTACHMENT",
+        "statePath": "report.attachmentStrength",
+        "operator": "NEQ",
+        "expectedValue": "NONE",
+        "description": "附件强度已确定"
+      },
+      {
+        "ruleId": "S4-EXIT-DISPATCH",
+        "statePath": "report.dispatchStatus",
+        "operator": "IN",
+        "expectedValue": [
+          "READY",
+          "DISPATCHED",
+          "SPLIT"
+        ],
+        "description": "首报到达合法末态"
+      }
+    ],
+    "mayNotAdvanceByTurnNumberAlone": true
+  }
+}

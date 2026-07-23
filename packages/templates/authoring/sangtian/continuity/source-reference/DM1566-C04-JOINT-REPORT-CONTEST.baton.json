@@ -1,0 +1,210 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C04-JOINT-REPORT-CONTEST",
+  "currentDateAndTime": "水灾之后的总督署签押房",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-POSITION-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "source.hu_zongxian 在 place.zhejiang_governor_office_signing_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-POSITION-2",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "source.yang_jinshui 在 place.zhejiang_governor_office_signing_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-POSITION-3",
+      "subjectRef": "source.zheng_michang",
+      "statement": "source.zheng_michang 在 place.zhejiang_governor_office_signing_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-POSITION-4",
+      "subjectRef": "source.he_maocai",
+      "statement": "source.he_maocai 在 place.zhejiang_governor_office_signing_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-POSITION-5",
+      "subjectRef": "source.ma_ningyuan",
+      "statement": "source.ma_ningyuan 在 place.zhejiang_governor_office_signing_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-KNOWLEDGE-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪要求奏疏写明由官府请朝廷调粮借贷、让百姓赶插秧苗，并在三年还粮期间不改稻为桑。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-KNOWLEDGE-2",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "杨金水说若奏疏照此写，他不署名；随后称织造局只管给朝廷织造丝绸。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-KNOWLEDGE-3",
+      "subjectRef": "source.ma_ningyuan_confession",
+      "statement": "马宁远递交写明毁堤经过、合谋者并由三人签名的供状；胡宗宪随后再问是否修改奏疏，杨金水、何茂才、郑泌昌先后同意。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    }
+  ],
+  "activeGoals": [],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-DECISION-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪要求奏疏写明由官府请朝廷调粮借贷、让百姓赶插秧苗，并在三年还粮期间不改稻为桑。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-DECISION-2",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "杨金水说若奏疏照此写，他不署名；随后称织造局只管给朝廷织造丝绸。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    }
+  ],
+  "unresolvedPromises": [],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-ARC-1",
+      "subjectRef": "source.zheng_michang",
+      "statement": "郑泌昌说，改桑是国策，是否延缓不该由他们说；若朝廷下旨今年不改，他们再遵旨。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-ARC-2",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪要求奏疏写明由官府请朝廷调粮借贷、让百姓赶插秧苗，并在三年还粮期间不改稻为桑。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-ARC-3",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "杨金水说若奏疏照此写，他不署名；随后称织造局只管给朝廷织造丝绸。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-JOINT-REPORT-CONTEST-ARC-4",
+      "subjectRef": "source.ma_ningyuan_confession",
+      "statement": "马宁远递交写明毁堤经过、合谋者并由三人签名的供状；胡宗宪随后再问是否修改奏疏，杨金水、何茂才、郑泌昌先后同意。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C04-JOINT-REPORT-CONTEST-ARTIFACT-R1",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+  ]
+}

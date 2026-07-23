@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-EVIDENCE-ATTACHMENT",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "report.attachmentStrength",
+    "evidence.chainStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "report.attachmentStrength",
+    "evidence.chainStatus"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "附件强度改变京师采信和地方毁证动机",
+      "过早公开会提高证人和保管链风险"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

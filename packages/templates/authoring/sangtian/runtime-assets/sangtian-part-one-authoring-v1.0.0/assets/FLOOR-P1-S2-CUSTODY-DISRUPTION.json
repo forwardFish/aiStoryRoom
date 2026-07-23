@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+  "assetType": "SECTION_FLOOR_OBLIGATION",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-DISCLOSURE-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "actor.xunfu_aide"
+  ],
+  "stateDependencies": [
+    "review.authority",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "witness.accessStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SEPARATE-XUNFU",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+    "FLOOR_OBLIGATION",
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "actor.xunfu_aide",
+    "review.authority",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "witness.accessStatus"
+  ],
+  "payload": {
+    "targetTurnWindow": {
+      "earliest": 3,
+      "latest": 10
+    },
+    "dramaticPurpose": "让原册、副本、封条、田契与经手人形成可争夺、可损坏、可追踪的证据链和知识差。",
+    "mayOnlyMoveNpcOrWorld": true,
+    "mayNotDecideForPlayer": true,
+    "mayNotInventEvidence": true,
+    "exitGates": [
+      {
+        "ruleId": "S2-EXIT-AUTHORITY",
+        "statePath": "review.authority",
+        "operator": "NEQ",
+        "expectedValue": "UNDECIDED",
+        "description": "复核主持权已确定"
+      },
+      {
+        "ruleId": "S2-EXIT-CHAIN",
+        "statePath": "evidence.chainStatus",
+        "operator": "IN",
+        "expectedValue": [
+          "TRACEABLE",
+          "FRAGILE",
+          "COMPROMISED"
+        ],
+        "description": "证据链状态已确定"
+      },
+      {
+        "ruleId": "S2-EXIT-CUSTODIAN",
+        "statePath": "evidence.primaryCustodianRef",
+        "operator": "NOT_NULL",
+        "expectedValue": true,
+        "description": "保管人已确定"
+      },
+      {
+        "ruleId": "S2-EXIT-WITNESS",
+        "statePath": "witness.accessStatus",
+        "operator": "NEQ",
+        "expectedValue": "UNKNOWN",
+        "description": "证人接触状态已确定"
+      }
+    ]
+  }
+}

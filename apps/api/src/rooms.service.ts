@@ -19,6 +19,7 @@ import { ContinuousStoryV2Service } from "./continuous-story-v2/continuous-story
 import { gamePageProjection } from "./game-page-projection";
 import { SOLO_STORY_ENGINE_VERSION } from "./solo-story-engine/constants";
 import { SoloStoryEngineService } from "./solo-story-engine/solo-story-engine.service";
+import type { SoloStoryPreview } from "./solo-story-engine/streamed-story-preview";
 import { policyForNewRun, readCreditConsumptionConfig, type BillingPriceSnapshot, type CreditPolicyVersion } from "./config/credit-consumption.config";
 import { CreditConsumptionService } from "./credits/credit-consumption.service";
 import { creditRequestHash } from "./credits/credit-policy";
@@ -892,6 +893,17 @@ export class RoomsService {
   submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) { return this.commands.submitMain(user, roomId, command); }
   async submitTurnDecision(user: AuthenticatedUser, roomId: string, turnId: string, command: TurnDecisionCommandV2) {
     return await this.usesSoloStory(roomId) ? this.soloStory.submit(user, roomId, turnId, command) : this.storyV2.submit(user, roomId, turnId, command);
+  }
+  async submitTurnDecisionStream(
+    user: AuthenticatedUser,
+    roomId: string,
+    turnId: string,
+    command: TurnDecisionCommandV2,
+    onPreview: (preview: SoloStoryPreview) => void | Promise<void>
+  ) {
+    return await this.usesSoloStory(roomId)
+      ? this.soloStory.submit(user, roomId, turnId, command, onPreview)
+      : this.storyV2.submit(user, roomId, turnId, command);
   }
   async retryTurnGeneration(user: AuthenticatedUser, roomId: string) {
     return await this.usesSoloStory(roomId) ? this.soloStory.retryLatest(user, roomId) : this.storyV2.retryResultGeneration(user, roomId);

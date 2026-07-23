@@ -1,0 +1,115 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+  "currentDateAndTime": "胡宗宪奏疏入京之后",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-POSITION-1",
+      "subjectRef": "source.xu_jie",
+      "statement": "source.xu_jie 在 place.grand_secretariat、place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-POSITION-2",
+      "subjectRef": "source.yan_song",
+      "statement": "source.yan_song 在 place.grand_secretariat、place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-POSITION-3",
+      "subjectRef": "source.yan_shifan",
+      "statement": "source.yan_shifan 在 place.grand_secretariat、place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-POSITION-4",
+      "subjectRef": "source.luo_longwen",
+      "statement": "source.luo_longwen 在 place.grand_secretariat、place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ]
+    }
+  ],
+  "characterKnowledge": [],
+  "activeGoals": [],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [],
+  "unresolvedPromises": [],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-ARC-1",
+      "subjectRef": "source.hu_zongxian_report",
+      "statement": "叙述明确说胡宗宪奏疏没有先送通政使司，而是直接送到西苑内阁值房。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-ARC-2",
+      "subjectRef": "source.hu_zongxian_report",
+      "statement": "徐阶只看奏疏封面便命书办送严府；到严府后，严世蕃先拆看奏疏。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-ARC-3",
+      "subjectRef": "source.yan_shifan",
+      "statement": "严世蕃与罗龙文把奏疏绕过通政司、直送内阁的做法解释为胡宗宪向徐阶与裕王一方示好。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-ARTIFACT-R1",
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+  "currentDateAndTime": "地方议案受阻之后",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-POSITION-1",
+      "subjectRef": "source.shen_yishi",
+      "statement": "source.shen_yishi 在 place.shen_yishi_account_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-POSITION-2",
+      "subjectRef": "source.gao_hanwen",
+      "statement": "source.gao_hanwen 在 place.shen_yishi_account_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-KNOWLEDGE-1",
+      "subjectRef": "source.shen_yishi",
+      "statement": "沈一石称账册连浙江巡抚都不能看，只选择口述部分内容，区分实物存在、接触权和听闻内容。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-KNOWLEDGE-2",
+      "subjectRef": "source.shen_yishi",
+      "statement": "沈一石只拣部分账目口述给高翰文，高翰文由此获得有限知识，却没有取得账册保管权。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    }
+  ],
+  "activeGoals": [],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-CUSTODY-1",
+      "subjectRef": "source.shen_yishi",
+      "statement": "沈一石称账册连浙江巡抚都不能看，只选择口述部分内容，区分实物存在、接触权和听闻内容。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-CUSTODY-2",
+      "subjectRef": "source.shen_yishi",
+      "statement": "沈一石只拣部分账目口述给高翰文，高翰文由此获得有限知识，却没有取得账册保管权。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    }
+  ],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-DECISION-1",
+      "subjectRef": "source.gao_hanwen",
+      "statement": "高翰文明确不愿以个人前程换取对低价卖田方案的同意。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    }
+  ],
+  "unresolvedPromises": [],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-ARC-1",
+      "subjectRef": "source.shen_yishi",
+      "statement": "沈一石称账册连浙江巡抚都不能看，只选择口述部分内容，区分实物存在、接触权和听闻内容。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-ARC-2",
+      "subjectRef": "source.shen_yishi",
+      "statement": "沈一石只拣部分账目口述给高翰文，高翰文由此获得有限知识，却没有取得账册保管权。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-ARC-3",
+      "subjectRef": "source.shen_yishi",
+      "statement": "沈一石建议高翰文接受灾民尽快卖田，并称可请宫中把他调离浙江，构成带交换条件的政治保护。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-ARC-4",
+      "subjectRef": "source.shen_yishi",
+      "statement": "沈一石主张失田百姓可受雇种桑织绸，以未来雇佣机会为当前低价卖田辩护；这是商人立场，不是客观保证。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-ARC-5",
+      "subjectRef": "source.gao_hanwen",
+      "statement": "高翰文明确不愿以个人前程换取对低价卖田方案的同意。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C07-MERCHANT-LEDGER-BARGAIN-ARTIFACT-R1",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+    "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+  ]
+}

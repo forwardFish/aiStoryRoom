@@ -1,7 +1,9 @@
 import { sha256Canonical } from "../continuous-strategy/canonical";
+import type { PartOneActionSettlement, PartOneRuntimeWorkingSet } from "@ai-story/templates";
 
 export type IntentSource = "RECOMMENDED" | "TALK" | "INVESTIGATE" | "USE_LEVERAGE" | "CUSTOM";
 export type GenerationTriggerType = "OPENING" | "PLAYER_ACTION";
+export type StoryProviderStage = "NARRATOR" | "DECISION";
 export type ValidationDecision = "ACCEPT" | "ACCEPT_WITH_COST" | "REWRITE_NEEDED" | "REJECTED";
 export type AttemptStatus =
   | "QUEUED"
@@ -19,6 +21,8 @@ export type RecommendedActionInput = {
   targetId: string;
   targetLabel: string;
   actionText: string;
+  decisionKernelId?: string | null;
+  affordanceTemplateId?: string | null;
 };
 
 export type TalkActionInput = {
@@ -64,6 +68,8 @@ export type PlayerIntent = {
   method: string;
   userFacingText: string;
   leverageKeys: string[];
+  decisionKernelId?: string | null;
+  affordanceTemplateId?: string | null;
   immutableIntentHash: string;
 };
 
@@ -166,6 +172,8 @@ export type ContextSourceItem = {
     | "ACTIVE_PRESSURES"
     | "PENDING_CONSEQUENCE"
     | "THIS_TURN_DIRECTED_BEAT"
+    | "PART_ONE_RUNTIME"
+    | "PART_ONE_SETTLEMENT"
     | "PLAYER_ACTION";
   content: unknown;
   tokenEstimate: number;
@@ -187,6 +195,8 @@ export type CompiledStoryContext = {
     activePressures: ContextSection<ActivePressure>;
     pendingConsequences: ContextSection<PendingConsequence>;
     directedBeat: ContextSection<DirectedBeat>;
+    partOneRuntime: ContextSection<PartOneRuntimeWorkingSet>;
+    partOneSettlement: ContextSection<PartOneActionSettlement["event"]>;
   };
   included: ContextSourceItem[];
   dropped: Array<{ itemId: string; reason: "ACL_FILTERED" | "BUDGET_EXHAUSTED" | "P0_BUDGET_EXHAUSTED" }>;
@@ -200,6 +210,9 @@ export type CompiledStoryContext = {
     assetKeys: string[];
     pendingConsequenceIds: string[];
     directedBeatIds: string[];
+    runtimeAssetIds: string[];
+    decisionKernelIds: string[];
+    affordanceTemplateIds: string[];
   };
   availableTargets: StoryActionTarget[];
   renderedWorkingSet: string;
@@ -223,6 +236,8 @@ export type ContextCompileInput = {
   playerIntent: PlayerIntent | null;
   availableTargets: StoryActionTarget[];
   openingTrigger?: { triggerId: string; summary: string } | null;
+  partOneRuntime?: PartOneRuntimeWorkingSet | null;
+  partOneSettlement?: PartOneActionSettlement | null;
   maxTokenEstimate: number;
 };
 
@@ -239,19 +254,35 @@ export type StoryTurnPrompt = {
   systemPrompt: string;
   userPrompt: string;
   outputSchema: Record<string, unknown>;
+  responseMode: "TEXT" | "JSON";
 };
 
 export type StoryTurnTransportRequest = {
   attemptId: string;
+  stage: StoryProviderStage;
   prompt: StoryTurnPrompt;
   context: CompiledStoryContext;
+  /**
+   * Optional player-visible provider progress. This is transport-only preview
+   * text: it is never canonical and must not be persisted before the complete
+   * response passes parsing, grounding and publication.
+   */
+  onTextDelta?: (delta: string, accumulated: string) => void | Promise<void>;
 };
 
 export type StoryTurnTransportResponse = {
+  stage: StoryProviderStage;
   rawText: string;
   model: string;
   providerRequestId?: string;
-  usage: { inputTokens: number; outputTokens: number };
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    reasoningTokens?: number;
+    promptCacheHitTokens?: number;
+    promptCacheMissTokens?: number;
+  };
+  timings?: { timeToHeadersMs: number; timeToFirstTokenMs?: number; totalMs: number };
 };
 
 export interface StoryTurnTransport {
@@ -272,6 +303,10 @@ export type StoryDecision = {
   concreteCost: string;
   expectedCountermove: string;
   groundingIds: string[];
+  /** Server-bound after the Writer selects an authored human-readable seed. */
+  decisionKernelId?: string;
+  /** Server-bound after the Writer selects an authored human-readable seed. */
+  affordanceTemplateId?: string;
 };
 
 export type StoryTurnPublishedOutput = {
@@ -321,10 +356,27 @@ export type StoryTurnModelOutput = StoryTurnPublishedOutput | StoryTurnClarifica
 
 export type StoryTurnValidatedOutput = StoryTurnModelOutput;
 
+export type StoryNarratorDraft = {
+  rawProse: string;
+  resultNarrative: string;
+  nextSituationNarrative: string;
+};
+
+export type StoryDecisionCopy = {
+  routeKey: string;
+  description: string;
+};
+
+export type StoryDecisionCopyOutput = {
+  decisions: StoryDecisionCopy[];
+};
+
 export type AttemptRecord = {
   attemptId: string;
   generationKey: string;
   providerCallCount: number;
+  narrationProviderCallCount: number;
+  decisionProviderCallCount: number;
   status: AttemptStatus;
   failureCode: string | null;
 };
@@ -339,10 +391,15 @@ export type ExecuteSoloStoryTurnInput = {
   activePressures: ActivePressure[];
   relevantScriptCards: ScriptCard[];
   availableTargets: StoryActionTarget[];
+  nextAvailableTargets?: StoryActionTarget[];
+  partOneRuntime?: PartOneRuntimeWorkingSet | null;
+  partOneSettlement?: PartOneActionSettlement | null;
   rawAction: RawPlayerAction;
   transport: StoryTurnTransport;
-  /** Persist the unique provider-call reservation before network I/O. */
-  onBeforeProviderCall?: () => Promise<void>;
+  /** Persist each role-separated provider-call reservation before network I/O. */
+  onBeforeProviderCall?: (stage: StoryProviderStage) => Promise<void>;
+  /** Receive raw provider text incrementally; final output still publishes atomically. */
+  onProviderTextDelta?: (delta: string, accumulated: string) => void | Promise<void>;
   maxTokenEstimate?: number;
 };
 
@@ -357,8 +414,10 @@ export type ExecuteSoloStorySuccess<TIntent extends PlayerIntent | null> =
       playerIntent: TIntent;
       actionResolution: ConfirmedResolution;
       context: CompiledStoryContext;
-      prompt: StoryTurnPrompt;
-      provider: StoryTurnTransportResponse;
+      narratorPrompt: StoryTurnPrompt;
+      decisionPrompt: StoryTurnPrompt;
+      narratorProvider: StoryTurnTransportResponse;
+      decisionProvider: StoryTurnTransportResponse;
       output: StoryTurnValidatedOutput;
     };
 
@@ -369,8 +428,11 @@ export type ExecuteSoloStoryFailure =
       playerIntent: PlayerIntent | null;
       actionResolution?: ConfirmedResolution;
       context?: CompiledStoryContext;
-      prompt?: StoryTurnPrompt;
-      provider?: StoryTurnTransportResponse;
+      failedStage?: StoryProviderStage;
+      narratorPrompt?: StoryTurnPrompt;
+      decisionPrompt?: StoryTurnPrompt;
+      narratorProvider?: StoryTurnTransportResponse;
+      decisionProvider?: StoryTurnTransportResponse;
       issues: ValidationIssue[];
     };
 

@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "section-contract-v1",
+  "sectionId": "SEC-P1-02",
+  "partId": "PART-01",
+  "title": "县册无主",
+  "dramaticPurpose": "让原册、副本、封条、田契与经手人形成可争夺、可损坏、可追踪的证据链和知识差。",
+  "targetTurnWindow": {
+    "earliest": 3,
+    "latest": 10
+  },
+  "entryRequirements": [
+    {
+      "ruleId": "ENTRY-P1-S2",
+      "statePath": "responsibility.firstRecordStatus",
+      "operator": "NEQ",
+      "expectedValue": "EMPTY",
+      "description": "第一节责任记录已形成"
+    }
+  ],
+  "requiredRequirementIds": [
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "activeDecisionKernelIds": [
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-DISCLOSURE-SCOPE"
+  ],
+  "activeCausalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "foregroundActorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "actor.xunfu_aide"
+  ],
+  "mustEstablish": [
+    {
+      "ruleId": "S2-MUST-AUTHORITY",
+      "statePath": "review.authority",
+      "operator": "NEQ",
+      "expectedValue": "UNDECIDED",
+      "description": "复核主持权已落在具体主体"
+    },
+    {
+      "ruleId": "S2-MUST-CHAIN",
+      "statePath": "evidence.chainStatus",
+      "operator": "IN",
+      "expectedValue": [
+        "TRACEABLE",
+        "FRAGILE",
+        "COMPROMISED"
+      ],
+      "description": "证据链状态可追踪"
+    },
+    {
+      "ruleId": "S2-MUST-CUSTODIAN",
+      "statePath": "evidence.primaryCustodianRef",
+      "operator": "NOT_NULL",
+      "expectedValue": true,
+      "description": "主保管人明确"
+    },
+    {
+      "ruleId": "S2-MUST-WITNESS",
+      "statePath": "witness.accessStatus",
+      "operator": "NEQ",
+      "expectedValue": "UNKNOWN",
+      "description": "关键书吏接触状态明确"
+    }
+  ],
+  "requiredMaterialChangeClasses": [
+    "EVIDENCE_CUSTODY",
+    "KNOWLEDGE_TRANSFER",
+    "REVIEW_AUTHORITY",
+    "WITNESS_ACCESS"
+  ],
+  "forbiddenEarlyReveals": [
+    "巡抚被确认是幕后主使",
+    "完整暗账被确认",
+    "大规模土地兼并已经完成",
+    "正式御前裁决已经发生",
+    "全部田契与商会一一对应",
+    "京师完成定性"
+  ],
+  "allowedNextSectionIds": [
+    "SEC-P1-03"
+  ],
+  "exitGates": [
+    {
+      "ruleId": "S2-EXIT-AUTHORITY",
+      "statePath": "review.authority",
+      "operator": "NEQ",
+      "expectedValue": "UNDECIDED",
+      "description": "复核主持权已确定"
+    },
+    {
+      "ruleId": "S2-EXIT-CHAIN",
+      "statePath": "evidence.chainStatus",
+      "operator": "IN",
+      "expectedValue": [
+        "TRACEABLE",
+        "FRAGILE",
+        "COMPROMISED"
+      ],
+      "description": "证据链状态已确定"
+    },
+    {
+      "ruleId": "S2-EXIT-CUSTODIAN",
+      "statePath": "evidence.primaryCustodianRef",
+      "operator": "NOT_NULL",
+      "expectedValue": true,
+      "description": "保管人已确定"
+    },
+    {
+      "ruleId": "S2-EXIT-WITNESS",
+      "statePath": "witness.accessStatus",
+      "operator": "NEQ",
+      "expectedValue": "UNKNOWN",
+      "description": "证人接触状态已确定"
+    }
+  ],
+  "floorObligationIds": [
+    "FLOOR-P1-S2-CUSTODY-DISRUPTION"
+  ],
+  "handoffStatePaths": [
+    "review.authority",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "witness.accessStatus"
+  ]
+}

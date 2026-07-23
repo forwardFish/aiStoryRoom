@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/checkpoint-machine-integrity-report-v1.schema.json",
+  "title": "checkpoint-machine-integrity-report-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "checkpoint-machine-integrity-report-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checkpoint": {
+      "enum": [
+        "G00",
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "packageBindingStatus": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "providerAttemptStatus": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "NOT_APPLICABLE",
+        "FAIL"
+      ]
+    },
+    "inboundActionStatus": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "NOT_APPLICABLE",
+        "FAIL"
+      ]
+    },
+    "continuityStatus": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "NOT_APPLICABLE",
+        "FAIL"
+      ]
+    },
+    "eventNarrativeStatus": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "atomicCommitStatus": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "nextContextStatus": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "evidenceHashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Fa-f0-9]{64}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "computedVerdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "checkpoint",
+    "packageBindingStatus",
+    "providerAttemptStatus",
+    "inboundActionStatus",
+    "continuityStatus",
+    "eventNarrativeStatus",
+    "atomicCommitStatus",
+    "nextContextStatus",
+    "evidenceHashes",
+    "computedVerdict",
+    "generatedAt",
+    "validatorVersion",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

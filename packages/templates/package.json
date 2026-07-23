@@ -11,6 +11,7 @@
     "check:continuous-strategy-generated": "node scripts/generate-continuous-strategy.mjs --check",
     "lint:continuous-strategy": "node --import tsx src/continuous-strategy/lint.ts",
     "test:continuous-strategy": "node --import tsx --test tests/continuous-strategy.test.ts",
+    "test:story-package": "node --import tsx --test tests/story-package.test.ts tests/narrative-scene-pattern-multiworld.test.ts",
     "test:games": "node --import tsx --test tests/game-registry.test.ts tests/continuous-strategy-multiworld.test.ts"
   },
   "devDependencies": {

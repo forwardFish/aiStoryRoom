@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-GRAIN-RELIEF",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head"
+  ],
+  "stateDependencies": [
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "REQ-P1-GRAIN-RELIEF",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "救急渠道形成债务和责任",
+      "粮食不足会压迫百姓出售土地"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

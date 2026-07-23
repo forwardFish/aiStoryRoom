@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-XUNFU-COUNTERMOVE",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.2.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "B1683C4E79A1E7D3774E2836158B4F7E9FCE2514D2B85A7F7A042A7D051778A0",
+  "candidateHash": "90A5F632E6AAB0FFE076529F70D8515683FEC176427FC3204113DE0D3CC0CC73",
+  "requirementIds": [
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:42:20.215Z",
+  "immutableHash": "49F0F2AFEDD03B8A31948D287F74E3E43F7AB717364669A829C1A60FBA152D83"
+}

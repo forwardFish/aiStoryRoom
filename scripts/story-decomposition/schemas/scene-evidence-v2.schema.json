@@ -1,0 +1,1919 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/scene-evidence-v2.schema.json",
+  "title": "scene-evidence-v2",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "dm1566_scene_evidence_v2"
+    },
+    "artifactId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "chapterId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sceneId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRefs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sourceId": {
+            "const": "dm1566-liuheping"
+          },
+          "sourceSha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "chapterId": {
+            "type": "string",
+            "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+          },
+          "paragraphStartId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paragraphEndId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lineStart": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lineEnd": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "textSpanSha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "sourceId",
+          "sourceSha256",
+          "chapterId",
+          "paragraphStartId",
+          "paragraphEndId",
+          "lineStart",
+          "lineEnd",
+          "textSpanSha256"
+        ]
+      },
+      "minItems": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "temporalState": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "certainty": {
+          "type": "string",
+          "enum": [
+            "explicit",
+            "strong_inference",
+            "weak_inference",
+            "unknown"
+          ]
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "sourceId": {
+                "const": "dm1566-liuheping"
+              },
+              "sourceSha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "chapterId": {
+                "type": "string",
+                "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+              },
+              "paragraphStartId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "paragraphEndId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lineStart": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineEnd": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "textSpanSha256": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "sourceId",
+              "sourceSha256",
+              "chapterId",
+              "paragraphStartId",
+              "paragraphEndId",
+              "lineStart",
+              "lineEnd",
+              "textSpanSha256"
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "value",
+        "certainty",
+        "sourceRefs"
+      ]
+    },
+    "locationRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "presentCharacterRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "referencedCharacterRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "openingState": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "actorMoves": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "immediateResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "claimIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "knowledgeDeltas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "informationTransfers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "relationshipDeltas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "custodyDeltas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "commitments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "threats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "plantedSetups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "paidOffSetups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "unresolvedQuestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "closingState": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "claimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "evidenceId",
+          "statement",
+          "actorRefs",
+          "claimIds",
+          "sourceRefs"
+        ]
+      },
+      "minItems": 0
+    },
+    "continuityDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stateChanges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "evidenceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "actorRefs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "claimIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "sourceRefs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "sourceId": {
+                      "const": "dm1566-liuheping"
+                    },
+                    "sourceSha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "chapterId": {
+                      "type": "string",
+                      "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                    },
+                    "paragraphStartId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "paragraphEndId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "lineStart": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lineEnd": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "textSpanSha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "sourceId",
+                    "sourceSha256",
+                    "chapterId",
+                    "paragraphStartId",
+                    "paragraphEndId",
+                    "lineStart",
+                    "lineEnd",
+                    "textSpanSha256"
+                  ]
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "evidenceId",
+              "statement",
+              "actorRefs",
+              "claimIds",
+              "sourceRefs"
+            ]
+          },
+          "minItems": 0
+        },
+        "knowledgeChanges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "evidenceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "actorRefs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "claimIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "sourceRefs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "sourceId": {
+                      "const": "dm1566-liuheping"
+                    },
+                    "sourceSha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "chapterId": {
+                      "type": "string",
+                      "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                    },
+                    "paragraphStartId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "paragraphEndId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "lineStart": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lineEnd": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "textSpanSha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "sourceId",
+                    "sourceSha256",
+                    "chapterId",
+                    "paragraphStartId",
+                    "paragraphEndId",
+                    "lineStart",
+                    "lineEnd",
+                    "textSpanSha256"
+                  ]
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "evidenceId",
+              "statement",
+              "actorRefs",
+              "claimIds",
+              "sourceRefs"
+            ]
+          },
+          "minItems": 0
+        },
+        "custodyChanges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "evidenceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "actorRefs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "claimIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "sourceRefs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "sourceId": {
+                      "const": "dm1566-liuheping"
+                    },
+                    "sourceSha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "chapterId": {
+                      "type": "string",
+                      "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                    },
+                    "paragraphStartId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "paragraphEndId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "lineStart": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lineEnd": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "textSpanSha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "sourceId",
+                    "sourceSha256",
+                    "chapterId",
+                    "paragraphStartId",
+                    "paragraphEndId",
+                    "lineStart",
+                    "lineEnd",
+                    "textSpanSha256"
+                  ]
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "evidenceId",
+              "statement",
+              "actorRefs",
+              "claimIds",
+              "sourceRefs"
+            ]
+          },
+          "minItems": 0
+        },
+        "openThreads": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "evidenceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "actorRefs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "claimIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "sourceRefs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "sourceId": {
+                      "const": "dm1566-liuheping"
+                    },
+                    "sourceSha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "chapterId": {
+                      "type": "string",
+                      "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                    },
+                    "paragraphStartId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "paragraphEndId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "lineStart": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lineEnd": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "textSpanSha256": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "sourceId",
+                    "sourceSha256",
+                    "chapterId",
+                    "paragraphStartId",
+                    "paragraphEndId",
+                    "lineStart",
+                    "lineEnd",
+                    "textSpanSha256"
+                  ]
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "evidenceId",
+              "statement",
+              "actorRefs",
+              "claimIds",
+              "sourceRefs"
+            ]
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "stateChanges",
+        "knowledgeChanges",
+        "custodyChanges",
+        "openThreads"
+      ]
+    },
+    "paragraphDisposition": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "paragraphId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "OWNED",
+              "OVERLAP_READ_ONLY",
+              "OUT_OF_SELECTED_SCOPE"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "paragraphId",
+          "disposition",
+          "reason"
+        ]
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "artifactId",
+    "revision",
+    "chapterId",
+    "sceneId",
+    "sourceRefs",
+    "title",
+    "temporalState",
+    "locationRefs",
+    "presentCharacterRefs",
+    "referencedCharacterRefs",
+    "openingState",
+    "actorMoves",
+    "decisions",
+    "immediateResults",
+    "claimIds",
+    "knowledgeDeltas",
+    "informationTransfers",
+    "relationshipDeltas",
+    "custodyDeltas",
+    "commitments",
+    "threats",
+    "plantedSetups",
+    "paidOffSetups",
+    "unresolvedQuestions",
+    "closingState",
+    "continuityDelta",
+    "paragraphDisposition"
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/player-action-v1.schema.json",
+  "title": "player-action-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "player-action-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "turnCheckpoint": {
+      "enum": [
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "actionOrdinal": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "sourceChoiceCheckpoint": {
+      "enum": [
+        "G00",
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19"
+      ]
+    },
+    "choiceCommitHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "choiceSubmissionReceiptHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "rawPlayerInputHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "normalizedIntentHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "acceptedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "turnCheckpoint",
+    "actionOrdinal",
+    "sourceChoiceCheckpoint",
+    "choiceCommitHash",
+    "choiceSubmissionReceiptHash",
+    "rawPlayerInputHash",
+    "normalizedIntentHash",
+    "acceptedAt",
+    "immutableHash"
+  ]
+}

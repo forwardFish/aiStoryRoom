@@ -11,7 +11,9 @@ export function normalizePlayerIntent(raw: RawPlayerAction): { ok: true; intent:
         objective: compact(raw.label, 200),
         method: compact(raw.actionText, 400),
         userFacingText: compact(raw.actionText, 400),
-        leverageKeys: []
+        leverageKeys: [],
+        decisionKernelId: normalizeOptionalId(raw.decisionKernelId),
+        affordanceTemplateId: normalizeOptionalId(raw.affordanceTemplateId)
       });
     case "TALK":
       return okIntent({
@@ -21,7 +23,9 @@ export function normalizePlayerIntent(raw: RawPlayerAction): { ok: true; intent:
         objective: `与${compact(raw.personName, 60)}交谈，争取回应`,
         method: compact(raw.prompt, 400),
         userFacingText: compact(raw.prompt, 400),
-        leverageKeys: []
+        leverageKeys: [],
+        decisionKernelId: null,
+        affordanceTemplateId: null
       });
     case "INVESTIGATE":
       return okIntent({
@@ -31,7 +35,9 @@ export function normalizePlayerIntent(raw: RawPlayerAction): { ok: true; intent:
         objective: `调查${compact(raw.locationName, 80)}`,
         method: compact(raw.task, 400),
         userFacingText: compact(raw.task, 400),
-        leverageKeys: []
+        leverageKeys: [],
+        decisionKernelId: null,
+        affordanceTemplateId: null
       });
     case "USE_LEVERAGE":
       return okIntent({
@@ -41,7 +47,9 @@ export function normalizePlayerIntent(raw: RawPlayerAction): { ok: true; intent:
         objective: `动用${compact(raw.leverageLabel, 80)}影响${compact(raw.targetLabel, 80)}`,
         method: compact(raw.task, 400),
         userFacingText: compact(raw.task, 400),
-        leverageKeys: [normalizeId(raw.leverageKey)]
+        leverageKeys: [normalizeId(raw.leverageKey)],
+        decisionKernelId: null,
+        affordanceTemplateId: null
       });
     case "CUSTOM": {
       const text = compact(raw.text, 500);
@@ -53,7 +61,9 @@ export function normalizePlayerIntent(raw: RawPlayerAction): { ok: true; intent:
         objective: inferObjective(text),
         method: text,
         userFacingText: text,
-        leverageKeys: []
+        leverageKeys: [],
+        decisionKernelId: null,
+        affordanceTemplateId: null
       });
     }
   }
@@ -73,7 +83,9 @@ function okIntent(input: Omit<PlayerIntent, "immutableIntentHash">): { ok: true;
       targetLabel: input.targetLabel,
       objective: input.objective,
       method: input.method,
-      leverageKeys: [...input.leverageKeys].sort()
+      leverageKeys: [...input.leverageKeys].sort(),
+      decisionKernelId: input.decisionKernelId,
+      affordanceTemplateId: input.affordanceTemplateId
     })
   };
   return { ok: true, intent };
@@ -84,7 +96,15 @@ function compact(value: string, max: number) {
 }
 
 function normalizeId(value: string) {
-  return compact(value, 120).toLowerCase().replace(/[^a-z0-9:_-]+/g, "_");
+  // Runtime asset and actor identifiers use dotted namespaces (for example
+  // actor.zhejiang_xunfu). Replacing dots with underscores makes a decision
+  // that was visibly offered fail the server's current-target check.
+  return compact(value, 120).toLowerCase().replace(/[^a-z0-9:._-]+/g, "_");
+}
+
+function normalizeOptionalId(value: string | null | undefined) {
+  const result = normalizeId(value || "");
+  return result || null;
 }
 
 function inferTargetId(text: string) {

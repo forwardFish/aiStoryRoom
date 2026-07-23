@@ -1,0 +1,142 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-MERCHANT-CONDITIONS",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-MERCHANT-CONDITIONS"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-MERCHANT-CONDITIONS"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel"
+  ],
+  "payload": {
+    "availableWhen": [
+      "官府需要粮、银或运输能力",
+      "商会拥有可验证但非无限的资源"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-MERCHANT-CONDITIONS-OPT-01",
+        "title": "粮可入、田不可买",
+        "actionText": "接受商会粮食和运力，但灾期不得收购或代持民田。",
+        "targetRef": "actor.jiangnan_merchant_head",
+        "method": "限定交易边界",
+        "immediateIntent": "接受商会粮食和运力，但灾期不得收购或代持民田。",
+        "visibleTradeoff": "商会可能缩减粮量，土地风险较低",
+        "stateEffects": [
+          "merchant.entryStatus",
+          "merchant.grantedRights",
+          "land.safeguardStatus"
+        ],
+        "statePatch": {
+          "merchant.entryStatus": "CONDITIONAL",
+          "merchant.grantedRights": [
+            "GRAIN_AND_TRANSPORT_ONLY"
+          ],
+          "land.safeguardStatus": "DISTRESS_PURCHASE_BANNED"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-MERCHANT-CONDITIONS-OPT-02",
+        "title": "只买运输",
+        "actionText": "官府按程付银，只用商会船队，不给收丝或购田优先权。",
+        "targetRef": "actor.jiangnan_merchant_head",
+        "method": "购买单项服务",
+        "immediateIntent": "官府按程付银，只用商会船队，不给收丝或购田优先权。",
+        "visibleTradeoff": "权利边界清楚，但官府要立即筹银",
+        "stateEffects": [
+          "merchant.entryStatus",
+          "merchant.grantedRights",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "merchant.entryStatus": "CONDITIONAL",
+          "merchant.grantedRights": [
+            "TRANSPORT_SERVICE_ONLY"
+          ],
+          "responsibility.governorExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-MERCHANT-CONDITIONS-OPT-03",
+        "title": "拒绝商会条件",
+        "actionText": "拒绝商会担保和优先权，改走官府借调粮路。",
+        "targetRef": "actor.jiangnan_merchant_head",
+        "method": "拒绝交易",
+        "immediateIntent": "拒绝商会担保和优先权，改走官府借调粮路。",
+        "visibleTradeoff": "避免官商绑定，粮价压力短期继续上升",
+        "stateEffects": [
+          "merchant.entryStatus",
+          "grain.reliefChannel",
+          "grain.immediatePressure"
+        ],
+        "statePatch": {
+          "merchant.entryStatus": "REJECTED",
+          "grain.reliefChannel": "OFFICIAL_ONLY",
+          "grain.immediatePressure": "RISING_FAST"
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

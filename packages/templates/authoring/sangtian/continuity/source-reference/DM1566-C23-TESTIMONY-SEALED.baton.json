@@ -1,0 +1,328 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C23-TESTIMONY-SEALED",
+  "currentDateAndTime": "原著后续，仅作文书保管与奏报渠道机制参考",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-POSITION-1",
+      "subjectRef": "source.hai_rui",
+      "statement": "source.hai_rui 在 place.interrogation_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-POSITION-2",
+      "subjectRef": "source.wang_yongji",
+      "statement": "source.wang_yongji 在 place.interrogation_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-POSITION-3",
+      "subjectRef": "source.clerk",
+      "statement": "source.clerk 在 place.interrogation_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-POSITION-4",
+      "subjectRef": "source.jiang_qianhu",
+      "statement": "source.jiang_qianhu 在 place.interrogation_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-POSITION-5",
+      "subjectRef": "source.xu_qianhu",
+      "statement": "source.xu_qianhu 在 place.interrogation_room 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    }
+  ],
+  "characterKnowledge": [],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-GOAL-1",
+      "subjectRef": "source.hai_rui",
+      "statement": "海瑞说重审仍用自己的封印，还有一个时辰天亮，送呈赵中丞急递。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-GOAL-2",
+      "subjectRef": "source.hai_rui",
+      "statement": "海瑞随即命人带上郑泌昌、何茂才，立刻去巡抚衙门。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-CUSTODY-1",
+      "subjectRef": "source.testimony",
+      "statement": "书办把同一份供词先移到蒋千户面前、再移到徐千户面前；两人先后画押，书办随后把供词交回王用汲。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-CUSTODY-2",
+      "subjectRef": "source.evidence_bundle",
+      "statement": "海瑞先把发回的原供装入信封，王用汲再把郑泌昌、何茂才的翻供、蒋徐二人的供词和田有禄、王牢头签名的字据递给海瑞，海瑞一并装入。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-CUSTODY-3",
+      "subjectRef": "source.hai_rui",
+      "statement": "书办烤漆封口后，海瑞趁漆未硬盖上自己的印章，并在烤漆处粘上三根羽毛。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    }
+  ],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-DECISION-1",
+      "subjectRef": "source.hai_rui",
+      "statement": "海瑞说重审仍用自己的封印，还有一个时辰天亮，送呈赵中丞急递。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-DECISION-2",
+      "subjectRef": "source.hai_rui",
+      "statement": "海瑞随即命人带上郑泌昌、何茂才，立刻去巡抚衙门。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-PROMISE-1",
+      "subjectRef": "source.hai_rui",
+      "statement": "海瑞说重审仍用自己的封印，还有一个时辰天亮，送呈赵中丞急递。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-PROMISE-2",
+      "subjectRef": "source.hai_rui",
+      "statement": "海瑞随即命人带上郑泌昌、何茂才，立刻去巡抚衙门。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-ARC-1",
+      "subjectRef": "source.testimony",
+      "statement": "书办把同一份供词先移到蒋千户面前、再移到徐千户面前；两人先后画押，书办随后把供词交回王用汲。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-ARC-2",
+      "subjectRef": "source.evidence_bundle",
+      "statement": "海瑞先把发回的原供装入信封，王用汲再把郑泌昌、何茂才的翻供、蒋徐二人的供词和田有禄、王牢头签名的字据递给海瑞，海瑞一并装入。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-ARC-3",
+      "subjectRef": "source.hai_rui",
+      "statement": "书办烤漆封口后，海瑞趁漆未硬盖上自己的印章，并在烤漆处粘上三根羽毛。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-ARC-4",
+      "subjectRef": "source.wang_yongji",
+      "statement": "王用汲取出自己的印章时，海瑞已经拿起封文，并说明原案与重审都用自己的封印；原文没有写王用汲的印章加盖在封文上。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-ARC-5",
+      "subjectRef": "source.hai_rui",
+      "statement": "海瑞说重审仍用自己的封印，还有一个时辰天亮，送呈赵中丞急递。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-TESTIMONY-SEALED-ARC-6",
+      "subjectRef": "source.hai_rui",
+      "statement": "海瑞随即命人带上郑泌昌、何茂才，立刻去巡抚衙门。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+        "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C23-TESTIMONY-SEALED-ARTIFACT-R1",
+    "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C23-CL-HAI-ORDERS-URGENT-DELIVERY-TO-ZHAO",
+    "DM1566-C23-CL-HAI-ORDERS-PRISONERS-TO-GOVERNOR-OFFICE"
+  ]
+}

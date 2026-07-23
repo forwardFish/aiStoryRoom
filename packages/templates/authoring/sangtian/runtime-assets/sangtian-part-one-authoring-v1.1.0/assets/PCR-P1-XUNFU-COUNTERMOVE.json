@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-XUNFU-COUNTERMOVE",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide"
+  ],
+  "stateDependencies": [
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide",
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "督抚关系与京师叙事同步变化",
+      "复核权被一方掌握后改变证据可见性"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

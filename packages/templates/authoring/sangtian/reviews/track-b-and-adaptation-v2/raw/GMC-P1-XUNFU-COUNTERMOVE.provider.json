@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "GMC-P1-XUNFU-COUNTERMOVE",
+  "kind": "MECHANISM",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:40:15.826Z",
+  "completedAt": "2026-07-22T18:40:16.182Z",
+  "httpStatus": 200,
+  "inputHash": "771FA458778C55E2DEBE65114C6FE127B4E77EE17F6AB621450099986425868D",
+  "rawOutputHash": "D6CCDDB0B98E36677F723E0CE9F2D2E808C3FCD092061A0537A7E597DB96AC1F",
+  "rawText": "{\n  \"verdict\": \"NEEDS_HUMAN_REVIEW\",\n  \"issues\": [\n    {\n      \"issueType\": \"WEAK_INFERENCE_AS_RULE\",\n      \"severity\": \"HIGH\",\n      \"reason\": \"候选将原著中胡宗宪催办、杨金水拒签等行为泛化为巡抚通用策略，但原著中巡抚并非独立角色，其权限和动机需依赖ADAPT-P1-SEPARATE-XUNFU批准，目前该决策仍为DRAFT，未获批准，因此机制缺乏原著直接支持。\"\n    },\n    {\n      \"issueType\": \"MISSING_PRECONDITION\",\n      \"severity\": \"MEDIUM\",\n      \"reason\": \"preconditions要求玩家行动触及执行速度等，但未明确巡抚得知该行动的具体条件（如文书传递时间、情报网络），仅依赖运行时证明，可能导致机制在缺乏证据时被触发。\"\n    },\n    {\n      \"issueType\": \"CLAIM_MISUSE\",\n      \"severity\": \"MEDIUM\",\n      \"reason\": \"使用了DM1566-C03-CL-GOVERNOR-INVARIANT（人物意图）和DM1566-C04-CL-REPORT-OMITS-DELAY（人物说法）作为机制依据，但这两条claim被标记为mustNotBeTreatedAsObjectiveFact，不能作为客观事实支撑机制规则。\"\n    }\n  ]\n}",
+  "usage": {
+    "prompt_tokens": 6087,
+    "completion_tokens": 302,
+    "total_tokens": 6389,
+    "prompt_tokens_details": {
+      "cached_tokens": 256
+    },
+    "prompt_cache_hit_tokens": 256,
+    "prompt_cache_miss_tokens": 5831
+  }
+}

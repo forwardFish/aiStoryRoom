@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/story-capability-requirement-v1.schema.json",
+  "title": "story-capability-requirement-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "story-capability-requirement-v1"
+    },
+    "requirementId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sectionIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "dramaticFunction": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decisionKernelIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "playerAuthorityRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "opposingActorRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "requiredResourceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "requiredEvidenceMechanisms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "sourceCandidateQueryTerms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "sourceCandidateChapterIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "sourceSceneIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "sourceClaimIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "mechanismCandidateIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "evidenceStrength": {
+      "type": "string",
+      "enum": [
+        "EXPLICIT",
+        "STRONG_INFERENCE",
+        "WEAK_INFERENCE",
+        "NONE"
+      ]
+    },
+    "adaptationGapIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "adaptationDecisionIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "runtimeAssetIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "stateEffects": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "delayedConsequenceRuleIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "retrievalTags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "mustNotAssume": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "coverageStatus": {
+      "type": "string",
+      "enum": [
+        "SATISFIED_BY_SOURCE",
+        "SATISFIED_BY_ADAPTATION",
+        "BLOCKED_MISSING_EVIDENCE",
+        "REJECTED_OUT_OF_SCOPE"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "requirementId",
+    "partId",
+    "sectionIds",
+    "dramaticFunction",
+    "decisionKernelIds",
+    "playerAuthorityRefs",
+    "opposingActorRefs",
+    "requiredResourceRefs",
+    "requiredEvidenceMechanisms",
+    "sourceCandidateQueryTerms",
+    "sourceCandidateChapterIds",
+    "sourceSceneIds",
+    "sourceClaimIds",
+    "mechanismCandidateIds",
+    "evidenceStrength",
+    "adaptationGapIds",
+    "adaptationDecisionIds",
+    "runtimeAssetIds",
+    "stateEffects",
+    "delayedConsequenceRuleIds",
+    "retrievalTags",
+    "mustNotAssume",
+    "coverageStatus"
+  ]
+}

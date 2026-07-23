@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C23-URGENT-DISPATCH-AT-GATE",
+  "currentDateAndTime": "原著后续，仅作文书保管与奏报渠道机制参考",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-POSITION-1",
+      "subjectRef": "source.shi_gonggong",
+      "statement": "source.shi_gonggong 在 place.beijing_yongding_gate 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-POSITION-2",
+      "subjectRef": "source.escort_jinyiwei",
+      "statement": "source.escort_jinyiwei 在 place.beijing_yongding_gate 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    }
+  ],
+  "characterKnowledge": [],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-GOAL-1",
+      "subjectRef": "source.shi_gonggong",
+      "statement": "石公公没有查看公文，只命锦衣卫带着，亲手交给陈公公。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-CUSTODY-1",
+      "subjectRef": "source.escort_jinyiwei",
+      "statement": "押送的锦衣卫从衣襟里取出一封粘着三根羽毛的急递文书。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    }
+  ],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-DECISION-1",
+      "subjectRef": "source.shi_gonggong",
+      "statement": "石公公没有查看公文，只命锦衣卫带着，亲手交给陈公公。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-PROMISE-1",
+      "subjectRef": "source.shi_gonggong",
+      "statement": "石公公没有查看公文，只命锦衣卫带着，亲手交给陈公公。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-ARC-1",
+      "subjectRef": "source.escort_jinyiwei",
+      "statement": "押送的锦衣卫从衣襟里取出一封粘着三根羽毛的急递文书。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-ARC-2",
+      "subjectRef": "source.escort_jinyiwei",
+      "statement": "锦衣卫禀告石公公：公文是浙江巡抚衙门昨天追上来递交的，内含司礼监和内阁吩咐重审郑泌昌、何茂才所得供词，要连同杨金水一起递交司礼监。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C23-URGENT-DISPATCH-AT-GATE-ARC-3",
+      "subjectRef": "source.shi_gonggong",
+      "statement": "石公公没有查看公文，只命锦衣卫带着，亲手交给陈公公。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C23-URGENT-DISPATCH-AT-GATE-ARTIFACT-R1",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ]
+}

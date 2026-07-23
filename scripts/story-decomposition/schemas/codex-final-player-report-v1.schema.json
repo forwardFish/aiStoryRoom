@@ -1,0 +1,559 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/codex-final-player-report-v1.schema.json",
+  "title": "codex-final-player-report-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "codex-final-player-report-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "blindContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answersFromPlayerPerspective": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storyRetelling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpointRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checkpoint": {
+                    "enum": [
+                      "G00",
+                      "T01",
+                      "T02",
+                      "T03",
+                      "T04",
+                      "T05",
+                      "T06",
+                      "T07",
+                      "T08",
+                      "T09",
+                      "T10",
+                      "T11",
+                      "T12",
+                      "T13",
+                      "T14",
+                      "T15",
+                      "T16",
+                      "T17",
+                      "T18",
+                      "T19",
+                      "T20"
+                    ]
+                  },
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "playerReviewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "checkpoint",
+                  "viewHash",
+                  "playerReviewHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "answer",
+            "checkpointRefs"
+          ]
+        },
+        "hardestChoices": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpointRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checkpoint": {
+                    "enum": [
+                      "G00",
+                      "T01",
+                      "T02",
+                      "T03",
+                      "T04",
+                      "T05",
+                      "T06",
+                      "T07",
+                      "T08",
+                      "T09",
+                      "T10",
+                      "T11",
+                      "T12",
+                      "T13",
+                      "T14",
+                      "T15",
+                      "T16",
+                      "T17",
+                      "T18",
+                      "T19",
+                      "T20"
+                    ]
+                  },
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "playerReviewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "checkpoint",
+                  "viewHash",
+                  "playerReviewHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "answer",
+            "checkpointRefs"
+          ]
+        },
+        "believableCharactersAndPull": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpointRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checkpoint": {
+                    "enum": [
+                      "G00",
+                      "T01",
+                      "T02",
+                      "T03",
+                      "T04",
+                      "T05",
+                      "T06",
+                      "T07",
+                      "T08",
+                      "T09",
+                      "T10",
+                      "T11",
+                      "T12",
+                      "T13",
+                      "T14",
+                      "T15",
+                      "T16",
+                      "T17",
+                      "T18",
+                      "T19",
+                      "T20"
+                    ]
+                  },
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "playerReviewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "checkpoint",
+                  "viewHash",
+                  "playerReviewHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "answer",
+            "checkpointRefs"
+          ]
+        },
+        "fillerOrForcedTransitions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpointRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checkpoint": {
+                    "enum": [
+                      "G00",
+                      "T01",
+                      "T02",
+                      "T03",
+                      "T04",
+                      "T05",
+                      "T06",
+                      "T07",
+                      "T08",
+                      "T09",
+                      "T10",
+                      "T11",
+                      "T12",
+                      "T13",
+                      "T14",
+                      "T15",
+                      "T16",
+                      "T17",
+                      "T18",
+                      "T19",
+                      "T20"
+                    ]
+                  },
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "playerReviewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "checkpoint",
+                  "viewHash",
+                  "playerReviewHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "answer",
+            "checkpointRefs"
+          ]
+        },
+        "characterVoiceConsistency": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpointRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checkpoint": {
+                    "enum": [
+                      "G00",
+                      "T01",
+                      "T02",
+                      "T03",
+                      "T04",
+                      "T05",
+                      "T06",
+                      "T07",
+                      "T08",
+                      "T09",
+                      "T10",
+                      "T11",
+                      "T12",
+                      "T13",
+                      "T14",
+                      "T15",
+                      "T16",
+                      "T17",
+                      "T18",
+                      "T19",
+                      "T20"
+                    ]
+                  },
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "playerReviewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "checkpoint",
+                  "viewHash",
+                  "playerReviewHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "answer",
+            "checkpointRefs"
+          ]
+        },
+        "decisionClarityAndDistinctness": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpointRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checkpoint": {
+                    "enum": [
+                      "G00",
+                      "T01",
+                      "T02",
+                      "T03",
+                      "T04",
+                      "T05",
+                      "T06",
+                      "T07",
+                      "T08",
+                      "T09",
+                      "T10",
+                      "T11",
+                      "T12",
+                      "T13",
+                      "T14",
+                      "T15",
+                      "T16",
+                      "T17",
+                      "T18",
+                      "T19",
+                      "T20"
+                    ]
+                  },
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "playerReviewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "checkpoint",
+                  "viewHash",
+                  "playerReviewHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "answer",
+            "checkpointRefs"
+          ]
+        },
+        "agencyAndPathChange": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpointRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checkpoint": {
+                    "enum": [
+                      "G00",
+                      "T01",
+                      "T02",
+                      "T03",
+                      "T04",
+                      "T05",
+                      "T06",
+                      "T07",
+                      "T08",
+                      "T09",
+                      "T10",
+                      "T11",
+                      "T12",
+                      "T13",
+                      "T14",
+                      "T15",
+                      "T16",
+                      "T17",
+                      "T18",
+                      "T19",
+                      "T20"
+                    ]
+                  },
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "playerReviewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "checkpoint",
+                  "viewHash",
+                  "playerReviewHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "answer",
+            "checkpointRefs"
+          ]
+        },
+        "desireForPartTwo": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpointRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checkpoint": {
+                    "enum": [
+                      "G00",
+                      "T01",
+                      "T02",
+                      "T03",
+                      "T04",
+                      "T05",
+                      "T06",
+                      "T07",
+                      "T08",
+                      "T09",
+                      "T10",
+                      "T11",
+                      "T12",
+                      "T13",
+                      "T14",
+                      "T15",
+                      "T16",
+                      "T17",
+                      "T18",
+                      "T19",
+                      "T20"
+                    ]
+                  },
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "playerReviewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "checkpoint",
+                  "viewHash",
+                  "playerReviewHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "answer",
+            "checkpointRefs"
+          ]
+        }
+      },
+      "required": [
+        "storyRetelling",
+        "hardestChoices",
+        "believableCharactersAndPull",
+        "fillerOrForcedTransitions",
+        "characterVoiceConsistency",
+        "decisionClarityAndDistinctness",
+        "agencyAndPathChange",
+        "desireForPartTwo"
+      ]
+    },
+    "citedCheckpointHashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Fa-f0-9]{64}$"
+      },
+      "minItems": 21,
+      "maxItems": 21,
+      "uniqueItems": true
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "blindContextId",
+    "answersFromPlayerPerspective",
+    "citedCheckpointHashes",
+    "sealedAt",
+    "immutableHash"
+  ]
+}

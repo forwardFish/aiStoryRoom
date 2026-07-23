@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/opening-technical-audit-v1.schema.json",
+  "title": "opening-technical-audit-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "opening-technical-audit-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checkpoint": {
+      "const": "G00"
+    },
+    "openingVersionHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "playerVisibleViewHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "checkpointPlayerGateHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "decisionContrastReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "initialStateHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "openingToPartOneStateMappingValid": {
+      "type": "boolean"
+    },
+    "displayDecisionsBoundToLegalAffordances": {
+      "type": "boolean"
+    },
+    "visibleUiIntegrity": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "hiddenAdjudicationVerdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "machineIntegrityReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "openedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "computedVerdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "checkpoint",
+    "openingVersionHash",
+    "playerVisibleViewHash",
+    "checkpointPlayerGateHash",
+    "decisionContrastReportHash",
+    "initialStateHash",
+    "openingToPartOneStateMappingValid",
+    "displayDecisionsBoundToLegalAffordances",
+    "visibleUiIntegrity",
+    "hiddenAdjudicationVerdict",
+    "machineIntegrityReportHash",
+    "openedAt",
+    "sealedAt",
+    "computedVerdict",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

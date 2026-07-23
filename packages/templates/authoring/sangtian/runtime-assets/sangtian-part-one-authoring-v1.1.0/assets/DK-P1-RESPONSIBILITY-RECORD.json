@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-RESPONSIBILITY-RECORD",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide"
+  ],
+  "stateDependencies": [
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure",
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide",
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure",
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "availableWhen": [
+      "存在待签或待修改的正式文书",
+      "至少两方对文书内容或署名有不同利益",
+      "玩家行动触及执行速度、复核权或责任归属",
+      "knowledgeTransfers 中存在接收者为 actor.zhejiang_xunfu 且主题匹配的送达事件，或该行动已通过巡抚依法可见的正式公文公开；否则本策略不得触发"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
+        "title": "要求联署",
+        "actionText": "把执行范围、复核办法和粮食责任逐项写明，请巡抚一同具名。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "共同具名",
+        "immediateIntent": "把执行范围、复核办法和粮食责任逐项写明，请巡抚一同具名。",
+        "visibleTradeoff": "共同承担能换来合作，也会模糊日后分歧",
+        "stateEffects": [
+          "responsibility.firstRecordStatus",
+          "responsibility.governorExposure",
+          "responsibility.xunfuExposure"
+        ],
+        "statePatch": {
+          "responsibility.firstRecordStatus": "JOINT_SIGNATURE_REQUESTED",
+          "responsibility.governorExposure": {
+            "$delta": 1
+          },
+          "responsibility.xunfuExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-02",
+        "title": "总督单署",
+        "actionText": "由总督独自签发附条件命令，并把巡抚催办原文作为附件留档。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "单独具名并附原文",
+        "immediateIntent": "由总督独自签发附条件命令，并把巡抚催办原文作为附件留档。",
+        "visibleTradeoff": "责任集中，但保留了催办来源",
+        "stateEffects": [
+          "responsibility.firstRecordStatus",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "responsibility.firstRecordStatus": "GOVERNOR_SIGNED_WITH_ATTACHMENT",
+          "responsibility.governorExposure": {
+            "$delta": 2
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
+        "title": "记明异议",
+        "actionText": "暂准执行，却在文书中逐字记下督抚分歧和各自承担的事项。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "分项责任记录",
+        "immediateIntent": "暂准执行，却在文书中逐字记下督抚分歧和各自承担的事项。",
+        "visibleTradeoff": "关系转冷，但后续不易互相改口",
+        "stateEffects": [
+          "responsibility.firstRecordStatus",
+          "relations.governorXunfu"
+        ],
+        "statePatch": {
+          "responsibility.firstRecordStatus": "DISAGREEMENT_RECORDED",
+          "relations.governorXunfu": {
+            "$delta": -1
+          }
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

@@ -236,7 +236,13 @@
       "mainlineQuestionIds": ["mq_execution_boundary", "mq_hidden_ledger_chain"],
       "activePressureIds": ["pressure_deadline", "pressure_grain"],
       "latentTruthIds": ["truth_xunfu_shadow_ledger"],
-      "floorObligationIds": ["floor_county_register_visibility"]
+      "floorObligationIds": ["floor_county_register_visibility"],
+      "actionAffordances": {
+        "conversationRoleKeys": ["xunfu"],
+        "investigationCardIds": ["card_material_county_secret_letter", "card_evidence_archive_seal_order"],
+        "leverageAssetKeys": ["county_letter", "governor_archive_order"],
+        "customPlanPressureIds": ["pressure_deadline", "pressure_grain"]
+      }
     },
     {
       "nodeId": "node_county_registers",
@@ -258,7 +264,13 @@
       "mainlineQuestionIds": ["mq_execution_boundary", "mq_hidden_ledger_chain"],
       "activePressureIds": ["pressure_deadline", "pressure_grain"],
       "latentTruthIds": ["truth_xunfu_shadow_ledger"],
-      "floorObligationIds": ["floor_county_register_visibility"]
+      "floorObligationIds": ["floor_county_register_visibility"],
+      "actionAffordances": {
+        "conversationRoleKeys": ["xunfu"],
+        "investigationCardIds": ["card_location_governor_office", "card_material_county_secret_letter", "card_evidence_archive_seal_order"],
+        "leverageAssetKeys": ["county_letter", "governor_archive_order"],
+        "customPlanPressureIds": ["pressure_deadline", "pressure_grain"]
+      }
     }
   ],
   "openingNodeId": "node_governor_opening"

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-LAND-RISK",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-LAND-RISK"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.jiangnan_merchant_head",
+    "actor.qingliu_magistrate"
+  ],
+  "stateDependencies": [
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-RISK-PREDICTION",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "REQ-P1-LAND-RISK",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.zhejiang_governor",
+    "actor.jiangnan_merchant_head",
+    "actor.qingliu_magistrate",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "粮食与执行选择改变抵押、卖田和兼并风险",
+      "土地保护会增加财政或改桑进度压力"
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

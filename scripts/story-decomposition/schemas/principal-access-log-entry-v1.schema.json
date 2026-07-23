@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/principal-access-log-entry-v1.schema.json",
+  "title": "principal-access-log-entry-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "principal-access-log-entry-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "principalRole": {
+      "type": "string",
+      "enum": [
+        "BLIND_PLAYER",
+        "HIDDEN_AUDITOR",
+        "PLAYER_OBSERVER",
+        "EVIDENCE_COLLECTOR",
+        "RELEASE_GATE_VALIDATOR"
+      ]
+    },
+    "principalContextId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "operation": {
+      "type": "string",
+      "enum": [
+        "READ",
+        "WRITE",
+        "DELIVER",
+        "CONTROL_SIGNAL",
+        "SEAL"
+      ]
+    },
+    "resourcePath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resourceClass": {
+      "type": "string",
+      "enum": [
+        "PLAYER_VISIBLE",
+        "HIDDEN_EVIDENCE",
+        "AUDIT_RESULT",
+        "DEVELOPMENT_SPEC",
+        "CONTROL_SIGNAL",
+        "RUN_ARTIFACT"
+      ]
+    },
+    "targetContextId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "ALLOWED",
+        "DENIED"
+      ]
+    },
+    "payloadHash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "previousEntryHash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "entryHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "collectorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "sequence",
+    "occurredAt",
+    "principalRole",
+    "principalContextId",
+    "operation",
+    "resourcePath",
+    "resourceClass",
+    "targetContextId",
+    "result",
+    "payloadHash",
+    "previousEntryHash",
+    "entryHash",
+    "collectorSignature"
+  ]
+}

@@ -54,7 +54,7 @@
       { "key": "treasury", "label": "国库银两", "value": 42, "suffix": "", "tone": "default" },
       { "key": "public_sentiment", "label": "民心", "value": 55, "suffix": "", "tone": "green" },
       { "key": "grain_price", "label": "粮价", "value": 72, "suffix": "", "tone": "gold" },
-      { "key": "reform_progress", "label": "改桑进度", "value": 58, "suffix": "%", "tone": "green" },
+      { "key": "reform_progress", "label": "改桑进度", "value": 0, "suffix": "%", "tone": "green" },
       { "key": "imperial_trust", "label": "皇帝信任", "value": 43, "suffix": "", "tone": "crown" }
     ]
   },
@@ -73,11 +73,11 @@
       "cannotDo": ["越过朝廷直接改写国策"],
       "portrait": "/assets/game/sangtian/generated/role-governor-scene-v1.png",
       "gameplayProfile": {
-        "characterName": "郑帅彬",
-        "rank": "从四品",
-        "office": "兵部侍郎衔",
+        "characterName": "浙直总督",
+        "rank": "总督差遣",
+        "office": "总督浙江军务兼理粮饷",
         "fateQuestion": "稳住浙江并避免皇帝认定你欺瞒。",
-        "goals": ["稳定浙江局势", "控制巡抚势力", "避免皇帝生疑"],
+        "goals": ["稳定浙江局势", "约束巡抚越权", "避免皇帝生疑"],
         "resources": [
           { "label": "银两", "value": "42 万两" },
           { "label": "粮草", "value": "23 万石" },

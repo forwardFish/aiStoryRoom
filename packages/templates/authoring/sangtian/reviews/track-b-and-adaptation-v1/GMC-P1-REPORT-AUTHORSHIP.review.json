@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-REPORT-AUTHORSHIP",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.0.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "8034A418C7D20E15C57F6FE459062EC8269C56046EBC3FB851C1255DCA176631",
+  "candidateHash": "7BBB3887083E976AEFC084EA6503B7FBCE756494FB44096D063E37BD8C0BD892",
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "verdict": "FAIL",
+  "issues": [
+    {
+      "issueType": "weak_inference",
+      "severity": "HIGH",
+      "reason": "precondition '地方必须形成第一份入京叙述' 无任何 claim 支持；原著中奏疏由胡宗宪主导形成，但玩家作为总督能否决定第一份叙述未在 claim 中体现。"
+    },
+    {
+      "issueType": "missing_evidence",
+      "severity": "HIGH",
+      "reason": "allowedMoves '总督单独奏报' 和 '允许巡抚先报并附异议' 无原著 claim 支持；原著中胡宗宪是总督，但巡抚角色来自 adaptation，且无证据表明总督可单独奏报或巡抚可先报。"
+    },
+    {
+      "issueType": "weak_inference",
+      "severity": "MEDIUM",
+      "reason": "delayedConsequences '最先到达的版本塑造京师初步定性' 基于原著中严嵩安排奏疏在裕王府呈递，但该 claim 为人物说法（unverified），不能作为客观规则。"
+    },
+    {
+      "issueType": "weak_inference",
+      "severity": "MEDIUM",
+      "reason": "delayedConsequences '署名模式决定后续问责和盟友关系' 无直接 claim 支持；原著中杨金水拒绝署名，但未说明署名模式如何决定问责。"
+    }
+  ],
+  "reviewedAt": "2026-07-22T18:36:03.383Z",
+  "immutableHash": "BC733E96034119289CBA4DD54AB16700C81864C607CF136D878BF98F82671186"
+}

@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-CAPITAL-CHANNEL",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-CAPITAL-CHANNEL"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili"
+  ],
+  "stateDependencies": [
+    "report.dispatchStatus",
+    "report.firstNarrativeController",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "DK-P1-CAPITAL-CHANNEL",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-CAPITAL-FRAMING",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili",
+    "report.dispatchStatus",
+    "report.firstNarrativeController",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "availableWhen": [
+      "正式或非正式文书已经进入递送渠道",
+      "渠道中介、署名和附件状态可追踪"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-CAPITAL-CHANNEL-OPT-01",
+        "title": "走正式通政渠道",
+        "actionText": "按正式渠道递送奏报，逐站记录交接和到达时辰。",
+        "targetRef": "resource.official_document_channel",
+        "method": "正式递送",
+        "immediateIntent": "按正式渠道递送奏报，逐站记录交接和到达时辰。",
+        "visibleTradeoff": "程序最稳，但中介和时间更难控制",
+        "stateEffects": [
+          "report.dispatchStatus",
+          "knowledgeTransfers"
+        ],
+        "statePatch": {
+          "report.dispatchStatus": "DISPATCHED",
+          "knowledgeTransfer": {
+            "topic": "first_report_formal_channel",
+            "senderRef": "actor.zhejiang_governor",
+            "recipientRef": "institution.capital_official_channel",
+            "status": "SENT"
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-CAPITAL-CHANNEL-OPT-02",
+        "title": "加封急递",
+        "actionText": "用总督封印加急送达指定上级，保留副本和交接回执。",
+        "targetRef": "resource.official_document_channel",
+        "method": "封缄急递",
+        "immediateIntent": "用总督封印加急送达指定上级，保留副本和交接回执。",
+        "visibleTradeoff": "速度更快，也会被解释为绕过常规渠道",
+        "stateEffects": [
+          "report.dispatchStatus",
+          "responsibility.governorExposure",
+          "knowledgeTransfers"
+        ],
+        "statePatch": {
+          "report.dispatchStatus": "DISPATCHED",
+          "responsibility.governorExposure": {
+            "$delta": 1
+          },
+          "knowledgeTransfer": {
+            "topic": "first_report_sealed_expedited",
+            "senderRef": "actor.zhejiang_governor",
+            "recipientRef": "institution.capital_named_superior",
+            "status": "SENT"
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-CAPITAL-CHANNEL-OPT-03",
+        "title": "双路互证",
+        "actionText": "正本走正式渠道，摘要另走密奏；两份互列封号，不让内容悄然替换。",
+        "targetRef": "resource.official_document_channel",
+        "method": "双路校验",
+        "immediateIntent": "正本走正式渠道，摘要另走密奏；两份互列封号，不让内容悄然替换。",
+        "visibleTradeoff": "较难截断，却会放大政治敏感和泄露面",
+        "stateEffects": [
+          "report.dispatchStatus",
+          "report.firstNarrativeController",
+          "evidence.chainStatus"
+        ],
+        "statePatch": {
+          "report.dispatchStatus": "SPLIT",
+          "report.firstNarrativeController": "DUAL_CHANNEL_CONTESTED",
+          "evidence.chainStatus": "TRACEABLE_WITH_CROSS_SEALS"
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

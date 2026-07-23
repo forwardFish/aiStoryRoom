@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "AP-P1-QINGLIU-MAGISTRATE",
+  "assetType": "ACTOR_POLICY",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-DISCLOSURE-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.qingliu_magistrate"
+  ],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "review.authority",
+    "review.procedureStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SEPARATE-XUNFU",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "actor.qingliu_magistrate",
+    "ACTOR_POLICY",
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "ARC-P1-CUSTODY-CONTEST",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "review.authority",
+    "review.procedureStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "payload": {
+    "goal": "保住县册可追溯性，同时避免在证据未稳时独自承担毁册或抗命罪名。",
+    "allowedMoves": [
+      "密报异常并请求上级明确程序",
+      "在获得保护时交出样册或经手名册",
+      "证据不足时承认不知道"
+    ],
+    "conditionalReactions": [
+      "被要求独自背责时保留文书",
+      "保管链受威胁时请求异地见证"
+    ],
+    "knowledgeBounded": true,
+    "mayNotWaitPassively": true
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-RESPONSIBILITY-RECORD",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.1.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "4580F4AF07E5915BB240093605BFE37C248163033C4A9EC50B1FB0B92CD40B10",
+  "candidateHash": "DDD999FC438DDB158C55D43F13FE33FFE4EAEBC68DD9800491820549C67A4059",
+  "requirementIds": [
+    "REQ-P1-RESPONSIBILITY-RECORD"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:40:13.562Z",
+  "immutableHash": "48128A92EECD24A6A07C4E56AA7EA3EBFBD2C535CB691AA5BC1FDD561EE0FA5C"
+}

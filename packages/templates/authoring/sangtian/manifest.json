@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "sangtian-part-one-authoring-manifest-v1",
+  "worldId": "sangtian",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "partContractIds": [
+    "PART-01",
+    "PART-02",
+    "PART-03",
+    "PART-04"
+  ],
+  "sectionContractIds": [
+    "SEC-P1-01",
+    "SEC-P1-02",
+    "SEC-P1-03",
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-THREE-DAY-DEADLINE",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SEPARATE-XUNFU",
+    "ADAPT-P1-MERCHANT-GUILD",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "narrativeStyleProfileId": "STYLE-SANGTIAN-HISTORICAL-NOVEL",
+  "lifecycleStatus": "MODEL_CANDIDATE"
+}

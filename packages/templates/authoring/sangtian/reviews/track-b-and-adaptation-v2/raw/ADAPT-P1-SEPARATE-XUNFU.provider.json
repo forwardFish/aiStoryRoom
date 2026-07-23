@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "ADAPT-P1-SEPARATE-XUNFU",
+  "kind": "ADAPTATION",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:40:25.437Z",
+  "completedAt": "2026-07-22T18:40:25.964Z",
+  "httpStatus": 200,
+  "inputHash": "48D15A87E27F792A6DC2F6476CCC8E458CC5F419648A5F5274E4507F2A113632",
+  "rawOutputHash": "BFEBAC14B1ACC5E47A476BE4595B2E78297B7281DA1B8447EEC7F538A410A131",
+  "rawText": "{\n  \"verdict\": \"PASS\",\n  \"issues\": []\n}",
+  "usage": {
+    "prompt_tokens": 12523,
+    "completion_tokens": 16,
+    "total_tokens": 12539,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 12523
+  }
+}

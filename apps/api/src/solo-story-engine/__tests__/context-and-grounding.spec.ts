@@ -1,12 +1,23 @@
 import assert from "node:assert/strict";
 import { compileSoloStoryContext } from "../context-compiler";
-import { validateStoryTurnOutput } from "../output-validator";
+import { buildSoloDecisionPrompt } from "../decision-prompt-builder";
+import { validatePlayerIntent } from "../local-validator";
+import { buildSoloNarratorPrompt } from "../narrator-prompt-builder";
+import { parseDecisionCopyOutput, parseNarratorDraft } from "../output-parser";
 import { normalizePlayerIntent } from "../player-intent";
 import { arbitratePlayerIntent } from "../rules-arbiter";
-import { validatePlayerIntent } from "../local-validator";
-import { baseCanon, baseCards, baseFacts, basePending, basePressures, baseRole, baseScene, baseTargets, validModelOutput } from "./helpers";
-import { buildSoloStoryTurnPrompt } from "../prompt-builder";
-import { parseStoryTurnOutput } from "../output-parser";
+import {
+  baseCanon,
+  baseCards,
+  baseFacts,
+  basePending,
+  basePressures,
+  baseRole,
+  baseScene,
+  baseTargets,
+  validDecisionOutput,
+  validNarratorProse
+} from "./helpers";
 
 const normalized = normalizePlayerIntent({
   source: "CUSTOM",
@@ -14,10 +25,14 @@ const normalized = normalizePlayerIntent({
 });
 assert.equal(normalized.ok, true);
 if (!normalized.ok) throw new Error("normalization failed");
-const validation = validatePlayerIntent(normalized.intent, baseRole());
-assert.equal(validation.ok, true);
-if (!validation.ok) throw new Error("validation failed");
-const resolution = arbitratePlayerIntent({ role: baseRole(), intent: normalized.intent, validation });
+const localValidation = validatePlayerIntent(normalized.intent, baseRole());
+assert.equal(localValidation.ok, true);
+if (!localValidation.ok) throw new Error("validation failed");
+const resolution = arbitratePlayerIntent({
+  role: baseRole(),
+  intent: normalized.intent,
+  validation: localValidation
+});
 const compiled = compileSoloStoryContext({
   role: baseRole(),
   scene: baseScene(),
@@ -33,57 +48,34 @@ const compiled = compileSoloStoryContext({
 });
 assert.equal(compiled.ok, true);
 if (!compiled.ok) throw new Error("compile failed");
+
 for (const target of baseTargets()) {
-  assert.ok(compiled.context.allowedReferences.groundingIds.includes(target.id), `scene target ${target.id} must be valid grounding`);
+  assert.ok(compiled.context.allowedReferences.groundingIds.includes(target.id));
 }
-
-assert.ok(compiled.context.renderedWorkingSet.includes("档房潜入一事必须在下一段剧情里出现实际回响"));
-const compactPrompt = buildSoloStoryTurnPrompt(compiled.context);
-assert.match(compactPrompt.systemPrompt, /2400 tokens 以内/);
-assert.match(compactPrompt.systemPrompt, /只生成 2 个决策/);
-assert.match(compactPrompt.systemPrompt, /绝不能.*截断 JSON/);
-assert.ok(compiled.context.renderedWorkingSet.includes("总督刚收起便条"));
+assert.ok(compiled.context.renderedWorkingSet.includes("档房潜入一事"));
 assert.ok(!compiled.context.renderedWorkingSet.includes("提前转移副本"));
-assert.ok(compiled.context.renderedWorkingSet.endsWith(`【玩家行动】${normalized.intent.userFacingText}`));
 
-const paidConsequences = ["pending_1", ...resolution.pendingConsequences.map((item) => item.consequenceId)];
-const parsed = parseStoryTurnOutput(validModelOutput(resolution.resolutionId, paidConsequences));
-const withoutSchemaVersion = JSON.parse(validModelOutput(resolution.resolutionId, paidConsequences));
-delete withoutSchemaVersion.schemaVersion;
-const missingSchemaValidated = validateStoryTurnOutput(parseStoryTurnOutput(JSON.stringify(withoutSchemaVersion)), compiled.context);
-assert.equal(missingSchemaValidated.ok, false, "缺少协议版本不得被本地补写");
+const narratorPrompt = buildSoloNarratorPrompt(compiled.context);
+assert.equal(narratorPrompt.responseMode, "TEXT");
+assert.equal("decisions" in narratorPrompt.outputSchema, false);
+assert.doesNotMatch(narratorPrompt.systemPrompt, /LEGAL_NEXT_DECISION_SEEDS|routeKey|affordanceTemplateId/);
+assert.doesNotMatch(narratorPrompt.userPrompt, /LEGAL_NEXT_DECISION_SEEDS|routeKey|affordanceTemplateId/);
+assert.ok(!narratorPrompt.userPrompt.includes(resolution.resolutionId));
+assert.ok(!narratorPrompt.userPrompt.includes("fact_archive_breakin"));
+assert.match(narratorPrompt.systemPrompt, /只写故事正文/);
+assert.match(narratorPrompt.systemPrompt, /不要写“你必须决定”/);
 
-const wrongSchemaVersion = JSON.parse(validModelOutput(resolution.resolutionId, paidConsequences));
-wrongSchemaVersion.schemaVersion = "wrong_story_contract";
-const wrongSchemaValidated = validateStoryTurnOutput(parseStoryTurnOutput(JSON.stringify(wrongSchemaVersion)), compiled.context);
-assert.equal(wrongSchemaValidated.ok, false);
-if (wrongSchemaValidated.ok) throw new Error("wrong schema failure expected");
-assert.ok(wrongSchemaValidated.issues.some((issue) => issue.code === "OUTPUT_SCHEMA_VERSION_INVALID"));
-
-if (parsed.resultType !== "PUBLISHED_TURN") throw new Error("published output expected");
-const badGrounding = {
-  ...parsed,
-  grounding: {
-    ...parsed.grounding,
-    usedCanonFactIds: ["fact_archive_breakin", "unknown:id"]
-  }
-};
-const validated = validateStoryTurnOutput(badGrounding, compiled.context);
-assert.equal(validated.ok, false);
-
-const conciseIntentOutput = parseStoryTurnOutput(validModelOutput(resolution.resolutionId, paidConsequences));
-if (conciseIntentOutput.resultType !== "PUBLISHED_TURN") throw new Error("published output expected");
-conciseIntentOutput.decisions[0]!.intent = "先问县令";
-const conciseIntentValidated = validateStoryTurnOutput(conciseIntentOutput, compiled.context);
-assert.equal(conciseIntentValidated.ok, true, "简短但明确的真实意图不应被字数门禁误杀");
-
-const missingIntentOutput = parseStoryTurnOutput(validModelOutput(resolution.resolutionId, paidConsequences));
-if (missingIntentOutput.resultType !== "PUBLISHED_TURN") throw new Error("published output expected");
-missingIntentOutput.decisions[0]!.intent = "";
-const missingIntentValidated = validateStoryTurnOutput(missingIntentOutput, compiled.context);
-assert.equal(missingIntentValidated.ok, false);
-if (missingIntentValidated.ok) throw new Error("missing intent failure expected");
-assert.ok(missingIntentValidated.issues.some((issue) => issue.code === "DECISION_INTENT_REQUIRED"));
+const draft = parseNarratorDraft(validNarratorProse());
+const decisionPrompt = buildSoloDecisionPrompt(compiled.context, draft);
+assert.equal(decisionPrompt.responseMode, "JSON");
+assert.match(decisionPrompt.userPrompt, new RegExp(escapeRegExp(draft.rawProse)));
+assert.match(decisionPrompt.userPrompt, /target:ROLE:xunfu:1/);
+assert.match(decisionPrompt.userPrompt, /target:LOCATION:archive_room:2/);
+assert.doesNotMatch(decisionPrompt.userPrompt, /stateEffects|statePatch|expectedCountermove/);
+assert.deepEqual(
+  parseDecisionCopyOutput(validDecisionOutput()).decisions.map((decision) => decision.routeKey),
+  ["target:ROLE:xunfu:1", "target:LOCATION:archive_room:2"]
+);
 
 const budgetFail = compileSoloStoryContext({
   role: baseRole(),
@@ -99,7 +91,11 @@ const budgetFail = compileSoloStoryContext({
   maxTokenEstimate: 20
 });
 assert.equal(budgetFail.ok, false);
-if (budgetFail.ok) throw new Error("budget fail expected");
+if (budgetFail.ok) throw new Error("budget failure expected");
 assert.equal(budgetFail.code, "P0_CONTEXT_BUDGET_EXCEEDED");
 
-console.log("solo story engine context and grounding: PASS");
+console.log("solo two-stage context isolation and grounding: PASS");
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

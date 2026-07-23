@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/section-contract-v1.schema.json",
+  "title": "section-contract-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "section-contract-v1"
+    },
+    "sectionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dramaticPurpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetTurnWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "earliest": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "latest": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        }
+      },
+      "required": [
+        "earliest",
+        "latest"
+      ]
+    },
+    "entryRequirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ruleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "type": "string",
+            "enum": [
+              "EQ",
+              "NEQ",
+              "IN",
+              "NOT_IN",
+              "GTE",
+              "LTE",
+              "NOT_NULL",
+              "ANY_PENDING"
+            ]
+          },
+          "expectedValue": {},
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "ruleId",
+          "statePath",
+          "operator",
+          "expectedValue",
+          "description"
+        ]
+      },
+      "minItems": 1
+    },
+    "requiredRequirementIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "activeDecisionKernelIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "activeCausalArcIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "foregroundActorRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "mustEstablish": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ruleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "type": "string",
+            "enum": [
+              "EQ",
+              "NEQ",
+              "IN",
+              "NOT_IN",
+              "GTE",
+              "LTE",
+              "NOT_NULL",
+              "ANY_PENDING"
+            ]
+          },
+          "expectedValue": {},
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "ruleId",
+          "statePath",
+          "operator",
+          "expectedValue",
+          "description"
+        ]
+      },
+      "minItems": 1
+    },
+    "requiredMaterialChangeClasses": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "forbiddenEarlyReveals": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "allowedNextSectionIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "exitGates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ruleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "type": "string",
+            "enum": [
+              "EQ",
+              "NEQ",
+              "IN",
+              "NOT_IN",
+              "GTE",
+              "LTE",
+              "NOT_NULL",
+              "ANY_PENDING"
+            ]
+          },
+          "expectedValue": {},
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "ruleId",
+          "statePath",
+          "operator",
+          "expectedValue",
+          "description"
+        ]
+      },
+      "minItems": 1
+    },
+    "floorObligationIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "handoffStatePaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "sectionId",
+    "partId",
+    "title",
+    "dramaticPurpose",
+    "targetTurnWindow",
+    "entryRequirements",
+    "requiredRequirementIds",
+    "activeDecisionKernelIds",
+    "activeCausalArcIds",
+    "foregroundActorRefs",
+    "mustEstablish",
+    "requiredMaterialChangeClasses",
+    "forbiddenEarlyReveals",
+    "allowedNextSectionIds",
+    "exitGates",
+    "floorObligationIds",
+    "handoffStatePaths"
+  ]
+}

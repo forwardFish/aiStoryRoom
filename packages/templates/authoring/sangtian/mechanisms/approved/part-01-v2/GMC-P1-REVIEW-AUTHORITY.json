@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-REVIEW-AUTHORITY",
+  "requirementIds": [
+    "REQ-P1-REVIEW-AUTHORITY"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+    "DM1566-C04-JOINT-REPORT-CONTEST",
+    "DM1566-C23-TESTIMONY-SEALED"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES"
+  ],
+  "candidateType": "INSTITUTION_CAPABILITY",
+  "dramaticFunction": "玩家能争夺县册复核的主持权和程序",
+  "preconditions": [
+    "复核对象和程序争议已经进入正式议程",
+    "参与者只能在自身官职权限和文书渠道内行动"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "由总督主持并邀请见证",
+    "由巡抚衙门汇总复核",
+    "成立督抚共同复核",
+    "让县令先行自查并限期提交"
+  ],
+  "likelyCountermoves": [
+    "质疑复核越权",
+    "拒绝共享原件",
+    "要求先执行后复核",
+    "把复核改写为地方抗命"
+  ],
+  "immediateStateEffects": [
+    "review.authority",
+    "review.procedureStatus"
+  ],
+  "delayedConsequences": [
+    "主持权改变谁先接触材料和谁写结论",
+    "程序可信度影响第一份奏报的分量"
+  ],
+  "invariantsToPreserve": [
+    "程序权不自动证明实体真相",
+    "参与复核不等于共享全部知识"
+  ],
+  "evidenceStrength": "STRONG_INFERENCE",
+  "limitations": [
+    "具体督抚分工须由 Adaptation 明确",
+    "不得发明超越官职的搜捕或定罪权"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-QINGLIU-COUNTY",
+  "status": "APPROVED_FOR_T3"
+}

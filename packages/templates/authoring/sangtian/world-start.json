@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "sangtian-world-start-v1",
+  "worldId": "sangtian",
+  "partId": "PART-01",
+  "sectionId": "SEC-P1-01",
+  "perspectiveRoleKey": "zhejiang_governor",
+  "sourceTimelinePolicy": {
+    "historicalBaseline": "开场前已经发生并经批准的事实",
+    "sourceFuture": "只可作为机制和审核参考",
+    "runtimeFuture": "只能由玩家行动、NPC策略和因果事件产生"
+  },
+  "state": {
+    "partId": "PART-01",
+    "sectionId": "SEC-P1-01",
+    "turnNumber": 0,
+    "reform": {
+      "executionMode": "UNKNOWN",
+      "scopeStatus": "UNSET",
+      "progress": "NOT_STARTED"
+    },
+    "review": {
+      "initiationStatus": "NOT_STARTED",
+      "authority": "UNDECIDED",
+      "procedureStatus": "UNSET"
+    },
+    "evidence": {
+      "chainStatus": "UNKNOWN",
+      "primaryCustodianRef": null,
+      "copyStatus": "NONE",
+      "archiveSealStatus": "UNKNOWN"
+    },
+    "witness": {
+      "accessStatus": "UNKNOWN"
+    },
+    "grain": {
+      "immediatePressure": "RISING",
+      "officialStockStatus": "UNKNOWN",
+      "reliefChannel": "UNDECIDED"
+    },
+    "merchant": {
+      "entryStatus": "ABSENT",
+      "grantedRights": []
+    },
+    "land": {
+      "riskLevel": "UNKNOWN",
+      "safeguardStatus": "NONE"
+    },
+    "report": {
+      "authorshipMode": "UNKNOWN",
+      "firstNarrativeController": "UNDECIDED",
+      "attachmentStrength": "NONE",
+      "dispatchStatus": "NOT_STARTED"
+    },
+    "responsibility": {
+      "firstRecordStatus": "EMPTY",
+      "governorExposure": 0,
+      "xunfuExposure": 0
+    },
+    "relations": {
+      "governorXunfu": 0
+    },
+    "knowledgeTransfers": [],
+    "pendingConsequences": []
+  }
+}

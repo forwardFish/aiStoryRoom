@@ -43,13 +43,24 @@ export function commandToRawPlayerAction(
     case "STORY_CHOICE": {
       const candidate = candidates.find((item) => item.id === command.candidateId);
       if (!candidate) throw new Error("DECISION_CANDIDATE_NOT_FOUND");
+      const decisionKernelId = marker(candidate.effectHooks, "decisionKernel:");
+      const affordanceTemplateId = marker(candidate.effectHooks, "affordance:");
       return {
         source: "RECOMMENDED",
         decisionId: candidate.id,
         label: candidate.label,
         targetId: candidate.intentDraft.target.id,
         targetLabel: candidate.intentDraft.target.label,
-        actionText: candidate.intentDraft.method || candidate.label
+        // For an authored Part One Story Choice the objective is the complete action
+        // text shown to the player. `method` is only the short tactical axis
+        // (for example "附条件签发") and cannot be used to re-bind the
+        // selected affordance on the next request. The fixed opening has no
+        // runtime affordance marker and keeps its concrete method text.
+        actionText: affordanceTemplateId
+          ? candidate.intentDraft.objective || candidate.description || candidate.intentDraft.method || candidate.label
+          : candidate.intentDraft.method || candidate.intentDraft.objective || candidate.description || candidate.label,
+        decisionKernelId,
+        affordanceTemplateId
       };
     }
   }
@@ -90,10 +101,20 @@ export function buildDecisionCandidates(
       concreteCost: decision.concreteCost,
       expectedCountermove: decision.expectedCountermove,
       visibility: intentDraft.visibility,
-      effectHooks: [decision.distinctAxis],
+      effectHooks: [
+        decision.distinctAxis,
+        ...(decision.decisionKernelId ? [`decisionKernel:${decision.decisionKernelId}`] : []),
+        ...(decision.affordanceTemplateId ? [`affordance:${decision.affordanceTemplateId}`] : [])
+      ],
       intentDraft
     };
   });
+}
+
+function marker(values: unknown, prefix: string) {
+  if (!Array.isArray(values)) return null;
+  const value = values.find((item) => typeof item === "string" && item.startsWith(prefix));
+  return typeof value === "string" ? value.slice(prefix.length) : null;
 }
 
 function clean(value: string, max: number) {

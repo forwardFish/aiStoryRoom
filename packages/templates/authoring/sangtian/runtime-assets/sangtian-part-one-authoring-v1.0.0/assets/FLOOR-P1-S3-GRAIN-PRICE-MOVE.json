@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+  "assetType": "SECTION_FLOOR_OBLIGATION",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "actor.xunfu_aide"
+  ],
+  "stateDependencies": [
+    "grain.immediatePressure",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "merchant.entryStatus",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+    "DM1566-C01-CL-LAND-RISK-PREDICTION",
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+    "FLOOR_OBLIGATION",
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "actor.xunfu_aide",
+    "grain.immediatePressure",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "merchant.entryStatus",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "payload": {
+    "targetTurnWindow": {
+      "earliest": 8,
+      "latest": 15
+    },
+    "dramaticPurpose": "让粮食救急成为短期有效但会改变土地风险、商会筹码和各方责任的真实交易。",
+    "mayOnlyMoveNpcOrWorld": true,
+    "mayNotDecideForPlayer": true,
+    "mayNotInventEvidence": true,
+    "exitGates": [
+      {
+        "ruleId": "S3-EXIT-CHANNEL",
+        "statePath": "grain.reliefChannel",
+        "operator": "NEQ",
+        "expectedValue": "UNDECIDED",
+        "description": "救急渠道确定"
+      },
+      {
+        "ruleId": "S3-EXIT-MERCHANT",
+        "statePath": "merchant.entryStatus",
+        "operator": "IN",
+        "expectedValue": [
+          "REJECTED",
+          "CONDITIONAL",
+          "ACTIVE"
+        ],
+        "description": "商会入口确定"
+      },
+      {
+        "ruleId": "S3-EXIT-LAND",
+        "statePath": "land.riskLevel",
+        "operator": "NEQ",
+        "expectedValue": "UNKNOWN",
+        "description": "土地风险确定"
+      },
+      {
+        "ruleId": "S3-EXIT-PENDING",
+        "statePath": "pendingConsequences",
+        "operator": "ANY_PENDING",
+        "expectedValue": true,
+        "description": "粮食或交易后果进入队列"
+      }
+    ]
+  }
+}

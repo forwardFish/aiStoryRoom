@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C13-LEDGERS-BURNED",
+  "currentDateAndTime": "原著后续，仅作证据保管机制参考",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C13-LEDGERS-BURNED-POSITION-1",
+      "subjectRef": "source.zheng_michang",
+      "statement": "source.zheng_michang 在 place.zhejiang_official_backyard 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C13-LEDGERS-BURNED-POSITION-2",
+      "subjectRef": "source.he_maocai",
+      "statement": "source.he_maocai 在 place.zhejiang_official_backyard 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C13-LEDGERS-BURNED-KNOWLEDGE-1",
+      "subjectRef": "source.zheng_michang_and_he_maocai",
+      "statement": "郑泌昌、何茂才不让底下人帮忙，亲自把四大箱账册一本一本投入火中焚烧。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+      ]
+    }
+  ],
+  "activeGoals": [],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [
+    {
+      "stateId": "DM1566-C13-LEDGERS-BURNED-CUSTODY-1",
+      "subjectRef": "source.zheng_michang_and_he_maocai",
+      "statement": "郑泌昌、何茂才不让底下人帮忙，亲自把四大箱账册一本一本投入火中焚烧。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+      ]
+    }
+  ],
+  "institutionalDecisions": [],
+  "unresolvedPromises": [],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C13-LEDGERS-BURNED-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C13-LEDGERS-BURNED-ARC-1",
+      "subjectRef": "source.zheng_michang_and_he_maocai",
+      "statement": "郑泌昌、何茂才不让底下人帮忙，亲自把四大箱账册一本一本投入火中焚烧。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C13-LEDGERS-BURNED-ARC-2",
+      "subjectRef": "source.he_maocai",
+      "statement": "何茂才说若被逼得走投无路，便自己请罪，把所有的人都供出来。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C13-LEDGERS-BURNED-ARTIFACT-R1",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-XUNFU-COUNTERMOVE",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.1.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "B4DA906153300C57A0DD9F766CC8A992C0FB6971A8CFB481B070C8375DE60229",
+  "candidateHash": "DF800E80DC1FA623E7ADD062015806FD50FB4774AFFC515E5CB4EBE6F522D131",
+  "requirementIds": [
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "verdict": "FAIL",
+  "issues": [
+    {
+      "issueType": "WEAK_INFERENCE_AS_RULE",
+      "severity": "HIGH",
+      "reason": "候选将原著中胡宗宪催办、杨金水拒签等行为泛化为巡抚通用策略，但原著中巡抚并非独立角色，其权限和动机需依赖ADAPT-P1-SEPARATE-XUNFU批准，目前该决策仍为DRAFT，未获批准，因此机制缺乏原著直接支持。"
+    },
+    {
+      "issueType": "MISSING_PRECONDITION",
+      "severity": "MEDIUM",
+      "reason": "preconditions要求玩家行动触及执行速度等，但未明确巡抚得知该行动的具体条件（如文书传递时间、情报网络），仅依赖运行时证明，可能导致机制在缺乏证据时被触发。"
+    },
+    {
+      "issueType": "CLAIM_MISUSE",
+      "severity": "MEDIUM",
+      "reason": "使用了DM1566-C03-CL-GOVERNOR-INVARIANT（人物意图）和DM1566-C04-CL-REPORT-OMITS-DELAY（人物说法）作为机制依据，但这两条claim被标记为mustNotBeTreatedAsObjectiveFact，不能作为客观事实支撑机制规则。"
+    }
+  ],
+  "reviewedAt": "2026-07-22T18:40:16.182Z",
+  "immutableHash": "D6F29C584EDCF87393B705AE654AE8DA89C5F5C39390642B81CC2875FA6EFA0E"
+}

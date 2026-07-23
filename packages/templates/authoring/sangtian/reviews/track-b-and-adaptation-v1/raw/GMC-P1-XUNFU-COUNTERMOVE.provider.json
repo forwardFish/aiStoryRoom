@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "GMC-P1-XUNFU-COUNTERMOVE",
+  "kind": "MECHANISM",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:36:08.547Z",
+  "completedAt": "2026-07-22T18:36:08.675Z",
+  "httpStatus": 200,
+  "inputHash": "A62125B91BF85C1D45928AEB45DF4D2056D4A7FCA8CD75BE7DF77325DE747EBC",
+  "rawOutputHash": "06A52326DFC033CC26C473574099C38EBCBC897D8D21ADB985F9CD9A9057F688",
+  "rawText": "{\n  \"verdict\": \"FAIL\",\n  \"issues\": [\n    {\n      \"issueType\": \"evidence_strength_mismatch\",\n      \"severity\": \"HIGH\",\n      \"reason\": \"候选声称evidenceStrength为STRONG_INFERENCE，但所有支撑claim均为人物说法（unverified），且mustNotBeTreatedAsObjectiveFact为true。从人物说法无法强推断出巡抚会主动争夺速度、复核权和解释权这一机制。\"\n    },\n    {\n      \"issueType\": \"precondition_not_supported\",\n      \"severity\": \"HIGH\",\n      \"reason\": \"precondition '巡抚已经通过合法或半公开渠道得知该行动' 无任何claim支持。原著中巡抚得知信息的渠道未在提供的claim中体现，属于未支持的假设。\"\n    },\n    {\n      \"issueType\": \"allowed_move_not_supported\",\n      \"severity\": \"MEDIUM\",\n      \"reason\": \"allowedMoves如'派幕僚参加复核'、'提出边办边查'、'抢先形成地方奏报'在提供的claim中无直接或间接证据。claim仅涉及报告呈递方式、胡宗宪意图、郑泌昌和杨金水的表态，未涉及巡抚的具体行动。\"\n    },\n    {\n      \"issueType\": \"invariant_not_supported\",\n      \"severity\": \"MEDIUM\",\n      \"reason\": \"invariant '巡抚必须有自己的目标和行动能力' 无claim支持。提供的claim中巡抚角色未出现，无法推断其目标和能力。\"\n    },\n    {\n      \"issueType\": \"limitation_contradicts_evidence\",\n      \"severity\": \"LOW\",\n      \"reason\": \"limitation称'由原著地方官僚自保机制强推断'，但实际证据仅为人物说法，且明确标注不可视为客观事实，与'强推断'矛盾。\"\n    }\n  ]\n}",
+  "usage": {
+    "prompt_tokens": 4330,
+    "completion_tokens": 400,
+    "total_tokens": 4730,
+    "prompt_tokens_details": {
+      "cached_tokens": 256
+    },
+    "prompt_cache_hit_tokens": 256,
+    "prompt_cache_miss_tokens": 4074
+  }
+}

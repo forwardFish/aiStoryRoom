@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/source-requirement-resolution-v1.schema.json",
+  "title": "source-requirement-resolution-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "source-requirement-resolution-v1"
+    },
+    "resolutionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceSha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "queryVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "searchedSectionIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "candidateScenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "candidateId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chapterId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "const": "dm1566-liuheping"
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "pattern": "^DM1566-(PROLOGUE|C\\d{2})$"
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          },
+          "matchedMechanisms": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "relevance": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ]
+          },
+          "selection": {
+            "type": "string",
+            "enum": [
+              "SELECTED",
+              "REJECTED",
+              "NEEDS_REVIEW"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "candidateId",
+          "chapterId",
+          "sourceRefs",
+          "matchedMechanisms",
+          "relevance",
+          "selection",
+          "reason"
+        ]
+      },
+      "minItems": 0
+    },
+    "coveredMechanisms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "missingMechanisms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "mustNotAssume": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "recommendedAdaptationGaps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "reviewerStatus": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "PASS",
+        "FAIL"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "resolutionId",
+    "requirementId",
+    "sourceSha256",
+    "queryVersion",
+    "searchedSectionIds",
+    "candidateScenes",
+    "coveredMechanisms",
+    "missingMechanisms",
+    "mustNotAssume",
+    "recommendedAdaptationGaps",
+    "reviewerStatus"
+  ]
+}

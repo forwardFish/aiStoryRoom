@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/final-hidden-audit-v1.schema.json",
+  "title": "final-hidden-audit-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "final-hidden-audit-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "auditorContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "codexFinalPlayerReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "openedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "auditItems": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "playerActionsAndStateChanges": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        },
+        "npcActionNecessity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        },
+        "npcAuthorityResourcesAndKnowledge": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        },
+        "pendingConsequenceLifecycle": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        },
+        "sectionContinuity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        },
+        "sourceTraceability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        },
+        "adaptationTraceability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        },
+        "forbiddenEarlyRevealCompliance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        },
+        "partTwoHandoffCausality": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conclusion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenEvidenceHashes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "conclusion",
+            "hiddenEvidenceHashes"
+          ]
+        }
+      },
+      "required": [
+        "playerActionsAndStateChanges",
+        "npcActionNecessity",
+        "npcAuthorityResourcesAndKnowledge",
+        "pendingConsequenceLifecycle",
+        "sectionContinuity",
+        "sourceTraceability",
+        "adaptationTraceability",
+        "forbiddenEarlyRevealCompliance",
+        "partTwoHandoffCausality"
+      ]
+    },
+    "verdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "auditorContextId",
+    "codexFinalPlayerReportHash",
+    "openedAt",
+    "auditItems",
+    "verdict",
+    "sealedAt",
+    "immutableHash"
+  ]
+}

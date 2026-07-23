@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "part-contract-v1",
+  "partId": "PART-02",
+  "title": "粮荒与卖田",
+  "foregroundPowers": [
+    "粮食分配权",
+    "土地定价权",
+    "债务与契约控制权"
+  ],
+  "irreversibleDecisions": [
+    "谁出粮",
+    "是否允许抵押或出售土地",
+    "救粮与保田优先级"
+  ],
+  "entryStatePaths": [
+    "grain.reliefChannel",
+    "merchant.entryStatus",
+    "land.riskLevel",
+    "report.dispatchStatus"
+  ],
+  "exitStatePaths": [
+    "grain.distributionOutcome",
+    "land.transferOutcome",
+    "debt.controlOutcome"
+  ],
+  "forbiddenEarlyReveals": [
+    "最终土地结局",
+    "完整暗账",
+    "御前裁决结论"
+  ],
+  "handoffPartIds": [
+    "PART-03"
+  ],
+  "implementationScope": "ENTRY_SHAPE_ONLY"
+}

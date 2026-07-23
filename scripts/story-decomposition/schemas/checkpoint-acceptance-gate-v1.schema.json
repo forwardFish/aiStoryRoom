@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/checkpoint-acceptance-gate-v1.schema.json",
+  "title": "checkpoint-acceptance-gate-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "checkpoint-acceptance-gate-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checkpoint": {
+      "enum": [
+        "G00",
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "generatedBy": {
+      "const": "CHECKPOINT_ACCEPTANCE_GATE_VALIDATOR"
+    },
+    "machineIntegrityReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "checkpointPlayerGateHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "hiddenAdjudicationHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "testIntegritySliceHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "decisionContrastReportHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "choiceBindingProofHash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "machineIntegrity": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "codexPlayerExperience": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "hiddenAdjudication": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "testIntegrity": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "choiceConsistency": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "NOT_APPLICABLE",
+        "FAIL"
+      ]
+    },
+    "computedVerdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "checkpoint",
+    "generatedBy",
+    "machineIntegrityReportHash",
+    "checkpointPlayerGateHash",
+    "hiddenAdjudicationHash",
+    "testIntegritySliceHash",
+    "decisionContrastReportHash",
+    "choiceBindingProofHash",
+    "machineIntegrity",
+    "codexPlayerExperience",
+    "hiddenAdjudication",
+    "testIntegrity",
+    "choiceConsistency",
+    "computedVerdict",
+    "generatedAt",
+    "validatorVersion",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

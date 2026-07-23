@@ -1,0 +1,227 @@
+{
+  "schemaVersion": "sangtian-part-one-requirement-coverage-report-v1",
+  "requirementCount": 12,
+  "expectedRequirementCount": 12,
+  "rows": [
+    {
+      "requirementId": "REQ-P1-EXECUTION-BOUNDARY",
+      "sectionIds": [
+        "SEC-P1-01"
+      ],
+      "candidateCount": 15,
+      "selectedCandidateCount": 3,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 3,
+      "sourceClaimCount": 6,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 2,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-RESPONSIBILITY-RECORD",
+      "sectionIds": [
+        "SEC-P1-01"
+      ],
+      "candidateCount": 8,
+      "selectedCandidateCount": 2,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 2,
+      "sourceClaimCount": 5,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 2,
+      "runtimeAssetCount": 4,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-XUNFU-COUNTERMOVE",
+      "sectionIds": [
+        "SEC-P1-01"
+      ],
+      "candidateCount": 15,
+      "selectedCandidateCount": 3,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "WEAK_INFERENCE",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 3,
+      "sourceClaimCount": 3,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 1,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-REGISTER-CUSTODY",
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "candidateCount": 16,
+      "selectedCandidateCount": 4,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 4,
+      "sourceClaimCount": 7,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 2,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-REVIEW-AUTHORITY",
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "candidateCount": 15,
+      "selectedCandidateCount": 3,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "STRONG_INFERENCE",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 3,
+      "sourceClaimCount": 5,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 2,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-KNOWLEDGE-CHAIN",
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "candidateCount": 18,
+      "selectedCandidateCount": 6,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 6,
+      "sourceClaimCount": 7,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 1,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-GRAIN-RELIEF",
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "candidateCount": 15,
+      "selectedCandidateCount": 3,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_SOURCE",
+      "sourceSceneCount": 3,
+      "sourceClaimCount": 4,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 0,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-MERCHANT-CONDITIONS",
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "candidateCount": 15,
+      "selectedCandidateCount": 3,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "STRONG_INFERENCE",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 3,
+      "sourceClaimCount": 5,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 1,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-LAND-RISK",
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "candidateCount": 16,
+      "selectedCandidateCount": 4,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 4,
+      "sourceClaimCount": 8,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 1,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-REPORT-AUTHORSHIP",
+      "sectionIds": [
+        "SEC-P1-04"
+      ],
+      "candidateCount": 16,
+      "selectedCandidateCount": 4,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 4,
+      "sourceClaimCount": 6,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 1,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-EVIDENCE-ATTACHMENT",
+      "sectionIds": [
+        "SEC-P1-04"
+      ],
+      "candidateCount": 12,
+      "selectedCandidateCount": 5,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_ADAPTATION",
+      "sourceSceneCount": 5,
+      "sourceClaimCount": 7,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 2,
+      "runtimeAssetCount": 4,
+      "blockers": [],
+      "verdict": "PASS"
+    },
+    {
+      "requirementId": "REQ-P1-CAPITAL-FRAMING",
+      "sectionIds": [
+        "SEC-P1-04"
+      ],
+      "candidateCount": 17,
+      "selectedCandidateCount": 5,
+      "reviewerStatus": "PASS",
+      "evidenceStrength": "EXPLICIT",
+      "coverageStatus": "SATISFIED_BY_SOURCE",
+      "sourceSceneCount": 5,
+      "sourceClaimCount": 8,
+      "mechanismCandidateCount": 1,
+      "adaptationDecisionCount": 0,
+      "runtimeAssetCount": 5,
+      "blockers": [],
+      "verdict": "PASS"
+    }
+  ],
+  "globalErrors": [],
+  "passCount": 12,
+  "failCount": 0,
+  "verdict": "PASS"
+}

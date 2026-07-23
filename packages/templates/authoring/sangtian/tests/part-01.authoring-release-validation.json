@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "sangtian-part-one-authoring-release-validation-v1",
+  "releaseVersion": "sangtian-part-one-authoring-v1.0.0",
+  "assetCount": 51,
+  "requirementCount": 12,
+  "decisionKernelCount": 15,
+  "causalArcCount": 4,
+  "sectionCount": 4,
+  "adaptationCount": 7,
+  "sourceClaimCount": 58,
+  "sourceFutureClaimCount": 14,
+  "errors": [],
+  "verdict": "PASS"
+}

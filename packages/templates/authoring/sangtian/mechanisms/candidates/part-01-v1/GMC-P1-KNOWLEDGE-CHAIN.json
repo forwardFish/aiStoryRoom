@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-KNOWLEDGE-CHAIN",
+  "requirementIds": [
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+    "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+    "DM1566-C02-REPORT-SUPPRESSION-RISK",
+    "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+    "DM1566-C23-URGENT-DISPATCH-AT-GATE"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "candidateType": "KNOWLEDGE_RULE",
+  "dramaticFunction": "秘密只能经由在场、密报、文书或口供传播",
+  "preconditions": [
+    "信息通过在场、口述、文书、密报或审讯中的一种路径出现",
+    "接收者和渠道可被事件记录"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "密封传递",
+    "有限口述",
+    "公开宣读",
+    "向指定官员提交"
+  ],
+  "likelyCountermoves": [
+    "截留文书",
+    "只透露部分账目",
+    "改变递送对象",
+    "公开否认未见原件的说法"
+  ],
+  "immediateStateEffects": [
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "delayedConsequences": [
+    "不同人物形成不对称知识",
+    "秘密一旦公开便不可恢复为私密状态"
+  ],
+  "invariantsToPreserve": [
+    "人物只能使用已经获得的信息",
+    "角色说法不能升级为客观事实"
+  ],
+  "evidenceStrength": "EXPLICIT",
+  "limitations": [
+    "暗账入口由 Adaptation 提供",
+    "DeepSeek 不得补造未发生的信息传递"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-SHADOW-LEDGER-ENTRY",
+  "status": "CANDIDATE_ONLY"
+}

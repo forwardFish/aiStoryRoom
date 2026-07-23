@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "adaptation-decision-set-v2",
+  "adaptations": [
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "adaptationDecisionId": "ADAPT-P1-PLAYABLE-GOVERNOR",
+      "sourceEntityOrArcIds": [
+        "source-arc.dm1566-reform-responsibility"
+      ],
+      "operation": "preserve",
+      "targetIds": [
+        "actor.zhejiang_governor"
+      ],
+      "rationale": "为可玩浙江总督视角建立连续决策，同时保留原著财政、制度、民生与责任机制。",
+      "invariantsToPreserve": [
+        "胡宗宪所代表的总督责任边界与治理压力"
+      ],
+      "intentionalDifferences": [
+        "玩家可以在制度权限内选择执行、复核、赈济与奏报路径"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-track-b-and-adaptation-review-v1.0.0:deepseek-v4-flash",
+      "approvedAt": "2026-07-22T18:36:13.432Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "adaptationDecisionId": "ADAPT-P1-QINGLIU-COUNTY",
+      "sourceEntityOrArcIds": [],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "place.qingliu_county",
+        "actor.qingliu_magistrate"
+      ],
+      "rationale": "为可玩浙江总督视角建立连续决策，同时保留原著财政、制度、民生与责任机制。",
+      "invariantsToPreserve": [
+        "地方县级执行与百姓承压机制"
+      ],
+      "intentionalDifferences": [
+        "清流县及县令为合成人物与地点，不冒充原著实体"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-track-b-and-adaptation-review-v1.0.0:deepseek-v4-flash",
+      "approvedAt": "2026-07-22T18:36:14.253Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "adaptationDecisionId": "ADAPT-P1-THREE-DAY-DEADLINE",
+      "sourceEntityOrArcIds": [],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "pressure.three_day_deadline"
+      ],
+      "rationale": "为可玩浙江总督视角建立连续决策，同时保留原著财政、制度、民生与责任机制。",
+      "invariantsToPreserve": [
+        "朝廷财政与执行压力必须真实约束地方官"
+      ],
+      "intentionalDifferences": [
+        "三日为玩法倒计时，不是原著逐字事实"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-track-b-and-adaptation-review-v1.0.0:deepseek-v4-flash",
+      "approvedAt": "2026-07-22T18:36:15.246Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "adaptationDecisionId": "ADAPT-P1-REGISTER-ALTERATION",
+      "sourceEntityOrArcIds": [],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "evidence.qingliu_register_anomaly"
+      ],
+      "rationale": "为可玩浙江总督视角建立连续决策，同时保留原著财政、制度、民生与责任机制。",
+      "invariantsToPreserve": [
+        "账册、田契与责任链只能逐步核验"
+      ],
+      "intentionalDifferences": [
+        "改痕只是异常入口，不能直接证明幕后主使"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-track-b-and-adaptation-review-v1.0.0:deepseek-v4-flash",
+      "approvedAt": "2026-07-22T18:36:16.522Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "adaptationDecisionId": "ADAPT-P1-SEPARATE-XUNFU",
+      "sourceEntityOrArcIds": [
+        "source-arc.dm1566-reform-responsibility"
+      ],
+      "operation": "split",
+      "targetIds": [
+        "actor.zhejiang_xunfu"
+      ],
+      "rationale": "为可玩浙江总督视角建立连续决策，同时保留原著财政、制度、民生与责任机制。",
+      "invariantsToPreserve": [
+        "督抚之间围绕执行速度、复核权和责任的制度冲突"
+      ],
+      "intentionalDifferences": [
+        "独立巡抚是玩法角色位，不把原著特定行为直接移植为既定罪责"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-track-b-and-adaptation-review-v1.0.0:deepseek-v4-flash",
+      "approvedAt": "2026-07-22T18:36:17.515Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "adaptationDecisionId": "ADAPT-P1-MERCHANT-GUILD",
+      "sourceEntityOrArcIds": [],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "actor.jiangnan_merchant_head",
+        "institution.jiangnan_merchant_guild"
+      ],
+      "rationale": "为可玩浙江总督视角建立连续决策，同时保留原著财政、制度、民生与责任机制。",
+      "invariantsToPreserve": [
+        "商人以粮、银、运力和丝路进入国策的机制"
+      ],
+      "intentionalDifferences": [
+        "商会是合成组织，短期方案有效但交换条件必须公开可见"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-track-b-and-adaptation-review-v1.0.0:deepseek-v4-flash",
+      "approvedAt": "2026-07-22T18:36:18.459Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "adaptationDecisionId": "ADAPT-P1-SHADOW-LEDGER-ENTRY",
+      "sourceEntityOrArcIds": [],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "evidence.shadow_ledger_entry"
+      ],
+      "rationale": "为可玩浙江总督视角建立连续决策，同时保留原著财政、制度、民生与责任机制。",
+      "invariantsToPreserve": [
+        "官商利益只能沿可追溯证据链逼近"
+      ],
+      "intentionalDifferences": [
+        "第一部分只允许暗账入口，不确认完整内容或幕后主使"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-track-b-and-adaptation-review-v1.0.0:deepseek-v4-flash",
+      "approvedAt": "2026-07-22T18:36:19.859Z"
+    }
+  ],
+  "reviewSetHash": "6233CBD5A24BEA2252FF12EF0BE4CB08FF0E433D72621D466EAC84E4DD4C3C86"
+}

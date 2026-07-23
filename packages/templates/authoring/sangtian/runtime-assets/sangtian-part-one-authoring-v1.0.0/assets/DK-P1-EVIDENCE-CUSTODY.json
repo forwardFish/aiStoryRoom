@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-EVIDENCE-CUSTODY",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-REGISTER-CUSTODY",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "payload": {
+    "availableWhen": [
+      "县册、田契、抄件或封条已经以事件进入房间",
+      "行动者具有接触、封存或抄录的合法路径"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-01",
+        "title": "原件封存",
+        "actionText": "原册留在档房，换新封条；总督、县令、巡抚三方各留封样。",
+        "targetRef": "evidence.qingliu_register_anomaly",
+        "method": "多方封样",
+        "immediateIntent": "原册留在档房，换新封条；总督、县令、巡抚三方各留封样。",
+        "visibleTradeoff": "原件少移动，但三方都知道调查已开始",
+        "stateEffects": [
+          "evidence.chainStatus",
+          "evidence.archiveSealStatus",
+          "evidence.primaryCustodianRef"
+        ],
+        "statePatch": {
+          "evidence.chainStatus": "TRACEABLE",
+          "evidence.archiveSealStatus": "SEALED_WITH_THREE_SAMPLES",
+          "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-02",
+        "title": "制作副本",
+        "actionText": "在两名见证人在场时抄出样册，逐页记下抄录人与时辰。",
+        "targetRef": "actor.reform_clerk",
+        "method": "见证抄录",
+        "immediateIntent": "在两名见证人在场时抄出样册，逐页记下抄录人与时辰。",
+        "visibleTradeoff": "可保留第二条链，但书吏暴露为关键证人",
+        "stateEffects": [
+          "evidence.copyStatus",
+          "witness.accessStatus",
+          "knowledgeTransfers"
+        ],
+        "statePatch": {
+          "evidence.copyStatus": "WITNESSED_COPY_CREATED",
+          "witness.accessStatus": "EXPOSED_AS_KEY_WITNESS",
+          "knowledgeTransfer": {
+            "topic": "witnessed_register_copy",
+            "senderRef": "actor.qingliu_magistrate",
+            "recipientRef": "actor.zhejiang_governor",
+            "status": "DELIVERED"
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-03",
+        "title": "移交总督府",
+        "actionText": "把可疑册页整封送往总督府，县衙只留交接清单。",
+        "targetRef": "evidence.qingliu_register_anomaly",
+        "method": "整封移交",
+        "immediateIntent": "把可疑册页整封送往总督府，县衙只留交接清单。",
+        "visibleTradeoff": "总督控制原件，也承担途中和保管责任",
+        "stateEffects": [
+          "evidence.primaryCustodianRef",
+          "evidence.chainStatus",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "evidence.primaryCustodianRef": "institution.zhejiang_governor_yamen",
+          "evidence.chainStatus": "FRAGILE_IN_TRANSIT",
+          "responsibility.governorExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "FLOOR-P1-S1-XUNFU-RESPONSE",
+  "assetType": "SECTION_FLOOR_OBLIGATION",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_clerk",
+    "actor.qingliu_messenger"
+  ],
+  "stateDependencies": [
+    "reform.executionMode",
+    "review.initiationStatus",
+    "responsibility.firstRecordStatus",
+    "relations.governorXunfu"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-THREE-DAY-DEADLINE",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "FLOOR-P1-S1-XUNFU-RESPONSE",
+    "FLOOR_OBLIGATION",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_clerk",
+    "actor.qingliu_messenger",
+    "reform.executionMode",
+    "review.initiationStatus",
+    "responsibility.firstRecordStatus",
+    "relations.governorXunfu"
+  ],
+  "payload": {
+    "targetTurnWindow": {
+      "earliest": 1,
+      "latest": 5
+    },
+    "dramaticPurpose": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+    "mayOnlyMoveNpcOrWorld": true,
+    "mayNotDecideForPlayer": true,
+    "mayNotInventEvidence": true,
+    "exitGates": [
+      {
+        "ruleId": "S1-EXIT-EXECUTION",
+        "statePath": "reform.executionMode",
+        "operator": "NEQ",
+        "expectedValue": "UNKNOWN",
+        "description": "执行模式已确定"
+      },
+      {
+        "ruleId": "S1-EXIT-REVIEW",
+        "statePath": "review.initiationStatus",
+        "operator": "NEQ",
+        "expectedValue": "NOT_STARTED",
+        "description": "复核已启动"
+      },
+      {
+        "ruleId": "S1-EXIT-RECORD",
+        "statePath": "responsibility.firstRecordStatus",
+        "operator": "NEQ",
+        "expectedValue": "EMPTY",
+        "description": "责任记录已形成"
+      },
+      {
+        "ruleId": "S1-EXIT-PENDING",
+        "statePath": "pendingConsequences",
+        "operator": "ANY_PENDING",
+        "expectedValue": true,
+        "description": "存在督抚相关待兑现后果"
+      }
+    ]
+  }
+}

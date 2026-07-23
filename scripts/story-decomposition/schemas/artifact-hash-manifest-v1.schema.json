@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/artifact-hash-manifest-v1.schema.json",
+  "title": "artifact-hash-manifest-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "artifact-hash-manifest-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hashAlgorithm": {
+      "const": "SHA-256"
+    },
+    "canonicalization": {
+      "const": "RFC8785_JSON_OR_RAW_BYTES"
+    },
+    "merkleAlgorithm": {
+      "const": "BINARY_SHA256_DUPLICATE_LAST"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "relativePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mediaType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "byteLength": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "checkpoint": {
+            "anyOf": [
+              {
+                "enum": [
+                  "G00",
+                  "T01",
+                  "T02",
+                  "T03",
+                  "T04",
+                  "T05",
+                  "T06",
+                  "T07",
+                  "T08",
+                  "T09",
+                  "T10",
+                  "T11",
+                  "T12",
+                  "T13",
+                  "T14",
+                  "T15",
+                  "T16",
+                  "T17",
+                  "T18",
+                  "T19",
+                  "T20"
+                ]
+              },
+              {
+                "const": "RUN"
+              }
+            ]
+          },
+          "requiredByReleaseGate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "relativePath",
+          "mediaType",
+          "byteLength",
+          "sha256",
+          "checkpoint",
+          "requiredByReleaseGate"
+        ]
+      },
+      "minItems": 1
+    },
+    "requiredArtifactPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "missingRequiredArtifactPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "duplicateArtifactPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "excludedPaths": {
+      "type": "array",
+      "const": [
+        "artifact-hashes.json",
+        "formal-use-acceptance-report.json"
+      ]
+    },
+    "principalAccessLogHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "runManifestHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "formalRunIntegrityHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "preReleaseEvidenceMerkleRoot": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "computedVerdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "hashAlgorithm",
+    "canonicalization",
+    "merkleAlgorithm",
+    "artifacts",
+    "requiredArtifactPaths",
+    "missingRequiredArtifactPaths",
+    "duplicateArtifactPaths",
+    "excludedPaths",
+    "principalAccessLogHash",
+    "runManifestHash",
+    "formalRunIntegrityHash",
+    "preReleaseEvidenceMerkleRoot",
+    "computedVerdict",
+    "sealedAt",
+    "validatorVersion",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

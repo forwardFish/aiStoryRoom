@@ -1,0 +1,241 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+  "currentDateAndTime": "农历四月地方强推改桑之后",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-POSITION-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "source.hu_zongxian 在 place.zhejiang_governor_office 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-POSITION-2",
+      "subjectRef": "source.tan_lun",
+      "statement": "source.tan_lun 在 place.zhejiang_governor_office 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-POSITION-3",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "source.yang_jinshui 在 place.zhejiang_governor_office 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-POSITION-4",
+      "subjectRef": "source.zheng_michang",
+      "statement": "source.zheng_michang 在 place.zhejiang_governor_office 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-POSITION-5",
+      "subjectRef": "source.he_maocai",
+      "statement": "source.he_maocai 在 place.zhejiang_governor_office 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-POSITION-6",
+      "subjectRef": "source.ma_ningyuan",
+      "statement": "source.ma_ningyuan 在 place.zhejiang_governor_office 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-KNOWLEDGE-1",
+      "subjectRef": "source.zheng_michang",
+      "statement": "郑泌昌答称向米行借贷的粮很少，各米行都说缺粮；外省调粮仍和往年一样，不肯多给。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    }
+  ],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-GOAL-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪先命马宁远放人、开堰灌苗；又命布政使和按察使衙门向米行催贷粮食，并表示可在借据上加盖总督衙门印章。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-DECISION-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪先命马宁远放人、开堰灌苗；又命布政使和按察使衙门向米行催贷粮食，并表示可在借据上加盖总督衙门印章。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-PROMISE-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪先命马宁远放人、开堰灌苗；又命布政使和按察使衙门向米行催贷粮食，并表示可在借据上加盖总督衙门印章。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-ARC-1",
+      "subjectRef": "source.zhejiang_governor_office",
+      "statement": "从淳安跟来的百姓跪满总督衙门外大坪与官路，形成总督亲眼可见的民生压力。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-ARC-2",
+      "subjectRef": "source.zheng_michang",
+      "statement": "郑泌昌答称向米行借贷的粮很少，各米行都说缺粮；外省调粮仍和往年一样，不肯多给。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-ARC-3",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪说，朝廷要降罪都是他的罪，百姓要骂也该骂他；随即说明无粮改桑会使百姓秋后无饭并可能成为反民。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-ARC-4",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪先命马宁远放人、开堰灌苗；又命布政使和按察使衙门向米行催贷粮食，并表示可在借据上加盖总督衙门印章。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    },
+    {
+      "stateId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-ARC-5",
+      "subjectRef": "source.yang_jinshui",
+      "statement": "杨金水称三个织造坊库存只有十几万匹，按现有桑田赶织仍会短二十多万匹，到时宫里会追问他。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-ARTIFACT-R1",
+    "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+  ]
+}

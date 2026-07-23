@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "ADAPT-P1-SHADOW-LEDGER-ENTRY",
+  "kind": "ADAPTATION",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:42:04.470Z",
+  "completedAt": "2026-07-22T18:42:04.842Z",
+  "httpStatus": 200,
+  "inputHash": "63D354F41EDE5F4E97D313D2E7D7EE7D67186F74F1902B3C38A7A972457C9010",
+  "rawOutputHash": "BFEBAC14B1ACC5E47A476BE4595B2E78297B7281DA1B8447EEC7F538A410A131",
+  "rawText": "{\n  \"verdict\": \"PASS\",\n  \"issues\": []\n}",
+  "usage": {
+    "prompt_tokens": 10070,
+    "completion_tokens": 16,
+    "total_tokens": 10086,
+    "prompt_tokens_details": {
+      "cached_tokens": 9984
+    },
+    "prompt_cache_hit_tokens": 9984,
+    "prompt_cache_miss_tokens": 86
+  }
+}

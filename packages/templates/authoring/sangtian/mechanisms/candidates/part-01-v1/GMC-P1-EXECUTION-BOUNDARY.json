@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-EXECUTION-BOUNDARY",
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C01-POLICY-COUNCIL",
+    "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+    "DM1566-C04-JOINT-REPORT-CONTEST"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE"
+  ],
+  "candidateType": "INSTITUTION_CAPABILITY",
+  "dramaticFunction": "玩家能决定改桑范围、速度和附加条件",
+  "preconditions": [
+    "朝廷改桑要求已经到达浙江",
+    "玩家仍拥有总督执行与行文权限"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "限定首批改桑范围",
+    "附加复核和民生条件",
+    "先试办后扩围",
+    "要求共同留名承担责任"
+  ],
+  "likelyCountermoves": [
+    "巡抚以期限和抗命风险催办",
+    "执行方抢先造成既成事实"
+  ],
+  "immediateStateEffects": [
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress"
+  ],
+  "delayedConsequences": [
+    "执行速度改变后续粮食与土地压力",
+    "书面边界决定问责时谁能切割责任"
+  ],
+  "invariantsToPreserve": [
+    "玩家不能废除国策",
+    "任何执行模式都必须承担速度、民生或政治代价"
+  ],
+  "evidenceStrength": "EXPLICIT",
+  "limitations": [
+    "具体三日期限来自 Adaptation",
+    "原著后续执行结果不是房间必然未来"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-PLAYABLE-GOVERNOR",
+  "status": "CANDIDATE_ONLY"
+}

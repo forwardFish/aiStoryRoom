@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "sangtian-part-one-track-b-candidate-manifest-v1",
+  "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
+  "candidateCount": 12,
+  "continuityBatonCount": 17,
+  "candidateIds": [
+    "GMC-P1-EXECUTION-BOUNDARY",
+    "GMC-P1-RESPONSIBILITY-RECORD",
+    "GMC-P1-XUNFU-COUNTERMOVE",
+    "GMC-P1-REGISTER-CUSTODY",
+    "GMC-P1-REVIEW-AUTHORITY",
+    "GMC-P1-KNOWLEDGE-CHAIN",
+    "GMC-P1-GRAIN-RELIEF",
+    "GMC-P1-MERCHANT-CONDITIONS",
+    "GMC-P1-LAND-RISK",
+    "GMC-P1-REPORT-AUTHORSHIP",
+    "GMC-P1-EVIDENCE-ATTACHMENT",
+    "GMC-P1-CAPITAL-FRAMING"
+  ],
+  "status": "AWAITING_INDEPENDENT_REVIEW",
+  "immutableHash": "2D5999FF1A75DE7BD0E3588A6C2831D449448E18750C630659EF915A83F7A3A6"
+}

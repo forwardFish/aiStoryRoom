@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-KNOWLEDGE-CHAIN",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.0.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "55BD9C6062A574677857E1BC5224EEE2A95EDAC3C4068E5A526498C1D9155A49",
+  "candidateHash": "1E55FA62F55DB8E19CAD26DD4C950837BA46E91DCE0CE92DC8F88EF22FFCD04E",
+  "requirementIds": [
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "verdict": "FAIL",
+  "issues": [
+    {
+      "issueType": "claim_type_mismatch",
+      "severity": "HIGH",
+      "reason": "候选机制依赖的6个Claim中，有4个是character_statement（人物说法），其truthStatus为unverified，且mustNotBeTreatedAsObjectiveFact为true。但机制将allowedMoves、countermoves等设计为无条件规则，未区分客观事实与人物说法，违反了mustNotAssume中'人物说法等于客观事实'的要求。"
+    },
+    {
+      "issueType": "evidence_strength_overclaim",
+      "severity": "HIGH",
+      "reason": "候选机制声明evidenceStrength为EXPLICIT，但实际支持的Claim中，只有2个是objective_event（客观事件），其余4个是unverified的人物说法。机制整体证据强度不足以支撑EXPLICIT，应降级为INFERRED或明确标注为Adaptation Gap。"
+    },
+    {
+      "issueType": "precondition_unsupported",
+      "severity": "MEDIUM",
+      "reason": "preconditions要求'信息通过在场、口述、文书、密报或审讯中的一种路径出现'，但Claim中仅覆盖了在场、口述、文书三种路径，密报和审讯路径无任何Claim支持，属于弱推断。"
+    },
+    {
+      "issueType": "invariant_unsupported",
+      "severity": "MEDIUM",
+      "reason": "invariantsToPreserve中'角色说法不能升级为客观事实'是合理的元规则，但机制本身并未提供任何机制来强制执行该规则，仅作为声明存在，缺乏可操作约束。"
+    }
+  ],
+  "reviewedAt": "2026-07-22T18:35:56.581Z",
+  "immutableHash": "7B3EF85052F9C5456BD42D8FE457717DCC6A7E955440AFB0841D03E05A5064FD"
+}

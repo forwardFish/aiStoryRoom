@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN",
+  "currentDateAndTime": "总督府同意改写奏疏数日后",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-POSITION-1",
+      "subjectRef": "source.yan_song",
+      "statement": "source.yan_song 在 place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-POSITION-2",
+      "subjectRef": "source.yan_shifan",
+      "statement": "source.yan_shifan 在 place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-POSITION-3",
+      "subjectRef": "source.luo_longwen",
+      "statement": "source.luo_longwen 在 place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-POSITION-4",
+      "subjectRef": "source.yan_maoqing",
+      "statement": "source.yan_maoqing 在 place.yan_residence 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    }
+  ],
+  "characterKnowledge": [
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-KNOWLEDGE-1",
+      "subjectRef": "source.zhejiang_report_bundle",
+      "statement": "叙述明确说，那份奏疏与郑泌昌、何茂才联名的一封信先送到严世蕃手里，随后又由严世蕃送到严嵩手中。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    }
+  ],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-GOAL-1",
+      "subjectRef": "source.yan_shifan",
+      "statement": "严世蕃看见奏疏与信后的反应是命罗龙文策动御史立刻弹劾，严嵩随即喝止。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-CUSTODY-1",
+      "subjectRef": "source.yan_shifan",
+      "statement": "严世蕃看见奏疏与信后的反应是命罗龙文策动御史立刻弹劾，严嵩随即喝止。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    }
+  ],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-DECISION-1",
+      "subjectRef": "source.yan_shifan",
+      "statement": "严世蕃看见奏疏与信后的反应是命罗龙文策动御史立刻弹劾，严嵩随即喝止。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-PROMISE-1",
+      "subjectRef": "source.yan_shifan",
+      "statement": "严世蕃看见奏疏与信后的反应是命罗龙文策动御史立刻弹劾，严嵩随即喝止。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-ARC-1",
+      "subjectRef": "source.zhejiang_report_bundle",
+      "statement": "叙述明确说，那份奏疏与郑泌昌、何茂才联名的一封信先送到严世蕃手里，随后又由严世蕃送到严嵩手中。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    },
+    {
+      "stateId": "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-ARC-2",
+      "subjectRef": "source.yan_shifan",
+      "statement": "严世蕃看见奏疏与信后的反应是命罗龙文策动御史立刻弹劾，严嵩随即喝止。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C04-REPORT-AND-LETTER-REACH-YAN-ARTIFACT-R1",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ]
+}

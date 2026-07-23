@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-REPORT-AUTHORSHIP",
+  "requirementIds": [
+    "REQ-P1-REPORT-AUTHORSHIP"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+    "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+    "DM1566-C04-JOINT-REPORT-CONTEST",
+    "DM1566-C04-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "candidateType": "DECISION_KERNEL",
+  "dramaticFunction": "玩家能决定共同、单方或分裂奏报",
+  "preconditions": [
+    "存在一份需要形成、修改或决定是否联署的地方奏报",
+    "玩家掌握至少一项可写入的执行、民生或证据事实"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "提议督抚共同奏报并逐项确认内容",
+    "依据可玩总督 Adaptation 单独具名奏报",
+    "允许巡抚拒绝联署并附送有具名的异议文书",
+    "保留两份内容不同且各自可追踪的地方文书"
+  ],
+  "likelyCountermoves": [
+    "拒绝联署",
+    "另递具名信件",
+    "要求删去延缓或民生内容",
+    "通过另一合法渠道送达"
+  ],
+  "immediateStateEffects": [
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "delayedConsequences": [
+    "内容不同的奏报与具名信件到达京师后可能触发不同政治反应",
+    "署名与经手记录为后续问责提供可追踪材料"
+  ],
+  "invariantsToPreserve": [
+    "奏报内容只能使用当前已知事实",
+    "共同署名不能消除真实分歧"
+  ],
+  "evidenceStrength": "STRONG_INFERENCE",
+  "limitations": [
+    "总督玩家的自由行动来自 ADAPT-P1-PLAYABLE-GOVERNOR，独立巡抚与分立署名来自 ADAPT-P1-SEPARATE-XUNFU",
+    "具体选项必须经运行时 Institution Capability 检查，不能预写皇帝最终裁决"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-SEPARATE-XUNFU",
+  "status": "CANDIDATE_ONLY"
+}

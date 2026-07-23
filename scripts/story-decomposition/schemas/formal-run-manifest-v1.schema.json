@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/formal-run-manifest-v1.schema.json",
+  "title": "formal-run-manifest-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "formal-run-manifest-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generatedBy": {
+      "const": "RUN_MANIFEST_VALIDATOR"
+    },
+    "gitCommitSha": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{40}$"
+    },
+    "packageVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packageHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "promptHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "styleProfileHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "provider": {
+      "const": "deepseek"
+    },
+    "modelAndConfigHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "blindSessionManifestHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "auditorSessionManifestHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "blindContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "initialBlindContextHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "auditorContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expectedAcceptanceCheckpointCount": {
+      "const": 21
+    },
+    "expectedPlayerChoiceCount": {
+      "const": 20
+    },
+    "expectedNarrationProviderCallCount": {
+      "const": 20
+    },
+    "expectedDecisionProviderCallCount": {
+      "const": 20
+    },
+    "expectedProviderCallCountTotal": {
+      "const": 40
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "generatedBy",
+    "gitCommitSha",
+    "packageVersion",
+    "packageHash",
+    "promptHash",
+    "styleProfileHash",
+    "provider",
+    "modelAndConfigHash",
+    "blindSessionManifestHash",
+    "auditorSessionManifestHash",
+    "blindContextId",
+    "initialBlindContextHash",
+    "auditorContextId",
+    "expectedAcceptanceCheckpointCount",
+    "expectedPlayerChoiceCount",
+    "expectedNarrationProviderCallCount",
+    "expectedDecisionProviderCallCount",
+    "expectedProviderCallCountTotal",
+    "sealedAt",
+    "validatorVersion",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

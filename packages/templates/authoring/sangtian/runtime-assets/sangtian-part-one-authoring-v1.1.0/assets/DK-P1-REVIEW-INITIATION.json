@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-REVIEW-INITIATION",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-REVIEW-INITIATION"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide"
+  ],
+  "stateDependencies": [
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-THREE-DAY-DEADLINE",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "DK-P1-REVIEW-INITIATION",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide",
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "availableWhen": [
+      "朝廷改桑要求已经到达浙江",
+      "玩家仍拥有总督执行与行文权限",
+      "玩家行动触及执行速度、复核权或责任归属",
+      "knowledgeTransfers 中存在接收者为 actor.zhejiang_xunfu 且主题匹配的送达事件，或该行动已通过巡抚依法可见的正式公文公开；否则本策略不得触发"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-REVIEW-INITIATION-OPT-01",
+        "title": "总督先封",
+        "actionText": "派总督亲随持令封存原册，县令和巡抚各出一名见证。",
+        "targetRef": "actor.qingliu_magistrate",
+        "method": "异地见证封存",
+        "immediateIntent": "派总督亲随持令封存原册，县令和巡抚各出一名见证。",
+        "visibleTradeoff": "保管链较强，但会立刻惊动巡抚一方",
+        "stateEffects": [
+          "review.initiationStatus",
+          "evidence.chainStatus",
+          "evidence.primaryCustodianRef"
+        ],
+        "statePatch": {
+          "review.initiationStatus": "GOVERNOR_SEAL_ORDERED",
+          "evidence.chainStatus": "TRACEABLE",
+          "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-REVIEW-INITIATION-OPT-02",
+        "title": "督抚同查",
+        "actionText": "请巡抚共同下文启动复核，任何抄件都由双方经手人具名。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "共同复核",
+        "immediateIntent": "请巡抚共同下文启动复核，任何抄件都由双方经手人具名。",
+        "visibleTradeoff": "程序更稳，但巡抚同时取得材料入口",
+        "stateEffects": [
+          "review.initiationStatus",
+          "review.authority",
+          "relations.governorXunfu"
+        ],
+        "statePatch": {
+          "review.initiationStatus": "JOINT_REVIEW_ORDERED",
+          "review.authority": "JOINT",
+          "relations.governorXunfu": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-REVIEW-INITIATION-OPT-03",
+        "title": "县令自查",
+        "actionText": "令清流县令连夜自查并送样册，总督府暂不派人接管档房。",
+        "targetRef": "actor.qingliu_magistrate",
+        "method": "限期自查",
+        "immediateIntent": "令清流县令连夜自查并送样册，总督府暂不派人接管档房。",
+        "visibleTradeoff": "动作隐蔽，却把首轮保管风险留在县衙",
+        "stateEffects": [
+          "review.initiationStatus",
+          "witness.accessStatus",
+          "evidence.chainStatus"
+        ],
+        "statePatch": {
+          "review.initiationStatus": "COUNTY_SELF_REVIEW_ORDERED",
+          "witness.accessStatus": "COUNTY_CONTROLLED",
+          "evidence.chainStatus": "FRAGILE"
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

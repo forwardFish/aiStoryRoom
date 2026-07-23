@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "sangtian-approved-mechanism-manifest-v1",
+  "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
+  "reviewSetHash": "6233CBD5A24BEA2252FF12EF0BE4CB08FF0E433D72621D466EAC84E4DD4C3C86",
+  "mechanismCandidateIds": [
+    "GMC-P1-CAPITAL-FRAMING",
+    "GMC-P1-EVIDENCE-ATTACHMENT",
+    "GMC-P1-EXECUTION-BOUNDARY",
+    "GMC-P1-GRAIN-RELIEF",
+    "GMC-P1-LAND-RISK",
+    "GMC-P1-MERCHANT-CONDITIONS",
+    "GMC-P1-REGISTER-CUSTODY",
+    "GMC-P1-RESPONSIBILITY-RECORD",
+    "GMC-P1-REVIEW-AUTHORITY"
+  ],
+  "status": "BLOCKED"
+}

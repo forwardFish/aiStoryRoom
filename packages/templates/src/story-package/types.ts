@@ -108,6 +108,13 @@ export type StoryPackageFloorObligation = {
   };
 };
 
+export type StoryPackageActionAffordances = {
+  conversationRoleKeys: string[];
+  investigationCardIds: string[];
+  leverageAssetKeys: string[];
+  customPlanPressureIds: string[];
+};
+
 export type StoryPackageNode = {
   nodeId: string;
   title: string;
@@ -122,6 +129,7 @@ export type StoryPackageNode = {
   activePressureIds: string[];
   latentTruthIds: string[];
   floorObligationIds: string[];
+  actionAffordances: StoryPackageActionAffordances;
 };
 
 export type StoryPackageDirectedBeatPolicy = {

@@ -229,7 +229,9 @@ function validateFloorObligation(value: unknown, label: string): StoryPackageFlo
 
 function validateNode(value: unknown, label: string): StoryPackageNode {
   const node = record(value, label);
-  exactKeys(node, label, ["nodeId", "title", "stageKey", "perspectiveRoleKey", "sceneLabel", "situationBoundary", "allowedAdjacentNodeIds", "publicEntryBeat", "relevantCardIds", "mainlineQuestionIds", "activePressureIds", "latentTruthIds", "floorObligationIds"]);
+  exactKeys(node, label, ["nodeId", "title", "stageKey", "perspectiveRoleKey", "sceneLabel", "situationBoundary", "allowedAdjacentNodeIds", "publicEntryBeat", "relevantCardIds", "mainlineQuestionIds", "activePressureIds", "latentTruthIds", "floorObligationIds", "actionAffordances"]);
+  const actionAffordances = record(node.actionAffordances, `${label}.actionAffordances`);
+  exactKeys(actionAffordances, `${label}.actionAffordances`, ["conversationRoleKeys", "investigationCardIds", "leverageAssetKeys", "customPlanPressureIds"]);
   return {
     nodeId: key(node.nodeId, `${label}.nodeId`),
     title: text(node.title, `${label}.title`),
@@ -243,7 +245,13 @@ function validateNode(value: unknown, label: string): StoryPackageNode {
     mainlineQuestionIds: keyArray(node.mainlineQuestionIds, `${label}.mainlineQuestionIds`),
     activePressureIds: keyArray(node.activePressureIds, `${label}.activePressureIds`),
     latentTruthIds: keyArray(node.latentTruthIds, `${label}.latentTruthIds`),
-    floorObligationIds: keyArray(node.floorObligationIds, `${label}.floorObligationIds`)
+    floorObligationIds: keyArray(node.floorObligationIds, `${label}.floorObligationIds`),
+    actionAffordances: {
+      conversationRoleKeys: keyArray(actionAffordances.conversationRoleKeys, `${label}.actionAffordances.conversationRoleKeys`),
+      investigationCardIds: keyArray(actionAffordances.investigationCardIds, `${label}.actionAffordances.investigationCardIds`),
+      leverageAssetKeys: keyArray(actionAffordances.leverageAssetKeys, `${label}.actionAffordances.leverageAssetKeys`),
+      customPlanPressureIds: keyArray(actionAffordances.customPlanPressureIds, `${label}.actionAffordances.customPlanPressureIds`)
+    }
   };
 }
 
@@ -313,6 +321,7 @@ export function validateRuntimeStoryPackage(value: unknown): RuntimeStoryPackage
   const pressureIds = new Set(pressures.map((pressure) => pressure.pressureId));
   const truthIds = new Set(truths.map((truth) => truth.truthId));
   const floorIds = new Set(floors.map((floor) => floor.obligationId));
+  const roleKeys = new Set(roles.map((role) => role.roleKey));
   if (new Set(roles.map((role) => role.roleKey)).size !== roles.length) fail("roles must have unique roleKey values");
   if (cardIds.size !== cards.length) fail("cards must have unique cardId values");
   if (questionIds.size !== questions.length) fail("mainlineQuestions must have unique questionId values");
@@ -333,6 +342,9 @@ export function validateRuntimeStoryPackage(value: unknown): RuntimeStoryPackage
     node.activePressureIds.forEach((pressureId) => { if (!pressureIds.has(pressureId)) fail(`node ${node.nodeId} references unknown pressure ${pressureId}`); });
     node.latentTruthIds.forEach((truthId) => { if (!truthIds.has(truthId)) fail(`node ${node.nodeId} references unknown latentTruth ${truthId}`); });
     node.floorObligationIds.forEach((floorId) => { if (!floorIds.has(floorId)) fail(`node ${node.nodeId} references unknown floorObligation ${floorId}`); });
+    node.actionAffordances.conversationRoleKeys.forEach((roleKey) => { if (!roleKeys.has(roleKey)) fail(`node ${node.nodeId} references unknown conversation role ${roleKey}`); });
+    node.actionAffordances.investigationCardIds.forEach((cardId) => { if (!cardIds.has(cardId)) fail(`node ${node.nodeId} references unknown investigation card ${cardId}`); });
+    node.actionAffordances.customPlanPressureIds.forEach((pressureId) => { if (!pressureIds.has(pressureId)) fail(`node ${node.nodeId} references unknown custom-plan pressure ${pressureId}`); });
   }
   const floorPolicy = record(storyPackage.floorPolicy, "floorPolicy");
   exactKeys(floorPolicy, "floorPolicy", ["recentCanonOverridesDefaults", "satisfiedFloorClosesPermanently", "preconditionFailureRequiresRetargetOrSilence", "maxDirectedBeatsPerTurn"]);
@@ -375,4 +387,33 @@ export function validateRuntimeStoryPackage(value: unknown): RuntimeStoryPackage
     nodes,
     openingNodeId
   };
+}
+
+export function validateStoryPackageSourceBindings(
+  storyPackage: RuntimeStoryPackage,
+  sourceMap: StoryPackageSourceMap
+): void {
+  const knownSourceIds = new Set(sourceMap.entries.map((entry) => entry.sourceId));
+  const assertKnown = (sourceId: string, owner: string) => {
+    if (!knownSourceIds.has(sourceId)) fail(`${owner} references unknown sourceId ${sourceId}`);
+  };
+
+  for (const card of storyPackage.cards) {
+    card.sourceIds.forEach((sourceId) => assertKnown(sourceId, `card ${card.cardId}`));
+  }
+  for (const question of storyPackage.mainlineQuestions) {
+    question.sourceIds.forEach((sourceId) => assertKnown(sourceId, `mainlineQuestion ${question.questionId}`));
+  }
+  for (const truth of storyPackage.latentTruths) {
+    truth.sourceIds.forEach((sourceId) => assertKnown(sourceId, `latentTruth ${truth.truthId}`));
+  }
+  for (const pressure of storyPackage.pressures) {
+    pressure.sourceIds.forEach((sourceId) => assertKnown(sourceId, `pressure ${pressure.pressureId}`));
+  }
+  for (const floor of storyPackage.floorObligations) {
+    floor.sourceIds.forEach((sourceId) => assertKnown(sourceId, `floorObligation ${floor.obligationId}`));
+    floor.directedBeatTemplate?.allowedSourceIds.forEach((sourceId) => {
+      assertKnown(sourceId, `floorObligation ${floor.obligationId} directedBeatTemplate`);
+    });
+  }
 }

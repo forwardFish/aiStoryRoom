@@ -1,0 +1,2314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/codex-player-review-v1.schema.json",
+  "title": "codex-player-review-v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "codex-player-review-v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contextId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewMode": {
+          "const": "BLIND_REAL_PLAYER"
+        },
+        "checkpoint": {
+          "const": "G00"
+        },
+        "viewHash": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "whatHappened": {
+          "type": "string",
+          "minLength": 1
+        },
+        "whatChanged": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currentPressure": {
+          "type": "string",
+          "minLength": 1
+        },
+        "knownUnknownBoundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisionSetScores": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "whyDecisionNow": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "actionParaphrasability": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "naturalLanguage": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "meaningfulDifference": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "perceptibleTradeoffWithoutSpoiler": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "roleAndKnowledgeLegality": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            }
+          },
+          "required": [
+            "whyDecisionNow",
+            "actionParaphrasability",
+            "naturalLanguage",
+            "meaningfulDifference",
+            "perceptibleTradeoffWithoutSpoiler",
+            "roleAndKnowledgeLegality"
+          ]
+        },
+        "decisionReviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "visibleOrdinal": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "titleQuote": {
+                "type": "string",
+                "minLength": 1
+              },
+              "naturalLanguageParaphrase": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1
+              },
+              "method": {
+                "type": "string",
+                "minLength": 1
+              },
+              "immediateIntent": {
+                "type": "string",
+                "minLength": 1
+              },
+              "perceivedTradeoff": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceRefs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "viewHash": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "fieldPath": {
+                      "type": "string",
+                      "pattern": "^/"
+                    },
+                    "startOffset": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "endOffset": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "quoteHash": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "viewHash",
+                    "fieldPath",
+                    "startOffset",
+                    "endOffset",
+                    "quoteHash"
+                  ]
+                },
+                "minItems": 1
+              },
+              "readability": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "evidenceRefs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "viewHash": {
+                          "type": "string",
+                          "pattern": "^[A-Fa-f0-9]{64}$"
+                        },
+                        "fieldPath": {
+                          "type": "string",
+                          "pattern": "^/"
+                        },
+                        "startOffset": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "endOffset": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "quoteHash": {
+                          "type": "string",
+                          "pattern": "^[A-Fa-f0-9]{64}$"
+                        }
+                      },
+                      "required": [
+                        "viewHash",
+                        "fieldPath",
+                        "startOffset",
+                        "endOffset",
+                        "quoteHash"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "score",
+                  "evidenceRefs",
+                  "reason"
+                ]
+              }
+            },
+            "required": [
+              "visibleOrdinal",
+              "titleQuote",
+              "naturalLanguageParaphrase",
+              "target",
+              "method",
+              "immediateIntent",
+              "perceivedTradeoff",
+              "evidenceRefs",
+              "readability"
+            ]
+          },
+          "minItems": 1
+        },
+        "notFiller": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "const": true
+            },
+            "evidenceRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "fieldPath": {
+                    "type": "string",
+                    "pattern": "^/"
+                  },
+                  "startOffset": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "endOffset": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "quoteHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "viewHash",
+                  "fieldPath",
+                  "startOffset",
+                  "endOffset",
+                  "quoteHash"
+                ]
+              },
+              "minItems": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "value",
+            "evidenceRefs",
+            "reason"
+          ]
+        },
+        "wantsToContinue": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "const": true
+            },
+            "continueReason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "strongestPull": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidenceRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "fieldPath": {
+                    "type": "string",
+                    "pattern": "^/"
+                  },
+                  "startOffset": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "endOffset": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "quoteHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "viewHash",
+                  "fieldPath",
+                  "startOffset",
+                  "endOffset",
+                  "quoteHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "value",
+            "continueReason",
+            "strongestPull",
+            "evidenceRefs"
+          ]
+        },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "reviewerAssessment": {
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "reviewSealedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "immutableHash": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "openingScores": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "roleClarity": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "pressureClarity": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "knowledgeBoundary": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "sceneQuality": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "historicalNovelStyle": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "naturalChineseAndPacing": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "initialDecisionClarity": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "desireToEnterStory": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            }
+          },
+          "required": [
+            "roleClarity",
+            "pressureClarity",
+            "knowledgeBoundary",
+            "sceneQuality",
+            "historicalNovelStyle",
+            "naturalChineseAndPacing",
+            "initialDecisionClarity",
+            "desireToEnterStory"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "runId",
+        "contextId",
+        "reviewMode",
+        "checkpoint",
+        "viewHash",
+        "whatHappened",
+        "whatChanged",
+        "currentPressure",
+        "knownUnknownBoundary",
+        "decisionSetScores",
+        "decisionReviews",
+        "notFiller",
+        "wantsToContinue",
+        "problems",
+        "reviewerAssessment",
+        "reviewSealedAt",
+        "immutableHash",
+        "openingScores"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "codex-player-review-v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contextId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewMode": {
+          "const": "BLIND_REAL_PLAYER"
+        },
+        "checkpoint": {
+          "enum": [
+            "T01",
+            "T02",
+            "T03",
+            "T04",
+            "T05",
+            "T06",
+            "T07",
+            "T08",
+            "T09",
+            "T10",
+            "T11",
+            "T12",
+            "T13",
+            "T14",
+            "T15",
+            "T16",
+            "T17",
+            "T18",
+            "T19",
+            "T20"
+          ]
+        },
+        "viewHash": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "whatHappened": {
+          "type": "string",
+          "minLength": 1
+        },
+        "whatChanged": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currentPressure": {
+          "type": "string",
+          "minLength": 1
+        },
+        "knownUnknownBoundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisionSetScores": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "whyDecisionNow": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "actionParaphrasability": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "naturalLanguage": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "meaningfulDifference": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "perceptibleTradeoffWithoutSpoiler": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "roleAndKnowledgeLegality": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            }
+          },
+          "required": [
+            "whyDecisionNow",
+            "actionParaphrasability",
+            "naturalLanguage",
+            "meaningfulDifference",
+            "perceptibleTradeoffWithoutSpoiler",
+            "roleAndKnowledgeLegality"
+          ]
+        },
+        "decisionReviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "visibleOrdinal": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "titleQuote": {
+                "type": "string",
+                "minLength": 1
+              },
+              "naturalLanguageParaphrase": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1
+              },
+              "method": {
+                "type": "string",
+                "minLength": 1
+              },
+              "immediateIntent": {
+                "type": "string",
+                "minLength": 1
+              },
+              "perceivedTradeoff": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceRefs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "viewHash": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    },
+                    "fieldPath": {
+                      "type": "string",
+                      "pattern": "^/"
+                    },
+                    "startOffset": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "endOffset": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "quoteHash": {
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "viewHash",
+                    "fieldPath",
+                    "startOffset",
+                    "endOffset",
+                    "quoteHash"
+                  ]
+                },
+                "minItems": 1
+              },
+              "readability": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "evidenceRefs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "viewHash": {
+                          "type": "string",
+                          "pattern": "^[A-Fa-f0-9]{64}$"
+                        },
+                        "fieldPath": {
+                          "type": "string",
+                          "pattern": "^/"
+                        },
+                        "startOffset": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "endOffset": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "quoteHash": {
+                          "type": "string",
+                          "pattern": "^[A-Fa-f0-9]{64}$"
+                        }
+                      },
+                      "required": [
+                        "viewHash",
+                        "fieldPath",
+                        "startOffset",
+                        "endOffset",
+                        "quoteHash"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "score",
+                  "evidenceRefs",
+                  "reason"
+                ]
+              }
+            },
+            "required": [
+              "visibleOrdinal",
+              "titleQuote",
+              "naturalLanguageParaphrase",
+              "target",
+              "method",
+              "immediateIntent",
+              "perceivedTradeoff",
+              "evidenceRefs",
+              "readability"
+            ]
+          },
+          "minItems": 1
+        },
+        "notFiller": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "const": true
+            },
+            "evidenceRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "fieldPath": {
+                    "type": "string",
+                    "pattern": "^/"
+                  },
+                  "startOffset": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "endOffset": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "quoteHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "viewHash",
+                  "fieldPath",
+                  "startOffset",
+                  "endOffset",
+                  "quoteHash"
+                ]
+              },
+              "minItems": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "value",
+            "evidenceRefs",
+            "reason"
+          ]
+        },
+        "wantsToContinue": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "const": true
+            },
+            "continueReason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "strongestPull": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidenceRefs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "viewHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  },
+                  "fieldPath": {
+                    "type": "string",
+                    "pattern": "^/"
+                  },
+                  "startOffset": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "endOffset": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "quoteHash": {
+                    "type": "string",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "viewHash",
+                  "fieldPath",
+                  "startOffset",
+                  "endOffset",
+                  "quoteHash"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "value",
+            "continueReason",
+            "strongestPull",
+            "evidenceRefs"
+          ]
+        },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "reviewerAssessment": {
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "reviewSealedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "immutableHash": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "storyScores": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "continuity": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "choiceResponse": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "sceneAndDetail": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "characterCredibility": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "causalClarity": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "historicalNovelStyle": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            },
+            "naturalChineseAndPacing": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "evidenceRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "viewHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      },
+                      "fieldPath": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "startOffset": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endOffset": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quoteHash": {
+                        "type": "string",
+                        "pattern": "^[A-Fa-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "viewHash",
+                      "fieldPath",
+                      "startOffset",
+                      "endOffset",
+                      "quoteHash"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "score",
+                "evidenceRefs",
+                "reason"
+              ]
+            }
+          },
+          "required": [
+            "continuity",
+            "choiceResponse",
+            "sceneAndDetail",
+            "characterCredibility",
+            "causalClarity",
+            "historicalNovelStyle",
+            "naturalChineseAndPacing"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "runId",
+        "contextId",
+        "reviewMode",
+        "checkpoint",
+        "viewHash",
+        "whatHappened",
+        "whatChanged",
+        "currentPressure",
+        "knownUnknownBoundary",
+        "decisionSetScores",
+        "decisionReviews",
+        "notFiller",
+        "wantsToContinue",
+        "problems",
+        "reviewerAssessment",
+        "reviewSealedAt",
+        "immutableHash",
+        "storyScores"
+      ]
+    }
+  ]
+}

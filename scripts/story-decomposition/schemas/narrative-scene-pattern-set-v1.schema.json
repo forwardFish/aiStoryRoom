@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/narrative-scene-pattern-set-v1.schema.json",
+  "title": "narrative-scene-pattern-set-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "narrative-scene-pattern-set-v1"
+    },
+    "worldId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scopeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "const": "narrative-scene-pattern-v1"
+          },
+          "patternId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceSceneId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sourceSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "chapterId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphStartId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragraphEndId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lineStart": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lineEnd": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "textSpanSha256": {
+                  "type": "string",
+                  "pattern": "^[A-Fa-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceSha256",
+                "chapterId",
+                "paragraphStartId",
+                "paragraphEndId",
+                "lineStart",
+                "lineEnd",
+                "textSpanSha256"
+              ]
+            },
+            "minItems": 1
+          },
+          "sectionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "requirementIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "decisionKernelIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "actorRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "sourceClaimIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "dramaticFunction": {
+            "type": "string",
+            "minLength": 1
+          },
+          "openingPressure": {
+            "type": "string",
+            "minLength": 1
+          },
+          "orderedBeats": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ordinal": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "actorRole": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "observableMove": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sceneFunction": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reactionCue": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "ordinal",
+                "actorRole",
+                "observableMove",
+                "sceneFunction",
+                "reactionCue"
+              ]
+            },
+            "minItems": 3
+          },
+          "dialogueTactics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "actorRole": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "surfaceMove": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "hiddenRisk": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "cadenceRule": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "actorRole",
+                "surfaceMove",
+                "hiddenRisk",
+                "cadenceRule"
+              ]
+            },
+            "minItems": 1
+          },
+          "blockingPrinciples": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "objectPowerMoves": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "objectLabel": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "observableUse": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "powerMeaning": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "objectLabel",
+                "observableUse",
+                "powerMeaning"
+              ]
+            },
+            "minItems": 0
+          },
+          "transferableTechniques": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "forbiddenFlattening": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "verbatimPolicy": {
+            "const": "MECHANISM_ONLY_NO_VERBATIM_REUSE"
+          },
+          "reviewStatus": {
+            "const": "APPROVED"
+          },
+          "reviewerId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approvedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "patternId",
+          "sourceSceneId",
+          "sourceRefs",
+          "sectionIds",
+          "requirementIds",
+          "decisionKernelIds",
+          "actorRefs",
+          "sourceClaimIds",
+          "dramaticFunction",
+          "openingPressure",
+          "orderedBeats",
+          "dialogueTactics",
+          "blockingPrinciples",
+          "objectPowerMoves",
+          "transferableTechniques",
+          "forbiddenFlattening",
+          "verbatimPolicy",
+          "reviewStatus",
+          "reviewerId",
+          "approvedAt"
+        ]
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "worldId",
+    "scopeId",
+    "version",
+    "patterns"
+  ]
+}

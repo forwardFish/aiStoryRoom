@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "gameplay-mechanism-candidate-v1",
+  "mechanismCandidateId": "GMC-P1-XUNFU-COUNTERMOVE",
+  "requirementIds": [
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "sourceSceneIds": [
+    "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+    "DM1566-C04-JOINT-REPORT-CONTEST",
+    "DM1566-C04-REPORT-AND-LETTER-REACH-YAN"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "candidateType": "ACTOR_POLICY",
+  "dramaticFunction": "巡抚会主动争夺速度、复核权和解释权",
+  "preconditions": [
+    "玩家行动触及执行速度、复核权或责任归属",
+    "knowledgeTransfers 中存在接收者为 actor.zhejiang_xunfu 且主题匹配的送达事件，或该行动已通过巡抚依法可见的正式公文公开；否则本策略不得触发"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide"
+  ],
+  "authorityOrResourceRefs": [
+    "resource.official_document_channel"
+  ],
+  "allowedMoves": [
+    "依据改编后的巡抚权限催办并要求书面回复",
+    "要求参与复核并留下本方经手记录",
+    "拒绝在包含延缓主张的文书上联署",
+    "另行递交写明异议的地方文书"
+  ],
+  "likelyCountermoves": [
+    "接受共同承担责任以换取执行速度",
+    "用已有催办公文质疑拖延",
+    "通过合法文书渠道把分歧送往上级"
+  ],
+  "immediateStateEffects": [
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "delayedConsequences": [
+    "督抚关系与京师叙事同步变化",
+    "复核权被一方掌握后改变证据可见性"
+  ],
+  "invariantsToPreserve": [
+    "巡抚必须有自己的目标和行动能力",
+    "不能因为是对手就预设其已犯罪"
+  ],
+  "evidenceStrength": "WEAK_INFERENCE",
+  "limitations": [
+    "原著只提供催办、拒签、另行成文与责任自保机制；具体巡抚动作属于弱推断",
+    "独立巡抚及其权限必须由 ADAPT-P1-SEPARATE-XUNFU 批准后才能发布"
+  ],
+  "proposedAdaptationGapId": "ADAPT-P1-SEPARATE-XUNFU",
+  "status": "APPROVED_FOR_T3"
+}

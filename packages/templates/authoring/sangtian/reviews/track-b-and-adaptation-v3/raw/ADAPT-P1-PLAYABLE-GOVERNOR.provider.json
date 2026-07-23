@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "sangtian-authoring-review-provider-record-v1",
+  "reviewKey": "ADAPT-P1-PLAYABLE-GOVERNOR",
+  "kind": "ADAPTATION",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRequestId": null,
+  "providerCallCount": 1,
+  "startedAt": "2026-07-22T18:41:57.100Z",
+  "completedAt": "2026-07-22T18:41:57.894Z",
+  "httpStatus": 200,
+  "inputHash": "4E10ACC0C8DE85A39B1997F138B76F9B98768CD7B29B4830ADD976275A62C8EA",
+  "rawOutputHash": "BFEBAC14B1ACC5E47A476BE4595B2E78297B7281DA1B8447EEC7F538A410A131",
+  "rawText": "{\n  \"verdict\": \"PASS\",\n  \"issues\": []\n}",
+  "usage": {
+    "prompt_tokens": 8920,
+    "completion_tokens": 16,
+    "total_tokens": 8936,
+    "prompt_tokens_details": {
+      "cached_tokens": 8832
+    },
+    "prompt_cache_hit_tokens": 8832,
+    "prompt_cache_miss_tokens": 88
+  }
+}

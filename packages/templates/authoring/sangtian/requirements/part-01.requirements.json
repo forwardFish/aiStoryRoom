@@ -1,0 +1,1135 @@
+{
+  "schemaVersion": "story-capability-requirement-set-v1",
+  "requirements": [
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-EXECUTION-BOUNDARY",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-01"
+      ],
+      "dramaticFunction": "玩家能决定改桑范围、速度和附加条件",
+      "decisionKernelIds": [
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "国策形成",
+        "地方执行责任",
+        "拖延与抗命边界"
+      ],
+      "sourceCandidateQueryTerms": [
+        "改稻为桑",
+        "总督",
+        "奉旨",
+        "缓办",
+        "试行"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C01-POLICY-COUNCIL",
+        "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-HALF-LAND",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH",
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-EXECUTION-BOUNDARY"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-THREE-DAY-DEADLINE"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-THREE-DAY-DEADLINE"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "PCR-P1-EXECUTION-BOUNDARY",
+        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE"
+      ],
+      "stateEffects": [
+        "reform.executionMode",
+        "reform.scopeStatus",
+        "reform.progress"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-EXECUTION-BOUNDARY"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-01",
+        "REQ-P1-EXECUTION-BOUNDARY"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-RESPONSIBILITY-RECORD",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-01"
+      ],
+      "dramaticFunction": "玩家能决定谁在正式文书上留下具名责任",
+      "decisionKernelIds": [
+        "DK-P1-RESPONSIBILITY-RECORD"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "奏疏",
+        "票拟",
+        "公文",
+        "催办",
+        "责任切割"
+      ],
+      "sourceCandidateQueryTerms": [
+        "具名",
+        "奏报",
+        "公文",
+        "责任",
+        "钧旨"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C01-POLICY-COUNCIL",
+        "DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-RESPONSIBILITY-RECORD"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "PCR-P1-RESPONSIBILITY-RECORD",
+        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE"
+      ],
+      "stateEffects": [
+        "responsibility.firstRecordStatus",
+        "responsibility.governorExposure",
+        "responsibility.xunfuExposure"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-RESPONSIBILITY-RECORD"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-01",
+        "REQ-P1-RESPONSIBILITY-RECORD"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-XUNFU-COUNTERMOVE",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-01"
+      ],
+      "dramaticFunction": "巡抚会主动争夺速度、复核权和解释权",
+      "decisionKernelIds": [
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-RESPONSIBILITY-RECORD"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "地方官僚自保",
+        "执行压力",
+        "责任转移"
+      ],
+      "sourceCandidateQueryTerms": [
+        "巡抚",
+        "总督",
+        "催",
+        "责任",
+        "改稻为桑"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "DM1566-C04-JOINT-REPORT-CONTEST",
+        "DM1566-C04-REPORT-AND-LETTER-REACH-YAN"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-XUNFU-COUNTERMOVE"
+      ],
+      "evidenceStrength": "WEAK_INFERENCE",
+      "adaptationGapIds": [
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-XUNFU-COUNTERMOVE",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "PCR-P1-XUNFU-COUNTERMOVE",
+        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE"
+      ],
+      "stateEffects": [
+        "relations.governorXunfu",
+        "pendingConsequences"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-XUNFU-COUNTERMOVE"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-01",
+        "REQ-P1-XUNFU-COUNTERMOVE"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-REGISTER-CUSTODY",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "dramaticFunction": "原件、副本、封条和经手人能被追踪与争夺",
+      "decisionKernelIds": [
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "账册",
+        "田契",
+        "文书保管",
+        "抄录",
+        "封存"
+      ],
+      "sourceCandidateQueryTerms": [
+        "账册",
+        "田册",
+        "田契",
+        "封",
+        "抄",
+        "经手"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "DM1566-C13-LEDGERS-BURNED",
+        "DM1566-C13-OTHER-LEDGER-BOXES-HELD",
+        "DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-REGISTER-CUSTODY"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-REGISTER-ALTERATION"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-REGISTER-ALTERATION"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-REGISTER-CUSTODY",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "ARC-P1-CUSTODY-CONTEST",
+        "PCR-P1-REGISTER-CUSTODY"
+      ],
+      "stateEffects": [
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-REGISTER-CUSTODY"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-02",
+        "REQ-P1-REGISTER-CUSTODY"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-REVIEW-AUTHORITY",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "dramaticFunction": "玩家能争夺县册复核的主持权和程序",
+      "decisionKernelIds": [
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "总督巡抚知府知县的制度权限",
+        "核验程序",
+        "文书渠道"
+      ],
+      "sourceCandidateQueryTerms": [
+        "总督",
+        "巡抚",
+        "知县",
+        "查验",
+        "会审",
+        "复核"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "DM1566-C04-JOINT-REPORT-CONTEST",
+        "DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-REVIEW-AUTHORITY"
+      ],
+      "evidenceStrength": "STRONG_INFERENCE",
+      "adaptationGapIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-REVIEW-AUTHORITY",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "PCR-P1-REVIEW-AUTHORITY"
+      ],
+      "stateEffects": [
+        "review.authority",
+        "review.procedureStatus"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-REVIEW-AUTHORITY"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-02",
+        "REQ-P1-REVIEW-AUTHORITY"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-KNOWLEDGE-CHAIN",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "dramaticFunction": "秘密只能经由在场、密报、文书或口供传播",
+      "decisionKernelIds": [
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "密报",
+        "口供",
+        "文书送达",
+        "解释权"
+      ],
+      "sourceCandidateQueryTerms": [
+        "密报",
+        "口供",
+        "知道",
+        "听说",
+        "文书",
+        "送到"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "DM1566-C04-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "DM1566-C23-TESTIMONY-SEALED",
+        "DM1566-C23-URGENT-DISPATCH-AT-GATE"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-KNOWLEDGE-CHAIN"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "ARC-P1-CUSTODY-CONTEST",
+        "PCR-P1-KNOWLEDGE-CHAIN"
+      ],
+      "stateEffects": [
+        "knowledgeTransfers",
+        "witness.accessStatus"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-KNOWLEDGE-CHAIN"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-02",
+        "REQ-P1-KNOWLEDGE-CHAIN"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-GRAIN-RELIEF",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "dramaticFunction": "官粮不足时玩家仍有多种真实救急渠道",
+      "decisionKernelIds": [
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu",
+        "actor.jiangnan_merchant_head"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_grain",
+        "resource.merchant_grain_route"
+      ],
+      "requiredEvidenceMechanisms": [
+        "官仓",
+        "借粮",
+        "调粮",
+        "以改兼赈"
+      ],
+      "sourceCandidateQueryTerms": [
+        "粮",
+        "仓",
+        "赈",
+        "借粮",
+        "调粮",
+        "米价"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "DM1566-C06-LAND-PRICE-DEBATE"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-GRAIN-RELIEF"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [],
+      "adaptationDecisionIds": [],
+      "runtimeAssetIds": [
+        "RTA-P1-GRAIN-RELIEF",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "PCR-P1-GRAIN-RELIEF"
+      ],
+      "stateEffects": [
+        "grain.officialStockStatus",
+        "grain.reliefChannel",
+        "grain.immediatePressure"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-GRAIN-RELIEF"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-03",
+        "REQ-P1-GRAIN-RELIEF"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_SOURCE"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-MERCHANT-CONDITIONS",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "dramaticFunction": "商会能提供短期有效资源并提出可见交换条件",
+      "decisionKernelIds": [
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-GRAIN-SOURCE"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu",
+        "actor.jiangnan_merchant_head"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_grain",
+        "resource.merchant_grain_route"
+      ],
+      "requiredEvidenceMechanisms": [
+        "商人粮路",
+        "银子",
+        "丝路",
+        "官商合作"
+      ],
+      "sourceCandidateQueryTerms": [
+        "商人",
+        "粮",
+        "银子",
+        "丝绸",
+        "买田",
+        "运粮"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C01-LAND-RISK-COUNCIL",
+        "DM1566-C06-LAND-PRICE-DEBATE",
+        "DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-MERCHANT-CONDITIONS"
+      ],
+      "evidenceStrength": "STRONG_INFERENCE",
+      "adaptationGapIds": [
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-GRAIN-SOURCE",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "PCR-P1-MERCHANT-CONDITIONS"
+      ],
+      "stateEffects": [
+        "merchant.entryStatus",
+        "merchant.grantedRights",
+        "grain.reliefChannel"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-MERCHANT-CONDITIONS"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-03",
+        "REQ-P1-MERCHANT-CONDITIONS"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-LAND-RISK",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "dramaticFunction": "粮食与改桑选择能改变抵押、卖田和兼并风险",
+      "decisionKernelIds": [
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu",
+        "actor.jiangnan_merchant_head"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "买田",
+        "田价",
+        "抵押",
+        "兼并风险"
+      ],
+      "sourceCandidateQueryTerms": [
+        "买田",
+        "卖田",
+        "田价",
+        "兼并",
+        "桑田",
+        "口粮"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C01-LAND-RISK-COUNCIL",
+        "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "DM1566-C06-LAND-PRICE-DEBATE",
+        "DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C01-CL-LAND-RISK-PREDICTION",
+        "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-LAND-RISK"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-LAND-RISK",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "PCR-P1-LAND-RISK"
+      ],
+      "stateEffects": [
+        "land.riskLevel",
+        "land.safeguardStatus"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-LAND-RISK"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-03",
+        "REQ-P1-LAND-RISK"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-REPORT-AUTHORSHIP",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-04"
+      ],
+      "dramaticFunction": "玩家能决定共同、单方或分裂奏报",
+      "decisionKernelIds": [
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "奏疏渠道",
+        "署名",
+        "官员责任"
+      ],
+      "sourceCandidateQueryTerms": [
+        "奏疏",
+        "奏报",
+        "具名",
+        "联署",
+        "上报"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+        "DM1566-C04-JOINT-REPORT-CONTEST",
+        "DM1566-C04-REPORT-AND-LETTER-REACH-YAN"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-REPORT-AUTHORSHIP"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "PCR-P1-REPORT-AUTHORSHIP"
+      ],
+      "stateEffects": [
+        "report.authorshipMode",
+        "report.firstNarrativeController",
+        "responsibility.governorExposure",
+        "responsibility.xunfuExposure"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-REPORT-AUTHORSHIP"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-04",
+        "REQ-P1-REPORT-AUTHORSHIP"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-EVIDENCE-ATTACHMENT",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-04"
+      ],
+      "dramaticFunction": "玩家能决定首报附什么证据并诚实标注强度",
+      "decisionKernelIds": [
+        "DK-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "原册",
+        "副本",
+        "口供",
+        "仓单",
+        "田契的证明边界"
+      ],
+      "sourceCandidateQueryTerms": [
+        "附件",
+        "原册",
+        "副本",
+        "口供",
+        "仓单",
+        "田契",
+        "账册",
+        "封存",
+        "实据"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "DM1566-C13-LEDGERS-BURNED",
+        "DM1566-C13-OTHER-LEDGER-BOXES-HELD",
+        "DM1566-C23-TESTIMONY-SEALED",
+        "DM1566-C23-URGENT-DISPATCH-AT-GATE"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED",
+        "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [
+        "ADAPT-P1-REGISTER-ALTERATION",
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-REGISTER-ALTERATION",
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+      ],
+      "runtimeAssetIds": [
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "PCR-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "stateEffects": [
+        "report.attachmentStrength",
+        "evidence.chainStatus"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-04",
+        "REQ-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_ADAPTATION"
+    },
+    {
+      "schemaVersion": "story-capability-requirement-v1",
+      "requirementId": "REQ-P1-CAPITAL-FRAMING",
+      "partId": "PART-01",
+      "sectionIds": [
+        "SEC-P1-04"
+      ],
+      "dramaticFunction": "首报会改变京师收到的第一版事实而不预定最终裁决",
+      "decisionKernelIds": [
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-REPORT-AUTHORSHIP"
+      ],
+      "playerAuthorityRefs": [
+        "institution.zhejiang_governor_yamen"
+      ],
+      "opposingActorRefs": [
+        "actor.zhejiang_xunfu"
+      ],
+      "requiredResourceRefs": [
+        "resource.official_document_channel"
+      ],
+      "requiredEvidenceMechanisms": [
+        "内阁",
+        "司礼监",
+        "织造体系",
+        "政治定性"
+      ],
+      "sourceCandidateQueryTerms": [
+        "内阁",
+        "司礼监",
+        "织造",
+        "奏报",
+        "皇上",
+        "定罪"
+      ],
+      "sourceCandidateChapterIds": [
+        "DM1566-C01",
+        "DM1566-C02",
+        "DM1566-C03",
+        "DM1566-C04",
+        "DM1566-C05",
+        "DM1566-C06",
+        "DM1566-C07"
+      ],
+      "sourceSceneIds": [
+        "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+        "DM1566-C02-REPORT-SUPPRESSION-RISK",
+        "DM1566-C04-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C23-URGENT-DISPATCH-AT-GATE"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY",
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+        "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+        "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION",
+        "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+        "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+      ],
+      "mechanismCandidateIds": [
+        "GMC-P1-CAPITAL-FRAMING"
+      ],
+      "evidenceStrength": "EXPLICIT",
+      "adaptationGapIds": [],
+      "adaptationDecisionIds": [],
+      "runtimeAssetIds": [
+        "RTA-P1-CAPITAL-FRAMING",
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "PCR-P1-CAPITAL-FRAMING"
+      ],
+      "stateEffects": [
+        "report.dispatchStatus",
+        "report.firstNarrativeController",
+        "pendingConsequences"
+      ],
+      "delayedConsequenceRuleIds": [
+        "PCR-P1-CAPITAL-FRAMING"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-04",
+        "REQ-P1-CAPITAL-FRAMING"
+      ],
+      "mustNotAssume": [
+        "人物说法等于客观事实",
+        "后续原著事件必然在本房间发生",
+        "密信或异常足以定罪",
+        "DeepSeek 可以补造缺失证据"
+      ],
+      "coverageStatus": "SATISFIED_BY_SOURCE"
+    }
+  ]
+}

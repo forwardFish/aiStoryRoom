@@ -1,10 +1,12 @@
-import type { AttemptRecord, AttemptStatus } from "./types";
+import type { AttemptRecord, AttemptStatus, StoryProviderStage } from "./types";
 
 export function createAttemptRecord(input: { attemptId: string; generationKey: string }): AttemptRecord {
   return {
     attemptId: input.attemptId,
     generationKey: input.generationKey,
     providerCallCount: 0,
+    narrationProviderCallCount: 0,
+    decisionProviderCallCount: 0,
     status: "QUEUED",
     failureCode: null
   };
@@ -20,11 +22,26 @@ export function transitionAttempt(attempt: AttemptRecord, next: AttemptStatus, f
   };
 }
 
-export function incrementProviderCallCount(attempt: AttemptRecord): AttemptRecord {
-  if (attempt.providerCallCount >= 1) throw new Error("PROVIDER_ALREADY_CALLED");
+export function incrementProviderCallCount(
+  attempt: AttemptRecord,
+  stage: StoryProviderStage
+): AttemptRecord {
+  if (stage === "NARRATOR") {
+    if (attempt.providerCallCount !== 0 || attempt.narrationProviderCallCount !== 0) {
+      throw new Error("NARRATOR_PROVIDER_ALREADY_CALLED");
+    }
+  } else if (
+    attempt.providerCallCount !== 1
+    || attempt.narrationProviderCallCount !== 1
+    || attempt.decisionProviderCallCount !== 0
+  ) {
+    throw new Error("DECISION_PROVIDER_CALL_OUT_OF_ORDER");
+  }
   return {
     ...attempt,
-    providerCallCount: attempt.providerCallCount + 1
+    providerCallCount: attempt.providerCallCount + 1,
+    narrationProviderCallCount: attempt.narrationProviderCallCount + (stage === "NARRATOR" ? 1 : 0),
+    decisionProviderCallCount: attempt.decisionProviderCallCount + (stage === "DECISION" ? 1 : 0)
   };
 }
 

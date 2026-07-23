@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "sangtian-authoring-candidate-review-v1",
+  "reviewKey": "GMC-P1-LAND-RISK",
+  "kind": "MECHANISM",
+  "reviewerVersion": "sangtian-track-b-and-adaptation-review-v1.1.0",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "providerRecordHash": "4CCED5C3B5221A0E9E01F0DA6E525FD78F77C3D7057F152400A5A169F5E71272",
+  "candidateHash": "7A13208023C8B8E0336521DEC70F7274BC54866F542ADAC820DB8026FFD49D06",
+  "requirementIds": [
+    "REQ-P1-LAND-RISK"
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-RISK-PREDICTION",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "verdict": "PASS",
+  "issues": [],
+  "reviewedAt": "2026-07-22T18:40:08.210Z",
+  "immutableHash": "8209D2B468B81F10813695DC87284167C0F790EF9F5E25A53340989B8FFE7D96"
+}

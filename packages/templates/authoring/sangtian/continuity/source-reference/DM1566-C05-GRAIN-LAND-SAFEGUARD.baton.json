@@ -1,0 +1,223 @@
+{
+  "schemaVersion": "dm1566_continuity_baton_v2",
+  "basedOnSceneId": "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+  "currentDateAndTime": "高翰文赴浙江途中",
+  "characterPositions": [
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-POSITION-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "source.hu_zongxian 在 place.roadside_post_station 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-POSITION-2",
+      "subjectRef": "source.gao_hanwen",
+      "statement": "source.gao_hanwen 在 place.roadside_post_station 出现。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    }
+  ],
+  "characterKnowledge": [],
+  "activeGoals": [
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-GOAL-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪提出受灾两县买田不得低于三十石稻谷一亩，以避免全部灾民失田。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-GOAL-2",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪提出把不足的改桑面积分散到未受灾县份并按更高价格买田，以降低集中兼并和民乱风险。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-GOAL-3",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪表示将赴苏州向应天巡抚借粮，为地方争取田价提供短期时间；这是一项意图而非已到仓的粮食。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    }
+  ],
+  "relationships": [],
+  "resources": [],
+  "objectCustody": [],
+  "institutionalDecisions": [
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-DECISION-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪提出受灾两县买田不得低于三十石稻谷一亩，以避免全部灾民失田。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-DECISION-2",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪提出把不足的改桑面积分散到未受灾县份并按更高价格买田，以降低集中兼并和民乱风险。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-DECISION-3",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪表示将赴苏州向应天巡抚借粮，为地方争取田价提供短期时间；这是一项意图而非已到仓的粮食。",
+      "status": "SOURCE_REFERENCE_ONLY",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    }
+  ],
+  "unresolvedPromises": [
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-PROMISE-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪提出受灾两县买田不得低于三十石稻谷一亩，以避免全部灾民失田。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-PROMISE-2",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪提出把不足的改桑面积分散到未受灾县份并按更高价格买田，以降低集中兼并和民乱风险。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-PROMISE-3",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪表示将赴苏州向应天巡抚借粮，为地方争取田价提供短期时间；这是一项意图而非已到仓的粮食。",
+      "status": "UNRESOLVED_IN_SOURCE_SPAN",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    }
+  ],
+  "openThreats": [],
+  "secretsNotYetKnown": [
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-SECRET-1",
+      "subjectRef": "source.future_runtime",
+      "statement": "该场景所展示的机制进入游戏时仍须由当前状态、玩家行动和已提交事件决定，不能把原著后续当成必然未来。",
+      "status": "MUST_NOT_ENTER_OPENING_KNOWLEDGE",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    }
+  ],
+  "openCausalChains": [
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-ARC-1",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪追问灾后压价买田应由知府、巡抚还是藩臬衙门过问，把土地价格转成制度权限问题。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-ARC-2",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪提出受灾两县买田不得低于三十石稻谷一亩，以避免全部灾民失田。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-ARC-3",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪提出把不足的改桑面积分散到未受灾县份并按更高价格买田，以降低集中兼并和民乱风险。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    },
+    {
+      "stateId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-ARC-4",
+      "subjectRef": "source.hu_zongxian",
+      "statement": "胡宗宪表示将赴苏州向应天巡抚借粮，为地方争取田价提供短期时间；这是一项意图而非已到仓的粮食。",
+      "status": "SOURCE_MECHANISM_REFERENCE",
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ]
+    }
+  ],
+  "causesWaitingForConsequences": [],
+  "unresolvedAliases": [],
+  "sourceArtifactIds": [
+    "DM1566-C05-GRAIN-LAND-SAFEGUARD-ARTIFACT-R1",
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+  ]
+}

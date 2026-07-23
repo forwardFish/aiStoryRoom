@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { DecisionFormV2, PlayerIntentV2, TurnDecisionCommandV2 } from "@ai-story/shared";
+import { normalizePlayerIntent } from "../player-intent";
 import { commandToRawPlayerAction } from "../runtime-mapper";
 
 function command(
@@ -87,4 +88,77 @@ test("自拟谋划原样保留玩家写下的完整行动", () => {
   }, text), []);
 
   assert.deepEqual(raw, { source: "CUSTOM", text });
+});
+
+test("主线剧情选择用完整可见行动回绑当前决策内核，而不是只提交战术短标签", () => {
+  const fullAction = "只准清流县先办一批，并把不得压价买田写进放行文书。";
+  const candidate = {
+    id: "d1",
+    label: "限定试办",
+    description: fullAction,
+    effectHooks: [
+      "附条件签发：用较慢的进度换取民田保护与可复核边界",
+      "decisionKernel:DK-P1-EXECUTION-SCOPE",
+      "affordance:DK-P1-EXECUTION-SCOPE-OPT-01"
+    ],
+    intentDraft: {
+      ...baseIntent,
+      objective: fullAction,
+      target: { type: "ROLE", id: "actor.zhejiang_xunfu", label: "浙江巡抚" },
+      method: "附条件签发"
+    }
+  } as any;
+  const raw = commandToRawPlayerAction({
+    idempotencyKey: "story-choice",
+    turnRevision: 2,
+    controlEpoch: 1,
+    decisionForm: "STORY_CHOICE",
+    candidateId: "d1",
+    intent: candidate.intentDraft
+  }, [candidate]);
+
+  assert.deepEqual(raw, {
+    source: "RECOMMENDED",
+    decisionId: "d1",
+    label: "限定试办",
+    targetId: "actor.zhejiang_xunfu",
+    targetLabel: "浙江巡抚",
+    actionText: fullAction,
+    decisionKernelId: "DK-P1-EXECUTION-SCOPE",
+    affordanceTemplateId: "DK-P1-EXECUTION-SCOPE-OPT-01"
+  });
+  const normalized = normalizePlayerIntent(raw);
+  assert.equal(normalized.ok, true);
+  if (normalized.ok) assert.equal(normalized.intent.targetId, "actor.zhejiang_xunfu");
+});
+
+test("固定开场选择仍提交玩家看见的具体执行方法", () => {
+  const method = "命亲随持令牌赶赴清流县封存档房，并让书吏带回三日内复核的口信。";
+  const candidate = {
+    id: "opening_d2",
+    label: "先封档房，再复巡抚",
+    description: "动用总督封缄令牌，先保住清流县档房现场，再给巡抚一个暂缓签发的答复。",
+    effectHooks: ["先保现场"],
+    intentDraft: {
+      ...baseIntent,
+      objective: "阻止县册和田契证据在核验前被转移",
+      target: { type: "EVIDENCE", id: "card_evidence_archive_seal_order", label: "总督封缄令牌" },
+      method
+    }
+  } as any;
+  const raw = commandToRawPlayerAction({
+    idempotencyKey: "opening-choice",
+    turnRevision: 1,
+    controlEpoch: 1,
+    decisionForm: "STORY_CHOICE",
+    candidateId: "opening_d2",
+    intent: candidate.intentDraft
+  }, [candidate]);
+
+  assert.equal(raw.source, "RECOMMENDED");
+  if (raw.source === "RECOMMENDED") {
+    assert.equal(raw.actionText, method);
+    assert.equal(raw.decisionKernelId, null);
+    assert.equal(raw.affordanceTemplateId, null);
+  }
 });

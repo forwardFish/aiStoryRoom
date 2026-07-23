@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/checkpoint-test-integrity-slice-v1.schema.json",
+  "title": "checkpoint-test-integrity-slice-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "checkpoint-test-integrity-slice-v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checkpoint": {
+      "enum": [
+        "G00",
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ]
+    },
+    "visibleUiObserved": {
+      "const": true
+    },
+    "blindHiddenReadCount": {
+      "const": 0
+    },
+    "auditResultsDeliveredToBlindCount": {
+      "const": 0
+    },
+    "directApiOrDbBypassCount": {
+      "const": 0
+    },
+    "providerCallCountTotal": {
+      "enum": [
+        0,
+        2
+      ]
+    },
+    "narrationProviderCallCount": {
+      "enum": [
+        0,
+        1
+      ]
+    },
+    "decisionProviderCallCount": {
+      "enum": [
+        0,
+        1
+      ]
+    },
+    "providerSwitchCount": {
+      "const": 0
+    },
+    "regenerateCount": {
+      "const": 0
+    },
+    "fallbackCount": {
+      "const": 0
+    },
+    "manualEditCount": {
+      "const": 0
+    },
+    "computedVerdict": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorSignature": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "checkpoint",
+    "visibleUiObserved",
+    "blindHiddenReadCount",
+    "auditResultsDeliveredToBlindCount",
+    "directApiOrDbBypassCount",
+    "providerCallCountTotal",
+    "narrationProviderCallCount",
+    "decisionProviderCallCount",
+    "providerSwitchCount",
+    "regenerateCount",
+    "fallbackCount",
+    "manualEditCount",
+    "computedVerdict",
+    "generatedAt",
+    "validatorVersion",
+    "validatorSignature",
+    "immutableHash"
+  ]
+}

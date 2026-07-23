@@ -1,4 +1,4 @@
-import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260721-solo-actions-v2";
+import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260722-solo-db-fastpath-v1";
 
 export function createContinuousStoryV2App({ root, window: win, runId, initialProjection, fetchImpl }) {
   if (!root || !runId || typeof fetchImpl !== "function") throw new TypeError("continuous story v2 requires root, runId and fetch");
@@ -18,7 +18,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     const previous = win.__AI_STORY_DISABLE_AUTO_BOOT__;
     win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
     try {
-      return await import("./app.js?v=20260721-solo-actions-v2");
+      return await import("./app.js?v=20260723-player-header-v3");
     } finally {
       if (previous === undefined) delete win.__AI_STORY_DISABLE_AUTO_BOOT__;
       else win.__AI_STORY_DISABLE_AUTO_BOOT__ = previous;
@@ -34,7 +34,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       if (draft) restoreCustomDraft(root, win, draft);
       renderCreditChrome();
       renderOpeningRecovery();
-      void refreshHostRequests();
+      if (!isSoloProjection(storage.projection)) void refreshHostRequests();
     } finally {
       refreshInFlight = false;
     }
@@ -66,19 +66,18 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     const p = storage.projection;
     const credit = p?.creditControl;
     if (!credit || credit.policyVersion !== "active_action_v1") return;
+    // A human-controlled role gets a compact cost disclosure next to the
+    // decision submit button. Do not turn an ordinary balance into story
+    // chrome or insert it into the opening panel.
+    if (p.control?.canHumanAct) return;
     const node = win.document.createElement("section");
     node.dataset.v2CreditChrome = runId;
     node.className = "credit-control-banner v2-credit-control-banner";
-    const human = Boolean(p.control?.canHumanAct);
-    node.innerHTML = human
-      ? `<div><b>${credit.available} World Credits available</b><span>Suggested action ${credit.standardActionCost} · Custom action ${credit.customActionCost} · AI control costs you 0</span></div>`
-      : `<div><b>AI is currently guiding your character.</b><span>You can keep reading and return to control when you have Credits.</span></div><button type="button" data-v2-add-credits>Add Credits</button>${credit.canRequestSponsor ? `<button type="button" data-v2-request-support>Request support</button>` : ""}<button type="button" data-v2-reclaim-credit>Reclaim character</button>`;
+    node.innerHTML = `<div><b>AI is currently guiding your character.</b><span>You can keep reading and return to control when you have Credits.</span></div><button type="button" data-v2-add-credits>Add Credits</button>${credit.canRequestSponsor ? `<button type="button" data-v2-request-support>Request support</button>` : ""}<button type="button" data-v2-reclaim-credit>Reclaim character</button>`;
     const mountWhenReady = () => {
       const mountedStoryColumn = root.querySelector(".causal-center");
       if (mountedStoryColumn) {
-        const actionZone = mountedStoryColumn.querySelector('.opening-start, [data-testid="decision-zone"]');
-        const flowTarget = actionZone || mountedStoryColumn;
-        if (node.parentElement !== flowTarget) flowTarget.prepend(node);
+        if (node.parentElement !== mountedStoryColumn) mountedStoryColumn.prepend(node);
       } else if (!node.isConnected) {
         win.document.body.append(node);
       }
@@ -147,7 +146,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
 
   async function refreshHostRequests() {
     const p = storage.projection;
-    if (!p || p.room?.ownerUserId !== p.player?.userId) return;
+    if (!p || p.room?.mode === "solo" || p.room?.ownerUserId !== p.player?.userId) return;
     try {
       const requests = await api(`/api/v4/story-runs/${encodeURIComponent(runId)}/sponsorship-requests`);
       const pending = Array.isArray(requests) ? requests.find((item) => item.status === "PENDING") : null;
@@ -171,20 +170,27 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       win.addEventListener("worldcreditsrequired", onCreditsRequired);
       renderCreditChrome();
       renderOpeningRecovery();
-      void refreshHostRequests();
-      pollTimer = win.setInterval(() => {
-        const state = storyApp?.getState();
-        const openingNeedsRecoveryPoll = Boolean(!storage.projection?.completed && !storage.projection?.currentTurn);
-        const hasDraft = Boolean(
-          root.querySelector("#customDecision")?.value?.trim()
-          || root.querySelector("#maneuverCustomText")?.value?.trim()
-          || root.querySelector(".maneuver-panel :focus")
-        );
-        if (!state?.busy
-          && (openingNeedsRecoveryPoll || (!state?.showOpening && !state?.openingStream && !state?.resultStream))
-          && !hasDraft) void refresh(true);
-      }, 1_500);
-      heartbeatTimer = win.setInterval(() => void heartbeat(), 10_000);
+      // A Solo action is resolved by its own request and returns the updated
+      // projection. Reading, scrolling, typing, or simply leaving the page
+      // open must not poll Supabase. Recovery remains explicit through the
+      // existing refresh/retry controls. Multiplayer keeps its presence and
+      // convergence timers until its transport is migrated separately.
+      if (!isSoloProjection(storage.projection)) {
+        void refreshHostRequests();
+        pollTimer = win.setInterval(() => {
+          const state = storyApp?.getState();
+          const openingNeedsRecoveryPoll = Boolean(!storage.projection?.completed && !storage.projection?.currentTurn);
+          const hasDraft = Boolean(
+            root.querySelector("#customDecision")?.value?.trim()
+            || root.querySelector("#maneuverCustomText")?.value?.trim()
+            || root.querySelector(".maneuver-panel :focus")
+          );
+          if (!state?.busy
+            && (openingNeedsRecoveryPoll || (!state?.showOpening && !state?.openingStream && !state?.resultStream))
+            && !hasDraft) void refresh(true);
+        }, 1_500);
+        heartbeatTimer = win.setInterval(() => void heartbeat(), 10_000);
+      }
       return this;
     },
     destroy() {
@@ -207,6 +213,10 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       customAction: root.querySelector("#customDecision")?.value || ""
     })
   };
+}
+
+function isSoloProjection(projection) {
+  return projection?.room?.mode === "solo";
 }
 
 function cssEscape(value) { return globalThis.CSS?.escape ? globalThis.CSS.escape(String(value)) : String(value).replace(/[^a-zA-Z0-9_-]/g, "_"); }

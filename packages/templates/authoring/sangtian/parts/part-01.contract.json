@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "part-contract-v1",
+  "partId": "PART-01",
+  "title": "急令与暗册",
+  "foregroundPowers": [
+    "改桑执行权",
+    "证据保管与解释权",
+    "首份奏报权"
+  ],
+  "irreversibleDecisions": [
+    "改桑执行模式",
+    "县册复核程序",
+    "首份入京叙述的署名与附件"
+  ],
+  "entryStatePaths": [
+    "reform.executionMode",
+    "review.initiationStatus",
+    "report.dispatchStatus"
+  ],
+  "exitStatePaths": [
+    "reform.executionMode",
+    "review.authority",
+    "evidence.chainStatus",
+    "grain.reliefChannel",
+    "report.firstNarrativeController",
+    "relations.governorXunfu",
+    "merchant.entryStatus",
+    "land.riskLevel"
+  ],
+  "forbiddenEarlyReveals": [
+    "巡抚是幕后主使",
+    "暗账全部内容",
+    "大规模土地兼并已经完成",
+    "御前裁决结论",
+    "原著后续是本房间必然未来",
+    "凭开场密信即可定罪"
+  ],
+  "handoffPartIds": [
+    "PART-02"
+  ],
+  "implementationScope": "FULL_20_TURN_VALIDATION"
+}
