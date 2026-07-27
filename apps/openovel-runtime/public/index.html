@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>桑田诏</title>
+    <link rel="stylesheet" href="/play/styles.css">
+  </head>
+  <body>
+    <main class="story-shell">
+      <header class="story-header">
+        <div>
+          <p class="eyebrow">第一部分 · 急令与暗册</p>
+          <h1>桑田诏</h1>
+        </div>
+        <button id="new-run" class="quiet-button" type="button">重新开始</button>
+      </header>
+
+      <section class="story-paper" aria-live="polite">
+        <div id="story" class="story" aria-label="剧情正文"></div>
+        <div id="streaming" class="streaming" hidden></div>
+      </section>
+
+      <section class="action-panel" aria-labelledby="action-heading">
+        <h2 id="action-heading">你要如何应对？</h2>
+        <div id="options" class="options"></div>
+        <form id="free-action" class="free-action">
+          <label for="action-text">或者，写下你自己的行动</label>
+          <div class="action-row">
+            <textarea
+              id="action-text"
+              name="action"
+              maxlength="2000"
+              rows="2"
+              placeholder="例如：先问清县令亲随，原册为何没有随信送来。"
+            ></textarea>
+            <button id="submit-action" class="primary-button" type="submit">继续剧情</button>
+          </div>
+        </form>
+        <p id="status" class="status" role="status"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/play/app.js"></script>
+  </body>
+</html>

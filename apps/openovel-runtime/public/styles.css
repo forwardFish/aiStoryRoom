@@ -1,0 +1,260 @@
+:root {
+  color-scheme: light;
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", SimSun, serif;
+  color: #26221b;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(161, 133, 82, 0.13), transparent 32rem),
+    linear-gradient(180deg, #f4f0e7 0%, #ece5d7 100%);
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.story-shell {
+  width: min(900px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 56px;
+}
+
+.story-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 8px 4px 22px;
+  border-bottom: 1px solid rgba(72, 55, 31, 0.22);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #785f3a;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(34px, 7vw, 54px);
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.quiet-button {
+  padding: 9px 14px;
+  color: #6e5b3c;
+  background: transparent;
+  border: 1px solid rgba(91, 69, 36, 0.3);
+  border-radius: 999px;
+}
+
+.story-paper {
+  min-height: 410px;
+  margin-top: 26px;
+  padding: clamp(26px, 6vw, 58px);
+  background: rgba(255, 253, 248, 0.88);
+  border: 1px solid rgba(105, 80, 43, 0.16);
+  border-radius: 5px;
+  box-shadow: 0 24px 70px rgba(64, 49, 27, 0.1);
+}
+
+.story h2 {
+  margin: 0 0 28px;
+  font-size: 28px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.story p,
+.streaming {
+  margin: 0 0 1.15em;
+  font-size: clamp(17px, 2.2vw, 20px);
+  line-height: 2;
+  text-align: justify;
+  text-indent: 2em;
+}
+
+.story .reader-action {
+  margin-top: 28px;
+  padding: 13px 18px;
+  color: #665438;
+  background: #f4eee2;
+  border-left: 3px solid #a58555;
+  font-size: 16px;
+  line-height: 1.7;
+  text-indent: 0;
+}
+
+.streaming {
+  position: relative;
+  margin-top: 20px;
+}
+
+.streaming::after {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 1em;
+  margin-left: 4px;
+  vertical-align: -0.12em;
+  background: #927344;
+  animation: pulse 0.9s steps(1) infinite;
+}
+
+.action-panel {
+  margin-top: 24px;
+  padding: 28px;
+  background: rgba(250, 247, 240, 0.94);
+  border: 1px solid rgba(105, 80, 43, 0.18);
+  border-radius: 16px;
+}
+
+.action-panel h2 {
+  margin: 0 0 20px;
+  font-size: 25px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.options {
+  display: grid;
+  gap: 12px;
+}
+
+.option-button {
+  width: 100%;
+  padding: 16px 18px;
+  color: #2d271e;
+  background: #fffefa;
+  border: 1px solid rgba(105, 80, 43, 0.24);
+  border-radius: 11px;
+  font-size: 17px;
+  line-height: 1.65;
+  text-align: left;
+  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.option-button:hover,
+.option-button:focus-visible {
+  border-color: #8b6b3f;
+  outline: none;
+  box-shadow: 0 8px 20px rgba(90, 67, 34, 0.11);
+  transform: translateY(-1px);
+}
+
+.free-action {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(105, 80, 43, 0.14);
+}
+
+.free-action label {
+  display: block;
+  margin-bottom: 9px;
+  color: #695a44;
+  font-size: 14px;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  padding: 13px 15px;
+  color: #29241d;
+  background: #fffefa;
+  border: 1px solid rgba(105, 80, 43, 0.26);
+  border-radius: 10px;
+  line-height: 1.6;
+}
+
+textarea:focus {
+  border-color: #8b6b3f;
+  outline: 2px solid rgba(139, 107, 63, 0.12);
+}
+
+.primary-button {
+  align-self: stretch;
+  min-width: 126px;
+  padding: 0 20px;
+  color: #fffdf8;
+  background: #56432a;
+  border: 0;
+  border-radius: 10px;
+  font-weight: 650;
+}
+
+.primary-button:disabled,
+.option-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.status {
+  min-height: 24px;
+  margin: 15px 0 0;
+  color: #765f3d;
+  font-size: 14px;
+  text-align: center;
+}
+
+@keyframes pulse {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .story-shell {
+    width: min(100% - 20px, 900px);
+    padding-top: 18px;
+  }
+
+  .story-header {
+    align-items: center;
+  }
+
+  .story-paper {
+    min-height: 340px;
+    padding: 24px 19px;
+  }
+
+  .action-panel {
+    padding: 22px 16px;
+  }
+
+  .action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-button {
+    min-height: 50px;
+  }
+}

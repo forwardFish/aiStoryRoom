@@ -1,0 +1,21 @@
+{
+  "name": "@apps/openovel-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OpenNovel-first foreground and background runtime for Our Many Worlds.",
+  "scripts": {
+    "dev": "tsx --env-file-if-exists=../../.env src/server.ts",
+    "dev:test": "tsx --env-file=../../.env.test src/server.ts",
+    "smoke:test": "tsx --env-file=../../.env.test src/cli/smoke.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.spec.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
