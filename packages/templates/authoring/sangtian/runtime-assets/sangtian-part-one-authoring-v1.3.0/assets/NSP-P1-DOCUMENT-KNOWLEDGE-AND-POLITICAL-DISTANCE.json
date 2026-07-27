@@ -1,0 +1,150 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+  "assetType": "NARRATIVE_SCENE_PATTERN",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "REQ-P1-RESPONSIBILITY-RECORD"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "source.hu_zongxian",
+    "source.tan_lun"
+  ],
+  "stateDependencies": [],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+    "NARRATIVE_SCENE_PATTERN",
+    "PLAYER_VISIBLE_PROSE_GRAMMAR",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "source.hu_zongxian",
+    "source.tan_lun"
+  ],
+  "payload": {
+    "schemaVersion": "narrative-scene-pattern-v1",
+    "patternId": "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+    "sourceSceneId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+    "dramaticFunction": "把盟友之间的同一目标写成政治距离：劝说者越靠近，主政者的行动越容易被定成党争；文书是否被观看本身改变双方的知识与责任。",
+    "openingPressure": "两个人表面站在同一边，却必须先确认彼此的靠近会不会毁掉原本还能转圜的空间。",
+    "runtimeActivationCues": [
+      "县册",
+      "副本",
+      "密信",
+      "知情",
+      "文书",
+      "经手",
+      "出示",
+      "拒绝阅读"
+    ],
+    "orderedBeats": [
+      {
+        "ordinal": 1,
+        "actorRole": "受到政治归类威胁的地方主政者",
+        "observableMove": "用短而冷的拒绝否定对方来意，迫使对方暴露失望与政治期待。",
+        "sceneFunction": "先制造人物关系裂缝，不急着解释全部理由。",
+        "reactionCue": "来客受到刺痛，转而质疑主政者究竟站在哪一边。"
+      },
+      {
+        "ordinal": 2,
+        "actorRole": "受到政治归类威胁的地方主政者",
+        "observableMove": "在对方被逼问后才说明自己的原则、未来罪名和渐进执行空间。",
+        "sceneFunction": "让人物立场从个人名节、政治归属和现实后果同时长出来。",
+        "reactionCue": "来客从愤怒转为迷惘，不再能用原来的清流立场概括他。"
+      },
+      {
+        "ordinal": 3,
+        "actorRole": "受到政治归类威胁的地方主政者",
+        "observableMove": "把被驳回的公文和持续催办的书信拿到对方面前，让政治边界变成可触摸的材料。",
+        "sceneFunction": "用物件传递证据和责任，而不是旁白讲解权力结构。",
+        "reactionCue": "来客只看必要的一份，面对更多材料时停住。"
+      },
+      {
+        "ordinal": 4,
+        "actorRole": "带着同盟期待而来的劝说者",
+        "observableMove": "主动拒绝继续阅读，以少知道来保护对方仍可否认的行动空间。",
+        "sceneFunction": "让拒绝知情成为联盟动作，而不是信息缺失。",
+        "reactionCue": "主政者的防备松动，关系在没有公开承诺的情况下发生变化。"
+      }
+    ],
+    "dialogueTactics": [
+      {
+        "actorRole": "受到政治归类威胁的地方主政者",
+        "surfaceMove": "先用一字一顿的短句推开对方，随后才用较长的话解释政治后果。",
+        "hiddenRisk": "接受帮助会让自己的每个决定都被重新定性为党争。",
+        "cadenceRule": "拒绝极短，解释渐长；展示文书后再次把话压短。"
+      },
+      {
+        "actorRole": "带着同盟期待而来的劝说者",
+        "surfaceMove": "先以失望逼问，听清后改用拒绝知情回应。",
+        "hiddenRisk": "知道得越多，越可能成为对方受清流指使的证据。",
+        "cadenceRule": "问题少而直接，真正转折由不接文书或不再追问完成。"
+      }
+    ],
+    "blockingPrinciples": [
+      "两人对谈必须有目光、转身、递与不接等可见动作承载关系变化。",
+      "解释不在开场一次说完；先让一句拒绝造成伤害，再逐层揭出理由。",
+      "知识边界通过文书的出示、接过、看完或拒绝发生改变。"
+    ],
+    "objectPowerMoves": [
+      {
+        "objectLabel": "驳回公文",
+        "observableUse": "主政者把已经遭遇的政治后果递给对方亲眼查看。",
+        "powerMeaning": "公文证明上级如何定性地方行动，也让阅读者承担知情责任。"
+      },
+      {
+        "objectLabel": "持续催办的公文与书信",
+        "observableUse": "更多材料被拿出，却被来客主动拒绝阅读。",
+        "powerMeaning": "不接材料保留了双方的政治距离，也保护后续行动不被轻易串联。"
+      }
+    ],
+    "transferableTechniques": [
+      "让关系变化通过递交或拒绝一件有政治含义的物件完成。",
+      "同盟人物也要有互相伤害和误解，不能只交换正确观点。",
+      "人物长篇解释必须由前面的拒绝、误判或物证逼出来。"
+    ],
+    "forbiddenFlattening": [
+      "不得把人物关系概括成合作或不合作、信任上升或下降。",
+      "不得把知识边界写成角色知道或不知道的后台清单。",
+      "不得让角色直接说出自己代表哪一派以及剧情需要什么。"
+    ],
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "reviewStatus": "APPROVED",
+    "reviewerId": "codex-source-scene-mechanism-review-v1",
+    "approvedAt": "2026-07-23T18:30:00+08:00"
+  }
+}

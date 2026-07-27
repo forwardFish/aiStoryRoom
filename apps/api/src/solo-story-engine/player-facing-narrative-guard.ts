@@ -53,10 +53,13 @@ export function inspectPlayerFacingNarrative(
   const continuityLedger = outsideDialogue.match(
     /(?:回文匣|空匣|匣子|公文|密信|文书|县册|原册|副本|封条|令牌)[^。！？\n]{0,70}(?:仍|没有|未)[^。！？\n]{0,26}(?:仍|没有|未)[^。！？\n]{0,26}(?:仍|没有|未)/
   )?.[0] || findObjectStateLedger(outsideDialogue);
-  if (continuityLedger) {
+  const settlementLedger = outsideDialogue.match(
+    /(?:复核启动方式|改桑执行方式|复核主持权|证据副本状态|首份责任记录)[^。！？\n]{0,36}(?:已经确定|确定为)|(?:无须|无需)[^。！？\n]{0,18}(?:离场送达|离场回报|另行送达)|当场听明这项答复/
+  )?.[0];
+  if (continuityLedger || settlementLedger) {
     issues.push({
       code: "NARRATIVE_READS_LIKE_RULE_SUMMARY",
-      detail: continuityLedger
+      detail: continuityLedger || settlementLedger || ""
     });
   } else if (constraintCount >= 4 && constraintCount > sceneMoveCount) {
     issues.push({
@@ -97,7 +100,11 @@ function findObjectStateLedger(text: string) {
       continue;
     }
     const stateCount = statePatterns.filter((pattern) => pattern.test(sentence)).length;
-    if (stateCount >= 2) return sentence;
+    // A single held object plus a still gesture is ordinary scene blocking
+    // (for example, a clerk keeps holding a reply box while watching another
+    // speaker).  Treat it as a continuity ledger only when the prose inventories
+    // at least three independent unchanged properties.
+    if (stateCount >= 3) return sentence;
   }
   return undefined;
 }

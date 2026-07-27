@@ -263,6 +263,8 @@ function partOnePromptProjection(item: import("@ai-story/templates").PartOneRunt
       registerRules: item.styleProfile.registerRules,
       sceneConstructionRules: item.styleProfile.sceneConstructionRules,
       dialogueAndSubtextRules: item.styleProfile.dialogueAndSubtextRules,
+      terminologyRules: item.styleProfile.terminologyRules,
+      forbiddenTerminologyPhrases: item.styleProfile.forbiddenTerminologyPhrases,
       narrativeBudget: item.styleProfile.narrativeBudget
     }
   };

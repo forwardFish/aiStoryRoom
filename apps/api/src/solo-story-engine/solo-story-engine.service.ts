@@ -842,7 +842,7 @@ export class SoloStoryEngineService {
       targetId: String(candidate.intentDraft?.target?.id || ""),
       targetLabel: String(candidate.intentDraft?.target?.label || ""),
       actionText: String(affordanceTemplateId
-        ? candidate.intentDraft?.objective || candidate.description || candidate.intentDraft?.method || candidate.label
+        ? candidate.description || candidate.intentDraft?.objective || candidate.intentDraft?.method || candidate.label
         : candidate.intentDraft?.method || candidate.intentDraft?.objective || candidate.description || candidate.label),
       decisionKernelId,
       affordanceTemplateId
@@ -2554,7 +2554,7 @@ function idempotencyReused() {
 function generationFailure(runId: string, attemptId: string, result: ExecuteSoloStoryFailure) {
   return new ServiceUnavailableException({
     code: "GENERATION_FAILED_RETRYABLE",
-    message: "这次剧情没有通过发布条件，系统没有伪造固定剧情，也没有自动重复调用 DeepSeek。请明确重试。",
+    message: "这次剧情没有通过发布条件，系统没有伪造固定剧情，也没有自动重复调用剧情模型。请明确重试。",
     runId,
     attemptId,
     issues: result.issues

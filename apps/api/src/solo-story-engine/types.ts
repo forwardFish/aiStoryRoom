@@ -358,6 +358,10 @@ export type StoryTurnValidatedOutput = StoryTurnModelOutput;
 
 export type StoryNarratorDraft = {
   rawProse: string;
+  /** First prose paragraph: the already-settled player action performed on scene. */
+  actionNarrative: string;
+  /** Remaining prose paragraphs: only the world's response and changed situation. */
+  worldResponseNarrative: string;
   resultNarrative: string;
   nextSituationNarrative: string;
 };

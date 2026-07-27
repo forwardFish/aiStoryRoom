@@ -1,0 +1,154 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-EXECUTION-SCOPE",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide"
+  ],
+  "stateDependencies": [
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-HALF-LAND",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH",
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-THREE-DAY-DEADLINE",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "DK-P1-EXECUTION-SCOPE",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.xunfu_aide",
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "relations.governorXunfu",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "availableWhen": [
+      "朝廷改桑要求已经到达浙江",
+      "玩家仍拥有总督执行与行文权限",
+      "玩家行动触及执行速度、复核权或责任归属",
+      "knowledgeTransfers 中存在接收者为 actor.zhejiang_xunfu 且主题匹配的送达事件，或该行动已通过巡抚依法可见的正式公文公开；否则本策略不得触发"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-01",
+        "title": "限定试办",
+        "actionText": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "附条件签发",
+        "immediateIntent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "visibleTradeoff": "用较慢的进度换取民田保护与可复核边界",
+        "stateEffects": [
+          "reform.executionMode",
+          "reform.scopeStatus",
+          "land.safeguardStatus"
+        ],
+        "statePatch": {
+          "reform.executionMode": "LIMITED_TRIAL",
+          "reform.scopeStatus": "QINGLIU_ONLY",
+          "land.safeguardStatus": "WRITTEN_NO_DISTRESS_PURCHASE"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-02",
+        "title": "先行放开",
+        "actionText": "按巡抚所请先放行改桑，同时限三日补齐复核册和经手名册。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "限期补正",
+        "immediateIntent": "按巡抚所请先放行改桑，同时限三日补齐复核册和经手名册。",
+        "visibleTradeoff": "先保进度，但错误可能先成为既成事实",
+        "stateEffects": [
+          "reform.executionMode",
+          "reform.progress",
+          "responsibility.xunfuExposure"
+        ],
+        "statePatch": {
+          "reform.executionMode": "PROVISIONAL_RELEASE",
+          "reform.progress": "STARTED",
+          "responsibility.xunfuExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-03",
+        "title": "暂缓封册",
+        "actionText": "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。",
+        "targetRef": "actor.qingliu_magistrate",
+        "method": "先保全证据",
+        "immediateIntent": "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。",
+        "visibleTradeoff": "证据更安全，朝廷与粮价压力立即上升",
+        "stateEffects": [
+          "reform.executionMode",
+          "evidence.archiveSealStatus",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "reform.executionMode": "TEMPORARILY_PAUSED",
+          "evidence.archiveSealStatus": "SEAL_ORDERED",
+          "responsibility.governorExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+  "assetType": "NARRATIVE_SCENE_PATTERN",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-XUNFU-COUNTERMOVE"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "source.hu_zongxian",
+    "source.tan_lun",
+    "source.zheng_michang",
+    "source.he_maocai",
+    "source.ma_ningyuan",
+    "source.yang_jinshui"
+  ],
+  "stateDependencies": [],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+    "NARRATIVE_SCENE_PATTERN",
+    "PLAYER_VISIBLE_PROSE_GRAMMAR",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-XUNFU-COUNTERMOVE",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "source.hu_zongxian",
+    "source.tan_lun",
+    "source.zheng_michang",
+    "source.he_maocai",
+    "source.ma_ningyuan",
+    "source.yang_jinshui"
+  ],
+  "payload": {
+    "schemaVersion": "narrative-scene-pattern-v1",
+    "patternId": "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+    "sourceSceneId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+    "dramaticFunction": "先让百姓与官场冲突堵在总督眼前，再由下属互相推责；总督通过连续追问粮源确认事实，主动承担责任后才发出命令。",
+    "openingPressure": "衙门前的可见人群和堂内官员的相互指责同时逼迫主政者表态。",
+    "runtimeActivationCues": [
+      "百姓",
+      "粮",
+      "米行",
+      "人群",
+      "民变",
+      "抓人",
+      "问责",
+      "赈济"
+    ],
+    "orderedBeats": [
+      {
+        "ordinal": 1,
+        "actorRole": "承担全局责任的地方主政者",
+        "observableMove": "先看见无法回避的民生现场，却不立刻用抓人或表态消除它。",
+        "sceneFunction": "让后续官员说法始终受眼前现实反证。",
+        "reactionCue": "随员急于指定责任人，其他官员等总督表态。"
+      },
+      {
+        "ordinal": 2,
+        "actorRole": "急于寻找问责对象的执法官员",
+        "observableMove": "把危局解释成有人抗命，主张先抓人再查。",
+        "sceneFunction": "给出对官府最省事、对百姓和证据最危险的处理方式。",
+        "reactionCue": "众人把目光转向总督，逼他接受这一归因。"
+      },
+      {
+        "ordinal": 3,
+        "actorRole": "承担全局责任的地方主政者",
+        "observableMove": "不接指控，转而逐项追问米行借粮和外省调粮究竟到了什么程度。",
+        "sceneFunction": "用可核实事实夺回议程，不在空泛立场上争吵。",
+        "reactionCue": "负责官员只能承认粮源不足。"
+      },
+      {
+        "ordinal": 4,
+        "actorRole": "承担全局责任的地方主政者",
+        "observableMove": "公开把朝廷降罪和百姓怨责揽到自己名下，再指出无粮强改会把民生问题变成治安危机。",
+        "sceneFunction": "先固定责任归属，才使后续命令具有政治分量。",
+        "reactionCue": "堂上沉默，原先逼责的人失去继续发难的立足点。"
+      },
+      {
+        "ordinal": 5,
+        "actorRole": "承担全局责任的地方主政者",
+        "observableMove": "连续下达释放、保苗、催粮和具保的命令，把代价落实到官署和自己身上。",
+        "sceneFunction": "让人物原则转化为可执行且会留下责任的行动。",
+        "reactionCue": "被点名者不得不领命，仍有利益受损者准备继续反制。"
+      }
+    ],
+    "dialogueTactics": [
+      {
+        "actorRole": "承担全局责任的地方主政者",
+        "surfaceMove": "先用极短的事实问题打断定罪，再在事实齐备后说一段承担责任的话。",
+        "hiddenRisk": "必须同时防止抗旨、断粮和民变被算到自己头上。",
+        "cadenceRule": "短问、短答、停顿、长句定责，最后用极短命令收束。"
+      },
+      {
+        "actorRole": "负责执行而试图说明困难的属官",
+        "surfaceMove": "用缺粮、调不来和上级追责说明自己为何无法完成差事。",
+        "hiddenRisk": "不愿承认地方执行和粮食准备本身有责任。",
+        "cadenceRule": "解释具体困难，但每句话都把责任推向米行、外省或上级。"
+      },
+      {
+        "actorRole": "急于寻找问责对象的执法官员",
+        "surfaceMove": "把复杂危局缩成抓谁、查谁、谁在抗命。",
+        "hiddenRisk": "需要尽快找到可承担责任的人，避免自己成为问责对象。",
+        "cadenceRule": "先提高声量、先定性，再要求对方当场说清。"
+      }
+    ],
+    "blockingPrinciples": [
+      "先给玩家一个无法用旁白替代的可见后果，再让官员在同一现场解释。",
+      "主政者的沉默必须造成他人抢话和暴露，不是空坐思考。",
+      "每次追问都改变谁掌握议程；命令下达后必须出现领命、迟疑或沉默的反应。"
+    ],
+    "objectPowerMoves": [
+      {
+        "objectLabel": "总督衙门",
+        "observableUse": "原本象征威严的入口被百姓占满，主政者无法照常进入。",
+        "powerMeaning": "空间本身证明官府秩序已经失效，不能只靠定性恢复。"
+      },
+      {
+        "objectLabel": "官府借据与总督印信",
+        "observableUse": "主政者愿意用自己的官署信用为借粮承担责任。",
+        "powerMeaning": "印信不是万能道具，而是把未来追责锁到具名者身上的筹码。"
+      }
+    ],
+    "transferableTechniques": [
+      "先让现实后果进入场景，再让人物争夺解释权。",
+      "用连续事实问题替代后台说明，让玩家亲眼看见哪些办法已经失灵。",
+      "人物只有在承担责任或付出资源后，才有资格作强硬决定。"
+    ],
+    "forbiddenFlattening": [
+      "不得把粮食、百姓、执行责任列成并列压力清单。",
+      "不得写成总督必须在国策与民生之间作出选择的判断题。",
+      "不得让 NPC 轮流解释背景；每句话必须争责任、夺议程或逼出行动。"
+    ],
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "reviewStatus": "APPROVED",
+    "reviewerId": "codex-source-scene-mechanism-review-v1",
+    "approvedAt": "2026-07-23T18:30:00+08:00"
+  }
+}

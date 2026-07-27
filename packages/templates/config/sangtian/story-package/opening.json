@@ -32,7 +32,7 @@
         "id": "card_material_county_secret_letter",
         "label": "清流县令密信"
       },
-      "method": "让书吏留下公文副本，传县令亲随当面说明密信来路与县册改痕。",
+      "method": "把巡抚催办公文暂压在案上，示意巡抚书吏留在内厅；只问县令亲随密信是否仅为报疑、原册是否并未随信送来，再从这两项已知事实启动复核。",
       "leverageKeys": [],
       "visibility": "LIMITED",
       "riskTolerance": "MEDIUM",

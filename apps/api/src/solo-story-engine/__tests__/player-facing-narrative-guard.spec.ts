@@ -17,6 +17,13 @@ test("accepts a scene that delivers the same pressure through people and objects
   assert.deepEqual(issues, []);
 });
 
+test("rejects backend settlement facts copied into player-facing prose", () => {
+  const issues = inspectPlayerFacingNarrative({
+    text: "总督点了一下头，转向书吏，说出了复核二字——复核启动方式已经确定为总督下令启动。书吏当场听明这项答复，无须离场再去送达。"
+  });
+  assert.ok(issues.some((issue) => issue.code === "NARRATIVE_READS_LIKE_RULE_SUMMARY"));
+});
+
 test("accepts an NPC's conditional explanation as dialogue rather than a decision menu", () => {
   const issues = inspectPlayerFacingNarrative({
     text: "巡抚书吏捧着回文匣道：“中丞有交代，若总督准了放行，卑职即刻领文回去；若暂缓，须得问明缘由。”他仍站在屏风外，没有退。"
@@ -58,6 +65,13 @@ test("rejects an unchanged object-state ledger even when the model varies the re
     text: "巡抚书吏仍捧着回文匣，匣子空着，合着，他双手未动。总督案上的两封文书也摊在原处。"
   });
   assert.ok(issues.some((issue) => issue.code === "NARRATIVE_READS_LIKE_RULE_SUMMARY"));
+});
+
+test("allows a held object to stay still as an observable reaction", () => {
+  const issues = inspectPlayerFacingNarrative({
+    text: "县令亲随听见这话，向前挪了半步。巡抚书吏回头看了他一眼，仍捧着回文匣不动。案上两封文书都等着总督处置。"
+  });
+  assert.ok(!issues.some((issue) => issue.code === "NARRATIVE_READS_LIKE_RULE_SUMMARY"));
 });
 
 test("allows an established object to appear when a character actually changes its state", () => {

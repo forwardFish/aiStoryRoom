@@ -10,6 +10,8 @@ import {
   parseDecisionCopyOutput,
   parseNarratorDraft
 } from "../../apps/api/src/solo-story-engine/output-parser";
+import { buildSoloNarratorPrompt } from "../../apps/api/src/solo-story-engine/narrator-prompt-builder";
+import { SoloDeepSeekTransport } from "../../apps/api/src/solo-story-engine/deepseek-transport";
 import {
   validateDecisionCopy,
   validateNarratorDraft,
@@ -33,8 +35,12 @@ async function main() {
     })
   ]);
   const candidates = Array.isArray(turn.decisionSet?.candidatesJson) ? turn.decisionSet.candidatesJson as any[] : [];
-  const candidate = candidates[0];
-  if (!candidate) throw new Error("current turn has no first candidate");
+  const candidateIndexArg = process.argv.indexOf("--candidate-index");
+  const candidateIndex = candidateIndexArg >= 0
+    ? Number(process.argv[candidateIndexArg + 1])
+    : 0;
+  const candidate = candidates[candidateIndex];
+  if (!candidate) throw new Error(`current turn has no candidate at index ${candidateIndex}`);
   const rawAction = commandToRawPlayerAction({
     idempotencyKey: `runtime-debug:${turn.id}`,
     turnRevision: turn.revision,
@@ -124,6 +130,13 @@ async function main() {
         compiled.context
       )
     : null;
+  const narratorPrompt = process.argv.includes("--include-prompt") && compiled?.ok
+    ? buildSoloNarratorPrompt(compiled.context)
+    : null;
+  const shadowNarratorAudit = process.argv.includes("--shadow-narrator")
+    && compiled?.ok
+    ? await generateShadowNarrator(compiled.context)
+    : null;
   console.log(JSON.stringify({
     runId,
     turnId: turn.id,
@@ -134,12 +147,39 @@ async function main() {
     validation,
     availability,
     lockReason,
-    attempts: attempts.map(({ rawOutput: _rawOutput, ...attempt }) => attempt),
+    attempts: attempts.map(({ rawOutput, ...attempt }) =>
+      process.argv.includes("--include-raw")
+        ? { ...attempt, rawOutput }
+        : attempt
+    ),
+    narratorPrompt,
     latestTwoStageAudit,
+    shadowNarratorAudit,
     settlementEvent: runtime.partOneSettlement?.event,
     availableTargets: runtime.availableTargets,
     nextAvailableTargets: runtime.nextAvailableTargets
   }, null, 2));
+}
+
+async function generateShadowNarrator(
+  context: Parameters<typeof validateNarratorDraft>[1]
+) {
+  const transport = SoloDeepSeekTransport.fromEnv();
+  const prompt = buildSoloNarratorPrompt(context);
+  const response = await transport.generate({
+    attemptId: `shadow-narrator:${Date.now()}`,
+    stage: "NARRATOR",
+    prompt,
+    context
+  });
+  const draft = parseNarratorDraft(response.rawText);
+  return {
+    model: response.model,
+    elapsedMs: response.elapsedMs,
+    usage: response.usage,
+    rawText: response.rawText,
+    validation: validateNarratorDraft(draft, context)
+  };
 }
 
 function auditLatestTwoStageAttempt(

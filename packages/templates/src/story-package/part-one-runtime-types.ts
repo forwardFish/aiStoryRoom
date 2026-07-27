@@ -87,6 +87,15 @@ export type PartOneAuthoritativeWorldMove = {
   consequenceId?: string;
 };
 
+export type NarrativeTextureAllowance = {
+  allowanceId: string;
+  textureClass: "CREATION_SUBSTRATE";
+  lifecycle: "CONSUMED_INTO_TARGET";
+  targetEntityKind: "DOCUMENT" | "OBJECT";
+  targetEntityRef: string;
+  targetEntityLabel: string;
+};
+
 export type PartOneNarrativePlan = {
   sceneStart: PartOneSceneState;
   sceneEnd: PartOneSceneState;
@@ -98,11 +107,16 @@ export type PartOneNarrativePlan = {
   authorizedActorDepartures: string[];
   dramaticTask: string;
   actionAlreadyOccurred: string;
+  playerSpeechMode:
+    | "INDIRECT_ONLY"
+    | "INDIRECT_SPEECH_REQUIRED"
+    | "EXACT_QUOTE_ALLOWED";
   authorizedPlayerSpeech: string[];
   confirmedEffects: string[];
   unresolvedFacts: string[];
   npcAgenda: string[];
   sceneBlocking: string[];
+  incidentalTextureAllowances: NarrativeTextureAllowance[];
   sceneBeats: Array<{
     beatId: string;
     sourceType: "PLAYER_ACTION" | "CONFIRMED_EFFECT" | "NPC_REACTION" | "WORLD_MOVE";
@@ -223,6 +237,7 @@ export type PartOneNarrativeStyleProfile = {
   characterVoiceAnchors: Record<string, string[]>;
   dialogueAndSubtextRules: string[];
   terminologyRules: string[];
+  forbiddenTerminologyPhrases: string[];
   forbiddenModernPhrases: string[];
   forbiddenSystemPhrases: string[];
   forbiddenAiSummaryPatterns: string[];

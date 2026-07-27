@@ -123,6 +123,15 @@ test("allows drying ink only when the current action has just written the docume
   );
 });
 
+test("a refusal to sign does not authorize invented writing or fresh ink", () => {
+  const eventText = "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。";
+  const authorized = authorizedPartOneProceduralDerivations(eventText);
+  const guidance = authorizedPartOneProceduralGuidance(eventText).join("\n");
+
+  assert.equal(authorized.some((item) => item.includes("墨迹")), false);
+  assert.doesNotMatch(guidance, /现场笔砚|新写墨迹/);
+});
+
 test("rejects an uncommitted NPC threat to send another emissary", () => {
   assert.equal(
     containsUnauthorizedPartOneDiscovery(
@@ -137,5 +146,77 @@ test("rejects an uncommitted NPC threat to send another emissary", () => {
       "中丞已经明令再遣人来取回文。"
     ),
     false
+  );
+});
+
+test("allows a conditional warning about a possible future emissary without treating it as an arrival", () => {
+  assert.equal(
+    containsUnauthorizedPartOneDiscovery(
+      "巡抚那边若再遣人来问，卑职恐怕答不周全。",
+      ""
+    ),
+    false
+  );
+  assert.equal(
+    containsUnauthorizedPartOneDiscovery(
+      "巡抚已经再遣人来到门外。",
+      ""
+    ),
+    true
+  );
+});
+
+test("rejects an invented archive catalog when only the archive-sealing order is known", () => {
+  assert.equal(
+    containsUnauthorizedPartOneDiscovery(
+      "此案既涉清流县封存库目，巡抚衙门理当与闻。",
+      "清流县档房封存命令已经发出，是否完成仍待回报。"
+    ),
+    true
+  );
+});
+
+test("allows a rhetorical absence of a reply without treating it as a discovered document", () => {
+  assert.equal(
+    containsUnauthorizedPartOneDiscovery(
+      "书吏等到的不是朱批，也不是回文底稿。",
+      "催办公文暂缓签发，现场没有形成书面回复。"
+    ),
+    false
+  );
+});
+
+test("rejects an unapproved folded memorandum introduced as a new prop", () => {
+  assert.equal(
+    containsUnauthorizedPartOneDiscovery(
+      "巡抚幕僚从袖中取出一页折好的手折，双手呈向案面。",
+      "巡抚幕僚可以到场追问材料披露范围。"
+    ),
+    true
+  );
+});
+
+test("allows an authorized review-method question without treating it as a new finding", () => {
+  const authorized = "巡抚书吏催问为何暂缓签发，并要求写明复核的范围与方式。";
+  assert.equal(
+    containsUnauthorizedPartOneDiscovery(
+      "复核以何方式、由何人经办？",
+      authorized
+    ),
+    false
+  );
+  assert.equal(
+    containsUnauthorizedPartOneDiscovery(
+      "复核以何方式、由何人经办？",
+      ""
+    ),
+    true
+  );
+  assert.equal(
+    containsUnauthorizedPartOneDiscovery(
+      "“由何人经办”已经写在另一份手令上。",
+      authorized
+    ),
+    true
   );
 });

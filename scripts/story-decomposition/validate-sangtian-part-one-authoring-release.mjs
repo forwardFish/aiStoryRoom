@@ -4,7 +4,7 @@ import { computeImmutableHash, readJson, repoRoot, validateWithSchema, writeJson
 
 const RELEASE_VERSION = String(
   process.env.SANGTIAN_AUTHORING_RELEASE_VERSION
-  || "sangtian-part-one-authoring-v1.2.0"
+  || "sangtian-part-one-authoring-v1.3.0"
 ).trim();
 const authoringRoot = resolve(repoRoot, "packages/templates/authoring/sangtian");
 const releaseRoot = resolve(authoringRoot, "runtime-assets", RELEASE_VERSION);
@@ -71,6 +71,21 @@ for (const asset of assets) {
       titles.add(option.title);
       const visible = `${option.title}\n${option.actionText}\n${option.visibleTradeoff}`;
       if (forbiddenVisibleTokens.some((pattern) => pattern.test(visible))) fail("KERNEL_OPTION_INTERNAL_LANGUAGE", `${asset.assetId}:${option.affordanceTemplateId}`);
+      if (
+        asset.assetId === "DK-P1-RESPONSIBILITY-RECORD"
+        && /已经写明|现有公文|同一份回文/u.test(option.actionText)
+      ) {
+        fail("KERNEL_OPTION_UNPROVEN_DOCUMENT_PRECONDITION", `${asset.assetId}:${option.affordanceTemplateId}`);
+      }
+      if (
+        /暂准放行/u.test(option.actionText)
+        && (
+          option.statePatch?.["reform.executionMode"] !== "PROVISIONAL_RELEASE"
+          || option.statePatch?.["reform.progress"] !== "STARTED"
+        )
+      ) {
+        fail("KERNEL_OPTION_VISIBLE_STATE_MISMATCH", `${asset.assetId}:${option.affordanceTemplateId}`);
+      }
     }
   }
 }

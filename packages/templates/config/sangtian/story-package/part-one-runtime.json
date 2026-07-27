@@ -3,16 +3,16 @@
   "worldId": "sangtian",
   "partId": "PART-01",
   "perspectiveRoleKey": "zhejiang_governor",
-  "authoringReleaseVersion": "sangtian-part-one-authoring-v1.2.0",
-  "authoringManifestHash": "2FC3EDDEF2B6C082F4403CAD94C4219F05CB6B67E7AEE1C0AAEBD1DF5BDE2559",
+  "authoringReleaseVersion": "sangtian-part-one-authoring-v1.3.0",
+  "authoringManifestHash": "D078C192F3D9780B640656960C2C9AB8E871C98AAA701DB94A60BB904EEA4E71",
   "authoringManifest": {
     "schemaVersion": "sangtian-part-one-authoring-release-v1",
-    "releaseVersion": "sangtian-part-one-authoring-v1.2.0",
+    "releaseVersion": "sangtian-part-one-authoring-v1.3.0",
     "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
     "reviewSetHash": "39E8E830FFDB58D41E470BE89F89EA4D93B086629C31B5C5D0A6E8F85F5A2E80",
     "adaptationReviewSetHash": "39E8E830FFDB58D41E470BE89F89EA4D93B086629C31B5C5D0A6E8F85F5A2E80",
-    "styleProfileHash": "5D5E67CD3A122AAAEAAEBE70D8D6E379F16CEDE8C12C45804541DB78BF1CC6FC",
-    "narrativeScenePatternSetHash": "F6E08AFD4DC26A0895712CBFA6EC8CA19141D6107C3D178F9A95169274A0E41F",
+    "styleProfileHash": "E6D4C4769C26DBEB4FBA0EE26768149D04E8E121323320C967BC8396DFB19326",
+    "narrativeScenePatternSetHash": "72673209998FF496AA2F9B8E4FF5E7827991AFD64BE7DB18395AD784CF47E197",
     "narrativeScenePatternCount": 3,
     "assetCount": 54,
     "decisionKernelCount": 15,
@@ -87,13 +87,13 @@
       "DK-P1-DISCLOSURE-SCOPE": "85A670C22F34888313B9CB11DA2CFE47F5A3A04B9C71AE31BB7111CCCE7A4444",
       "DK-P1-EVIDENCE-ATTACHMENT": "F4490B345B52F9C074B23E93BAD5818E53B55ABD76E674F86D7C47CF3BBC4AE5",
       "DK-P1-EVIDENCE-CUSTODY": "50019D014F7A4D180853D8908744E56260846B2E4C5A61F866A92A8821D268D3",
-      "DK-P1-EXECUTION-SCOPE": "C385DB0951E764B3B15553DDA1C0B96295F59F10FF33A4E15E9D2B92462E0B75",
+      "DK-P1-EXECUTION-SCOPE": "A1DDCEC92EFAEC6419C90F06F03522857072AEE0B9D36E6882BC46EC50387C90",
       "DK-P1-GRAIN-SOURCE": "06C58D380D71FADD0806714E66C4806DD20E966EB9471FF096B7B501002A4303",
       "DK-P1-LAND-SAFEGUARD": "82D7727EC932B1A84ACA0F6BCF8587F48B9033FE9AAC7FCBDAF754380DB1536C",
       "DK-P1-MERCHANT-CONDITIONS": "3CF9739A783F71C757296BC9BCB6E3F91C71923CD19F306A9C59D477D10FD0B3",
       "DK-P1-RELIEF-PRIORITY": "9BC23087D9DFF22F98B9FB4988B572E6DAC60D55D8322EBA9507F5A8595683F6",
       "DK-P1-REPORT-AUTHORSHIP": "CD3A8541855E051F30533BA2AC44DB07A3BB0CB9673250498A9A6F70BF7DDC55",
-      "DK-P1-RESPONSIBILITY-RECORD": "49AD5C05A648A960B5EB695B26E227AB201594CE9920562E081B9585FE987DC2",
+      "DK-P1-RESPONSIBILITY-RECORD": "2871402F44672F91AB7D626B49BCF0B9D7A9F92C29DDCFD79D150631856C5208",
       "DK-P1-RESPONSIBILITY-SCOPE": "6BF4C02BE650023BE1752C977D03C8CAEFD9091A25E2B74C474674DAD75FDCE0",
       "DK-P1-REVIEW-AUTHORITY": "098C68E5184CF731080E14389FFE50C6921964590C9122E0D1AB9C3219C758FA",
       "DK-P1-REVIEW-INITIATION": "62EC9FC004E21C977518BC45C397A2872994EA3DB23E7D26009E7789B73496AA",
@@ -102,12 +102,12 @@
       "FLOOR-P1-S2-CUSTODY-DISRUPTION": "E1BFA2A68EBE232E7030936D85C2170992525BB38E243CDC108CB71AEEB73170",
       "FLOOR-P1-S3-GRAIN-PRICE-MOVE": "9FA251455A8885BE5FF8D1B46B9888C92678DC617408D72E14500BD6AD85F7DB",
       "FLOOR-P1-S4-CAPITAL-DEADLINE": "3BC9FC8E8510B437432B896B3AC9102882281BF4D33ED09077F96099C8805C60",
-      "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE": "0043D66AF701CE136C19C64AD3B1E67A23E539C6F4EF5288EFB0619B72B60028",
-      "NSP-P1-POLICY-QUESTION-AND-DISPATCH": "27C3FE6B362165175EBA6D8A5455187FC579C13566D49EB544D808AD6D43F435",
-      "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY": "79EE33402048DC8451541564A9D848453902744F8818AF5B38254516744ACEEE",
+      "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE": "22348A8BD1FEC5D5F5FBD50DC76B13B174CCE2F5264F3D16BDFC0B25F615BDF8",
+      "NSP-P1-POLICY-QUESTION-AND-DISPATCH": "A9E8EBEA2924A2EC7915CBBA92F07E942F9EF75D990C3EEC2008B8AC08BED639",
+      "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY": "D3E6B321241CED036986CD47ABD1DCEBB71ECD1A584DDBE4CA38C9D634D229E1",
       "PCR-P1-CAPITAL-FRAMING": "AC1B6C74B1BCFB5C1BACDF14C1553B8511D519F6F7D6121EC856A8C6D4428750",
       "PCR-P1-EVIDENCE-ATTACHMENT": "949BA61299D748163C7709A18203FC4129B9E5E30C187E3556EE88E5443B1B18",
-      "PCR-P1-EXECUTION-BOUNDARY": "22CFEBB134B4D0BF2CC5737F96F090188CD03648A172FF48DFA0DEAE7B3E5ADC",
+      "PCR-P1-EXECUTION-BOUNDARY": "CF8C8F2831D4B7F22F248356B8EE15E8458BE6398F23C770A3AE050A89FA7473",
       "PCR-P1-GRAIN-RELIEF": "EAD639FE2D313E422FFEFE2A541419E71BAFDB220B09A3A0910F99D6F2A45E3E",
       "PCR-P1-KNOWLEDGE-CHAIN": "86803311C8F296CB1211DAAF727D02399E9F9F14E802E3CFA91C415FA55E4186",
       "PCR-P1-LAND-RISK": "5E01156A8C4D766028096B61884309058788A96754E7010266DA27FF2015D9FF",
@@ -116,7 +116,7 @@
       "PCR-P1-REPORT-AUTHORSHIP": "082B9C05FA30B6F63621356F64BF52E71AACEC453B549ADCCD4BB556F97F1D57",
       "PCR-P1-RESPONSIBILITY-RECORD": "D1AA84C0DE06CECCD53A9FF01582D58C716C1F342E2D2B0F1D2F2CC55E0F0C24",
       "PCR-P1-REVIEW-AUTHORITY": "6934FBCCBD3B3792B8873480EC6F48B648D8D4DC806D811976259778B3B6CA53",
-      "PCR-P1-XUNFU-COUNTERMOVE": "B534470D3CEB7D77290AB68D9824031CAC4129CF60EC7F4345463CF3BB5D3179",
+      "PCR-P1-XUNFU-COUNTERMOVE": "BF3488F5D99CB69FCA137DA66908FAB1E1C640442765B04E8B855C006C18F2A9",
       "RTA-P1-CAPITAL-FRAMING": "522E4B92291055A5D912885341BA49D34FC8D75DB5D2B69DFA265B713CA55B07",
       "RTA-P1-EVIDENCE-ATTACHMENT": "EE6F4D44B40843154ACFB18B9BF0EAB20E8B5F0A53C23B6F4C7AC4B2E87983EE",
       "RTA-P1-EXECUTION-BOUNDARY": "62B375B19C652A92D12E3301B6A80D24AEBFAA3A22476FBC433C0CDBDCC7501E",
@@ -128,12 +128,12 @@
       "RTA-P1-REPORT-AUTHORSHIP": "E02097F232FCD6961BD0FF25E1A7A106B6AB1271C7570F32C261DF869E0F324F",
       "RTA-P1-RESPONSIBILITY-RECORD": "E7B015B3F666E7E4C96FCFCF1DC3ACB7F5E86493E3B2DEE1E0342E1146AADD11",
       "RTA-P1-REVIEW-AUTHORITY": "C068DE392BDC029529D6F44538C51F6C689650766449648A99ADE1714CD9ADB6",
-      "RTA-P1-XUNFU-COUNTERMOVE": "D00455597A256C087D4AD036428D357253422D9133E300C4BCC0DF2785900954",
-      "STYLE-SANGTIAN-HISTORICAL-NOVEL": "BF83AD457B05291A23E3987914CDB94B12D4A34839568A41A29D2EA0EF7B95FB"
+      "RTA-P1-XUNFU-COUNTERMOVE": "8504A007E5670BDDE9E65D08A6BF12AB347F3356BC3FD74F02E936EB61C19CB5",
+      "STYLE-SANGTIAN-HISTORICAL-NOVEL": "AEE1FA9AD6362B8486380A0C4397E0C77572595D6102A1E5D3CA1B786A9EFE76"
     },
-    "runtimeIndexHash": "B1EABED2C10DC1E7573D3F95E5C982558D744CE54CC6C9A75A3A180E35B81B08",
+    "runtimeIndexHash": "FE91B97016E582F46351C56DD238D8EF1184C7EFBADCFC73877AF7EBDF221DD7",
     "requirementSetHash": "4449154CDD3BC8A542FD8C9231CB79CC01AB4BE878777AB40BDFA0CCDE8267EA",
-    "immutableHash": "2FC3EDDEF2B6C082F4403CAD94C4219F05CB6B67E7AEE1C0AAEBD1DF5BDE2559"
+    "immutableHash": "D078C192F3D9780B640656960C2C9AB8E871C98AAA701DB94A60BB904EEA4E71"
   },
   "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
   "contentCounts": {
@@ -2075,7 +2075,7 @@
   "styleProfile": {
     "schemaVersion": "narrative-style-profile-v1",
     "profileId": "STYLE-SANGTIAN-HISTORICAL-NOVEL",
-    "version": "1.3.0",
+    "version": "1.4.3",
     "pointOfView": "以浙江总督可感知范围为主的第三人称限知叙事；不进入玩家未获知人物的内心。",
     "registerRules": [
       "使用明代官署、文书、田粮与上下级称谓",
@@ -2085,7 +2085,7 @@
     "sceneConstructionRules": [
       "每回合先呈现上一选择造成的可观察变化",
       "至少一个人物主动行动或世界压力兑现",
-      "场景必须包含地点、物件、动作或声音等可感细节",
+      "优先使用工作集已经列出的地点、文书、物件和人物动作；只允许少量不改变事实的声光细节，不为增加真实感补造程序、权限、文书内容或办理结果",
       "用人物的追问、回答、停顿、递交、拒绝和在场反应呈现冲突，不把内部限制说明改写成正文",
       "结尾以眼前必须处理的矛盾自然导出选择，不写测试式总结，也不在正文替玩家列出选择题"
     ],
@@ -2114,18 +2114,36 @@
         "熟悉经手顺序和细节",
         "说话谨慎且受保管人影响",
         "知道自己可能成为证人或替罪羊"
+      ],
+      "actor.xunfu_aide": [
+        "只在巡抚已经授权的范围内争时限、复核权和责任记录",
+        "把压力落到公文、具名与复命，不替巡抚宣布工作集之外的新命令"
+      ],
+      "actor.xunfu_clerk": [
+        "自称“卑职”，称总督“部堂”或“大人”；不得把“书吏”这个后台角色标签当作第一人称自称",
+        "只以奉巡抚催取回文的身份恭谨追问而不退让，把压力落到为何暂缓、三日期限和书面回复；不冒充巡抚本人，也不暗示工作集未给出的更高授意者"
+      ],
+      "actor.qingliu_messenger": [
+        "只传达县令已经报疑并等待上命，不替县令判断案情",
+        "领到明确命令后简短领命，不自行展开县衙封存程序或场外结果"
       ]
     },
     "dialogueAndSubtextRules": [
       "对话必须同时表现角色目的和不愿明说的风险",
       "短问之后允许短答、沉默或旁人的可见反应，不把所有人的话写成同样长度的说明",
       "避免所有人轮流解释背景",
-      "重要主张由文书、物件、在场动作或既有事件支撑"
+      "重要主张由文书、物件、在场动作或既有事件支撑",
+      "下属在对白中使用与身份相符的自称和称谓，不把后台角色标签当作第一人称反复自称"
     ],
     "terminologyRules": [
       "用改稻为桑或改桑，不用产业升级",
       "用奏报、公文、具名、封缄、复核，不用流程工单",
       "用米价、官仓、田契、田册，不用供应链 KPI"
+    ],
+    "forbiddenTerminologyPhrases": [
+      "改桑为田",
+      "改桑田为稻田",
+      "改桑为稻"
     ],
     "forbiddenModernPhrases": [
       "KPI",
@@ -2135,7 +2153,8 @@
       "战略抓手",
       "风险敞口",
       "资源置换",
-      "项目推进"
+      "项目推进",
+      "踩了刹车"
     ],
     "forbiddenSystemPhrases": [
       "玩家选择",
@@ -2164,8 +2183,8 @@
       "minCharacters": 300,
       "maxCharacters": 1500
     },
-    "reviewerId": "codex-player-scene-pattern-repair-v1.3.0",
-    "approvedAt": "2026-07-23T12:00:00.000+08:00"
+    "reviewerId": "codex-player-terminology-lock-v1.4.3",
+    "approvedAt": "2026-07-26T00:00:00.000+08:00"
   },
   "assets": [
     {
@@ -2233,6 +2252,16 @@
         "sourceSceneId": "DM1566-C01-POLICY-COUNCIL",
         "dramaticFunction": "让一项看似能填补亏空的政策，在连续追问百姓口粮与执行责任后仍被迅速定为急务；冲突由人物问答和权力落槌完成，不由旁白解释。",
         "openingPressure": "先有人主动揽下一部分责任，权力中心随后把抽象财政策略追问成具体民生问题。",
+        "runtimeActivationCues": [
+          "急令",
+          "催办",
+          "答复",
+          "追问",
+          "三日",
+          "下令",
+          "领命",
+          "责任"
+        ],
         "orderedBeats": [
           {
             "ordinal": 1,
@@ -2370,6 +2399,16 @@
         "sourceSceneId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
         "dramaticFunction": "先让百姓与官场冲突堵在总督眼前，再由下属互相推责；总督通过连续追问粮源确认事实，主动承担责任后才发出命令。",
         "openingPressure": "衙门前的可见人群和堂内官员的相互指责同时逼迫主政者表态。",
+        "runtimeActivationCues": [
+          "百姓",
+          "粮",
+          "米行",
+          "人群",
+          "民变",
+          "抓人",
+          "问责",
+          "赈济"
+        ],
         "orderedBeats": [
           {
             "ordinal": 1,
@@ -2523,6 +2562,16 @@
         "sourceSceneId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
         "dramaticFunction": "把盟友之间的同一目标写成政治距离：劝说者越靠近，主政者的行动越容易被定成党争；文书是否被观看本身改变双方的知识与责任。",
         "openingPressure": "两个人表面站在同一边，却必须先确认彼此的靠近会不会毁掉原本还能转圜的空间。",
+        "runtimeActivationCues": [
+          "县册",
+          "副本",
+          "密信",
+          "知情",
+          "文书",
+          "经手",
+          "出示",
+          "拒绝阅读"
+        ],
         "orderedBeats": [
           {
             "ordinal": 1,
@@ -2710,8 +2759,7 @@
         "REQ-P1-EXECUTION-BOUNDARY"
       ],
       "decisionKernelIds": [
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-REVIEW-INITIATION"
+        "DK-P1-EXECUTION-SCOPE"
       ],
       "causalArcIds": [
         "ARC-P1-DEADLINE-RESPONSIBILITY"
@@ -2749,7 +2797,6 @@
         "REQ-P1-EXECUTION-BOUNDARY",
         "PENDING_CONSEQUENCE",
         "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-REVIEW-INITIATION",
         "ARC-P1-DEADLINE-RESPONSIBILITY",
         "actor.zhejiang_governor",
         "actor.zhejiang_xunfu",
@@ -3123,7 +3170,7 @@
         ],
         "allowedMoves": [
           "依据改编后的巡抚权限催办并要求书面回复",
-          "要求参与复核并留下本方经手记录",
+          "要求参与复核，并要求复核发生时如实注明巡抚一方经手",
           "拒绝在包含延缓主张的文书上联署",
           "另行递交写明异议的地方文书"
         ],
@@ -3246,15 +3293,29 @@
             "requiredTermGroups": [
               [
                 "巡抚",
-                "巡抚一方"
+                "巡抚一方",
+                "抚院"
               ],
               [
                 "材料",
-                "披露"
+                "披露",
+                "能看的",
+                "允准披露"
               ],
               [
                 "另立",
-                "叙述"
+                "叙述",
+                "另具一稿",
+                "另写一稿",
+                "另具一份",
+                "另写一份",
+                "自具一稿",
+                "另叙",
+                "另作说法",
+                "另作一说",
+                "自行具文",
+                "具文回话",
+                "把今日情形写进去"
               ]
             ],
             "resultCeiling": "只能形成公开威胁，不得写成另一份奏报已经发出。"
@@ -6043,10 +6104,10 @@
           {
             "affordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-01",
             "title": "限定试办",
-            "actionText": "只准清流县先办一批，并把不得压价买田写进放行文书。",
+            "actionText": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
             "targetRef": "actor.zhejiang_xunfu",
             "method": "附条件签发",
-            "immediateIntent": "只准清流县先办一批，并把不得压价买田写进放行文书。",
+            "immediateIntent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
             "visibleTradeoff": "用较慢的进度换取民田保护与可复核边界",
             "stateEffects": [
               "reform.executionMode",
@@ -6085,10 +6146,10 @@
           {
             "affordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-03",
             "title": "暂缓封册",
-            "actionText": "暂不签放行文书，先封存清流县档房，并把延误责任记在自己名下。",
+            "actionText": "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。",
             "targetRef": "actor.qingliu_magistrate",
             "method": "先保全证据",
-            "immediateIntent": "暂不签放行文书，先封存清流县档房，并把延误责任记在自己名下。",
+            "immediateIntent": "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。",
             "visibleTradeoff": "证据更安全，朝廷与粮价压力立即上升",
             "stateEffects": [
               "reform.executionMode",
@@ -6937,10 +6998,10 @@
           {
             "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
             "title": "要求联署",
-            "actionText": "在已经写明的改桑边界之后，补写复核办法与督抚各自责任，请巡抚一同具名。",
+            "actionText": "将当前改桑执行边界、复核办法与督抚各自责任写入正式回文，请巡抚共同具名。",
             "targetRef": "actor.zhejiang_xunfu",
             "method": "共同具名",
-            "immediateIntent": "在已经写明的改桑边界之后，补写复核办法与督抚各自责任，请巡抚一同具名。",
+            "immediateIntent": "将当前改桑执行边界、复核办法与督抚各自责任写入正式回文，请巡抚共同具名。",
             "visibleTradeoff": "共同承担能换来合作，也会模糊日后分歧",
             "stateEffects": [
               "responsibility.firstRecordStatus",
@@ -6961,10 +7022,10 @@
           {
             "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-02",
             "title": "总督单署",
-            "actionText": "由总督独自签发附条件命令，并把巡抚催办原文作为附件留档。",
+            "actionText": "由总督单独具名写明当前改桑执行边界，并把巡抚催办原文作为附件留档。",
             "targetRef": "actor.zhejiang_xunfu",
             "method": "单独具名并附原文",
-            "immediateIntent": "由总督独自签发附条件命令，并把巡抚催办原文作为附件留档。",
+            "immediateIntent": "由总督单独具名写明当前改桑执行边界，并把巡抚催办原文作为附件留档。",
             "visibleTradeoff": "责任集中，但保留了催办来源",
             "stateEffects": [
               "responsibility.firstRecordStatus",
@@ -6981,20 +7042,24 @@
           {
             "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
             "title": "记明异议",
-            "actionText": "在现有公文上批明暂准放行，并在同一份回文中逐项写明督抚分歧和各自承担的事项。",
+            "actionText": "另具正式回文暂准放行，并逐项写明督抚分歧和各自承担的事项。",
             "targetRef": "actor.zhejiang_xunfu",
             "method": "分项责任记录",
-            "immediateIntent": "在现有公文上批明暂准放行，并在同一份回文中逐项写明督抚分歧和各自承担的事项。",
+            "immediateIntent": "另具正式回文暂准放行，并逐项写明督抚分歧和各自承担的事项。",
             "visibleTradeoff": "关系转冷，但后续不易互相改口",
             "stateEffects": [
               "responsibility.firstRecordStatus",
-              "relations.governorXunfu"
+              "relations.governorXunfu",
+              "reform.executionMode",
+              "reform.progress"
             ],
             "statePatch": {
               "responsibility.firstRecordStatus": "DISAGREEMENT_RECORDED",
               "relations.governorXunfu": {
                 "$delta": -1
-              }
+              },
+              "reform.executionMode": "PROVISIONAL_RELEASE",
+              "reform.progress": "STARTED"
             },
             "createsPendingConsequence": true
           }
@@ -9363,7 +9428,10 @@
         "actor.zhejiang_xunfu",
         "actor.qingliu_magistrate",
         "actor.jiangnan_merchant_head",
-        "actor.reform_clerk"
+        "actor.reform_clerk",
+        "actor.xunfu_aide",
+        "actor.xunfu_clerk",
+        "actor.qingliu_messenger"
       ],
       "stateDependencies": [
         "partId",
@@ -9472,6 +9540,9 @@
         "actor.qingliu_magistrate",
         "actor.jiangnan_merchant_head",
         "actor.reform_clerk",
+        "actor.xunfu_aide",
+        "actor.xunfu_clerk",
+        "actor.qingliu_messenger",
         "partId",
         "sectionId",
         "pendingConsequences",
@@ -9480,7 +9551,7 @@
       "payload": {
         "schemaVersion": "narrative-style-profile-v1",
         "profileId": "STYLE-SANGTIAN-HISTORICAL-NOVEL",
-        "version": "1.3.0",
+        "version": "1.4.3",
         "pointOfView": "以浙江总督可感知范围为主的第三人称限知叙事；不进入玩家未获知人物的内心。",
         "registerRules": [
           "使用明代官署、文书、田粮与上下级称谓",
@@ -9490,7 +9561,7 @@
         "sceneConstructionRules": [
           "每回合先呈现上一选择造成的可观察变化",
           "至少一个人物主动行动或世界压力兑现",
-          "场景必须包含地点、物件、动作或声音等可感细节",
+          "优先使用工作集已经列出的地点、文书、物件和人物动作；只允许少量不改变事实的声光细节，不为增加真实感补造程序、权限、文书内容或办理结果",
           "用人物的追问、回答、停顿、递交、拒绝和在场反应呈现冲突，不把内部限制说明改写成正文",
           "结尾以眼前必须处理的矛盾自然导出选择，不写测试式总结，也不在正文替玩家列出选择题"
         ],
@@ -9519,18 +9590,36 @@
             "熟悉经手顺序和细节",
             "说话谨慎且受保管人影响",
             "知道自己可能成为证人或替罪羊"
+          ],
+          "actor.xunfu_aide": [
+            "只在巡抚已经授权的范围内争时限、复核权和责任记录",
+            "把压力落到公文、具名与复命，不替巡抚宣布工作集之外的新命令"
+          ],
+          "actor.xunfu_clerk": [
+            "自称“卑职”，称总督“部堂”或“大人”；不得把“书吏”这个后台角色标签当作第一人称自称",
+            "只以奉巡抚催取回文的身份恭谨追问而不退让，把压力落到为何暂缓、三日期限和书面回复；不冒充巡抚本人，也不暗示工作集未给出的更高授意者"
+          ],
+          "actor.qingliu_messenger": [
+            "只传达县令已经报疑并等待上命，不替县令判断案情",
+            "领到明确命令后简短领命，不自行展开县衙封存程序或场外结果"
           ]
         },
         "dialogueAndSubtextRules": [
           "对话必须同时表现角色目的和不愿明说的风险",
           "短问之后允许短答、沉默或旁人的可见反应，不把所有人的话写成同样长度的说明",
           "避免所有人轮流解释背景",
-          "重要主张由文书、物件、在场动作或既有事件支撑"
+          "重要主张由文书、物件、在场动作或既有事件支撑",
+          "下属在对白中使用与身份相符的自称和称谓，不把后台角色标签当作第一人称反复自称"
         ],
         "terminologyRules": [
           "用改稻为桑或改桑，不用产业升级",
           "用奏报、公文、具名、封缄、复核，不用流程工单",
           "用米价、官仓、田契、田册，不用供应链 KPI"
+        ],
+        "forbiddenTerminologyPhrases": [
+          "改桑为田",
+          "改桑田为稻田",
+          "改桑为稻"
         ],
         "forbiddenModernPhrases": [
           "KPI",
@@ -9540,7 +9629,8 @@
           "战略抓手",
           "风险敞口",
           "资源置换",
-          "项目推进"
+          "项目推进",
+          "踩了刹车"
         ],
         "forbiddenSystemPhrases": [
           "玩家选择",
@@ -9569,8 +9659,8 @@
           "minCharacters": 300,
           "maxCharacters": 1500
         },
-        "reviewerId": "codex-player-scene-pattern-repair-v1.3.0",
-        "approvedAt": "2026-07-23T12:00:00.000+08:00"
+        "reviewerId": "codex-player-terminology-lock-v1.4.3",
+        "approvedAt": "2026-07-26T00:00:00.000+08:00"
       }
     }
   ],
@@ -9849,7 +9939,6 @@
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
-        "PCR-P1-EXECUTION-BOUNDARY",
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-XUNFU-COUNTERMOVE",
@@ -10184,7 +10273,8 @@
         "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
         "FLOOR-P1-S4-CAPITAL-DEADLINE",
         "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-XUNFU-COUNTERMOVE"
+        "RTA-P1-XUNFU-COUNTERMOVE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "actor.qingliu_magistrate": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -10263,11 +10353,13 @@
       ],
       "actor.xunfu_clerk": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "FLOOR-P1-S1-XUNFU-RESPONSE"
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "actor.qingliu_messenger": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "FLOOR-P1-S1-XUNFU-RESPONSE"
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ]
     },
     "byLocation": {},
@@ -10659,7 +10751,6 @@
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
-        "PCR-P1-EXECUTION-BOUNDARY",
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-XUNFU-COUNTERMOVE",
@@ -10907,7 +10998,8 @@
         "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
         "FLOOR-P1-S4-CAPITAL-DEADLINE",
         "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-XUNFU-COUNTERMOVE"
+        "RTA-P1-XUNFU-COUNTERMOVE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "relations.governorXunfu": [
         "AP-P1-XUNFU-AIDE",
@@ -11498,11 +11590,13 @@
       ],
       "actor.xunfu_clerk": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "FLOOR-P1-S1-XUNFU-RESPONSE"
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "actor.qingliu_messenger": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "FLOOR-P1-S1-XUNFU-RESPONSE"
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "review.initiationStatus": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
@@ -11606,5 +11700,5 @@
       ]
     }
   },
-  "immutableHash": "3EEF0AE19DFF404BF93B84C40F7FAC81D0101E5D510BA448AE2B2A62B4071700"
+  "immutableHash": "50FC5E2FE44461C53B6B552C4D23690BE84F3C6AD0D5943AC98F18B66B8B2359"
 }

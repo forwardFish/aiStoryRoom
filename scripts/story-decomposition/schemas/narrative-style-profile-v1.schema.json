@@ -64,6 +64,14 @@
       },
       "minItems": 1
     },
+    "forbiddenTerminologyPhrases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
     "forbiddenModernPhrases": {
       "type": "array",
       "items": {
@@ -125,6 +133,7 @@
     "characterVoiceAnchors",
     "dialogueAndSubtextRules",
     "terminologyRules",
+    "forbiddenTerminologyPhrases",
     "forbiddenModernPhrases",
     "forbiddenSystemPhrases",
     "forbiddenAiSummaryPatterns",

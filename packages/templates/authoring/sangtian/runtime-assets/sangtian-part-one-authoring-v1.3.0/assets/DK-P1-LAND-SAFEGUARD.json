@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-LAND-SAFEGUARD",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-LAND-RISK"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-LAND-SAFEGUARD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.jiangnan_merchant_head",
+    "actor.qingliu_magistrate"
+  ],
+  "stateDependencies": [
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-LAND-RISK-PREDICTION",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "DK-P1-LAND-SAFEGUARD",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-LAND-RISK",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.zhejiang_governor",
+    "actor.jiangnan_merchant_head",
+    "actor.qingliu_magistrate",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "payload": {
+    "availableWhen": [
+      "改桑范围、粮食缺口或购田方案至少一项已经确定",
+      "百姓生计和田价仍受地方政策影响"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-LAND-SAFEGUARD-OPT-01",
+        "title": "设田价底线",
+        "actionText": "灾期成交不得低于公开底价，县衙逐契登记买受人。",
+        "targetRef": "actor.qingliu_magistrate",
+        "method": "价格与买受人监管",
+        "immediateIntent": "灾期成交不得低于公开底价，县衙逐契登记买受人。",
+        "visibleTradeoff": "压低兼并风险，却可能让急需粮钱的百姓更难成交",
+        "stateEffects": [
+          "land.safeguardStatus",
+          "land.riskLevel",
+          "evidence.chainStatus"
+        ],
+        "statePatch": {
+          "land.safeguardStatus": "PUBLIC_PRICE_FLOOR",
+          "land.riskLevel": "MEDIUM",
+          "evidence.chainStatus": "TRACEABLE"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-LAND-SAFEGUARD-OPT-02",
+        "title": "暂禁购田",
+        "actionText": "赈期内禁止商会和大户购入灾民田，先用借粮维持。",
+        "targetRef": "actor.jiangnan_merchant_head",
+        "method": "灾期禁购",
+        "immediateIntent": "赈期内禁止商会和大户购入灾民田，先用借粮维持。",
+        "visibleTradeoff": "土地最安全，但商粮和改桑资金可能撤回",
+        "stateEffects": [
+          "land.safeguardStatus",
+          "merchant.grantedRights",
+          "grain.immediatePressure"
+        ],
+        "statePatch": {
+          "land.safeguardStatus": "TEMPORARY_PURCHASE_BAN",
+          "merchant.grantedRights": [],
+          "grain.immediatePressure": "RISING"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-LAND-SAFEGUARD-OPT-03",
+        "title": "分散指标",
+        "actionText": "把改桑指标分到更多非灾县，清流只承担有限份额。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "跨县分摊",
+        "immediateIntent": "把改桑指标分到更多非灾县，清流只承担有限份额。",
+        "visibleTradeoff": "减轻一县卖田压力，却扩大执行协调和政治阻力",
+        "stateEffects": [
+          "reform.scopeStatus",
+          "land.riskLevel",
+          "relations.governorXunfu"
+        ],
+        "statePatch": {
+          "reform.scopeStatus": "DISTRIBUTED_ACROSS_COUNTIES",
+          "land.riskLevel": "DISTRIBUTED_MEDIUM",
+          "relations.governorXunfu": {
+            "$delta": -1
+          }
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

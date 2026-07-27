@@ -51,13 +51,14 @@ export function commandToRawPlayerAction(
         label: candidate.label,
         targetId: candidate.intentDraft.target.id,
         targetLabel: candidate.intentDraft.target.label,
-        // For an authored Part One Story Choice the objective is the complete action
-        // text shown to the player. `method` is only the short tactical axis
-        // (for example "附条件签发") and cannot be used to re-bind the
-        // selected affordance on the next request. The fixed opening has no
-        // runtime affordance marker and keeps its concrete method text.
+        // An authored Part One Story Choice is bound by the exact description
+        // shown to the player. `objective` is an internal intent summary and
+        // may legitimately use different wording; using it here makes a
+        // visible current-turn option fail the server's affordance check.
+        // The fixed opening has no runtime affordance marker and keeps its
+        // concrete method text.
         actionText: affordanceTemplateId
-          ? candidate.intentDraft.objective || candidate.description || candidate.intentDraft.method || candidate.label
+          ? candidate.description || candidate.intentDraft.objective || candidate.intentDraft.method || candidate.label
           : candidate.intentDraft.method || candidate.intentDraft.objective || candidate.description || candidate.label,
         decisionKernelId,
         affordanceTemplateId

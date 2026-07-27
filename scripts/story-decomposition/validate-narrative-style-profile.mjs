@@ -18,6 +18,9 @@ const requiredVoices = [
   "actor.qingliu_magistrate",
   "actor.jiangnan_merchant_head",
   "actor.reform_clerk",
+  "actor.xunfu_aide",
+  "actor.xunfu_clerk",
+  "actor.qingliu_messenger",
 ];
 for (const actorRef of requiredVoices) {
   if (!Array.isArray(profile.characterVoiceAnchors?.[actorRef]) || profile.characterVoiceAnchors[actorRef].length < 2) {

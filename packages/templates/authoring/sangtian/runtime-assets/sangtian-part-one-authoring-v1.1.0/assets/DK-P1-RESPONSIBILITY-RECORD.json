@@ -125,10 +125,10 @@
       {
         "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
         "title": "记明异议",
-        "actionText": "暂准执行，却在文书中逐字记下督抚分歧和各自承担的事项。",
+        "actionText": "在现有公文上批明暂准放行，并在同一份回文中逐项写明督抚分歧和各自承担的事项。",
         "targetRef": "actor.zhejiang_xunfu",
         "method": "分项责任记录",
-        "immediateIntent": "暂准执行，却在文书中逐字记下督抚分歧和各自承担的事项。",
+        "immediateIntent": "在现有公文上批明暂准放行，并在同一份回文中逐项写明督抚分歧和各自承担的事项。",
         "visibleTradeoff": "关系转冷，但后续不易互相改口",
         "stateEffects": [
           "responsibility.firstRecordStatus",

@@ -140,6 +140,14 @@
             "type": "string",
             "minLength": 1
           },
+          "runtimeActivationCues": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
           "orderedBeats": {
             "type": "array",
             "items": {
@@ -287,6 +295,7 @@
           "sourceClaimIds",
           "dramaticFunction",
           "openingPressure",
+          "runtimeActivationCues",
           "orderedBeats",
           "dialogueTactics",
           "blockingPrinciples",

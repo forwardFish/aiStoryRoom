@@ -1,0 +1,132 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-GRAIN-RELIEF",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head"
+  ],
+  "stateDependencies": [
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "REQ-P1-GRAIN-RELIEF",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "救急渠道形成债务和责任",
+      "粮食不足会压迫百姓出售土地"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-GRAIN-DEBT",
+        "actorRefs": [
+          "actor.qingliu_magistrate",
+          "actor.jiangnan_merchant_head"
+        ],
+        "action": "县令与商会会首把救粮由谁垫付、由谁担保、由谁日后偿还摆到案前；粮一旦入局，债务和责任也随之有了经手人。",
+        "requiredTermGroups": [
+          [
+            "县令",
+            "清流县令"
+          ],
+          [
+            "商会会首",
+            "会首"
+          ],
+          [
+            "垫付",
+            "担保",
+            "偿还"
+          ]
+        ],
+        "resultCeiling": "只能确定救粮会产生债务责任，不得新增具体粮数、银数或价格。"
+      },
+      {
+        "beatId": "PAYOFF-P1-GRAIN-LAND-PRESSURE",
+        "actorRefs": [
+          "actor.qingliu_magistrate",
+          "actor.jiangnan_merchant_head"
+        ],
+        "action": "清流县令警告，粮若仍不能及时接上，百姓以田换粮的询价就会增加；商会会首没有否认，只追问官府肯给什么边界。",
+        "requiredTermGroups": [
+          [
+            "清流县令",
+            "县令"
+          ],
+          [
+            "以田换粮",
+            "田",
+            "粮"
+          ],
+          [
+            "商会会首",
+            "会首"
+          ]
+        ],
+        "resultCeiling": "只能表现卖田风险正在逼近，不得写成大规模卖田已经发生。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

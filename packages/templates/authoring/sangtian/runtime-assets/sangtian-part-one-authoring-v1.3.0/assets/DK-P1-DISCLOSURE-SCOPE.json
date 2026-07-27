@@ -1,0 +1,162 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-DISCLOSURE-SCOPE",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-DISCLOSURE-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "review.authority",
+    "review.procedureStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-ESCORT-PRODUCES-THREE-FEATHER-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-SEPARATE-XUNFU",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "review.authority",
+    "review.procedureStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus"
+  ],
+  "payload": {
+    "availableWhen": [
+      "复核对象和程序争议已经进入正式议程",
+      "参与者只能在自身官职权限和文书渠道内行动",
+      "信息通过在场、有限口述或可追踪文书中的一种路径出现",
+      "接收者、发送者和渠道可由事件记录"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-DISCLOSURE-SCOPE-OPT-01",
+        "title": "只报异常",
+        "actionText": "只向巡抚说明册页存在差异，不透露书吏和密供位置。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "有限披露",
+        "immediateIntent": "只向巡抚说明册页存在差异，不透露书吏和密供位置。",
+        "visibleTradeoff": "保住证人与入口，却降低共同复核的信任",
+        "stateEffects": [
+          "knowledgeTransfers",
+          "relations.governorXunfu"
+        ],
+        "statePatch": {
+          "relations.governorXunfu": {
+            "$delta": -1
+          },
+          "knowledgeTransfer": {
+            "topic": "register_anomaly_only",
+            "senderRef": "actor.zhejiang_governor",
+            "recipientRef": "actor.zhejiang_xunfu",
+            "status": "DELIVERED"
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-DISCLOSURE-SCOPE-OPT-02",
+        "title": "共享样册",
+        "actionText": "把带见证记录的样册交巡抚查验，原件仍由现保管人封存。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "共享副本",
+        "immediateIntent": "把带见证记录的样册交巡抚查验，原件仍由现保管人封存。",
+        "visibleTradeoff": "提高程序合作，也扩大线索泄露面",
+        "stateEffects": [
+          "knowledgeTransfers",
+          "evidence.copyStatus"
+        ],
+        "statePatch": {
+          "evidence.copyStatus": "SHARED_WITNESSED_COPY",
+          "knowledgeTransfer": {
+            "topic": "witnessed_register_copy",
+            "senderRef": "actor.zhejiang_governor",
+            "recipientRef": "actor.zhejiang_xunfu",
+            "status": "DELIVERED"
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-DISCLOSURE-SCOPE-OPT-03",
+        "title": "暂不外泄",
+        "actionText": "以保管链未稳为由拒绝披露细节，只承诺限时提交复核结果。",
+        "targetRef": "actor.zhejiang_xunfu",
+        "method": "保密并承诺期限",
+        "immediateIntent": "以保管链未稳为由拒绝披露细节，只承诺限时提交复核结果。",
+        "visibleTradeoff": "减少毁证机会，却会被当作独占调查",
+        "stateEffects": [
+          "relations.governorXunfu",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "relations.governorXunfu": {
+            "$delta": -2
+          },
+          "responsibility.governorExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

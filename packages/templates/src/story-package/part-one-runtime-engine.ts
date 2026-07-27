@@ -314,6 +314,15 @@ export function settlePartOneAction(
     ...sceneAfter.presentActorRefs,
     ...authoritativeWorldMoves.flatMap((move) => move.actorRefs)
   ]);
+  sceneAfter.situation = reconcileSceneSituationAfterSettlement({
+    action,
+    sceneBefore,
+    sceneAfter,
+    sectionTransitioned,
+    authoritativeObservableFacts,
+    authoritativeNpcReactions,
+    authoritativeWorldMoves
+  });
   proposedState.scene = sceneAfter;
   if (!deepEqual(sceneBefore, sceneAfter)) changedStatePaths.push("scene");
   const narrativePlan = buildNarrativePlan({
@@ -629,6 +638,11 @@ function adaptAffordanceForCurrentState(
   affordance: PartOneRuntimeAffordance,
   state: PartOneState
 ): PartOneRuntimeAffordance {
+  const existingExecutionReply = state.scene.documentStates?.some(
+    (item) =>
+      item.documentRef === "document.reform_execution_record"
+      && item.accessState === "WRITTEN"
+  ) === true;
   // G00 can already issue the seal order. If the player chose it, asking them
   // to "seal the archive first" again on the very next screen is a false
   // choice. Preserve the same strategic endpoint (continue the pause and own
@@ -656,7 +670,79 @@ function adaptAffordanceForCurrentState(
       }
     };
   }
+
+  // The responsibility kernel can be reached from several execution branches.
+  // A paused branch has no written reform reply yet, while a limited-trial or
+  // provisional-release branch may already have one. Player copy must describe
+  // the action being chosen now; it may never presuppose a document or boundary
+  // that the authoritative scene state does not contain.
+  if (affordance.affordanceTemplateId === "DK-P1-RESPONSIBILITY-RECORD-OPT-01") {
+    const actionText = existingExecutionReply
+      ? "请巡抚在刚刚写成的改桑放行回文上共同具名，与总督共同承担清流试办和复核责任。"
+      : `把${executionBoundaryLabel(state)}、复核办法与督抚各自责任写进正式回文，请巡抚共同具名。`;
+    return {
+      ...affordance,
+      actionText,
+      immediateIntent: actionText
+    };
+  }
+
+  if (affordance.affordanceTemplateId === "DK-P1-RESPONSIBILITY-RECORD-OPT-02") {
+    const actionText = existingExecutionReply
+      ? "维持刚刚写成的放行回文不改；由总督另具责任说明，单独具名，并把巡抚催办原文作为附件留档。"
+      : `由总督单独具名写明${executionBoundaryLabel(state)}，并把巡抚催办原文作为附件留档。`;
+    return {
+      ...affordance,
+      actionText,
+      immediateIntent: actionText
+    };
+  }
+
+  if (affordance.affordanceTemplateId === "DK-P1-RESPONSIBILITY-RECORD-OPT-03") {
+    const actionText = existingExecutionReply
+      ? "维持刚刚写成的放行回文不改；由总督另具责任说明，逐项写明督抚对复核与材料披露的分歧，各自成文、各自担责。"
+      : "另具正式回文暂准放行，并逐项写明督抚分歧和各自承担的事项。";
+    const stateEffects = existingExecutionReply
+      ? affordance.stateEffects.filter((path) => path !== "reform.executionMode")
+      : unique([
+          ...affordance.stateEffects,
+          "reform.executionMode",
+          "reform.progress"
+        ]);
+    const statePatch = existingExecutionReply
+      ? {
+          ...(affordance.statePatch || {}),
+          "reform.executionMode": undefined,
+          "reform.progress": "STARTED"
+        }
+      : {
+          ...(affordance.statePatch || {}),
+          "reform.executionMode": "PROVISIONAL_RELEASE",
+          "reform.progress": "STARTED"
+        };
+    if (existingExecutionReply) delete statePatch["reform.executionMode"];
+    return {
+      ...affordance,
+      actionText,
+      immediateIntent: actionText,
+      stateEffects,
+      statePatch
+    };
+  }
   return affordance;
+}
+
+function executionBoundaryLabel(state: PartOneState) {
+  switch (state.reform.executionMode) {
+    case "TEMPORARILY_PAUSED":
+      return "暂缓签发的缘由";
+    case "LIMITED_TRIAL":
+      return "清流县先行试办的边界";
+    case "PROVISIONAL_RELEASE":
+      return "暂准放行的条件";
+    default:
+      return "当前改桑执行边界";
+  }
 }
 
 export function partOneRuntimeTargets(
@@ -819,12 +905,15 @@ function buildNarrativePlan(input: {
           "推门出去",
           "便出去了",
           "走了出去",
+          "躬身出去",
           "出了厅门",
           "步出内厅",
           "侧身而出",
           "走向厅门",
           "跨过门槛",
           "脚步声往甬道",
+          "脚步声很快远了",
+          "脚步声渐远",
           "领命而去"
         ]
       ],
@@ -833,26 +922,21 @@ function buildNarrativePlan(input: {
     })
   );
   const sceneBeats: PartOneNarrativePlan["sceneBeats"] = [
-    {
-      beatId: "PLAYER-ACTION",
-      sourceType: "PLAYER_ACTION",
-      action: input.action.actionText,
-      requiredTermGroups: requiredTermGroupsFor(input.action.actionText),
-      mustAppear: true
-    },
+    ...buildPlayerActionSceneBeats(input.action.actionText),
     ...departureBeats,
     ...input.authoritativeObservableFacts.map((fact, index) => ({
       beatId: `CONFIRMED-EFFECT-${index + 1}`,
       sourceType: "CONFIRMED_EFFECT" as const,
       action: fact,
       requiredTermGroups: requiredTermGroupsFor(fact),
-      mustAppear: false
+      mustAppear: /^清流县令亲随当场只确认/.test(fact)
     })),
     ...input.authoritativeNpcReactions.map((reaction) => ({
       beatId: reaction.reactionEventId,
       sourceType: "NPC_REACTION" as const,
       action: reaction.action,
       requiredTermGroups: requiredTermGroupsFor(reaction.action),
+      resultCeiling: resultCeilingForNpcReaction(reaction.action),
       mustAppear: true
     })),
     ...input.authoritativeWorldMoves.map((move) => ({
@@ -868,6 +952,10 @@ function buildNarrativePlan(input: {
     || input.authoritativeNpcReactions.at(-1)?.action
     || input.authoritativeObservableFacts.at(-1)
     || input.action.actionText;
+  const incidentalTextureAllowances = buildIncidentalTextureAllowances(
+    input.sceneBefore,
+    input.sceneAfter
+  );
   return {
     sceneStart: clone(input.sceneBefore),
     sceneEnd: clone(input.sceneAfter),
@@ -879,10 +967,8 @@ function buildNarrativePlan(input: {
     authorizedActorDepartures,
     dramaticTask: input.section.dramaticPurpose,
     actionAlreadyOccurred: input.action.actionText,
-    authorizedPlayerSpeech: extractAuthorizedPlayerSpeech(
-      input.action.actionText,
-      input.sceneBefore.documentStates || []
-    ),
+    playerSpeechMode: resolvePlayerSpeechMode(input.action.actionText),
+    authorizedPlayerSpeech: extractExplicitPlayerQuotes(input.action.actionText),
     confirmedEffects: [...input.authoritativeObservableFacts],
     unresolvedFacts: [
       "密信和异常只能证明需要复核，不能直接证明巡抚、商会或任何个人有罪。",
@@ -909,6 +995,7 @@ function buildNarrativePlan(input: {
           "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
           "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。"
         ],
+    incidentalTextureAllowances,
     sceneBeats,
     requiredEndChange: lastMove,
     narrativeCeiling: [
@@ -926,65 +1013,243 @@ function buildNarrativePlan(input: {
   };
 }
 
-function extractAuthorizedPlayerSpeech(
-  actionText: string,
-  documentStates: PartOneSceneState["documentStates"] = []
-) {
-  const candidates = [
-    ...[...actionText.matchAll(/[“"]([^”"]{2,80})[”"]/g)].map((match) => match[1]),
-    ...[...actionText.matchAll(/[：:]([^；。！？]{2,80})(?=[；。！？]|$)/g)].map((match) => match[1])
-  ];
-  const normalizedAction = actionText
-    .trim()
-    .replace(/^[，。；：、“”‘’！？\s]+|[，。；：、“”‘’！？\s]+$/g, "");
-  if (
-    candidates.length === 0
-    && normalizedAction.length <= 80
-    && /^(?:由|先由|准|允许|不得|不许|继续|暂|限|命|令|要求|拒绝)/.test(
-      normalizedAction
-    )
-  ) {
-    candidates.push(normalizedAction);
-  }
-  const actionTargetsAbsentDocument = documentStates.some((document) => {
-    if (document.accessState !== "NOT_PRESENT") return false;
-    if (actionText.includes(document.label)) return true;
-    if (document.label.includes("原件") && /(?:原册|原件)/.test(actionText)) return true;
-    if (document.label.includes("副本") && /(?:副本|抄本)/.test(actionText)) return true;
-    return false;
-  });
-  if (actionTargetsAbsentDocument && normalizedAction.length <= 80) {
-    candidates.push(normalizedAction);
-  }
-  if (
-    actionText.includes("交给清流县令亲随")
-    && actionText.includes("封存档房")
-  ) {
-    candidates.push("持此去清流，封存档房");
-  }
-  return unique(
-    candidates
-      .map((candidate) => candidate.trim().replace(/^[，。；：、“”‘’！？\s]+|[，。；：、“”‘’！？\s]+$/g, ""))
+function buildIncidentalTextureAllowances(
+  sceneStart: PartOneSceneState,
+  sceneEnd: PartOneSceneState
+): PartOneNarrativePlan["incidentalTextureAllowances"] {
+  const startDocumentRefs = new Set(
+    (sceneStart.documentStates || [])
+      .map((document) => document.documentRef)
       .filter(Boolean)
   );
+
+  return (sceneEnd.documentStates || [])
+    .filter((document) =>
+      document.accessState === "WRITTEN"
+      && Boolean(document.documentRef)
+      && !startDocumentRefs.has(document.documentRef)
+    )
+    .map((document) => ({
+      allowanceId: `TEXTURE-CREATE-${document.documentRef}`,
+      textureClass: "CREATION_SUBSTRATE" as const,
+      lifecycle: "CONSUMED_INTO_TARGET" as const,
+      targetEntityKind: "DOCUMENT" as const,
+      targetEntityRef: document.documentRef,
+      targetEntityLabel: document.label
+    }));
+}
+
+function hasExplicitPlayerQuote(actionText: string) {
+  return /[“"]([^”"]{2,160})[”"]/.test(actionText);
+}
+
+function resolvePlayerSpeechMode(
+  actionText: string
+): PartOneNarrativePlan["playerSpeechMode"] {
+  if (hasExplicitPlayerQuote(actionText)) return "EXACT_QUOTE_ALLOWED";
+  if (
+    /(?:命|令|吩咐|嘱咐|责成|要求|告知|答复|回告|回应|追问|只问|询问|宣告|通知)/.test(
+      actionText
+    )
+  ) {
+    return "INDIRECT_SPEECH_REQUIRED";
+  }
+  return "INDIRECT_ONLY";
+}
+
+function extractExplicitPlayerQuotes(actionText: string) {
+  const candidates = [...actionText.matchAll(/[“"]([^”"]{2,160})[”"]/g)]
+    .map((match) => match[1]);
+  return unique(
+    candidates
+      .map((candidate) => candidate.trim())
+      .filter(Boolean)
+  );
+}
+
+function buildPlayerActionSceneBeats(
+  actionText: string
+): PartOneNarrativePlan["sceneBeats"] {
+  return splitPlayerActionClauses(actionText).map((action, index) => ({
+    beatId: `PLAYER-ACTION-${index + 1}`,
+    sourceType: "PLAYER_ACTION" as const,
+    action,
+    requiredTermGroups: requiredTermGroupsFor(action),
+    resultCeiling: resultCeilingForPlayerAction(action),
+    mustAppear: true
+  }));
+}
+
+function resultCeilingForPlayerAction(action: string) {
+  if (
+    /(?:改桑)?放行回文/.test(action)
+    && /写明|写进|写入/.test(action)
+  ) {
+    return "浙江总督当场提笔写成名为“改桑放行回文”的文书，文中只写清流县先办一批和不得趁急难压价买田；写成后交给巡抚书吏。普通纸张与笔墨只能作为写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。";
+  }
+
+  if (/封缄令牌|总督令牌/.test(action) && /交给|交予|递给/.test(action)) {
+    return "只写令牌从总督交到亲随手中；不得补写令牌原先藏在何处、函套、材质、纹样、重量或其他未列属性。";
+  }
+  if (/封存档房/.test(action) && /命|令|吩咐|传达/.test(action)) {
+    return "只传达封存档房这项命令；可用“候上命再启”写出封存的最低限度含义，但不得扩写钥匙归属、册籍清单、出入禁令、具体启封人员、差员到场或其他封存程序。";
+  }
+  if (/暂缓签发|暂不签发/.test(action) && /三日内复核/.test(action)) {
+    return "只写暂缓签发并在三日内复核；不得承诺复核后一定落印、再定行止或另给新期限。";
+  }
+  return "只把这项已经结算的行动写清，不增加第二项命令、承诺、程序或办理结果。";
+}
+
+function resultCeilingForNpcReaction(action: string) {
+  if (
+    /巡抚书吏/.test(action)
+    && /三日期限内书面回复/.test(action)
+    && /复核的范围与方式/.test(action)
+  ) {
+    return "只让巡抚书吏追问暂缓缘由，并要求三日内书面说明复核范围与方式；不得给催办公文补写日期、落款、原话或其他内容，也不得另造期限、程序或事实。";
+  }
+  return "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。";
+}
+
+function splitPlayerActionClauses(actionText: string) {
+  const clauses: string[] = [];
+  let current = "";
+  let closingQuote: string | null = null;
+  const closingQuoteFor: Record<string, string> = {
+    "“": "”",
+    "\"": "\"",
+    "‘": "’",
+    "'": "'"
+  };
+  const characters = [...actionText.trim()];
+  for (let index = 0; index < characters.length; index += 1) {
+    const char = characters[index]!;
+    if (!closingQuote && closingQuoteFor[char]) {
+      closingQuote = closingQuoteFor[char];
+      current += char;
+      continue;
+    }
+    if (closingQuote && char === closingQuote) {
+      closingQuote = null;
+      current += char;
+      continue;
+    }
+    if (!closingQuote && /[；;。]/.test(char)) {
+      const clause = current.trim();
+      if (clause) clauses.push(clause);
+      current = "";
+      continue;
+    }
+    if (
+      !closingQuote
+      && /[，,]/.test(char)
+      && /^(?:命|令|吩咐|嘱咐|责成|要求|告知|答复|回告|示意)/.test(
+        characters.slice(index + 1).join("").trimStart()
+      )
+    ) {
+      const clause = current.trim();
+      if (clause) clauses.push(clause);
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  const tail = current.trim();
+  if (tail) clauses.push(tail);
+  return clauses.length ? clauses : [actionText.trim()];
 }
 
 function requiredTermGroupsFor(text: string): string[][] {
   const groups: string[][] = [];
   const candidates: Array<[RegExp, string[]]> = [
+    [/封缄令牌|总督令牌/, ["封缄令牌", "总督令牌", "令牌"]],
+    [
+      /交给|交予|递给/,
+      ["交给", "交到", "交予", "递给", "递到", "搁到", "放到", "接过", "接下"]
+    ],
+    [
+      /命他|命其|传达[^。；！？]{0,12}之令|下令/,
+      [
+        "EXACT:命他",
+        "EXACT:命其",
+        "EXACT:命亲随",
+        "EXACT:命清流县令亲随",
+        "EXACT:吩咐他",
+        "EXACT:吩咐亲随",
+        "EXACT:吩咐清流县令亲随",
+        "EXACT:责令",
+        "EXACT:下令",
+        "EXACT:交代他",
+        "EXACT:交代亲随"
+      ]
+    ],
     [/封存档房/, ["封存档房", "档房封存", "封住档房"]],
+    [
+      /回报[^。；！？]{0,8}封存结果|封存结果/,
+      ["封存结果", "封存回报", "封存情形", "回报封存", "封存是否完成"]
+    ],
     [/三日内复核/, ["三日内复核", "三日期限内复核"]],
+    [
+      /三日(?:限期|期限|之限|之内)/,
+      ["三日限期", "三日期限", "三日之限", "三日之内"]
+    ],
+    [
+      /延误责任[^。；！？]{0,12}(?:由本督承担|本督承担)|责在本督|由本督承担|本督一人承担/,
+      [
+        "延误责任由本督承担",
+        "责任由本督承担",
+        "由本督承担",
+        "责在本督",
+        "本督一人承担"
+      ]
+    ],
     [/暂缓签发|暂不签发/, ["暂缓签发", "暂不签发", "扣下不签"]],
+    [
+      /答复[^。；！？]{0,8}(?:巡抚)?书吏/,
+      [
+        "EXACT:答复巡抚书吏",
+        "EXACT:答复书吏",
+        "EXACT:告知巡抚书吏",
+        "EXACT:告知书吏",
+        "EXACT:告诉巡抚书吏",
+        "EXACT:告诉书吏",
+        "EXACT:回告巡抚书吏",
+        "EXACT:回告书吏",
+        "EXACT:面告巡抚书吏",
+        "EXACT:面告书吏",
+        "EXACT:对巡抚书吏说明",
+        "EXACT:对书吏说明",
+        "EXACT:向巡抚书吏说明",
+        "EXACT:向书吏说明",
+        "EXACT:命书吏转告",
+        "EXACT:总督转向他，当面答复",
+        "EXACT:总督转面答复",
+        "EXACT:总督当面答复"
+      ]
+    ],
     [
       /只准清流县先办一批|清流县先办一批|限定试办/,
       ["只准清流县先办一批", "清流县先办一批", "清流县试办", "清流试办", "限定试办"]
     ],
     [/清流县试办|清流试办|执行范围/, ["清流县试办", "清流试办", "执行范围"]],
-    [/写进(?:放行)?文书|写入(?:放行)?文书/, ["写进放行文书", "写入放行文书", "落进放行文书", "写进回文", "落进回文", "写在文书上"]],
+    [/(?:改桑)?放行回文/, ["改桑放行回文", "放行回文", "回文"]],
+    [
+      /(?:写进|写入|写明)[^。；！？]{0,12}(?:改桑)?放行回文|(?:改桑)?放行回文[^。；！？]{0,12}(?:写明|写有)/,
+      ["写明", "书明", "写进", "写入", "落笔", "批明", "另起一行", "补入", "添入", "补写"]
+    ],
     [/压价买田|买田|购田/, ["压价买田", "低价买田", "趁急难买田", "购田"]],
     [/巡抚幕僚|幕僚/, ["巡抚幕僚", "幕僚"]],
     [/巡抚书吏|书吏/, ["巡抚书吏", "书吏"]],
-    [/清流县令|县令/, ["清流县令", "县令"]],
+    [
+      /清流县令亲随|县令亲随|清流亲随/,
+      ["清流县令亲随", "县令亲随", "清流亲随", "亲随"]
+    ],
+    [/清流县令(?!亲随)|县令(?!亲随)/, ["清流县令", "县令"]],
+    [/(?:仅为报疑|只报疑|只敢报疑)/, ["仅为报疑", "只报疑", "只敢报疑"]],
+    [
+      /原册[^。；！？]{0,18}(?:并未|未|没有)随信送来/,
+      ["原册并未随信送来", "原册未随信送来", "原册没有随信送来"]
+    ],
     [/改桑书吏/, ["改桑书吏", "书吏"]],
     [/商会会首|会首/, ["商会会首", "会首"]],
     [/首批救粮|救粮/, ["首批救粮", "救粮"]],
@@ -995,6 +1260,8 @@ function requiredTermGroupsFor(text: string): string[][] {
     [/粮|米行|开仓/, ["粮", "米", "仓"]],
     [/民田|卖田|购田|买田|田契/, ["民田", "卖田", "购田", "买田", "田契"]],
     [/具名|署名|联署/, ["具名", "署名", "联署"]],
+    [/责任说明/, ["责任说明", "责任文书", "责任记录"]],
+    [/各自成文|各自担责/, ["各自成文", "分别成文", "各自担责", "分别担责"]],
     [/底稿|摘要/, ["底稿", "摘要"]],
     [/担保|官保/, ["担保", "官保"]],
     [/保护令|传唤|问讯/, ["保护", "传唤", "问讯"]]
@@ -1053,25 +1320,109 @@ function applySceneCustodyEffects(
     }
   }
 
-  if (
-    /放行文书|附条件命令|现有公文|同一份回文|逐项写明|补写复核办法|补写[^。；]{0,12}责任/.test(
+  const writesExecutionRecord =
+    action.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-01"
+    || action.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-02"
+    || /(?:写进放行文书|写进(?:给巡抚的)?(?:改桑)?放行回文|(?:改桑)?放行回文[^。；]{0,8}写明|写进正式回文|写入正式回文|另具正式回文|单独具名写明|签发附条件命令|补写复核办法|补写[^。；]{0,12}责任)/.test(
       action.actionText
-    )
-  ) {
+    );
+  if (writesExecutionRecord) {
     scene.documentStates = clone(scene.documentStates || []);
+    const deliversExecutionReplyToXunfu =
+      action.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-01"
+      || action.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-02"
+      || /给巡抚的[^。；]{0,12}(?:改桑)?放行回文/.test(action.actionText);
     const existing = scene.documentStates.find(
       (item) => item.documentRef === "document.reform_execution_record"
     );
     const writtenRecord = {
       documentRef: "document.reform_execution_record",
-      label: "改桑执行回文",
+      label: "改桑放行回文",
+      accessState: "WRITTEN" as const,
+      holderRef: deliversExecutionReplyToXunfu
+        ? "actor.xunfu_clerk"
+        : "actor.zhejiang_governor",
+      continuityNote: deliversExecutionReplyToXunfu
+        ? "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+        : "本轮只延续已经写入的改桑范围、复核办法与督抚责任；不得另造第二份文书或增加未经结算的条款。"
+    };
+    if (existing) Object.assign(existing, writtenRecord);
+    else scene.documentStates.push(writtenRecord);
+    if (deliversExecutionReplyToXunfu) {
+      const replyBox = scene.objectStates.find(
+        (item) => item.objectRef === "object.xunfu_reply_box"
+      );
+      if (replyBox) {
+        replyBox.holderRef = "actor.xunfu_clerk";
+        replyBox.contentsState = "CONTAINS_DOCUMENT";
+        replyBox.closureState = "CLOSED";
+        replyBox.continuityNote = "巡抚书吏已经把总督写成的改桑放行回文收进匣中并合拢匣盖；回文匣仍由书吏持有。";
+      }
+    }
+  }
+
+  const writesSeparateResponsibilityRecord =
+    action.affordanceTemplateId === "DK-P1-RESPONSIBILITY-RECORD-OPT-02"
+    || action.affordanceTemplateId === "DK-P1-RESPONSIBILITY-RECORD-OPT-03";
+  if (writesSeparateResponsibilityRecord && /责任说明/.test(action.actionText)) {
+    scene.documentStates = clone(scene.documentStates || []);
+    const existing = scene.documentStates.find(
+      (item) => item.documentRef === "document.responsibility_record"
+    );
+    const writtenRecord = {
+      documentRef: "document.responsibility_record",
+      label: "督抚责任说明",
       accessState: "WRITTEN" as const,
       holderRef: "actor.zhejiang_governor",
-      continuityNote: "本轮只延续已经写入的改桑范围、复核办法与督抚责任；不得另造第二份文书或增加未经结算的条款。"
+      continuityNote: "总督已经另具督抚责任说明；它与巡抚书吏带走的改桑放行回文不是同一份文书。"
     };
     if (existing) Object.assign(existing, writtenRecord);
     else scene.documentStates.push(writtenRecord);
   }
+}
+
+function reconcileSceneSituationAfterSettlement(input: {
+  action: PartOneIncomingAction;
+  sceneBefore: PartOneSceneState;
+  sceneAfter: PartOneSceneState;
+  sectionTransitioned: boolean;
+  authoritativeObservableFacts: string[];
+  authoritativeNpcReactions: PartOneCommittedEvent["authoritativeNpcReactions"];
+  authoritativeWorldMoves: PartOneAuthoritativeWorldMove[];
+}) {
+  if (input.sectionTransitioned) return input.sceneAfter.situation;
+
+  const remainingActorLabels = input.sceneAfter.presentActorRefs
+    .map((actorRef) => runtimeTargetFor(actorRef).label);
+  const remaining = remainingActorLabels.length
+    ? `${remainingActorLabels.join("、")}仍在${input.sceneAfter.locationLabel}`
+    : `${input.sceneAfter.locationLabel}暂时无人留守`;
+  const endActorRefs = new Set(input.sceneAfter.presentActorRefs);
+  const departedActorLabels = input.sceneBefore.presentActorRefs
+    .filter((actorRef) => !endActorRefs.has(actorRef))
+    .map((actorRef) => runtimeTargetFor(actorRef).label);
+  const departure = departedActorLabels.length
+    ? `${departedActorLabels.join("、")}已领命离开当前现场，场外办理结果尚未回报`
+    : "";
+  const latestChange = input.authoritativeWorldMoves.at(-1)?.action
+    || input.authoritativeNpcReactions.at(-1)?.action
+    || input.authoritativeObservableFacts.at(-1)
+    || `浙江总督已经${input.action.actionText}`;
+
+  return [
+    remaining,
+    departure,
+    renderSceneSituationChange(latestChange)
+  ].filter(Boolean).join("；") + "。";
+}
+
+function renderSceneSituationChange(change: string) {
+  return change
+    .replace(
+      /^巡抚书吏按来府前所受交代当场追问：正式催办总督，催问/,
+      "巡抚书吏已经当场追问总督"
+    )
+    .replace(/[。；]+$/u, "");
 }
 
 function timeLabelVariants(timeLabel: string, previousTimeLabel = "") {
@@ -1093,11 +1444,17 @@ function sceneForSection(sectionId: string): PartOneSceneState {
 }
 
 function buildAuthoritativeObservableFacts(
-  _action: PartOneIncomingAction,
+  action: PartOneIncomingAction,
   statePatch: Record<string, unknown>,
   stateAfter: PartOneState
 ) {
   const facts: string[] = [];
+  if (
+    /(?:只问|核实)[^。；！？]{0,36}(?:仅为报疑|只报疑|只敢报疑)/.test(action.actionText)
+    && /原册[^。；！？]{0,18}(?:并未|未|没有)随信送来/.test(action.actionText)
+  ) {
+    facts.push("清流县令亲随当场只确认：密信仅为报疑，原册并未随信送来；除此不能再作断言");
+  }
   const labels: Record<string, string> = {
     "reform.executionMode": "改桑执行方式",
     "reform.scopeStatus": "改桑范围",
@@ -1216,7 +1573,10 @@ function buildAuthoritativeNpcReactions(
       .replace("依据改编后的巡抚权限", "通过巡抚衙门正式催办");
     const renderedMove = selectedMove.includes("催办") && selectedMove.includes("书面回复")
       ? "正式催办总督，催问为何暂缓签发，并要求在三日期限内书面回复，写明复核的范围与方式"
-      : selectedMove;
+      : input.decisionKernelId === "DK-P1-EXECUTION-SCOPE"
+        && selectedMove.includes("参与复核")
+        ? "要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        : selectedMove;
     const representativeRef = String(transfer?.representativeRef || "");
     const deliveryMode = String(transfer?.deliveryMode || "");
     const xunfuReaction = policy.actorRefs.includes("actor.zhejiang_xunfu")

@@ -1,7 +1,11 @@
+import type { NarrativeTextureAllowance } from "@ai-story/templates";
+import { isAuthorizedIncidentalCreationTexture } from "./narrative-causality-boundary";
+
 export const PART_ONE_UNSUPPORTED_DISCOVERY_TERMS = [
   "田契抄本", "借阅人", "借阅过", "笔迹", "墨色", "朱批", "无异议", "县丞", "远亲", "口供", "供述",
+  "户册", "屡有涂改", "桑田亩数", "实种不符", "与实种不符",
   "病吏", "病信", "督标", "门役",
-  "失踪", "封条破损", "封条被动", "仓单", "账房", "暗账线索", "册面编号", "田契目录",
+  "失踪", "封条破损", "封条被动", "仓单", "账房", "暗账线索", "册面编号", "田契目录", "封存库目",
   "存目抄本", "重新粘贴", "页码", "主簿", "巡抚手书", "仓曹吏", "常平仓尚有存粮",
   "米铺已挂", "米铺已经挂", "米铺挂出", "开仓需巡抚联署", "开仓须巡抚联署", "今日之内",
   "今日日落前", "明日午前", "明早之前", "明日之前", "今夜之前", "密信锁入",
@@ -13,7 +17,7 @@ export const PART_ONE_UNSUPPORTED_DISCOVERY_TERMS = [
   "今日必须签发", "自行具题", "再遣人", "另遣人", "去而复返", "消息不断传入", "一概不得取出",
   "墨迹未干", "墨迹尚新", "墨迹极新", "今早才添", "临时写就", "早已备好", "预先备好",
   "另行递交", "异议文书", "催问条陈", "已有底稿", "备好的底稿", "经手底簿", "另留一份",
-  "另取一纸", "另书一纸", "另纸", "附页",
+  "另取一纸", "另取一张纸", "另拿一张纸", "另取纸张", "另书一纸", "另纸", "空笺", "空白笺纸", "附页", "手折",
   "便笺", "札纸", "札子", "字条", "白皮文书", "塘报", "公文匣", "回文匣", "批文", "手令", "公函",
   "行文底稿", "用印后的正本", "正本", "副本", "清单", "原件", "节略",
   "驿报", "急报", "密奏", "粮道", "钱塘县", "仁和县",
@@ -29,17 +33,51 @@ export const PART_ONE_UNSUPPORTED_DISCOVERY_TERMS = [
   "签纸", "田赋底册", "推收票根", "过割号簿", "封存时刻", "写在牌面",
   "不许移动", "不许翻阅", "任何人翻阅", "一应文书", "甲衣",
   "本督会派人", "本督派人赴", "带去复核范围", "必有书面回复", "自有书面回复",
-  "原地等候本督下一步指令", "等候本督下一步指令"
+  "原地等候本督下一步指令", "等候本督下一步指令",
+  "原册存于", "下令调取", "方敢封送", "廊下有人", "门外有人", "窗外有人"
 ] as const;
 
-export function containsUnauthorizedPartOneDiscovery(sentence: string, authorizedCorpus: string) {
+export function containsUnauthorizedPartOneDiscovery(
+  sentence: string,
+  authorizedCorpus: string,
+  incidentalTextureAllowances: readonly NarrativeTextureAllowance[] = []
+) {
   return PART_ONE_UNSUPPORTED_DISCOVERY_TERMS.some((term) =>
     sentence.includes(term)
     && !authorizedCorpus.includes(term)
+    && !isAuthorizedIncidentalCreationTexture(
+      sentence,
+      incidentalTextureAllowances
+    )
     && !isFigurativeEvidenceComparison(sentence, term)
     && !isNonEvidentiaryDocumentTexture(sentence, term, authorizedCorpus)
+    && !isNegatedDocumentExpectationTexture(sentence, term)
     && !isPreparedSpeechTexture(sentence, term)
+    && !isHypotheticalFutureActorMention(sentence, term)
+    && !isAuthorizedProceduralQuestion(sentence, term, authorizedCorpus)
   );
+}
+
+function isAuthorizedProceduralQuestion(
+  sentence: string,
+  term: string,
+  authorizedCorpus: string
+) {
+  if (!["查哪几项", "由何人经办"].includes(term)) return false;
+  if (!/[？?]/.test(sentence) && !/(?:敢问|请问|追问|问道)/.test(sentence)) {
+    return false;
+  }
+  return /复核/.test(sentence)
+    && /复核/.test(authorizedCorpus)
+    && /(?:范围|方式|如何复核|所复何事)/.test(authorizedCorpus);
+}
+
+function isNegatedDocumentExpectationTexture(sentence: string, term: string) {
+  if (!["朱批", "批文", "回文底稿", "底稿"].includes(term)) return false;
+  const escaped = escapeRegExp(term);
+  return new RegExp(
+    `(?:等到的|等来的|候来的)[^。！？]{0,12}(?:不是|并非)${escaped}`
+  ).test(sentence);
 }
 
 function isFigurativeEvidenceComparison(sentence: string, term: string) {
@@ -51,6 +89,10 @@ function isFigurativeEvidenceComparison(sentence: string, term: string) {
     index = sentence.indexOf(term, index + term.length);
   }
   return false;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function isNonEvidentiaryDocumentTexture(
@@ -79,6 +121,21 @@ function isPreparedSpeechTexture(sentence: string, term: string) {
   return /(?:一句|一番|一套|那些)?(?:话|说辞|答话|回话|口气|措辞)/.test(sentence);
 }
 
+function isHypotheticalFutureActorMention(sentence: string, term: string) {
+  if (!["再遣人", "另遣人"].includes(term)) return false;
+  let index = sentence.indexOf(term);
+  while (index >= 0) {
+    const prefix = sentence.slice(Math.max(0, index - 24), index);
+    const suffix = sentence.slice(index + term.length, index + term.length + 18);
+    if (/(?:若|倘若|倘|如果|一旦)[^。！？]{0,20}$/.test(prefix)
+      && /^(?:再)?(?:来问|来催|催问|询问|追问|来取|来索)/.test(suffix)) {
+      return true;
+    }
+    index = sentence.indexOf(term, index + term.length);
+  }
+  return false;
+}
+
 /**
  * Minimal procedure that is semantically contained in an already-settled
  * action. These phrases may make an action performable on the page, but they
@@ -98,10 +155,11 @@ export function authorizedPartOneProceduralDerivations(eventText: string) {
       "不许任何人调阅",
       "不得擅自调阅",
       "清流县令亲随接过令牌",
-      "清流县令亲随接了令牌"
+      "清流县令亲随接了令牌",
+      "候上命再启"
     );
   }
-  if (/(?:写|签|记|落笔|递交|行文|文书)/.test(eventText)) {
+  if (authorizesDocumentWriting(eventText)) {
     derivations.push(
       "墨迹未干",
       "墨迹尚新",
@@ -143,11 +201,21 @@ export function authorizedPartOneProceduralGuidance(eventText: string) {
       "责任分歧只能写进现场已有的同一份回文；不得另取纸张、另作附页、附件、异议文书或第二份公文。"
     );
   }
-  if (/(?:写|签|记|落笔|递交|行文|文书)/.test(eventText)) {
+  if (authorizesDocumentWriting(eventText)) {
     guidance.push(
       "可用现场笔砚完成已经结算的书写，只写落笔、搁笔、已经写入的字句和人物回应；不要增加其他书写器物，也不要借纸面外观推出新证据。",
       "新写墨迹在同一现场只能写未干或渐干；只有明确跨到获批的次日场景后，才可写成已经干透。"
     );
   }
   return guidance;
+}
+
+function authorizesDocumentWriting(eventText: string) {
+  const withoutRefusals = eventText.replace(
+    /(?:暂不|先不|不|未|勿|毋|拒绝|不得|不许|不能)[^，。；！？]{0,8}(?:签发|签署|签名|具名|落笔|批复|行文)/g,
+    ""
+  );
+  return /(?:写进|写入|补写|批明|批复|签署|签名|具名|落笔|记入|行文)/.test(
+    withoutRefusals
+  );
 }

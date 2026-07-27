@@ -95,6 +95,321 @@ test("loads the immutable Sangtian Part One authoring runtime package", () => {
   assert.equal(loaded.package.authoringManifestHash, loaded.package.authoringManifest.immutableHash);
 });
 
+test("temporarily withholding the release order does not create a written reply", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const review = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d1",
+      actionText: "把巡抚催办公文暂压在案上，示意巡抚书吏留在内厅；只问县令亲随密信是否仅为报疑、原册是否并未随信送来，再从这两项已知事实启动复核。"
+    },
+    1
+  );
+  const pause = settlePartOneAction(
+    pkg,
+    review.proposedState,
+    {
+      source: "RECOMMENDED",
+      decisionId: "DK-P1-EXECUTION-SCOPE-OPT-03",
+      actionText: "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。"
+    },
+    2
+  );
+  assert.equal(
+    pause.event.sceneAfter.documentStates?.some(
+      (item) => item.documentRef === "document.reform_execution_record"
+    ),
+    false
+  );
+});
+
+test("issuing the limited-trial reply delivers it through the established reply box", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const opening = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d2",
+      actionText: "将总督封缄令牌交给清流县令亲随，命他向清流县传达封存档房之令；同时当面答复巡抚书吏：暂缓签发，三日内复核。"
+    },
+    1
+  );
+  const issued = settlePartOneAction(
+    pkg,
+    opening.proposedState,
+    {
+      source: "RECOMMENDED",
+      decisionId: "DK-P1-EXECUTION-SCOPE-OPT-01",
+      actionText: "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。"
+    },
+    2
+  );
+  const reply = issued.event.sceneAfter.documentStates?.find(
+    (item) => item.documentRef === "document.reform_execution_record"
+  );
+  assert.equal(reply?.label, "改桑放行回文");
+  assert.equal(reply?.holderRef, "actor.xunfu_clerk");
+  const replyBox = issued.event.sceneAfter.objectStates?.find(
+    (item) => item.objectRef === "object.xunfu_reply_box"
+  );
+  assert.equal(replyBox?.holderRef, "actor.xunfu_clerk");
+  assert.equal(replyBox?.contentsState, "CONTAINS_DOCUMENT");
+  assert.equal(replyBox?.closureState, "CLOSED");
+  const playerBeat = issued.event.narrativePlan.sceneBeats.find(
+    (beat) => beat.sourceType === "PLAYER_ACTION"
+  );
+  assert.ok(playerBeat);
+  assert.equal(
+    playerBeat.requiredTermGroups.some(
+      (group) => group.includes("改桑放行回文") && group.includes("回文")
+    ),
+    true
+  );
+  assert.equal(
+    playerBeat.requiredTermGroups.some(
+      (group) => group.includes("写明") && group.includes("另起一行")
+    ),
+    true
+  );
+});
+
+test("responsibility action beats preserve both the three-day limit and the governor's liability in natural prose", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const opening = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d2",
+      actionText: "将总督封缄令牌交给清流县令亲随，命他向清流县传达封存档房之令；同时当面答复巡抚书吏：暂缓签发，三日内复核。"
+    },
+    1
+  );
+  const responsibility = settlePartOneAction(
+    pkg,
+    opening.proposedState,
+    {
+      source: "RECOMMENDED",
+      decisionId: "DK-P1-EXECUTION-SCOPE-OPT-03",
+      actionText: "继续暂缓签发，待清流县回报封存结果后再议；三日限期内的延误责任由本督承担。"
+    },
+    2
+  );
+  const responsibilityBeat = responsibility.event.narrativePlan.sceneBeats.find(
+    (beat) =>
+      beat.sourceType === "PLAYER_ACTION"
+      && beat.action.includes("延误责任")
+  );
+  assert.ok(responsibilityBeat);
+  assert.deepEqual(
+    responsibilityBeat.requiredTermGroups,
+    [
+      ["三日限期", "三日期限", "三日之限", "三日之内"],
+      [
+        "延误责任由本督承担",
+        "责任由本督承担",
+        "由本督承担",
+        "责在本督",
+        "本督一人承担"
+      ]
+    ]
+  );
+  const waitingBeat = responsibility.event.narrativePlan.sceneBeats.find(
+    (beat) =>
+      beat.sourceType === "PLAYER_ACTION"
+      && beat.action.includes("待清流县回报封存结果")
+  );
+  assert.ok(waitingBeat);
+  assert.equal(
+    waitingBeat.requiredTermGroups.some((group) =>
+      group.includes("封存结果")
+      && group.includes("封存回报")
+      && group.includes("封存是否完成")
+    ),
+    true
+  );
+});
+
+test("xunfu countermove distinguishes future participation records from a pre-existing ledger", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const policy = pkg.assets.find(
+    (asset) => asset.assetId === "RTA-P1-XUNFU-COUNTERMOVE"
+  );
+  assert.ok(policy);
+  const allowedMoves = policy.payload.allowedMoves as string[];
+  assert.equal(
+    allowedMoves.includes("要求参与复核，并要求复核发生时如实注明巡抚一方经手"),
+    true
+  );
+  assert.equal(
+    allowedMoves.some((move) => /底册|底簿|副本已经存在/.test(move)),
+    false
+  );
+  const consequence = pkg.assets.find(
+    (asset) => asset.assetId === "PCR-P1-XUNFU-COUNTERMOVE"
+  );
+  assert.ok(consequence);
+  const payoffBeats = consequence.payload.payoffBeats as Array<{
+    beatId: string;
+    requiredTermGroups: string[][];
+  }>;
+  const visibilityBeat = payoffBeats.find(
+    (beat) => beat.beatId === "PAYOFF-P1-XUNFU-VISIBILITY"
+  );
+  assert.ok(visibilityBeat);
+  assert.equal(
+    visibilityBeat.requiredTermGroups.some((group) => group.includes("另叙")),
+    true
+  );
+});
+
+test("responsibility choices describe executable actions from a paused branch without inventing a prior written boundary", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const sealed = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d2",
+      actionText: "将总督封缄令牌交给清流县令亲随，命他向清流县传达封存档房之令；同时当面答复巡抚书吏：暂缓签发，三日内复核。"
+    },
+    1
+  );
+  const afterOpening = finalizePartOneSettlement(sealed, []).proposedState;
+  const execution = buildPartOneRuntimeWorkingSet(pkg, afterOpening, 1)
+    .decisionAffordances
+    .find((item) => item.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-03");
+  assert.ok(execution);
+  const paused = settlePartOneAction(pkg, afterOpening, {
+    source: "RECOMMENDED",
+    decisionKernelId: execution.decisionKernelId,
+    affordanceTemplateId: execution.affordanceTemplateId,
+    label: execution.title,
+    actionText: execution.actionText,
+    targetRef: execution.targetRef
+  }, 2);
+  const pausedState = finalizePartOneSettlement(
+    paused,
+    paused.dueConsequences.map((item) => item.consequenceId)
+  ).proposedState;
+  assert.equal(
+    pausedState.scene.documentStates?.some(
+      (item) => item.documentRef === "document.reform_execution_record"
+    ),
+    false
+  );
+
+  const responsibility = buildPartOneRuntimeWorkingSet(pkg, pausedState, 2);
+  assert.equal(responsibility.openDecisionKernel.assetId, "DK-P1-RESPONSIBILITY-RECORD");
+  assert.deepEqual(
+    responsibility.decisionAffordances.map((item) => item.actionText),
+    [
+      "把暂缓签发的缘由、复核办法与督抚各自责任写进正式回文，请巡抚共同具名。",
+      "另具正式回文暂准放行，并逐项写明督抚分歧和各自承担的事项。"
+    ]
+  );
+  for (const option of responsibility.decisionAffordances) {
+    assert.doesNotMatch(option.actionText, /已经写明|现有公文|同一份回文/);
+  }
+
+  const release = responsibility.decisionAffordances.at(-1);
+  assert.ok(release);
+  const released = settlePartOneAction(pkg, pausedState, {
+    source: "RECOMMENDED",
+    decisionKernelId: release.decisionKernelId,
+    affordanceTemplateId: release.affordanceTemplateId,
+    label: release.title,
+    actionText: release.actionText,
+    targetRef: release.targetRef
+  }, 3);
+  assert.equal(released.proposedState.reform.executionMode, "PROVISIONAL_RELEASE");
+  assert.equal(released.proposedState.reform.progress, "STARTED");
+  assert.equal(
+    released.event.sceneAfter.documentStates?.find(
+      (item) => item.documentRef === "document.reform_execution_record"
+    )?.accessState,
+    "WRITTEN"
+  );
+});
+
+test("responsibility choices preserve an already-issued limited-trial reply instead of writing it twice", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const opening = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d2",
+      actionText: "将总督封缄令牌交给清流县令亲随，命他向清流县传达封存档房之令；同时当面答复巡抚书吏：暂缓签发，三日内复核。"
+    },
+    1
+  );
+  const afterOpening = finalizePartOneSettlement(opening, []).proposedState;
+  const execution = buildPartOneRuntimeWorkingSet(pkg, afterOpening, 1)
+    .decisionAffordances
+    .find((item) => item.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-01");
+  assert.ok(execution);
+  const issued = settlePartOneAction(pkg, afterOpening, {
+    source: "RECOMMENDED",
+    decisionKernelId: execution.decisionKernelId,
+    affordanceTemplateId: execution.affordanceTemplateId,
+    label: execution.title,
+    actionText: execution.actionText,
+    targetRef: execution.targetRef
+  }, 2);
+  const issuedState = finalizePartOneSettlement(
+    issued,
+    issued.dueConsequences.map((item) => item.consequenceId)
+  ).proposedState;
+  assert.equal(issuedState.reform.executionMode, "LIMITED_TRIAL");
+  assert.equal(
+    issuedState.scene.documentStates?.find(
+      (item) => item.documentRef === "document.reform_execution_record"
+    )?.holderRef,
+    "actor.xunfu_clerk"
+  );
+
+  const responsibility = buildPartOneRuntimeWorkingSet(pkg, issuedState, 2);
+  assert.equal(responsibility.openDecisionKernel.assetId, "DK-P1-RESPONSIBILITY-RECORD");
+  assert.deepEqual(
+    responsibility.decisionAffordances.map((item) => item.actionText),
+    [
+      "请巡抚在刚刚写成的改桑放行回文上共同具名，与总督共同承担清流试办和复核责任。",
+      "维持刚刚写成的放行回文不改；由总督另具责任说明，逐项写明督抚对复核与材料披露的分歧，各自成文、各自担责。"
+    ]
+  );
+  for (const option of responsibility.decisionAffordances) {
+    assert.doesNotMatch(option.actionText, /把清流县先行试办的边界[^。]*写进正式回文|另具正式回文暂准放行/);
+  }
+
+  const disagreement = responsibility.decisionAffordances.at(-1);
+  assert.ok(disagreement);
+  assert.equal(disagreement.stateEffects.includes("reform.executionMode"), false);
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(disagreement.statePatch, "reform.executionMode"),
+    false
+  );
+  const recorded = settlePartOneAction(pkg, issuedState, {
+    source: "RECOMMENDED",
+    decisionKernelId: disagreement.decisionKernelId,
+    affordanceTemplateId: disagreement.affordanceTemplateId,
+    label: disagreement.title,
+    actionText: disagreement.actionText,
+    targetRef: disagreement.targetRef
+  }, 3);
+  assert.equal(recorded.proposedState.reform.executionMode, "LIMITED_TRIAL");
+  assert.equal(recorded.proposedState.reform.progress, "STARTED");
+  assert.equal(
+    recorded.event.sceneAfter.documentStates?.find(
+      (item) => item.documentRef === "document.responsibility_record"
+    )?.holderRef,
+    "actor.zhejiang_governor"
+  );
+});
+
 test("rejects a tampered Sangtian Part One authoring runtime package", () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "part-one-runtime-tamper-"));
   cpSync(resolve(configRoot, "sangtian"), resolve(tempRoot, "sangtian"), { recursive: true });
@@ -198,12 +513,32 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
         )?.holderRef,
         "actor.qingliu_messenger"
       );
+      assert.deepEqual(
+        settlement.event.sceneAfter.presentActorRefs,
+        ["actor.zhejiang_governor", "actor.xunfu_clerk"]
+      );
+      assert.match(
+        settlement.event.sceneAfter.situation,
+        /浙江总督、巡抚书吏仍在杭州总督府内厅/
+      );
+      assert.match(
+        settlement.event.sceneAfter.situation,
+        /清流县令亲随已领命离开当前现场，场外办理结果尚未回报/
+      );
+      assert.match(
+        settlement.event.sceneAfter.situation,
+        /巡抚书吏已经当场追问总督为何暂缓签发/
+      );
+      assert.doesNotMatch(
+        settlement.event.sceneAfter.situation,
+        /清流县令亲随留在厅中等候/
+      );
     }
     if (turn === 3) {
       assert.equal(settlement.event.sectionTransitioned, true);
       assert.match(
         settlement.event.actionText,
-        /在已经写明的改桑边界之后，补写复核办法与督抚各自责任/
+        /请巡抚在刚刚写成的改桑放行回文上共同具名/
       );
       const executionPressure = settlement.event.authoritativeWorldMoves.find(
         (move) => move.sourceType === "DUE_CONSEQUENCE"
@@ -216,10 +551,16 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
         "NOT_PRESENT"
       );
       assert.equal(
-        settlement.event.sceneAfter.documentStates?.find(
-          (item) => item.documentRef === "document.reform_execution_record"
-        )?.accessState,
-        "WRITTEN"
+        settlement.event.sceneAfter.documentStates?.some(
+          (item) =>
+            item.documentRef === "document.reform_execution_record"
+            || item.documentRef === "document.responsibility_record"
+        ),
+        false
+      );
+      assert.equal(
+        settlement.proposedState.responsibility.firstRecordStatus,
+        "JOINT_SIGNATURE_REQUESTED"
       );
       const transition = settlement.event.authoritativeWorldMoves.find(
         (move) => move.sourceType === "SECTION_TRANSITION"
@@ -243,15 +584,18 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
     if (turn === 4) {
       assert.deepEqual(
         settlement.event.narrativePlan.authorizedPlayerSpeech,
-        ["由总督府定复核清单，巡抚和县令只能派见证人参加"]
+        []
+      );
+      assert.equal(
+        settlement.event.narrativePlan.playerSpeechMode,
+        "INDIRECT_SPEECH_REQUIRED"
       );
     }
     if (turn === 5) {
+      assert.deepEqual(settlement.event.narrativePlan.authorizedPlayerSpeech, []);
       assert.equal(
-        settlement.event.narrativePlan.authorizedPlayerSpeech.includes(
-          "原册留在档房，换新封条；总督、县令、巡抚三方各留封样"
-        ),
-        true
+        settlement.event.narrativePlan.playerSpeechMode,
+        "INDIRECT_SPEECH_REQUIRED"
       );
     }
     const paidPendingConsequenceIds = settlement.dueConsequences.map((item) => item.consequenceId);

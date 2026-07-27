@@ -7,7 +7,17 @@ import { join, resolve } from "node:path";
 
 const root = resolve(process.env.PROJECT_ROOT || ".");
 const databaseEnvFile = resolve(process.env.SANGTIAN_ENV_FILE || join(root, ".env.test"));
-if (!process.env.DATABASE_URL && existsSync(databaseEnvFile)) process.loadEnvFile(databaseEnvFile);
+const explicitDatabaseUrl = String(process.env.SANGTIAN_DATABASE_URL || "").trim();
+if (explicitDatabaseUrl) {
+  process.env.DATABASE_URL = explicitDatabaseUrl;
+} else if (existsSync(databaseEnvFile)) {
+  // Codex and other parent processes may carry a stale, task-local DATABASE_URL.
+  // Formal acceptance defaults to the pinned env file so the API and readback
+  // inspect the same durable database. Callers can still opt in to another
+  // database explicitly through SANGTIAN_DATABASE_URL.
+  delete process.env.DATABASE_URL;
+  process.loadEnvFile(databaseEnvFile);
+}
 const { PrismaClient } = await import("@prisma/client");
 const webBase = String(process.env.SANGTIAN_WEB_BASE || "http://127.0.0.1:5315").replace(/\/$/, "");
 const mailSink = resolve(process.env.AUTH_MAIL_SINK_FILE || "apps/api/.auth-mail-sink.ndjson");
@@ -113,6 +123,7 @@ class Cdp {
     this.consoleErrors = [];
     this.failedRequests = [];
     this.network = [];
+    this.requests = [];
     this.responseBodies = [];
   }
 
@@ -133,6 +144,16 @@ class Cdp {
       }
       if (data.method === "Network.loadingFailed") {
         cdp.failedRequests.push({ requestId: data.params.requestId, errorText: data.params.errorText, canceled: data.params.canceled === true });
+      }
+      if (data.method === "Network.requestWillBeSent") {
+        const urlValue = String(data.params?.request?.url || "");
+        if (urlValue.includes("/api/v4/rooms/") || urlValue.includes("/api/v4/credits/")) {
+          cdp.requests.push({
+            url: urlValue,
+            method: data.params.request.method,
+            postData: data.params.request.postData || null
+          });
+        }
       }
       if (data.method === "Network.responseReceived") {
         const urlValue = String(data.params?.response?.url || "");
@@ -398,10 +419,21 @@ try {
       );
     }
     const selected = decisions[selectedIndex];
+    const selectedCandidateId = await evaluate(`fetch(
+      '/api/v4/rooms/${runId}/game?choiceBindingTs=' + Date.now(),
+      { credentials:'include', headers:{ accept:'application/json' } }
+    ).then(async (response) => {
+      if (!response.ok) throw new Error('choice-binding projection request failed: ' + response.status);
+      const projection = await response.json();
+      const choice = projection.currentTurn?.decisions?.[${selectedIndex}];
+      if (!choice?.id) throw new Error('selected candidate missing from current projection');
+      return choice.id;
+    })`);
     const checkpointId = `T${String(turnNumber).padStart(2, "0")}`;
     const actionRecord = {
       actionId,
       selectedDecisionId: selected.id,
+      selectedCandidateId,
       selectedVisibleText: selected.visibleText,
       selectionMode,
       selectedIndex,
@@ -419,9 +451,14 @@ try {
       if(!input) throw new Error('selected decision missing');
       input.click();
       if(!input.checked) throw new Error('selected decision was not checked');
-      document.querySelector('#submitDecision').click();
-      return true;
+      return input.value;
     })()`);
+    await sleep(100);
+    const checkedDecisionId = await evaluate("document.querySelector('input[name=\"decision\"]:checked')?.value || null");
+    if (checkedDecisionId !== selected.id) {
+      throw new Error(`${checkpointId} browser choice binding failed before submit: expected ${selected.id}, got ${checkedDecisionId}`);
+    }
+    await evaluate("document.querySelector('#submitDecision').click(); true");
     await wait("Boolean(document.querySelector('[data-testid=\"simulation-screen\"], .simulation-stage, .simulation-screen')) || document.body.innerText.includes('AI is shaping') || document.body.innerText.includes('推演')", `${checkpointId} resolving`, 10_000);
     await screenshot(`${checkpointId}-resolving.png`);
     await wait("Boolean(document.querySelector('#continueStoryBtn')) || Boolean(document.querySelector('[data-testid=\"error-banner\"]'))", `${checkpointId} generated result`, 150_000);
@@ -436,6 +473,12 @@ try {
       throw new Error(`${checkpointId} database prefix failed: ${JSON.stringify(prefix.checks)}`);
     }
     const latestResolution = snapshot.resolutions.at(-1);
+    const latestSubmission = snapshot.submissions.at(-1);
+    if (latestSubmission?.candidateId !== selectedCandidateId) {
+      throw new Error(
+        `${checkpointId} submitted candidate mismatch: expected ${selectedCandidateId}, got ${latestSubmission?.candidateId || "NONE"}`
+      );
+    }
     const outcome = latestResolution?.outcomeJson || {};
     const record = {
       checkpointId,
@@ -445,7 +488,7 @@ try {
         prefixChecks: prefix.checks,
         partOneState: prefix.partOne,
         currentAttempt: snapshot.attempts.at(-1),
-        currentSubmission: snapshot.submissions.at(-1),
+        currentSubmission: latestSubmission,
         currentAction: snapshot.actions.at(-1),
         currentResolution: latestResolution,
         committedEvent: outcome.partOneEvent || null,
@@ -525,6 +568,7 @@ try {
     runtimeExceptions: cdp.exceptions,
     consoleErrors: cdp.consoleErrors,
     failedRequests: cdp.failedRequests.filter((item) => !item.canceled),
+    requests: cdp.requests,
     network: cdp.network,
     capturedAt: new Date().toISOString()
   };
@@ -544,6 +588,7 @@ try {
     runtimeExceptions: cdp?.exceptions || [],
     consoleErrors: cdp?.consoleErrors || [],
     failedRequests: cdp?.failedRequests || [],
+    requests: cdp?.requests || [],
     network: cdp?.network || [],
     responseBodies: cdp?.responseBodies || [],
     capturedAt: new Date().toISOString()

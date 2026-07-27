@@ -125,10 +125,10 @@
       {
         "affordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-03",
         "title": "暂缓封册",
-        "actionText": "暂不签放行文书，先封存清流县档房，并把延误责任记在自己名下。",
+        "actionText": "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。",
         "targetRef": "actor.qingliu_magistrate",
         "method": "先保全证据",
-        "immediateIntent": "暂不签放行文书，先封存清流县档房，并把延误责任记在自己名下。",
+        "immediateIntent": "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。",
         "visibleTradeoff": "证据更安全，朝廷与粮价压力立即上升",
         "stateEffects": [
           "reform.executionMode",

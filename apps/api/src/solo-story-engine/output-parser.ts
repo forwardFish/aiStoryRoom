@@ -14,18 +14,22 @@ export function parseNarratorDraft(rawText: string): StoryNarratorDraft {
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
-  // Dialogue-heavy historical scenes often use short question/answer
-  // paragraphs. Preserve that rhythm instead of forcing the Narrator to merge
-  // speakers into report-like blocks.
-  if (paragraphs.length < 3 || paragraphs.length > 12) {
+  // Parsing only requires the lossless boundary between the resolved action
+  // and the changed present situation. Turn-specific paragraph limits belong
+  // to validateNarratorDraft, where the active scene budget is available.
+  if (paragraphs.length < 2) {
     throw new SyntaxError("NARRATOR_PARAGRAPH_COUNT_INVALID");
   }
+  const actionNarrative = paragraphs[0]!;
+  const worldResponseNarrative = paragraphs.slice(1).join("\n\n");
   const nextSituationNarrative = paragraphs.at(-1)!;
   const resultNarrative = paragraphs.slice(0, -1).join("\n\n");
   const recomposed = `${resultNarrative}\n\n${nextSituationNarrative}`;
   if (recomposed !== canonical) throw new SyntaxError("NARRATOR_PROSE_IMMUTABILITY_BROKEN");
   return {
     rawProse: canonical,
+    actionNarrative,
+    worldResponseNarrative,
     resultNarrative,
     nextSituationNarrative
   };

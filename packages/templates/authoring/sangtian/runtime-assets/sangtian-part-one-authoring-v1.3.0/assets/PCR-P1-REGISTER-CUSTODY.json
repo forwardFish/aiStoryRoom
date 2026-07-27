@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-REGISTER-CUSTODY",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk"
+  ],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-02",
+    "REQ-P1-REGISTER-CUSTODY",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "ARC-P1-CUSTODY-CONTEST",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.reform_clerk",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "保管链强弱决定证据能否随奏报进入问责",
+      "多份材料可能使单点销毁不能抹除全部线索"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-CUSTODY-CHAIN",
+        "actorRefs": [
+          "actor.qingliu_magistrate",
+          "actor.reform_clerk"
+        ],
+        "action": "清流县令与改桑书吏只能按现有保管记录逐项对答；原件由谁看守、副本由谁经手，开始成为任何人都绕不过去的证据链。",
+        "requiredTermGroups": [
+          [
+            "清流县令",
+            "县令"
+          ],
+          [
+            "改桑书吏",
+            "书吏"
+          ],
+          [
+            "原件",
+            "副本",
+            "证据链"
+          ]
+        ],
+        "resultCeiling": "只能确认保管责任进入核对，不得新增县册差异或暗账内容。"
+      },
+      {
+        "beatId": "PAYOFF-P1-CUSTODY-REDUNDANCY",
+        "actorRefs": [
+          "actor.qingliu_magistrate",
+          "actor.reform_clerk"
+        ],
+        "action": "县令指出，原件、见证记录与已经存在的抄件若分由不同经手人保管，任何一处出问题都不能悄然抹去其余线索。",
+        "requiredTermGroups": [
+          [
+            "县令",
+            "清流县令"
+          ],
+          [
+            "原件",
+            "抄件"
+          ],
+          [
+            "经手人",
+            "见证"
+          ]
+        ],
+        "resultCeiling": "只能说明多点保管的效果，不得写成某处已经毁损或失窃。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

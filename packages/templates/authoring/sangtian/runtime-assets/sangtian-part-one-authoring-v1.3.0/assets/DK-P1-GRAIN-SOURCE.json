@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-GRAIN-SOURCE",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure",
+    "merchant.entryStatus",
+    "merchant.grantedRights"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "DK-P1-GRAIN-SOURCE",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "actor.zhejiang_xunfu",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure",
+    "merchant.entryStatus",
+    "merchant.grantedRights"
+  ],
+  "payload": {
+    "availableWhen": [
+      "官仓或可调用粮源不足以同时满足全部需要",
+      "粮价或灾民压力已经可见",
+      "官府需要粮、银或运输能力",
+      "商会拥有可验证但非无限的资源"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-GRAIN-SOURCE-OPT-01",
+        "title": "官府借调",
+        "actionText": "先动官仓并向邻省借粮，所有借据由总督府承担。",
+        "targetRef": "resource.official_grain",
+        "method": "官府借调",
+        "immediateIntent": "先动官仓并向邻省借粮，所有借据由总督府承担。",
+        "visibleTradeoff": "不让商会取得政策入口，但财政与偿还责任加重",
+        "stateEffects": [
+          "grain.officialStockStatus",
+          "grain.reliefChannel",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "grain.officialStockStatus": "MOBILIZED_AND_BORROWING",
+          "grain.reliefChannel": "OFFICIAL",
+          "responsibility.governorExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-GRAIN-SOURCE-OPT-02",
+        "title": "商会开仓",
+        "actionText": "准商会限量开仓，换取官府担保，但不得以粮价换购灾民田地。",
+        "targetRef": "actor.jiangnan_merchant_head",
+        "method": "附条件商粮",
+        "immediateIntent": "准商会限量开仓，换取官府担保，但不得以粮价换购灾民田地。",
+        "visibleTradeoff": "粮食来得快，商会同时获得官府信用",
+        "stateEffects": [
+          "grain.reliefChannel",
+          "merchant.entryStatus",
+          "land.safeguardStatus"
+        ],
+        "statePatch": {
+          "grain.reliefChannel": "MERCHANT_CONDITIONAL",
+          "merchant.entryStatus": "CONDITIONAL",
+          "land.safeguardStatus": "NO_GRAIN_FOR_LAND"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-GRAIN-SOURCE-OPT-03",
+        "title": "官商并用",
+        "actionText": "官仓先稳城内，商会负责外县运输，两路账目分开核销。",
+        "targetRef": "actor.jiangnan_merchant_head",
+        "method": "双渠道救急",
+        "immediateIntent": "官仓先稳城内，商会负责外县运输，两路账目分开核销。",
+        "visibleTradeoff": "风险分散，但核销和监管更复杂",
+        "stateEffects": [
+          "grain.reliefChannel",
+          "merchant.entryStatus",
+          "evidence.chainStatus"
+        ],
+        "statePatch": {
+          "grain.reliefChannel": "DUAL_CHANNEL",
+          "merchant.entryStatus": "CONDITIONAL",
+          "evidence.chainStatus": "TRACEABLE"
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

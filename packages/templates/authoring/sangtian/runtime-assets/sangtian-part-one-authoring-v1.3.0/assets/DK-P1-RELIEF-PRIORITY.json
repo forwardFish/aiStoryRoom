@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "DK-P1-RELIEF-PRIORITY",
+  "assetType": "DECISION_KERNEL",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-LAND-RISK"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-RELIEF-PRIORITY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head"
+  ],
+  "stateDependencies": [
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C01-CL-LAND-RISK-PREDICTION",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "DK-P1-RELIEF-PRIORITY",
+    "OPEN_DECISION_KERNEL",
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-LAND-RISK",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.zhejiang_governor",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "payload": {
+    "availableWhen": [
+      "官仓或可调用粮源不足以同时满足全部需要",
+      "粮价或灾民压力已经可见",
+      "改桑范围、粮食缺口或购田方案至少一项已经确定",
+      "百姓生计和田价仍受地方政策影响"
+    ],
+    "minimumVisibleOptions": 2,
+    "maximumVisibleOptions": 2,
+    "allowFreeAction": true,
+    "options": [
+      {
+        "affordanceTemplateId": "DK-P1-RELIEF-PRIORITY-OPT-01",
+        "title": "先保无粮户",
+        "actionText": "把现粮优先发给无存粮和无地可抵的百姓。",
+        "targetRef": "resource.official_grain",
+        "method": "按生计风险赈济",
+        "immediateIntent": "把现粮优先发给无存粮和无地可抵的百姓。",
+        "visibleTradeoff": "能减轻卖田压力，却可能耽误春种和城内供应",
+        "stateEffects": [
+          "grain.immediatePressure",
+          "land.riskLevel"
+        ],
+        "statePatch": {
+          "grain.immediatePressure": "RELIEVED_FOR_HUNGRIEST",
+          "land.riskLevel": "CONTAINED_BUT_PRESENT"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-RELIEF-PRIORITY-OPT-02",
+        "title": "先保种粮",
+        "actionText": "先留下种粮和插秧所需，再按户发放余粮。",
+        "targetRef": "actor.qingliu_magistrate",
+        "method": "保生产再赈济",
+        "immediateIntent": "先留下种粮和插秧所需，再按户发放余粮。",
+        "visibleTradeoff": "明年风险较低，眼前挨饿者会更多",
+        "stateEffects": [
+          "grain.immediatePressure",
+          "land.riskLevel"
+        ],
+        "statePatch": {
+          "grain.immediatePressure": "ACUTE_FOR_LANDLESS",
+          "land.riskLevel": "MEDIUM"
+        },
+        "createsPendingConsequence": true
+      },
+      {
+        "affordanceTemplateId": "DK-P1-RELIEF-PRIORITY-OPT-03",
+        "title": "先稳要地",
+        "actionText": "先稳杭州和清流县米市，再向外围灾村分批送粮。",
+        "targetRef": "resource.official_grain",
+        "method": "分区压价",
+        "immediateIntent": "先稳杭州和清流县米市，再向外围灾村分批送粮。",
+        "visibleTradeoff": "能压住政治中心，外围百姓承担更长等待",
+        "stateEffects": [
+          "grain.immediatePressure",
+          "responsibility.governorExposure"
+        ],
+        "statePatch": {
+          "grain.immediatePressure": "SHIFTED_TO_OUTLYING_VILLAGES",
+          "responsibility.governorExposure": {
+            "$delta": 1
+          }
+        },
+        "createsPendingConsequence": true
+      }
+    ],
+    "contrastRules": [
+      "每项必须在目标、方法、即时成本或反制中至少两项不同",
+      "不得把必然后果写成剧透",
+      "玩家应能不用内部 ID 复述行动"
+    ]
+  }
+}

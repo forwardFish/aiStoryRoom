@@ -379,6 +379,7 @@ const schemas = {
     characterVoiceAnchors: { type: "object", minProperties: 1, additionalProperties: nonEmptyStringArray },
     dialogueAndSubtextRules: nonEmptyStringArray,
     terminologyRules: nonEmptyStringArray,
+    forbiddenTerminologyPhrases: nonEmptyStringArray,
     forbiddenModernPhrases: nonEmptyStringArray,
     forbiddenSystemPhrases: nonEmptyStringArray,
     forbiddenAiSummaryPatterns: nonEmptyStringArray,
@@ -404,6 +405,7 @@ const schemas = {
       sourceClaimIds: nonEmptyStringArray,
       dramaticFunction: str,
       openingPressure: str,
+      runtimeActivationCues: nonEmptyStringArray,
       orderedBeats: arr(obj({
         ordinal: { type: "integer", minimum: 1 },
         actorRole: str,

@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "PCR-P1-RESPONSIBILITY-RECORD",
+  "assetType": "PENDING_CONSEQUENCE_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-RESPONSIBILITY-RECORD"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu"
+  ],
+  "stateDependencies": [
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-01",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "PENDING_CONSEQUENCE",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "payload": {
+    "createOnlyFromCommittedEvent": true,
+    "consequences": [
+      "京师按最先到达且证据最完整的文书形成初步定性",
+      "未具名者获得切割责任的空间"
+    ],
+    "payoffBeats": [
+      {
+        "beatId": "PAYOFF-P1-RESPONSIBILITY-SIGNATURE",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "巡抚一方当面追问谁肯在首份责任记录上具名，并把没有具名的人仍可推卸责任这一点公开摆到桌面。",
+        "requiredTermGroups": [
+          [
+            "巡抚",
+            "巡抚一方"
+          ],
+          [
+            "责任记录",
+            "责任"
+          ],
+          [
+            "具名",
+            "署名"
+          ]
+        ],
+        "resultCeiling": "只能争夺既有责任记录的署名，不得替任何一方完成签署。"
+      },
+      {
+        "beatId": "PAYOFF-P1-RESPONSIBILITY-FIRST-FRAME",
+        "actorRefs": [
+          "actor.xunfu_aide"
+        ],
+        "action": "巡抚幕僚明言，最先送到京师且附件齐全的那份文字会先定下责任名分，督抚双方都不能再把首份记录当作内厅私议。",
+        "requiredTermGroups": [
+          [
+            "巡抚幕僚",
+            "幕僚"
+          ],
+          [
+            "京师",
+            "入京"
+          ],
+          [
+            "首份记录",
+            "责任名分"
+          ]
+        ],
+        "resultCeiling": "只能提出政治后果，不得写成京师已经收到或已经作出判断。"
+      }
+    ],
+    "mustRecord": [
+      "consequenceId",
+      "causedByEventId",
+      "dueWindow",
+      "priority",
+      "status",
+      "payoffBeat"
+    ],
+    "allowedTransitions": [
+      "PENDING",
+      "DUE",
+      "PAID",
+      "DEFERRED_WITH_REASON",
+      "TRANSFORMED"
+    ],
+    "mayNotDisappearSilently": true
+  }
+}

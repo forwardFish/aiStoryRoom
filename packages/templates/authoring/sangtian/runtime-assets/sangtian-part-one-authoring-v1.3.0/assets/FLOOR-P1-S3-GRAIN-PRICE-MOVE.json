@@ -1,0 +1,205 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+  "assetType": "SECTION_FLOOR_OBLIGATION",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "actor.xunfu_aide"
+  ],
+  "stateDependencies": [
+    "grain.immediatePressure",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "merchant.entryStatus",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
+    "DM1566-C01-CL-LAND-PROFIT-MECHANISM",
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
+    "DM1566-C01-CL-LAND-RISK-PREDICTION",
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-03",
+    "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+    "FLOOR_OBLIGATION",
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "actor.qingliu_magistrate",
+    "actor.jiangnan_merchant_head",
+    "actor.xunfu_aide",
+    "grain.immediatePressure",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "merchant.entryStatus",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "payload": {
+    "targetTurnWindow": {
+      "earliest": 8,
+      "latest": 15
+    },
+    "dramaticPurpose": "让粮食救急成为短期有效但会改变土地风险、商会筹码和各方责任的真实交易。",
+    "mayOnlyMoveNpcOrWorld": true,
+    "mayNotDecideForPlayer": true,
+    "mayNotInventEvidence": true,
+    "exitGates": [
+      {
+        "ruleId": "S3-EXIT-CHANNEL",
+        "statePath": "grain.reliefChannel",
+        "operator": "NEQ",
+        "expectedValue": "UNDECIDED",
+        "description": "救急渠道确定"
+      },
+      {
+        "ruleId": "S3-EXIT-MERCHANT",
+        "statePath": "merchant.entryStatus",
+        "operator": "IN",
+        "expectedValue": [
+          "REJECTED",
+          "CONDITIONAL",
+          "ACTIVE"
+        ],
+        "description": "商会入口确定"
+      },
+      {
+        "ruleId": "S3-EXIT-LAND",
+        "statePath": "land.riskLevel",
+        "operator": "NEQ",
+        "expectedValue": "UNKNOWN",
+        "description": "土地风险确定"
+      },
+      {
+        "ruleId": "S3-EXIT-PENDING",
+        "statePath": "pendingConsequences",
+        "operator": "ANY_PENDING",
+        "expectedValue": true,
+        "description": "粮食或交易后果进入队列"
+      }
+    ],
+    "continuationDecisions": [
+      {
+        "continuationDecisionId": "CD-P1-S3-RELIEF-RECEIPTS",
+        "basedOnDecisionKernelId": "DK-P1-RELIEF-PRIORITY",
+        "worldPressure": {
+          "pressureId": "PRESSURE-P1-S3-FIRST-RELIEF-DELIVERY",
+          "summary": "首批救粮已经抵县；平码、验收和发放若同时办理，今日只能开一半仓门，若先发后验，经手账目就会留下不能即时互证的空档。",
+          "sourceFloorAssetId": "FLOOR-P1-S3-GRAIN-PRICE-MOVE"
+        },
+        "options": [
+          {
+            "affordanceTemplateId": "CD-P1-S3-RELIEF-RECEIPTS-OPT-01",
+            "title": "验一仓、开一仓",
+            "actionText": "令县令会同乡老逐船过秤，实收数当场张榜；验完一仓便开一仓，不准用口报代替回执。",
+            "targetRef": "actor.qingliu_magistrate",
+            "method": "见证验收后分仓发放",
+            "immediateIntent": "让每一批放粮都能对应到当日实收与领粮回执。",
+            "visibleTradeoff": "发粮会慢半日，饥民与催办改桑的巡抚都可能把延误算到总督头上",
+            "stateEffects": [
+              "knowledgeTransfers",
+              "responsibility.governorExposure",
+              "relations.governorXunfu"
+            ],
+            "statePatch": {
+              "knowledgeTransfer": {
+                "topic": "relief_receipt_before_release",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.qingliu_magistrate",
+                "status": "DELIVERED"
+              },
+              "responsibility.governorExposure": {
+                "$delta": 1
+              },
+              "relations.governorXunfu": {
+                "$delta": -1
+              }
+            },
+            "createsPendingConsequence": true
+          },
+          {
+            "affordanceTemplateId": "CD-P1-S3-RELIEF-RECEIPTS-OPT-02",
+            "title": "先放粮、日落补册",
+            "actionText": "令米船一到便按既定名册放粮，日落前再由每名经手人补齐平码数、领粮户和余粮去向。",
+            "targetRef": "resource.official_grain",
+            "method": "先救急后限时补齐回执",
+            "immediateIntent": "先缩短百姓等粮时间，再以当天死限追回账目。",
+            "visibleTradeoff": "饥情缓得更快，但半日账目空档会成为巡抚、商会和县衙互相争执的口实",
+            "stateEffects": [
+              "knowledgeTransfers",
+              "responsibility.governorExposure",
+              "relations.governorXunfu"
+            ],
+            "statePatch": {
+              "knowledgeTransfer": {
+                "topic": "relief_release_before_receipt",
+                "senderRef": "actor.zhejiang_governor",
+                "recipientRef": "actor.qingliu_magistrate",
+                "status": "DELIVERED"
+              },
+              "responsibility.governorExposure": {
+                "$delta": 2
+              },
+              "relations.governorXunfu": {
+                "$delta": 1
+              }
+            },
+            "createsPendingConsequence": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -8,7 +8,7 @@ import {
   writeJson,
 } from "./lib/contract-utils.mjs";
 
-const RELEASE_VERSION = "sangtian-part-one-authoring-v1.2.0";
+const RELEASE_VERSION = "sangtian-part-one-authoring-v1.3.0";
 const EVIDENCE_RELEASE_ID = "sangtian-part-one-evidence-v1.0.0";
 const authoringRoot = resolve(repoRoot, "packages/templates/authoring/sangtian");
 const approvedMechanismRoot = resolve(authoringRoot, "mechanisms/approved/part-01-v3");
@@ -57,9 +57,9 @@ const approvedAdaptationIds = new Set(adaptationSet.adaptations.map((item) => it
 
 const kernelOptions = {
   "DK-P1-EXECUTION-SCOPE": [
-    ["限定试办", "只准清流县先办一批，并把不得压价买田写进放行文书。", "actor.zhejiang_xunfu", "附条件签发", "用较慢的进度换取民田保护与可复核边界", ["reform.executionMode", "reform.scopeStatus", "land.safeguardStatus"]],
+    ["限定试办", "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。", "actor.zhejiang_xunfu", "附条件签发", "用较慢的进度换取民田保护与可复核边界", ["reform.executionMode", "reform.scopeStatus", "land.safeguardStatus"]],
     ["先行放开", "按巡抚所请先放行改桑，同时限三日补齐复核册和经手名册。", "actor.zhejiang_xunfu", "限期补正", "先保进度，但错误可能先成为既成事实", ["reform.executionMode", "reform.progress", "responsibility.xunfuExposure"]],
-    ["暂缓封册", "暂不签放行文书，先封存清流县档房，并把延误责任记在自己名下。", "actor.qingliu_magistrate", "先保全证据", "证据更安全，朝廷与粮价压力立即上升", ["reform.executionMode", "evidence.archiveSealStatus", "responsibility.governorExposure"]],
+    ["暂缓封册", "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。", "actor.qingliu_magistrate", "先保全证据", "证据更安全，朝廷与粮价压力立即上升", ["reform.executionMode", "evidence.archiveSealStatus", "responsibility.governorExposure"]],
   ],
   "DK-P1-REVIEW-INITIATION": [
     ["总督先封", "派总督亲随持令封存原册，县令和巡抚各出一名见证。", "actor.qingliu_magistrate", "异地见证封存", "保管链较强，但会立刻惊动巡抚一方", ["review.initiationStatus", "evidence.chainStatus", "evidence.primaryCustodianRef"]],
@@ -67,9 +67,9 @@ const kernelOptions = {
     ["县令自查", "令清流县令连夜自查并送样册，总督府暂不派人接管档房。", "actor.qingliu_magistrate", "限期自查", "动作隐蔽，却把首轮保管风险留在县衙", ["review.initiationStatus", "witness.accessStatus", "evidence.chainStatus"]],
   ],
   "DK-P1-RESPONSIBILITY-RECORD": [
-    ["要求联署", "在已经写明的改桑边界之后，补写复核办法与督抚各自责任，请巡抚一同具名。", "actor.zhejiang_xunfu", "共同具名", "共同承担能换来合作，也会模糊日后分歧", ["responsibility.firstRecordStatus", "responsibility.governorExposure", "responsibility.xunfuExposure"]],
-    ["总督单署", "由总督独自签发附条件命令，并把巡抚催办原文作为附件留档。", "actor.zhejiang_xunfu", "单独具名并附原文", "责任集中，但保留了催办来源", ["responsibility.firstRecordStatus", "responsibility.governorExposure"]],
-    ["记明异议", "在现有公文上批明暂准放行，并在同一份回文中逐项写明督抚分歧和各自承担的事项。", "actor.zhejiang_xunfu", "分项责任记录", "关系转冷，但后续不易互相改口", ["responsibility.firstRecordStatus", "relations.governorXunfu"]],
+    ["要求联署", "将当前改桑执行边界、复核办法与督抚各自责任写入正式回文，请巡抚共同具名。", "actor.zhejiang_xunfu", "共同具名", "共同承担能换来合作，也会模糊日后分歧", ["responsibility.firstRecordStatus", "responsibility.governorExposure", "responsibility.xunfuExposure"]],
+    ["总督单署", "由总督单独具名写明当前改桑执行边界，并把巡抚催办原文作为附件留档。", "actor.zhejiang_xunfu", "单独具名并附原文", "责任集中，但保留了催办来源", ["responsibility.firstRecordStatus", "responsibility.governorExposure"]],
+    ["记明异议", "另具正式回文暂准放行，并逐项写明督抚分歧和各自承担的事项。", "actor.zhejiang_xunfu", "分项责任记录", "关系转冷，但后续不易互相改口", ["responsibility.firstRecordStatus", "relations.governorXunfu", "reform.executionMode", "reform.progress"]],
   ],
   "DK-P1-EVIDENCE-CUSTODY": [
     ["原件封存", "原册留在档房，换新封条；总督、县令、巡抚三方各留封样。", "evidence.qingliu_register_anomaly", "多方封样", "原件少移动，但三方都知道调查已开始", ["evidence.chainStatus", "evidence.archiveSealStatus", "evidence.primaryCustodianRef"]],
@@ -150,7 +150,7 @@ const kernelStatePatches = {
   "DK-P1-RESPONSIBILITY-RECORD": [
     { "responsibility.firstRecordStatus": "JOINT_SIGNATURE_REQUESTED", "responsibility.governorExposure": { $delta: 1 }, "responsibility.xunfuExposure": { $delta: 1 } },
     { "responsibility.firstRecordStatus": "GOVERNOR_SIGNED_WITH_ATTACHMENT", "responsibility.governorExposure": { $delta: 2 } },
-    { "responsibility.firstRecordStatus": "DISAGREEMENT_RECORDED", "relations.governorXunfu": { $delta: -1 } },
+    { "responsibility.firstRecordStatus": "DISAGREEMENT_RECORDED", "relations.governorXunfu": { $delta: -1 }, "reform.executionMode": "PROVISIONAL_RELEASE", "reform.progress": "STARTED" },
   ],
   "DK-P1-EVIDENCE-CUSTODY": [
     { "evidence.chainStatus": "TRACEABLE", "evidence.archiveSealStatus": "SEALED_WITH_THREE_SAMPLES", "evidence.primaryCustodianRef": "actor.qingliu_magistrate" },
@@ -273,7 +273,25 @@ const consequencePayoffBeatsByRequirement = {
       beatId: "PAYOFF-P1-XUNFU-VISIBILITY",
       actorRefs: ["actor.xunfu_aide"],
       action: "巡抚一方要求先看已经允许披露的材料范围；若仍被排除在外，便要以拒绝协作为由另立自己的叙述。",
-      requiredTermGroups: [["巡抚", "巡抚一方"], ["材料", "披露"], ["另立", "叙述"]],
+      requiredTermGroups: [
+        ["巡抚", "巡抚一方", "抚院"],
+        ["材料", "披露", "能看的", "允准披露"],
+        [
+          "另立",
+          "叙述",
+          "另具一稿",
+          "另写一稿",
+          "另具一份",
+          "另写一份",
+          "自具一稿",
+          "另叙",
+          "另作说法",
+          "另作一说",
+          "自行具文",
+          "具文回话",
+          "把今日情形写进去"
+        ]
+      ],
       resultCeiling: "只能形成公开威胁，不得写成另一份奏报已经发出。",
     },
   ],
@@ -775,7 +793,9 @@ for (const requirement of requirementSet.requirements) {
     assetId: consequenceAssetId,
     assetType: "PENDING_CONSEQUENCE_RULE",
     requirementIds: [requirement.requirementId],
-    decisionKernelIds: requirement.decisionKernelIds,
+    decisionKernelIds: requirement.requirementId === "REQ-P1-EXECUTION-BOUNDARY"
+      ? requirement.decisionKernelIds.filter((kernelId) => kernelId === "DK-P1-EXECUTION-SCOPE")
+      : requirement.decisionKernelIds,
     causalArcIds: section.activeCausalArcIds,
     actorRefs: mechanism.actorRefs,
     stateDependencies: requirement.stateEffects,

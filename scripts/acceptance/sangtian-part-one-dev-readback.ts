@@ -39,7 +39,7 @@ async function main() {
       select: { id: true, status: true, currentDay: true, worldSequence: true, engineVersion: true, strategyVersion: true, stateJson: true }
     }),
     prisma.actorTurn.findMany({ where: { runId }, orderBy: { turnIndex: "asc" }, select: { id: true, turnIndex: true, status: true, situationTitle: true, situationNarrative: true, contextJson: true } }),
-    prisma.soloGenerationAttempt.findMany({ where: { runId }, orderBy: { createdAt: "asc" }, select: { id: true, triggerType: true, status: true, providerCallCount: true, contextSnapshotHash: true, confirmedResolutionJson: true, rawOutput: true, parsedOutput: true, issueCodesJson: true, failureReason: true, timingsJson: true } }),
+    prisma.soloGenerationAttempt.findMany({ where: { runId }, orderBy: { createdAt: "asc" }, select: { id: true, triggerType: true, status: true, providerCallCount: true, contextSnapshotHash: true, confirmedResolutionJson: true, contextReportJson: true, rawOutput: true, parsedOutput: true, issueCodesJson: true, failureReason: true, timingsJson: true } }),
     prisma.decisionSubmission.findMany({ where: { runId }, orderBy: { submittedAt: "asc" }, select: { id: true, turnId: true, playerActionId: true, candidateId: true, rawIntentJson: true, normalizedIntentJson: true, immutableIntentHash: true, status: true, submittedAt: true, resolvedAt: true } }),
     prisma.playerAction.findMany({ where: { runId }, orderBy: { createdAt: "asc" }, select: { id: true, actionType: true, targetType: true, targetId: true, targetText: true, method: true, intent: true, normalizedJson: true, status: true, resolvedJson: true } }),
     prisma.actionResolution.findMany({ where: { runId }, orderBy: { resolvedAt: "asc" }, select: { id: true, turnId: true, playerActionId: true, appliedWorldSequence: true, outcomeJson: true, statePatchJson: true, resultNarrative: true, nextHook: true, qualityStatus: true, resolvedAt: true } }),
@@ -64,6 +64,7 @@ async function main() {
         failureReason: attempt.failureReason,
         rawOutputCharacterCount: attempt.rawOutput?.length || 0,
         rawOutputPreview: attempt.rawOutput?.slice(0, 1200) || null,
+        contextReport: attempt.contextReportJson,
         timings: attempt.timingsJson
       })),
       actionCount: actions.length,

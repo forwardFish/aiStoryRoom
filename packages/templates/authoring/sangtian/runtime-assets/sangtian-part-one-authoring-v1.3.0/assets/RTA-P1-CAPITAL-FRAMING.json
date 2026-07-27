@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "RTA-P1-CAPITAL-FRAMING",
+  "assetType": "CAUSAL_RULE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-CAPITAL-CHANNEL",
+    "DK-P1-REPORT-AUTHORSHIP"
+  ],
+  "causalArcIds": [
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili"
+  ],
+  "stateDependencies": [
+    "report.dispatchStatus",
+    "report.firstNarrativeController",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY",
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C02-CL-REPORT-CAN-BE-SUPPRESSED",
+    "DM1566-C04-CL-REPORT-AND-LETTER-REACH-YAN",
+    "DM1566-C04-CL-REPORT-PROVOKES-IMMEDIATE-REACTION",
+    "DM1566-C23-CL-ESCORT-EXPLAINS-DISPATCH-PROVENANCE",
+    "DM1566-C23-CL-SHI-ORDERS-PERSONAL-DELIVERY-TO-CHEN"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "SEC-P1-04",
+    "REQ-P1-CAPITAL-FRAMING",
+    "DK-P1-CAPITAL-CHANNEL",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "actor.zhejiang_governor",
+    "actor.zhejiang_xunfu",
+    "institution.grand_secretariat",
+    "institution.sili",
+    "report.dispatchStatus",
+    "report.firstNarrativeController",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "dramaticFunction": "首报会改变京师收到的第一版事实而不预定最终裁决",
+    "preconditions": [
+      "正式或非正式文书已经进入递送渠道",
+      "渠道中介、署名和附件状态可追踪"
+    ],
+    "allowedMoves": [
+      "走通政司正式渠道",
+      "使用密奏或专递",
+      "让多份文书相互印证",
+      "在奏报中标明事实与推断边界"
+    ],
+    "likelyCountermoves": [
+      "中介截留或延迟",
+      "以另一套语言重述地方问题",
+      "先见某一方奏报",
+      "要求补证后再定性"
+    ],
+    "immediateStateEffects": [
+      "report.dispatchStatus",
+      "report.firstNarrativeController",
+      "pendingConsequences"
+    ],
+    "delayedConsequences": [
+      "京师先收到的版本形成第一版事实框架",
+      "渠道记录成为后续追责的一部分"
+    ],
+    "invariantsToPreserve": [
+      "京师角色不得提前知道未送达信息",
+      "第一版定性不是最终御前裁决"
+    ],
+    "limitations": [
+      "只定义渠道和政治解释机制",
+      "不得提前引入第四部分裁决"
+    ],
+    "evidenceStrength": "EXPLICIT"
+  }
+}

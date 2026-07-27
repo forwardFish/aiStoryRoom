@@ -37,49 +37,154 @@ test("Narrator receives settled story facts but cannot see next-decision routes"
   const fixture = partOneFixture();
   const prompt = buildSoloNarratorPrompt(fixture.context);
   assert.equal(prompt.responseMode, "TEXT");
-  assert.match(prompt.userPrompt, /输出前逐段计数：必须是四至七个自然段/);
-  assert.match(prompt.userPrompt, /每段最多三句/);
-  assert.match(prompt.userPrompt, /去掉空白后不得少于 300 字/);
-  assert.match(prompt.userPrompt, /不能用重复物件状态、规则解释或新增事实凑字/);
-  assert.match(prompt.userPrompt, /【RECENT CANON】/);
+  assert.match(prompt.userPrompt, /【最近正文】/);
+  assert.match(prompt.systemPrompt, /全文至少两个自然段/);
+  assert.match(prompt.systemPrompt, /第一自然段只负责完整演出已结算行动/);
+  assert.match(prompt.systemPrompt, /进入第二自然段后，不得再让玩家角色下令、答复、追问、承诺、批准或决定新事项/);
   assert.match(prompt.userPrompt, /总督已经看过清流县令密信/);
-  assert.match(prompt.userPrompt, /【SCENE START】/);
-  assert.match(prompt.userPrompt, /【SCENE END】/);
-  assert.match(prompt.userPrompt, /【SCENE START ACTORS — ONLY THESE MAY ACT BEFORE TRANSITION】/);
-  assert.match(prompt.userPrompt, /【SCENE END ACTORS — ONLY THESE MAY ACT AFTER TRANSITION】/);
-  assert.match(prompt.userPrompt, /【AUTHORIZED ACTOR ARRIVALS】/);
-  assert.match(prompt.userPrompt, /【AUTHORIZED ACTOR DEPARTURES】/);
-  assert.match(prompt.userPrompt, /【AUTHORIZED PLAYER SPEECH】/);
-  assert.match(prompt.userPrompt, /暂缓签发，三日内复核/);
-  assert.match(prompt.userPrompt, /持此去清流，封存档房/);
-  assert.match(prompt.userPrompt, /【MANDATORY SCENE BEATS】/);
-  assert.match(prompt.userPrompt, /【AUTHORIZED EXISTING OBJECTS】/);
-  assert.match(prompt.userPrompt, /"巡抚回文匣"/);
-  assert.doesNotMatch(prompt.userPrompt, /continuityNote|不得改变分量/);
-  assert.doesNotMatch(prompt.userPrompt, /\[\s*"巡",\s*"清",\s*"总"/);
-  assert.match(prompt.userPrompt, /【REQUIRED END CHANGE】/);
-  assert.match(prompt.userPrompt, new RegExp(escapeRegExp(fixture.settlement.event.actionText)));
-  for (const reaction of fixture.settlement.event.authoritativeNpcReactions) {
-    assert.match(prompt.userPrompt, new RegExp(escapeRegExp(reaction.action)));
-  }
-  assert.match(prompt.systemPrompt, /Recent Canon 是已经发生的最高连续性依据/);
-  assert.match(prompt.systemPrompt, /场景只能从 SCENE START 推进到 SCENE END/);
-  assert.match(prompt.systemPrompt, /SCENE START ACTORS 和 SCENE END ACTORS 是分阶段的实体级硬边界/);
-  assert.match(prompt.systemPrompt, /获批预算 300—1500/);
-  assert.match(prompt.systemPrompt, /到期后果只有在正文真正发生后，后台才会记为兑现/);
-  assert.match(prompt.systemPrompt, /不得改写为从此刻、现在或本轮重新起算/);
-  assert.match(prompt.systemPrompt, /不得换算成“已非一日、已有数日、一夜之间”/);
-  assert.match(prompt.systemPrompt, /不写“分量没有变”/);
-  assert.match(prompt.systemPrompt, /不得为方便场面另取一纸、另造节略、底稿、附件或第二份文书/);
-  assert.match(prompt.userPrompt, /【AUTHORIZED QUANTITIES】/);
-  assert.match(prompt.userPrompt, /三日/);
-  assert.match(prompt.userPrompt, /本轮始于并结束于嘉靖三十五年五月初八辰时/);
-  assert.match(prompt.userPrompt, /只让已点名的在场人物行动/);
-  assert.match(prompt.userPrompt, /不得新增它的材质、尺寸、正反面、刻字、字号、纹样/);
-  assert.match(prompt.userPrompt, /【PLAYER ACTION — THIS HAS ALREADY HAPPENED】/);
-  assert.doesNotMatch(prompt.userPrompt, /【本轮末尾必须自然到场的公开压力/);
+  assert.match(prompt.userPrompt, /巡抚催办公文也已翻到末页/);
+  assert.match(prompt.userPrompt, /【当前现场】/);
+  assert.match(prompt.userPrompt, /开场在场人物：浙江总督、巡抚书吏、清流县令亲随/);
+  assert.match(prompt.userPrompt, /巡抚催办公文由浙江总督持有，已经读过/);
+  assert.match(prompt.userPrompt, /清流县令密信由浙江总督持有，已经读过/);
+  assert.match(prompt.userPrompt, /【玩家行动呈现方式】/);
+  assert.match(prompt.userPrompt, /玩家选择中包含必须传达给在场对象的命令、追问或答复/);
+  assert.match(prompt.userPrompt, /不能改成点头、递物、敲案、指向或其他手势暗示/);
+  assert.match(prompt.userPrompt, /【玩家行动之后必须发生的场景推进】/);
+  assert.match(
+    prompt.userPrompt,
+    /【玩家刚刚选择的行动（已经结算；以下步骤属于同一选择，正文开头依次明确发生）】/
+  );
+  assert.match(prompt.userPrompt, /1\. 行动者：浙江总督。已完成：将总督封缄令牌交给清流县令亲随/);
+  assert.match(prompt.userPrompt, /2\. 行动者：浙江总督。已完成：命他向清流县传达封存档房之令/);
+  assert.match(prompt.userPrompt, /3\. 行动者：浙江总督。已完成：同时当面答复巡抚书吏：暂缓签发，三日内复核/);
+  assert.match(prompt.userPrompt, /不能只让其他人物事后提及或转述/);
+  assert.match(prompt.userPrompt, /【正文两阶段边界】/);
+  assert.match(prompt.userPrompt, /第一自然段必须把上述每一步全部演完/);
+  assert.match(prompt.userPrompt, /“玩家行动之后必须发生的场景推进”从第二自然段开始/);
+  assert.match(prompt.userPrompt, /清流县令亲随接令后领命退出杭州总督府内厅/);
+  assert.match(prompt.userPrompt, /巡抚书吏当场追问总督为何暂缓签发/);
+  assert.match(prompt.userPrompt, /本场结束时仍在场人物：浙江总督、巡抚书吏/);
+  assert.match(prompt.userPrompt, /不得给催办公文补写日期、落款、原话或其他内容/);
+  assert.match(prompt.userPrompt, /【在场人物说话边界】/);
+  assert.match(prompt.userPrompt, /巡抚书吏：自称“卑职”，称总督“部堂”或“大人”/);
+  assert.match(prompt.userPrompt, /清流县令亲随：只传达县令已经报疑并等待上命/);
+  assert.match(prompt.userPrompt, /【原著场面机制】/);
+  assert.match(prompt.userPrompt, /让冲突通过人物动作、追问和停顿发生，不用旁白解释规则/);
+  assert.doesNotMatch(prompt.userPrompt, /用急递、具名和领命把争论转成下一场的实际压力/);
+  assert.doesNotMatch(prompt.userPrompt, /先提高声量|先定性|裁定发生后才允许掌权者离座/);
+  assert.match(prompt.userPrompt, /可用“候上命再启”写出封存的最低限度含义/);
+  assert.match(prompt.userPrompt, /不得扩写钥匙归属、册籍清单、出入禁令、具体启封人员、差员到场/);
+  assert.match(prompt.userPrompt, /不得承诺复核后一定落印、再定行止或另给新期限/);
+  assert.match(prompt.userPrompt, /【事实边界】/);
+  assert.match(prompt.userPrompt, /幕后主使、暗账全貌和未呈到的证据都还没有查明/);
+  assert.match(prompt.userPrompt, /【收束方式】/);
+  assert.match(prompt.userPrompt, /本场文书保持开场状态；催问只通过人物当面对话发生/);
+  assert.match(prompt.userPrompt, /【本场篇幅】\nSHORT_RESPONSE：建议 220—380 字，硬范围 160—480 字；2—7 个自然段/);
+  assert.match(prompt.userPrompt, /不把每句短对白单独拆段/);
+  assert.doesNotMatch(prompt.userPrompt, /复核启动方式已经确定|无须离场送达/);
+  assert.doesNotMatch(
+    prompt.userPrompt,
+    /continuityNote|physicalDescriptionPolicy|holderRef|objectRef|documentRef|accessState|AUTHORIZED_|MANDATORY_|REQUIRED_END_CHANGE/
+  );
+  assert.equal(
+    countOccurrences(prompt.userPrompt, "将总督封缄令牌交给清流县令亲随"),
+    1
+  );
+  assert.equal(
+    countOccurrences(prompt.userPrompt, "命他向清流县传达封存档房之令"),
+    1
+  );
+  assert.equal(
+    countOccurrences(prompt.userPrompt, "同时当面答复巡抚书吏：暂缓签发，三日内复核"),
+    1
+  );
+  assert.equal(countOccurrences(prompt.userPrompt, "完整执行上一选择"), 0);
+  assert.doesNotMatch(prompt.userPrompt, /上一选择已经推动的处置/);
+  assert.ok(
+    prompt.userPrompt.lastIndexOf("【玩家刚刚选择的行动")
+      > prompt.userPrompt.lastIndexOf("【玩家行动之后必须发生的场景推进】")
+  );
+  assert.equal(prompt.userPrompt.trimEnd().endsWith("新的压力留给下一组玩家决策。"), true);
+  assert.match(prompt.systemPrompt, /最近正文是已经发生的最高连续性依据/);
+  assert.match(prompt.systemPrompt, /不解释后台规则/);
+  assert.match(prompt.systemPrompt, /之后不再总结形势、清点尚未发生的事/);
+  assert.ok(prompt.systemPrompt.length < 1100);
+  assert.ok(prompt.userPrompt.length < 5200);
   assert.doesNotMatch(prompt.userPrompt, /routeKey|affordanceTemplateId|stateEffects|statePatch/);
   assert.doesNotMatch(prompt.systemPrompt, /LEGAL_NEXT_DECISION_SEEDS/);
+  const playerActionBeats = fixture.settlement.event.narrativePlan.sceneBeats.filter(
+    (beat) => beat.sourceType === "PLAYER_ACTION"
+  );
+  assert.deepEqual(
+    playerActionBeats.map((beat) => beat.action),
+    [
+      "将总督封缄令牌交给清流县令亲随",
+      "命他向清流县传达封存档房之令",
+      "同时当面答复巡抚书吏：暂缓签发，三日内复核"
+    ]
+  );
+  assert.deepEqual(
+    playerActionBeats[0]!.requiredTermGroups,
+    [
+      ["封缄令牌", "总督令牌", "令牌"],
+      ["交给", "交到", "交予", "递给", "递到", "搁到", "放到", "接过", "接下"],
+      ["清流县令亲随", "县令亲随", "清流亲随", "亲随"]
+    ]
+  );
+  assert.deepEqual(
+    playerActionBeats[1]!.requiredTermGroups,
+    [
+      [
+        "EXACT:命他",
+        "EXACT:命其",
+        "EXACT:命亲随",
+        "EXACT:命清流县令亲随",
+        "EXACT:吩咐他",
+        "EXACT:吩咐亲随",
+        "EXACT:吩咐清流县令亲随",
+        "EXACT:责令",
+        "EXACT:下令",
+        "EXACT:交代他",
+        "EXACT:交代亲随"
+      ],
+      ["封存档房", "档房封存", "封住档房"],
+      ["封存", "封条", "封缄"]
+    ]
+  );
+  assert.deepEqual(
+    playerActionBeats[2]!.requiredTermGroups,
+    [
+      ["三日内复核", "三日期限内复核"],
+      ["暂缓签发", "暂不签发", "扣下不签"],
+      [
+        "EXACT:答复巡抚书吏",
+        "EXACT:答复书吏",
+        "EXACT:告知巡抚书吏",
+        "EXACT:告知书吏",
+        "EXACT:告诉巡抚书吏",
+        "EXACT:告诉书吏",
+        "EXACT:回告巡抚书吏",
+        "EXACT:回告书吏",
+        "EXACT:面告巡抚书吏",
+        "EXACT:面告书吏",
+        "EXACT:对巡抚书吏说明",
+        "EXACT:对书吏说明",
+        "EXACT:向巡抚书吏说明",
+        "EXACT:向书吏说明",
+        "EXACT:命书吏转告",
+        "EXACT:总督转向他，当面答复",
+        "EXACT:总督转面答复",
+        "EXACT:总督当面答复"
+      ],
+      ["巡抚书吏", "书吏"],
+      ["复核"]
+    ]
+  );
+  assert.equal(
+    playerActionBeats.every((beat) => beat.requiredTermGroups.length > 0),
+    true
+  );
   for (const route of fixture.workingSet.decisionAffordances) {
     assert.ok(
       !prompt.userPrompt.includes(route.affordanceTemplateId),
@@ -103,6 +208,184 @@ test("Narrator receives settled story facts but cannot see next-decision routes"
   assert.doesNotMatch(decisionPrompt.userPrompt, /stateEffects|statePatch|createsPendingConsequence/);
 });
 
+test("T02 narrator receives only physically available foreground props", () => {
+  const fixture = partOneSecondTurnFixture();
+  const prompt = buildSoloNarratorPrompt(fixture.context);
+  const currentScene = prompt.userPrompt
+    .split("【当前现场】")[1]
+    ?.split("【玩家行动呈现方式】")[0] || "";
+
+  assert.match(
+    currentScene,
+    /当前可用动作落点：巡抚回文匣由巡抚书吏持有，合拢、里面是空的/
+  );
+  assert.match(
+    currentScene,
+    /人物可以继续捧持、按住或收紧手指；物件持有人、开合和内容沿用上句状态/
+  );
+  assert.doesNotMatch(currentScene, /不得另造其中的文书|不得擅自改变持有人/);
+  assert.doesNotMatch(currentScene, /总督封缄令牌/);
+  assert.doesNotMatch(currentScene, /场外持有人/);
+});
+
+test("T02 narrator receives the authorized reply plus a consumed creation-texture boundary", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prompt = buildSoloNarratorPrompt(fixture.context);
+  const currentScene = prompt.userPrompt
+    .split("【当前现场】")[1]
+    ?.split("【玩家行动呈现方式】")[0] || "";
+
+  assert.match(
+    currentScene,
+    /本场唯一发生变化的文书：改桑放行回文将在本场写成，写成后由巡抚书吏持有/
+  );
+  assert.match(
+    currentScene,
+    /改桑放行回文由浙江总督在本场当面提笔写成/
+  );
+  assert.match(
+    currentScene,
+    /落字后直接称“改桑放行回文”，写成后按上句移交/
+  );
+  assert.match(
+    currentScene,
+    /普通纸张与笔墨可以短暂作为一次性过程细节出现；它们落字后就是同一份已获批文书/
+  );
+  assert.doesNotMatch(
+    currentScene,
+    /空白纸页|行牌|札纸|手本/
+  );
+  assert.match(
+    currentScene,
+    /其余现有文书只作为原状背景：巡抚催办公文、清流县令密信/
+  );
+  assert.match(
+    currentScene,
+    /本场没有续写或移交动作/
+  );
+  assert.match(
+    currentScene,
+    /本场授权的物件变化：巡抚回文匣起初由巡抚书吏持有，合拢、里面是空的；本场结束时由巡抚书吏持有，合拢、里面已有文书/
+  );
+  assert.match(
+    currentScene,
+    /浙江总督当场写成改桑放行回文并递给巡抚书吏/
+  );
+  assert.match(
+    currentScene,
+    /巡抚书吏始终捧持巡抚回文匣，由巡抚书吏本人启开匣盖、收入改桑放行回文并重新合拢/
+  );
+  assert.doesNotMatch(
+    currentScene,
+    /不得让浙江总督拿取、开启、合拢或推递巡抚回文匣/
+  );
+  assert.doesNotMatch(
+    prompt.userPrompt,
+    /共同具名|联署|署名|画押|姓名在上|名字写在/
+  );
+  assert.doesNotMatch(
+    prompt.userPrompt,
+    /让关系变化通过递交或拒绝一件有政治含义的物件完成/
+  );
+  assert.doesNotMatch(
+    prompt.userPrompt,
+    /用人物的追问、回答、停顿、递交、拒绝和在场反应呈现冲突/
+  );
+  assert.match(
+    prompt.userPrompt,
+    /巡抚幕僚：只在巡抚已经授权的范围内争时限、复核权和责任记录/
+  );
+  assert.match(
+    prompt.userPrompt,
+    /要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录/
+  );
+});
+test("Recent Canon keeps the named actor with a closing pronoun gesture", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const context = structuredClone(fixture.context);
+  context.sections.recentCanon.items = [{
+    entryId: "canon-t01-next",
+    chronologicalOrder: 2,
+    narrative: [
+      "书吏双手仍捧着那只合拢的空回文匣，十指收紧了一线，没有退。",
+      "他低头道：“卑职不敢催问部堂决断，只是抚院催取回文，上头要的是落印，不是暂缓。”",
+      "他把回文匣往前微微一送，又收住，没有再往前递。"
+    ].join("")
+  }];
+  const prompt = buildSoloNarratorPrompt(context);
+  const recentCanon = prompt.userPrompt
+    .split("【最近正文】")[1]
+    ?.split("【当前现场】")[0] || "";
+
+  assert.match(recentCanon, /^(\r?\n)?书吏双手仍捧着那只合拢的空回文匣/);
+  assert.match(recentCanon, /他把回文匣往前微微一送，又收住，没有再往前递/);
+  assert.notEqual(
+    recentCanon.trim(),
+    "他把回文匣往前微微一送，又收住，没有再往前递。"
+  );
+});
+
+
+test("Narrator budget grants a bounded short-scene extension only for an authorized actor arrival", () => {
+  const fixture = partOneFixture();
+  const context = structuredClone(fixture.context);
+  const event = context.sections.partOneSettlement.items[0]!;
+  event.narrativePlan.authorizedActorArrivals.push("巡抚幕僚");
+  const prompt = buildSoloNarratorPrompt(context);
+  assert.match(
+    prompt.userPrompt,
+    /【本场篇幅】\nSHORT_RESPONSE：建议 220—420 字，硬范围 160—520 字；2—7 个自然段/
+  );
+});
+
+test("Narrator parser preserves an exact two-paragraph short scene", () => {
+  const prose = [
+    "总督把令牌交给亲随，命他传达封存档房之令；亲随接令后退出内厅。",
+    "巡抚书吏仍候在案前，追问三日内复核的范围与方式。"
+  ].join("\n\n");
+  const draft = parseNarratorDraft(prose);
+  assert.equal(draft.rawProse, prose);
+  assert.equal(draft.actionNarrative, prose.split("\n\n")[0]);
+  assert.equal(draft.worldResponseNarrative, prose.split("\n\n")[1]);
+  assert.equal(draft.resultNarrative, prose.split("\n\n")[0]);
+  assert.equal(draft.nextSituationNarrative, prose.split("\n\n")[1]);
+});
+
+test("Narrator gate requires every settled player-action beat in the first prose phase", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到亲随手中，命他回清流县传令封存档房。亲随领命退出内厅。",
+    "巡抚书吏等门帘落下才躬身道：“大人既示暂缓，三日之内如何复核，还请给卑职一个书面说法。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) =>
+      issue.code === "COMMITTED_EVENT_NOT_RENDERED"
+      && issue.message.includes("当面答复巡抚书吏")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects a new governor answer after the world response begins", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "书吏垂手候在原处，等总督对这番催问作答。",
+    "总督听完便告诉他：先查经手人名，查完再行知会。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "PLAYER_ACTION_AFTER_WORLD_RESPONSE"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
 test("Narrator receives only the latest changed-situation paragraph from Recent Canon", () => {
   const fixture = partOneFixture();
   const context = structuredClone(fixture.context);
@@ -115,11 +398,22 @@ test("Narrator receives only the latest changed-situation paragraph from Recent 
   assert.doesNotMatch(prompt.userPrompt, /先前已经说过米价/);
   assert.doesNotMatch(prompt.userPrompt, /先前已经说明只敢报疑/);
   assert.match(prompt.userPrompt, /案前两边来人都没有退/);
-  assert.match(prompt.userPrompt, /NAME_HOLDER_AND_AUTHORIZED_TEXT_ONLY/);
-  assert.match(prompt.userPrompt, /AUTHORIZED_STATE_FIELDS_ONLY_NO_NEW_APPEARANCE/);
+  assert.doesNotMatch(prompt.userPrompt, /NAME_HOLDER_AND_AUTHORIZED_TEXT_ONLY/);
+  assert.doesNotMatch(prompt.userPrompt, /AUTHORIZED_STATE_FIELDS_ONLY_NO_NEW_APPEARANCE/);
 });
 
-test("Narrator receives a phase-specific material boundary when the action writes a document", () => {
+test("Narrator keeps the full final canon paragraph so motive is not reduced to a prop movement", () => {
+  const fixture = partOneFixture();
+  const context = structuredClone(fixture.context);
+  context.sections.recentCanon.items[0]!.narrative =
+    "县令亲随刚刚说过只敢报疑。巡抚书吏追问三日内要怎样书面回复。说罢，他把回文匣往胸前收了收，只等总督答复。";
+  const prompt = buildSoloNarratorPrompt(context);
+  assert.match(prompt.userPrompt, /刚刚说过只敢报疑/);
+  assert.match(prompt.userPrompt, /追问三日内要怎样书面回复/);
+  assert.match(prompt.userPrompt, /把回文匣往胸前收了收/);
+});
+
+test("Narrator receives the semantic scene transition but not machine material-state policy", () => {
   const fixture = partOneFixture();
   const context = structuredClone(fixture.context);
   const event = context.sections.partOneSettlement.items[0]!;
@@ -129,24 +423,98 @@ test("Narrator receives a phase-specific material boundary when the action write
   event.narrativePlan.sceneEnd.timeLabel = "嘉靖三十五年五月初九巳时";
   event.narrativePlan.sceneEnd.locationLabel = "杭州总督府签押房";
   const prompt = buildSoloNarratorPrompt(context);
-  assert.match(prompt.userPrompt, /FRESH WRITING MATERIAL-STATE BOUNDARY/);
-  assert.match(prompt.userPrompt, /不得在转场前写成/);
-  assert.match(prompt.userPrompt, /只有正文明确进入.*五月初九巳时.*签押房\s+后/);
+  assert.match(prompt.userPrompt, /故事才可转到嘉靖三十五年五月初九巳时的杭州总督府签押房/);
+  assert.doesNotMatch(prompt.userPrompt, /FRESH WRITING MATERIAL-STATE BOUNDARY|墨迹只能写|不得在转场前写成/);
+  assert.match(prompt.userPrompt, /行动者：浙江总督。已完成：将总督封缄令牌交给清流县令亲随/);
+  assert.ok(
+    prompt.userPrompt.lastIndexOf("【玩家刚刚选择的行动")
+      > prompt.userPrompt.lastIndexOf("【玩家行动之后必须发生的场景推进】")
+  );
 });
 
-test("Narrator requires a declarative institutional action to be spoken verbatim", () => {
+test("Narrator renders an unquoted institutional action indirectly", () => {
   const fixture = partOneFixture();
   const context = structuredClone(fixture.context);
   const event = context.sections.partOneSettlement.items[0]!;
   event.actionText = "由总督府定复核清单，巡抚和县令只能派见证人参加。";
   event.narrativePlan.actionAlreadyOccurred = event.actionText;
-  event.narrativePlan.authorizedPlayerSpeech = [
-    "由总督府定复核清单，巡抚和县令只能派见证人参加"
-  ];
+  event.narrativePlan.playerSpeechMode = "INDIRECT_ONLY";
+  event.narrativePlan.authorizedPlayerSpeech = [];
   const prompt = buildSoloNarratorPrompt(context);
-  assert.match(prompt.userPrompt, /PLAYER ACTION PERFORMANCE MODE/);
-  assert.match(prompt.userPrompt, /不得只用眼神、摆笔或旁白解释动作含义/);
-  assert.match(prompt.userPrompt, /玩家必须在开头逐字说出/);
+  assert.match(prompt.userPrompt, /【玩家行动呈现方式】/);
+  assert.match(prompt.userPrompt, /不让浙江总督说引号台词/);
+  assert.match(prompt.userPrompt, /必须让玩家刚刚选择的行动在正文中明确完成/);
+  assert.match(prompt.userPrompt, /不能只写成准备、意向、暗示或由其他人物转述/);
+  assert.match(prompt.userPrompt, /【玩家刚刚选择的行动（已经结算；以下步骤属于同一选择，正文开头依次明确发生）】/);
+  event.narrativePlan.sceneBeats = [{
+    beatId: "PLAYER-ACTION-1",
+    sourceType: "PLAYER_ACTION",
+    action: event.actionText,
+    requiredTermGroups: [],
+    mustAppear: true
+  }];
+  assert.match(
+    buildSoloNarratorPrompt(context).userPrompt,
+    /行动者：浙江总督。已完成：由总督府定复核清单，巡抚和县令只能派见证人参加/
+  );
+  assert.doesNotMatch(prompt.userPrompt, /玩家亲自写明了以下原话/);
+});
+
+test("Narrator allows only a player-authored exact quote", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian").package;
+  const settlement = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "CUSTOM",
+      actionText: "总督把令牌交给亲随，并明确说：“持此去清流，封存档房。”"
+    },
+    1
+  );
+  assert.equal(settlement.event.narrativePlan.playerSpeechMode, "EXACT_QUOTE_ALLOWED");
+  assert.deepEqual(
+    settlement.event.narrativePlan.authorizedPlayerSpeech,
+    ["持此去清流，封存档房。"]
+  );
+});
+
+test("Narrator gate rejects the live choppy sample and its invented governor quote", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将令牌搁在案边，推向清流县令亲随那一侧。",
+    "“持此去清流，封存档房。人不离档，候本督另文。”",
+    "亲随双手接过令牌，指节微白，低头应了一声，退后两步，转身出了内厅。脚步声沿廊下远了。",
+    "巡抚书吏一直站在案前未动。他等那脚步声断绝，才开口：“部堂，催办公文是抚院衙门签发的，限期回文。如今暂缓签发——下官回去如何禀报？”",
+    "总督没有立刻答他。",
+    "书吏往前半步，声音压低，却更紧：“三日复核，复核什么、如何复核，抚院要一个说法。部堂若只口说暂缓，中丞那边，下官交不了差。”",
+    "“三日。”总督说。",
+    "“三日之内，可有书面回文？”",
+    "书吏盯着案上那封催办公文，又看一眼总督的手。",
+    "“部堂，下官斗胆——复核的范围与方式，还请明示，容下官笔录带回。否则抚院只听得一句‘暂缓’，必以为是总督府压案不办。”",
+    "他说完，没有退，也没有再追，只是站着等。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "NARRATIVE_PARAGRAPH_BUDGET_VIOLATION"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_SPEECH"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate accepts a compact scene that renders an unquoted action indirectly", () => {
+  const fixture = partOneFixture();
+  const validation = validateNarratorDraft(
+    parseNarratorDraft(partOneNarration(fixture)),
+    fixture.context
+  );
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
 });
 
 test("Narrator treats an action aimed at an absent register as an order, not an on-site prop scene", () => {
@@ -155,9 +523,8 @@ test("Narrator treats an action aimed at an absent register as an order, not an 
   const event = context.sections.partOneSettlement.items[0]!;
   event.actionText = "原册留在档房，换新封条；总督、县令、巡抚三方各留封样。";
   event.narrativePlan.actionAlreadyOccurred = event.actionText;
-  event.narrativePlan.authorizedPlayerSpeech = [
-    "原册留在档房，换新封条；总督、县令、巡抚三方各留封样"
-  ];
+  event.narrativePlan.playerSpeechMode = "INDIRECT_ONLY";
+  event.narrativePlan.authorizedPlayerSpeech = [];
   event.narrativePlan.sceneStart.documentStates = [{
     documentRef: "document.qingliu_register_original",
     label: "清流县册原件",
@@ -166,9 +533,19 @@ test("Narrator treats an action aimed at an absent register as an order, not an 
     continuityNote: "原件仍在清流县档房。"
   }];
   const prompt = buildSoloNarratorPrompt(context);
-  assert.match(prompt.userPrompt, /清流县册原件不在现场/);
-  assert.match(prompt.userPrompt, /不得当场取出、换封、盖印、分割或递交/);
-  assert.match(prompt.userPrompt, /只写玩家下令，不写实物操作/);
+  assert.match(prompt.userPrompt, /清流县册原件不在当前现场/);
+  assert.doesNotMatch(prompt.userPrompt, /documentRef|accessState|continuityNote/);
+  event.narrativePlan.sceneBeats = [{
+    beatId: "PLAYER-ACTION-1",
+    sourceType: "PLAYER_ACTION",
+    action: event.actionText,
+    requiredTermGroups: [],
+    mustAppear: true
+  }];
+  assert.match(
+    buildSoloNarratorPrompt(context).userPrompt,
+    /行动者：浙江总督。已完成：原册留在档房，换新封条；总督、县令、巡抚三方各留封样/
+  );
 });
 
 test("Decision gate rejects an extra action inferred from the prose", () => {
@@ -270,11 +647,83 @@ test("Narrator gate accepts a committed world move expressed with a close natura
   assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
 });
 
+test("Narrator gate recognizes the live T02 threat to write a separate account", () => {
+  const fixture = partOneFixture();
+  const context = structuredClone(fixture.context);
+  const event = context.sections.partOneSettlement.items[0]!;
+  const visibilityMove = {
+    beatId: "PAYOFF-P1-XUNFU-VISIBILITY-LIVE-T02",
+    sourceType: "DUE_CONSEQUENCE" as const,
+    sourceId: "PCR-P1-XUNFU-COUNTERMOVE",
+    consequenceId: "PC-P1-XUNFU-VISIBILITY-LIVE-T02",
+    actorRefs: ["actor.xunfu_aide"],
+    action: "巡抚一方要求先看已经允许披露的材料范围；若仍被排除在外，便要以拒绝协作为由另立自己的叙述。",
+    requiredTermGroups: [
+      ["巡抚", "巡抚一方", "抚院"],
+      ["材料", "披露", "能看的", "允准披露"],
+      [
+        "另立",
+        "叙述",
+        "另具一稿",
+        "另写一稿",
+        "另具一份",
+        "另写一份",
+        "自具一稿",
+        "把今日情形写进去"
+      ]
+    ],
+    resultCeiling: "只能形成公开威胁，不得写成另一份奏报已经发出。"
+  };
+  event.authoritativeWorldMoves.push(visibilityMove);
+  event.narrativePlan.presentActorLabels.push("巡抚幕僚");
+  event.narrativePlan.sceneEndActorLabels.push("巡抚幕僚");
+  event.narrativePlan.authorizedActorArrivals.push("巡抚幕僚");
+  event.narrativePlan.sceneBeats.push({
+    beatId: visibilityMove.beatId,
+    sourceType: "WORLD_MOVE",
+    action: visibilityMove.action,
+    requiredTermGroups: visibilityMove.requiredTermGroups,
+    resultCeiling: visibilityMove.resultCeiling,
+    mustAppear: true
+  });
+  const prose = `${partOneNarration(fixture)}
+
+内厅侧门有人掀帘进来。来人青衫便帽，向总督长揖，自报是巡抚幕僚。他站定后开口道：“部堂若不准抚院协查，抚院只好另具一稿，把今日情形写进去。卑职先问一句：部堂这边已经允准披露的材料，究竟到哪一层？今日能看的，还是不能看的？”`;
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), context);
+  const issues = validation.ok ? [] : validation.issues;
+  assert.equal(
+    issues.some(
+      (issue) =>
+        issue.code === "COMMITTED_EVENT_NOT_RENDERED"
+        && issue.message.includes(visibilityMove.action)
+    ),
+    false,
+    JSON.stringify(issues)
+  );
+  assert.equal(
+    issues.some(
+      (issue) => issue.code === "UNAUTHORIZED_PART_ONE_ACTOR_APPEARANCE"
+    ),
+    false,
+    JSON.stringify(issues)
+  );
+});
+
 test("Narrator gate recognizes a messenger pushing the door open and leaving", () => {
   const fixture = partOneFixture();
   const prose = partOneNarration(fixture).replace(
     "领命退出内厅",
     "转身推门出去"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
+test("Narrator gate recognizes a messenger bowing out through the threshold", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "清流县令亲随双手接过令牌，领命退出内厅。",
+    "清流县令亲随双手接牌，退至门槛处躬身出去。廊下脚步声很快远了。"
   );
   const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
   assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
@@ -286,6 +735,18 @@ test("Narrator gate recognizes a messenger going to the door and slipping out", 
     "领命退出内厅",
     "转身到了门边，侧身而出"
   );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
+test("Narrator gate recognizes the county messenger's natural shortened title", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督拿起封缄令牌，交到清流亲随手里，命他持令去清流封存档房。亲随双手收拢，躬身领命，转过门槛便出去了。总督这才转向巡抚书吏，当面答复巡抚书吏：放行文书暂缓签发，三日内复核。",
+    "巡抚书吏没有退。他先看了一眼案上的催办公文，随后问道：“中丞等的是落印回文。如今暂缓，复核只限清流一县，还是连抚院已报之数一并核过？”",
+    "书吏把双手拢回袖中，仍立在屏风外：“三日之内，还请部堂说明复核的范围与方式，下官才好回禀。”他的称呼仍旧恭谨，问的却不是一句客套话；回到抚院以后，暂缓的缘由落在谁名下，便从这句话起了头。",
+    "厅中无人再动。催办公文仍压在案前，密信也只报了一个疑处。书吏不肯空手退下，那句催问便留在两封文书之间，等着总督给出一句能够记入责任的答复。"
+  ].join("\n\n");
   const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
   assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
 });
@@ -342,6 +803,27 @@ test("Narrator gate requires every settled player-action meaning to appear", () 
     validation.issues.some((issue) =>
       issue.code === "COMMITTED_EVENT_NOT_RENDERED"
       && issue.message.includes("封存档房")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate does not treat a gesture plus the messenger's later action as an explicit governor order", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督从案上取起封缄令牌，交到清流县令亲随手中，以手背朝外一推，示意他即刻返回清流县传令封存档房。亲随双手接过令牌，退步至门槛处躬身而出，脚步声沿廊下远了。",
+    "总督转向巡抚书吏，将催办公文压在掌下，当面告以暂缓签发，三日内复核再议。",
+    "巡抚书吏没有退。他看了一眼亲随离去的方向，又看向总督按住公文的手，随后问道：“部堂，暂缓签发，下官回去如何交代？”",
+    "他把双手拢在袖中，语气仍旧恭谨：“三日之内，还请部堂给个书面回复，写明复核范围与方式，下官才好据实回禀抚台。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) =>
+      issue.code === "COMMITTED_EVENT_NOT_RENDERED"
+      && issue.message.includes("命他向清流县传达封存档房之令")
     ),
     true,
     JSON.stringify(validation.issues)
@@ -430,6 +912,38 @@ test("Narrator gate rejects invented document clues and quantified public events
   if (validation.ok) return;
   assert.ok(validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_DISCOVERY"));
   assert.ok(validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_QUANTITY"));
+});
+
+test("Narrator gate rejects unsupported register details invented as an answer", () => {
+  const fixture = partOneFixture();
+  const draft = parseNarratorDraft([
+    partOneNarration(fixture),
+    "县令亲随又说，县中户册近月屡有涂改，桑田亩数与实种不符。"
+  ].join("\n\n"));
+  const validation = validateNarratorDraft(draft, fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_DISCOVERY"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects invented register custody procedure and unseen hallway actors", () => {
+  const fixture = partOneFixture();
+  const draft = parseNarratorDraft([
+    partOneNarration(fixture),
+    "亲随又道，原册存于清流县衙，须大人下令调取，方敢封送。窗外廊下有人换了一次脚。"
+  ].join("\n\n"));
+  const validation = validateNarratorDraft(draft, fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_DISCOVERY"),
+    true,
+    JSON.stringify(validation.issues)
+  );
 });
 
 test("Narrator gate rejects an unapproved paper prop added only to stage the scene", () => {
@@ -584,6 +1098,22 @@ test("Narrator gate rejects a new blank generic document sheet", () => {
   );
 });
 
+test("Narrator gate rejects a clerk drawing a new blank memorandum from his sleeve", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音",
+    "巡抚书吏从袖中抽出一张空白手本，摊在案角"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_DOCUMENT_INTRODUCTION"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
 test("Narrator gate allows only the minimum procedure implied by a settled archive seal", () => {
   const fixture = partOneFixture();
   const prose = partOneNarration(fixture).replace(
@@ -635,6 +1165,36 @@ test("Narrator gate does not treat idiomatic degree or document classifiers as n
     "他没有替巡抚加一句，也没有把催问说得更轻",
     "书吏的声音冷了几分：“中丞还要一份明确的回复。”他没有替巡抚加一句，也没有把催问说得更轻"
   );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
+test("Narrator gate treats a voice lowered by half an inch as figurative degree, not physical distance", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "他没有替巡抚加一句，也没有把催问说得更轻",
+    "书吏开口时声调比先前更低半寸。他没有替巡抚加一句，也没有把催问说得更轻"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
+test("Narrator gate allows an incidental half-inch blocking detail without canonizing a distance", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "他没有替巡抚加一句，也没有把催问说得更轻",
+    "书吏抬起手，指尖停在案面上方半寸。他没有替巡抚加一句，也没有把催问说得更轻"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
+test("Narrator gate allows the live reply-box movement toward the clerk's chest as blocking", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命他回县传达封存档房之令，候上命再启；同时当面答复巡抚书吏，暂缓签发，三日内复核。亲随双手接过令牌，躬身领命，退步至门边，转身出了内厅。",
+    "门帘合拢后，巡抚书吏仍捧着那只空的回文匣，没有挪步。他微微欠身，语气恭谨却咬得很紧：“大人既示下暂缓，卑职不敢妄议。只是抚院催取回文，三日期限是上头定的，卑职空手回去，须得有个交代。敢请大人三日内给一份书面回复，写明复核的范围与方式，卑职据以回话，抚院那边才好等得明白。”他说完，双手将回文匣往胸前收紧了一寸，垂目候着。"
+  ].join("\n\n");
   const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
   assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
 });
@@ -755,7 +1315,7 @@ test("limited-trial action accepts natural pilot wording while preserving every 
     {
       source: "RECOMMENDED",
       decisionId: "DK-P1-EXECUTION-SCOPE-OPT-01",
-      actionText: "只准清流县先办一批，并把不得压价买田写进放行文书。"
+      actionText: "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。"
     },
     2
   );
@@ -766,6 +1326,138 @@ test("limited-trial action accepts natural pilot wording while preserving every 
     actionGroups.some((group) => group.includes("清流县试办")),
     true,
     JSON.stringify(actionGroups)
+  );
+});
+
+test("review-question action supplies a bounded answer without inventing player dialogue", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian").package;
+  const settlement = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d1",
+      actionText: "把巡抚催办公文暂压在案上，示意巡抚书吏留在内厅；只问县令亲随密信是否仅为报疑、原册是否并未随信送来，再从这两项已知事实启动复核。"
+    },
+    1
+  );
+  assert.deepEqual(
+    settlement.event.narrativePlan.authorizedPlayerSpeech,
+    []
+  );
+  assert.equal(
+    settlement.event.narrativePlan.playerSpeechMode,
+    "INDIRECT_SPEECH_REQUIRED"
+  );
+  assert.ok(
+    settlement.event.authoritativeObservableFacts.includes(
+      "清流县令亲随当场只确认：密信仅为报疑，原册并未随信送来；除此不能再作断言"
+    )
+  );
+  assert.ok(
+    settlement.event.narrativePlan.sceneBeats.some((beat) =>
+      beat.action.startsWith("清流县令亲随当场只确认")
+      && beat.mustAppear
+    )
+  );
+  const createdConsequence = settlement.proposedState.pendingConsequences.find(
+    (item) => settlement.event.createdPendingConsequenceIds.includes(item.consequenceId)
+  );
+  assert.equal(
+    createdConsequence?.ruleAssetId,
+    "PCR-P1-XUNFU-COUNTERMOVE"
+  );
+  assert.match(
+    createdConsequence?.payoffBeat.action || "",
+    /参加下一轮复核/
+  );
+  assert.doesNotMatch(
+    createdConsequence?.payoffBeat.action || "",
+    /清流县试办|压价买田/
+  );
+});
+
+test("Narrator gate rejects an unspoken second governor question", () => {
+  const fixture = partOneFixture();
+  const context = structuredClone(fixture.context);
+  const event = context.sections.partOneSettlement.items[0]!;
+  event.actionText = "只问县令亲随：“密信只是报疑，原册没有随信送来，可是如此？”";
+  event.narrativePlan.actionAlreadyOccurred = event.actionText;
+  event.narrativePlan.playerSpeechMode = "EXACT_QUOTE_ALLOWED";
+  event.narrativePlan.authorizedPlayerSpeech = [
+    "密信只是报疑，原册没有随信送来，可是如此？"
+  ];
+  const prose = partOneNarration(fixture).replace(
+    "清流县令亲随双手接过令牌，领命退出内厅。",
+    "总督问道：“密信只是报疑，原册没有随信送来，可是如此？”亲随只确认了这两项。总督追问一句，亲随便不再开口。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_ACTION"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate allows narration that the governor did not ask a second question", () => {
+  const fixture = partOneFixture();
+  const context = structuredClone(fixture.context);
+  const event = context.sections.partOneSettlement.items[0]!;
+  event.actionText = "只问县令亲随：“密信只是报疑，原册没有随信送来，可是如此？”";
+  event.narrativePlan.actionAlreadyOccurred = event.actionText;
+  event.narrativePlan.playerSpeechMode = "EXACT_QUOTE_ALLOWED";
+  event.narrativePlan.authorizedPlayerSpeech = [
+    "密信只是报疑，原册没有随信送来，可是如此？"
+  ];
+  const prose = partOneNarration(fixture).replace(
+    "清流县令亲随双手接过令牌，领命退出内厅。",
+    "总督问道：“密信只是报疑，原册没有随信送来，可是如此？”亲随只确认了这两项。总督没有追问。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), context);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_ACTION"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate does not attribute a clerk's quoted request to a governor who stays silent", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "巡抚书吏一直在门内等候。",
+    "巡抚书吏先开口道：“大人可否给卑职一个书面字据，好让卑职回去交差？”总督未答。巡抚书吏一直在门内等候。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_SPEECH"
+        || issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_COMMITMENT"
+    ),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects an NPC demand for a new handling ledger absent from the world move", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "巡抚书吏一直在门内等候。",
+    "巡抚书吏先开口道：“抚院亦当与闻复核，留一份本方经手底册。”巡抚书吏一直在门内等候。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some(
+      (issue) => issue.code === "UNAUTHORIZED_PART_ONE_NPC_DOCUMENT_DEMAND"
+    ),
+    true,
+    JSON.stringify(validation.issues)
   );
 });
 
@@ -813,6 +1505,26 @@ test("Narrator gate rejects the governor moving a reply box held by the xunfu cl
     true
   );
 });
+test("Narrator gate rejects the governor sending forward a reply box held by the xunfu clerk", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音。",
+    "浙江总督将回文匣往前一送，又收住；内厅只剩茶盏轻触案面的声音。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"
+        && issue.message.includes("浙江总督将回文匣往前一送")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
 
 test("Narrator gate rejects changing an empty closed reply box without a settled handoff", () => {
   const fixture = partOneFixture();
@@ -826,6 +1538,22 @@ test("Narrator gate rejects changing an empty closed reply box without a settled
   assert.equal(
     validation.issues.some((issue) => issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"),
     true
+  );
+});
+
+test("Narrator gate rejects inserting an unchanged document into the empty reply box", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音。",
+    "巡抚书吏将催办公文夹入回文匣，重新合拢匣盖；内厅只剩茶盏轻触案面的声音。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"),
+    true,
+    JSON.stringify(validation.issues)
   );
 });
 
@@ -900,35 +1628,24 @@ test("Narrator gate does not confuse the authorized county messenger with the ma
   assert.equal(validation.ok, true, JSON.stringify(validation.issues));
 });
 
-test("Narrator gate rejects inventing a storage position for the transferred seal token", () => {
+test("Narrator gate allows the authorized new holder to stow the seal token without changing custody", () => {
   const fixture = partOneFixture();
   const prose = partOneNarration(fixture).replace(
     "话说完，他看着阶下的人把这道命令听全",
     "清流县令亲随把封缄令牌收入袖中。话说完，他看着阶下的人把这道命令听全"
   );
   const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
-  assert.equal(validation.ok, false);
-  if (validation.ok) return;
-  assert.equal(
-    validation.issues.some((issue) => issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"),
-    true
-  );
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
 });
 
-test("Narrator gate rejects inventing an initial desk storage position for the seal token", () => {
+test("Narrator gate allows the authorized holder to retrieve the seal token from neutral blocking", () => {
   const fixture = partOneFixture();
   const prose = partOneNarration(fixture).replace(
     "浙江总督把手按在案沿",
     "浙江总督从案后取出封缄令牌，递向清流县令亲随，随后把手按在案沿"
   );
   const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
-  assert.equal(validation.ok, false);
-  if (validation.ok) return;
-  assert.equal(
-    validation.issues.some((issue) => issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"),
-    true,
-    JSON.stringify(validation.issues)
-  );
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
 });
 
 test("Narrator gate allows the governor to stand from behind the desk before handing over the seal token", () => {
@@ -1123,6 +1840,68 @@ test("Narrator gate rejects a named actor who acts outside the authorized scene 
   );
 });
 
+test("Narrator gate rejects an unlisted bailiff used as offstage atmosphere", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音。",
+    "厅中一时只剩窗外差役换班的脚步声。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_ACTOR_ACTION"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects a document-location contradiction within one paragraph", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音。",
+    "催办公文与密信并不同案，两样东西却又压在同一张案上。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate does not confuse a superior's urging document with the superior acting", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "浙江总督把手按在案沿",
+    "浙江总督将巡抚催办公文往案上一压，朝巡抚书吏抬了抬手"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_ACTOR_ACTION"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate does not confuse the xunfu reply box with the xunfu acting", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音。",
+    "书吏捧持巡抚回文匣，启开匣盖，将改桑放行回文折好收入，重新合拢，退后半步躬身。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_ACTOR_ACTION"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
 test("Narrator gate rejects an unlisted superior who enters with the authorized aide", () => {
   const fixture = partOneFixture();
   const prose = partOneNarration(fixture).replace(
@@ -1173,11 +1952,70 @@ test("Narrator gate rejects an invented personal name for an authorized unnamed 
   );
 });
 
+test("Narrator gate allows neutral non-causal appearance texture for an authorized unnamed actor", () => {
+  const fixture = partOneFixture();
+  const context = structuredClone(fixture.context);
+  const plan = context.sections.partOneSettlement.items[0]!.narrativePlan;
+  plan.sceneStartActorLabels.push("巡抚幕僚");
+  plan.sceneEndActorLabels.push("巡抚幕僚");
+  const prose = partOneNarration(fixture).replace(
+    "巡抚书吏一直在门内等候。",
+    "巡抚幕僚青衫便帽，面相清瘦，向总督行了一揖。巡抚书吏一直在门内等候。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), context);
+  assert.equal(
+    validation.ok
+      ? false
+      : validation.issues.some(
+          (issue) => issue.code === "UNAUTHORIZED_PART_ONE_ACTOR_APPEARANCE"
+        ),
+    false,
+    validation.ok ? "" : JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects appearance details that create new evidence or authority", () => {
+  const fixture = partOneFixture();
+  const context = structuredClone(fixture.context);
+  const plan = context.sections.partOneSettlement.items[0]!.narrativePlan;
+  plan.sceneStartActorLabels.push("巡抚幕僚");
+  plan.sceneEndActorLabels.push("巡抚幕僚");
+  const prose = partOneNarration(fixture).replace(
+    "巡抚书吏一直在门内等候。",
+    "巡抚幕僚青衫便帽，腰间悬着巡抚关防腰牌，向总督行了一揖。巡抚书吏一直在门内等候。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some(
+      (issue) => issue.code === "UNAUTHORIZED_PART_ONE_ACTOR_APPEARANCE"
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
 test("Narrator gate allows an ordinary direct address to 大人", () => {
   const fixture = partOneFixture();
   const prose = partOneNarration(fixture).replace(
     "他没有替巡抚加一句",
     "他只道：“那便请大人明示。”他没有替巡抚加一句"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_ACTOR_IDENTITY"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate treats 须大人下令 as modal grammar, not a personal name", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "他没有替巡抚加一句",
+    "他只道：“原册未曾随信送来，须大人下令。”他没有替巡抚加一句"
   );
   const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
   if (validation.ok) return;
@@ -1196,6 +2034,22 @@ test("Narrator gate does not treat a vague duration as a settled numeric deadlin
   );
   const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
   assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
+test("Narrator gate rejects an invented physical distance between known documents", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音。",
+    "两封文书并置，中间隔着半尺案面。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_QUANTITY"),
+    true,
+    JSON.stringify(validation.issues)
+  );
 });
 
 test("Narrator gate rejects player commitments beyond the settled action", () => {
@@ -1306,6 +2160,65 @@ test("Narrator gate does not treat a clerk speaking after looking back at the go
   assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
 });
 
+test("Narrator gate does not attribute a clerk quote after he looks at the governor's hand", () => {
+  const fixture = partOneFixture();
+  const event = fixture.settlement.event;
+  const reactionText = event.authoritativeNpcReactions
+    .map((reaction) => reaction.action)
+    .join("。");
+  const paragraphs = partOneNarration(fixture).split(/\n\s*\n/);
+  paragraphs[1] = [
+    "书吏没有立即接话。他看了一眼被按住的公文，又看了一眼总督的手，才开口：",
+    `“${reactionText}”`
+  ].join("");
+  const validation = validateNarratorDraft(
+    parseNarratorDraft(paragraphs.join("\n\n")),
+    fixture.context
+  );
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_SPEECH"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate does not start player-speech attribution inside a clerk's gaze object", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督从案上取了封缄令牌，搁在清流县令亲随面前，吩咐他即刻回县，传令封存档房，一册一卷不许擅动。亲随双手接过，退至门槛处躬身退出。脚步声沿廊下远了。",
+    "总督随即转向巡抚书吏，说催办文书暂缓签发，三日内复核。",
+    "书吏没有立刻接话。他低头看了一眼案上那封催办公文，又抬眼看了看总督搁笔的位置，才开口：“部堂明示，三日复核，是复哪一宗？是单复清流一县所报，还是并复巡抚衙门移文所列款项？”",
+    "总督没有答。",
+    "书吏往前半步，声音压低却更紧：“非是下官敢催。抚院要的是落印移文。敢请部堂示下复核范围与复核方式，下官据实回禀？”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_SPEECH"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("short-response budget accepts a complete 298-character scene without padding", () => {
+  const fixture = partOneFixture();
+  const context = structuredClone(fixture.context);
+  const event = context.sections.partOneSettlement.items[0]!;
+  const prose = [
+    "总督从案上取起那面封缄令牌，交到清流县令亲随手中，命他立即回县传达封存档房之令。亲随双手接过，低头领命，退至门槛处躬身一礼，转身出了内厅。脚步声沿廊下渐远。",
+    "总督转向巡抚书吏，以掌按住那封催办公文，明言暂缓签发，三日内复核。",
+    "书吏没有立即接话。他看了一眼被按住的公文，又看了一眼总督的手，才开口：“部堂，催办文书上写的是限期，不是可缓可急的商量。暂缓签发，下官回去如何交代？”",
+    "总督没有改口。",
+    "书吏往前半步，压低声音：“三日之内，还请部堂给一份书面回复，写明复核的范围与方式。下官好拿回去销差——不然，抚院那边只当杭州这边压着不办。”"
+  ].join("\n\n");
+  assert.ok(prose.length >= 180 && prose.length < 300, `unexpected fixture length ${prose.length}`);
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), context);
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "NARRATIVE_STYLE_BUDGET_VIOLATION"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
 test("Narrator gate catches a player commitment in adjacent unattributed dialogue", () => {
   const fixture = partOneFixture();
   const prose = partOneNarration(fixture).replace(
@@ -1318,6 +2231,466 @@ test("Narrator gate catches a player commitment in adjacent unattributed dialogu
   assert.equal(
     validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_COMMITMENT"),
     true
+  );
+});
+
+test("Narrator gate catches governor speech when attribution follows the quote", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音",
+    "“三日内复核。”总督打断了书吏。内厅只剩茶盏轻触案面的声音"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_SPEECH"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects invented archive-sealing procedure beyond the settled order", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "只把已经作出的处置说得清楚：",
+    "只把已经作出的处置说得清楚：钥匙由县令亲收，所有册籍一律不得挪动，候总督府差员到场再行启封。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PROCEDURE"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects the live shadow sample that lets the clerk repeat an unrendered player answer", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命他即刻返回清流，传令封存档房，候上命再启。亲随双手接过，躬身领命，退步至门边，转身出了内厅。",
+    "巡抚书吏一直候在侧旁，见那人出门，上前半步，躬身道：“总督大人，巡抚部院催取回文，限已明定。如今暂缓签发，书吏不敢自专，须得回禀。敢问大人，暂缓缘由可否书吏一并带回？三日之内复核，复核何项、以何方式，还望大人示下，俾书吏据实回复，免得部院再行催取。”",
+    "他说得恭谨，脚下却未退。总督没有即刻接话。书吏便又补了一句：“书吏知大人有斟酌之处。只是巡抚部院要的是书面回文，空口转述，书吏担不起。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "COMMITTED_EVENT_NOT_RENDERED"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects the live shadow sample that invents archive procedure and a document date", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命他即刻返回清流县，传令封存档房，听候总督衙门复核。亲随双手接过，躬身领命，退至门边转身出去，脚步声很快没了。",
+    "总督转面答复巡抚书吏：暂缓签发，三日内复核。",
+    "书吏听完，躬身应是，却未退去。他停了一息，抬头道：“总督大人，卑职奉巡抚之命催取回文，不敢空手而返。三日期限之内，还望大人写明复核范围与方式，卑职好据实禀复。”",
+    "他顿了顿，声音放低半分：“催办公文上写的是五月初八。今日已是初八。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PROCEDURE"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_DOCUMENT_CONTENT"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate accepts the bounded live shadow scene after semantic attribution and roster review", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命他回清流县传令：即刻封存档房，候上命再启。亲随双手接过，躬身领命，退步至门边，转身出去了。亲随退下后，总督与巡抚书吏仍在厅中，催办公文摊在案上。总督转向他，当面答复：暂缓签发，三日内复核。",
+    "书吏没有立刻应声。他低头看了一眼案上那封催办公文，又抬眼看了看总督，才开口道：“制台既示暂缓，下官不敢不遵。只是下官奉巡抚大人之命催取回文，空手回去难以复命——斗胆请问制台，暂缓签发所为何事？再者，三日之限，还望制台给一份书面回复，写明复核的范围与方式，下官好据实禀报巡抚大人。”",
+    "总督没有接话。书吏便站着等。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, JSON.stringify(validation.issues));
+});
+
+test("Narrator gate accepts the exact fresh-run T01 reply when the governor turns to the named clerk", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命其回清流传令：封存档房，候上命再启。亲随双手接过，躬身领命，退步至门槛，转身出了内厅。总督遂转向巡抚书吏，当面答复：暂缓签发，三日内复核。",
+    "书吏并未退去。他躬身候了片刻，抬头道：“部堂既示暂缓，卑职不敢强请落印。只是抚院催取回文，卑职空手回去难以交差。敢问大人，暂缓缘由可否赐知一二？三日之内复核，所复是何范围、以何方式，还望部堂给卑职一个书面说明，卑职据此回禀，抚院那边才好等候。”他说完仍站着，目光低垂，两手垂在身侧，等着。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, JSON.stringify(validation.issues));
+});
+
+test("Narrator gate accepts the fresh-run T01 prose that uses 面告 and modal 蒙大人", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督从案上取过封缄令牌，交到清流县令亲随手中，命他回清流县传令：封存档房，候上命再启。亲随双手接过，躬身领命。总督随即面告巡抚书吏：暂缓签发回文，三日内复核。",
+    "亲随将令牌收入袖中，退后一步行礼，转身出了内厅。脚步声渐远，案上只剩那封催办文书与那封密信并排搁着。巡抚书吏仍捧着空回文匣，站了片刻，才开口道：\"部堂暂缓签发，卑职不敢不遵。只是抚院那边催取已久，卑职空手回去，上头必要问缘由。敢请大人示知——三日之内复核何事、以何方式复核，卑职才好据实回话。若蒙大人给一纸书面，卑职便有了交代。\""
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
+test("Narrator gate does not attribute a clerk quote to a governor who explicitly stays silent", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "浙江总督从案上取过封缄令牌，递向清流县令亲随，命他回清流传话：县衙档房即刻封存，候上命再启。亲随双手接过令牌，拢入袖中，躬身领命。总督随即转向巡抚书吏，告知他：催办回文暂缓签发，三日内复核再议。",
+    "亲随退后一步，长揖行礼，转身出内厅去了。脚步声过门槛，渐远不闻。厅中只剩总督与巡抚书吏两人，案上那封催办公文仍摊着，回文匣空合在书吏掌中。书吏将匣子换到左手，右手垂下，躬了躬身子，却没有退。他抬头看总督，语气仍恭谨：\"大人，卑职奉抚院催取回文，不敢空手而归。暂缓签发，可有缘由可禀？抚院若问，卑职总要有话回。\"总督没有开口。书吏等了片刻，又道：\"三日之期，大人若肯给卑职一纸书面，写明复核何项、以何方式，卑职据此复抚院，便不算白跑。\"他把回文匣往胸前收了收，指尖扣在匣盖上，仍站着不动。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
+test("Narrator gate classifies the exact failed T02 output at the correct layers", () => {
+  const fixture = partOneSecondTurnFixture();
+  const prose = [
+    "总督将那封催办公文重新合拢，搁在案角，没有取笔。书吏的目光跟着那只手移到案面，又移开，等到的不是朱批，也不是回文底稿。总督以手势示意：签发暂缓，须待清流县回报封存结果后再议；三日限期之内若有延误，责在总督本衙，不另开回文推诿。书吏躬身应了一声，却没有退。",
+    "片刻后他开口，语气仍恭谨：“部堂既有此意，卑职不敢多问。只是卑职回去复命，抚院那边须有个交代——巡抚大人说，复核一事，抚院也要派人同看，经手底簿上须留本方一笔。”",
+    "总督未答。书吏便又补了一句，声音压得平：“若部堂这边尚不能示下可看材料的范围，抚院也只能据实另叙，说总督府未予协作。”",
+    "厅外传来脚步声。一个青衫幕僚跨过门槛，向总督行过半礼，不待书吏引介便站到书吏侧后方，从袖中取出一页折好的手折，双手呈向案面，没有说话。书吏看了那手折一眼，回身向总督欠了欠身：“这是抚院幕宾赵先生，巡抚大人差来同卑职一道候回文的。”赵幕僚将手折往前又递了半寸，指尖抵在案沿上，仍不收回。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "UNSUPPORTED_PART_ONE_DISCOVERY"
+        && issue.message.includes("经手底簿")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "UNSUPPORTED_PART_ONE_DISCOVERY"
+        && issue.message.includes("等到的不是朱批")
+    ),
+    false,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_QUANTITY"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_ACTOR_IDENTITY"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  const missingBeats = validation.issues.filter(
+    (issue) => issue.code === "COMMITTED_EVENT_NOT_RENDERED"
+  );
+  assert.equal(missingBeats.length, 1, JSON.stringify(validation.issues));
+  assert.match(missingBeats[0]!.message, /PLAYER_ACTION/);
+});
+
+test("Narrator gate accepts a bounded T02 response with personal liability and an unnamed xunfu aide", () => {
+  const fixture = partOneSecondTurnFixture();
+  const prose = [
+    "总督把催办公文合拢，仍压在案角，当面告知巡抚书吏：继续暂缓签发，待清流县回报封存结果后再议；三日之内若有延误，责在本督。",
+    "书吏躬身听完，随即把抚院的要求说清：巡抚一方要参加复核；待复核发生时，也须如实注明抚院一方经手。",
+    "廊外脚步声近，一名巡抚幕僚进了内厅，只向总督行礼，并不自报姓名。他开口追问大人准许披露哪些材料；若仍不许抚院与闻，抚院只得另叙今日总督府拒绝协作。话说完，书吏捧着那只仍旧合拢的空回文匣，手指在匣沿略略收紧；幕僚与书吏都留在原处，等总督下一步处置。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, JSON.stringify(validation.issues));
+});
+
+test("Narrator gate accepts the bounded T02 limited-trial reply on the authorized document", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "总督提笔写成改桑放行回文，文中写明只准清流县先办一批，并把民田不得压价买田这条一并写进回文。写罢将回文交给巡抚书吏；书吏接过，启开原本空着的回文匣，将回文纳入匣中，又合拢匣盖。",
+    "巡抚书吏捧定回文匣，当面传话：抚院要参与复核；复核发生时，也须如实注明巡抚一方经手。廊外随即进来一名未报姓名的巡抚幕僚，追问部堂准许披露哪些材料；若仍不许抚院与闻，抚院便要自行具文回话，叙明总督府拒绝协作。话说完，书吏的手指在匣沿略略收紧，两人都留在原处等候。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, JSON.stringify(validation.issues));
+});
+
+test("Narrator gate accepts the exact fresh-run T02 reply-box choreography", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "总督将巡抚催办公文搁在案侧，提笔写成改桑放行回文，文中只准清流县先办一批改桑，并写明不得趁急难压价买田。写罢搁笔，将回文递向书吏。书吏双手接过，捧持巡抚回文匣，启开匣盖，将改桑放行回文折好收入，重新合拢，退后半步躬身。",
+    "书吏尚未告辞，内厅侧门被人推开，一名巡抚幕僚入内，向总督行过礼，目光落在书吏手中合拢的回文匣上，随即开口：抚院还有一句话——既准了清流先办一批，复核时须派员到场，到场查验经过据实记入复核记录，不能只凭总督府单方出文了事。幕僚顿了顿，又道：抚院想知道，大人准许披露的材料范围到何处。若仍将抚院排除在外，抚院不便协办，只好另立一份经过叙述，呈上去时各说各话，于大局未必相宜。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, JSON.stringify(validation.issues));
+});
+
+test("Narrator gate accepts the exact live T02 incidental writing substrate", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "浙江总督没有再看书吏，将两封文书移到案侧，提笔在空白笺纸上写成改桑放行回文，写明清流县先办一批，并写明不得趁急难压价买田。笔搁下，他将回文推至案沿。书吏右手仍按匣盖，左手启开匣口，将改桑放行回文收入，重新合拢，退后半步躬身接住。",
+    "书吏没有转身。他双手捧匣，又躬了一躬，声音比先前低了半分：“大人，卑职临行前另有抚院口信传禀。抚院说，改桑既已放行，复核一节，抚院要派员到场参与查验，到场经过须据实记入复核记录，不能只凭总督府单方出具。”他顿了顿，目光仍落在地面，“抚院还说，清流县令密信既已呈到部堂案上，抚院愿先看大人允准披露的材料范围。若此项仍将抚院排除在外——”厅门方向传来脚步声。一名青衫幕僚侧身入内，向总督行过礼，站到书吏身侧，接过话头，语气平而缓：“部堂，抚院的意思是，复核若不容抚院与闻，日后各衙门各有各的叙述，于公事反而不便。抚院叫卑职带一句话：协与不协，只看部堂今日肯不肯让抚院的人到场。”幕僚说完，与书吏一并垂手立着，等总督的回应。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, JSON.stringify(validation.issues));
+});
+
+test("Narrator gate treats the latest live T02 gaze toward a closed reply box as texture", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "总督没有答书吏的话，只从案上取过一张素纸，铺在催办文书旁，蘸墨落笔。字不多，写的是准清流县先办一批改桑，并写明不得趁急难压价买田。写罢将纸折好，搁在案沿，朝书吏抬了抬手。书吏会意，捧回文匣上前，单手启开匣盖，将折好的回文收入匣中，重新合拢，双手捧稳，退后半步躬了躬身。",
+    "书吏还没走，帘外有人报进来。来人穿青布直裰，腰间系着巡抚衙门的牌绳，进门先向总督行了一礼，再朝书吏点了点头，才开口道：“部堂，抚台有话交代卑职带回。抚台说，清流先办一批，抚台不拦；但复核一事，抚台要派员到场，到场查验经过须据实记入复核记录，不能只凭总督衙门一方的单子。”他顿了顿，把目光从总督脸上移到那只已经合拢的回文匣上，声音压低了半分：“另外，抚台请部堂先示下，已经允许披露的材料范围究竟到哪一步。若抚院仍被排除在外，抚台只好以拒绝协作另立叙述，届时呈上去的，就不只是回文了。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, JSON.stringify(validation.issues));
+});
+
+test("Narrator gate rejects the exact live T02 actor-custody and future-choice leaks without misclassifying its writing substrate", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "总督将巡抚催办公文搁在案侧，另取一张纸，提笔写改桑放行回文。回文里只准清流县先办一批，末后另起一行，写明不得趁急难压价买田。写毕，将回文折好，放入巡抚回文匣中，合拢匣盖，推向巡抚书吏。书吏双手接过，退后半步，并未即时告退。",
+    "书吏捧匣躬身道：“部堂，卑职奉巡抚大人之命催取回文，如今回文虽已写就，却仍注明三日复核。卑职不敢擅专——巡抚大人有话：复核一事，巡抚衙门须得与闻，经手之时亦须如实注明巡抚一方在场。”他顿了顿，声音仍恭谨，语气却不退，“若部堂仍将巡抚排除在外，巡抚大人另有一句话：材料范围若不先示，巡抚便只能以未获协作为由，自行具文呈报，另立一说。”",
+    "话音未落，门外靴声响，一人由廊下转入内厅，青直身，行至书吏身侧站定，向总督长揖——巡抚幕僚到了。幕僚不待书吏再开口，便道：“部堂，回文既已写就，匣中便是定局。然三日复核之期，巡抚大人须有姓名在上。若复核时巡抚一方不得与闻，这回文便只是部堂一面之词，巡抚衙门难以画押复命。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"
+        && issue.message.includes("放入巡抚回文匣中")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "UNSUPPORTED_PART_ONE_DISCOVERY"
+        && issue.message.includes("另取一张纸")
+    ),
+    false,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "NARRATIVE_NEXT_DECISION_LEAKAGE"
+        && /姓名在上|画押/.test(issue.message)
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate classifies a pre-existing reply and next-decision signature as separate T02 failures", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "总督将回文铺回案上，提笔在改桑放行回文末尾补入一行：清流县先办一批，不得趁急难压价买田。搁笔，将回文递向书吏。书吏双手接过，启开回文匣，将回文收入，合拢匣盖。",
+    "巡抚幕僚入内说道：“巡抚这边总要先看过，才好署名协办。若材料不便与阅，中丞也只好另具一说。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"
+        && /铺回案上|末尾补入/.test(issue.message)
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "NARRATIVE_NEXT_DECISION_LEAKAGE"
+        && issue.message.includes("署名协办")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "COMMITTED_EVENT_NOT_RENDERED"
+        && issue.message.includes("PLAYER_ACTION")
+    ),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects a blank-paper substitute, unauthorized clerk reading and delivery promise", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "总督提笔在空笺上落字，写明清流县先办一批改桑，并写明不得趁急难压价买田。写罢将笺纸递向书吏。书吏双手接过，略看一遍，启开所捧回文匣，将笺纸收入，合拢匣盖，退后半步躬身道：“卑职这就回禀巡抚大人。”",
+    "廊外脚步声近，一名未报姓名的巡抚幕僚进了内厅，要求抚院派员参与复核，并在复核发生后把到场查验经过据实记入复核记录。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "UNAUTHORIZED_PART_ONE_DOCUMENT_HANDLING"
+        && issue.message.includes("空笺")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "UNAUTHORIZED_PART_ONE_DOCUMENT_HANDLING"
+        && issue.message.includes("略看")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "UNAUTHORIZED_PART_ONE_NPC_COMMITMENT"
+        && issue.message.includes("这就回禀")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects a corrupted reform-policy term from a live T02 turn", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "总督提笔写成改桑放行回文，文中写明准清流县先办一批改桑为田，并把民田不得压价买田这条一并写进回文。写罢将回文交给巡抚书吏；书吏接过，启开原本空着的回文匣，将回文纳入匣中，又合拢匣盖。",
+    "巡抚书吏捧定回文匣，当面传话：抚院要参与复核；复核发生时，也须如实注明巡抚一方经手。廊外随即进来一名未报姓名的巡抚幕僚，追问部堂准许披露哪些材料；若仍不让抚院与闻，抚院便要自行具文回话，叙明总督府拒绝协作。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "NARRATIVE_FORBIDDEN_STYLE_PHRASE"
+        && issue.message.includes("改桑为田")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate treats moving the established reply box half an inch as blocking, not state", () => {
+  const fixture = partOneLimitedTrialSecondTurnFixture();
+  const prose = [
+    "总督提笔写成改桑放行回文，文中写明只准清流县先办一批，并把民田不得压价买田这条一并写进回文。写罢将回文交给巡抚书吏；书吏接过，启开原本空着的回文匣，将回文纳入匣中，又合拢匣盖。",
+    "巡抚书吏当面传话：抚院要参与复核；复核发生时，也须如实注明巡抚一方经手。廊外随即进来一名未报姓名的巡抚幕僚，追问部堂准许披露哪些材料；若仍不许抚院与闻，抚院便要另叙总督府拒绝协作。书吏捧着已经合拢的回文匣，又往前递了半寸，便停在那里等候。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_QUANTITY"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate accepts a live turn that keeps the focal governor present and resolves the clerk pronoun", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命他速回清流，传令封存档房，候上命再启，不得擅动。亲随双手接过，躬身领命，退步至门边，转身出去了。亲随退下后，巡抚书吏仍立在案前。总督告知他：暂缓签发，三日内复核。",
+    "书吏抬眼，停了一息，躬身道：“部堂明断，卑职不敢妄议。只是抚院催取回文，三日之期，卑职须得有话回禀。”他顿了顿，“敢问部堂，暂缓缘由可否见告？三日之内复核，所复者是何范围、以何方式，抚院这边要有书面回话，卑职才好销差。”",
+    "总督没有即刻答言。书吏垂目，又道：“卑职非敢催逼。只是抚院公文既到，部堂若只批暂缓，不说缘由，不说复核何事，抚院那边便只当寻常延宕——三日之后若仍无回文，卑职再来，便不是一个人来了。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, JSON.stringify(validation.issues));
+});
+
+test("Narrator gate rejects the exact live T01 sample across quantity, action and roster layers", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命其即刻返回清流，传令封存档房，候上命再启。亲随双手接过，躬身领命，退步至门帘处转身出去，脚步声很快消失在廊下。",
+    "内厅里只剩巡抚书吏。他一直候在侧旁，此时上前半步，拱手道：“部堂，卑职奉巡抚大人之命催取回文，公文在此已候了两日。部堂既示下暂缓签发、三日内复核，卑职不敢擅退，只是回署复命须有个交代。敢请部堂明示，暂缓缘由何在？三日之内复核，所核是何范围、以何方式？若蒙部堂给一纸书面说明，卑职好据实回禀，巡抚大人那边也不至再生疑窦。”",
+    "他说完仍垂手立着，目光落在案上那封催办公文上，没有去拿，也没有退。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_QUANTITY"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "COMMITTED_EVENT_NOT_RENDERED"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some(
+      (issue) =>
+        issue.code === "PART_ONE_CONTINUITY_CONTRADICTION"
+        && issue.message.includes("在场人数")
+    ),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects repeated backend role labels as the clerk's first-person self-reference", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命他返回清流县传令：封存档房，候上命再启。亲随双手接过，躬身领命，退步至门边，转身出了内厅。",
+    "总督随即答复巡抚书吏：催办公文暂缓签发，三日内复核。",
+    "书吏方才看着亲随出门的背影，闻言转过身来，躬身道：“总督大人，书吏奉巡抚部院差遣取回文，公文在此，大人既已阅过，缘何暂缓签发？书吏不敢空手返报。若暂缓，还请大人示知缘由，并于三日内给一个书面回复，写明复核的范围与方式，书吏好据实回禀巡抚部院。”",
+    "他顿了顿，又补了一句：“三日期限，书吏在杭州候文。”"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "NARRATIVE_CHARACTER_VOICE_VIOLATION"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate accepts seven natural dialogue paragraphs but rejects an invented higher pressure source", () => {
+  const fixture = partOneFixture();
+  const prose = [
+    "总督将封缄令牌交到清流县令亲随手中，命他回清流传令：县衙档房即刻封存，候上命再启。亲随双手接过，躬身领命，退步至门帘处转身一揖，掀帘出去了。帘子晃了两晃，廊下脚步声渐远。",
+    "总督转面答复巡抚书吏：催办公文暂缓签发，三日内复核。",
+    "书吏原候在一旁，闻言上身微前倾，并不退步。他略停了停，压住声气道：“大人，卑职奉巡抚之命催取回文，不敢自专。暂缓缘由，还望大人示知一二，卑职好回去禀复。”",
+    "总督没有接话。",
+    "书吏又道：“三日之限，卑职回去可以转禀。只是巡抚要问：复核范围是哪几项，以何种方式核——是大人行文，还是另差委员？若没有书面回复，卑职空手回去，巡抚那边不好交代。”",
+    "他顿了顿，把声音再放低半分：“大人，卑职多一句嘴——巡抚催得急，不是巡抚一个人的意思。”",
+    "帘外没有风。总督案上那封催办文书压着密信，纸角相叠。书吏仍弓着腰，等在那里。"
+  ].join("\n\n");
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "NARRATIVE_PARAGRAPH_BUDGET_VIOLATION"),
+    false,
+    JSON.stringify(validation.issues)
+  );
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNSUPPORTED_PART_ONE_PRESSURE_SOURCE"),
+    true,
+    JSON.stringify(validation.issues)
+  );
+});
+
+test("Narrator gate rejects an added promise about what happens after review", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "总督没有替尚未完成的封存和复核预写结果",
+    "总督当面答复，复核之后再定落印。总督没有替尚未完成的封存和复核预写结果"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_PLAYER_COMMITMENT"),
+    true,
+    JSON.stringify(validation.issues)
   );
 });
 
@@ -1486,6 +2859,16 @@ test("Narrator gate does not mistake only the listed actors' sounds for a room r
   );
 });
 
+test("Narrator gate does not treat an actor mentioned after shadow texture as the remaining roster", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音",
+    "厅中安静下来，只剩他站立的影子压在地砖上，等着总督给出一个能写在纸上的答复"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, true, validation.ok ? "" : JSON.stringify(validation.issues));
+});
+
 test("Narrator gate accepts an unambiguous short label for the only clerk in the room", () => {
   const fixture = partOneFixture();
   const prose = partOneNarration(fixture).replace(
@@ -1639,6 +3022,21 @@ test("Narrator gate rejects saying that the three-day deadline starts now", () =
   const prose = partOneNarration(fixture).replace(
     "内厅只剩茶盏轻触案面的声音。",
     "三日从这一刻起已经开始走了。内厅只剩茶盏轻触案面的声音。"
+  );
+  const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
+  assert.equal(validation.ok, false);
+  if (validation.ok) return;
+  assert.equal(
+    validation.issues.some((issue) => issue.code === "UNAUTHORIZED_PART_ONE_DEADLINE_ANCHOR"),
+    true
+  );
+});
+
+test("Narrator gate rejects re-anchoring the deadline to the clerk's current sentence", () => {
+  const fixture = partOneFixture();
+  const prose = partOneNarration(fixture).replace(
+    "内厅只剩茶盏轻触案面的声音。",
+    "三日之限从这句话起便压在厅中。内厅只剩茶盏轻触案面的声音。"
   );
   const validation = validateNarratorDraft(parseNarratorDraft(prose), fixture.context);
   assert.equal(validation.ok, false);
@@ -1823,6 +3221,78 @@ function partOneFixture() {
   };
 }
 
+function partOneSecondTurnFixture() {
+  const first = partOneFixture();
+  const pkg = loadPartOneRuntimePackage("sangtian").package;
+  const route = first.workingSet.decisionAffordances.find(
+    (candidate) => candidate.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-03"
+  )!;
+  const settlement = settlePartOneAction(
+    pkg,
+    first.settlement.proposedState,
+    {
+      source: "RECOMMENDED",
+      decisionKernelId: route.decisionKernelId,
+      affordanceTemplateId: route.affordanceTemplateId,
+      label: route.title,
+      actionText: route.actionText,
+      targetRef: route.targetRef
+    },
+    2
+  );
+  const nextWorkingSet = buildPartOneRuntimeWorkingSet(pkg, settlement.proposedState, 2);
+  const context = structuredClone(first.context);
+  context.sections.partOneRuntime.items = [nextWorkingSet];
+  context.sections.partOneSettlement.items = [settlement.event];
+  context.actionResolution.actionStarted = settlement.event.actionText;
+  context.actionResolution.summary = settlement.event.actionText;
+  context.actionResolution.immediateObservableResult =
+    settlement.event.authoritativeObservableFacts;
+  context.actionResolution.factsModelMayStateAsConfirmed =
+    settlement.event.authoritativeObservableFacts;
+  return {
+    ...first,
+    context,
+    settlement
+  };
+}
+
+function partOneLimitedTrialSecondTurnFixture() {
+  const first = partOneFixture();
+  const pkg = loadPartOneRuntimePackage("sangtian").package;
+  const route = first.workingSet.decisionAffordances.find(
+    (candidate) => candidate.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-01"
+  )!;
+  const settlement = settlePartOneAction(
+    pkg,
+    first.settlement.proposedState,
+    {
+      source: "RECOMMENDED",
+      decisionKernelId: route.decisionKernelId,
+      affordanceTemplateId: route.affordanceTemplateId,
+      label: route.title,
+      actionText: route.actionText,
+      targetRef: route.targetRef
+    },
+    2
+  );
+  const nextWorkingSet = buildPartOneRuntimeWorkingSet(pkg, settlement.proposedState, 2);
+  const context = structuredClone(first.context);
+  context.sections.partOneRuntime.items = [nextWorkingSet];
+  context.sections.partOneSettlement.items = [settlement.event];
+  context.actionResolution.actionStarted = settlement.event.actionText;
+  context.actionResolution.summary = settlement.event.actionText;
+  context.actionResolution.immediateObservableResult =
+    settlement.event.authoritativeObservableFacts;
+  context.actionResolution.factsModelMayStateAsConfirmed =
+    settlement.event.authoritativeObservableFacts;
+  return {
+    ...first,
+    context,
+    settlement
+  };
+}
+
 function partOneNarration(
   fixture: ReturnType<typeof partOneFixture>
 ) {
@@ -1830,9 +3300,13 @@ function partOneNarration(
   const reactionText = event.authoritativeNpcReactions
     .map((reaction) => reaction.action)
     .join("。");
-  const factText = event.authoritativeObservableFacts.join("。");
+  const factText = event.narrativePlan.sceneBeats
+    .filter((beat) => beat.sourceType === "CONFIRMED_EFFECT" && beat.mustAppear)
+    .map((beat) => beat.action)
+    .join("。");
+  const factClause = factText ? `${factText}。` : "";
   return [
-    `浙江总督把手按在案沿，没有再解释密信里尚未查清的疑处，只把已经作出的处置说得清楚：${event.actionText}。清流县令亲随双手接过令牌，领命退出内厅。话说完，他看着阶下的人把这道命令听全，没有再添别的吩咐。${factText}。`,
+    `浙江总督把手按在案沿，没有再解释密信里尚未查清的疑处，只把已经作出的处置说得清楚：${event.actionText}。清流县令亲随双手接过令牌，领命退出内厅。话说完，他看着阶下的人把这道命令听全，没有再添别的吩咐。${factClause}`,
     `巡抚书吏一直在门内等候。总督的话落下后，他先垂眼停了片刻，随后依照巡抚的原话回禀：${reactionText}。他没有替巡抚加一句，也没有把催问说得更轻，只把“为何暂缓”“三日之内”“范围与方式”说得字字分明。`,
     `内厅只剩茶盏轻触案面的声音。总督没有替尚未完成的封存和复核预写结果，巡抚书吏也没有退下；案前隔着的，仍是已经发出的命令和必须书面说明的责任。书吏垂手候在原处，等总督对这番催问作答。`
   ].join("\n\n");
@@ -1840,4 +3314,8 @@ function partOneNarration(
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function countOccurrences(value: string, needle: string) {
+  return value.split(needle).length - 1;
 }

@@ -1,8 +1,14 @@
+import type { NarrativeTextureAllowance } from "@ai-story/templates";
 import {
   authorizedPartOneProceduralDerivations,
   containsUnauthorizedPartOneDiscovery
 } from "./part-one-prose-guard";
+import {
+  findExplicitUnauthorizedObjectManipulation,
+  isAuthorizedIncidentalCreationTexture
+} from "./narrative-causality-boundary";
 import { inspectPlayerFacingNarrative } from "./player-facing-narrative-guard";
+import { resolvePartOneNarrativeBudget } from "./narrative-budget";
 import type {
   CompiledStoryContext,
   StoryDecisionCopyOutput,
@@ -32,6 +38,12 @@ export function validateNarratorDraft(
       message: "拆分后的玩家正文与 Narrator 原文不完全一致。"
     });
   }
+  if (`${draft.actionNarrative}\n\n${draft.worldResponseNarrative}` !== prose) {
+    issues.push({
+      code: "NARRATIVE_PHASE_SPLIT_BROKEN",
+      message: "已结算行动段与世界反应段不能无损重组为 Narrator 原文。"
+    });
+  }
   if (/<\/?[a-z][^>]*>|^#{1,6}\s|^\s*[-*]\s/m.test(prose)) {
     issues.push({
       code: "NARRATIVE_FORMAT_NOT_PROSE",
@@ -54,9 +66,18 @@ export function validateNarratorDraft(
 
   if (runtime) {
     const count = [...prose.replace(/\s/g, "")].length;
-    const { minCharacters, maxCharacters } = runtime.styleProfile.narrativeBudget;
-    const effectiveMinCharacters = minCharacters;
-    const effectiveMaxCharacters = maxCharacters;
+    const narrativeBudget = event
+      ? resolvePartOneNarrativeBudget(
+          event.narrativePlan,
+          runtime.styleProfile.narrativeBudget
+        )
+      : {
+          ...runtime.styleProfile.narrativeBudget,
+          minParagraphs: 3,
+          maxParagraphs: 12
+        };
+    const effectiveMinCharacters = narrativeBudget.minCharacters;
+    const effectiveMaxCharacters = narrativeBudget.maxCharacters;
     if (count < effectiveMinCharacters || count > effectiveMaxCharacters) {
       issues.push({
         code: "NARRATIVE_STYLE_BUDGET_VIOLATION",
@@ -64,13 +85,17 @@ export function validateNarratorDraft(
       });
     }
     const paragraphCount = prose.split(/\n\s*\n/).filter((paragraph) => paragraph.trim()).length;
-    if (paragraphCount < 3 || paragraphCount > 12) {
+    if (
+      paragraphCount < narrativeBudget.minParagraphs
+      || paragraphCount > narrativeBudget.maxParagraphs
+    ) {
       issues.push({
         code: "NARRATIVE_PARAGRAPH_BUDGET_VIOLATION",
-        message: `正文共有 ${paragraphCount} 个自然段，第一部分要求 3—12 段。`
+        message: `正文共有 ${paragraphCount} 个自然段，本场要求 ${narrativeBudget.minParagraphs}—${narrativeBudget.maxParagraphs} 段。`
       });
     }
     const forbidden = [
+      ...runtime.styleProfile.forbiddenTerminologyPhrases,
       ...runtime.styleProfile.forbiddenModernPhrases,
       ...runtime.styleProfile.forbiddenSystemPhrases,
       ...runtime.styleProfile.forbiddenAiSummaryPatterns
@@ -79,6 +104,13 @@ export function validateNarratorDraft(
       issues.push({
         code: "NARRATIVE_FORBIDDEN_STYLE_PHRASE",
         message: `正文出现禁用表达：${forbidden}`
+      });
+    }
+    const roleLabelSelfReference = findRepeatedClerkRoleLabelSelfReference(prose);
+    if (roleLabelSelfReference) {
+      issues.push({
+        code: "NARRATIVE_CHARACTER_VOICE_VIOLATION",
+        message: `巡抚书吏把后台角色标签当作第一人称反复自称：${roleLabelSelfReference}`
       });
     }
     const reveal = runtime.forbiddenEarlyReveals.find((phrase) => phrase && prose.includes(phrase));
@@ -123,7 +155,11 @@ export function validateNarratorDraft(
   ].join("\n");
   if (runtime) {
     for (const sentence of proseSentences(prose)) {
-      if (containsUnauthorizedPartOneDiscovery(sentence, authoritativeCorpus)) {
+      if (containsUnauthorizedPartOneDiscovery(
+        sentence,
+        authoritativeCorpus,
+        event?.narrativePlan.incidentalTextureAllowances || []
+      )) {
         issues.push({
           code: "UNSUPPORTED_PART_ONE_DISCOVERY",
           message: `正文出现本轮工作集未授权的新发现：${sentence}`
@@ -131,11 +167,23 @@ export function validateNarratorDraft(
         break;
       }
     }
+    const unsupportedPressureSource = prose.match(
+      /(?:不是|不只|并非)(?:巡抚|中丞|抚台)(?:一个人|一人|本人)?(?:的)?意思|(?:巡抚|中丞|抚台)(?:背后|上头)[^。！？]{0,24}(?:有人|另有|还有|授意|交代)/
+    )?.[0];
+    if (
+      unsupportedPressureSource
+      && !authoritativeCorpus.includes(unsupportedPressureSource)
+    ) {
+      issues.push({
+        code: "UNSUPPORTED_PART_ONE_PRESSURE_SOURCE",
+        message: `正文暗示了工作集未授权的更高压力来源：${unsupportedPressureSource}`
+      });
+    }
   }
   if (runtime) {
     const inventedQuantity = [
       ...prose.matchAll(
-        /(?:\d+|[一二三四五六七八九十百千万两半余剩]+)(?:个)?(?:成|钱|户|家|铺|人|年|月|日|夜|时辰|石|担|亩|里|县)/g
+        /(?:\d+|[一二三四五六七八九十百千万两半余剩]+)(?:个)?(?:成|钱|户|家|铺|人|年|月|日|夜|时辰|石|担|亩|里|县|寸|尺)/g
       )
     ].find((match) =>
       !isAuthorizedPartOneQuantity(
@@ -146,6 +194,8 @@ export function validateNarratorDraft(
         event?.narrativePlan || null
       )
       && !isNonFactualTemporalComparison(prose, match.index ?? 0, match[0])
+      && !isFigurativeDegreeMeasure(prose, match.index ?? 0, match[0])
+      && !isIncidentalSceneBlockingMeasure(prose, match.index ?? 0, match[0])
     )?.[0];
     if (inventedQuantity) {
       issues.push({
@@ -176,6 +226,13 @@ export function validateNarratorDraft(
       issues.push({
         code: "PART_ONE_CONTINUITY_CONTRADICTION",
         message: `正文写错了紧随其后的台词字数：${quotedCharacterCountContradiction}`
+      });
+    }
+    const localNarrativeContradiction = findLocalNarrativeContradiction(prose);
+    if (localNarrativeContradiction) {
+      issues.push({
+        code: "PART_ONE_CONTINUITY_CONTRADICTION",
+        message: `正文在同一段内自相矛盾：${localNarrativeContradiction}`
       });
     }
     const eventText = event
@@ -240,9 +297,20 @@ export function validateNarratorDraft(
         message: `正文给工作集中的无名人物新增了姓名或专属称呼：${unauthorizedActorIdentity}`
       });
     }
-    const unauthorizedDocumentIntroduction = findUnauthorizedDocumentIntroduction(
+    const unauthorizedActorAppearance = findUnauthorizedCausalActorAppearance(
       prose,
       authoritativeCorpus
+    );
+    if (unauthorizedActorAppearance) {
+      issues.push({
+        code: "UNAUTHORIZED_PART_ONE_ACTOR_APPEARANCE",
+        message: `正文给人物新增了工作集未提供且会改变身份、证据或行动能力的外貌或服饰：${unauthorizedActorAppearance}`
+      });
+    }
+    const unauthorizedDocumentIntroduction = findUnauthorizedDocumentIntroduction(
+      prose,
+      authoritativeCorpus,
+      event?.narrativePlan.incidentalTextureAllowances || []
     );
     if (unauthorizedDocumentIntroduction) {
       issues.push({
@@ -260,6 +328,48 @@ export function validateNarratorDraft(
       issues.push({
         code: "PART_ONE_CONTINUITY_CONTRADICTION",
         message: `正文改写了已经确定的文书状态：${documentStateContradiction}`
+      });
+    }
+    const newDocumentLifecycleContradiction = event
+      ? findNewDocumentLifecycleContradiction(
+          prose,
+          event.narrativePlan.sceneStart.documentStates || [],
+          event.narrativePlan.sceneEnd.documentStates || []
+        )
+      : null;
+    if (newDocumentLifecycleContradiction) {
+      issues.push({
+        code: "PART_ONE_CONTINUITY_CONTRADICTION",
+        message: `正文把本场新写的文书改成了开场前已经存在的旧文书：${newDocumentLifecycleContradiction}`
+      });
+    }
+    const unauthorizedNewDocumentHandling = event
+      ? findUnauthorizedNewDocumentHandling(
+          prose,
+          event.narrativePlan.sceneStart.documentStates || [],
+          event.narrativePlan.sceneEnd.documentStates || [],
+          event.narrativePlan.incidentalTextureAllowances || []
+        )
+      : null;
+    for (const handlingIssue of unauthorizedNewDocumentHandling || []) {
+      issues.push({
+        code: "UNAUTHORIZED_PART_ONE_DOCUMENT_HANDLING",
+        message: `正文改变了本场新文书获批的名称或阅看范围：${handlingIssue}`
+      });
+    }
+    const unauthorizedDocumentContent = event
+      ? findUnauthorizedDocumentContentAssertion(
+          prose,
+          [
+            ...(event.narrativePlan.sceneStart.documentStates || []),
+            ...(event.narrativePlan.sceneEnd.documentStates || [])
+          ]
+        )
+      : null;
+    if (unauthorizedDocumentContent) {
+      issues.push({
+        code: "UNAUTHORIZED_PART_ONE_DOCUMENT_CONTENT",
+        message: `正文给既有文书增加了工作集未提供的记载：${unauthorizedDocumentContent}`
       });
     }
     const remoteDocumentProcedure = event
@@ -308,6 +418,19 @@ export function validateNarratorDraft(
         message: `正文给既有物件增加了未结算的鉴别属性：${unauthorizedMaterialAttribute}`
       });
     }
+    const unauthorizedSealProcedure = event
+      ? findUnauthorizedSealProcedureExpansion(
+          prose,
+          event.actionText,
+          authoritativeCorpus
+        )
+      : null;
+    if (unauthorizedSealProcedure) {
+      issues.push({
+        code: "UNAUTHORIZED_PART_ONE_PROCEDURE",
+        message: `正文把封存命令扩写成了未结算的程序或权限：${unauthorizedSealProcedure}`
+      });
+    }
     const unauthorizedPlayerSpeech = event
       ? findUnauthorizedPlayerSpeech(prose, event.narrativePlan.authorizedPlayerSpeech)
       : null;
@@ -315,6 +438,16 @@ export function validateNarratorDraft(
       issues.push({
         code: "UNAUTHORIZED_PART_ONE_PLAYER_SPEECH",
         message: `正文替玩家说了未获批的原话：${unauthorizedPlayerSpeech}`
+      });
+    }
+    const unauthorizedAdditionalPlayerAction = findUnauthorizedAdditionalPlayerAction(
+      prose,
+      event?.actionText || ""
+    );
+    if (unauthorizedAdditionalPlayerAction) {
+      issues.push({
+        code: "UNAUTHORIZED_PART_ONE_PLAYER_ACTION",
+        message: `正文替玩家追加了未结算的第二个行动：${unauthorizedAdditionalPlayerAction}`
       });
     }
     const unauthorizedCommitment = findUnauthorizedPlayerCommitment(
@@ -337,6 +470,27 @@ export function validateNarratorDraft(
         message: `正文替 NPC 新增了工作集未授权的办理承诺：${unauthorizedNpcCommitment}`
       });
     }
+    const unauthorizedNpcDocumentDemand = findUnauthorizedNpcDocumentDemand(
+      prose,
+      authoritativeCorpus
+    );
+    if (unauthorizedNpcDocumentDemand) {
+      issues.push({
+        code: "UNAUTHORIZED_PART_ONE_NPC_DOCUMENT_DEMAND",
+        message: `正文替 NPC 新增了工作集未授权的造册、留底或抄录要求：${unauthorizedNpcDocumentDemand}`
+      });
+    }
+    const nextDecisionLeakage = findNextDecisionLeakage(
+      prose,
+      authoritativeCorpus,
+      runtime.decisionAffordances
+    );
+    if (nextDecisionLeakage) {
+      issues.push({
+        code: "NARRATIVE_NEXT_DECISION_LEAKAGE",
+        message: `正文把下一组玩家决策才会确定的事项提前写成了 NPC 的既定要求：${nextDecisionLeakage}`
+      });
+    }
   }
 
   if (event) {
@@ -352,21 +506,33 @@ export function validateNarratorDraft(
         threshold: beat.sourceType === "PLAYER_ACTION" ? 0.16 : 0.11
       }));
     for (const beat of requiredBeats) {
+      const beatProse = beat.label === "PLAYER_ACTION"
+        ? draft.actionNarrative
+        : beat.label === "NPC_REACTION"
+          ? draft.worldResponseNarrative
+          : prose;
       const departureRendered = beat.beatId.startsWith("SCENE-DEPARTURE-")
-        && actorDepartureRendered(beat.requiredTermGroups[0] || [], prose);
+        && actorDepartureRendered(beat.requiredTermGroups[0] || [], beatProse);
       const groupsRendered = departureRendered || (
         beat.requiredTermGroups.length > 0
-        && beat.requiredTermGroups.every((group) => termGroupRendered(group, prose))
+        && beat.requiredTermGroups.every((group) => termGroupRendered(group, beatProse))
       );
       const missing = beat.requireAllTermGroups
         ? !groupsRendered
-        : !groupsRendered && ngramCoverage(beat.text, prose) < beat.threshold;
+        : !groupsRendered && ngramCoverage(beat.text, beatProse) < beat.threshold;
       if (beat.text && missing) {
         issues.push({
           code: "COMMITTED_EVENT_NOT_RENDERED",
           message: `${beat.label}没有在正文中得到可辨认的场景化呈现：${beat.text}`
         });
       }
+    }
+    const latePlayerAction = findLatePlayerAction(draft.worldResponseNarrative);
+    if (latePlayerAction) {
+      issues.push({
+        code: "PLAYER_ACTION_AFTER_WORLD_RESPONSE",
+        message: `世界反应阶段又替玩家作出了未结算的新行动：${latePlayerAction}`
+      });
     }
   }
 
@@ -378,6 +544,14 @@ export function validateNarratorDraft(
     });
   }
   return issues.length ? { ok: false, issues } : { ok: true, issues: [] };
+}
+
+function findLatePlayerAction(worldResponse: string) {
+  const narrationOnly = worldResponse.replace(/[“"][^”"]*[”"]/g, "");
+  const playerSubjectAction = /(?:^|[。！？；]\s*)(?:浙江)?总督(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^。！？]){0,24}(?:下令|命他|命其|吩咐|告知|告诉|答复|回告|追问|准许|批准|允准|承诺|决定)/;
+  return proseSentences(narrationOnly).find((sentence) =>
+    playerSubjectAction.test(sentence)
+  ) || null;
 }
 
 function authorizedProseDerivations(
@@ -562,9 +736,34 @@ function ngramCoverage(source: string, target: string) {
 }
 
 function termGroupRendered(terms: string[], prose: string) {
+  const exactTerms = terms
+    .filter((term) => term.startsWith("EXACT:"))
+    .map((term) => term.slice("EXACT:".length))
+    .filter(Boolean);
+  const expectsClerkReply = exactTerms.some((term) =>
+    /(?:答复|告知|告诉|回告|面告|说明|转告)(?:巡抚)?书吏/.test(term)
+  );
+  const governorRepliesToClerk =
+    /(?:总督|部堂|制台)[^。！？]{0,24}(?:(?:转向|转面|面向|向|对)[^。！？]{0,12}(?:巡抚书吏|书吏|他)[^。！？]{0,12}(?:当面)?(?:告知|告诉|答复|回告|面告|说明)|(?:当面)?(?:告知|告诉|答复|回告|面告|说明)[^。！？]{0,12}(?:巡抚书吏|书吏|他))/.test(
+      prose
+    );
+  if (
+    expectsClerkReply
+    && (
+      governorRepliesToClerk
+      || /(?:巡抚书吏|书吏)[^。！？]{0,50}[。！？]\s*(?:总督|部堂|制台)[^。！？]{0,18}(?:告知|告诉|答复|回告|说明)(?:了)?他/.test(
+        prose
+      )
+    )
+  ) {
+    return true;
+  }
+  if (exactTerms.length === terms.length) {
+    return exactTerms.some((term) => prose.includes(term));
+  }
   if (
     terms.includes("写进放行文书")
-    && /(?:放行文书|改桑执行回文|回文)[^。！？]{0,36}(?:提笔|落笔|落字|写明|写下|写了|写成)|(?:提笔|落笔|落字|写明|写下|写了|写成)[^。！？]{0,36}(?:放行文书|改桑执行回文|回文)/.test(prose)
+    && /(?:放行文书|改桑执行回文|改桑放行回文|回文)[^。！？]{0,36}(?:提笔|落笔|落字|写明|写下|写了|写成)|(?:提笔|落笔|落字|写明|写下|写了|写成)[^。！？]{0,36}(?:放行文书|改桑执行回文|改桑放行回文|回文)/.test(prose)
   ) {
     return true;
   }
@@ -576,21 +775,48 @@ function termGroupRendered(terms: string[], prose: string) {
   });
 }
 
+function findRepeatedClerkRoleLabelSelfReference(prose: string) {
+  const speechPattern =
+    /(?:巡抚书吏|书吏)[^“”"\n]{0,100}(?:道|问|答|开口|说道|补了一句)[：:]?\s*[“"]([^”"]{1,320})[”"]/g;
+  for (const match of prose.matchAll(speechPattern)) {
+    const quote = match[1] || "";
+    const selfReferences = quote.match(
+      /(?:^|[，。！？；、\s])书吏(?=(?:奉|不敢|须|要|在|好|来|请|已|也|只|便|当|若|愿))/g
+    ) || [];
+    if (selfReferences.length >= 2) {
+      return quote.slice(0, 120);
+    }
+  }
+  return null;
+}
+
 function actorDepartureRendered(actorTerms: string[], prose: string) {
-  for (const actorTerm of actorTerms) {
+  for (const actorTerm of actorReferenceAliases(actorTerms)) {
     if (!actorTerm) continue;
     let actorIndex = prose.indexOf(actorTerm);
     while (actorIndex >= 0) {
       const tail = prose.slice(actorIndex, actorIndex + 260);
       const movesToExit =
-        /(?:转身|退后|躬身)[^。！？]{0,60}(?:朝|向|走向|迈向)?[^。！？]{0,12}(?:厅门|门边|门槛|门帘|门外)|(?:朝|向|走向|迈向)[^。！？]{0,12}(?:厅门|门边|门槛|门帘|门外)/.test(tail);
+        /(?:转身|退后|躬身)[^。！？]{0,60}(?:朝|向|走向|迈向)?[^。！？]{0,12}(?:厅门|门边|门槛|门帘|门外)|(?:朝|向|走向|迈向)[^。！？]{0,12}(?:厅门|门边|门槛|门帘|门外)|(?:转过|跨过|迈过)门槛/.test(tail);
       const exitCompleted =
-        /(?:出了|退出|离开|迈出[^。！？]{0,16}(?:门框|门槛|厅门)|背影[^。！？]{0,16}(?:消失|不见)|步出(?:内厅|厅门)|跨过门槛|(?:侧身|闪身|迈步|举步|转身)而出|脚步声[^。！？]{0,20}(?:远|听不见)|门帘[^。！？]{0,20}(?:落下|合上)|厅(?:中|里)[^。！？]{0,18}(?:少了|只剩))/.test(tail);
+        /(?:出了|出去了|退出|离开|迈出[^。！？]{0,16}(?:门框|门槛|厅门)|背影[^。！？]{0,16}(?:消失|不见)|步出(?:内厅|厅门)|跨过门槛|(?:侧身|闪身|迈步|举步|转身)而出|脚步声[^。！？]{0,20}(?:远|听不见)|门帘[^。！？]{0,20}(?:落下|合上)|厅(?:中|里)[^。！？]{0,18}(?:少了|只剩))/.test(tail);
       if (movesToExit && exitCompleted) return true;
       actorIndex = prose.indexOf(actorTerm, actorIndex + actorTerm.length);
     }
   }
   return false;
+}
+
+function actorReferenceAliases(actorTerms: string[]) {
+  const aliases = new Set(actorTerms.filter(Boolean));
+  for (const actorTerm of actorTerms) {
+    if (/清流县令亲随/.test(actorTerm)) {
+      aliases.add("县令亲随");
+      aliases.add("清流亲随");
+      aliases.add("亲随");
+    }
+  }
+  return [...aliases];
 }
 
 function ngrams(text: string, size: number) {
@@ -632,6 +858,50 @@ function isNonFactualTemporalComparison(prose: string, matchIndex: number, quant
   const sentence = prose.slice(sentenceStart, sentenceEnd);
   const escaped = escapeRegExp(quantity);
   return new RegExp(`${escaped}[^。！？]{0,24}(?:便|就|则|愈|更|多)[^。！？]{0,12}${escaped}`).test(sentence);
+}
+
+function isFigurativeDegreeMeasure(prose: string, matchIndex: number, quantity: string) {
+  if (!/[寸尺]$/.test(quantity)) return false;
+  const clauseStart = Math.max(
+    prose.lastIndexOf("。", matchIndex - 1),
+    prose.lastIndexOf("！", matchIndex - 1),
+    prose.lastIndexOf("？", matchIndex - 1),
+    prose.lastIndexOf("，", matchIndex - 1),
+    prose.lastIndexOf("；", matchIndex - 1),
+    prose.lastIndexOf("：", matchIndex - 1)
+  ) + 1;
+  const prefix = prose.slice(clauseStart, matchIndex);
+  return /(?:声调|声音|语气|嗓音|话音)[^。！？，；：]{0,20}(?:更|又|愈|略|稍|比[^。！？，；：]{0,8})?(?:高|低|沉|轻|重|冷|缓|紧|硬|软)(?:了)?$/.test(prefix);
+}
+
+function isIncidentalSceneBlockingMeasure(
+  prose: string,
+  matchIndex: number,
+  quantity: string
+) {
+  if (!/[寸尺]$/.test(quantity)) return false;
+  const clauseStart = Math.max(
+    prose.lastIndexOf("。", matchIndex - 1),
+    prose.lastIndexOf("！", matchIndex - 1),
+    prose.lastIndexOf("？", matchIndex - 1),
+    prose.lastIndexOf("；", matchIndex - 1),
+    prose.lastIndexOf("：", matchIndex - 1),
+    prose.lastIndexOf("，", matchIndex - 1)
+  ) + 1;
+  const clauseEndCandidates = ["。", "！", "？", "；", "，"]
+    .map((mark) => prose.indexOf(mark, matchIndex))
+    .filter((index) => index >= 0);
+  const clauseEnd = clauseEndCandidates.length
+    ? Math.min(...clauseEndCandidates)
+    : prose.length;
+  const clause = prose.slice(clauseStart, clauseEnd);
+  const statefulQuantity = /(?:期限|限期|路程|相隔|相距|田亩|亩数|册数|页数|封条|证据|粮|银|田|户|人)/.test(
+    clause
+  );
+  if (statefulQuantity) return false;
+  return /(?:手|指|笔|袖|衣角|袍角|脚|步|身子|目光|案面|纸面|门槛)[^。！？；]{0,28}(?:悬|停|抬|挪|退|进|离|擦|压|落|递|送|伸|收|拢)|(?:悬|停|抬|挪|退|进|离|擦|压|落|递|送|伸|收|拢)[^。！？；]{0,28}(?:上方|下方|之前|之后|面前|胸前|案边|纸上|门边|往前|向前|往后|向后)|(?:往前|向前|往后|向后|往胸前|向胸前)[^。！？；，]{0,6}(?:递|送|伸|挪|推|收|拢)/.test(
+    clause
+  );
 }
 
 function isAuthorizedPartOneQuantity(
@@ -738,13 +1008,23 @@ function findActorCountContradiction(
     if (/(?:的)?(?:动静|声音|声响|脚步声|呼吸声|落笔声|风声|雨声)/.test(roster)) {
       continue;
     }
+    // Only the grammatical head of “只剩……” describes the remaining roster.
+    // A later subordinate clause may mention another actor without asserting
+    // that the actor has left, for example:
+    // “厅中只剩他站立的影子压在地砖上，等着总督给出答复。”
+    // Counting the later “总督” as a roster item turns valid scene texture
+    // into a false continuity contradiction.
+    const rosterHead = roster.split(/[，；]/, 1)[0] || roster;
     const mentionedActors = plan.sceneEndActorLabels.filter((label) =>
-      actorLabelAppears(label, roster, plan.sceneEndActorLabels)
+      actorLabelAppears(label, rosterHead, plan.sceneEndActorLabels)
     );
     if (
       mentionedActors.length > 0
       && mentionedActors.length !== plan.sceneEndActorLabels.length
     ) {
+      const omittedActors = plan.sceneEndActorLabels.filter((label) =>
+        !mentionedActors.includes(label)
+      );
       return match[0];
     }
   }
@@ -867,6 +1147,12 @@ function findQuotedCharacterCountContradiction(prose: string) {
   return null;
 }
 
+function findLocalNarrativeContradiction(prose: string) {
+  return prose.match(
+    /(?:并不同案|并非同案|不在同一张案上)[^。！？]{0,90}(?:同一张案|同案)/
+  )?.[0] || null;
+}
+
 function parseSmallChineseNumber(value: string) {
   const normalized = value === "两" ? "二" : value;
   const digits: Record<string, number> = {
@@ -883,20 +1169,41 @@ function parseSmallChineseNumber(value: string) {
   return null;
 }
 
-function findUnauthorizedDocumentIntroduction(prose: string, authoritativeCorpus: string) {
-  const blankDocument = prose.match(
-    /(?:(?:空白的?|尚未落字的?)(?:回文纸|文纸|札纸|纸页|纸张|契纸|公文|文书)|空文纸)/
-  )?.[0];
-  if (blankDocument && !authoritativeCorpus.includes(blankDocument)) return blankDocument;
-
+function findUnauthorizedDocumentIntroduction(
+  prose: string,
+  authoritativeCorpus: string,
+  incidentalTextureAllowances: readonly NarrativeTextureAllowance[]
+) {
   const patterns = [
-    /(?:袖中|怀中|案下|身后)?[^。！？]{0,10}(?:取出|掏出|拿出|递上|递向|呈上|展开)[^。！？]{0,14}(手本|札子|札纸|便笺|字条|节略|底稿|底簿|清单|公函|公文|文书|纸页|纸张|附件|附页|手令|批文|册子|空册)/g,
+    /(?:袖中|怀中|案下|身后)?[^。！？]{0,10}(?:取出|抽出|掏出|拿出|递上|递向|呈上|展开)[^。！？]{0,14}(手本|札子|札纸|便笺|字条|节略|底稿|底簿|清单|公函|公文|文书|纸页|纸张|附件|附页|手令|批文|册子|空册)/g,
     /(?:搬入|搬来|搬了|搬进|捧来|抱来|带来|抬进|搁下|放下)[^。！？]{0,14}(?:一摞|一叠|一册|几册)?(册子|空册|底簿|文书|公文|清单|底稿)/g
   ];
-  for (const pattern of patterns) {
-    for (const match of prose.matchAll(pattern)) {
-      const documentKind = match[1] || "";
-      if (!documentKind || !authoritativeCorpus.includes(documentKind)) return match[0];
+  for (const sentence of proseSentences(prose)) {
+    const incidentalCreation = isAuthorizedIncidentalCreationTexture(
+      sentence,
+      incidentalTextureAllowances
+    );
+    const blankDocument = sentence.match(
+      /(?:(?:空白的?|尚未落字的?)(?:回文纸|文纸|札纸|纸页|纸张|笺纸|契纸|公文|文书|手本)|空文纸|空笺)/
+    )?.[0];
+    if (
+      blankDocument
+      && !authoritativeCorpus.includes(blankDocument)
+      && !incidentalCreation
+    ) {
+      return blankDocument;
+    }
+
+    for (const pattern of patterns) {
+      for (const match of sentence.matchAll(pattern)) {
+        const documentKind = match[1] || "";
+        if (
+          (!documentKind || !authoritativeCorpus.includes(documentKind))
+          && !incidentalCreation
+        ) {
+          return match[0];
+        }
+      }
     }
   }
   return null;
@@ -943,6 +1250,99 @@ function findDocumentStateContradiction(
     }
   }
   return null;
+}
+
+function findNewDocumentLifecycleContradiction(
+  prose: string,
+  sceneStartDocuments: Array<{
+    label: string;
+    accessState: string;
+    holderRef: string | null;
+    documentRef?: string;
+  }>,
+  sceneEndDocuments: Array<{
+    label: string;
+    accessState: string;
+    holderRef: string | null;
+    documentRef?: string;
+  }>
+) {
+  const startRefs = new Set(
+    sceneStartDocuments.map((document) => document.documentRef).filter(Boolean)
+  );
+  const newlyWritten = sceneEndDocuments.filter((document) =>
+    document.accessState === "WRITTEN"
+    && document.documentRef
+    && !startRefs.has(document.documentRef)
+  );
+  for (const document of newlyWritten) {
+    for (const label of uniqueDocumentLabels(document.label)) {
+      const escaped = escapeRegExp(label);
+      const preExistingAction = prose.match(
+        new RegExp(
+          `(?:将|把)?${escaped}[^。！？]{0,10}(?:铺回|放回|搁回|拿起|拿回|取回|翻开|重新摊开)|`
+          + `(?:在|于)${escaped}[^。！？]{0,10}(?:末尾|末页|原文后)[^。！？]{0,10}(?:补入|添入|补写|续写)`
+        )
+      )?.[0];
+      if (preExistingAction) return preExistingAction;
+    }
+  }
+  return null;
+}
+
+function findUnauthorizedNewDocumentHandling(
+  prose: string,
+  sceneStartDocuments: Array<{
+    label: string;
+    accessState: string;
+    holderRef: string | null;
+    documentRef?: string;
+  }>,
+  sceneEndDocuments: Array<{
+    label: string;
+    accessState: string;
+    holderRef: string | null;
+    documentRef?: string;
+  }>,
+  incidentalTextureAllowances: readonly NarrativeTextureAllowance[]
+) {
+  const startRefs = new Set(
+    sceneStartDocuments.map((document) => document.documentRef).filter(Boolean)
+  );
+  const newlyWritten = sceneEndDocuments.filter((document) =>
+    document.accessState === "WRITTEN"
+    && document.documentRef
+    && !startRefs.has(document.documentRef)
+  );
+  if (!newlyWritten.length) return [];
+  const issues: string[] = [];
+  const blankSubstituteSentence = proseSentences(prose).find((sentence) =>
+    /(?:提笔|落笔|挥笔|蘸墨)[^。！？]{0,10}(?:在|于)?(?:空笺|空白笺纸|尚未落字的笺纸)|(?:空笺|空白笺纸|尚未落字的笺纸)[^。！？]{0,12}(?:落字|写下|写明|写成)/.test(
+      sentence
+    )
+    && !isAuthorizedIncidentalCreationTexture(
+      sentence,
+      incidentalTextureAllowances
+    )
+  );
+  if (blankSubstituteSentence) issues.push(blankSubstituteSentence);
+
+  for (const document of newlyWritten) {
+    if (!document.holderRef || document.holderRef === "actor.zhejiang_governor") continue;
+    const holder = PART_ONE_OBJECT_ACTORS.find(
+      (actor) => actor.actorRef === document.holderRef
+    );
+    const holderAliases = holder?.aliases.map(escapeRegExp).join("|");
+    if (!holderAliases) continue;
+    const unauthorizedRead = prose.match(
+      new RegExp(
+        `(?:${holderAliases})[^。！？]{0,20}(?:略看|展看|展开看|翻看|翻阅|读过|细看|验看)|`
+        + `(?:略看|展看|展开看|翻看|翻阅|读过|细看|验看)[^。！？]{0,12}(?:${holderAliases})`
+      )
+    )?.[0];
+    if (unauthorizedRead) issues.push(unauthorizedRead);
+  }
+  return [...new Set(issues)];
 }
 
 function findRemoteDocumentProcedurePhysicalization(
@@ -1002,25 +1402,33 @@ function findObjectHolderContradiction(
         && sceneStart.holderRef
         && sceneEnd.holderRef
       ) {
-        const governorMovesObject = prose.match(
-          new RegExp(
-            `(?:浙江总督|总督)[^。！？]{0,8}(?:将|把)?[^。！？]{0,6}${escaped}[^。！？]{0,12}(?:搁|放|推|收起|打开|合上|拿起|取走)|(?:浙江总督|总督)[^。！？]{0,8}(?:取过|拿过|接过|拿起|收起|打开|合上)[^。！？]{0,8}${escaped}`
-          )
-        )?.[0];
-        if (governorMovesObject) return governorMovesObject;
+        const unauthorizedManipulation =
+          findExplicitUnauthorizedObjectManipulation({
+            prose,
+            objectLabels: uniqueDocumentLabels(object.label),
+            authorizedHolderRef:
+              sceneStart.holderRef === sceneEnd.holderRef
+                ? sceneStart.holderRef
+                : null,
+            actors: PART_ONE_OBJECT_ACTORS
+          });
+        if (unauthorizedManipulation) return unauthorizedManipulation.fragment;
       }
       const contentsRemainEmpty = sceneStart.contentsState === "EMPTY"
         && sceneEnd.contentsState === "EMPTY";
       if (contentsRemainEmpty) {
         const changedContents = prose.match(
           new RegExp(
-            `(?:${escaped}|空匣)[^。！？]{0,26}(?:比来时|较来时|分量)[^。！？]{0,10}(?:轻|重)|(?:${escaped}|空匣)[^。！？]{0,26}(?:没有一丝|毫无)分量|(?:捧来的东西|匣中之物)[^。！？]{0,28}(?:捧回去|如今|眼下)[^。！？]{0,12}(?:不一样|不同)|${escaped}[^。！？]{0,16}(?:装着|盛着|已有|放着)[^。！？]{0,10}(?:回文|文书|纸页)`
+            `(?:${escaped}|空匣)[^。！？]{0,26}(?:比来时|较来时|分量)[^。！？]{0,10}(?:轻|重)|(?:${escaped}|空匣)[^。！？]{0,26}(?:没有一丝|毫无)分量|(?:捧来的东西|匣中之物)[^。！？]{0,28}(?:捧回去|如今|眼下)[^。！？]{0,12}(?:不一样|不同)|${escaped}[^。！？]{0,16}(?:装着|盛着|已有|放着)[^。！？]{0,10}(?:回文|文书|纸页)|(?:回文|公文|文书|纸页)[^。！？]{0,10}(?:夹入|装入|放入|塞入|收入)(?:${escaped}|匣中|匣内)`
           )
         )?.[0];
         if (changedContents) return changedContents;
       }
       const closureRemainsClosed = sceneStart.closureState === "CLOSED"
         && sceneEnd.closureState === "CLOSED";
+      const contentsInsertionAuthorized =
+        sceneStart.contentsState === "EMPTY"
+        && sceneEnd.contentsState === "CONTAINS_DOCUMENT";
       if (closureRemainsClosed) {
         const closurePattern = new RegExp(
           `${escaped}[^。！？]{0,12}(?:匣盖)?(?:虚掩|半开|敞开|打开|开启)|匣盖[^。！？]{0,10}(?:虚掩|半开|敞开|打开|开启)`,
@@ -1033,22 +1441,44 @@ function findObjectHolderContradiction(
               changedClosure.index ?? 0,
               changedClosure[0]
             )
+            && !(
+              contentsInsertionAuthorized
+              && closesObjectAfterAuthorizedInsertion(
+                prose,
+                changedClosure.index ?? 0,
+                changedClosure[0]
+              )
+            )
           ) {
             return changedClosure[0];
           }
         }
       }
-      if (/令牌/.test(label)) {
-        const inventedPlacement = prose.match(
-          new RegExp(
-            `${escaped}[^。！？]{0,10}(?:收入|藏入|拢入|塞入|悬在|挂在|放在|搁在|藏在)[^。！？]{0,6}(?:袖中|袖内|怀中|怀前|腰间|案后|案下|案角|案旁)|(?:袖中|袖内|怀中|怀前|腰间)[^。！？]{0,8}${escaped}|(?:从|自)(?:袖中|袖内|怀中|怀前|腰间|案后|案下|案角|案旁)[^。！？]{0,8}(?:取出|拿出)[^。！？]{0,8}${escaped}`
-          )
-        )?.[0];
-        if (inventedPlacement) return inventedPlacement;
-      }
     }
   }
   return null;
+}
+
+const PART_ONE_OBJECT_ACTORS = [
+  { actorRef: "actor.zhejiang_governor", aliases: ["浙江总督", "总督", "督宪", "部堂"] },
+  { actorRef: "actor.xunfu_clerk", aliases: ["巡抚书吏", "书吏"] },
+  { actorRef: "actor.xunfu_aide", aliases: ["巡抚幕僚", "幕僚"] },
+  { actorRef: "actor.qingliu_messenger", aliases: ["清流县令亲随", "县令亲随", "亲随"] },
+  { actorRef: "actor.qingliu_magistrate", aliases: ["清流县令", "县令"] },
+  { actorRef: "actor.jiangnan_merchant_head", aliases: ["江南商会会首", "商会会首", "会首"] }
+] as const;
+
+function closesObjectAfterAuthorizedInsertion(
+  prose: string,
+  matchIndex: number,
+  matchedText: string
+) {
+  const suffix = prose.slice(
+    matchIndex + matchedText.length,
+    matchIndex + matchedText.length + 90
+  );
+  return /(?:合拢|合上|盖好|阖上|扣上)(?:了)?(?:匣盖|盖子)?/.test(suffix)
+    || /(?:匣盖|盖子)[^。！？]{0,8}(?:合拢|合上|盖好|阖上|扣上)/.test(suffix);
 }
 
 function isNegatedOrHypotheticalClosureChange(
@@ -1131,6 +1561,17 @@ function uniqueDocumentLabels(label: string) {
 }
 
 function findUnauthorizedPlayerCommitment(prose: string, actionText: string) {
+  const postReviewCommitment = proseSentences(prose).find((sentence) =>
+    /(?:总督|督宪|部堂)/.test(sentence)
+    && /(?:复核(?:之后|以后|后)|三日(?:之后|以后|后))[^。！？]{0,16}(?:再定|落印|签发|行止|开档|启封)/.test(
+      sentence
+    )
+    && !actionText.includes(
+      sentence.match(/(?:复核(?:之后|以后|后)|三日(?:之后|以后|后))[^。！？]{0,16}/)?.[0] || ""
+    )
+  );
+  if (postReviewCommitment) return postReviewCommitment;
+
   const commitmentTerms = [
     "亲自",
     "届时",
@@ -1156,6 +1597,30 @@ function findUnauthorizedPlayerCommitment(prose: string, actionText: string) {
   return null;
 }
 
+function findUnauthorizedAdditionalPlayerAction(prose: string, actionText: string) {
+  if (!actionText.includes("追问")) {
+    const followUpQuestion = prose.match(
+      /(?:浙江)?总督[^。！？]{0,16}(?:追问(?:了)?(?:一句|一声)?|又问|再问|另问)[^。！？]{0,18}/
+    )?.[0];
+    if (
+      followUpQuestion
+      && !/(?:没有|并未|未曾|不再)追问/.test(followUpQuestion)
+    ) {
+      return followUpQuestion;
+    }
+  }
+  const repeatedOrder = prose.match(
+    /(?:浙江)?总督[^。！？]{0,12}(?:又|再|另|随后)(?:吩咐|下令|命人|交代)[^。！？]{0,18}/
+  )?.[0];
+  if (
+    repeatedOrder
+    && !["又", "再", "另", "随后"].some((marker) => actionText.includes(marker))
+  ) {
+    return repeatedOrder;
+  }
+  return null;
+}
+
 function findUnauthorizedNpcCommitment(
   prose: string,
   authoritativeCorpus: string
@@ -1166,6 +1631,70 @@ function findUnauthorizedNpcCommitment(
       /(?:随时|即刻|立刻|当日|明日|马上)?(?:可以|可|能够|能|会|愿意|保证|负责)[^。！？]{0,10}(?:呈到|送到|交出|拿来|调来|送来|开仓|交粮|提供|完成)/
     )?.[0];
     if (commitment && !authoritativeCorpus.includes(commitment)) return commitment;
+    const immediateDelivery = sentence.match(
+      /(?:这就|即刻|立刻|马上|随即)(?:回禀|复命|送回|带回|送去|呈送)/
+    )?.[0];
+    if (
+      immediateDelivery
+      && !authoritativeCorpus.includes(immediateDelivery)
+    ) {
+      return immediateDelivery;
+    }
+  }
+  return null;
+}
+
+function findUnauthorizedNpcDocumentDemand(
+  prose: string,
+  authoritativeCorpus: string
+) {
+  const documentDemandPattern =
+    /(?:应当|亦当|理当|须|要|要求|还得|得|请|当)[^。！？]{0,36}(?:留|另留|抄|另抄|备|另备|设|另设|造|另造)[^。！？]{0,16}(?:一份|一册|底册|底簿|记录|副本|抄本|簿册)/;
+  if (documentDemandPattern.test(authoritativeCorpus)) return null;
+  for (const sentence of proseSentences(prose)) {
+    if (!/(?:书吏|幕僚|巡抚|中丞|抚院)/.test(sentence)) continue;
+    const demand = sentence.match(documentDemandPattern)?.[0];
+    if (demand) return demand;
+  }
+  return null;
+}
+
+const NEXT_DECISION_CONCEPTS = [
+  {
+    routeTerms: ["共同具名", "具名", "联署"],
+    proseTerms: ["共同具名", "具名", "联署", "署名", "画押", "姓名在上", "名字写在"]
+  },
+  {
+    routeTerms: ["另具正式回文"],
+    proseTerms: ["另具正式回文", "另具回文", "另作正式回文"]
+  },
+  {
+    routeTerms: ["逐项写明", "逐项列明"],
+    proseTerms: ["逐项写明", "逐条写明", "逐项列明", "逐条列明"]
+  }
+] as const;
+
+function findNextDecisionLeakage(
+  prose: string,
+  authoritativeCorpus: string,
+  decisionAffordances: Array<{ actionText: string }>
+) {
+  const routeCorpus = decisionAffordances.map((route) => route.actionText).join("\n");
+  for (const concept of NEXT_DECISION_CONCEPTS) {
+    if (!concept.routeTerms.some((term) => routeCorpus.includes(term))) continue;
+    if (concept.proseTerms.some((term) => authoritativeCorpus.includes(term))) continue;
+    for (const sentence of proseSentences(prose)) {
+      if (!/(?:书吏|幕僚|巡抚|中丞|抚院)/.test(sentence)) continue;
+      const term = concept.proseTerms.find((candidate) => sentence.includes(candidate));
+      if (!term) continue;
+      if (
+        /(?:须|必须|要|要求|得|还得|请|应当|理当|不可不|不能不|方可|才可|难以|不能|不肯)/.test(
+          sentence
+        )
+      ) {
+        return sentence;
+      }
+    }
   }
   return null;
 }
@@ -1183,36 +1712,121 @@ function collectAttributedPlayerSpeech(prose: string) {
   for (const paragraph of String(prose || "").split(/\n\s*\n/)) {
     const explicitOpenSpeech = [
       ...paragraph.matchAll(
-        /(?:总督|督宪|部堂)[^。！？“”"]{0,24}(?:才|便|遂|终于)?开口[^。！？“”"]{0,64}[：:]\s*[“"]([^”"]+)[”"]/g
+        /(?:^|[。！？；，,\n])\s*(?:总督|督宪|部堂)[^。！？“”"]{0,24}(?:才|便|遂|终于)?开口[^。！？“”"]{0,64}[：:]\s*[“"]([^”"]+)[”"]/g
       )
     ]
       .filter((match) => !isGovernorObjectMention(paragraph, match.index ?? 0))
       .map((match) => match[1]);
     const attributedSpeech = [
       ...paragraph.matchAll(
-        /(?:总督|督宪)(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^。！？“”"]){0,80}(?:道|说|答|回道|开口|朗声|沉声)(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^“”"]){0,8}[“"]([^”"]+)[”"]/g
+        /(?:^|[。！？；，,\n])\s*(?:总督|督宪)(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^。！？“”"]){0,80}(?:道|说|答|回道|开口|朗声|沉声)(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^“”"]){0,8}[“"]([^”"]+)[”"]/g
       )
     ]
       .filter((match) => !isGovernorObjectMention(paragraph, match.index ?? 0))
       .map((match) => match[1]);
     const adjacentSpeech = [
       ...paragraph.matchAll(
-        /(?:总督|督宪)(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^。！？“”"]){0,24}(?:转向|抬眼|开口|道|说|答|回道|朗声|沉声)(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^“”"]){0,8}[“"]([^”"]+)[”"]/g
+        /(?:^|[。！？；，,\n])\s*(?:总督|督宪)(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^。！？“”"]){0,24}(?:转向|抬眼|开口|道|说|答|回道|朗声|沉声)(?:(?!书吏|亲随|县令|巡抚|中丞|会首|幕僚|织造使)[^“”"]){0,8}[“"]([^”"]+)[”"]/g
       )
     ]
       .filter((match) => !isGovernorObjectMention(paragraph, match.index ?? 0))
       .map((match) => match[1]);
     const selfNamedSpeech = [...paragraph.matchAll(/[“"]([^”"]*本督[^”"]*)[”"]/g)]
       .map((match) => match[1]);
-    speeches.push(...explicitOpenSpeech, ...attributedSpeech, ...adjacentSpeech, ...selfNamedSpeech);
+    const postAttributedSpeech = [
+      ...paragraph.matchAll(
+        /[“"]([^”"]+)[”"]\s*(?:，|。)?\s*(?:总督|督宪|部堂)[^。！？]{0,20}(?:打断|道|说|答|回道|开口|朗声|沉声)/g
+      )
+    ]
+      .filter(
+        (match) =>
+          !/(?:总督|督宪|部堂)[^。！？]{0,8}(?:未答|没有答|并未答|不答|未曾答|未开口|没有开口|并未开口|未曾开口|不曾开口)/.test(
+            match[0]
+          )
+      )
+      .map((match) => match[1]);
+    speeches.push(
+      ...explicitOpenSpeech,
+      ...attributedSpeech,
+      ...adjacentSpeech,
+      ...postAttributedSpeech,
+      ...selfNamedSpeech
+    );
   }
   return [...new Set(speeches.map((speech) => speech.trim()).filter(Boolean))];
 }
 
+function findUnauthorizedSealProcedureExpansion(
+  prose: string,
+  actionText: string,
+  authoritativeCorpus: string
+) {
+  if (!/封存档房/.test(actionText)) return null;
+  for (const sentence of proseSentences(prose)) {
+    const procedure = sentence.match(
+      /(?:钥匙[^。！？]{0,16}(?:亲收|收存|保管)|(?:票据|函件|卷宗|架阁|人役|出入账册|收发文簿)[^。！？]{0,36}(?:不得|不许|一律|封存)|(?:候|待)(?:上命|命令|手谕|下文)[^。！？]{0,12}(?:再)?(?:启封|开档|再启)|(?:听候|等候)(?:总督(?:衙门|府)?|上司)?[^。！？]{0,8}(?:复核|查验)|(?:无[^。！？]{0,12}(?:手谕|下文)|候[^。！？]{0,16}(?:差员|复核)|待[^。！？]{0,16}(?:差员|复核))[^。！？]{0,24}(?:启封|开档|调阅|移运|挪动|抄录|销毁|出入))/
+    )?.[0];
+    if (procedure && !authoritativeCorpus.includes(procedure)) return procedure;
+  }
+  return null;
+}
+
+function findUnauthorizedDocumentContentAssertion(
+  prose: string,
+  documentStates: Array<{
+    label: string;
+    continuityNote: string;
+    documentRef?: string;
+  }>
+) {
+  const documents = new Map<string, { label: string; continuityNotes: string[] }>();
+  for (const state of documentStates) {
+    const key = state.documentRef || state.label;
+    const current = documents.get(key) || { label: state.label, continuityNotes: [] };
+    if (state.continuityNote && !current.continuityNotes.includes(state.continuityNote)) {
+      current.continuityNotes.push(state.continuityNote);
+    }
+    documents.set(key, current);
+  }
+  for (const document of documents.values()) {
+    const aliases = [
+      document.label,
+      document.label.replace(/^(?:浙江)?(?:巡抚|总督|清流县令)/, "")
+    ].filter((alias, index, all) =>
+      alias.length >= 3 && all.indexOf(alias) === index
+    );
+    const authorizedDocumentText = [
+      document.label,
+      ...document.continuityNotes
+    ].join("\n");
+    for (const alias of aliases) {
+      const assertion = prose.match(
+        new RegExp(
+          `${escapeRegExp(alias)}[^。！？；，,]{0,8}(?:上|中|内)?(?:写着|写的是|明写|注明|列着|列明|落款为|署着)[“"']?([^”"'。！？；，,]{2,24})`
+        )
+      );
+      const assertedContent = assertion?.[1]?.trim();
+      if (
+        assertion?.[0]
+        && assertedContent
+        && !authorizedDocumentText.includes(assertedContent)
+      ) {
+        return assertion[0];
+      }
+    }
+  }
+  return null;
+}
+
 function isGovernorObjectMention(paragraph: string, mentionIndex: number) {
-  const prefix = paragraph.slice(Math.max(0, mentionIndex - 6), mentionIndex);
-  return /(?:看见|看向|看着|望向|望着|对着|朝着|扫过|落在|回到|移到|移向|听见)$/.test(prefix)
-    || /(?:他|书吏|幕僚|县令|会首|织造使|亲随)(?:等|看见|看向|看着|望向|望着|听见)[^。！？]{0,4}$/.test(
+  const prefix = paragraph.slice(Math.max(0, mentionIndex - 14), mentionIndex);
+  const objectPhrase = paragraph.slice(mentionIndex, mentionIndex + 16);
+  const gazeAtGovernorObject =
+    /(?:看|望|瞥|扫)(?:了|着|向)?(?:一眼)?[^。！？]{0,3}$/.test(prefix)
+    && /^(?:总督|督宪|部堂)的(?:手|脸|神色|目光|衣袖|案前|回文|公文|文书)/.test(objectPhrase);
+  return gazeAtGovernorObject
+    || /(?:看见|看向|看着|看了?一眼|望向|望着|瞥了?一眼|对着|朝着|扫过|落在|回到|移到|移向|听见)$/.test(prefix)
+    || /(?:他|书吏|幕僚|县令|会首|织造使|亲随)(?:等|看见|看向|看着|看了?一眼|望向|望着|瞥了?一眼|听见)[^。！？]{0,4}$/.test(
       prefix
     );
 }
@@ -1226,7 +1840,7 @@ function findUnauthorizedTimeAdvance(prose: string, authoritativeCorpus: string)
 
 function findUnauthorizedDeadlineAnchor(prose: string) {
   return prose.match(
-    /(?:三日|期限|限期)[^。！？]{0,12}(?:从|自)(?:此刻|这一刻|现在|眼下|本轮|这时)[^。！？]{0,8}(?:起算|算起|重新计算|重算|开始(?:走|计算|起算|算))/
+    /(?:三日(?:之限|期限)?|期限|限期)[^。！？]{0,12}(?:从|自)(?:此刻|这一刻|现在|眼下|本轮|这时|这句话|此话|这道答复)[^。！？]{0,8}(?:起算|算起|重新计算|重算|开始(?:走|计算|起算|算)|起便压)/
   )?.[0] || null;
 }
 
@@ -1265,7 +1879,44 @@ function findUnauthorizedActorIdentity(prose: string, authoritativeCorpus: strin
   );
   for (const match of prose.matchAll(identityPattern)) {
     const identity = match[1] || "";
+    const prefix = prose.slice(Math.max(0, (match.index ?? 0) - 2), match.index ?? 0);
+    const suffix = prose.slice(
+      (match.index ?? 0) + match[0].length,
+      (match.index ?? 0) + match[0].length + 12
+    );
+    if (
+      /^(?:须|需)大人$/.test(identity)
+      && /^(?:下令|示下|定夺|批示|作主|发话)/.test(suffix)
+    ) {
+      continue;
+    }
+    if (
+      identity === "蒙大人"
+      && /(?:若|如|倘|幸|得|承)$/.test(prefix)
+      && /^(?:给|赐|示|允|准|垂|见告|开恩)/.test(suffix)
+    ) {
+      continue;
+    }
     if (identity && !authoritativeCorpus.includes(identity)) return identity;
+  }
+  return null;
+}
+
+function findUnauthorizedCausalActorAppearance(
+  prose: string,
+  authoritativeCorpus: string
+) {
+  const patterns = [
+    /(?:穿着|身着|披着)[^。！？；]{0,18}(?:官服|公服|补服|蟒袍|飞鱼服|甲胄|孝服|囚服|血衣)/g,
+    /(?:腰间|腰上|身上|袖中)[^，。！？；]{0,18}(?:佩刀|短刀|兵刃|腰牌|关防|钥匙|印信|令牌)/g,
+    /(?:脸上|面上|额上|手上|身上|腿上)[^，。！？；]{0,18}(?:伤口|血迹|刀疤|刺青|胎记)/g,
+    /(?:跛脚|跛足|瘸腿|断指|独眼|失明|残臂|断臂)/g
+  ];
+  for (const pattern of patterns) {
+    for (const match of prose.matchAll(pattern)) {
+      const phrase = match[0];
+      if (!authoritativeCorpus.includes(phrase)) return phrase;
+    }
   }
   return null;
 }
@@ -1291,8 +1942,12 @@ function findUnauthorizedNamedActorAction(prose: string, allowedActorLabels: str
   const allowed = new Set(allowedActorLabels);
   const specs = [
     {
+      label: "未列低阶差役",
+      pattern: /(?:窗外|门外|廊下|厅外)?(?:差役|衙役|门役|仆役|侍从|随员|小吏)[^\n。！？]{0,18}(?:换班|走动|脚步|说话|回禀|入厅|进厅|走进|站定|开口|退下)/
+    },
+    {
       label: "浙江巡抚",
-      pattern: /(?:浙江巡抚本人|巡抚本人)|(?:浙江巡抚|巡抚(?!书吏|幕僚|衙门|一方|方面|那边|来文|公文|催问|立场|要求|所))[^\n。！？]{0,28}(?:入(?:了)?(?:内)?厅|进(?:了)?(?:内)?厅|走进|站在|坐下|落座|起身|开口|说道|道：|抬手|目光|行礼|呈上|取出|走到|退后|点头|摇头|穿着|穿青|公服|腰间)/
+      pattern: /(?:浙江巡抚本人|巡抚本人)|(?:浙江巡抚|巡抚(?!书吏|幕僚|衙门|回文匣|一方|方面|那边|来文|公文|催办(?:公文|文书|来文)|催问|立场|要求|所))[^\n。！？]{0,28}(?:入(?:了)?(?:内)?厅|进(?:了)?(?:内)?厅|走进|站在|坐下|落座|起身|开口|说道|道：|抬手|目光|行礼|呈上|取出|走到|退后|点头|摇头|穿着|穿青|公服|腰间)/
     },
     {
       label: "清流县令",

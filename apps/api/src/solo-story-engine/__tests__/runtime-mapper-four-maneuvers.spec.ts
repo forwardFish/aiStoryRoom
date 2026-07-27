@@ -91,7 +91,8 @@ test("自拟谋划原样保留玩家写下的完整行动", () => {
 });
 
 test("主线剧情选择用完整可见行动回绑当前决策内核，而不是只提交战术短标签", () => {
-  const fullAction = "只准清流县先办一批，并把不得压价买田写进放行文书。";
+  const fullAction = "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。";
+  const internalObjective = "用有限试办换取民田保护与可复核边界";
   const candidate = {
     id: "d1",
     label: "限定试办",
@@ -103,7 +104,7 @@ test("主线剧情选择用完整可见行动回绑当前决策内核，而不�
     ],
     intentDraft: {
       ...baseIntent,
-      objective: fullAction,
+      objective: internalObjective,
       target: { type: "ROLE", id: "actor.zhejiang_xunfu", label: "浙江巡抚" },
       method: "附条件签发"
     }
