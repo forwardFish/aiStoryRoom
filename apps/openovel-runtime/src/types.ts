@@ -16,6 +16,7 @@ export type ProviderResult = {
   text: string;
   model: string;
   requestId?: string;
+  finishReason?: string;
   usage: ProviderUsage;
   latencyMs: number;
 };
@@ -27,6 +28,7 @@ export type ProviderRequest = {
   maxTokens: number;
   json: boolean;
   stream: boolean;
+  timeoutMs?: number;
   onDelta?: (text: string) => void;
 };
 
@@ -38,11 +40,30 @@ export interface OpenNovelProvider {
 export type OpenNovelOptionEffect = {
   intent?: string;
   consequence?: string;
+  beatContract?: {
+    sourceRef?: string;
+    objective: string;
+    moves: string[];
+    requiredAnchorGroups: string[][];
+    requiredDurableAnchorGroups?: string[][];
+    authorizedPlayerActions?: string[];
+    constraints?: string[];
+    settledNarrative?: string;
+    stopCondition: string;
+  };
+  knowledgeBoundary?: {
+    sourceRef?: string;
+    allowed: string[];
+    forbidden: string[];
+    subjects?: string[];
+  };
   stateHints?: Array<{
     key: string;
     op: "set" | "inc" | "dec" | "flag";
     value: unknown;
     note?: string;
+    presentThisTurn?: boolean;
+    surfaceAnchor?: string;
   }>;
   risk?: "low" | "medium" | "high";
   difficulty?: string;
@@ -59,6 +80,22 @@ export type OpenNovelOption = {
 export type BoundOption = {
   id: string;
   label: string;
+};
+
+export type CausalDelta = {
+  turnId: string;
+  source: "bound-option" | "free-text";
+  readerAction: string;
+  immediateIntent: string;
+  protagonistScope: "inquiry-only" | "observation-only" | "bounded-action";
+  stopCondition: string;
+  allowedKnowledge: string[];
+  forbiddenKnowledge: string[];
+  knowledgeBoundaryRef?: string;
+  evidenceSubjects: string[];
+  beatContract: NonNullable<OpenNovelOptionEffect["beatContract"]> | null;
+  durableHints: NonNullable<OpenNovelOptionEffect["stateHints"]>;
+  requiredNarrativeFacts: string[];
 };
 
 export type RunMetadata = {
@@ -88,6 +125,7 @@ export type SceneEvent = {
 export type StorySnapshot = {
   metadata: RunMetadata;
   brief: string;
+  directorArc: string;
   foregroundGuidance: string;
   durableMemory: string;
   storyMemory: string;
@@ -106,6 +144,8 @@ export type CompiledForegroundContext = {
     usedChars: number;
     budgets: Record<string, number>;
     truncated: string[];
+    removedPlayerDirectiveClauses: number;
+    deduplicatedContextCardSections: number;
   };
 };
 
@@ -113,7 +153,8 @@ export type RuntimeWarning = {
   code: string;
   message: string;
   severity: "LOW" | "MEDIUM" | "HIGH";
-  blocksPlayer: false;
+  blocksPlayer: boolean;
+  details?: Record<string, string>;
 };
 
 export type TurnResult = {
@@ -125,6 +166,7 @@ export type TurnResult = {
   framing: string;
   tension: string;
   storyComplete: boolean;
+  causalDelta: CausalDelta;
   warnings: RuntimeWarning[];
   narrator: ProviderResult;
   optionsProvider?: ProviderResult;
@@ -144,7 +186,13 @@ export type MirrorEvent = {
   payload: unknown;
 };
 
+export type MirrorEnvelope = MirrorEvent & {
+  id: string;
+  createdAt: string;
+};
+
 export interface EventMirror {
+  readonly configured?: boolean;
   publish(event: MirrorEvent): Promise<void>;
 }
 
@@ -155,5 +203,7 @@ export type StorykeeperInboxItem = {
   narration: string;
   recentCanonBefore?: string;
   selectedEffect: OpenNovelOptionEffect | null;
+  causalDelta?: CausalDelta;
+  warnings?: RuntimeWarning[];
   createdAt: string;
 };

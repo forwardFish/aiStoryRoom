@@ -78,7 +78,7 @@ export type PartOneConsequencePayoffBeat = {
 
 export type PartOneAuthoritativeWorldMove = {
   beatId: string;
-  sourceType: "DUE_CONSEQUENCE" | "NEXT_DECISION_PRESSURE" | "SECTION_TRANSITION";
+  sourceType: "DUE_CONSEQUENCE" | "NEXT_DECISION_PRESSURE" | "SECTION_TRANSITION" | "SETTLED_RESPONSE";
   sourceId: string;
   actorRefs: string[];
   action: string;
@@ -112,6 +112,12 @@ export type PartOneNarrativePlan = {
     | "INDIRECT_SPEECH_REQUIRED"
     | "EXACT_QUOTE_ALLOWED";
   authorizedPlayerSpeech: string[];
+  /**
+   * Optional author-compiled prose for a high-risk action whose exact causal
+   * content must not be delegated to the Narrator (for example a closed-list
+   * formal document). The Narrator continues after this paragraph.
+   */
+  settledActionNarrative?: string;
   confirmedEffects: string[];
   unresolvedFacts: string[];
   npcAgenda: string[];
@@ -124,6 +130,7 @@ export type PartOneNarrativePlan = {
     requiredTermGroups: string[][];
     resultCeiling?: string;
     mustAppear: boolean;
+    hardRequired?: boolean;
   }>;
   requiredEndChange: string;
   narrativeCeiling: string[];

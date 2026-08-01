@@ -4,7 +4,7 @@
   "partId": "PART-01",
   "perspectiveRoleKey": "zhejiang_governor",
   "authoringReleaseVersion": "sangtian-part-one-authoring-v1.3.0",
-  "authoringManifestHash": "D078C192F3D9780B640656960C2C9AB8E871C98AAA701DB94A60BB904EEA4E71",
+  "authoringManifestHash": "322FDE77C24296062F0BD1FF9481C951D7B02EF836A5543D1625E2FAC002811C",
   "authoringManifest": {
     "schemaVersion": "sangtian-part-one-authoring-release-v1",
     "releaseVersion": "sangtian-part-one-authoring-v1.3.0",
@@ -14,7 +14,8 @@
     "styleProfileHash": "E6D4C4769C26DBEB4FBA0EE26768149D04E8E121323320C967BC8396DFB19326",
     "narrativeScenePatternSetHash": "72673209998FF496AA2F9B8E4FF5E7827991AFD64BE7DB18395AD784CF47E197",
     "narrativeScenePatternCount": 3,
-    "assetCount": 54,
+    "evidenceProfileCount": 1,
+    "assetCount": 55,
     "decisionKernelCount": 15,
     "causalArcCount": 4,
     "floorObligationCount": 4,
@@ -42,6 +43,7 @@
       "DK-P1-REVIEW-AUTHORITY",
       "DK-P1-REVIEW-INITIATION",
       "DK-P1-WITNESS-ACCESS",
+      "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
       "FLOOR-P1-S1-XUNFU-RESPONSE",
       "FLOOR-P1-S2-CUSTODY-DISRUPTION",
       "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
@@ -95,9 +97,10 @@
       "DK-P1-REPORT-AUTHORSHIP": "CD3A8541855E051F30533BA2AC44DB07A3BB0CB9673250498A9A6F70BF7DDC55",
       "DK-P1-RESPONSIBILITY-RECORD": "2871402F44672F91AB7D626B49BCF0B9D7A9F92C29DDCFD79D150631856C5208",
       "DK-P1-RESPONSIBILITY-SCOPE": "6BF4C02BE650023BE1752C977D03C8CAEFD9091A25E2B74C474674DAD75FDCE0",
-      "DK-P1-REVIEW-AUTHORITY": "098C68E5184CF731080E14389FFE50C6921964590C9122E0D1AB9C3219C758FA",
+      "DK-P1-REVIEW-AUTHORITY": "9FCA704B92DAFF55CEF9F68077F0CA381557471E87FA8C6F75257547F35A9540",
       "DK-P1-REVIEW-INITIATION": "62EC9FC004E21C977518BC45C397A2872994EA3DB23E7D26009E7789B73496AA",
       "DK-P1-WITNESS-ACCESS": "4CE762A8D8E54EDBAF378AF318AFA31077B3A318C79FAF224250C992B676CB76",
+      "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY": "D664C2D34744DF34D022ADC1792DCF39AB828ECDE5EC9DC77FE8441F286EF8B1",
       "FLOOR-P1-S1-XUNFU-RESPONSE": "2642D8983E393BDC45CD767A8D0B0238B1F062BEE3751E1633ADAD8A73FCC736",
       "FLOOR-P1-S2-CUSTODY-DISRUPTION": "E1BFA2A68EBE232E7030936D85C2170992525BB38E243CDC108CB71AEEB73170",
       "FLOOR-P1-S3-GRAIN-PRICE-MOVE": "9FA251455A8885BE5FF8D1B46B9888C92678DC617408D72E14500BD6AD85F7DB",
@@ -107,7 +110,7 @@
       "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY": "D3E6B321241CED036986CD47ABD1DCEBB71ECD1A584DDBE4CA38C9D634D229E1",
       "PCR-P1-CAPITAL-FRAMING": "AC1B6C74B1BCFB5C1BACDF14C1553B8511D519F6F7D6121EC856A8C6D4428750",
       "PCR-P1-EVIDENCE-ATTACHMENT": "949BA61299D748163C7709A18203FC4129B9E5E30C187E3556EE88E5443B1B18",
-      "PCR-P1-EXECUTION-BOUNDARY": "CF8C8F2831D4B7F22F248356B8EE15E8458BE6398F23C770A3AE050A89FA7473",
+      "PCR-P1-EXECUTION-BOUNDARY": "B6E49BF61879903DC574A9F14511E9A4CDC884FD70C3C55765A051A3B0848B3F",
       "PCR-P1-GRAIN-RELIEF": "EAD639FE2D313E422FFEFE2A541419E71BAFDB220B09A3A0910F99D6F2A45E3E",
       "PCR-P1-KNOWLEDGE-CHAIN": "86803311C8F296CB1211DAAF727D02399E9F9F14E802E3CFA91C415FA55E4186",
       "PCR-P1-LAND-RISK": "5E01156A8C4D766028096B61884309058788A96754E7010266DA27FF2015D9FF",
@@ -116,10 +119,10 @@
       "PCR-P1-REPORT-AUTHORSHIP": "082B9C05FA30B6F63621356F64BF52E71AACEC453B549ADCCD4BB556F97F1D57",
       "PCR-P1-RESPONSIBILITY-RECORD": "D1AA84C0DE06CECCD53A9FF01582D58C716C1F342E2D2B0F1D2F2CC55E0F0C24",
       "PCR-P1-REVIEW-AUTHORITY": "6934FBCCBD3B3792B8873480EC6F48B648D8D4DC806D811976259778B3B6CA53",
-      "PCR-P1-XUNFU-COUNTERMOVE": "BF3488F5D99CB69FCA137DA66908FAB1E1C640442765B04E8B855C006C18F2A9",
+      "PCR-P1-XUNFU-COUNTERMOVE": "B933BE0BB875D0E4BA516ED89740741F65CA152F9C17006A87E0D26EAB2C24BE",
       "RTA-P1-CAPITAL-FRAMING": "522E4B92291055A5D912885341BA49D34FC8D75DB5D2B69DFA265B713CA55B07",
       "RTA-P1-EVIDENCE-ATTACHMENT": "EE6F4D44B40843154ACFB18B9BF0EAB20E8B5F0A53C23B6F4C7AC4B2E87983EE",
-      "RTA-P1-EXECUTION-BOUNDARY": "62B375B19C652A92D12E3301B6A80D24AEBFAA3A22476FBC433C0CDBDCC7501E",
+      "RTA-P1-EXECUTION-BOUNDARY": "4BD7DC0A827F2DA3DE66AEA476234274F6CBFDA8E534AE15C779435C263DE21B",
       "RTA-P1-GRAIN-RELIEF": "DC74730D2C5C3F992BCD89D59CEAA7B1E8F16E6A7445C6E404999FEA694C2D58",
       "RTA-P1-KNOWLEDGE-CHAIN": "091DFEA5145B4E31E8712191DB9DC0C144CCF4DE6E4DF0CB786631056A7334A4",
       "RTA-P1-LAND-RISK": "FB7A1EE18326D3DAFF63A9B3B7C824C1A9740CDF520DA1986DF08A0597E5D773",
@@ -131,20 +134,21 @@
       "RTA-P1-XUNFU-COUNTERMOVE": "8504A007E5670BDDE9E65D08A6BF12AB347F3356BC3FD74F02E936EB61C19CB5",
       "STYLE-SANGTIAN-HISTORICAL-NOVEL": "AEE1FA9AD6362B8486380A0C4397E0C77572595D6102A1E5D3CA1B786A9EFE76"
     },
-    "runtimeIndexHash": "FE91B97016E582F46351C56DD238D8EF1184C7EFBADCFC73877AF7EBDF221DD7",
-    "requirementSetHash": "4449154CDD3BC8A542FD8C9231CB79CC01AB4BE878777AB40BDFA0CCDE8267EA",
-    "immutableHash": "D078C192F3D9780B640656960C2C9AB8E871C98AAA701DB94A60BB904EEA4E71"
+    "runtimeIndexHash": "D7934E427E2D54B46F9411EB4623A49598D4E3F4D9BBD6767AD72F6629010501",
+    "requirementSetHash": "1FAE9CC5B70A845AF6B1FBFD6FA1E361FFBE4D0EAF0452BA7B414DE8AEB5E189",
+    "immutableHash": "322FDE77C24296062F0BD1FF9481C951D7B02EF836A5543D1625E2FAC002811C"
   },
   "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
   "contentCounts": {
-    "assets": 54,
+    "assets": 55,
     "requirements": 12,
     "sections": 4,
     "decisionKernels": 15,
     "causalArcs": 4,
     "floorObligations": 4,
     "approvedAdaptations": 7,
-    "narrativeScenePatterns": 3
+    "narrativeScenePatterns": 3,
+    "evidenceProfiles": 1
   },
   "worldStart": {
     "schemaVersion": "sangtian-world-start-v1",
@@ -865,6 +869,7 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-EXECUTION-BOUNDARY",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-REVIEW-INITIATION",
         "ARC-P1-DEADLINE-RESPONSIBILITY",
@@ -1147,6 +1152,7 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-REGISTER-CUSTODY",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-EVIDENCE-CUSTODY",
         "DK-P1-WITNESS-ACCESS",
         "ARC-P1-CUSTODY-CONTEST",
@@ -1334,6 +1340,7 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-KNOWLEDGE-CHAIN",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-DISCLOSURE-SCOPE",
         "DK-P1-WITNESS-ACCESS",
         "ARC-P1-CUSTODY-CONTEST",
@@ -2189,6 +2196,209 @@
   "assets": [
     {
       "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+      "assetType": "EVIDENCE_PROFILE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-01",
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-KNOWLEDGE-CHAIN"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS"
+      ],
+      "causalArcIds": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-CUSTODY-CONTEST"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.qingliu_magistrate",
+        "actor.qingliu_messenger"
+      ],
+      "stateDependencies": [
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus",
+        "knowledgeTransfers"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-REGISTER-ALTERATION"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "SEC-P1-01",
+        "SEC-P1-02",
+        "EVP-P1-QINGLIU-REGISTER-ANOMALY",
+        "evidence.qingliu_register_anomaly",
+        "EVIDENCE_PROFILE",
+        "KNOWLEDGE_BOUNDARY",
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-CUSTODY-CONTEST",
+        "actor.zhejiang_governor",
+        "actor.qingliu_magistrate",
+        "actor.qingliu_messenger",
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus",
+        "knowledgeTransfers"
+      ],
+      "payload": {
+        "evidenceProfileId": "EVP-P1-QINGLIU-REGISTER-ANOMALY",
+        "targetRef": "evidence.qingliu_register_anomaly",
+        "carrierRef": "document.qingliu_secret_letter",
+        "openingReport": {
+          "statement": "清流县令声称，他在编报本县第一批待改田亩时，将册内分户田数逐项相加，所得合计与册尾所列总数不符。",
+          "statementClass": "ATTRIBUTED_UNVERIFIED_REPORT",
+          "validationSubjects": [
+            "清流县册",
+            "县册",
+            "原册",
+            "册子",
+            "分户田数",
+            "分户数",
+            "册尾总数"
+          ],
+          "reportedByActorRef": "actor.qingliu_magistrate",
+          "carriedByActorRef": "actor.qingliu_messenger",
+          "knownByActorRefs": [
+            "actor.qingliu_magistrate",
+            "actor.qingliu_messenger",
+            "actor.zhejiang_governor"
+          ],
+          "allowedAssertions": [
+            "密信只是清流县令的报疑，不是已经核实的结论",
+            "原册没有随密信送到总督府",
+            "清流县令声称，他在编报本县第一批待改田亩时，将册内分户田数逐项相加，所得合计与册尾所列总数不符",
+            "县令亲随只受命转述上述报疑，不知道原册的更多细节",
+            "浙江总督尚未独立核实这项不符"
+          ],
+          "forbiddenAssertions": [
+            "具体田亩数、户数、差额或精确数量",
+            "具体册页、行次、墨色、笔迹、纸张、落款、印章或真伪结论",
+            "旧册、新册、底册、副本或其他版本已经存在",
+            "具体经手人、保管人、钥匙、封条或档房出入状态",
+            "不符是误抄、漏算还是故意篡改",
+            "巡抚、商会、县令、书吏或任何具名人物已经有罪"
+          ]
+        },
+        "openingBeatContract": {
+          "objective": "把玩家的暂缓签发与核对报疑写成一个完整的内厅问答 beat，不启动下一项调查或处置。",
+          "moves": [
+            "总督把巡抚催办公文暂压在案上，让巡抚书吏继续留候。",
+            "总督只让县令亲随复述密信中已经写明的报疑，不替玩家追问原册所在地、经手人或保管状态。",
+            "亲随复述：县令声称分户田数逐项相加的合计与册尾所列总数不符；这只是县令报疑，尚未由总督核实。",
+            "亲随对差额和核验次数如实说不知道；总督不再追问原册所在地、保管人或其他细节，巡抚书吏仍在等待回文。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "没有去拿印",
+              "朱印未动",
+              "公文暂压",
+              "公文往案角",
+              "公文往案侧"
+            ],
+            [
+              "分户田数",
+              "分户逐项"
+            ],
+            [
+              "册尾总数",
+              "册尾所列总数"
+            ],
+            [
+              "不符",
+              "对不上"
+            ],
+            [
+              "不知道",
+              "不知",
+              "答不上来",
+              "不敢妄答",
+              "没交代",
+              "没有交代",
+              "没有写",
+              "没写",
+              "没有教小的记"
+            ]
+          ],
+          "stopCondition": "亲随承认不知道报疑以外的细节，巡抚书吏仍在等待总督答复时结束。"
+        },
+        "revealPolicy": {
+          "currentTier": "REPORTED_ANOMALY",
+          "tiers": [
+            {
+              "tier": "REPORTED_ANOMALY",
+              "availableWhen": [
+                "opening Canon 已建立密信报疑",
+                "玩家向县令亲随核对密信"
+              ],
+              "mayReveal": [
+                "分户田数合计与册尾总数不符",
+                "县令说法尚未由总督独立核实"
+              ],
+              "mayNotReveal": [
+                "任何精确数值",
+                "任何物理改痕",
+                "任何原册保管状态",
+                "任何责任结论"
+              ]
+            },
+            {
+              "tier": "MATERIAL_ACCESSED",
+              "availableWhen": [
+                "原册、见证抄件或合法口供已经通过已提交事件进入 Canon",
+                "对应保管与知情关系已写入持久状态"
+              ],
+              "mayReveal": [
+                "只揭示被该事件明确建立的新增事实"
+              ],
+              "mayNotReveal": [
+                "用本证据卡自动补齐尚未查到的亩数、版本、墨迹、印章、经手人或幕后关系"
+              ]
+            }
+          ]
+        },
+        "invariants": [
+          "人物说法与客观事实必须分开",
+          "异常入口不能自动升级为篡改结论",
+          "原件、副本、听闻内容与推断必须分开",
+          "后续细节只能由玩家选择的查验路径和已提交事件建立"
+        ]
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
       "assetId": "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
       "assetType": "NARRATIVE_SCENE_PATTERN",
       "partIds": [
@@ -2732,7 +2942,8 @@
         ],
         "delayedConsequences": [
           "执行速度改变后续粮食与土地压力",
-          "书面边界决定问责时谁能切割责任"
+          "先放行后补册使复核责任落到具体承办人",
+          "暂缓封档把误期与粮价压力集中到总督"
         ],
         "invariantsToPreserve": [
           "玩家不能废除国策",
@@ -2808,7 +3019,8 @@
         "createOnlyFromCommittedEvent": true,
         "consequences": [
           "执行速度改变后续粮食与土地压力",
-          "书面边界决定问责时谁能切割责任"
+          "先放行后补册使复核责任落到具体承办人",
+          "暂缓封档把误期与粮价压力集中到总督"
         ],
         "payoffBeats": [
           {
@@ -2816,7 +3028,7 @@
             "actorRefs": [
               "actor.xunfu_aide"
             ],
-            "action": "巡抚幕僚把三日限期和眼前粮价一并压到案前，追问为何只准清流县试办、又不许趁急难压价买田，并要总督说明这两条是否仍照办；速度之争由此变成一项可追责的当面催问。",
+            "action": "巡抚幕僚以三日限期和正在上涨的粮价向总督施压，口头追问为何只准清流县试办、又不许趁急难压价买田，并要总督说明这两条是否仍照办；速度之争由此变成一项可追责的当面催问。",
             "requiredTermGroups": [
               [
                 "巡抚幕僚",
@@ -2833,37 +3045,68 @@
                 "照办"
               ]
             ],
-            "resultCeiling": "只能形成催问与责任压力；眼前粮价只能定性写成正在上涨或压力在眼前，不得换算为一日一变、每日、每时等频率；不得写成朝廷已经定罪或巡抚已经取得执行权。"
+            "resultCeiling": "只能形成口头催问与责任压力；眼前粮价只能定性写成正在上涨或压力在眼前，不得换算为一日一变、每日、每时等频率，也不得为期限或粮价另造单帖、报价单、账册或精确数字；不得写成朝廷已经定罪或巡抚已经取得执行权。"
           },
           {
-            "beatId": "PAYOFF-P1-EXECUTION-RECORD",
+            "beatId": "PAYOFF-P1-EXECUTION-SUPPLEMENT",
             "actorRefs": [
               "actor.xunfu_aide"
             ],
-            "action": "巡抚幕僚盯住已经写进放行文书的两条边界，要求总督说明由谁具名担责；日后谁想切割责任，都必须先解释这份已经写明的边界。",
+            "action": "巡抚幕僚要求总督说明：既已先放行改桑，三日内补齐复核册和经手名册究竟由谁承办、误期由谁担责。",
             "requiredTermGroups": [
               [
                 "巡抚幕僚",
                 "幕僚"
               ],
               [
-                "改桑范围",
-                "执行范围",
-                "清流县试办",
-                "清流试办",
-                "何县试办",
-                "划定的范围"
+                "先放行",
+                "已经放行",
+                "改桑"
               ],
               [
-                "责任",
-                "具名",
-                "切割首尾",
-                "切割干系",
-                "切割干净",
-                "交代"
+                "三日",
+                "复核册",
+                "经手名册"
+              ],
+              [
+                "承办",
+                "担责",
+                "责任"
               ]
             ],
-            "resultCeiling": "巡抚幕僚只以巡抚代表身份独自加入现场；不得让巡抚本人或其他随员到场。只能把“清流县试办”和“不得趁急难压价买田”这两项已结算边界带入责任争夺；不得新增乡、里、保、亩数、田地分类、第二份文书或已经完成的签署内容。"
+            "resultCeiling": "只能追问补册承办与误期责任；不得写成复核册、经手名册已经补齐，也不得新增其中内容或经手人姓名。"
+          },
+          {
+            "beatId": "PAYOFF-P1-EXECUTION-PAUSE",
+            "actorRefs": [
+              "actor.xunfu_aide"
+            ],
+            "action": "巡抚幕僚把三日限期和正在上涨的粮价一并摆到总督面前，追问封存是否已有回报、暂缓要到何时，并把误期责任明白记在总督名下。",
+            "requiredTermGroups": [
+              [
+                "巡抚幕僚",
+                "幕僚"
+              ],
+              [
+                "三日限期",
+                "三日"
+              ],
+              [
+                "粮价",
+                "米价"
+              ],
+              [
+                "封存回报",
+                "封存",
+                "回报"
+              ],
+              [
+                "暂缓",
+                "误期",
+                "责任"
+              ]
+            ],
+            "resultCeiling": "只能形成催问和责任压力；封存仍待回报，不得写成档房、原册或封条已经得到保全，也不得写成朝廷已经定罪。"
           }
         ],
         "mustRecord": [
@@ -3279,7 +3522,11 @@
               ],
               [
                 "耽误国策",
-                "迟疑"
+                "误了国策",
+                "耽搁国策",
+                "拖延国策",
+                "迟疑",
+                "误期"
               ]
             ],
             "resultCeiling": "只能提出参加与记责要求，不得让巡抚自动取得复核主持权。"
@@ -7324,10 +7571,10 @@
           {
             "affordanceTemplateId": "DK-P1-REVIEW-AUTHORITY-OPT-03",
             "title": "县级初核",
-            "actionText": "先由县令按总督列出的项目初核，督抚只审其结果和原件。",
+            "actionText": "先由县令初核，督抚只审初核结果和原件。",
             "targetRef": "actor.qingliu_magistrate",
             "method": "分层复核",
-            "immediateIntent": "先由县令按总督列出的项目初核，督抚只审其结果和原件。",
+            "immediateIntent": "先由县令初核，督抚只审初核结果和原件。",
             "visibleTradeoff": "节省时间，却给县衙留下整理材料的空间",
             "stateEffects": [
               "review.authority",
@@ -9690,6 +9937,7 @@
         "DK-P1-REVIEW-AUTHORITY",
         "DK-P1-REVIEW-INITIATION",
         "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
@@ -9731,6 +9979,7 @@
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-RESPONSIBILITY-RECORD",
         "DK-P1-REVIEW-INITIATION",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
@@ -9752,6 +10001,7 @@
         "DK-P1-EVIDENCE-CUSTODY",
         "DK-P1-REVIEW-AUTHORITY",
         "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-KNOWLEDGE-CHAIN",
         "PCR-P1-REGISTER-CUSTODY",
@@ -9797,12 +10047,38 @@
         "ARC-P1-DEADLINE-RESPONSIBILITY",
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-REVIEW-INITIATION",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
         "PCR-P1-EXECUTION-BOUNDARY",
         "RTA-P1-EXECUTION-BOUNDARY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "REQ-P1-REGISTER-CUSTODY": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "REQ-P1-KNOWLEDGE-CHAIN": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-KNOWLEDGE-CHAIN",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-RESPONSIBILITY-RECORD": [
@@ -9829,17 +10105,6 @@
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "REQ-P1-REGISTER-CUSTODY": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "REQ-P1-REVIEW-AUTHORITY": [
         "AP-P1-QINGLIU-MAGISTRATE",
         "ARC-P1-CUSTODY-CONTEST",
@@ -9848,18 +10113,6 @@
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REVIEW-AUTHORITY",
         "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "REQ-P1-KNOWLEDGE-CHAIN": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-KNOWLEDGE-CHAIN",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-GRAIN-RELIEF": [
@@ -9917,6 +10170,59 @@
       ]
     },
     "byDecisionKernel": {
+      "DK-P1-REVIEW-INITIATION": [
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "DK-P1-REVIEW-INITIATION",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+        "PCR-P1-XUNFU-COUNTERMOVE",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-XUNFU-COUNTERMOVE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-EVIDENCE-CUSTODY": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-DISCLOSURE-SCOPE": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-WITNESS-ACCESS": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-REGISTER-CUSTODY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
       "DK-P1-EXECUTION-SCOPE": [
         "AP-P1-XUNFU-AIDE",
         "ARC-P1-DEADLINE-RESPONSIBILITY",
@@ -9926,19 +10232,6 @@
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
         "PCR-P1-EXECUTION-BOUNDARY",
-        "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-XUNFU-COUNTERMOVE",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-REVIEW-INITIATION": [
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "DK-P1-REVIEW-INITIATION",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
-        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
-        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-XUNFU-COUNTERMOVE",
@@ -9958,48 +10251,12 @@
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "DK-P1-EVIDENCE-CUSTODY": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-WITNESS-ACCESS": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-REGISTER-CUSTODY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "DK-P1-REVIEW-AUTHORITY": [
         "AP-P1-QINGLIU-MAGISTRATE",
         "ARC-P1-CUSTODY-CONTEST",
         "DK-P1-REVIEW-AUTHORITY",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-DISCLOSURE-SCOPE": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REVIEW-AUTHORITY",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
@@ -10081,6 +10338,7 @@
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-RESPONSIBILITY-RECORD",
         "DK-P1-REVIEW-INITIATION",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
@@ -10102,6 +10360,7 @@
         "DK-P1-EVIDENCE-CUSTODY",
         "DK-P1-REVIEW-AUTHORITY",
         "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-KNOWLEDGE-CHAIN",
         "PCR-P1-REGISTER-CUSTODY",
@@ -10143,6 +10402,92 @@
       ]
     },
     "byActor": {
+      "actor.zhejiang_governor": [
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-CAPITAL-FRAMING",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-EXECUTION-BOUNDARY",
+        "PCR-P1-GRAIN-RELIEF",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-LAND-RISK",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "PCR-P1-REGISTER-CUSTODY",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "PCR-P1-RESPONSIBILITY-RECORD",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-CAPITAL-FRAMING",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-GRAIN-RELIEF",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-LAND-RISK",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-REGISTER-CUSTODY",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "actor.qingliu_magistrate": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-GRAIN-RELIEF",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-LAND-RISK",
+        "PCR-P1-REGISTER-CUSTODY",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-GRAIN-RELIEF",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-LAND-RISK",
+        "RTA-P1-REGISTER-CUSTODY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "actor.qingliu_messenger": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
       "source.jiajing": [
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH"
       ],
@@ -10174,54 +10519,6 @@
       ],
       "source.yang_jinshui": [
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY"
-      ],
-      "actor.zhejiang_governor": [
-        "ARC-P1-CUSTODY-CONTEST",
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-CAPITAL-CHANNEL",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "DK-P1-RELIEF-PRIORITY",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "DK-P1-REVIEW-AUTHORITY",
-        "DK-P1-REVIEW-INITIATION",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-CAPITAL-FRAMING",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-EXECUTION-BOUNDARY",
-        "PCR-P1-GRAIN-RELIEF",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-LAND-RISK",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "PCR-P1-REGISTER-CUSTODY",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "PCR-P1-RESPONSIBILITY-RECORD",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-CAPITAL-FRAMING",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-LAND-RISK",
-        "RTA-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-REGISTER-CUSTODY",
-        "RTA-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-RESPONSIBILITY-RECORD",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "actor.zhejiang_xunfu": [
         "ARC-P1-CUSTODY-CONTEST",
@@ -10276,36 +10573,6 @@
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "actor.qingliu_magistrate": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-RELIEF-PRIORITY",
-        "DK-P1-REVIEW-AUTHORITY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-GRAIN-RELIEF",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-LAND-RISK",
-        "PCR-P1-REGISTER-CUSTODY",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-LAND-RISK",
-        "RTA-P1-REGISTER-CUSTODY",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "actor.reform_clerk": [
         "AP-P1-REFORM-CLERK",
         "ARC-P1-CUSTODY-CONTEST",
@@ -10355,15 +10622,68 @@
         "ARC-P1-DEADLINE-RESPONSIBILITY",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "actor.qingliu_messenger": [
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ]
     },
     "byLocation": {},
     "byStateDependency": {
+      "evidence.chainStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-REGISTER-CUSTODY"
+      ],
+      "evidence.primaryCustodianRef": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY"
+      ],
+      "evidence.copyStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY"
+      ],
+      "evidence.archiveSealStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY"
+      ],
+      "knowledgeTransfers": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
       "reform.executionMode": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
         "ARC-P1-FIRST-REPORT-FRAMING",
@@ -10436,49 +10756,6 @@
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "evidence.chainStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-REGISTER-CUSTODY"
-      ],
-      "evidence.primaryCustodianRef": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
-      ],
-      "evidence.copyStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
-      ],
-      "evidence.archiveSealStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
-      ],
       "review.authority": [
         "AP-P1-QINGLIU-MAGISTRATE",
         "ARC-P1-CUSTODY-CONTEST",
@@ -10496,16 +10773,6 @@
         "DK-P1-REVIEW-AUTHORITY",
         "PCR-P1-REVIEW-AUTHORITY",
         "RTA-P1-REVIEW-AUTHORITY"
-      ],
-      "knowledgeTransfers": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-WITNESS-ACCESS",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "witness.accessStatus": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -10644,6 +10911,7 @@
         "DK-P1-REVIEW-AUTHORITY",
         "DK-P1-REVIEW-INITIATION",
         "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
@@ -10682,6 +10950,7 @@
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-RESPONSIBILITY-RECORD",
         "DK-P1-REVIEW-INITIATION",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
@@ -10692,6 +10961,306 @@
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-XUNFU-COUNTERMOVE"
+      ],
+      "SEC-P1-02": [
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-REGISTER-CUSTODY",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-REGISTER-CUSTODY",
+        "RTA-P1-REVIEW-AUTHORITY"
+      ],
+      "EVP-P1-QINGLIU-REGISTER-ANOMALY": [
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY"
+      ],
+      "evidence.qingliu_register_anomaly": [
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY"
+      ],
+      "EVIDENCE_PROFILE": [
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY"
+      ],
+      "KNOWLEDGE_BOUNDARY": [
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY"
+      ],
+      "REQ-P1-EXECUTION-BOUNDARY": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+        "PCR-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "REQ-P1-REGISTER-CUSTODY": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "REQ-P1-KNOWLEDGE-CHAIN": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-REVIEW-INITIATION": [
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "DK-P1-REVIEW-INITIATION",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+        "PCR-P1-XUNFU-COUNTERMOVE",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-XUNFU-COUNTERMOVE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-EVIDENCE-CUSTODY": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-DISCLOSURE-SCOPE": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-WITNESS-ACCESS": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-REGISTER-CUSTODY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "ARC-P1-DEADLINE-RESPONSIBILITY": [
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-REVIEW-INITIATION",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+        "PCR-P1-EXECUTION-BOUNDARY",
+        "PCR-P1-RESPONSIBILITY-RECORD",
+        "PCR-P1-XUNFU-COUNTERMOVE",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "RTA-P1-XUNFU-COUNTERMOVE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "ARC-P1-CUSTODY-CONTEST": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-REGISTER-CUSTODY",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-REGISTER-CUSTODY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "actor.zhejiang_governor": [
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-CAPITAL-FRAMING",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-EXECUTION-BOUNDARY",
+        "PCR-P1-GRAIN-RELIEF",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-LAND-RISK",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "PCR-P1-REGISTER-CUSTODY",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "PCR-P1-RESPONSIBILITY-RECORD",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-CAPITAL-FRAMING",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-GRAIN-RELIEF",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-LAND-RISK",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-REGISTER-CUSTODY",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "actor.qingliu_magistrate": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-GRAIN-RELIEF",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "PCR-P1-LAND-RISK",
+        "PCR-P1-REGISTER-CUSTODY",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-GRAIN-RELIEF",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-LAND-RISK",
+        "RTA-P1-REGISTER-CUSTODY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "actor.qingliu_messenger": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "evidence.chainStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-REGISTER-CUSTODY"
+      ],
+      "evidence.primaryCustodianRef": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY"
+      ],
+      "evidence.copyStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY"
+      ],
+      "evidence.archiveSealStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "PCR-P1-REGISTER-CUSTODY",
+        "RTA-P1-REGISTER-CUSTODY"
+      ],
+      "knowledgeTransfers": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DM1566-C01-POLICY-COUNCIL": [
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH"
@@ -10705,18 +11274,6 @@
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY"
-      ],
-      "REQ-P1-EXECUTION-BOUNDARY": [
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-REVIEW-INITIATION",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
-        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
-        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
-        "PCR-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-EXECUTION-BOUNDARY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-RESPONSIBILITY-RECORD": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
@@ -10743,19 +11300,6 @@
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "DK-P1-REVIEW-INITIATION": [
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "DK-P1-REVIEW-INITIATION",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
-        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
-        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
-        "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-XUNFU-COUNTERMOVE",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "DK-P1-RESPONSIBILITY-RECORD": [
         "AP-P1-XUNFU-AIDE",
         "ARC-P1-DEADLINE-RESPONSIBILITY",
@@ -10766,24 +11310,6 @@
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
         "PCR-P1-RESPONSIBILITY-RECORD",
         "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-RESPONSIBILITY-RECORD",
-        "RTA-P1-XUNFU-COUNTERMOVE",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "ARC-P1-DEADLINE-RESPONSIBILITY": [
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "DK-P1-REVIEW-INITIATION",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
-        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
-        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
-        "PCR-P1-EXECUTION-BOUNDARY",
-        "PCR-P1-RESPONSIBILITY-RECORD",
-        "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
@@ -10838,54 +11364,6 @@
       ],
       "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY": [
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE"
-      ],
-      "actor.zhejiang_governor": [
-        "ARC-P1-CUSTODY-CONTEST",
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-CAPITAL-CHANNEL",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "DK-P1-RELIEF-PRIORITY",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "DK-P1-REVIEW-AUTHORITY",
-        "DK-P1-REVIEW-INITIATION",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-CAPITAL-FRAMING",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-EXECUTION-BOUNDARY",
-        "PCR-P1-GRAIN-RELIEF",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-LAND-RISK",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "PCR-P1-REGISTER-CUSTODY",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "PCR-P1-RESPONSIBILITY-RECORD",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-CAPITAL-FRAMING",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-LAND-RISK",
-        "RTA-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-REGISTER-CUSTODY",
-        "RTA-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-RESPONSIBILITY-RECORD",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "actor.zhejiang_xunfu": [
         "ARC-P1-CUSTODY-CONTEST",
@@ -11026,102 +11504,6 @@
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "SEC-P1-02": [
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-REVIEW-AUTHORITY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-REGISTER-CUSTODY",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-REGISTER-CUSTODY",
-        "RTA-P1-REVIEW-AUTHORITY"
-      ],
-      "REQ-P1-REGISTER-CUSTODY": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-EVIDENCE-CUSTODY": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-WITNESS-ACCESS": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-REGISTER-CUSTODY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "ARC-P1-CUSTODY-CONTEST": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-REVIEW-AUTHORITY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-REGISTER-CUSTODY",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-REGISTER-CUSTODY",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "actor.qingliu_magistrate": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-RELIEF-PRIORITY",
-        "DK-P1-REVIEW-AUTHORITY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-GRAIN-RELIEF",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-LAND-RISK",
-        "PCR-P1-REGISTER-CUSTODY",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-LAND-RISK",
-        "RTA-P1-REGISTER-CUSTODY",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "actor.reform_clerk": [
         "AP-P1-REFORM-CLERK",
         "ARC-P1-CUSTODY-CONTEST",
@@ -11137,49 +11519,6 @@
         "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REGISTER-CUSTODY",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "evidence.chainStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-REGISTER-CUSTODY"
-      ],
-      "evidence.primaryCustodianRef": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
-      ],
-      "evidence.copyStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
-      ],
-      "evidence.archiveSealStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "DK-P1-EVIDENCE-CUSTODY",
-        "DK-P1-WITNESS-ACCESS",
-        "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
       ],
       "REQ-P1-REVIEW-AUTHORITY": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -11200,19 +11539,6 @@
         "RTA-P1-REVIEW-AUTHORITY",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "DK-P1-DISCLOSURE-SCOPE": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "review.authority": [
         "AP-P1-QINGLIU-MAGISTRATE",
         "ARC-P1-CUSTODY-CONTEST",
@@ -11230,28 +11556,6 @@
         "DK-P1-REVIEW-AUTHORITY",
         "PCR-P1-REVIEW-AUTHORITY",
         "RTA-P1-REVIEW-AUTHORITY"
-      ],
-      "REQ-P1-KNOWLEDGE-CHAIN": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "knowledgeTransfers": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-WITNESS-ACCESS",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-KNOWLEDGE-CHAIN",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "witness.accessStatus": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -11593,11 +11897,6 @@
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "actor.qingliu_messenger": [
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "review.initiationStatus": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
         "FLOOR-P1-S1-XUNFU-RESPONSE"
@@ -11665,6 +11964,7 @@
         "DK-P1-REVIEW-AUTHORITY",
         "DK-P1-REVIEW-INITIATION",
         "DK-P1-WITNESS-ACCESS",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
@@ -11700,5 +12000,5 @@
       ]
     }
   },
-  "immutableHash": "50FC5E2FE44461C53B6B552C4D23690BE84F3C6AD0D5943AC98F18B66B8B2359"
+  "immutableHash": "B5A88A00EB91FE8281482BDD55683D3AED9B7422B5E3C834DF8CA5BA9EE0208A"
 }

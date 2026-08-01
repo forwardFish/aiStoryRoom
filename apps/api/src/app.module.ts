@@ -19,15 +19,21 @@ import { PresenceHeartbeatRateLimitGuard } from "./api-transport";
 import { ContinuousStoryV2Module } from "./continuous-story-v2/continuous-story-v2.module";
 import { SoloStoryEngineModule } from "./solo-story-engine/solo-story-engine.module";
 import { MetricsController } from "./observability/metrics.controller";
+import { OpenNovelAdapterController } from "./openovel-adapter/openovel-adapter.controller";
+import { OpenNovelAdapterService } from "./openovel-adapter/openovel-adapter.service";
+import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.controller";
+import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
-  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController],
+  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController],
   providers: [
     StoryService,
     StoryTaskOutboxService,
     RoomsService,
-    PresenceHeartbeatRateLimitGuard
+    PresenceHeartbeatRateLimitGuard,
+    OpenNovelAdapterService,
+    OpenNovelRuntimeClient
   ]
 })
 export class AppModule {}

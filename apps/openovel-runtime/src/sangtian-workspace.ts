@@ -1,7 +1,13 @@
 import path from "node:path";
+import templatesPackage from "@ai-story/templates";
 import { readJson, writeAtomic, writeJsonAtomic } from "./io.js";
 import type { OpenNovelOption, RunMetadata } from "./types.js";
 import type { WorkspacePaths } from "./paths.js";
+
+const {
+  createInitialPartOneState,
+  loadPartOneRuntimePackage,
+} = templatesPackage;
 
 type OpeningAsset = {
   packageVersion: string;
@@ -17,6 +23,7 @@ type OpeningAsset = {
     description: string;
     intent?: string;
     method?: string;
+    evidenceProfileId?: string;
     concreteCost?: string;
     expectedCountermove?: string;
   }>;
@@ -34,6 +41,55 @@ type NarrativeStyle = {
   forbiddenModernPhrases?: string[];
   forbiddenSystemPhrases?: string[];
   forbiddenAiSummaryPatterns?: string[];
+};
+
+type WorldStartAsset = {
+  state?: {
+    scene?: {
+      objectStates?: Array<{
+        label?: string;
+        contentsState?: string;
+        closureState?: string;
+        continuityNote?: string;
+      }>;
+    };
+  };
+};
+
+type EvidenceProfileAsset = {
+  assetId: string;
+  assetType: "EVIDENCE_PROFILE";
+  payload: {
+    evidenceProfileId: string;
+    targetRef: string;
+    carrierRef: string;
+    openingReport: {
+      statement: string;
+      statementClass: string;
+      validationSubjects: string[];
+      reportedByActorRef: string;
+      carriedByActorRef: string;
+      knownByActorRefs: string[];
+      allowedAssertions: string[];
+      forbiddenAssertions: string[];
+    };
+    openingBeatContract: {
+      objective: string;
+      moves: string[];
+      requiredAnchorGroups: string[][];
+      stopCondition: string;
+    };
+    revealPolicy: {
+      currentTier: string;
+      tiers: Array<{
+        tier: string;
+        availableWhen: string[];
+        mayReveal: string[];
+        mayNotReveal: string[];
+      }>;
+    };
+    invariants: string[];
+  };
 };
 
 const FRONTEND_FILES = [
@@ -73,21 +129,69 @@ export async function seedSangtianWorkspace(
     "narrative",
     "style-profile.approved.json",
   );
+  const worldStartPath = path.join(
+    projectRoot,
+    "packages",
+    "templates",
+    "authoring",
+    "sangtian",
+    "world-start.json",
+  );
   const opening = await readJson<OpeningAsset | null>(openingPath, null);
   if (!opening) throw new Error(`Sangtian opening asset is missing: ${openingPath}`);
   const style = await readJson<NarrativeStyle>(stylePath, {});
+  const worldStart = await readJson<WorldStartAsset>(worldStartPath, {});
+  const partOneRuntime = loadPartOneRuntimePackage(
+    "sangtian",
+    path.join(projectRoot, "packages", "templates", "config"),
+  ).package;
+  const evidenceProfiles = partOneRuntime.assets
+    .filter((asset) => asset.assetType === "EVIDENCE_PROFILE") as unknown as EvidenceProfileAsset[];
+  const evidenceProfilesById = new Map(evidenceProfiles.flatMap((asset) => [
+    [asset.assetId, asset],
+    [asset.payload.evidenceProfileId, asset],
+  ]));
+  for (const decision of opening.decisions) {
+    if (decision.evidenceProfileId && !evidenceProfilesById.has(decision.evidenceProfileId)) {
+      throw new Error(
+        `Sangtian opening decision ${decision.decisionId} references missing evidence profile ${decision.evidenceProfileId}`,
+      );
+    }
+  }
+  const objectInvariantLines = renderObjectInvariantLines(
+    worldStart.state?.scene?.objectStates || [],
+  );
 
-  const openingOptions: OpenNovelOption[] = opening.decisions.map((decision, index) => ({
-    id: decision.decisionId || `opening_${index + 1}`,
-    label: decision.description.trim(),
-    key: true,
-    effect: {
-      intent: decision.method || decision.intent,
-      consequence: [decision.concreteCost, decision.expectedCountermove].filter(Boolean).join("；"),
-      risk: index === 0 ? "medium" : "high",
-      reversible: false,
-    },
-  }));
+  const openingOptions: OpenNovelOption[] = opening.decisions.map((decision, index) => {
+    const evidenceProfile = decision.evidenceProfileId
+      ? evidenceProfilesById.get(decision.evidenceProfileId)
+      : undefined;
+    return {
+      id: decision.decisionId || `opening_${index + 1}`,
+      label: decision.description.trim(),
+      key: true,
+      effect: {
+        intent: decision.method || decision.intent,
+        consequence: [decision.concreteCost, decision.expectedCountermove].filter(Boolean).join("；"),
+        ...(evidenceProfile
+          ? {
+            beatContract: {
+              sourceRef: evidenceProfile.assetId,
+              ...evidenceProfile.payload.openingBeatContract,
+            },
+            knowledgeBoundary: {
+              sourceRef: evidenceProfile.assetId,
+              allowed: evidenceProfile.payload.openingReport.allowedAssertions,
+              forbidden: evidenceProfile.payload.openingReport.forbiddenAssertions,
+              subjects: evidenceProfile.payload.openingReport.validationSubjects,
+            },
+          }
+          : {}),
+        risk: index === 0 ? "medium" : "high",
+        reversible: false,
+      },
+    };
+  });
 
   const openingCanon = [
     `# ${opening.story.title}`,
@@ -114,6 +218,7 @@ export async function seedSangtianWorkspace(
       "@include story/context-cards/governor/CARD.md",
       "@include story/context-cards/xunfu-clerk/CARD.md",
       "@include story/context-cards/qingliu-messenger/CARD.md",
+      "@include story/context-cards/qingliu-register-anomaly/CARD.md",
       "",
     ].join("\n")),
     writeAtomic(paths.cardsAutoManifest, ""),
@@ -122,6 +227,7 @@ export async function seedSangtianWorkspace(
     writeAtomic(paths.arcLog, arcSeed()),
     writeAtomic(paths.storyMemory, storyMemorySeed()),
     writeJsonAtomic(paths.currentOptions, openingOptions),
+    writeJsonAtomic(paths.partOneState, createInitialPartOneState(partOneRuntime)),
     writeJsonAtomic(paths.jobs, { storykeeper: { status: "IDLE" }, updatedAt: metadata.createdAt }),
   ]);
 
@@ -146,7 +252,7 @@ export async function seedSangtianWorkspace(
       "",
       "- 浙江总督：玩家角色，权力很重，处境却受皇命、地方责任和证据不足同时约束。不要替他作出玩家尚未选择的重大承诺。",
       "- 巡抚书吏：奉命等候回文，谨慎守礼，但会把总督的态度和每一句答复带回巡抚衙门。他只知道自己携带的催办公文、取回答复的差事和亲眼所见；不知道清流县册内容、具体田亩数字或巡抚未公开的另行安排。",
-      "- 清流县令亲随：只负责送来县令的报疑密信并候令；他说不出原册内容，也不能替县令指认幕后人物。",
+      "- 清流县令亲随：只负责送来县令的报疑密信并候令；他能复述县令在密信中写明的那一层数字不合，除此以外说不出原册细节，也不能替县令指认幕后人物。",
       "- 浙江巡抚：此刻不在内厅。他要尽快推进改桑，并争夺第一份奏报的解释权，会通过书吏、公文和后续动作施压。",
       "- 清流县令：此刻不在内厅。他最早发现县册疑点，但证据不完整，既怕误告，也怕材料被动。",
     ].join("\n"),
@@ -162,10 +268,11 @@ export async function seedSangtianWorkspace(
       "",
       "- 朝廷要求浙江三日内具报改桑执行方案。",
       "- 杭州米价已连涨，已有米行闭门；这是正在加重的民生压力，不是已经爆发的全城粮荒。",
-      "- 清流县令密信只说县册数字似有改痕，没有随信附原册、田契、暗账或经手人具结。",
+      "- 清流县令密信只载报疑；除密信本身外，没有其他证据材料随信送到总督府。",
       "- 巡抚催办公文仍待总督答复，玩家尚未签发改桑放行文书。",
       "- 第一部分的核心是执行权、证据权与第一份奏报解释权的争夺；不能提前完成破案或御前裁决。",
       "- 任何关键证据、正式文书、具名人物和秘密都必须由既有 Canon、Context Card 或自然查证过程进入故事。",
+      ...objectInvariantLines,
     ].join("\n"),
     "open-threads.md": [
       "## Open Threads",
@@ -189,7 +296,7 @@ export async function seedSangtianWorkspace(
       "## Forbidden",
       "",
       "- 不得把“报疑”写成已经证实的篡改，更不得直接宣布巡抚或商会是幕后主使。",
-      "- 不得凭空出现暗账、田契副本、口供、密令或已经完成的封存程序；需要时让人物通过行动去寻找。",
+      "- 关键证据只限 Canon 与 Context Card 已明确建立的材料；新的证据对象必须先经玩家选择的查找、调取或取得过程进入现场。",
       "- 不得把内部规则、状态字段、验证语言、利弊分析或选项说明写进小说正文。",
       "- 避免现代报告腔和系统腔。用人物、场面、话语、迟疑和反制呈现压力。",
       "- 不要复述刚刚发生的开场，也不要让所有人物停住等待总督一句话；NPC 应依各自职责主动试探和传递压力。",
@@ -220,8 +327,16 @@ export async function seedSangtianWorkspace(
     writeCard(paths, "qingliu-messenger", ["县令亲随", "清流县令亲随", "亲随"], [
       "# 清流县令亲随",
       "",
-      "连夜送来清流县令密信，只知道县令报疑、原册没有随信送来。他能受命返回清流传话，但不能替县令提供不存在的证据。",
+      "连夜送来清流县令密信，只知道县令报疑、原册没有随信送来，以及县令在信中明确写下的那一层数字不合。他能受命返回清流传话，但不能替县令提供不存在的证据。",
     ].join("\n")),
+    writeCard(
+      paths,
+      "qingliu-register-anomaly",
+      ["县册", "密信", "数字不符", "数字不合", "清流"],
+      renderEvidenceProfileCard(
+        evidenceProfilesById.get("EVP-P1-QINGLIU-REGISTER-ANOMALY"),
+      ),
+    ),
     writeCard(paths, "governor-runner", ["总督府差役", "差役", "值差", "府中差人"], [
       "# 总督府差役",
       "",
@@ -251,6 +366,53 @@ export async function seedSangtianWorkspace(
     openingCanon,
     recentOpening,
   };
+}
+
+function renderEvidenceProfileCard(profile: EvidenceProfileAsset | undefined) {
+  if (!profile) {
+    throw new Error("Sangtian Qingliu register evidence profile is missing");
+  }
+  const openingReport = profile.payload.openingReport;
+  return [
+    "# 清流县册报疑",
+    "",
+    "## 已进入开场的说法",
+    "",
+    `- ${openingReport.statement}`,
+    "- 原册没有随密信送到总督府。",
+    "- 县令亲随只受命转述县令写入密信的报疑，不掌握原册的其他细节。",
+    "",
+    "## 证据地位",
+    "",
+    "- 以上内容是清流县令经亲随和密信传来的说法，浙江总督尚未独立核实。",
+    "- 数字不合可以来自误抄、漏算或故意改动；当前不能确定原因，更不能据此定罪。",
+    "",
+    "## 后续揭示规则",
+    "",
+    "- 只有原册、合法见证抄件或口供经玩家选择的查验路径进入 Canon 后，才能增加该事件明确建立的新事实。",
+    "- 本卡不能自动补出精确亩数、册簿版本、册页位置、墨迹印章、经手人、保管状态或幕后关系。",
+    "",
+    `- 因果来源：${profile.assetId}；改编证据入口，不冒充原著逐字事实。`,
+  ].join("\n");
+}
+
+function renderObjectInvariantLines(
+  states: NonNullable<NonNullable<NonNullable<WorldStartAsset["state"]>["scene"]>["objectStates"]>,
+) {
+  return states.flatMap((state) => {
+    const label = String(state.label || "").trim();
+    if (!label) return [];
+    const facts = [
+      state.contentsState === "EMPTY" ? "为空" : "",
+      state.closureState === "CLOSED" ? "合拢" : "",
+      state.closureState === "OPEN" ? "开启" : "",
+    ].filter(Boolean);
+    if (!facts.length) return [];
+    const continuity = String(state.continuityNote || "").trim();
+    return [
+      `- 持久物件事实：${label}当前${facts.join("且")}；${continuity || "在 Canon 明确发生改变前保持此状态。"}`,
+    ];
+  });
 }
 
 function foregroundTemplate() {
@@ -296,7 +458,7 @@ function renderTone(style: NarrativeStyle) {
     "- 使用中文第三人称近距离叙事，镜头贴近浙江总督能感知的场面。",
     "- 语言克制、具体，有《大明王朝1566》式的权力分寸、含蓄对话和现实压力；学习其结构与气质，不复制原句。",
     "- 用动作、停顿、称谓、递话和人物之间的试探呈现政治含义，不替读者总结“核心矛盾”和“决策代价”。",
-    "- 一回合只推进一个自然 beat，既回应玩家行动，也让世界或 NPC 向前走一步，停在新的可行动时刻。",
+    "- 一回合只推进一个自然 beat。回应玩家行动，并让在场人物给出符合职责的即时反应；这本身就是推进。停在新的可行动时刻，不为凑推进量另造外部事件。",
     ...profileLines.map((line) => `- ${line}`),
   ].join("\n");
 }
@@ -331,9 +493,27 @@ function arcSeed() {
     "",
     "第一部分：急令与暗册。",
     "",
-    "当前段落：第一节“急令压案”。先形成答复、责任和复核方式，再推进县册现场。不要急着引入完整暗账、商会主线或京师裁决。",
+    "## 当前段落",
     "",
-    "松弛节奏目标：G00—T05 让开场决定产生反制，并自然形成去清流县或调取材料的下一步入口。玩家选择可以改变路径，不要求每五回合机械结束一节。",
+    "第一节“急令压案”。先形成答复、责任和复核方式，再推进县册现场。不要急着引入完整暗账、商会主线或京师裁决。",
+    "",
+    "## 节奏与结构期限",
+    "",
+    "- T01—T02：开场选择必须得到在场人物的具体回应，并改变答复、责任或查验路径中的至少一项。",
+    "- floor T03，前提：开场选择已经被当场执行或明确受阻。最迟在本回合让一个已经建立的外部压力独立推进，例如巡抚继续催逼、清流来报、驿件抵达或粮价压力进入眼前；只推进压力，不凭空带来证据或结论。",
+    "- floor T05，前提：玩家仍在第一节且未主动离开此线。最迟在本回合形成一个可以实际采取的下一步入口：去清流、调取材料、确定复核参与者或给出正式答复边界。路径由玩家此前选择决定，不强制固定结果。",
+    "",
+    "## 防停滞规则",
+    "",
+    "- 不连续两回合只起草、改字、复述同一份文书或等待同一人回话。出现这种趋势时，下一回合由已建立的 NPC、期限或民生压力先动一步。",
+    "- 每回合至少推进情节、关系或风险之一；安静场面可以有，但不能用气氛替代变化。",
+    "- floor 到期时只把裸世界事件写进 This Turn；不得替总督决定如何响应。",
+    "",
+    "## 当前伏笔",
+    "",
+    "- 县册只有报疑，原册、经手链和具体改动仍待查证。",
+    "- 巡抚要的不只是执行速度，也包括谁先写出浙江局势的第一版说法。",
+    "- 米价与米行闭门正在把官场争执推向真实民生代价。",
   ].join("\n");
 }
 

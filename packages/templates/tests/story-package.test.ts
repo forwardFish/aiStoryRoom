@@ -87,7 +87,7 @@ test("loads the immutable Sangtian Part One authoring runtime package", () => {
   assert.equal(loaded.package.partId, "PART-01");
   assert.equal(loaded.package.sections.length, 4);
   assert.equal(loaded.package.requirements.length, 12);
-  assert.equal(loaded.package.assets.length, 54);
+  assert.equal(loaded.package.assets.length, 55);
   assert.equal(loaded.package.contentCounts.narrativeScenePatterns, 3);
   assert.equal(loaded.package.assets.filter((asset) => asset.assetId.startsWith("DK-P1-")).length, 15);
   assert.equal(loaded.package.styleProfile.narrativeBudget.minCharacters, 300);
@@ -174,6 +174,12 @@ test("issuing the limited-trial reply delivers it through the established reply 
     ),
     true
   );
+  assert.equal(
+    playerBeat.requiredTermGroups.some(
+      (group) => group.includes("压价买田") && group.includes("压价买民田")
+    ),
+    true
+  );
 });
 
 test("responsibility action beats preserve both the three-day limit and the governor's liability in natural prose", () => {
@@ -207,7 +213,7 @@ test("responsibility action beats preserve both the three-day limit and the gove
   assert.deepEqual(
     responsibilityBeat.requiredTermGroups,
     [
-      ["三日限期", "三日期限", "三日之限", "三日之内"],
+      ["三日限期", "三日期限", "三日之限", "三日之内", "三日之期", "三日具报"],
       [
         "延误责任由本督承担",
         "责任由本督承担",
@@ -378,7 +384,7 @@ test("responsibility choices preserve an already-issued limited-trial reply inst
     responsibility.decisionAffordances.map((item) => item.actionText),
     [
       "请巡抚在刚刚写成的改桑放行回文上共同具名，与总督共同承担清流试办和复核责任。",
-      "维持刚刚写成的放行回文不改；由总督另具责任说明，逐项写明督抚对复核与材料披露的分歧，各自成文、各自担责。"
+      "维持放行回文不改，另具督抚责任说明：巡抚要求派员参与复核而总督尚未同意，巡抚若有异议须另行成文，督抚各担其责。"
     ]
   );
   for (const option of responsibility.decisionAffordances) {
@@ -408,6 +414,26 @@ test("responsibility choices preserve an already-issued limited-trial reply inst
     )?.holderRef,
     "actor.zhejiang_governor"
   );
+  assert.match(
+    recorded.event.sceneAfter.documentStates?.find(
+      (item) => item.documentRef === "document.responsibility_record"
+    )?.continuityNote || "",
+    /正文目前只由总督知晓.*未经玩家明确出示、宣读或移交/
+  );
+  assert.match(
+    recorded.event.authoritativeNpcReactions[0]?.action || "",
+    /只能记下总督另具责任说明这件事/
+  );
+  assert.doesNotMatch(
+    recorded.event.authoritativeNpcReactions[0]?.action || "",
+    /拒绝.*联署/
+  );
+  const responsibilityBeat = recorded.event.narrativePlan.sceneBeats.find(
+    (beat) => beat.sourceType === "PLAYER_ACTION" && /督抚责任说明/.test(beat.action)
+  );
+  assert.match(responsibilityBeat?.resultCeiling || "", /责任说明中只写三项/);
+  assert.match(responsibilityBeat?.resultCeiling || "", /责任说明留在总督案前，不交给巡抚书吏/);
+  assert.match(responsibilityBeat?.resultCeiling || "", /不得补写原册所在地、保管人、移交办法、材料披露范围/);
 });
 
 test("rejects a tampered Sangtian Part One authoring runtime package", () => {
@@ -529,6 +555,17 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
         settlement.event.sceneAfter.situation,
         /巡抚书吏已经当场追问总督为何暂缓签发/
       );
+      assert.equal(
+        settlement.event.narrativePlan.sceneBeats
+          .find((beat) => beat.sourceType === "NPC_REACTION")
+          ?.requiredTermGroups
+          .some((group) =>
+            group.includes("未即刻签发")
+            && group.includes("没有落印")
+            && group.includes("朱印未动")
+          ),
+        true
+      );
       assert.doesNotMatch(
         settlement.event.sceneAfter.situation,
         /清流县令亲随留在厅中等候/
@@ -536,12 +573,21 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
     }
     if (turn === 3) {
       assert.equal(settlement.event.sectionTransitioned, true);
+      assert.equal(
+        settlement.event.authoritativeWorldMoves.some(
+          (move) => move.sourceType === "NEXT_DECISION_PRESSURE"
+        ),
+        false,
+        "the destination scene already owns the next playable question"
+      );
       assert.match(
         settlement.event.actionText,
         /请巡抚在刚刚写成的改桑放行回文上共同具名/
       );
       const executionPressure = settlement.event.authoritativeWorldMoves.find(
-        (move) => move.sourceType === "DUE_CONSEQUENCE"
+        (move) =>
+          move.sourceType === "DUE_CONSEQUENCE"
+          && move.sourceId === "PCR-P1-EXECUTION-BOUNDARY"
       );
       assert.match(executionPressure?.resultCeiling || "", /不得换算为一日一变、每日、每时等频率/);
       assert.equal(
@@ -565,6 +611,13 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
       const transition = settlement.event.authoritativeWorldMoves.find(
         (move) => move.sourceType === "SECTION_TRANSITION"
       );
+      const transitionIndex = settlement.event.authoritativeWorldMoves.findIndex(
+        (move) => move.sourceType === "SECTION_TRANSITION"
+      );
+      const firstDueIndex = settlement.event.authoritativeWorldMoves.findIndex(
+        (move) => move.sourceType === "DUE_CONSEQUENCE"
+      );
+      assert.ok(transitionIndex >= 0 && firstDueIndex > transitionIndex);
       assert.deepEqual(
         transition?.requiredTermGroups[0],
         ["嘉靖三十五年五月初九巳时", "五月初九巳时", "次日巳时"]
@@ -574,6 +627,25 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
         ["杭州总督府签押房", "签押房"]
       );
       assert.match(transition?.resultCeiling || "", /不得声称已经知道这些文书的笔迹、户头、具体内容或真伪/);
+      const narrativeWorldBeats = settlement.event.narrativePlan.sceneBeats
+        .filter((beat) => beat.sourceType === "WORLD_MOVE");
+      assert.equal(
+        narrativeWorldBeats.filter((beat) => beat.beatId.includes("+")).length,
+        1,
+        "same-actor due consequences should become one natural dialogue beat"
+      );
+      assert.match(
+        narrativeWorldBeats.find((beat) => beat.beatId.includes("+"))?.action || "",
+        /同一次当面反制/
+      );
+      assert.match(
+        settlement.event.narrativePlan.dramaticTask,
+        /两封文书.*督抚责任关系/
+      );
+      assert.doesNotMatch(
+        settlement.event.narrativePlan.dramaticTask,
+        /原册、副本、封条、田契/
+      );
       assert.equal(
         settlement.event.narrativePlan.narrativeCeiling.some((line) =>
           line.includes("不复述 Recent Canon 已写过的文书状态")
@@ -665,7 +737,7 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
   assert.equal(nextPressureMoveCount, 5);
 });
 
-test("cannot mark a due Part One consequence paid when its visible payoff beat is absent", () => {
+test("defers a due Part One consequence until its actor can legally enter the scene", () => {
   const pkg = loadPartOneRuntimePackage("sangtian").package;
   const initial = createInitialPartOneState(pkg);
   const first = settlePartOneAction(pkg, initial, {
@@ -684,14 +756,29 @@ test("cannot mark a due Part One consequence paid when its visible payoff beat i
     actionText: option.actionText,
     targetRef: option.targetRef
   }, 2);
-  assert.equal(second.dueConsequences.length, 1);
-  const withoutPayoff = structuredClone(second);
-  withoutPayoff.event.authoritativeWorldMoves = withoutPayoff.event.authoritativeWorldMoves
-    .filter((move) => move.sourceType !== "DUE_CONSEQUENCE");
+  assert.equal(second.dueConsequences.length, 0);
+  assert.equal(
+    second.event.authoritativeWorldMoves.some(
+      (move) => move.sourceType === "DUE_CONSEQUENCE"
+    ),
+    false
+  );
+  assert.equal(
+    second.event.sceneAfter.presentActorRefs.includes("actor.xunfu_aide"),
+    false
+  );
+  assert.equal(
+    second.proposedState.pendingConsequences.some(
+      (item) =>
+        item.consequenceId === first.event.createdPendingConsequenceIds[0]
+        && item.status === "DUE"
+    ),
+    true
+  );
   assert.throws(
     () => finalizePartOneSettlement(
-      withoutPayoff,
-      second.dueConsequences.map((item) => item.consequenceId)
+      second,
+      [first.event.createdPendingConsequenceIds[0]]
     ),
     /PART_ONE_CONSEQUENCE_PAYOFF_NOT_AUTHORIZED/
   );

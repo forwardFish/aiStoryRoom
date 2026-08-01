@@ -55,6 +55,10 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
         body: JSON.stringify({ worldId: state.story.id, roleKey: role.key, idempotencyKey, resumeExisting: !startFresh })
       });
       const payload = await response.json().catch(() => null);
+      if (requiresAuthentication(response, payload)) {
+        redirectToLogin(browserWindow);
+        return;
+      }
       const runId = payload?.id || payload?.runId || payload?.roomId;
       if (!response.ok || !runId) throw new Error(payload?.message || `The story could not be started (HTTP ${response.status}).`);
       storage?.removeItem?.(pendingKey);
@@ -143,6 +147,26 @@ function apiBase(location = globalThis.location) {
 
 function apiOverride(location = globalThis.location) {
   try { return new URL(location.href).searchParams.get("apiBase") || ""; } catch { return ""; }
+}
+
+function requiresAuthentication(response, payload) {
+  return response?.status === 401 || payload?.code === "AUTHENTICATION_REQUIRED";
+}
+
+function redirectToLogin(browserWindow) {
+  const location = browserWindow?.location;
+  let returnTo = `${location?.pathname || ""}${location?.search || ""}${location?.hash || ""}`;
+  if (!returnTo.startsWith("/")) {
+    try {
+      const current = new URL(location?.href || "", "http://many-worlds.invalid");
+      returnTo = `${current.pathname}${current.search}${current.hash}`;
+    } catch {
+      returnTo = "/";
+    }
+  }
+  const loginUrl = `/auth?returnTo=${encodeURIComponent(returnTo || "/")}`;
+  if (typeof location?.assign === "function") location.assign(loginUrl);
+  else if (location) location.href = loginUrl;
 }
 
 function escapeHtml(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;"); }

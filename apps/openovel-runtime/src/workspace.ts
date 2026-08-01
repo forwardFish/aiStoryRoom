@@ -1,5 +1,6 @@
 import path from "node:path";
-import { readdir } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { open, readdir, rename, stat, unlink } from "node:fs/promises";
 import {
   appendJsonl,
   appendText,
@@ -16,10 +17,13 @@ import { workspacePaths, type WorkspacePaths } from "./paths.js";
 import { seedSangtianWorkspace } from "./sangtian-workspace.js";
 import {
   OPENOVEL_RUNTIME_MODE,
+  type MirrorEnvelope,
+  type MirrorEvent,
   type OpenNovelOption,
   type ProviderRequest,
   type ProviderResult,
   type RunMetadata,
+  type RuntimeWarning,
   type SceneEvent,
   type StorykeeperInboxItem,
   type TurnResult,
@@ -109,6 +113,98 @@ export class FileStoryWorkspace {
     return getStorySnapshot(this.paths(runId));
   }
 
+  async acquireForegroundLease(
+    runId: string,
+    ttlMs = foregroundLeaseTtl(),
+  ): Promise<() => Promise<void>> {
+    const paths = this.paths(runId);
+    return this.acquireWorkspaceLease(
+      runId,
+      paths.foregroundLock,
+      "RUN_FOREGROUND_BUSY",
+      ttlMs,
+    );
+  }
+
+  async acquireStorykeeperLease(
+    runId: string,
+    ttlMs = storykeeperLeaseTtl(),
+  ): Promise<() => Promise<void>> {
+    const paths = this.paths(runId);
+    return this.acquireWorkspaceLease(
+      runId,
+      paths.storykeeperLock,
+      "RUN_STORYKEEPER_BUSY",
+      ttlMs,
+    );
+  }
+
+  async acquireMirrorLease(
+    runId: string,
+    ttlMs = mirrorLeaseTtl(),
+  ): Promise<() => Promise<void>> {
+    const paths = this.paths(runId);
+    return this.acquireWorkspaceLease(
+      runId,
+      paths.mirrorLock,
+      "RUN_MIRROR_BUSY",
+      ttlMs,
+    );
+  }
+
+  private async acquireWorkspaceLease(
+    runId: string,
+    lockPath: string,
+    busyCode: string,
+    ttlMs: number,
+  ): Promise<() => Promise<void>> {
+    const token = randomUUID();
+    const safeTtlMs = Math.max(30_000, Math.min(ttlMs, 30 * 60_000));
+    await this.metadata(runId);
+    await ensureDir(path.dirname(lockPath));
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const handle = await open(lockPath, "wx");
+        try {
+          await handle.writeFile(JSON.stringify(leaseRecord(token, safeTtlMs)), "utf8");
+        } finally {
+          await handle.close();
+        }
+        let heartbeatTask = Promise.resolve();
+        const heartbeat = setInterval(() => {
+          heartbeatTask = heartbeatTask
+            .then(() => this.refreshWorkspaceLease(lockPath, token, safeTtlMs))
+            .catch(() => {});
+        }, Math.max(10_000, Math.floor(safeTtlMs / 3)));
+        heartbeat.unref();
+        return async () => {
+          clearInterval(heartbeat);
+          await heartbeatTask;
+          const current = await readJson<WorkspaceLeaseRecord | null>(lockPath, null);
+          if (current?.token !== token) return;
+          await unlink(lockPath).catch((error) => {
+            if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+          });
+        };
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+        if (!await workspaceLeaseExpired(lockPath, safeTtlMs)) {
+          throw new Error(busyCode);
+        }
+        const stalePath = `${lockPath}.stale.${token}`;
+        try {
+          await rename(lockPath, stalePath);
+          await unlink(stalePath).catch(() => {});
+        } catch (renameError) {
+          const code = (renameError as NodeJS.ErrnoException).code;
+          if (!["ENOENT", "EEXIST", "EPERM"].includes(String(code))) throw renameError;
+        }
+      }
+    }
+    throw new Error(busyCode);
+  }
+
   async recordSceneEvent(
     runId: string,
     event: { type: string; turnId?: string; [key: string]: unknown },
@@ -125,11 +221,14 @@ export class FileStoryWorkspace {
     request: ProviderRequest,
     result?: ProviderResult,
     error?: unknown,
+    attempt = 1,
   ) {
     const paths = this.paths(runId);
-    await writeJsonAtomic(path.join(paths.callsDir, `${turnId}.${stage}.json`), {
+    const suffix = attempt > 1 ? `.${String(attempt).padStart(2, "0")}` : "";
+    await writeJsonAtomic(path.join(paths.callsDir, `${turnId}.${stage}${suffix}.json`), {
       turnId,
       stage,
+      attempt,
       capturedAt: new Date().toISOString(),
       request: {
         ...request,
@@ -140,7 +239,51 @@ export class FileStoryWorkspace {
     });
   }
 
-  async commitTurn(
+  async nextModelCallAttempt(
+    runId: string,
+    turnId: string,
+    stage: ProviderRequest["profile"],
+  ) {
+    const escapedTurn = turnId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const escapedStage = stage.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`^${escapedTurn}\\.${escapedStage}(?:\\.(\\d+))?\\.json$`);
+    const entries = await readdir(this.paths(runId).callsDir).catch(() => []);
+    let highest = 0;
+    for (const entry of entries) {
+      const match = entry.match(pattern);
+      if (!match) continue;
+      highest = Math.max(highest, match[1] ? Number(match[1]) : 1);
+    }
+    return highest + 1;
+  }
+
+  async latestCommittedForegroundTurn(runId: string) {
+    const lines = (await readText(this.paths(runId).sceneLog, ""))
+      .split(/\r?\n/)
+      .filter(Boolean);
+    for (let index = lines.length - 1; index >= 0; index -= 1) {
+      try {
+        const event = JSON.parse(lines[index]) as Record<string, unknown>;
+        if (
+          event.type === "foreground_turn"
+          && typeof event.turnId === "string"
+          && typeof event.action === "string"
+          && typeof event.narration === "string"
+        ) {
+          return {
+            turnId: event.turnId,
+            action: event.action,
+            narration: event.narration,
+          };
+        }
+      } catch {
+        // A damaged audit line must not hide an earlier valid committed turn.
+      }
+    }
+    return null;
+  }
+
+  async commitNarration(
     runId: string,
     input: {
       turnId: string;
@@ -162,8 +305,7 @@ export class FileStoryWorkspace {
       action: input.action,
       selectedOption: input.selectedOption,
       narration: input.result.narration,
-      options: input.result.options,
-      tension: input.result.tension,
+      causalDelta: input.result.causalDelta,
       warnings: input.result.warnings,
       committedAt: input.result.committedAt,
     }));
@@ -179,8 +321,81 @@ export class FileStoryWorkspace {
     });
   }
 
+  async publishTurnOptions(
+    runId: string,
+    input: {
+      turnId: string;
+      options: OpenNovelOption[];
+      framing: string;
+      tension: string;
+      storyComplete: boolean;
+      warnings: RuntimeWarning[];
+      completedAt: string;
+    },
+  ) {
+    const paths = this.paths(runId);
+    await writeJsonAtomic(paths.currentOptions, input.options);
+    await appendJsonl(paths.sceneLog, this.event("foreground_options", {
+      turnId: input.turnId,
+      options: input.options,
+      framing: input.framing,
+      tension: input.tension,
+      storyComplete: input.storyComplete,
+      warnings: input.warnings,
+      completedAt: input.completedAt,
+    }));
+  }
+
   async enqueueStorykeeper(runId: string, item: StorykeeperInboxItem) {
     await appendJsonl(this.paths(runId).inboxQueue, item);
+  }
+
+  async enqueueMirror(event: MirrorEvent) {
+    const envelope: MirrorEnvelope = {
+      ...event,
+      id: `mirror_${Date.now()}_${randomUUID()}`,
+      createdAt: new Date().toISOString(),
+    };
+    await appendJsonl(this.paths(event.runId).mirrorQueue, envelope);
+    return envelope;
+  }
+
+  async mirrorOutbox(runId: string) {
+    const paths = this.paths(runId);
+    const lines = (await readText(paths.mirrorQueue, "")).split(/\r?\n/).filter(Boolean);
+    const items = lines.flatMap((line) => {
+      try {
+        return [JSON.parse(line) as MirrorEnvelope];
+      } catch {
+        return [];
+      }
+    });
+    const state = await readJson<{ processed: string[]; failures: Record<string, string> }>(
+      paths.mirrorState,
+      { processed: [], failures: {} },
+    );
+    return { items, state };
+  }
+
+  async markMirror(
+    runId: string,
+    itemId: string,
+    result: { processed: boolean; error?: string },
+  ) {
+    const { state } = await this.mirrorOutbox(runId);
+    const processed = new Set(state.processed);
+    const failures = { ...state.failures };
+    if (result.processed) {
+      processed.add(itemId);
+      delete failures[itemId];
+    } else if (result.error) {
+      failures[itemId] = result.error.slice(0, 1_000);
+    }
+    await writeJsonAtomic(this.paths(runId).mirrorState, {
+      processed: [...processed],
+      failures,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   async inbox(runId: string) {
@@ -193,7 +408,12 @@ export class FileStoryWorkspace {
         return [];
       }
     });
-    const state = await readJson<{ processed: string[]; failures: Record<string, string> }>(
+    const state = await readJson<{
+      processed: string[];
+      failures: Record<string, string>;
+      attempts?: Record<string, number>;
+      deadLetters?: Record<string, string>;
+    }>(
       paths.inboxState,
       { processed: [], failures: {} },
     );
@@ -208,15 +428,38 @@ export class FileStoryWorkspace {
     const { state } = await this.inbox(runId);
     const processed = new Set(state.processed);
     const failures = { ...state.failures };
+    const attempts = { ...(state.attempts || {}) };
+    const deadLetters = { ...(state.deadLetters || {}) };
     if (result.processed) {
       processed.add(itemId);
       delete failures[itemId];
+      delete attempts[itemId];
+      delete deadLetters[itemId];
     } else if (result.error) {
       failures[itemId] = result.error.slice(0, 1000);
+      attempts[itemId] = (attempts[itemId] || (state.failures[itemId] ? 1 : 0)) + 1;
     }
     await writeJsonAtomic(this.paths(runId).inboxState, {
       processed: [...processed],
       failures,
+      attempts,
+      deadLetters,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  async deadLetterInbox(runId: string, itemId: string, error: string) {
+    const { state } = await this.inbox(runId);
+    const processed = new Set(state.processed);
+    processed.add(itemId);
+    await writeJsonAtomic(this.paths(runId).inboxState, {
+      processed: [...processed],
+      failures: { ...state.failures, [itemId]: error.slice(0, 1_000) },
+      attempts: { ...(state.attempts || {}) },
+      deadLetters: {
+        ...(state.deadLetters || {}),
+        [itemId]: error.slice(0, 1_000),
+      },
       updatedAt: new Date().toISOString(),
     });
   }
@@ -279,5 +522,77 @@ export class FileStoryWorkspace {
       type,
       ...extra,
     };
+  }
+
+  private async refreshWorkspaceLease(
+    lockPath: string,
+    token: string,
+    ttlMs: number,
+  ) {
+    let handle;
+    try {
+      handle = await open(lockPath, "r+");
+      const text = await handle.readFile("utf8");
+      let current: WorkspaceLeaseRecord | null = null;
+      try {
+        current = JSON.parse(text) as WorkspaceLeaseRecord;
+      } catch {
+        return;
+      }
+      if (current?.token !== token) return;
+      const updated = JSON.stringify(leaseRecord(token, ttlMs));
+      await handle.truncate(0);
+      await handle.write(updated, 0, "utf8");
+      await handle.sync();
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    } finally {
+      await handle?.close();
+    }
+  }
+}
+
+type WorkspaceLeaseRecord = {
+  token: string;
+  ownerPid: number;
+  acquiredAt: string;
+  expiresAt: string;
+};
+
+function leaseRecord(token: string, ttlMs: number): WorkspaceLeaseRecord {
+  const now = Date.now();
+  return {
+    token,
+    ownerPid: process.pid,
+    acquiredAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + ttlMs).toISOString(),
+  };
+}
+
+function foregroundLeaseTtl() {
+  const configured = Number(process.env.OPENOVEL_FOREGROUND_LEASE_TTL_MS || 0);
+  return Number.isFinite(configured) && configured > 0 ? configured : 120_000;
+}
+
+function storykeeperLeaseTtl() {
+  const configured = Number(process.env.OPENOVEL_STORYKEEPER_LEASE_TTL_MS || 0);
+  return Number.isFinite(configured) && configured > 0 ? configured : 600_000;
+}
+
+function mirrorLeaseTtl() {
+  const configured = Number(process.env.OPENOVEL_MIRROR_LEASE_TTL_MS || 0);
+  return Number.isFinite(configured) && configured > 0 ? configured : 120_000;
+}
+
+async function workspaceLeaseExpired(lockPath: string, ttlMs: number) {
+  const current = await readJson<WorkspaceLeaseRecord | null>(lockPath, null);
+  const expiresAt = Date.parse(String(current?.expiresAt || ""));
+  if (Number.isFinite(expiresAt)) return expiresAt <= Date.now();
+  try {
+    const details = await stat(lockPath);
+    return details.mtimeMs + ttlMs <= Date.now();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return true;
+    throw error;
   }
 }

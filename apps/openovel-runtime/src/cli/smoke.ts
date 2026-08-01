@@ -18,12 +18,22 @@ const storykeeper = process.argv.includes("--no-storykeeper")
       isRunning: () => false,
     }
   : new StorykeeperDrain(workspace, provider);
-const runtime = new OpenNovelRuntime(workspace, provider, storykeeper, new NoopMirror());
+const runtime = new OpenNovelRuntime(
+  workspace,
+  provider,
+  storykeeper,
+  new NoopMirror(),
+  { decisionMode: "AUTHORED_WHEN_AVAILABLE" },
+);
 
 const turns = boundedArg("--turns", 1, 1, 20);
 const runId = arg("--run-id") || `openovel_smoke_${Date.now()}`;
 const waitForStorykeeper = !process.argv.includes("--no-storykeeper-wait");
 const actionOverride = decodeActionArg();
+const drainOnly = process.argv.includes("--drain-only");
+if (drainOnly && process.argv.includes("--no-storykeeper")) {
+  throw new Error("--drain-only cannot be combined with --no-storykeeper");
+}
 
 await runtime.createRun({
   runId,
@@ -34,6 +44,18 @@ await runtime.createRun({
 });
 
 process.stdout.write(`RUN ${runId}\n`);
+if (drainOnly) {
+  await storykeeper.kick(runId);
+  const inbox = await workspace.inbox(runId);
+  process.stdout.write(
+    `STORYKEEPER processed=${inbox.state.processed.length} pending=${
+      inbox.items.filter((item) => !inbox.state.processed.includes(item.id)).length
+    }\n`,
+  );
+  process.stdout.write(`\nWORKSPACE ${workspace.paths(runId).root}\n`);
+  process.exit(0);
+}
+
 for (let index = 0; index < turns; index += 1) {
   const current = await runtime.getRun(runId);
   const action = index === 0 && actionOverride

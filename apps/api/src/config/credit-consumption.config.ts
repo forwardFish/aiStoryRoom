@@ -4,7 +4,8 @@ export type CreditPolicyVersion = typeof CREDIT_POLICY_VERSIONS[number];
 const ACTIVE_ACTION_ENGINE_VERSIONS = new Set([
   "continuous_strategy_v1_1",
   "continuous_story_v2",
-  "solo_story_v2"
+  "solo_story_v2",
+  "openovel_v1"
 ]);
 
 export function supportsActiveActionBilling(engineVersion: string | null | undefined) {

@@ -160,7 +160,7 @@ const OPENING_PATCHES: Record<string, { kernelId: string; patch: Record<string, 
     kernelId: "DK-P1-REVIEW-INITIATION",
     targetRef: "evidence.qingliu_register_anomaly",
     patch: {
-      "review.initiationStatus": "GOVERNOR_REVIEW_ORDERED",
+      "review.initiationStatus": "GOVERNOR_PRELIMINARY_INQUIRY",
       "evidence.chainStatus": "FRAGILE",
       "knowledgeTransfer": {
         topic: "governor_holds_document_for_review",
@@ -308,12 +308,17 @@ export function settlePartOneAction(
     sectionBefore,
     sectionAfter,
     sceneBefore,
-    sceneAfter
+    sceneAfter,
+    statePatch
   });
-  sceneAfter.presentActorRefs = unique([
-    ...sceneAfter.presentActorRefs,
-    ...authoritativeWorldMoves.flatMap((move) => move.actorRefs)
-  ]);
+  const payableDueIds = new Set(
+    authoritativeWorldMoves
+      .filter((move) => move.sourceType === "DUE_CONSEQUENCE" && move.consequenceId)
+      .map((move) => move.consequenceId!)
+  );
+  const payableDueConsequences = dueConsequences.filter((item) =>
+    payableDueIds.has(item.consequenceId)
+  );
   sceneAfter.situation = reconcileSceneSituationAfterSettlement({
     action,
     sceneBefore,
@@ -327,7 +332,11 @@ export function settlePartOneAction(
   if (!deepEqual(sceneBefore, sceneAfter)) changedStatePaths.push("scene");
   const narrativePlan = buildNarrativePlan({
     action,
-    section: requireSection(pkg, sectionAfter),
+    // A transition turn still has to finish the section the player acted in.
+    // The next section's broad purpose belongs to subsequent turns; exposing
+    // it as this turn's objective invites the Narrator to reveal evidence that
+    // the transition scene only establishes as a future contest.
+    section: requireSection(pkg, sectionTransitioned ? sectionBefore : sectionAfter),
     sceneBefore,
     sceneAfter,
     sectionTransitioned,
@@ -350,7 +359,7 @@ export function settlePartOneAction(
     statePatch,
     changedStatePaths: unique(changedStatePaths),
     createdPendingConsequenceIds: createdPendingConsequences.map((item) => item.consequenceId),
-    duePendingConsequenceIds: dueConsequences.map((item) => item.consequenceId),
+    duePendingConsequenceIds: payableDueConsequences.map((item) => item.consequenceId),
     authoritativeObservableFacts,
     authoritativeNpcReactions,
     sceneBefore,
@@ -359,7 +368,13 @@ export function settlePartOneAction(
     narrativePlan,
     sectionTransitioned
   };
-  return { beforeState, proposedState, event, appliedAffordance, dueConsequences };
+  return {
+    beforeState,
+    proposedState,
+    event,
+    appliedAffordance,
+    dueConsequences: payableDueConsequences
+  };
 }
 
 export function finalizePartOneSettlement(
@@ -700,7 +715,7 @@ function adaptAffordanceForCurrentState(
 
   if (affordance.affordanceTemplateId === "DK-P1-RESPONSIBILITY-RECORD-OPT-03") {
     const actionText = existingExecutionReply
-      ? "维持刚刚写成的放行回文不改；由总督另具责任说明，逐项写明督抚对复核与材料披露的分歧，各自成文、各自担责。"
+      ? "维持放行回文不改，另具督抚责任说明：巡抚要求派员参与复核而总督尚未同意，巡抚若有异议须另行成文，督抚各担其责。"
       : "另具正式回文暂准放行，并逐项写明督抚分歧和各自承担的事项。";
     const stateEffects = existingExecutionReply
       ? affordance.stateEffects.filter((path) => path !== "reform.executionMode")
@@ -809,21 +824,35 @@ function buildAuthoritativeWorldMoves(input: {
   sectionAfter: string;
   sceneBefore: PartOneSceneState;
   sceneAfter: PartOneSceneState;
+  statePatch: Record<string, unknown>;
 }): PartOneAuthoritativeWorldMove[] {
-  const moves: PartOneAuthoritativeWorldMove[] = input.dueConsequences.map((consequence) => {
-    const payoff = consequence.payoffBeat
-      || fallbackPayoffBeat(consequence.ruleAssetId, consequence.summary, []);
-    return {
-      beatId: payoff.beatId,
-      sourceType: "DUE_CONSEQUENCE",
-      sourceId: consequence.ruleAssetId,
-      actorRefs: [...payoff.actorRefs],
-      action: payoff.action,
-      requiredTermGroups: clone(payoff.requiredTermGroups),
-      resultCeiling: payoff.resultCeiling,
-      consequenceId: consequence.consequenceId
-    };
-  });
+  const presentActors = new Set(input.sceneAfter.presentActorRefs);
+  const dueMoves: PartOneAuthoritativeWorldMove[] = input.dueConsequences.flatMap(
+    (consequence) => {
+      const payoff = consequence.payoffBeat
+        || fallbackPayoffBeat(consequence.ruleAssetId, consequence.summary, []);
+      // A due consequence remains DUE until its acting party can enter through
+      // the current scene contract. Never teleport an absent actor merely to
+      // satisfy a payoff schedule.
+      if (
+        payoff.actorRefs.length
+        && !payoff.actorRefs.some((actorRef) => presentActors.has(actorRef))
+      ) {
+        return [];
+      }
+      return [{
+        beatId: payoff.beatId,
+        sourceType: "DUE_CONSEQUENCE" as const,
+        sourceId: consequence.ruleAssetId,
+        actorRefs: [...payoff.actorRefs],
+        action: payoff.action,
+        requiredTermGroups: clone(payoff.requiredTermGroups),
+        resultCeiling: payoff.resultCeiling,
+        consequenceId: consequence.consequenceId
+      }];
+    }
+  );
+  const moves: PartOneAuthoritativeWorldMove[] = [];
   if (input.sectionTransitioned) {
     const presentActorLabels = input.sceneAfter.presentActorRefs
       .map((ref) => runtimeTargetFor(ref).label);
@@ -848,14 +877,52 @@ function buildAuthoritativeWorldMoves(input: {
           : ""
       ].filter(Boolean).join("")
     });
+    if (
+      input.statePatch["responsibility.firstRecordStatus"] === "JOINT_SIGNATURE_REQUESTED"
+      && presentActors.has("actor.xunfu_aide")
+    ) {
+      moves.push({
+        beatId: "SETTLED-RESPONSE-P1-JOINT-SIGNATURE",
+        sourceType: "SETTLED_RESPONSE",
+        sourceId: "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
+        actorRefs: ["actor.xunfu_aide"],
+        action: "巡抚幕僚在次日签押房正式答复：巡抚拒绝在昨日的改桑放行回文上共同具名；共同具名的请求至此有了明确回应。",
+        requiredTermGroups: [
+          ["巡抚幕僚", "幕僚"],
+          ["拒绝共同具名", "不肯共同具名", "拒绝联署", "不肯联署", "不愿具名", "不具名"],
+          ["改桑放行回文", "放行回文", "回文"]
+        ],
+        resultCeiling: "只答复巡抚拒绝在既有改桑放行回文上共同具名；不得改写回文、另造拒签文书，或让巡抚本人到场。"
+      });
+    }
   }
+  // Consequences whose actor only exists in the destination scene must follow
+  // the section transition. Rendering them first would teleport the actor into
+  // the old room and force the Narrator to invent a bridge. When there is no
+  // transition, the same due moves naturally remain in the current scene.
+  moves.push(...dueMoves);
   const pressure = input.nextWorkingSet.nextDecisionPressure;
-  if (pressure) {
+  const pressureActors = pressure
+    ? [...(PRESSURE_WORLD_MOVE_ACTORS[pressure.pressureId] || [])]
+    : [];
+  if (
+    pressure
+    // A section transition already establishes the next playable question in
+    // the destination scene. Emitting the next section's pressure in the same
+    // turn overloads one beat and can make the spoken ending disagree with the
+    // authored choices that follow. Let that pressure enter on the first turn
+    // inside the new section instead.
+    && !input.sectionTransitioned
+    && (
+      pressureActors.length === 0
+      || pressureActors.some((actorRef) => presentActors.has(actorRef))
+    )
+  ) {
     moves.push({
       beatId: pressure.pressureId,
       sourceType: "NEXT_DECISION_PRESSURE",
       sourceId: pressure.sourceFloorAssetId,
-      actorRefs: [...(PRESSURE_WORLD_MOVE_ACTORS[pressure.pressureId] || [])],
+      actorRefs: pressureActors,
       action: pressure.summary,
       requiredTermGroups: requiredTermGroupsFor(pressure.summary),
       resultCeiling: "只把这项新压力带到玩家面前；不得替玩家答复，也不得提前写出两条可选行动的结果。"
@@ -918,7 +985,8 @@ function buildNarrativePlan(input: {
         ]
       ],
       resultCeiling: "只允许把已在场人物写出当前房间，不得补写赶路、抵达、封存完成或场外回报。",
-      mustAppear: true
+      mustAppear: true,
+      hardRequired: true
     })
   );
   const sceneBeats: PartOneNarrativePlan["sceneBeats"] = [
@@ -929,7 +997,8 @@ function buildNarrativePlan(input: {
       sourceType: "CONFIRMED_EFFECT" as const,
       action: fact,
       requiredTermGroups: requiredTermGroupsFor(fact),
-      mustAppear: /^清流县令亲随当场只确认/.test(fact)
+      mustAppear: /^清流县令亲随当场只确认/.test(fact),
+      hardRequired: /^清流县令亲随当场只确认/.test(fact)
     })),
     ...input.authoritativeNpcReactions.map((reaction) => ({
       beatId: reaction.reactionEventId,
@@ -937,16 +1006,10 @@ function buildNarrativePlan(input: {
       action: reaction.action,
       requiredTermGroups: requiredTermGroupsFor(reaction.action),
       resultCeiling: resultCeilingForNpcReaction(reaction.action),
-      mustAppear: true
+      mustAppear: true,
+      hardRequired: true
     })),
-    ...input.authoritativeWorldMoves.map((move) => ({
-      beatId: move.beatId,
-      sourceType: "WORLD_MOVE" as const,
-      action: move.action,
-      requiredTermGroups: clone(move.requiredTermGroups),
-      resultCeiling: move.resultCeiling,
-      mustAppear: true
-    }))
+    ...buildWorldMoveNarrativeBeats(input.authoritativeWorldMoves)
   ];
   const lastMove = input.authoritativeWorldMoves.at(-1)?.action
     || input.authoritativeNpcReactions.at(-1)?.action
@@ -969,6 +1032,7 @@ function buildNarrativePlan(input: {
     actionAlreadyOccurred: input.action.actionText,
     playerSpeechMode: resolvePlayerSpeechMode(input.action.actionText),
     authorizedPlayerSpeech: extractExplicitPlayerQuotes(input.action.actionText),
+    settledActionNarrative: settledActionNarrativeFor(input.action.actionText),
     confirmedEffects: [...input.authoritativeObservableFacts],
     unresolvedFacts: [
       "密信和异常只能证明需要复核，不能直接证明巡抚、商会或任何个人有罪。",
@@ -978,8 +1042,9 @@ function buildNarrativePlan(input: {
     sceneBlocking: input.sectionTransitioned
       ? [
           `先在${input.sceneBefore.locationLabel}完成玩家行动及其即时回应。`,
-          `只有写完已授权的世界行动后，才转到${input.sceneAfter.timeLabel}的${input.sceneAfter.locationLabel}。`,
+          `完成旧场的玩家行动和在场 NPC 即时回应后，直接转到${input.sceneAfter.timeLabel}的${input.sceneAfter.locationLabel}；只在新场呈现新到期的世界行动。`,
           `转场后的现场只允许${input.sceneAfter.presentActorRefs.map((ref) => runtimeTargetFor(ref).label).join("、")}在场；其他人物、随员和未呈到的文书不得随转场出现。`,
+          sceneDocumentBoundary(input.sceneAfter),
           ...(input.sceneAfter.documentStates || [])
             .filter((document) => document.accessState === "NOT_PRESENT")
             .map((document) => document.continuityNote)
@@ -1011,6 +1076,96 @@ function buildNarrativePlan(input: {
       "未知保持未知，禁止提前确认幕后主使或暗账全貌。"
     ]
   };
+}
+
+function settledActionNarrativeFor(action: string) {
+  if (
+    /(?:改桑)?放行回文/.test(action)
+    && /清流县先办一批/.test(action)
+    && /不得趁急难压价买田/.test(action)
+  ) {
+    return [
+      "总督从案头抽过一张公文纸，提笔写成改桑放行回文。正文只写两项：清流县先办一批；不得趁急难压价买田。",
+      "墨迹稍干，他没有落印，也没有签押，只把回文折起递向屏风外：\"收进匣里。\"巡抚书吏双手接过，收进原先捧着的回文匣，合上匣盖。巡抚那封催办公文仍压在总督案前。"
+    ].join("\n\n");
+  }
+  if (
+    /督抚责任说明|责任说明/.test(action)
+    && /巡抚要求派员参与复核/.test(action)
+    && /总督尚未同意/.test(action)
+    && /各自担责|各担其责/.test(action)
+  ) {
+    return [
+      "总督另取一张公文纸，提笔写下督抚责任说明。正文只写三项：巡抚要求派员参与复核；总督尚未同意；巡抚若有异议须另行成文，督抚各担其责。",
+      "写完，他没有落印，也没有签押，只将纸留在案前，并未交给巡抚书吏。纸面朝内，书吏隔着屏风只听见落笔声，看不见正文。"
+    ].join("\n\n");
+  }
+  return undefined;
+}
+
+function sceneDocumentBoundary(scene: PartOneSceneState) {
+  const presentDocuments = (scene.documentStates || [])
+    .filter((document) => document.accessState !== "NOT_PRESENT")
+    .map((document) => document.label);
+  const documentObjects = (scene.objectStates || [])
+    .filter((object) => object.contentsState === "CONTAINS_DOCUMENT")
+    .map((object) => object.label);
+  const allowed = unique([...presentDocuments, ...documentObjects]);
+  return allowed.length
+    ? `新场获批在场的正式文书或证据容器仅有：${allowed.join("、")}；不得另添核验单、手帖、册匣或其他记录。`
+    : "新场没有获批的正式文书或证据容器在案；普通无字纸张与笔砚只可作叙事纹理，不得命名成核验单、手帖、在办公文、册匣或其他记录。";
+}
+
+function buildWorldMoveNarrativeBeats(
+  moves: PartOneAuthoritativeWorldMove[]
+): PartOneNarrativePlan["sceneBeats"] {
+  const beats: PartOneNarrativePlan["sceneBeats"] = [];
+  for (let index = 0; index < moves.length;) {
+    const move = moves[index]!;
+    const actorKey = [...move.actorRefs].sort().join("|");
+    const group = [move];
+    let cursor = index + 1;
+    while (
+      move.sourceType !== "SECTION_TRANSITION"
+      && cursor < moves.length
+      && moves[cursor]!.sourceType !== "SECTION_TRANSITION"
+      && [...moves[cursor]!.actorRefs].sort().join("|") === actorKey
+    ) {
+      group.push(moves[cursor]!);
+      cursor += 1;
+    }
+    beats.push({
+      beatId: group.map((item) => item.beatId).join("+"),
+      sourceType: "WORLD_MOVE",
+      action: group.length === 1
+        ? move.action
+        : `${runtimeTargetFor(move.actorRefs[0] || "public_frame").label}在同一次当面反制中一并提出：${group.map((item) => item.action).join("；同时，")}`,
+      requiredTermGroups: uniqueTermGroups(
+        group.flatMap((item) => clone(item.requiredTermGroups))
+      ),
+      resultCeiling: unique(
+        group.map((item) => item.resultCeiling).filter(Boolean)
+      ).join(" "),
+      mustAppear: true,
+      hardRequired: group.some((item) => (
+        item.sourceType === "DUE_CONSEQUENCE"
+        || item.sourceType === "SECTION_TRANSITION"
+        || item.sourceType === "SETTLED_RESPONSE"
+      ))
+    });
+    index = group.length > 1 ? cursor : index + 1;
+  }
+  return beats;
+}
+
+function uniqueTermGroups(groups: string[][]) {
+  const seen = new Set<string>();
+  return groups.filter((group) => {
+    const key = JSON.stringify(group);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function buildIncidentalTextureAllowances(
@@ -1076,16 +1231,31 @@ function buildPlayerActionSceneBeats(
     action,
     requiredTermGroups: requiredTermGroupsFor(action),
     resultCeiling: resultCeilingForPlayerAction(action),
-    mustAppear: true
+    mustAppear: true,
+    hardRequired: true
   }));
 }
 
 function resultCeilingForPlayerAction(action: string) {
   if (
+    /督抚责任说明|责任说明/.test(action)
+    && /巡抚要求派员参与复核/.test(action)
+    && /总督尚未同意/.test(action)
+    && /各自担责|各担其责/.test(action)
+  ) {
+    return [
+      "浙江总督当场写成一份名为“督抚责任说明”的新文书；它与巡抚书吏回文匣中的改桑放行回文不是同一份。",
+      "督抚责任说明中只写三项：巡抚要求派员参与复核、总督对此尚未同意、巡抚若有异议须另行成文并由督抚各自担责。正文必须让玩家直接知道这三项已经写入，不得只说写成了责任说明。",
+      "不得补写原册所在地、保管人、移交办法、材料披露范围、复核主持权或其他程序结论。",
+      "本回合不落印、不签押；责任说明留在总督案前，不交给巡抚书吏。书吏只能记下总督另具了责任说明，无权看见或认可其中主张。"
+    ].join("");
+  }
+
+  if (
     /(?:改桑)?放行回文/.test(action)
     && /写明|写进|写入/.test(action)
   ) {
-    return "浙江总督当场提笔写成名为“改桑放行回文”的文书，文中只写清流县先办一批和不得趁急难压价买田；写成后交给巡抚书吏。普通纸张与笔墨只能作为写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。";
+    return "浙江总督当场写成一份名为“改桑放行回文”的新文书；正文只载两项：清流县先办一批；不得趁急难压价买田。不得增加复核依据、执行条件、处罚、期限或其他条款。本回合不落印、不签押；写成后交给巡抚书吏收进既有回文匣。原先压在案上的巡抚催办公文仍留在总督案前。";
   }
 
   if (/封缄令牌|总督令牌/.test(action) && /交给|交予|递给/.test(action)) {
@@ -1190,8 +1360,8 @@ function requiredTermGroupsFor(text: string): string[][] {
     ],
     [/三日内复核/, ["三日内复核", "三日期限内复核"]],
     [
-      /三日(?:限期|期限|之限|之内)/,
-      ["三日限期", "三日期限", "三日之限", "三日之内"]
+      /三日(?:限期|期限|之限|之内|之期)/,
+      ["三日限期", "三日期限", "三日之限", "三日之内", "三日之期", "三日具报"]
     ],
     [
       /延误责任[^。；！？]{0,12}(?:由本督承担|本督承担)|责在本督|由本督承担|本督一人承担/,
@@ -1203,7 +1373,19 @@ function requiredTermGroupsFor(text: string): string[][] {
         "本督一人承担"
       ]
     ],
-    [/暂缓签发|暂不签发/, ["暂缓签发", "暂不签发", "扣下不签"]],
+    [
+      /暂缓签发|暂不签发/,
+      [
+        "暂缓签发",
+        "暂不签发",
+        "扣下不签",
+        "未即刻签发",
+        "没有即刻签发",
+        "没有落印",
+        "没有碰印盒",
+        "朱印未动"
+      ]
+    ],
     [
       /答复[^。；！？]{0,8}(?:巡抚)?书吏/,
       [
@@ -1229,15 +1411,15 @@ function requiredTermGroupsFor(text: string): string[][] {
     ],
     [
       /只准清流县先办一批|清流县先办一批|限定试办/,
-      ["只准清流县先办一批", "清流县先办一批", "清流县试办", "清流试办", "限定试办"]
+      ["只准清流县先办一批", "清流县先办一批", "清流县先办第一批", "清流县试办", "清流试办", "限定试办"]
     ],
     [/清流县试办|清流试办|执行范围/, ["清流县试办", "清流试办", "执行范围"]],
     [/(?:改桑)?放行回文/, ["改桑放行回文", "放行回文", "回文"]],
     [
       /(?:写进|写入|写明)[^。；！？]{0,12}(?:改桑)?放行回文|(?:改桑)?放行回文[^。；！？]{0,12}(?:写明|写有)/,
-      ["写明", "书明", "写进", "写入", "落笔", "批明", "另起一行", "补入", "添入", "补写"]
+      ["写明", "书明", "写进", "写入", "写下", "写的是", "写了", "落笔", "落字", "提笔", "批明", "另起一行", "补入", "添入", "补写"]
     ],
-    [/压价买田|买田|购田/, ["压价买田", "低价买田", "趁急难买田", "购田"]],
+    [/压价买田|买田|购田/, ["压价买田", "压价买民田", "低价买田", "低价买民田", "趁急难买田", "趁急难压价买民田", "购田"]],
     [/巡抚幕僚|幕僚/, ["巡抚幕僚", "幕僚"]],
     [/巡抚书吏|书吏/, ["巡抚书吏", "书吏"]],
     [
@@ -1255,13 +1437,16 @@ function requiredTermGroupsFor(text: string): string[][] {
     [/首批救粮|救粮/, ["首批救粮", "救粮"]],
     [/县册|册页|原册/, ["县册", "册页", "原册"]],
     [/封存|封条/, ["封存", "封条", "封缄"]],
-    [/复核/, ["复核"]],
+    [/复核/, ["复核", "核看", "核验", "查验"]],
     [/奏报|首报|入京/, ["奏报", "首报", "入京"]],
     [/粮|米行|开仓/, ["粮", "米", "仓"]],
     [/民田|卖田|购田|买田|田契/, ["民田", "卖田", "购田", "买田", "田契"]],
     [/具名|署名|联署/, ["具名", "署名", "联署"]],
     [/责任说明/, ["责任说明", "责任文书", "责任记录"]],
-    [/各自成文|各自担责/, ["各自成文", "分别成文", "各自担责", "分别担责"]],
+    [
+      /各自成文|各自担责|各担其责/,
+      ["各自成文", "分别成文", "各自担责", "分别担责", "各担其责", "各写各的", "各担各的"]
+    ],
     [/底稿|摘要/, ["底稿", "摘要"]],
     [/担保|官保/, ["担保", "官保"]],
     [/保护令|传唤|问讯/, ["保护", "传唤", "问讯"]]
@@ -1374,7 +1559,7 @@ function applySceneCustodyEffects(
       label: "督抚责任说明",
       accessState: "WRITTEN" as const,
       holderRef: "actor.zhejiang_governor",
-      continuityNote: "总督已经另具督抚责任说明；它与巡抚书吏带走的改桑放行回文不是同一份文书。"
+      continuityNote: "总督已经另具督抚责任说明；它与巡抚书吏带走的改桑放行回文不是同一份文书。责任说明正文目前只由总督知晓；巡抚书吏和后续巡抚来人只知道文书存在。未经玩家明确出示、宣读或移交，不得让其他人物看见、复述或依据正文行动。"
     };
     if (existing) Object.assign(existing, writtenRecord);
     else scene.documentStates.push(writtenRecord);
@@ -1482,6 +1667,7 @@ function buildAuthoritativeObservableFacts(
     FRAGILE: "尚未形成稳固保管链",
     SEAL_ORDERED: "封存令已经发出，是否完成仍待回报",
     GOVERNOR_REVIEW_ORDERED: "总督已下令启动复核",
+    GOVERNOR_PRELIMINARY_INQUIRY: "总督已从密信报疑启动初步查问，尚未确定正式复核程序",
     GOVERNOR_SEAL_ORDERED: "总督已下令先行封存并复核",
     LIMITED_TRIAL: "限定试办",
     PROVISIONAL_RELEASE: "附条件先行放开",
@@ -1558,12 +1744,17 @@ function buildAuthoritativeNpcReactions(
     // answers the newly settled player action; a hash selector can otherwise
     // repeat the same demand on consecutive turns and make the scene appear
     // to have forgotten what was just said.
+    const responsibilityRecordStatus = String(
+      input.statePatch["responsibility.firstRecordStatus"] || ""
+    );
     const preferredMove = input.decisionKernelId === "DK-P1-REVIEW-INITIATION"
       ? allowedMoves.find((move) => move.includes("书面回复"))
       : input.decisionKernelId === "DK-P1-EXECUTION-SCOPE"
         ? allowedMoves.find((move) => move.includes("参与复核"))
         : input.decisionKernelId === "DK-P1-RESPONSIBILITY-RECORD"
-          ? allowedMoves.find((move) => move.includes("联署"))
+          ? responsibilityRecordStatus === "DISAGREEMENT_RECORDED"
+            ? allowedMoves.find((move) => move.includes("另行递交"))
+            : allowedMoves.find((move) => move.includes("联署"))
           : null;
     const selector = Number.parseInt(
       digest(`${input.eventId}:${policy.assetId}`).slice(0, 8),
@@ -1571,7 +1762,18 @@ function buildAuthoritativeNpcReactions(
     ) % moves.length;
     const selectedMove = (preferredMove || moves[selector])
       .replace("依据改编后的巡抚权限", "通过巡抚衙门正式催办");
-    const renderedMove = selectedMove.includes("催办") && selectedMove.includes("书面回复")
+    const renderedMove = (
+      input.decisionKernelId === "DK-P1-RESPONSIBILITY-RECORD"
+      && responsibilityRecordStatus === "JOINT_SIGNATURE_REQUESTED"
+    )
+      ? "由巡抚书吏当场说明：共同具名须由巡抚本人决定，他无权代为答应，只能把总督的联署请求原样带回"
+      : (
+      input.decisionKernelId === "DK-P1-RESPONSIBILITY-RECORD"
+      && responsibilityRecordStatus === "DISAGREEMENT_RECORDED"
+      && selectedMove.includes("另行递交")
+    )
+      ? "由巡抚书吏当面说明：他只能记下总督另具责任说明这件事，无权代表巡抚认可其中主张；巡抚若有异议，只能另行成文回应"
+      : selectedMove.includes("催办") && selectedMove.includes("书面回复")
       ? "正式催办总督，催问为何暂缓签发，并要求在三日期限内书面回复，写明复核的范围与方式"
       : input.decisionKernelId === "DK-P1-EXECUTION-SCOPE"
         && selectedMove.includes("参与复核")
@@ -1580,7 +1782,9 @@ function buildAuthoritativeNpcReactions(
     const representativeRef = String(transfer?.representativeRef || "");
     const deliveryMode = String(transfer?.deliveryMode || "");
     const xunfuReaction = policy.actorRefs.includes("actor.zhejiang_xunfu")
-      ? representativeRef === "actor.xunfu_clerk" && deliveryMode === "IN_PERSON_REPRESENTATIVE"
+      ? renderedMove.startsWith("由巡抚书吏")
+        ? renderedMove
+        : representativeRef === "actor.xunfu_clerk" && deliveryMode === "IN_PERSON_REPRESENTATIVE"
         ? `巡抚书吏按来府前所受交代当场追问：${renderedMove}`
         : `浙江巡抚通过巡抚书吏传话：${renderedMove}`
       : renderedMove;

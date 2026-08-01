@@ -33,7 +33,12 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
       narratorModel: String(env.OPENOVEL_NARRATOR_MODEL || defaultModel).trim(),
       optionsModel: String(env.OPENOVEL_OPTIONS_MODEL || defaultModel).trim(),
       storykeeperModel: String(env.OPENOVEL_STORYKEEPER_MODEL || defaultModel).trim(),
-      timeoutMs: boundedInteger(env.OPENOVEL_PROVIDER_TIMEOUT_MS, 180_000, 5_000, 300_000),
+      timeoutMs: boundedInteger(
+        env.OPENOVEL_PROVIDER_TIMEOUT_MS || env.SOLO_STORY_PROVIDER_TIMEOUT_MS,
+        180_000,
+        5_000,
+        300_000,
+      ),
       fetchImpl,
     });
   }
@@ -51,69 +56,95 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
     const model = this.modelFor(request.profile);
     const startedAt = Date.now();
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.config.timeoutMs);
+    const timeoutMs = Number.isFinite(request.timeoutMs) && Number(request.timeoutMs) > 0
+      ? Math.min(this.config.timeoutMs, Math.max(1_000, Number(request.timeoutMs)))
+      : this.config.timeoutMs;
+    let timedOut = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+        reject(new Error(`Provider timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
     try {
-      const response = await this.fetchImpl(`${this.config.baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${this.config.apiKey}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: request.messages,
-          temperature: request.temperature,
-          max_tokens: request.maxTokens,
-          stream: request.stream,
-          ...(request.stream ? { stream_options: { include_usage: true } } : {}),
-          ...(request.json && supportsJsonMode(this.config.baseUrl, model)
-            ? { response_format: { type: "json_object" } }
-            : {}),
-          ...thinkingFields(this.config.baseUrl),
-        }),
-        signal: controller.signal,
-      });
-      const requestId = response.headers.get("x-request-id")
-        || response.headers.get("x-deepseek-request-id")
-        || undefined;
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null) as Record<string, unknown> | null;
-        const error = payload?.error as Record<string, unknown> | undefined;
-        throw new Error(String(error?.message || payload?.message || `Provider HTTP ${response.status}`).slice(0, 500));
-      }
-      if (request.stream) {
-        return {
-          ...(await readStream(response, request.onDelta)),
-          model,
-          requestId,
-          latencyMs: Date.now() - startedAt,
-        };
-      }
-      const payload = await response.json() as {
-        model?: string;
-        choices?: Array<{ message?: { content?: string } }>;
-        usage?: { prompt_tokens?: number; completion_tokens?: number };
-      };
-      const text = String(payload.choices?.[0]?.message?.content || "").trim();
-      if (!text) throw new Error("Provider returned an empty response");
-      return {
-        text,
-        model: payload.model || model,
-        requestId,
-        usage: {
-          inputTokens: Number(payload.usage?.prompt_tokens || 0),
-          outputTokens: Number(payload.usage?.completion_tokens || 0),
-        },
-        latencyMs: Date.now() - startedAt,
-      };
+      return await Promise.race([
+        this.execute(request, model, controller.signal, startedAt),
+        timeout,
+      ]);
     } catch (error) {
-      if ((error as Error).name === "AbortError") {
-        throw new Error(`Provider timed out after ${this.config.timeoutMs}ms`);
+      if (timedOut || (error as Error).name === "AbortError") {
+        throw new Error(`Provider timed out after ${timeoutMs}ms`);
       }
       throw error;
     } finally {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
     }
+  }
+
+  private async execute(
+    request: ProviderRequest,
+    model: string,
+    signal: AbortSignal,
+    startedAt: number,
+  ): Promise<ProviderResult> {
+    const response = await this.fetchImpl(`${this.config.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${this.config.apiKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: request.messages,
+        temperature: request.temperature,
+        max_tokens: request.maxTokens,
+        stream: request.stream,
+        ...(request.stream ? { stream_options: { include_usage: true } } : {}),
+        ...(request.json && supportsJsonMode(this.config.baseUrl, model)
+          ? { response_format: { type: "json_object" } }
+          : {}),
+        ...thinkingFields(this.config.baseUrl),
+      }),
+      signal,
+    });
+    const requestId = response.headers.get("x-request-id")
+      || response.headers.get("x-deepseek-request-id")
+      || undefined;
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null) as Record<string, unknown> | null;
+      const error = payload?.error as Record<string, unknown> | undefined;
+      throw new Error(String(error?.message || payload?.message || `Provider HTTP ${response.status}`).slice(0, 500));
+    }
+    if (request.stream) {
+      return {
+        ...(await readStream(response, request.onDelta)),
+        model,
+        requestId,
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+    const payload = await response.json() as {
+      model?: string;
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string | null }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    const text = String(payload.choices?.[0]?.message?.content || "").trim();
+    if (!text) throw new Error("Provider returned an empty response");
+    return {
+      text,
+      model: payload.model || model,
+      requestId,
+      ...(payload.choices?.[0]?.finish_reason
+        ? { finishReason: payload.choices[0].finish_reason }
+        : {}),
+      usage: {
+        inputTokens: Number(payload.usage?.prompt_tokens || 0),
+        outputTokens: Number(payload.usage?.completion_tokens || 0),
+      },
+      latencyMs: Date.now() - startedAt,
+    };
   }
 
   private modelFor(profile: ProviderRequest["profile"]) {
@@ -131,6 +162,7 @@ async function readStream(response: Response, onDelta?: (text: string) => void) 
   let text = "";
   let inputTokens = 0;
   let outputTokens = 0;
+  let finishReason = "";
   while (true) {
     const chunk = await reader.read();
     if (chunk.done) break;
@@ -141,7 +173,7 @@ async function readStream(response: Response, onDelta?: (text: string) => void) 
       const data = line.startsWith("data:") ? line.slice(5).trim() : "";
       if (!data || data === "[DONE]") continue;
       const payload = JSON.parse(data) as {
-        choices?: Array<{ delta?: { content?: string } }>;
+        choices?: Array<{ delta?: { content?: string }; finish_reason?: string | null }>;
         usage?: { prompt_tokens?: number; completion_tokens?: number };
       };
       const delta = String(payload.choices?.[0]?.delta?.content || "");
@@ -151,12 +183,14 @@ async function readStream(response: Response, onDelta?: (text: string) => void) 
       }
       inputTokens = Number(payload.usage?.prompt_tokens || inputTokens);
       outputTokens = Number(payload.usage?.completion_tokens || outputTokens);
+      finishReason = String(payload.choices?.[0]?.finish_reason || finishReason);
     }
   }
   text = text.trim();
   if (!text) throw new Error("Provider returned an empty streamed response");
   return {
     text,
+    ...(finishReason ? { finishReason } : {}),
     usage: { inputTokens, outputTokens },
   };
 }
@@ -164,7 +198,12 @@ async function readStream(response: Response, onDelta?: (text: string) => void) 
 function thinkingFields(baseUrl: string) {
   const host = new URL(baseUrl).hostname.toLowerCase();
   if (host.endsWith("deepseek.com")) return { thinking: { type: "disabled" } };
-  if (host.includes("siliconflow")) return { enable_thinking: false };
+  if (host.includes("siliconflow")) {
+    // SiliconFlow documents a 4096-token default thinking budget for
+    // reasoning models. Some newly deployed models still spend that budget
+    // even when enable_thinking=false, so make the minimum explicit.
+    return { enable_thinking: false, thinking_budget: 128 };
+  }
   return {};
 }
 

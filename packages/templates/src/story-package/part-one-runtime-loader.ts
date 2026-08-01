@@ -103,8 +103,8 @@ export function validatePartOneRuntimePackage(raw: unknown, worldId = "sangtian"
   count(counts.narrativeScenePatterns, narrativePatternIds.length, "narrativeScenePatterns");
   count(authoringManifest.narrativeScenePatternCount, narrativePatternIds.length, "authoringManifest.narrativeScenePatternCount");
 
-  if (sections.length !== 4 || requirements.length !== 12 || assets.length !== 54 || kernelIds.length !== 15 || arcIds.length !== 4 || floorIds.length !== 4 || adaptations.length !== 7 || narrativePatternIds.length !== 3) {
-    fail("frozen Part One cardinalities 4/12/54/15/4/4/7/3");
+  if (sections.length !== 4 || requirements.length !== 12 || assets.length !== 55 || kernelIds.length !== 15 || arcIds.length !== 4 || floorIds.length !== 4 || adaptations.length !== 7 || narrativePatternIds.length !== 3) {
+    fail("frozen Part One cardinalities 4/12/55/15/4/4/7/3");
   }
   for (const adaptation of adaptations) equal(record(adaptation, "adaptation").reviewStatus, "APPROVED", "adaptation.reviewStatus");
   for (const section of sections) {

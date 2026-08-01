@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { FileStoryWorkspace } from "./workspace.js";
 import { runtimeRoot } from "./paths.js";
 import { OpenAICompatibleProvider } from "./provider.js";
-import { HttpEventMirror } from "./mirror.js";
+import { DurableEventMirror, HttpEventMirror } from "./mirror.js";
 import { StorykeeperDrain } from "./storykeeper.js";
 import { OpenNovelRuntime } from "./runtime.js";
 import { recoverRuntimeRuns } from "./recovery.js";
@@ -17,9 +17,18 @@ const playtestDir = path.resolve(projectRoot, "apps", "openovel-runtime", "publi
 const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
 const provider = OpenAICompatibleProvider.fromEnv();
 const workspace = new FileStoryWorkspace(runtimeRoot(), projectRoot, upstreamCommit);
-const mirror = HttpEventMirror.fromEnv();
+const mirrorTransport = HttpEventMirror.fromEnv();
+const mirror = mirrorTransport.configured
+  ? new DurableEventMirror(workspace, mirrorTransport)
+  : mirrorTransport;
 const storykeeper = new StorykeeperDrain(workspace, provider);
-const runtime = new OpenNovelRuntime(workspace, provider, storykeeper, mirror);
+const runtime = new OpenNovelRuntime(
+  workspace,
+  provider,
+  storykeeper,
+  mirror,
+  { decisionMode: "AUTHORED_WHEN_AVAILABLE" },
+);
 
 const server = createServer(async (request, response) => {
   try {
@@ -27,14 +36,12 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && playtestEnabled() && isPlaytestPath(url.pathname)) {
       return servePlaytest(response, url.pathname);
     }
+    if (request.method === "GET" && url.pathname === "/health") {
+      return json(response, 200, healthPayload());
+    }
     if (!authorized(request)) return json(response, 401, { error: "UNAUTHORIZED" });
     if (request.method === "GET" && url.pathname === "/internal/openovel/health") {
-      return json(response, 200, {
-        ok: true,
-        runtimeMode: "OPENOVEL_V1",
-        provider: provider.describe(),
-        upstreamCommit,
-      });
+      return json(response, 200, healthPayload());
     }
     if (request.method === "GET" && url.pathname === "/internal/openovel/providers") {
       return json(response, 200, provider.describe());
@@ -59,6 +66,21 @@ const server = createServer(async (request, response) => {
       const run = await runtime.getRun(decodeURIComponent(jobsMatch[1]));
       return json(response, 200, run.jobs);
     }
+    const optionsRecoveryMatch = url.pathname.match(
+      /^\/internal\/openovel\/runs\/([^/]+)\/options\/recover$/,
+    );
+    if (request.method === "POST" && optionsRecoveryMatch) {
+      const recovered = await runtime.recoverOptions(
+        decodeURIComponent(optionsRecoveryMatch[1]),
+      );
+      return json(response, 200, {
+        turnId: recovered.turnId,
+        options: recovered.options.map(({ effect: _hidden, ...visible }) => visible),
+        framing: recovered.framing,
+        tension: recovered.tension,
+        storyComplete: recovered.storyComplete,
+      });
+    }
     const actionMatch = url.pathname.match(/^\/internal\/openovel\/runs\/([^/]+)\/actions$/);
     if (request.method === "POST" && actionMatch) {
       const runId = decodeURIComponent(actionMatch[1]);
@@ -69,6 +91,7 @@ const server = createServer(async (request, response) => {
           await runtime.processAction({
             runId,
             action: String(body.action || ""),
+            submissionId: String(body.submissionId || ""),
             boundOption: normalizeBoundOption(body.boundOption),
             onEvent: (event) => writeSse(response, sanitizeEvent(event)),
           });
@@ -90,6 +113,7 @@ const server = createServer(async (request, response) => {
       const result = await runtime.processAction({
         runId,
         action: String(body.action || ""),
+        submissionId: String(body.submissionId || ""),
         boundOption: normalizeBoundOption(body.boundOption),
       });
       return json(response, 200, sanitizeTurn(result));
@@ -102,13 +126,29 @@ const server = createServer(async (request, response) => {
   }
 });
 
-const port = Number(process.env.OPENOVEL_RUNTIME_PORT || 3110);
+const port = Number(process.env.PORT || process.env.OPENOVEL_RUNTIME_PORT || 3110);
+const host = String(
+  process.env.OPENOVEL_RUNTIME_HOST
+  || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1"),
+).trim();
 const recovery = await recoverRuntimeRuns(workspace, storykeeper);
-server.listen(port, "127.0.0.1", () => {
+if (mirror instanceof DurableEventMirror) {
+  for (const runId of recovery.recovered) void mirror.kick(runId);
+}
+server.listen(port, host, () => {
   process.stdout.write(
-    `OpenNovel runtime listening on http://127.0.0.1:${port}; recovered=${recovery.recovered.length}; interrupted=${recovery.interrupted.length}; failures=${recovery.failures.length}\n`,
+    `OpenNovel runtime listening on http://${host}:${port}; recovered=${recovery.recovered.length}; interrupted=${recovery.interrupted.length}; failures=${recovery.failures.length}\n`,
   );
 });
+
+function healthPayload() {
+  return {
+    ok: true,
+    runtimeMode: "OPENOVEL_V1",
+    provider: provider.describe(),
+    upstreamCommit,
+  };
+}
 
 function authorized(request: IncomingMessage) {
   const expected = String(process.env.OPENOVEL_INTERNAL_TOKEN || "").trim();
@@ -156,7 +196,7 @@ function prepareSse(response: ServerResponse) {
   });
 }
 
-function writeSse(response: ServerResponse, event: TurnEvent) {
+function writeSse(response: ServerResponse, event: { type: string; data: unknown }) {
   response.write(`event: ${event.type}\n`);
   response.write(`data: ${JSON.stringify(event.data)}\n\n`);
 }
@@ -184,13 +224,20 @@ function normalizeBoundOption(value: unknown) {
 }
 
 function sanitizeTurn(result: TurnResult) {
+  const {
+    causalDelta: _causalDelta,
+    narrator: _narrator,
+    optionsProvider: _optionsProvider,
+    warnings: _warnings,
+    ...visible
+  } = result;
   return {
-    ...result,
+    ...visible,
     options: result.options.map(({ effect: _hidden, ...visible }) => visible),
   };
 }
 
-function sanitizeEvent(event: TurnEvent): TurnEvent {
+function sanitizeEvent(event: TurnEvent) {
   if (event.type === "options.complete") {
     return {
       ...event,

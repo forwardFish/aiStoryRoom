@@ -1,3 +1,4 @@
+import { jsonrepair } from "jsonrepair";
 import type { OpenNovelOption, OpenNovelOptionEffect } from "./types.js";
 
 export type ParsedOptions = {
@@ -12,6 +13,7 @@ export function parseOptions(
   turnId: string,
   latestAction: string,
   previous: OpenNovelOption[],
+  knownContext = "",
 ): ParsedOptions {
   const parsed = parseJsonObject(raw);
   const storyComplete = parsed.storyComplete === true;
@@ -23,7 +25,7 @@ export function parseOptions(
   const options: OpenNovelOption[] = [];
   if (!storyComplete && Array.isArray(parsed.options)) {
     for (const item of parsed.options) {
-      const option = normalizeOption(item);
+      const option = normalizeOption(item, knownContext);
       if (!option) continue;
       const key = normalizeLabel(option.label);
       if (!key || banned.has(key) || seen.has(key)) continue;
@@ -45,19 +47,34 @@ export function parseOptions(
   };
 }
 
-function normalizeOption(value: unknown): Omit<OpenNovelOption, "id"> | null {
-  if (typeof value === "string") {
-    const label = value.trim();
-    return label ? { label } : null;
-  }
-  if (!value || typeof value !== "object") return null;
-  const record = value as Record<string, unknown>;
-  const label = typeof record.label === "string" ? record.label.trim() : "";
+function normalizeOption(
+  value: unknown,
+  knownContext: string,
+): Omit<OpenNovelOption, "id"> | null {
+  if (typeof value !== "string" && (!value || typeof value !== "object")) return null;
+  const record = typeof value === "string" ? {} : value as Record<string, unknown>;
+  const label = typeof value === "string"
+    ? value.trim()
+    : typeof record.label === "string" ? record.label.trim() : "";
   if (!label || label.length > 120 || /(?:风险|代价|成功|失败|后果|因为这样)/.test(label)) return null;
+  if (!isExploratoryOption(label) && isVagueCommunicativeOption(label)) return null;
+  if (hasContradictoryCommunicationMode(label)) return null;
+  if (referencesUnavailableMaterial(label, knownContext)) return null;
+  // Every visible option must name one player action. A label such as
+  // "call adviser A or officer B" delegates the choice back to the model and
+  // can also smuggle an ungrounded actor into the next turn.
+  if (/(?:叫|命|让|派|召).{0,24}或.{0,24}(?:来|去|查|办|送|取)/u.test(label)) return null;
   const option: Omit<OpenNovelOption, "id"> = { label };
-  if (record.key === true) option.key = true;
-  const effect = normalizeEffect(record.effect);
-  if (effect) option.effect = effect;
+  // Questions and inspection are reversible discovery moves. Their answers
+  // do not exist yet, so a model may not pre-write a durable result for them.
+  if (!isExploratoryOption(label)) {
+    const effect = normalizeEffect(record.effect);
+    if (effect) option.effect = effect;
+    // Runtime-generated options are suggestions. Only an explicitly
+    // irreversible effect may be elevated to a key decision. Authored opening
+    // decisions bypass this parser and keep their reviewed key metadata.
+    if (record.key === true && effect?.reversible === false) option.key = true;
+  }
   return option;
 }
 
@@ -84,6 +101,13 @@ function normalizeEffect(value: unknown): OpenNovelOptionEffect | undefined {
         op: String(hint.op || "flag") as "set" | "inc" | "dec" | "flag",
         value: hint.value,
         ...(typeof hint.note === "string" ? { note: hint.note.slice(0, 300) } : {}),
+        // Model option effects are Storykeeper candidates, not authoritative
+        // results. The selected label itself authorizes the action; only
+        // reviewed, server-authored effects may require a durable result in
+        // the same turn.
+        ...(typeof hint.surfaceAnchor === "string" && hint.surfaceAnchor.trim()
+          ? { surfaceAnchor: hint.surfaceAnchor.trim().slice(0, 120) }
+          : {}),
       }))
       .filter((hint) => hint.key && ["set", "inc", "dec", "flag"].includes(hint.op))
       .slice(0, 8);
@@ -101,9 +125,40 @@ function parseJsonObject(raw: string): Record<string, unknown> {
   const start = unwrapped.indexOf("{");
   const end = unwrapped.lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("Options response is not a JSON object");
-  return JSON.parse(unwrapped.slice(start, end + 1)) as Record<string, unknown>;
+  const candidate = unwrapped.slice(start, end + 1);
+  try {
+    return JSON.parse(candidate) as Record<string, unknown>;
+  } catch {
+    // Repair serialization only. Option meaning is still normalized and
+    // validated above, so this cannot authorize a new action or fact.
+    return JSON.parse(jsonrepair(candidate)) as Record<string, unknown>;
+  }
 }
 
 function normalizeLabel(value: string) {
   return String(value || "").toLocaleLowerCase().replace(/[\s，。；、！？,.!?;:'"“”‘’（）()]/g, "");
+}
+
+function isExploratoryOption(label: string) {
+  return /^(?:先)?(?:问|询问|追问|查问|核对|查看|察看|翻看|听|去看|去听|打听)/u.test(label.trim());
+}
+
+function isVagueCommunicativeOption(label: string) {
+  if (!/(?:口信|答复|回话|回文)/u.test(label)) return false;
+  if (/[：:“”"'「」]/u.test(label)) return false;
+  return !/(?:不签|暂缓|缓签|落印|签发|同意|准许|拒绝|驳回|先查|核查|报疑|限期|今日|明日|三日)/u.test(label);
+}
+
+function hasContradictoryCommunicationMode(label: string) {
+  if (/(?:写下|记下|记录|誊录|转为书面|写成书面)/u.test(label)) return false;
+  return /(?:写|拟|起草|具文|落笔).{0,16}(?:口头回话|口头答复|口信)|(?:口头回话|口头答复|口信).{0,16}(?:写|拟|起草|具文|落笔)/u.test(label);
+}
+
+function referencesUnavailableMaterial(label: string, knownContext: string) {
+  const lookup = label.match(
+    /(?:调取?|取来|取阅|查阅|翻看|核对|比对|查看).{0,24}(汇总册|名册|账册|册簿|副本|原件|仓单|田契|口供|卷宗|暗账)/u,
+  );
+  if (!lookup) return false;
+  const materialType = String(lookup[1] || "");
+  return materialType !== "原件" && !knownContext.includes(materialType);
 }
