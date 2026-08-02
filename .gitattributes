@@ -1,3 +1,6 @@
 # Strategy content is hash-addressed byte-for-byte. Keep its line endings
 # stable across Windows and Unix checkouts so registry hashes remain valid.
 packages/templates/config/**/*.json text eol=lf
+# Evidence source hashes were authored from CRLF text. Keep all tracked source
+# transcripts byte-stable on Windows and Unix checkouts.
+docs/**/*.txt text eol=crlf

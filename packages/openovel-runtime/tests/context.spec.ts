@@ -1031,10 +1031,11 @@ test("rejects a decision that repeats a newly completed responsibility record", 
 test("is not imported by API or web player paths", () => {
   const { paths } = setup();
   const roots = [join(paths.repoRoot, "apps", "api", "src"), join(paths.repoRoot, "apps", "web", "src")];
+  const packageSpecifier = /(?:from\s*|import\s*(?:\(\s*)?|require\s*\(\s*)["']@ai-story\/openovel-runtime(?:\/[^"']*)?["']/u;
   for (const root of roots) {
     for (const file of walk(root)) {
       if (!/\.(?:ts|js|mjs)$/.test(file)) continue;
-      assert.equal(readFileSync(file, "utf8").includes("openovel-runtime"), false, file);
+      assert.doesNotMatch(readFileSync(file, "utf8"), packageSpecifier, file);
     }
   }
 });

@@ -48,6 +48,7 @@ blockingRecords: 98
 
 - 根 workspace 元数据；
 - `apps/openovel-runtime/**`；
+- `packages/openovel-runtime/**`（完整仓库中的 Evidence/Shadow compiler；上一轮安全压缩包未包含）；
 - `packages/shared/**`、`packages/templates/**`；
 - `third_party/openovel/**`；
 - v4.0 架构文档、历史审计设计、P00 任务说明；
@@ -72,3 +73,16 @@ pnpm p00:corpus -- --severity HIGH --json
 ```
 
 所有命令只读取仓库 fixture，不访问外部模型或 provider。
+
+## 双 workspace 工程门
+
+完整仓库有两套职责不同、名称不可互换的 OpenNovel workspace：
+
+| 门 | 目录 | package name | 职责 | spec |
+|---|---|---|---|---:|
+| app runtime | `apps/openovel-runtime` | `@apps/openovel-runtime` | OpenNovel-first 应用运行时 | 2 个文件，97 tests |
+| evidence runtime | `packages/openovel-runtime` | `@ai-story/openovel-runtime` | Evidence/Shadow 编译与审计 | 2 个文件，33 tests |
+
+`pnpm test:openovel-runtime` 只运行 app runtime；`pnpm test:openovel-evidence-runtime` 只运行 evidence runtime。八条既有 `openovel:evidence*`、`openovel:world-bible`、`openovel:compare`、`openovel:shadow-*` 根命令继续指向真正提供对应 script 的 evidence runtime，并通过 script-existence wrapper 阻止 pnpm 的静默空跑。
+
+证据源文本统一以通用 `docs/**/*.txt text eol=crlf` 属性检出，使冻结的字节级 source hash 在 Windows 和 Unix worktree 一致。
