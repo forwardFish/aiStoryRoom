@@ -200,6 +200,7 @@ export function renderNarratorCausalDelta(delta: CausalDelta) {
   const durableBoundaries = (delta.beatContract?.constraints || [])
     .filter((constraint) => (
       isNarratorDurableBoundary(constraint)
+      && !isBackstageCatchAllBoundary(constraint)
       && !isClosedFormalDocumentBoundary(constraint)
       && !isDocumentKnowledgeBoundary(constraint)
     ))
@@ -246,6 +247,24 @@ export function renderNarratorCausalDelta(delta: CausalDelta) {
 function isNarratorDurableBoundary(value: string) {
   return /(?:具名人物|关键证据|正式文书|命令|回文|奏报|奏疏|公文|责任说明|签发|签押|落印|用印|持有人|保管|移交|交给|递给|封存|启封|损毁|知情|秘密|只写|不得.{0,24}(?:新增|确认|签|承诺|移交|公开|泄露))/u
     .test(String(value || ""));
+}
+
+export function isBackstageCatchAllBoundary(value: string) {
+  const text = normalizeReaderAction(value);
+  if (/^[-*+]?\s*shadow_warning\b/iu.test(text)) return true;
+  const categories = [
+    "人物",
+    "文书",
+    "证据",
+    "数量",
+    "期限",
+    "发现",
+    "承诺",
+    "办理",
+  ];
+  const categoryCount = categories.filter((item) => text.includes(item)).length;
+  return categoryCount >= 4
+    && /(?:不得|不要|禁止|严禁).{0,20}(?:新增|补出|编造|出现)/u.test(text);
 }
 
 function isClosedFormalDocumentBoundary(value: string) {

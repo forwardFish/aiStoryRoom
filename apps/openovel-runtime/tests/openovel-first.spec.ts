@@ -353,15 +353,19 @@ test("Narrator projection keeps causal pressure but removes backstage player com
     "## Forbidden",
     "",
     "- 不得替总督响应巡抚加码或做出选择。",
+    "- 不得新增人物、文书、证据、数量、期限或办理完成结果。",
+    "- shadow_warning UNVERIFIED_DURABLE_LOCATION：公文所在地尚未确认。",
   ].join("\n");
   const projected = projectForegroundGuidance(sangtianGuidance);
   assert.match(projected.text, /巡抚差役跪在堂下等回话/);
   assert.match(projected.text, /封存令已发但差员未派/);
   assert.match(projected.text, /不得替总督响应巡抚加码或做出选择/);
+  assert.doesNotMatch(projected.text, /不得新增人物、文书、证据、数量、期限/);
+  assert.doesNotMatch(projected.text, /shadow_warning|UNVERIFIED_DURABLE_LOCATION/);
   assert.doesNotMatch(projected.text, /总督须面对加码/);
   assert.doesNotMatch(projected.text, /总督必须面对加码/);
   assert.doesNotMatch(projected.text, /T05入口节点|由玩家选择/);
-  assert.equal(projected.removedPlayerDirectiveClauses, 3);
+  assert.equal(projected.removedPlayerDirectiveClauses, 5);
   assert.equal(projected.deduplicatedContextCardSections, 0);
 
   const secondWorldGuidance = [
@@ -2400,7 +2404,10 @@ test("authored options bridge only when the actual ending asks another instituti
         label: "只准清流县先办一批，并写明不得趁急难压价买田。",
         effect: {
           beatContract: {
+            objective: "bridge coverage",
             moves: ["巡抚要求派员参与复核并记下查验经过。"],
+            requiredAnchorGroups: [],
+            stopCondition: "stop after response",
           },
         },
       }],
@@ -2442,6 +2449,7 @@ test("keeps a private formal document's knowledge boundary in narrator context a
           requiredAnchorGroups: [["航向"], ["轮机员"], ["责任"]],
           constraints: [
             "航行令正文目前只由舰长知晓；轮机员只知道文书存在。未经玩家明确出示、宣读或移交，不得让其他人物看见、复述或依据正文行动。",
+            "不得新增人物、文书、证据、数量、期限或办理完成结果。",
           ],
           stopCondition: "轮机员追问谁承担误期责任。",
         },
@@ -2450,6 +2458,7 @@ test("keeps a private formal document's knowledge boundary in narrator context a
   }));
 
   assert.match(context, /文书知情边界/);
+  assert.doesNotMatch(context, /不得新增人物、文书、证据、数量、期限/);
   assert.match(context, /航行令正文目前只由舰长知晓/);
   assert.match(context, /未经玩家明确出示、宣读或移交/);
 });
@@ -2782,193 +2791,83 @@ test("typed authored object state overrides a stale prose invariant", () => {
   ).reason, "REGISTERED_OBJECT_STATE_CONTRADICTION");
 });
 
-test("a valid narrative prefix is published once when an unsupported causal tail is clipped", async () => {
+test("an attributed unverified location stays intact and reaches Shadow", async () => {
   const rawNarration = [
-    "总督没有去拿印。他把巡抚公文往案角推了半寸，抬眼对屏风外道：“你先候着，回文不急这一刻。”",
+    "总督没有去拿印。他把巡抚公文往案角推了半寸，抬眼对屏风外道：‘你先候着，回文不急这一刻。’",
     "巡抚书吏到底没再催，只把回文匣换到另一只手上，退后半步站定。",
-    "总督转向县令亲随：“密信里说分户田数加总与册尾总数不合——你县尊是拿哪一列去加的，加出来差多少？”",
-    "亲随低头答：“县尊只命小的转报：分户逐项相加，与册尾所列总数对不上。差数多少，信里没写，小的也不知道。”",
-    "总督又问：“原册现在何处？”",
-    "亲随道：“仍在清流县档房，未曾带出。”",
-    "总督指节在案面轻叩了一下，不再说话。",
+    "总督转向县令亲随：‘密信里说分户田数加总与册尾总数不合——你县尊是拿哪一列去加的，加出来差多少？’",
+    "亲随低头答：‘县尊只命小的转报：分户逐项相加，与册尾所列总数对不上。差数多少，信里没写，小的也不知道。’",
+    "总督又问：‘原册现在何处？’亲随道：‘仍在清流县档房，未曾带出。’",
   ].join("");
-  const prefix = safeNarrativePrefixForWarning(rawNarration, {
-    code: "CAUSAL_KNOWLEDGE_BOUNDARY",
-    message: "unsupported location",
-    severity: "HIGH",
-    blocksPlayer: true,
-    details: {
-      sourceCode: "UNSUPPORTED_DURABLE_LOCATION",
-      subject: "原册",
-      location: "清流县",
-    },
-  });
-  assert.match(prefix, /小的也不知道。”$/);
-  assert.doesNotMatch(prefix, /原册现在何处|清流县档房/);
-  const multiSentenceAnswer = [
-    "总督没有去拿印，只把巡抚公文往案角推了半寸。巡抚书吏仍捧着空匣，退后半步候着。",
-    "总督只让亲随复述密信。亲随答：“第一批待改田亩分户逐项相加，与册尾所列总数对不上。”",
-    "总督问：“差多少？”亲随答：“县尊没跟小人提数字。”",
-    "总督又问：“原册呢？”亲随答：“没随信送来。县尊说原册还在清流，怕路上有失。”",
-  ].join("");
-  const multiSentencePrefix = safeNarrativePrefixForWarning(multiSentenceAnswer, {
-    code: "CAUSAL_KNOWLEDGE_BOUNDARY",
-    message: "unsupported location",
-    severity: "HIGH",
-    blocksPlayer: true,
-    details: {
-      sourceCode: "UNSUPPORTED_DURABLE_LOCATION",
-      subject: "原册",
-      location: "清流",
-    },
-  }, 80);
-  assert.match(multiSentencePrefix, /县尊没跟小人提数字。”$/);
-  assert.doesNotMatch(multiSentencePrefix, /原册呢|还在清流/);
-  const straightQuotePrefix = safeNarrativePrefixForWarning(
-    multiSentenceAnswer.replace(/[“”]/gu, "\""),
-    {
-      code: "CAUSAL_KNOWLEDGE_BOUNDARY",
-      message: "unsupported location",
-      severity: "HIGH",
-      blocksPlayer: true,
-      details: {
-        sourceCode: "UNSUPPORTED_DURABLE_LOCATION",
-        subject: "原册",
-        location: "清流",
-      },
-    },
-    80,
-  );
-  assert.match(straightQuotePrefix, /县尊没跟小人提数字。"$/);
-
   const provider = new ScriptedProvider({
     narrator: [rawNarration],
-    options: [JSON.stringify({
-      options: [
-        { label: "让亲随把县令报疑的原话再复述一遍" },
-        { label: "先问巡抚书吏中丞要何种答复" },
-      ],
-      tension: "报疑与催办",
-    })],
+    options: [JSON.stringify({ options: [
+      { label: "追问这句话是亲见还是转述" },
+      { label: "暂不采信，转问巡抚书吏" },
+    ], tension: "未经核实的所在地" })],
   });
   await withRuntime(async ({ runtime, workspace, runId }) => {
     const opening = await runtime.getRun(runId);
     const option = opening.options.find((item) => item.id === "opening_d1");
     assert.ok(option);
-    const deltas: string[] = [];
     const result = await runtime.processAction({
-      runId,
-      action: option.label,
-      boundOption: { id: option.id, label: option.label },
-      onEvent(event) {
-        if (event.type === "narration.delta") {
-          deltas.push(String((event.data as { text?: string }).text || ""));
-        }
-      },
+      runId, action: option.label, boundOption: { id: option.id, label: option.label },
     });
-    assert.equal(result.turnId, "T01");
-    assert.equal(result.narration, prefix);
-    assert.equal(deltas.join(""), prefix);
-    assert.doesNotMatch(deltas.join(""), /清流县档房/);
-    assert.ok(result.warnings.some((item) => (
-      item.code === "NARRATION_CAUSAL_TAIL_CLIPPED"
-    )));
-    assert.equal(
-      provider.calls.filter((item) => item.profile === "narrator").length,
-      1,
-    );
-    assert.equal(
-      provider.calls.filter((item) => item.profile === "options").length,
-      1,
-    );
+    assert.equal(result.narration, rawNarration);
+    assert.ok(result.warnings.some((item) => item.code === "UNVERIFIED_DURABLE_LOCATION"));
     const canon = await readFile(workspace.paths(runId).chapters, "utf8");
-    assert.match(canon, /小的也不知道/);
-    assert.doesNotMatch(canon, /清流县档房/);
-    const recorded = await readFile(
-      path.join(workspace.paths(runId).callsDir, "T01.narrator.json"),
-      "utf8",
-    );
-    assert.match(recorded, /清流县档房/);
+    assert.match(canon, /仍在清流县档房/);
+    assert.doesNotMatch(canon, /NARRATION_CAUSAL_TAIL_CLIPPED/);
   }, provider);
 });
-
-test("causal clipping refuses to publish when the first substantive evidence answer is invented", async () => {
+test("an unverified evidence procedure stays playable and is marked Shadow", async () => {
   const provider = new ScriptedProvider({
     narrator: [[
-      "总督没有去拿印。他把巡抚公文往案角一推，巡抚书吏仍捧着回文匣候着。",
-      "总督转向县令亲随：“密信里说分户田数逐项相加，与册尾总数不符——你县尊是自己核的，还是经手书办核的？”",
-      "亲随答：“县尊说，是他亲手逐项加过两遍，才敢写进信里。册尾总数多出分户之合。”",
-      "总督又问：“原册现在何处？”亲随道：“仍在清流县档房。”",
+      "总督没有去拿印，只让亲随复述县令报疑。",
+      "亲随答：‘县尊说，是他亲手逐项加过两遍，才敢写进信里。册尾总数多出分户之合。’",
+      "总督没有把这句话当成已核实结论。",
     ].join("")],
+    options: [JSON.stringify({ options: [
+      { label: "追问核验次数从何得知" },
+      { label: "只记录报疑，不采信次数" },
+    ], tension: "未经核实的核验程序" })],
   });
   await withRuntime(async ({ runtime, workspace, runId }) => {
     const opening = await runtime.getRun(runId);
     const option = opening.options.find((item) => item.id === "opening_d1");
     assert.ok(option);
-    await assert.rejects(
-      runtime.processAction({
-        runId,
-        action: option.label,
-        boundOption: { id: option.id, label: option.label },
-      }),
-      /CAUSAL_KNOWLEDGE_BOUNDARY|UNSUPPORTED_EVIDENCE_DETAIL/,
-    );
-    assert.equal(
-      provider.calls.filter((item) => item.profile === "narrator").length,
-      1,
-    );
-    assert.equal(
-      provider.calls.filter((item) => item.profile === "options").length,
-      0,
-    );
+    const result = await runtime.processAction({
+      runId, action: option.label, boundOption: { id: option.id, label: option.label },
+    });
+    assert.equal(result.turnNumber, 1);
+    assert.ok(result.warnings.every((warning) => warning.blocksPlayer === false));
     const canon = await readFile(workspace.paths(runId).chapters, "utf8");
-    assert.doesNotMatch(canon, /亲手逐项加过两遍|册尾总数多出/);
+    assert.match(canon, /亲手逐项加过两遍/);
   }, provider);
 });
-
 test("durable findings stay in Shadow and reach Storykeeper without blocking Canon", async () => {
   const provider = new ScriptedProvider({
-    narrator: [
-      "总督只问原册是否随信送来。亲随答道：“不曾。县尊只说原册仍在清流，未曾离县。”巡抚书吏在屏风外听着，捧匣的手没有动，只等总督给一句能够带回去的话。",
-    ],
-    options: [JSON.stringify({
-      options: [
-        { label: "追问亲随这句话是亲眼所见，还是县令转述" },
-        { label: "不采信这句转述，先给巡抚书吏一个暂缓答复" },
-      ],
-      tension: "未经核实的原册去向",
-    })],
+    narrator: ["总督只问原册是否随信送来。亲随答道：‘不曾。县尊只说原册仍在清流，未曾离县。’巡抚书吏仍捧匣等候。"],
+    options: [JSON.stringify({ options: [
+      { label: "追问这句话是亲眼所见还是县令转述" },
+      { label: "不采信这句转述，先答复巡抚书吏" },
+    ], tension: "未经核实的原册去向" })],
     storykeeper: [storykeeperPatch({
       "open-threads.md": "## Open Threads\n\n- 亲随转述原册仍在清流，但尚未查证其真实所在地和保管状态。",
     })],
   });
   await withRuntime(async ({ runtime, workspace, storykeeper, runId }) => {
-    const result = await runtime.processAction({
-      runId,
-      action: "暂不签发放行文书，只核对密信是否附有原册。",
-    });
+    const result = await runtime.processAction({ runId, action: "暂不签发，只核对密信是否附有原册。" });
     assert.equal(result.turnNumber, 1);
-    assert.ok(result.warnings.some((warning) => (
-      warning.code === "UNSUPPORTED_CUSTODY_ASSERTION"
-      || warning.code === "UNSUPPORTED_DURABLE_LOCATION"
-    )));
-    const published = await workspace.readPublicRun(runId);
-    assert.equal(published.status, "READY");
-    assert.match(published.canon, /原册仍在清流/);
-    const audit = await readFile(workspace.paths(runId).shadowAudit, "utf8");
-    assert.match(audit, /无来源的既往保管保证|无来源的明确所在地/);
-
+    assert.ok(result.warnings.some((warning) => warning.code === "UNVERIFIED_DURABLE_LOCATION"));
+    assert.equal((await workspace.readPublicRun(runId)).status, "READY");
+    assert.match((await workspace.readPublicRun(runId)).canon, /原册仍在清流/);
     await storykeeper.kick(runId);
-    const storykeeperCall = provider.calls.find((call) => call.profile === "storykeeper");
-    assert.ok(storykeeperCall);
-    assert.match(storykeeperCall.messages[0].content, /未经核实说法/);
-    assert.match(storykeeperCall.messages[1].content, /<shadow_warnings>/);
-    assert.match(storykeeperCall.messages[1].content, /UNSUPPORTED_(?:CUSTODY_ASSERTION|DURABLE_LOCATION)/);
-    const guidance = await readFile(workspace.paths(runId).foregroundGuidance, "utf8");
-    assert.match(guidance, /尚未查证其真实所在地和保管状态/);
+    const call = provider.calls.find((item) => item.profile === "storykeeper");
+    assert.ok(call);
+    assert.match(call.messages[1].content, /<shadow_warnings>/);
   }, provider);
 });
-
 test("Storykeeper section bodies are normalized by code before the next foreground", async () => {
   const provider = new ScriptedProvider({
     narrator: [
@@ -3043,89 +2942,47 @@ test("frontend section formatter preserves correct headings and repairs bare bod
 
 test("consequential narrator overreach is rejected before Options and Canon", async () => {
   const provider = new ScriptedProvider({
-    narrator: [
-      "总督叫值差去查米价，又补了一句：“不必声张，也不要知会巡抚衙门。”值差当即领命。",
-    ],
-    options: [JSON.stringify({
-      options: [{ label: "等值差回报" }],
-      tension: "米价",
-    })],
+    narrator: ["总督叫值差去查米价，又补了一句：‘不必声张，也不要知会巡抚衙门。’值差当即领命。"],
+    options: [JSON.stringify({ options: [{ label: "等值差回报" }], tension: "米价" })],
   });
   await withRuntime(async ({ runtime, workspace, runId }) => {
     const before = await workspace.readPublicRun(runId);
-    await assert.rejects(
-      runtime.processAction({ runId, action: "叫人去查城中米价和米行闭门情形。" }),
-      /UNAUTHORIZED_SECRECY_ORDER/,
-    );
+    await assert.rejects(runtime.processAction({ runId, action: "叫人去查城中米价和米行闭门情形。" }), /PLAYER_ACTION_OVERREACH/);
     const after = await workspace.readPublicRun(runId);
     assert.equal(after.turnNumber, 0);
     assert.equal(after.canon, before.canon);
     assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
-    const log = await readFile(workspace.paths(runId).sceneLog, "utf8");
-    assert.match(log, /"type":"foreground_rejected"/);
-    assert.match(log, /UNAUTHORIZED_SECRECY_ORDER/);
+    assert.match(await readFile(workspace.paths(runId).sceneLog, "utf8"), /PLAYER_ACTION_OVERREACH/);
   }, provider);
 });
-
 test("an unchosen future reply promise is rejected before Options and Canon", async () => {
   const provider = new ScriptedProvider({
-    narrator: [
-      '总督问完密信里的疑处，把信压回公文下面。巡抚书吏仍捧匣站着。"回文今晚给你。"总督搁下茶盏，语气没有什么变化，"你先坐着。"',
-    ],
-    options: [JSON.stringify({
-      options: [{ label: "等候回文" }],
-      tension: "回文",
-    })],
+    narrator: ["总督问完密信里的疑处，把信压回公文下面。总督道：‘回文今晚给你，你先候着。’"],
+    options: [JSON.stringify({ options: [{ label: "等候回文" }], tension: "回文" })],
   });
   await withRuntime(async ({ runtime, workspace, runId }) => {
     const before = await workspace.readPublicRun(runId);
-    await assert.rejects(
-      runtime.processAction({
-        runId,
-        action: "暂不签发放行文书，留下巡抚书吏，同时核对密信。",
-      }),
-      /PLAYER_COMMITMENT_WARNING/,
-    );
+    await assert.rejects(runtime.processAction({ runId, action: "暂不签发，留下书吏并核对密信。" }), /PLAYER_ACTION_OVERREACH/);
     const after = await workspace.readPublicRun(runId);
     assert.equal(after.turnNumber, 0);
     assert.equal(after.canon, before.canon);
     assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
   }, provider);
 });
-
-test("an authorized player clause survives when an appended promise is projected out", async () => {
-  assert.equal(
-    projectPlayerSpeechToAuthorizedAction(
-      '总督抬眼道：“你先候着，回文随后给。”书吏应声站定。',
-      "留下巡抚书吏。",
-      "你先候着，回文随后给。",
-    ),
-    '总督抬眼道：“你先候着。”书吏应声站定。',
-  );
+test("runtime rejects an appended promise instead of rewriting the prose", async () => {
   const provider = new ScriptedProvider({
-    narrator: [
-      '总督没有去碰案上那枚象牙章。他把巡抚公文往手边一压，抬眼朝屏风外道："你先候着，回文随后给。"巡抚书吏应了声"是"，脚却没动，回文匣仍捧在胸前。总督转向县令亲随，只让他复述密信中的报疑。亲随说分户田数逐项相加与册尾总数不符，对差额和核验次数都答不知。总督没有再追问。',
-    ],
-    options: [JSON.stringify({
-      options: [{ label: "答复巡抚书吏" }],
-      tension: "回文",
-    })],
+    narrator: ["总督没有去碰印。他抬眼道：‘你先候着，回文随后给。’巡抚书吏仍捧匣站定。"],
+    options: [JSON.stringify({ options: [{ label: "答复巡抚书吏" }], tension: "回文" })],
   });
   await withRuntime(async ({ runtime, workspace, runId }) => {
-    const result = await runtime.processAction({
-      runId,
-      action: "暂不签发放行文书，留下巡抚书吏，同时核对密信。",
-    });
-    assert.equal(result.turnNumber, 1);
-    assert.match(result.narration, /你先候着。/);
-    assert.doesNotMatch(result.narration, /回文随后给/);
-    assert.ok(result.warnings.some((warning) => (
-      warning.code === "NARRATION_PLAYER_SPEECH_PROJECTED"
-    )));
-    assert.match(await readFile(workspace.paths(runId).sceneLog, "utf8"), /foreground_player_speech_projected/);
+    const before = await workspace.readPublicRun(runId);
+    await assert.rejects(runtime.processAction({ runId, action: "暂不签发，留下巡抚书吏。" }), /PLAYER_ACTION_OVERREACH/);
+    const after = await workspace.readPublicRun(runId);
+    assert.equal(after.turnNumber, 0);
+    assert.equal(after.canon, before.canon);
+    assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
   }, provider);
 });
-
 test("a chosen investigation may be stated while an NPC conditional is not a player action", () => {
   const action = "先答粮价：命查杭州米铺实情，再议各县";
   const narration = [
@@ -3135,37 +2992,23 @@ test("a chosen investigation may be stated while an NPC conditional is not a pla
   assert.deepEqual(shadowContinuityWarnings(narration, action), []);
 });
 
-test("a pure inquiry publishes only the complete inquiry before appended orders", async () => {
+test("a pure inquiry rejects appended orders without clipping the prose", async () => {
   const provider = new ScriptedProvider({
-    narrator: [
-      [
-        "总督只问书吏：“中丞要的究竟是今日落印，还是一句可带回去的答复？”",
-        "书吏低声说自己只奉命取回答复，不敢替中丞改口。",
-        "总督却接着说：“回去告诉中丞，清流县报了事，本督要核；核以前印不会动。”",
-        "他又转向县令亲随：“原册不许动，档房不许外人进出，本督另派人到。”",
-        "亲随应声退到门边，书吏问能否告退，总督道：“去吧。”",
-      ].join("\n\n"),
-    ],
-    options: [JSON.stringify({
-      options: [{ label: "商议派谁去清流" }],
-      tension: "清流核册",
-    })],
+    narrator: [[
+      "总督只问书吏：‘中丞要的是今日落印，还是一句可带回去的答复？’",
+      "书吏说自己只奉命取回答复。",
+      "总督又转向亲随：‘原册不许动，本督另派人到。’",
+    ].join("\n\n")],
   });
   await withRuntime(async ({ runtime, workspace, runId }) => {
-    const result = await runtime.processAction({
-      runId,
-      action: "问巡抚书吏：中丞要的究竟是今日落印，还是一句可带回去的答复。",
-    });
+    const before = await workspace.readPublicRun(runId);
+    await assert.rejects(runtime.processAction({ runId, action: "只问巡抚书吏要何种答复。" }), /PLAYER_ACTION_OVERREACH/);
     const after = await workspace.readPublicRun(runId);
-    assert.equal(after.turnNumber, 1);
-    assert.match(after.canon, /只奉命取回答复，不敢替中丞改口/);
-    assert.doesNotMatch(after.canon, /原册不许动|本督另派人到|去吧/);
-    assert.ok(result.warnings.some((warning) => (
-      warning.code === "NARRATION_CAUSAL_TAIL_CLIPPED"
-    )));
+    assert.equal(after.turnNumber, 0);
+    assert.equal(after.canon, before.canon);
+    assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
   }, provider);
 });
-
 test("options failure never rolls back narration and free-text can continue next turn", async () => {
   const provider = new ScriptedProvider({
     narrator: [
@@ -3289,35 +3132,23 @@ test("failed Options can be recovered without regenerating or recommitting Canon
 
 test("unsupported location and custody narration stays playable as Shadow", async () => {
   const provider = new ScriptedProvider({
-    narrator: [
-      "亲随隔着案角低声说，清流县的册子还在百里之外，没有人碰过，也没有人看过。总督没有把这句话当成凭据，只抬眼问他：这是县令亲见，还是差役转述。亲随一时答不上来。巡抚书吏仍捧着回文匣，把这句问话原原本本听了进去。",
-    ],
-    options: [JSON.stringify({
-      options: [
-        { label: "追问亲随这句话的来源" },
-        { label: "暂不采信，转而答复巡抚书吏" },
-      ],
-      tension: "未经核实的保管说法",
-    })],
+    narrator: ["亲随低声说，清流县的册子还在百里之外，没有人碰过，也没有人看过。总督没有把这句话当成凭据，只问这是县令亲见还是差役转述。"],
+    options: [JSON.stringify({ options: [
+      { label: "追问亲随这句话的来源" },
+      { label: "暂不采信，转而答复巡抚书吏" },
+    ], tension: "未经核实的保管说法" })],
     storykeeper: [storykeeperPatch()],
   });
   await withRuntime(async ({ runtime, workspace, runId }) => {
-    const result = await runtime.processAction({
-      runId,
-      action: "问亲随原册现在由谁看守。",
-    });
+    const result = await runtime.processAction({ runId, action: "问亲随原册现在由谁看守。" });
     assert.equal(result.turnNumber, 1);
-    assert.ok(result.warnings.some((warning) => (
-      warning.code === "UNSUPPORTED_CUSTODY_ASSERTION"
-      || warning.code === "UNSUPPORTED_DURABLE_LOCATION"
-    )));
+    assert.ok(result.warnings.some((warning) => warning.code === "UNVERIFIED_DURABLE_CUSTODY"));
     assert.ok(result.warnings.every((warning) => warning.blocksPlayer === false));
     const run = await workspace.readPublicRun(runId);
     assert.equal(run.status, "READY");
-    assert.match(run.canon, /这是县令亲见，还是差役转述/);
+    assert.match(run.canon, /这是县令亲见还是差役转述/);
   }, provider);
 });
-
 test("a settled player action cannot disappear behind an abbreviated narration", () => {
   const action = "只准清流县先办一批，并在回文里写明不得趁急难压价买田。";
   const delta = buildCausalDelta({
@@ -3365,6 +3196,7 @@ test("a transitioned scene admits ordinary paper texture but not unapproved name
         intent: "请巡抚共同具名。",
         beatContract: {
           objective: "转入次日签押房",
+          requiredAnchorGroups: [],
           moves: ["议事转到次日签押房"],
           constraints: [
             "新场没有获批的正式文书或证据容器在案；普通无字纸张与笔砚只可作叙事纹理。",
@@ -3393,6 +3225,7 @@ test("a transitioned scene admits ordinary paper texture but not unapproved name
         intent: "另具督抚责任说明。",
         beatContract: {
           objective: "转入次日签押房",
+          requiredAnchorGroups: [],
           moves: ["议事转到次日签押房"],
           constraints: [
             "新场获批在场的正式文书或证据容器仅有：督抚责任说明；不得另添其他权力凭证。",

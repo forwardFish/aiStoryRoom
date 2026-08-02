@@ -8,6 +8,7 @@ import {
   type PartOneState,
 } from "@ai-story/templates";
 import { appendJsonl, readJson, writeJsonAtomic } from "./io.js";
+import { durableAnchorGroupPresent } from "./durable-truth-gate.js";
 import type { FileStoryWorkspace } from "./workspace.js";
 import type { OpenNovelOption } from "./types.js";
 
@@ -82,7 +83,7 @@ export async function commitSangtianDecision(
       move.sourceType === "DUE_CONSEQUENCE"
       && move.consequenceId
       && move.requiredTermGroups.every((group) => (
-        group.some((term) => publishedNarration.includes(term.replace(/^EXACT:/u, "")))
+        durableAnchorGroupPresent(publishedNarration, group)
       ))
     ))
     .map((move) => move.consequenceId!);

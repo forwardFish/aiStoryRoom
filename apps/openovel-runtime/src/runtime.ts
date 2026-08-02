@@ -14,22 +14,12 @@ import {
 import {
   authorizedNarrativeIntent,
   buildCausalDelta,
-  enforceCausalKnowledgeBoundary,
-  validateRequiredNarrativeFacts,
 } from "./causal-delta.js";
+import { validateDurableTruth } from "./durable-truth-gate.js";
 import { parseOptions } from "./options.js";
 import {
-  projectBackstageConstraintSentence,
-  projectClosedFormalDocumentClaims,
-  projectClosedFormalDocumentExtent,
-  projectExternalActorSpeechToAuthorizedMoves,
-  projectPlayerSpeechToAuthorizedAction,
-  projectUnsupportedIncidentalSentence,
   normalizeCanonicalRoleTerms,
   normalizeNarrativeSurface,
-  safeNarrativePrefixForWarning,
-  shadowContinuityWarnings,
-  validateDurableBoundary,
   validateForegroundSurface,
 } from "./surface-guard.js";
 import {
@@ -270,10 +260,6 @@ export class OpenNovelRuntime {
       authorizedNarrativeIntent(causalDelta.immediateIntent),
       ...(causalDelta.beatContract?.authorizedPlayerActions || []),
     ].filter(Boolean).join("\n");
-    const authorizedAction = [
-      playerAuthorizedAction,
-      ...(causalDelta.beatContract?.constraints || []),
-    ].filter(Boolean).join("\n");
     const emit = (event: TurnEvent) => {
       try {
         input.onEvent?.(event);
@@ -335,61 +321,6 @@ export class OpenNovelRuntime {
         currentSnapshot.metadata.roleId,
       ),
     };
-    const initialProjectionWarnings: RuntimeWarning[] = [];
-    const backstageProjected = projectBackstageConstraintSentence(narrator.text);
-    if (backstageProjected) {
-      narrator = { ...narrator, text: backstageProjected };
-      const projectionWarning: RuntimeWarning = {
-        code: "NARRATION_BACKSTAGE_CONSTRAINT_PROJECTED",
-        message: "模型把后台未知项清单写成了主角没有追问的正文；运行时删除该非因果句并重新执行全部发布校验",
-        severity: "LOW",
-        blocksPlayer: false,
-      };
-      initialProjectionWarnings.push(projectionWarning);
-      await this.workspace.recordSceneEvent(input.runId, {
-        type: "foreground_backstage_constraint_projected",
-        turnId,
-        code: projectionWarning.code,
-      }).catch(() => {});
-    }
-    const formalExtentProjected = projectClosedFormalDocumentExtent(
-      narrator.text,
-      authorizedAction,
-    );
-    if (formalExtentProjected) {
-      narrator = { ...narrator, text: formalExtentProjected };
-      const projectionWarning: RuntimeWarning = {
-        code: "NARRATION_CLOSED_DOCUMENT_EXTENT_PROJECTED",
-        message: "模型把闭集文书写成了与获批条款数冲突的篇幅；运行时按已结算条款数校正表面措辞并重新执行全部发布校验",
-        severity: "LOW",
-        blocksPlayer: false,
-      };
-      initialProjectionWarnings.push(projectionWarning);
-      await this.workspace.recordSceneEvent(input.runId, {
-        type: "foreground_closed_document_extent_projected",
-        turnId,
-        code: projectionWarning.code,
-      }).catch(() => {});
-    }
-    const formalClaimsProjected = projectClosedFormalDocumentClaims(
-      narrator.text,
-      authorizedAction,
-    );
-    if (formalClaimsProjected) {
-      narrator = { ...narrator, text: formalClaimsProjected };
-      const projectionWarning: RuntimeWarning = {
-        code: "NARRATION_SETTLED_DOCUMENT_CLAIMS_PROJECTED",
-        message: "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验",
-        severity: "LOW",
-        blocksPlayer: false,
-      };
-      initialProjectionWarnings.push(projectionWarning);
-      await this.workspace.recordSceneEvent(input.runId, {
-        type: "foreground_settled_document_claims_projected",
-        turnId,
-        code: projectionWarning.code,
-      }).catch(() => {});
-    }
     let surface = validateForegroundSurface(narrator.text, previousOpening);
     if (!surface.ok) {
       await this.workspace.updateMetadata(input.runId, {
@@ -418,221 +349,30 @@ export class OpenNovelRuntime {
       text,
       previousOpening,
     )) => {
-      const durableAudit = validateDurableBoundary(
-        text,
-        authorizedAction,
+      const durableAudit = validateDurableTruth({
+        narration: text,
+        readerAction: playerAuthorizedAction,
         knownContext,
+        causalDelta,
+        authorizedWorldMoves: [
+          ...(causalDelta.beatContract?.moves || []),
+          causalDelta.beatContract?.stopCondition || "",
+        ].join("\n"),
         policy,
-      );
+      });
       const preflightWarnings: RuntimeWarning[] = [
-        ...initialProjectionWarnings,
         ...checkedSurface.warnings,
-        ...enforceCausalKnowledgeBoundary(durableAudit.warnings, causalDelta),
-        ...shadowContinuityWarnings(
-          text,
-          playerAuthorizedAction,
-          [
-            ...(causalDelta.beatContract?.moves || []),
-            causalDelta.beatContract?.stopCondition || "",
-          ].join("\n"),
-          compiled.recentCanonExcerpt,
-        ),
-        ...validateRequiredNarrativeFacts(text, causalDelta),
+        ...durableAudit.shadowWarnings,
+        ...durableAudit.hardIssues,
       ];
       return { surface: checkedSurface, preflightWarnings };
     };
-    const authorizedExternalMoves = [
-      ...(causalDelta.beatContract?.moves || []),
-      causalDelta.beatContract?.stopCondition || "",
-    ].join("\n");
-    let audited = auditNarration(narrator.text, surface);
-    let preflightWarnings = audited.preflightWarnings;
-    let blockingWarning = preflightWarnings.find(isForegroundBlockingWarning);
-    if (
-      blockingWarning
-      && /(?:PLAYER_COMMITMENT_WARNING|PLAYER_ACTION_OVERREACH)/u.test(blockingWarning.code)
-    ) {
-      const projected = projectPlayerSpeechToAuthorizedAction(
-        narrator.text,
-        playerAuthorizedAction,
-        String(blockingWarning.details?.promise || blockingWarning.details?.action || ""),
-      );
-      if (projected) {
-        const projectedSurface = validateForegroundSurface(projected, previousOpening);
-        const projectedAudit = projectedSurface.ok
-          ? auditNarration(projected, projectedSurface)
-          : null;
-        const projectedBlocking = projectedAudit?.preflightWarnings
-          .find(isForegroundBlockingWarning);
-        if (projectedAudit && !projectedBlocking) {
-          const projectionWarning: RuntimeWarning = {
-            code: "NARRATION_PLAYER_SPEECH_PROJECTED",
-            message: "模型把未授权承诺附在已获准的玩家台词后；运行时只保留获准子句并重新通过发布校验",
-            severity: "LOW",
-            blocksPlayer: false,
-            details: {
-              sourceCode: blockingWarning.code,
-              removedSpeech: String(
-                blockingWarning.details?.promise || blockingWarning.details?.action || "",
-              ),
-            },
-          };
-          narrator = { ...narrator, text: projected };
-          surface = projectedSurface;
-          audited = projectedAudit;
-          preflightWarnings = [
-            ...projectedAudit.preflightWarnings,
-            projectionWarning,
-          ];
-          blockingWarning = undefined;
-          await this.workspace.recordSceneEvent(input.runId, {
-            type: "foreground_player_speech_projected",
-            turnId,
-            ...projectionWarning.details,
-          }).catch(() => {});
-        }
-      }
-    }
-    if (blockingWarning?.code === "UNAUTHORIZED_EXTERNAL_ACTOR_MOVE") {
-      const projected = projectExternalActorSpeechToAuthorizedMoves(
-        narrator.text,
-        authorizedExternalMoves,
-        String(blockingWarning.details?.clause || ""),
-        String(blockingWarning.details?.axis || ""),
-      );
-      if (projected) {
-        const projectedSurface = validateForegroundSurface(projected, previousOpening);
-        const projectedAudit = projectedSurface.ok
-          ? auditNarration(projected, projectedSurface)
-          : null;
-        const projectedBlocking = projectedAudit?.preflightWarnings
-          .find(isForegroundBlockingWarning);
-        if (projectedAudit && !projectedBlocking) {
-          const projectionWarning: RuntimeWarning = {
-            code: "NARRATION_EXTERNAL_SPEECH_PROJECTED",
-            message: "模型在已获授权的 NPC 主张后追加了越权程序；运行时只删除该独立越权片段并重新通过全部发布校验",
-            severity: "LOW",
-            blocksPlayer: false,
-            details: {
-              sourceCode: blockingWarning.code,
-              removedAxis: String(blockingWarning.details?.axis || ""),
-            },
-          };
-          narrator = { ...narrator, text: projected };
-          surface = projectedSurface;
-          audited = projectedAudit;
-          preflightWarnings = [
-            ...projectedAudit.preflightWarnings,
-            projectionWarning,
-          ];
-          blockingWarning = undefined;
-          await this.workspace.recordSceneEvent(input.runId, {
-            type: "foreground_external_speech_projected",
-            turnId,
-            ...projectionWarning.details,
-          }).catch(() => {});
-        }
-      }
-    }
-    if (
-      blockingWarning
-      && /(?:UNAUTHORIZED_FORMAL_ARTIFACT|UNAUTHORIZED_NEW_EVIDENCE|UNSUPPORTED_DURABLE_LOCATION|UNSUPPORTED_CUSTODY_ASSERTION|UNSUPPORTED_DOCUMENT_AUTHENTICATION)/u.test(
-        String(blockingWarning.details?.sourceCode || blockingWarning.code),
-      )
-    ) {
-      const projected = projectUnsupportedIncidentalSentence(
-        narrator.text,
-        blockingWarning,
-      );
-      if (projected) {
-        const projectedSurface = validateForegroundSurface(projected, previousOpening);
-        const projectedAudit = projectedSurface.ok
-          ? auditNarration(projected, projectedSurface)
-          : null;
-        const projectedBlocking = projectedAudit?.preflightWarnings
-          .find(isForegroundBlockingWarning);
-        if (projectedAudit && !projectedBlocking) {
-          const projectionWarning: RuntimeWarning = {
-            code: "NARRATION_INCIDENTAL_CAUSAL_DETAIL_PROJECTED",
-            message: "模型在完整剧情 beat 中夹入了未经授权的独立物件或内心推断句；运行时删除该非因果旁白并重新通过全部发布校验",
-            severity: "LOW",
-            blocksPlayer: false,
-            details: {
-              sourceCode: String(
-                blockingWarning.details?.sourceCode || blockingWarning.code,
-              ),
-              removedSubject: String(
-                blockingWarning.details?.artifact || blockingWarning.details?.subject || "",
-              ),
-            },
-          };
-          narrator = { ...narrator, text: projected };
-          surface = projectedSurface;
-          audited = projectedAudit;
-          preflightWarnings = [
-            ...projectedAudit.preflightWarnings,
-            projectionWarning,
-          ];
-          blockingWarning = undefined;
-          await this.workspace.recordSceneEvent(input.runId, {
-            type: "foreground_incidental_detail_projected",
-            turnId,
-            ...projectionWarning.details,
-          }).catch(() => {});
-        }
-      }
-    }
-    if (blockingWarning) {
-      const safePrefix = safeNarrativePrefixForWarning(
-        narrator.text,
-        blockingWarning,
-        causalDelta.protagonistScope === "inquiry-only" ? 50 : 120,
-      );
-      if (safePrefix) {
-        const clippedSurface = validateForegroundSurface(safePrefix, previousOpening);
-        const clippedAudit = clippedSurface.ok
-          ? auditNarration(safePrefix, clippedSurface)
-          : null;
-        const clippedBlocking = clippedAudit?.preflightWarnings
-          .find(isForegroundBlockingWarning);
-        const clippedMissesSceneTransition = Boolean(
-          clippedAudit
-          && hasAuthoredSceneTransition(causalDelta)
-          && clippedAudit.preflightWarnings.some((warning) => (
-            warning.code === "MISSING_REQUIRED_BEAT_OUTCOME"
-          )),
-        );
-        if (clippedAudit && !clippedBlocking && !clippedMissesSceneTransition) {
-          const rawLength = narrator.text.length;
-          narrator = { ...narrator, text: safePrefix };
-          surface = clippedSurface;
-          const clippedWarning: RuntimeWarning = {
-            code: "NARRATION_CAUSAL_TAIL_CLIPPED",
-            message: "模型在完整剧情 beat 后追加了越界因果断言；运行时已从第一处违规前完整收束，并重新通过发布校验",
-            severity: "LOW",
-            blocksPlayer: false,
-            details: {
-              sourceCode: String(
-                blockingWarning.details?.sourceCode || blockingWarning.code,
-              ),
-              rawChars: String(rawLength),
-              acceptedChars: String(safePrefix.length),
-            },
-          };
-          audited = clippedAudit;
-          preflightWarnings = [
-            ...clippedAudit.preflightWarnings,
-            clippedWarning,
-          ];
-          blockingWarning = undefined;
-          await this.workspace.recordSceneEvent(input.runId, {
-            type: "foreground_causal_tail_clipped",
-            turnId,
-            ...clippedWarning.details,
-          }).catch(() => {});
-        }
-      }
-    }
+    const audited = auditNarration(narrator.text, surface);
+    const preflightWarnings = audited.preflightWarnings;
+    const blockingWarning = preflightWarnings.find(isForegroundBlockingWarning);
+    // P0 Durable Truth is never repaired by deleting or rewriting prose.
+    // A clear violation is retained as evidence and rejected; all ambiguous
+    // findings have already been downgraded to non-blocking Shadow warnings.
     if (blockingWarning) {
       await this.workspace.recordSceneEvent(input.runId, {
         type: "foreground_rejected",
@@ -645,17 +385,14 @@ export class OpenNovelRuntime {
         runId: input.runId,
         turnId,
         readerAction: input.action,
-        suspectedDurableConflicts: preflightWarnings.map((warning) => warning.message),
-        authorityWarnings: preflightWarnings
-          .filter(isForegroundBlockingWarning)
-          .map((warning) => warning.message),
+        suspectedDurableConflicts: [blockingWarning.message],
+        authorityWarnings: [blockingWarning.message],
         severity: "HIGH",
         blocksPlayer: true,
         observedAt: new Date().toISOString(),
       }).catch(() => {});
       throw new Error(blockingWarning.code);
     }
-
     if (holdNarrationUntilValidated) {
       emit({
         type: "narration.delta",
@@ -1278,6 +1015,23 @@ function durablePolicy(
       "奏报",
       "奏疏",
     ],
+    knownFormalArtifacts: ["公文", "回文", "奏报", "奏疏"],
+    durableClaimSubjects: [
+      "改桑",
+      "桑田",
+      "改田",
+      "田主",
+      "户头",
+      "田亩",
+      "县册",
+      "原册",
+      "复核",
+      "粮价",
+      "米价",
+      "期限",
+      "公文",
+      "回文",
+    ],
     evidenceSubjects: [...new Set([
       ...evidenceSubjects,
       "密信",
@@ -1327,6 +1081,13 @@ function durablePolicy(
       "具报",
       "期限",
     ])],
+    registeredObjects: registeredObjectStates.map((item) => ({
+      subject: item.label,
+      contentsState: item.contentsState,
+      closureState: item.closureState,
+    })),
+    protagonistLabels: ["浙江总督", "总督", "制台"],
+    secretClaims: ["巡抚就是幕后主使", "商会就是幕后主使"],
   };
 }
 

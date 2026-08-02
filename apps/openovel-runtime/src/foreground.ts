@@ -13,7 +13,10 @@ import {
   removeUnsupportedObjectiveClaims,
   unsupportedClaimsFromWarnings,
 } from "./shadow-claims.js";
-import { renderNarratorCausalDelta } from "./causal-delta.js";
+import {
+  isBackstageCatchAllBoundary,
+  renderNarratorCausalDelta,
+} from "./causal-delta.js";
 import type {
   CausalDelta,
   CompiledForegroundContext,
@@ -215,6 +218,10 @@ export function projectForegroundGuidance(value: string) {
       if (!line.trim() || /^#{1,6}\s/.test(line.trim())) return [line];
       const sentences = line.match(/[^。！？!?]+[。！？!?]?/g) || [line];
       const projected = sentences.flatMap((sentence) => {
+        if (isBackstageCatchAllBoundary(sentence)) {
+          removedPlayerDirectiveClauses += 1;
+          return [];
+        }
         if (isBackstagePlayerMenu(sentence)) {
           removedPlayerDirectiveClauses += 1;
           return [];
