@@ -318,3 +318,4 @@ export function getTemplate(templateId: string): StoryTemplate {
 export * from "./continuous-strategy";
 export * from "./game-registry";
 export * from "./story-package";
+export * from "./runtime-contract";
