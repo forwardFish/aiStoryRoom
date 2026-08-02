@@ -85,12 +85,39 @@ test("historical corpus schema has 98 of 98 complete manual labels", async () =>
   assert.equal(corpus.records.length, 98);
   assert.equal(corpus.records.filter((record) => record.humanClassification === "UNLABELED").length, 0);
   assert.equal(corpus.records.filter((record) => record.classificationRationale.trim().length >= 12).length, 98);
-  assert.deepEqual(calculateStats(corpus).classifications, { REAL_P0: 76, FALSE_POSITIVE: 11, UNCERTAIN: 11 });
+  assert.equal(corpus.records.filter((record) => Object.values(record.reviewEvidence).every((value) => value.trim().length >= 4)).length, 98);
+  const classifications = calculateStats(corpus).classifications;
+  assert.equal(Object.values(classifications).reduce((sum, count) => sum + count, 0), 98);
+  assert.equal(classifications.REAL_P0, 0, "sanitized warnings alone must not be promoted to gold REAL_P0 evidence");
+  assert.deepEqual(
+    corpus.records.filter((record) => ["B004", "B005"].includes(record.auditId)).map((record) => [record.auditId, record.humanClassification]),
+    [["B004", "FALSE_POSITIVE"], ["B005", "UNCERTAIN"]],
+  );
+});
+
+test("speech-act review is schema-based and works for an English non-story fixture", async () => {
+  const corpus = await loadCorpus(resolve(root, "p00-historical-blockers.sanitized.json"));
+  const fixture = structuredClone(corpus.records[0]);
+  fixture.auditId = "B999";
+  fixture.sourceRef = "0123456789abcdef";
+  fixture.turnId = "T99";
+  fixture.auditFinding.suspectedDurableConflicts = ["Would you like me to send an envoy?"];
+  fixture.auditFinding.authorityWarnings = ["Would you like me to send an envoy?"];
+  fixture.humanClassification = "FALSE_POSITIVE";
+  fixture.classificationRationale = "This is an interrogative proposal, not an asserted action, order, or commitment.";
+  fixture.reviewEvidence = {
+    excerpt: "Would you like me to send an envoy?",
+    speechAct: "QUESTION",
+    assertedPredicate: "No envoy dispatch is asserted.",
+    expectedPredicateEvidence: "An affirmative dispatch statement plus actor authorization would be required.",
+  };
+  const fixtureCorpus = { ...corpus, counts: { ...corpus.counts, blockingRecords: 1 }, records: [fixture] };
+  assert.deepEqual(validateCorpus(fixtureCorpus), []);
 });
 
 test("query and statistics are stable across equivalent calls", async () => {
   const corpus = await loadCorpus(resolve(root, "p00-historical-blockers.sanitized.json"));
-  const filters = { classification: "REAL_P0", severity: "HIGH", turnId: "T03", keyword: "文书" };
+  const filters = { classification: "UNCERTAIN", severity: "HIGH", turnId: "T03", keyword: "文书" };
   const first = filterRecords(corpus.records, filters);
   const second = filterRecords([...corpus.records].reverse(), filters);
   assert.deepEqual(first.map((record) => record.auditId), second.map((record) => record.auditId));

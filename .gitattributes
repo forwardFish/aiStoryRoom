@@ -4,3 +4,7 @@ packages/templates/config/**/*.json text eol=lf
 # Evidence source hashes were authored from CRLF text. Keep all tracked source
 # transcripts byte-stable on Windows and Unix checkouts.
 docs/**/*.txt text eol=crlf
+# Generated evidence is canonical LF JSON/JSONL. This keeps a clean build
+# byte-identical in Windows and Unix worktrees.
+packages/openovel-runtime/generated/source-evidence/*.json text eol=lf
+packages/openovel-runtime/generated/source-evidence/*.jsonl text eol=lf

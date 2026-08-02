@@ -38,6 +38,14 @@ export function validateCorpus(corpus) {
     if (typeof record?.classificationRationale !== "string" || record.classificationRationale.trim().length < 12) {
       errors.push(`${at}.classificationRationale must contain an auditable reason of at least 12 characters`);
     }
+    if (!record?.reviewEvidence || typeof record.reviewEvidence !== "object") {
+      errors.push(`${at}.reviewEvidence is required`);
+    }
+    for (const field of ["excerpt", "speechAct", "assertedPredicate", "expectedPredicateEvidence"]) {
+      if (typeof record?.reviewEvidence?.[field] !== "string" || record.reviewEvidence[field].trim().length < 4) {
+        errors.push(`${at}.reviewEvidence.${field} must be a non-empty review field`);
+      }
+    }
   }
   if (corpus?.records?.length !== corpus?.counts?.blockingRecords) errors.push("records length must equal counts.blockingRecords");
   return errors;

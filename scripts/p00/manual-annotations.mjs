@@ -1,6 +1,6 @@
 // P00 human review decisions. Each entry is deliberately explicit and reviewable;
 // no lexical rule or world-specific runtime branch consumes this file.
-export const MANUAL_ANNOTATIONS = {
+const ROUND_ONE_ANNOTATIONS = {
   B001: ["REAL_P0", "断言关键原册的持久所在地与既往保管状态，属于未授权持久事实。"],
   B002: ["REAL_P0", "为关键原册确定具体所在地，改变可依赖的位置事实。"],
   B003: ["REAL_P0", "无来源保证关键原册的既往保管状态，属于持久证据事实。"],
@@ -100,3 +100,63 @@ export const MANUAL_ANNOTATIONS = {
   B097: ["REAL_P0", "遗漏未签发或未落印这一必要认证结果，影响文书状态。"],
   B098: ["REAL_P0", "遗漏朱印未动和公文暂压等已批准结果，导致决定不可见。"],
 };
+
+// Round 2 re-review policy: the sanitized corpus contains validator excerpts but
+// not the complete narration, actor policy, or required-result contract. A
+// validator allegation alone cannot establish a gold REAL_P0 label. These sets
+// are explicit human review decisions; runtime code does not infer labels from
+// language, keywords, characters, or world IDs.
+const FALSE_POSITIVE_SPEECH_ACTS = {
+  B004: "UNKNOWN_OR_UNVERIFIED",
+  B007: "NARRATIVE_TEXTURE",
+  B015: "LOW_VALUE_ACTION_COUNT",
+  B037: "NEGATED_TRANSIENT_ACTION",
+  B041: "LEXICAL_FALSE_MATCH",
+  B044: "NARRATIVE_TEXTURE",
+  B047: "LEXICAL_FALSE_MATCH",
+  B054: "NEGATED_TRANSIENT_ACTION",
+  B059: "NARRATIVE_TEXTURE",
+  B062: "NARRATIVE_TEXTURE",
+  B074: "NARRATIVE_TEXTURE",
+  B093: "STYLE_OR_HEDGE",
+};
+
+const UNCERTAIN_IDS = new Set([
+  "B001", "B002", "B003", "B005", "B006", "B008", "B009", "B010", "B011", "B012", "B013", "B014",
+  "B016", "B017", "B018", "B019", "B020", "B021", "B022", "B023", "B024", "B025", "B026", "B027",
+  "B028", "B029", "B030", "B031", "B032", "B033", "B034", "B035", "B036", "B038", "B039", "B040",
+  "B042", "B043", "B045", "B046", "B048", "B049", "B050", "B051", "B052", "B053", "B055", "B056",
+  "B057", "B058", "B060", "B061", "B063", "B064", "B065", "B066", "B067", "B068", "B069", "B070",
+  "B071", "B072", "B073", "B075", "B076", "B077", "B078", "B079", "B080", "B081", "B082", "B083",
+  "B084", "B085", "B086", "B087", "B088", "B089", "B090", "B091", "B092", "B094", "B095", "B096",
+  "B097", "B098",
+]);
+
+const specialRationales = {
+  B004: "摘录明确说保管人、钥匙和封条状态均未核实；它表达未知，没有断言这些持久状态。",
+  B005: "派员文字是玩家角色的疑问，不是命令或承诺；另一项“一年”警告缺少原句和合同，整体只能暂不确定。",
+};
+
+export const MANUAL_ANNOTATIONS = Object.fromEntries(
+  Object.entries(ROUND_ONE_ANNOTATIONS).map(([auditId, [, previousRationale]]) => {
+    const speechAct = FALSE_POSITIVE_SPEECH_ACTS[auditId] ?? "INSUFFICIENT_SANITIZED_CONTEXT";
+    const classification = FALSE_POSITIVE_SPEECH_ACTS[auditId] ? "FALSE_POSITIVE" : "UNCERTAIN";
+    if (!FALSE_POSITIVE_SPEECH_ACTS[auditId] && !UNCERTAIN_IDS.has(auditId)) {
+      throw new Error(`Round 2 classification missing for ${auditId}`);
+    }
+    const rationale = specialRationales[auditId] ?? (classification === "FALSE_POSITIVE"
+      ? previousRationale
+      : `脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：${previousRationale}`);
+    return [auditId, {
+      classification,
+      rationale,
+      speechAct,
+      assertedPredicate: classification === "FALSE_POSITIVE"
+        ? "摘录本身没有断言受保护的持久因果变化或玩家行动。"
+        : "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+      expectedPredicateEvidence: classification === "FALSE_POSITIVE"
+        ? "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+        : "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。",
+    }];
+  }),
+);

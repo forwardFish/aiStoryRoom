@@ -78,6 +78,7 @@
     "test:openovel-runtime": "node scripts/p00/openovel-test-gate.mjs",
     "test:openovel-evidence-runtime": "node scripts/p00/openovel-test-gate.mjs --target evidence",
     "p00:check-evidence-command": "node scripts/p00/workspace-script-gate.mjs --workspace @ai-story/openovel-runtime --script evidence:build --check-only",
+    "p00:check-evidence-clean": "node scripts/p00/evidence-clean-gate.mjs",
     "p00:corpus": "node scripts/p00/corpus-cli.mjs",
     "p00:replay": "node scripts/p00/replay-audit.mjs",
     "test:p00": "node --test scripts/p00/*.spec.mjs",

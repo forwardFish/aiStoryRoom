@@ -58,8 +58,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "断言关键原册的持久所在地与既往保管状态，属于未授权持久事实。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：断言关键原册的持久所在地与既往保管状态，属于未授权持久事实。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：档房 || 正文越过了本轮已审定的知识上限：正文为原册新增了无来源的既往保管保证",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B002",
@@ -91,8 +97,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "为关键原册确定具体所在地，改变可依赖的位置事实。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：为关键原册确定具体所在地，改变可依赖的位置事实。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：清流",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B003",
@@ -124,8 +136,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "无来源保证关键原册的既往保管状态，属于持久证据事实。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：无来源保证关键原册的既往保管状态，属于持久证据事实。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的既往保管保证",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B004",
@@ -157,8 +175,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增档案保管、钥匙和封条等证据访问状态，超出已知事实。"
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "摘录明确说保管人、钥匙和封条状态均未核实；它表达未知，没有断言这些持久状态。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文凭空确定了证据保管或档案访问细节：密信只是报疑，原册不在眼前，亲随转述的也只是县令一面之词——档房什么人在管，钥匙谁收着，封条还在不在，他一样都还没有核实",
+        "speechAct": "UNKNOWN_OR_UNVERIFIED",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B005",
@@ -192,8 +216,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家提出派员行动，同时加入未授权精确时长，构成越权承诺。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "派员文字是玩家角色的疑问，不是命令或承诺；另一项“一年”警告缺少原句和合同，整体只能暂不确定。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为持久事实新增了无来源精确数量：一年 || 正文替玩家新增了未授权的未来承诺：是让本督派人去清流？",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B006",
@@ -226,7 +256,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "摘录是对钥匙归属的提问而非明确断言，缺少完整上下文判断是否落地为事实。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：摘录是对钥匙归属的提问而非明确断言，缺少完整上下文判断是否落地为事实。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文凭空确定了证据保管或档案访问细节：\"档房钥匙在谁手里",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B007",
@@ -259,7 +295,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "墨色只是物件表面叙事纹理，没有改变证据的因果状态。"
+      "classificationRationale": "墨色只是物件表面叙事纹理，没有改变证据的因果状态。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为既有证据新增了无来源的具体属性：墨色",
+        "speechAct": "NARRATIVE_TEXTURE",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B008",
@@ -292,7 +334,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "仅见精确数量提示，无法从脱敏摘录确认数量是否是必须持久化的事实。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：仅见精确数量提示，无法从脱敏摘录确认数量是否是必须持久化的事实。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为持久事实新增了无来源精确数量：两家",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B009",
@@ -325,8 +373,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "同时确定县册所在地和既往保管保证，形成新的持久证据状态。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：同时确定县册所在地和既往保管保证，形成新的持久证据状态。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为县册新增了无来源的明确所在地：清流 || 正文为原册新增了无来源的既往保管保证",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B010",
@@ -358,8 +412,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "为关键田契新增明确档案位置，属于持久位置变化或断言。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：为关键田契新增明确档案位置，属于持久位置变化或断言。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为田契新增了无来源的明确所在地：档房",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B011",
@@ -391,8 +451,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "凭空确认底册这一关键记录存在，属于新增关键证据。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：凭空确认底册这一关键记录存在，属于新增关键证据。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文凭空确认了新的关键证据或记录存在：底册",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B012",
@@ -424,8 +490,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "向正式文书追加派员参与的政策权限，超出获批闭集条款。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：向正式文书追加派员参与的政策权限，超出获批闭集条款。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：正文一行一行往下压：巡抚要求就清流县田册复核派员到场参与",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B013",
@@ -458,7 +530,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "只显示既有公文摆放和可见文字，可能是纹理，也可能改变文书可见状态。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：只显示既有公文摆放和可见文字，可能是纹理，也可能改变文书可见状态。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚那封催办公文仍摊在案角，首页朝上，三日具报几个字看得清楚。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B014",
@@ -491,7 +569,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "新增书吏转述期限，但脱敏片段不足以确认这是新命令还是既有信息复述。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增书吏转述期限，但脱敏片段不足以确认这是新命令还是既有信息复述。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚书吏忽然上前半步，躬身道：\"中丞催办在前，三日具报是朝廷的限期。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B015",
@@ -524,7 +608,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "“一遍”是低价值动作计数，不构成持久因果或玩家越权。"
+      "classificationRationale": "“一遍”是低价值动作计数，不构成持久因果或玩家越权。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文补充了当前因果契约明确禁止的新数量：一遍",
+        "speechAct": "LOW_VALUE_ACTION_COUNT",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B016",
@@ -556,8 +646,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增正式派员、查验及记录要求，属于未授权命令和程序。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增正式派员、查验及记录要求，属于未授权命令和程序。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空新增了未获当前剧情合同授权的场外行动：另有一节——中丞吩咐卑职转禀：清流既先办，复核时须派员到场参与查验，到场经过据实记入复核记录。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B017",
@@ -593,8 +689,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏本轮必须可见的试办、购田限制与对象结果，命中结果遗漏标准。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏本轮必须可见的试办、购田限制与对象结果，命中结果遗漏标准。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B018",
@@ -628,8 +730,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家作出具报承诺和传话处置，属于未授权命令。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家作出具报承诺和传话处置，属于未授权命令。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空新增了未获当前剧情合同授权的场外行动：其余的，你回去禀中丞，我自会具报。\" || 正文替玩家新增了未授权的命令或处置：其余的，你回去禀中丞，我自会具报",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B019",
@@ -662,7 +770,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "仅由写入动作同义词缺失推断遗漏，脱敏数据不足以确认结果确实不可见。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：仅由写入动作同义词缺失推断遗漏，脱敏数据不足以确认结果确实不可见。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B020",
@@ -695,8 +809,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "向闭集正式文书新增政策条款，构成文书内容越权。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：向闭集正式文书新增政策条款，构成文书内容越权。",
+      "reviewEvidence": {
+        "excerpt": "模型把后台未知项清单写成了主角没有追问的正文；运行时删除该非因果句并重新执行全部发布校验 || 正文替获批文书增加了契约之外的政策、权限或处置：十几行字，先写\"清流县先办一批\"，搁笔想了想，又添一行——\"不得趁急难压价买田\"。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B021",
@@ -732,8 +852,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏必须展示的试办和购田限制结果，属于关键结算不可见。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏必须展示的试办和购田限制结果，属于关键结算不可见。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B022",
@@ -765,8 +891,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "无来源确定原册所在地，形成新的持久位置事实。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：无来源确定原册所在地，形成新的持久位置事实。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：清流",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B023",
@@ -798,8 +930,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "凭空新增正式派员参与复核要求，属于关键命令。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：凭空新增正式派员参与复核要求，属于关键命令。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空新增了未获当前剧情合同授权的场外行动：\"部堂，\"他开口，声音不高，却带着不容回避的节奏，\"中丞的意思，复核时巡抚衙门须派员到场。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B024",
@@ -831,8 +969,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增共同查验的正式命令，即使以转述呈现仍改变程序义务。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增共同查验的正式命令，即使以转述呈现仍改变程序义务。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的命令或处置：中丞的意思，巡抚衙门当派员到场，与总督所委之员一同查验",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B025",
@@ -864,8 +1008,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增派员、共同查验、记录和存档程序，属于正式命令。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增派员、共同查验、记录和存档程序，属于正式命令。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚衙门请总督大人派员到场，参与清流县复核。复核之后，到场查验经过须据实记入复核记录，存档备查。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B026",
@@ -900,8 +1050,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "闭集文书条款数及政策被改写，并遗漏责任分立结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：闭集文书条款数及政策被改写，并遗漏责任分立结果。",
+      "reviewEvidence": {
+        "excerpt": "模型把闭集文书写成了与获批条款数冲突的篇幅；运行时按已结算条款数校正表面措辞并重新执行全部发布校验 || 正文替获批文书增加了契约之外的政策、权限或处置：不得趁急难压价买田——这三条 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各担其责 / 各写各的 / 各担各的",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B027",
@@ -938,8 +1094,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "漏掉获批文书条款并新增派员、追责和政策内容，属于复合越权。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：漏掉获批文书条款并新增派员、追责和政策内容，属于复合越权。",
+      "reviewEvidence": {
+        "excerpt": "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验 || 正文替获批文书增加了契约之外的政策、权限或处置：明不得趁急难压价买田 || 正文把普通叙事动作无授权地升级成了正式追责事实：目光从责任说明上移开，先看向巡抚幕僚。\n\n幕僚没有等他开口。他上前半步，拱手一揖，腰没弯到底就直起来，声音不高但咬字很紧。\n\n\"部堂，中丞的意思卑职代为转达。三日之期已在眼前，省城米价这几日只涨不落，民间已有风声。改桑为国策，迟一日便多一日口实。中丞以为，下一轮复核须有巡抚衙门的人在场参与，部堂此前的迟疑，也当记入复核记录，以备日后查考——若耽误了国策推行， || 正文替玩家新增了未授权的命令或处置：巡抚衙门要求派员到场参与清流改桑复核",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B028",
@@ -972,8 +1134,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "对正式公文关防和期限墨迹作认证状态断言，并伴随条款遗漏。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：对正式公文关防和期限墨迹作认证状态断言，并伴随条款遗漏。",
+      "reviewEvidence": {
+        "excerpt": "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验 || 正文无来源地断言了文书或证据的认证状态：他直起腰时，目光越过匣面，落在总督案前那张仍摊着的催办公文上——公文正面朝上，关防未动，三日具报的期限墨迹尚新。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B029",
@@ -1005,8 +1173,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增派员共同查验、记录和禁止补录的正式程序命令。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增派员共同查验、记录和禁止补录的正式程序命令。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空新增了未获当前剧情合同授权的场外行动：书吏把腰又弯了弯，声音压得比先前低半寸：中丞说，清流既报有疑，复核时当许巡抚衙门派员到场，一同查验。到场经过，须据实记入复核记录，不得事后补录。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B030",
@@ -1039,8 +1213,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "虽含普通折痕纹理，但同时遗漏全部获批文书条款，结果不可见。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：虽含普通折痕纹理，但同时遗漏全部获批文书条款，结果不可见。",
+      "reviewEvidence": {
+        "excerpt": "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验 || 正文为既有证据新增了无来源的具体属性：折痕",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B031",
@@ -1072,8 +1252,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增巡抚派员及复核记录要求，形成未获授权的正式程序。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增巡抚派员及复核记录要求，形成未获授权的正式程序。",
+      "reviewEvidence": {
+        "excerpt": "正文把普通叙事动作无授权地升级成了正式追责事实：目光从匣子上移开，落到案前那张催办公文上。\"三日具报\"四个字还在镇纸底下露着半行。他没有碰它。\n\n巡抚书吏没有退。他清了清嗓子，声音压得比刚才低半分：\"中丞还有一句话，命小人转禀制台。\"\n\n总督没说让他说，也没拦。灯火又晃了一下。\n\n\"中丞说，既准了清流先办，复核一事，巡抚衙门要派员到场参与。查验经过，须据实记入复核记录。\"\n\n话音落地，内厅里只剩灯芯细微的",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B032",
@@ -1105,8 +1291,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "凭空生成三行正式记录及异议成文要求，属于新增文书事实。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：凭空生成三行正式记录及异议成文要求，属于新增文书事实。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空新增了未获当前剧情合同授权的场外行动：第一行是巡抚要求派员，第二行是总督尚未同意，第三行是异议须另行成文。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B033",
@@ -1142,8 +1334,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增派员存档程序、扩写文书政策并遗漏试办结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增派员存档程序、扩写文书政策并遗漏试办结果。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：再两行正文——清流县准先办第一批改桑田亩 || 正文凭空新增了未获当前剧情合同授权的场外行动：中丞说：清流县既先办，复核时须准巡抚衙门派员到场参与。到场查验经过，须据实记入复核记录，存档备查。 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B034",
@@ -1179,8 +1377,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "正式文书被追加期限内容且遗漏试办结果，不只是表面措辞。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：正式文书被追加期限内容且遗漏试办结果，不只是表面措辞。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：三日具报的墨字朝上 || 正文把普通叙事动作无授权地升级成了正式追责事实：墨字朝上，三日具报那一行他再看了一遍，目光停了不过一息，便移开了。 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B035",
@@ -1212,8 +1416,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "断言正式回文无印无签押，属于关键文书认证状态。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：断言正式回文无印无签押，属于关键文书认证状态。",
+      "reviewEvidence": {
+        "excerpt": "正文无来源地断言了文书或证据的认证状态：回文匣稳稳捧在胸前，里头装着那两行字，没有印，没有签押。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B036",
@@ -1246,7 +1456,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "数量被标为“可能”，脱敏摘录不足以确认它指向关键持久对象。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：数量被标为“可能”，脱敏摘录不足以确认它指向关键持久对象。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文可能为持久事实补充了尚未核实的精确数量：两份",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B037",
@@ -1279,7 +1495,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "没有拿取朱印是瞬时叙事动作，未说明印章或文书状态改变。"
+      "classificationRationale": "没有拿取朱印是瞬时叙事动作，未说明印章或文书状态改变。",
+      "reviewEvidence": {
+        "excerpt": "正文无来源地断言了文书或证据的认证状态：总督没有去拿巡抚公文末页那方朱印。",
+        "speechAct": "NEGATED_TRANSIENT_ACTION",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B038",
@@ -1314,8 +1536,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏获批文书条款并新增册子不会挪动的保管保证。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏获批文书条款并新增册子不会挪动的保管保证。",
+      "reviewEvidence": {
+        "excerpt": "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验 || 正文无来源地断言了文书或证据的认证状态：签押房里四个人都知道，在谁接触县册、谁来见证这件事定下来之前，册子不会挪动。 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 误了国策 / 耽搁国策 / 拖延国策 / 迟疑 / 误期",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B039",
@@ -1349,8 +1577,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家追加派员处置并遗漏必须可见的追责后果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家追加派员处置并遗漏必须可见的追责后果。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的命令或处置：巡抚要求派员到场参与复核—— || 正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 误了国策 / 耽搁国策 / 拖延国策 / 迟疑 / 误期",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B040",
@@ -1391,8 +1625,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增共同开册、画押存档及价格政策，同时遗漏多项获批结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增共同开册、画押存档及价格政策，同时遗漏多项获批结果。",
+      "reviewEvidence": {
+        "excerpt": "模型把闭集文书写成了与获批条款数冲突的篇幅；运行时按已结算条款数校正表面措辞并重新执行全部发布校验 || 正文替获批文书增加了契约之外的政策、权限或处置：改桑田价不得低于今年春市常估 || 正文凭空新增了未获当前剧情合同授权的场外行动：中丞说，清流既报疑，复核便不可只由本县自办。中丞的意思是，巡抚衙门要派员到场，与清流县一同开册查验。查验经过，逐日记入复核记录，双方画押存档。 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B041",
@@ -1425,7 +1665,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "“那句问”被误识别为具名人物，是明显分词误判。"
+      "classificationRationale": "“那句问”被误识别为具名人物，是明显分词误判。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空引入了新的具名人物：那句问",
+        "speechAct": "LEXICAL_FALSE_MATCH",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B042",
@@ -1459,8 +1705,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏必须可见的拒绝联署结果；附带时长误差不改变该结论。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏必须可见的拒绝联署结果；附带时长误差不改变该结论。",
+      "reviewEvidence": {
+        "excerpt": "正文补充了当前因果契约明确禁止的新数量：一日 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B043",
@@ -1492,8 +1744,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏本轮已结算的追责或迟疑后果，属于必要结果不可见。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏本轮已结算的追责或迟疑后果，属于必要结果不可见。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 迟疑",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B044",
@@ -1526,7 +1784,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "字迹是普通表面属性，未改变文书内容、认证或因果状态。"
+      "classificationRationale": "字迹是普通表面属性，未改变文书内容、认证或因果状态。",
+      "reviewEvidence": {
+        "excerpt": "正文为既有证据新增了无来源的具体属性：字迹",
+        "speechAct": "NARRATIVE_TEXTURE",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B045",
@@ -1566,8 +1830,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增正式派员承诺，并遗漏试办、购田限制和写入结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增正式派员承诺，并遗漏试办、购田限制和写入结果。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的未来承诺：巡抚大人说，既是准了清流先办一批，这批田亩的复核，须得派员到场。到场查验的经过，要据实记入复核记录。 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B046",
@@ -1599,8 +1869,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "未呈现已结算的限定试办结果，命中必要结果遗漏。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：未呈现已结算的限定试办结果，命中必要结果遗漏。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B047",
@@ -1633,7 +1909,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "“须记明”被误识别为人物名称，是明显词法误判。"
+      "classificationRationale": "“须记明”被误识别为人物名称，是明显词法误判。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空引入了新的具名人物：须记明",
+        "speechAct": "LEXICAL_FALSE_MATCH",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B048",
@@ -1665,8 +1947,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏必须可见的迟疑或耽误后果，属于结算结果缺失。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏必须可见的迟疑或耽误后果，属于结算结果缺失。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 迟疑",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B049",
@@ -1700,8 +1988,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "正式回文及其写入动作均未呈现，导致结算文书结果不可见。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：正式回文及其写入动作均未呈现，导致结算文书结果不可见。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：改桑放行回文 / 放行回文 / 回文 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B050",
@@ -1733,8 +2027,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏已结算的正式放行回文，属于关键文书结果缺失。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏已结算的正式放行回文，属于关键文书结果缺失。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：改桑放行回文 / 放行回文 / 回文",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B051",
@@ -1766,8 +2066,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏已结算的购田限制，属于本轮必须可见的政策结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏已结算的购田限制，属于本轮必须可见的政策结果。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B052",
@@ -1799,8 +2105,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "向获批文书追加放行政策表述，改变正式文书闭集内容。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：向获批文书追加放行政策表述，改变正式文书闭集内容。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：既已放行清流先办",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B053",
@@ -1832,8 +2144,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏各自成文和分别担责的必要结果，改变责任可见性。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏各自成文和分别担责的必要结果，改变责任可见性。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各写各的 / 各担各的",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B054",
@@ -1866,7 +2184,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "按纸和未碰朱印只是瞬时动作，没有落成新的认证状态。"
+      "classificationRationale": "按纸和未碰朱印只是瞬时动作，没有落成新的认证状态。",
+      "reviewEvidence": {
+        "excerpt": "正文无来源地断言了文书或证据的认证状态：总督把巡抚公文按回案面，掌缘压住纸角，没有去碰砚台旁那方朱印。",
+        "speechAct": "NEGATED_TRANSIENT_ACTION",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B055",
@@ -1900,8 +2224,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "明确断言正式文书无印无签押，属于关键认证状态。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：明确断言正式文书无印无签押，属于关键认证状态。",
+      "reviewEvidence": {
+        "excerpt": "正文为既有证据新增了无来源的具体属性：折痕 || 正文凭空新增了未获当前剧情合同授权的场外行动：巡抚书吏单手托匣，一手来接，指节碰到纸边时顿了一瞬——纸是干的，没有印，没有签押。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B056",
@@ -1936,8 +2266,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "为证据新增册尾不符内容，并可能漏掉复核这一必要结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：为证据新增册尾不符内容，并可能漏掉复核这一必要结果。",
+      "reviewEvidence": {
+        "excerpt": "正文为既有证据或文书新增了无来源的明确内容：合计与册尾不符 || 正文可能没有清楚呈现已批准剧情 beat：册尾总数 / 册尾所列总数 || 正文可能没有清楚呈现已批准剧情 beat：不知道 / 不知 / 没有写 / 没写 / 没有教小的记 || 正文可能没有清楚呈现已批准剧情 beat：复核",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B057",
@@ -1972,8 +2308,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "凭空新增底册证据并替玩家发出对外命令。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：凭空新增底册证据并替玩家发出对外命令。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空确认了新的关键证据或记录存在：底册 || 正文替玩家新增了未授权的命令或处置：你回去告诉县尊， || 正文可能没有清楚呈现已批准剧情 beat：没有去拿印 / 朱印未动 / 公文暂压 / 公文往案角 / 公文往案侧",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B058",
@@ -2006,8 +2348,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "凭空确认底稿这一关键记录存在，属于新增证据。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：凭空确认底稿这一关键记录存在，属于新增证据。",
+      "reviewEvidence": {
+        "excerpt": "正文凭空确认了新的关键证据或记录存在：底稿 || 正文可能没有清楚呈现已批准剧情 beat：耽误国策 / 迟疑",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B059",
@@ -2040,7 +2388,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "“笔锋在田字末笔收住”是书写纹理，不是新增政策或权限。"
+      "classificationRationale": "“笔锋在田字末笔收住”是书写纹理，不是新增政策或权限。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：笔锋在田字末笔收住",
+        "speechAct": "NARRATIVE_TEXTURE",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B060",
@@ -2074,8 +2428,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "向正式文书追加以某册为准的政策条件，并可能遗漏已批结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：向正式文书追加以某册为准的政策条件，并可能遗漏已批结果。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：写明此批放行以清流县自行复核之册为准 || 正文可能没有清楚呈现已批准剧情 beat：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办 || 正文可能没有清楚呈现已批准剧情 beat：压价买田 / 低价买田 / 趁急难买田 / 购田",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B061",
@@ -2110,8 +2470,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "向正式文书追加公文留置处置，并可能遗漏多个获批结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：向正式文书追加公文留置处置，并可能遗漏多个获批结果。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：原催办仍留本督案前 || 正文可能没有清楚呈现已批准剧情 beat：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办 || 正文可能没有清楚呈现已批准剧情 beat：压价买田 / 低价买田 / 趁急难买田 / 购田 || 正文可能没有清楚呈现已批准剧情 beat：民田 / 卖田 / 购田 / 买田 / 田契",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B062",
@@ -2144,7 +2510,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "墨色是普通视觉纹理，不改变证据的内容或持久状态。"
+      "classificationRationale": "墨色是普通视觉纹理，不改变证据的内容或持久状态。",
+      "reviewEvidence": {
+        "excerpt": "正文为既有证据新增了无来源的具体属性：墨色",
+        "speechAct": "NARRATIVE_TEXTURE",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B063",
@@ -2178,8 +2550,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家命令对方等待并承诺随后给回文，属于未授权承诺。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家命令对方等待并承诺随后给回文，属于未授权承诺。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的未来承诺：你先候着，回文随后给。 || 正文替玩家新增了未授权的命令或处置：你先候着，回文随后给",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B064",
@@ -2211,8 +2589,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "向获批正式文书增加试办政策内容，超出闭集合同。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：向获批正式文书增加试办政策内容，超出闭集合同。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：清流县先办一批改桑田亩",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B065",
@@ -2245,7 +2629,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "仅有“放行期间”片段，无法确认是新政策期限还是叙事连接语。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：仅有“放行期间”片段，无法确认是新政策期限还是叙事连接语。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：改桑放行期间",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B066",
@@ -2286,8 +2676,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家追加调查命令、未来承诺和落印行动，并漏掉多项必要结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家追加调查命令、未来承诺和落印行动，并漏掉多项必要结果。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的重大行动：总督若肯落印，自然好说 || 正文替玩家新增了未授权的未来承诺：传话给中丞：总督衙门这就差人去杭州城里各米铺查实牌价，一家一家抄回来。查清了是涨了多少、涨在哪几处，再坐下来议各县怎么办。 || 正文替玩家新增了未授权的命令或处置：传话给中丞：总督衙门这就差人去杭州城里各米铺查实牌价，一家一家抄回来 || 正文可能没有清楚呈现已批准剧情 beat：参加复核 / 复核 || 正文可能没有清楚呈现已批准剧情 beat：耽误国策 / 迟疑 || 正文可能没有清楚呈现已批准剧情 beat：三日限期 / 三日 || 正文可能没有清楚呈现已批准剧情 beat：清流县试办 / 压价买田 / 两条 / 照办 || 正文可能没有清楚呈现已批准剧情 beat：责任记录 / 责任",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B067",
@@ -2321,8 +2717,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏已批准的明确时点和追责结果；附带数值纹理不影响结论。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏已批准的明确时点和追责结果；附带数值纹理不影响结论。",
+      "reviewEvidence": {
+        "excerpt": "正文补充了当前因果契约明确禁止的新数量：三分 || 正文可能没有清楚呈现已批准剧情 beat：嘉靖三十五年五月初九巳时 / 五月初九巳时 / 次日巳时 || 正文可能没有清楚呈现已批准剧情 beat：耽误国策 / 迟疑",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B068",
@@ -2356,8 +2758,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "本轮三日期限未呈现，且片段引入签发处置，必要结果不可见。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：本轮三日期限未呈现，且片段引入签发处置，必要结果不可见。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的命令或处置：大人暂缓签发，卑职回去不好交代 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：三日限期 / 三日期限 / 三日之限 / 三日之内 / 三日具报",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B069",
@@ -2389,8 +2797,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏本轮已结算的购田限制，属于必须可见的政策结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏本轮已结算的购田限制，属于必须可见的政策结果。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 低价买田 / 趁急难买田 / 购田",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B070",
@@ -2422,8 +2836,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏本轮已结算的复核结果，属于必须可见的行动结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏本轮已结算的复核结果，属于必须可见的行动结果。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：复核",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B071",
@@ -2455,8 +2875,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏已结算的三日期限，属于本轮必要结果不可见。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏已结算的三日期限，属于本轮必要结果不可见。",
+      "reviewEvidence": {
+        "excerpt": "正文没有呈现本轮已结算的关键行动、回应或到期后果：三日限期 / 三日期限 / 三日之限 / 三日之内 / 三日具报",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B072",
@@ -2490,8 +2916,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏拒绝共同具名的结果；额外数值问题不是主要判定依据。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏拒绝共同具名的结果；额外数值问题不是主要判定依据。",
+      "reviewEvidence": {
+        "excerpt": "正文补充了当前因果契约明确禁止的新数量：三分 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B073",
@@ -2525,8 +2957,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "无授权改变回文匣持久状态，并遗漏拒绝联署结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：无授权改变回文匣持久状态，并遗漏拒绝联署结果。",
+      "reviewEvidence": {
+        "excerpt": "正文无授权地改变了已登记持久物件状态：巡抚回文匣 CLOSED || 正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B074",
@@ -2559,7 +2997,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "墨迹是普通文书表面属性，没有改变内容、认证或持久状态。"
+      "classificationRationale": "墨迹是普通文书表面属性，没有改变内容、认证或持久状态。",
+      "reviewEvidence": {
+        "excerpt": "正文为既有证据新增了无来源的具体属性：墨迹",
+        "speechAct": "NARRATIVE_TEXTURE",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B075",
@@ -2594,7 +3038,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "发言者明确否认代为承诺；缺少完整合同判断是否充分呈现拒绝联署。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：发言者明确否认代为承诺；缺少完整合同判断是否充分呈现拒绝联署。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的未来承诺：共同具名一事，须中丞本人定夺。卑职无权代为答应，只能将总督的话原样带回。 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B076",
@@ -2628,8 +3078,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增共同查验和记录命令，同时遗漏拒绝联署的必要结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增共同查验和记录命令，同时遗漏拒绝联署的必要结果。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的命令或处置：中丞要派员与总督一同查验清流县册，到场经过据实记入复核记录 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B077",
@@ -2664,8 +3120,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增对玩家决定的未来约束与追责承诺，并遗漏联署拒绝结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增对玩家决定的未来约束与追责承诺，并遗漏联署拒绝结果。",
+      "reviewEvidence": {
+        "excerpt": "正文为粮价新增了无来源的明确所在地：杭州 || 正文替玩家新增了未授权的未来承诺：这两条，总督大人还照办不照办？若照办，只准清流一县试办，其余各县怎么办？若不照办，前一条是耽误国策，后一条是阻人买田——哪一条，中丞都得替总督大人记着。 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B078",
@@ -2699,8 +3161,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家发出携回文并请求共同具名的正式命令。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家发出携回文并请求共同具名的正式命令。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的命令或处置：你把匣子里的回文带回去，请中丞在上面共同具名 || 正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B079",
@@ -2733,7 +3201,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "只是期限来源地点归属，脱敏片段不足以确认其是否为关键持久位置事实。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：只是期限来源地点归属，脱敏片段不足以确认其是否为关键持久位置事实。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文为期限新增了无来源的明确所在地：巡抚衙门",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B080",
@@ -2767,8 +3241,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家发出传话命令并承诺按期具报，属于未授权行动。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家发出传话命令并承诺按期具报，属于未授权行动。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的未来承诺：改桑的事，本督自有章程。三日之内，具报不会误。 || 正文替玩家新增了未授权的命令或处置：你回去告诉县尊，",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B081",
@@ -2800,8 +3280,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家命令等待并隐含将给回文的未来承诺。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家命令等待并隐含将给回文的未来承诺。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的命令或处置：你且等着，回文不是不给你。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B082",
@@ -2834,7 +3320,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "落款可能是关键文书内容，也可能只是表面描述，缺少上下文确认。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：落款可能是关键文书内容，也可能只是表面描述，缺少上下文确认。",
+      "reviewEvidence": {
+        "excerpt": "正文为既有证据新增了无来源的具体属性：落款",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B083",
@@ -3026,7 +3518,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "UNCERTAIN",
-      "classificationRationale": "文本似在交付已批回文，但警告同时称结果未兑现，脱敏信息内部不足。"
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：文本似在交付已批回文，但警告同时称结果未兑现，脱敏信息内部不足。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的命令或处置：这是本督给抚院的回文。清流先办一批，其余候札。买田不许压价，这一条写进去了，你带回去交你家大人过目。 || 正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办 || 正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B084",
@@ -3219,8 +3717,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家新增封存、禁阅、派员查验和执行政策等一组正式命令。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家新增封存、禁阅、派员查验和执行政策等一组正式命令。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的命令或处置：你回去告诉你家县尊：原册封存，不许任何人调阅，等本督衙门委员到县查验。他若办第一批改桑，照此行牌办——田价不许压，册子不许动。 || 正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办 || 正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田 || 正文没有兑现已批准剧情 beat 的必要结果：民田 / 卖田 / 购田 / 买田 / 田契",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B085",
@@ -3413,8 +3917,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "改变回文匣持久状态并替玩家发出对外处置命令。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：改变回文匣持久状态并替玩家发出对外处置命令。",
+      "reviewEvidence": {
+        "excerpt": "正文无授权地改变了已登记持久物件状态：巡抚回文匣 EMPTY || 正文替玩家新增了未授权的命令或处置：回去告诉你家县尊：先办一批，就照他信上所报那批。县册的事， || 正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办 || 正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B086",
@@ -3609,8 +4119,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "尽管字迹是纹理，但多项已批准文书与政策结果没有兑现。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：尽管字迹是纹理，但多项已批准文书与政策结果没有兑现。",
+      "reviewEvidence": {
+        "excerpt": "正文为既有证据新增了无来源的具体属性：字迹 || 正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办 || 正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写 || 正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田 || 正文没有兑现已批准剧情 beat 的必要结果：民田 / 卖田 / 购田 / 买田 / 田契",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B087",
@@ -3797,8 +4313,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏已批准的文书写入结果，属于必须可见的正式文书结算。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏已批准的文书写入结果，属于必须可见的正式文书结算。",
+      "reviewEvidence": {
+        "excerpt": "正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B088",
@@ -3834,8 +4356,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏期限、分别担责和追责后果等多项必要结算结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏期限、分别担责和追责后果等多项必要结算结果。",
+      "reviewEvidence": {
+        "excerpt": "正文没有兑现已批准剧情 beat 的必要结果：各自成文 / 分别成文 / 各自担责 / 分别担责 || 正文没有兑现已批准剧情 beat 的必要结果：耽误国策 / 迟疑 || 正文没有兑现已批准剧情 beat 的必要结果：三日限期 / 三日",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B089",
@@ -3868,8 +4396,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏已结算的具名或联署结果；地点问题不是主要判定依据。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏已结算的具名或联署结果；地点问题不是主要判定依据。",
+      "reviewEvidence": {
+        "excerpt": "正文为粮价新增了无来源的明确所在地：清流 || 正文没有兑现已批准剧情 beat 的必要结果：具名 / 署名 / 联署",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B090",
@@ -3905,8 +4439,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "新增责任说明文书、未来安排和明确场外时点，构成正式状态越权。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：新增责任说明文书、未来安排和明确场外时点，构成正式状态越权。",
+      "reviewEvidence": {
+        "excerpt": "正文替获批文书增加了契约之外的政策、权限或处置：总督另具责任说明 || 正文替玩家新增了未授权的重大行动：次日巳时，总督府签押房 || 正文替玩家新增了未授权的未来承诺：总督另具责任说明，小的不敢擅取。只是抚台交代的话，小的不敢不记。总督准了清流先办一批、不许趁急难压价买田，这两条，小的记下了。至于派员参与复核一节——",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B091",
@@ -3944,8 +4484,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "改变回文匣状态、追加交付命令并遗漏分别担责结果。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：改变回文匣状态、追加交付命令并遗漏分别担责结果。",
+      "reviewEvidence": {
+        "excerpt": "正文无授权地改变了已登记持久物件状态：巡抚回文匣 EMPTY || 正文替玩家新增了未授权的重大行动：杭州总督府签押房 || 正文替玩家新增了未授权的命令或处置：匣里的回文不改，你带回去。 || 正文没有兑现已批准剧情 beat 的必要结果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各写各的 / 各担各的",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B092",
@@ -3979,8 +4525,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "替玩家新增封存多项证据、派员到场和未来签署承诺。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：替玩家新增封存多项证据、派员到场和未来签署承诺。",
+      "reviewEvidence": {
+        "excerpt": "正文替玩家新增了未授权的未来承诺：所以本督更要查清楚再签。 || 正文替玩家新增了未授权的命令或处置：你回去告诉县令，原册、经手花名、档房收存簿，一样都不许动，等本督衙的人到。",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B093",
@@ -4013,7 +4565,13 @@
         "sectionDriftWarnings": []
       },
       "humanClassification": "FALSE_POSITIVE",
-      "classificationRationale": "“像是背熟”是叙述者风格性推测，不是证据的明确内容。"
+      "classificationRationale": "“像是背熟”是叙述者风格性推测，不是证据的明确内容。",
+      "reviewEvidence": {
+        "excerpt": "正文为既有证据或文书新增了无来源的明确内容：亲随答得快，像是来时背熟了的，",
+        "speechAct": "STYLE_OR_HEDGE",
+        "assertedPredicate": "摘录本身没有断言受保护的持久因果变化或玩家行动。",
+        "expectedPredicateEvidence": "无需额外 P0 证据；若要推翻误报结论，须提供明确肯定断言及其因果对象。"
+      }
     },
     {
       "auditId": "B094",
@@ -4045,8 +4603,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "通过问答确定关键原册所在地，仍形成无来源的持久位置事实。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：通过问答确定关键原册所在地，仍形成无来源的持久位置事实。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文通过连续问答为原册新增了无来源的明确所在地：清流县",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B095",
@@ -4078,8 +4642,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "连续问答落成关键原册的明确所在地，属于持久位置断言。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：连续问答落成关键原册的明确所在地，属于持久位置断言。",
+      "reviewEvidence": {
+        "excerpt": "正文越过了本轮已审定的知识上限：正文通过连续问答为原册新增了无来源的明确所在地：清流",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B096",
@@ -4111,8 +4681,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏已批准的暂缓签发结果，属于本轮必须可见的决定。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏已批准的暂缓签发结果，属于本轮必须可见的决定。",
+      "reviewEvidence": {
+        "excerpt": "正文没有兑现已批准剧情 beat 的必要结果：暂缓签发 / 暂不签发 / 扣下不签",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B097",
@@ -4144,8 +4720,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏未签发或未落印这一必要认证结果，影响文书状态。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏未签发或未落印这一必要认证结果，影响文书状态。",
+      "reviewEvidence": {
+        "excerpt": "正文没有兑现已批准剧情 beat 的必要结果：暂缓签发 / 暂不签发 / 扣下不签 / 未即刻签发 / 没有即刻签发 / 没有落印 / 没有碰印盒 / 朱印未动",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     },
     {
       "auditId": "B098",
@@ -4177,8 +4759,14 @@
         "knowledgeWarnings": [],
         "sectionDriftWarnings": []
       },
-      "humanClassification": "REAL_P0",
-      "classificationRationale": "遗漏朱印未动和公文暂压等已批准结果，导致决定不可见。"
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "脱敏记录缺少完整正文、Actor Policy 与本轮结算合同，不能用 validator 警告独立证实 P0；待核实事项：遗漏朱印未动和公文暂压等已批准结果，导致决定不可见。",
+      "reviewEvidence": {
+        "excerpt": "正文没有兑现已批准剧情 beat 的必要结果：没有去拿印 / 朱印未动 / 公文暂压 / 公文往案角 / 公文往案侧",
+        "speechAct": "INSUFFICIENT_SANITIZED_CONTEXT",
+        "assertedPredicate": "validator 声称存在受保护谓词，但脱敏记录不足以独立重建该谓词。",
+        "expectedPredicateEvidence": "需要完整相关正文、说话者归属、Actor Policy，以及本轮 required-result/causal contract。"
+      }
     }
   ]
 }

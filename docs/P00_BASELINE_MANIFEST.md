@@ -22,7 +22,7 @@ auditRecords: 290
 blockingRecords: 98
 ```
 
-当前人工分类的可重算结果：`REAL_P0=76`、`FALSE_POSITIVE=11`、`UNCERTAIN=11`。以上数字由 `pnpm p00:replay` 和 `pnpm p00:corpus -- --stats` 计算；文档不作为数据源。
+Round 2 逐条复核后的可重算结果：`REAL_P0=0`、`FALSE_POSITIVE=12`、`UNCERTAIN=86`。这不表示历史运行不存在真实 P0，而是当前脱敏附件没有一条同时保留完整正文、说话者授权策略和 required-result/causal contract，不能依据 validator 的结论性警告建立 Gold REAL_P0。数字由代码重新计算，文档不作为数据源。
 
 ## 语料 Schema
 
@@ -32,9 +32,10 @@ blockingRecords: 98
 - `turnId`、`auditFinding.severity`；
 - 四组审计警告数组；
 - `humanClassification`，只能是 `REAL_P0`、`FALSE_POSITIVE`、`UNCERTAIN`；
-- 非空且可审查的 `classificationRationale`。
+- 非空且可审查的 `classificationRationale`；
+- `reviewEvidence.excerpt`、`speechAct`、`assertedPredicate`、`expectedPredicateEvidence` 四项最小审查依据。
 
-校验器还检查基线 SHA、schemaVersion、允许分类的稳定顺序、统计字段类型、auditId 唯一性、sourceRef 格式以及 98/98 覆盖率。
+校验器还检查基线 SHA、schemaVersion、允许分类的稳定顺序、统计字段类型、auditId 唯一性、sourceRef 格式以及 98/98 分类和证据字段覆盖率。
 
 ## 分类标准
 
@@ -42,7 +43,7 @@ blockingRecords: 98
 - `FALSE_POSITIVE`：普通叙事纹理、明确分词误判、纯风格或措辞问题，没有落成持久因果。
 - `UNCERTAIN`：脱敏片段主语不明、低置信度歧义或上下文不足，不能安全判为 P0，也不能确定为明显误判。
 
-人工结论逐条保存在语料中；`scripts/p00/manual-annotations.mjs` 保留同一批审查决策的可追踪来源。它不进入运行时判定，不包含故事专用正则或 worldId 分支。
+人工结论逐条保存在语料中；`scripts/p00/manual-annotations.mjs` 保留同一批审查决策的可追踪来源。它不进入运行时判定，不包含故事专用正则或 worldId 分支。明确纹理、疑问、否定或未核实表达从 P0 中剥离；其余缺正文、Actor Policy 或结算合同的记录保守归为 `UNCERTAIN`。B004 是明确未核实表达；B005 的派员文字是问题，另一数量警告又缺原句，因此整体为 `UNCERTAIN`。
 
 ## 包含范围
 
@@ -86,3 +87,4 @@ pnpm p00:corpus -- --severity HIGH --json
 `pnpm test:openovel-runtime` 只运行 app runtime；`pnpm test:openovel-evidence-runtime` 只运行 evidence runtime。八条既有 `openovel:evidence*`、`openovel:world-bible`、`openovel:compare`、`openovel:shadow-*` 根命令继续指向真正提供对应 script 的 evidence runtime，并通过 script-existence wrapper 阻止 pnpm 的静默空跑。
 
 证据源文本统一以通用 `docs/**/*.txt text eol=crlf` 属性检出，使冻结的字节级 source hash 在 Windows 和 Unix worktree 一致。
+Evidence 生成目录的 JSON/JSONL 统一为 LF；`pnpm p00:check-evidence-clean` 执行真实 build，并要求该目录在 build 前后均保持 Git clean。
