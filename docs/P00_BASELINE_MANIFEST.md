@@ -1,0 +1,74 @@
+# P00 可信基线清单
+
+## 基线身份
+
+- 仓库：`forwardFish/aiStoryRoom`
+- 唯一源码基线：`main@d5aff3096f901cc41ed4fd9c5e290855a46f480e`
+- 功能分支：`feat/story-v2-p00-baseline-gates`
+- 基线提交标题：`refactor(story): adopt OpenNovel-first durable truth gate`
+- 语料：`p00-historical-blockers.sanitized.json`
+- Schema：`p00-historical-blocker-corpus-v1`
+
+完整 SHA 已同时固化在语料的 `baselineCommit`、离线校验器常量与本清单中。`pnpm p00:replay` 会交叉验证这些值，而不是信任手写统计。
+
+## 统计口径
+
+语料顶层 `counts` 保存来源汇总，`records` 只保存历史上 `blocksPlayer=true` 的脱敏记录。重放器验证 `records.length === counts.blockingRecords`，并从 98 条记录重新聚合人工分类、严重度与 turnId。
+
+```text
+runDirectories: 150
+shadowAuditFiles: 145
+auditRecords: 290
+blockingRecords: 98
+```
+
+当前人工分类的可重算结果：`REAL_P0=76`、`FALSE_POSITIVE=11`、`UNCERTAIN=11`。以上数字由 `pnpm p00:replay` 和 `pnpm p00:corpus -- --stats` 计算；文档不作为数据源。
+
+## 语料 Schema
+
+每条阻断记录必须包含：
+
+- 唯一 `auditId`（`B001`—`B098`）与单向散列前缀 `sourceRef`；
+- `turnId`、`auditFinding.severity`；
+- 四组审计警告数组；
+- `humanClassification`，只能是 `REAL_P0`、`FALSE_POSITIVE`、`UNCERTAIN`；
+- 非空且可审查的 `classificationRationale`。
+
+校验器还检查基线 SHA、schemaVersion、允许分类的稳定顺序、统计字段类型、auditId 唯一性、sourceRef 格式以及 98/98 覆盖率。
+
+## 分类标准
+
+- `REAL_P0`：新增关键人物、正式文书、证据或命令；改变持久所有权、状态、位置、公开或销毁状态；泄露秘密；替玩家追加签署、承诺、命令或行动；遗漏本轮必须可见的结果。
+- `FALSE_POSITIVE`：普通叙事纹理、明确分词误判、纯风格或措辞问题，没有落成持久因果。
+- `UNCERTAIN`：脱敏片段主语不明、低置信度歧义或上下文不足，不能安全判为 P0，也不能确定为明显误判。
+
+人工结论逐条保存在语料中；`scripts/p00/manual-annotations.mjs` 保留同一批审查决策的可追踪来源。它不进入运行时判定，不包含故事专用正则或 worldId 分支。
+
+## 包含范围
+
+- 根 workspace 元数据；
+- `apps/openovel-runtime/**`；
+- `packages/shared/**`、`packages/templates/**`；
+- `third_party/openovel/**`；
+- v4.0 架构文档、历史审计设计、P00 任务说明；
+- 脱敏后的 98 条阻断语料。
+
+## 排除范围
+
+- `.git`、本机脏工作区与未提交变更；
+- `.runtime`、原始 provider 请求/响应、真实 reader action、真实 run ID；
+- `.env*`、密钥、Token、Cookie、浏览器状态；
+- 数据库、真实用户数据、线上配置；
+- `node_modules`、缓存、构建产物；
+- 与 P00 无关且安全导出未包含的 API/Web 等 workspace。
+
+## 重放与查询
+
+```bash
+pnpm p00:replay
+pnpm p00:corpus -- --stats
+pnpm p00:corpus -- --classification REAL_P0 --turn-id T03 --keyword 文书
+pnpm p00:corpus -- --severity HIGH --json
+```
+
+所有命令只读取仓库 fixture，不访问外部模型或 provider。

@@ -1,0 +1,4184 @@
+{
+  "schemaVersion": "p00-historical-blocker-corpus-v1",
+  "baselineCommit": "d5aff3096f901cc41ed4fd9c5e290855a46f480e",
+  "generatedFor": "Phase P00 baseline and trustworthy engineering gates",
+  "privacy": {
+    "omitted": [
+      "runId",
+      "readerAction",
+      "timestamps",
+      "model request messages",
+      "provider metadata",
+      "API keys and environment values",
+      "browser state"
+    ],
+    "sourceRef": "one-way SHA-256 prefix used only to correlate a run and turn inside this corpus"
+  },
+  "counts": {
+    "runDirectories": 150,
+    "shadowAuditFiles": 145,
+    "auditRecords": 290,
+    "blockingRecords": 98
+  },
+  "allowedClassifications": [
+    "REAL_P0",
+    "FALSE_POSITIVE",
+    "UNCERTAIN"
+  ],
+  "records": [
+    {
+      "auditId": "B001",
+      "sourceRef": "b7a24405336153ef",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：档房",
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的既往保管保证"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：档房",
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的既往保管保证"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "断言关键原册的持久所在地与既往保管状态，属于未授权持久事实。"
+    },
+    {
+      "auditId": "B002",
+      "sourceRef": "98c5b9f24f0c0f0a",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：清流"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：清流"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "为关键原册确定具体所在地，改变可依赖的位置事实。"
+    },
+    {
+      "auditId": "B003",
+      "sourceRef": "ae8429a49c32e18d",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的既往保管保证"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的既往保管保证"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "无来源保证关键原册的既往保管状态，属于持久证据事实。"
+    },
+    {
+      "auditId": "B004",
+      "sourceRef": "c59947953b0af53e",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文凭空确定了证据保管或档案访问细节：密信只是报疑，原册不在眼前，亲随转述的也只是县令一面之词——档房什么人在管，钥匙谁收着，封条还在不在，他一样都还没有核实"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文凭空确定了证据保管或档案访问细节：密信只是报疑，原册不在眼前，亲随转述的也只是县令一面之词——档房什么人在管，钥匙谁收着，封条还在不在，他一样都还没有核实"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增档案保管、钥匙和封条等证据访问状态，超出已知事实。"
+    },
+    {
+      "auditId": "B005",
+      "sourceRef": "9913790f55c784ff",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为持久事实新增了无来源精确数量：一年",
+          "正文替玩家新增了未授权的未来承诺：是让本督派人去清流？"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为持久事实新增了无来源精确数量：一年",
+          "正文替玩家新增了未授权的未来承诺：是让本督派人去清流？"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家提出派员行动，同时加入未授权精确时长，构成越权承诺。"
+    },
+    {
+      "auditId": "B006",
+      "sourceRef": "cfc4cdf30a935326",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文凭空确定了证据保管或档案访问细节：\"档房钥匙在谁手里"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文凭空确定了证据保管或档案访问细节：\"档房钥匙在谁手里"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "摘录是对钥匙归属的提问而非明确断言，缺少完整上下文判断是否落地为事实。"
+    },
+    {
+      "auditId": "B007",
+      "sourceRef": "6ce20805e2f813fd",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为既有证据新增了无来源的具体属性：墨色"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为既有证据新增了无来源的具体属性：墨色"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "墨色只是物件表面叙事纹理，没有改变证据的因果状态。"
+    },
+    {
+      "auditId": "B008",
+      "sourceRef": "340391270ee762dc",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为持久事实新增了无来源精确数量：两家"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为持久事实新增了无来源精确数量：两家"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "仅见精确数量提示，无法从脱敏摘录确认数量是否是必须持久化的事实。"
+    },
+    {
+      "auditId": "B009",
+      "sourceRef": "bb54e69a08694682",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为县册新增了无来源的明确所在地：清流",
+          "正文为原册新增了无来源的既往保管保证"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为县册新增了无来源的明确所在地：清流"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "同时确定县册所在地和既往保管保证，形成新的持久证据状态。"
+    },
+    {
+      "auditId": "B010",
+      "sourceRef": "d04f6463d913488b",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为田契新增了无来源的明确所在地：档房"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为田契新增了无来源的明确所在地：档房"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "为关键田契新增明确档案位置，属于持久位置变化或断言。"
+    },
+    {
+      "auditId": "B011",
+      "sourceRef": "7d7e7ade59493889",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文凭空确认了新的关键证据或记录存在：底册"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文凭空确认了新的关键证据或记录存在：底册"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "凭空确认底册这一关键记录存在，属于新增关键证据。"
+    },
+    {
+      "auditId": "B012",
+      "sourceRef": "7a010852616c4e21",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：正文一行一行往下压：巡抚要求就清流县田册复核派员到场参与"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：正文一行一行往下压：巡抚要求就清流县田册复核派员到场参与"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "向正式文书追加派员参与的政策权限，超出获批闭集条款。"
+    },
+    {
+      "auditId": "B013",
+      "sourceRef": "385c7457aa938ad6",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚那封催办公文仍摊在案角，首页朝上，三日具报几个字看得清楚。"
+        ],
+        "authorityWarnings": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚那封催办公文仍摊在案角，首页朝上，三日具报几个字看得清楚。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "只显示既有公文摆放和可见文字，可能是纹理，也可能改变文书可见状态。"
+    },
+    {
+      "auditId": "B014",
+      "sourceRef": "cdfa2087dabb4d8e",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚书吏忽然上前半步，躬身道：\"中丞催办在前，三日具报是朝廷的限期。"
+        ],
+        "authorityWarnings": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚书吏忽然上前半步，躬身道：\"中丞催办在前，三日具报是朝廷的限期。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "新增书吏转述期限，但脱敏片段不足以确认这是新命令还是既有信息复述。"
+    },
+    {
+      "auditId": "B015",
+      "sourceRef": "50b2006a8fc54f69",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文补充了当前因果契约明确禁止的新数量：一遍"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文补充了当前因果契约明确禁止的新数量：一遍"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "“一遍”是低价值动作计数，不构成持久因果或玩家越权。"
+    },
+    {
+      "auditId": "B016",
+      "sourceRef": "241b9b40fed47d93",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：另有一节——中丞吩咐卑职转禀：清流既先办，复核时须派员到场参与查验，到场经过据实记入复核记录。"
+        ],
+        "authorityWarnings": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：另有一节——中丞吩咐卑职转禀：清流既先办，复核时须派员到场参与查验，到场经过据实记入复核记录。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增正式派员、查验及记录要求，属于未授权命令和程序。"
+    },
+    {
+      "auditId": "B017",
+      "sourceRef": "4bd8ffc6ded8b98a",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏本轮必须可见的试办、购田限制与对象结果，命中结果遗漏标准。"
+    },
+    {
+      "auditId": "B018",
+      "sourceRef": "70eafe727526659d",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：其余的，你回去禀中丞，我自会具报。\"",
+          "正文替玩家新增了未授权的命令或处置：其余的，你回去禀中丞，我自会具报"
+        ],
+        "authorityWarnings": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：其余的，你回去禀中丞，我自会具报。\"",
+          "正文替玩家新增了未授权的命令或处置：其余的，你回去禀中丞，我自会具报"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家作出具报承诺和传话处置，属于未授权命令。"
+    },
+    {
+      "auditId": "B019",
+      "sourceRef": "9e36edb9ecac7cc1",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "仅由写入动作同义词缺失推断遗漏，脱敏数据不足以确认结果确实不可见。"
+    },
+    {
+      "auditId": "B020",
+      "sourceRef": "9d3fe24076858166",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "模型把后台未知项清单写成了主角没有追问的正文；运行时删除该非因果句并重新执行全部发布校验",
+          "正文替获批文书增加了契约之外的政策、权限或处置：十几行字，先写\"清流县先办一批\"，搁笔想了想，又添一行——\"不得趁急难压价买田\"。"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：十几行字，先写\"清流县先办一批\"，搁笔想了想，又添一行——\"不得趁急难压价买田\"。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "向闭集正式文书新增政策条款，构成文书内容越权。"
+    },
+    {
+      "auditId": "B021",
+      "sourceRef": "060ef186ade35fa7",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏必须展示的试办和购田限制结果，属于关键结算不可见。"
+    },
+    {
+      "auditId": "B022",
+      "sourceRef": "251d94061b6a5f75",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：清流"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为原册新增了无来源的明确所在地：清流"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "无来源确定原册所在地，形成新的持久位置事实。"
+    },
+    {
+      "auditId": "B023",
+      "sourceRef": "9fb277c5c97bafd2",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：\"部堂，\"他开口，声音不高，却带着不容回避的节奏，\"中丞的意思，复核时巡抚衙门须派员到场。"
+        ],
+        "authorityWarnings": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：\"部堂，\"他开口，声音不高，却带着不容回避的节奏，\"中丞的意思，复核时巡抚衙门须派员到场。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "凭空新增正式派员参与复核要求，属于关键命令。"
+    },
+    {
+      "auditId": "B024",
+      "sourceRef": "7ff29ca2af356e85",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的命令或处置：中丞的意思，巡抚衙门当派员到场，与总督所委之员一同查验"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的命令或处置：中丞的意思，巡抚衙门当派员到场，与总督所委之员一同查验"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增共同查验的正式命令，即使以转述呈现仍改变程序义务。"
+    },
+    {
+      "auditId": "B025",
+      "sourceRef": "535ed0aa4f30ef56",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚衙门请总督大人派员到场，参与清流县复核。复核之后，到场查验经过须据实记入复核记录，存档备查。"
+        ],
+        "authorityWarnings": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚衙门请总督大人派员到场，参与清流县复核。复核之后，到场查验经过须据实记入复核记录，存档备查。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增派员、共同查验、记录和存档程序，属于正式命令。"
+    },
+    {
+      "auditId": "B026",
+      "sourceRef": "0e8149a58759638e",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "模型把闭集文书写成了与获批条款数冲突的篇幅；运行时按已结算条款数校正表面措辞并重新执行全部发布校验",
+          "正文替获批文书增加了契约之外的政策、权限或处置：不得趁急难压价买田——这三条",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各担其责 / 各写各的 / 各担各的"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：不得趁急难压价买田——这三条",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各担其责 / 各写各的 / 各担各的"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "闭集文书条款数及政策被改写，并遗漏责任分立结果。"
+    },
+    {
+      "auditId": "B027",
+      "sourceRef": "57371d09c916a9dd",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验",
+          "正文替获批文书增加了契约之外的政策、权限或处置：明不得趁急难压价买田",
+          "正文把普通叙事动作无授权地升级成了正式追责事实：目光从责任说明上移开，先看向巡抚幕僚。\n\n幕僚没有等他开口。他上前半步，拱手一揖，腰没弯到底就直起来，声音不高但咬字很紧。\n\n\"部堂，中丞的意思卑职代为转达。三日之期已在眼前，省城米价这几日只涨不落，民间已有风声。改桑为国策，迟一日便多一日口实。中丞以为，下一轮复核须有巡抚衙门的人在场参与，部堂此前的迟疑，也当记入复核记录，以备日后查考——若耽误了国策推行，",
+          "正文替玩家新增了未授权的命令或处置：巡抚衙门要求派员到场参与清流改桑复核"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：明不得趁急难压价买田",
+          "正文把普通叙事动作无授权地升级成了正式追责事实：目光从责任说明上移开，先看向巡抚幕僚。\n\n幕僚没有等他开口。他上前半步，拱手一揖，腰没弯到底就直起来，声音不高但咬字很紧。\n\n\"部堂，中丞的意思卑职代为转达。三日之期已在眼前，省城米价这几日只涨不落，民间已有风声。改桑为国策，迟一日便多一日口实。中丞以为，下一轮复核须有巡抚衙门的人在场参与，部堂此前的迟疑，也当记入复核记录，以备日后查考——若耽误了国策推行，",
+          "正文替玩家新增了未授权的命令或处置：巡抚衙门要求派员到场参与清流改桑复核"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "漏掉获批文书条款并新增派员、追责和政策内容，属于复合越权。"
+    },
+    {
+      "auditId": "B028",
+      "sourceRef": "b80b495605d8ed13",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验",
+          "正文无来源地断言了文书或证据的认证状态：他直起腰时，目光越过匣面，落在总督案前那张仍摊着的催办公文上——公文正面朝上，关防未动，三日具报的期限墨迹尚新。"
+        ],
+        "authorityWarnings": [
+          "正文无来源地断言了文书或证据的认证状态：他直起腰时，目光越过匣面，落在总督案前那张仍摊着的催办公文上——公文正面朝上，关防未动，三日具报的期限墨迹尚新。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "对正式公文关防和期限墨迹作认证状态断言，并伴随条款遗漏。"
+    },
+    {
+      "auditId": "B029",
+      "sourceRef": "2dabe1b6b99e099a",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：书吏把腰又弯了弯，声音压得比先前低半寸：中丞说，清流既报有疑，复核时当许巡抚衙门派员到场，一同查验。到场经过，须据实记入复核记录，不得事后补录。"
+        ],
+        "authorityWarnings": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：书吏把腰又弯了弯，声音压得比先前低半寸：中丞说，清流既报有疑，复核时当许巡抚衙门派员到场，一同查验。到场经过，须据实记入复核记录，不得事后补录。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增派员共同查验、记录和禁止补录的正式程序命令。"
+    },
+    {
+      "auditId": "B030",
+      "sourceRef": "90cff27dedaddd03",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验",
+          "正文为既有证据新增了无来源的具体属性：折痕"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据新增了无来源的具体属性：折痕"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "虽含普通折痕纹理，但同时遗漏全部获批文书条款，结果不可见。"
+    },
+    {
+      "auditId": "B031",
+      "sourceRef": "f954d9d9657a61ae",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文把普通叙事动作无授权地升级成了正式追责事实：目光从匣子上移开，落到案前那张催办公文上。\"三日具报\"四个字还在镇纸底下露着半行。他没有碰它。\n\n巡抚书吏没有退。他清了清嗓子，声音压得比刚才低半分：\"中丞还有一句话，命小人转禀制台。\"\n\n总督没说让他说，也没拦。灯火又晃了一下。\n\n\"中丞说，既准了清流先办，复核一事，巡抚衙门要派员到场参与。查验经过，须据实记入复核记录。\"\n\n话音落地，内厅里只剩灯芯细微的"
+        ],
+        "authorityWarnings": [
+          "正文把普通叙事动作无授权地升级成了正式追责事实：目光从匣子上移开，落到案前那张催办公文上。\"三日具报\"四个字还在镇纸底下露着半行。他没有碰它。\n\n巡抚书吏没有退。他清了清嗓子，声音压得比刚才低半分：\"中丞还有一句话，命小人转禀制台。\"\n\n总督没说让他说，也没拦。灯火又晃了一下。\n\n\"中丞说，既准了清流先办，复核一事，巡抚衙门要派员到场参与。查验经过，须据实记入复核记录。\"\n\n话音落地，内厅里只剩灯芯细微的"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增巡抚派员及复核记录要求，形成未获授权的正式程序。"
+    },
+    {
+      "auditId": "B032",
+      "sourceRef": "fd93b459fec81856",
+      "turnId": "T04",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：第一行是巡抚要求派员，第二行是总督尚未同意，第三行是异议须另行成文。"
+        ],
+        "authorityWarnings": [
+          "正文凭空新增了未获当前剧情合同授权的场外行动：第一行是巡抚要求派员，第二行是总督尚未同意，第三行是异议须另行成文。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "凭空生成三行正式记录及异议成文要求，属于新增文书事实。"
+    },
+    {
+      "auditId": "B033",
+      "sourceRef": "940b31cdf3b3e807",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：再两行正文——清流县准先办第一批改桑田亩",
+          "正文凭空新增了未获当前剧情合同授权的场外行动：中丞说：清流县既先办，复核时须准巡抚衙门派员到场参与。到场查验经过，须据实记入复核记录，存档备查。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：再两行正文——清流县准先办第一批改桑田亩",
+          "正文凭空新增了未获当前剧情合同授权的场外行动：中丞说：清流县既先办，复核时须准巡抚衙门派员到场参与。到场查验经过，须据实记入复核记录，存档备查。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增派员存档程序、扩写文书政策并遗漏试办结果。"
+    },
+    {
+      "auditId": "B034",
+      "sourceRef": "90c42163ad33eddb",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：三日具报的墨字朝上",
+          "正文把普通叙事动作无授权地升级成了正式追责事实：墨字朝上，三日具报那一行他再看了一遍，目光停了不过一息，便移开了。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：三日具报的墨字朝上",
+          "正文把普通叙事动作无授权地升级成了正式追责事实：墨字朝上，三日具报那一行他再看了一遍，目光停了不过一息，便移开了。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "正式文书被追加期限内容且遗漏试办结果，不只是表面措辞。"
+    },
+    {
+      "auditId": "B035",
+      "sourceRef": "f0d653ad013a0ff7",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文无来源地断言了文书或证据的认证状态：回文匣稳稳捧在胸前，里头装着那两行字，没有印，没有签押。"
+        ],
+        "authorityWarnings": [
+          "正文无来源地断言了文书或证据的认证状态：回文匣稳稳捧在胸前，里头装着那两行字，没有印，没有签押。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "断言正式回文无印无签押，属于关键文书认证状态。"
+    },
+    {
+      "auditId": "B036",
+      "sourceRef": "ac8bca6ec03a4aca",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文可能为持久事实补充了尚未核实的精确数量：两份"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文可能为持久事实补充了尚未核实的精确数量：两份"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "数量被标为“可能”，脱敏摘录不足以确认它指向关键持久对象。"
+    },
+    {
+      "auditId": "B037",
+      "sourceRef": "3b6fb860575444de",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文无来源地断言了文书或证据的认证状态：总督没有去拿巡抚公文末页那方朱印。"
+        ],
+        "authorityWarnings": [
+          "正文无来源地断言了文书或证据的认证状态：总督没有去拿巡抚公文末页那方朱印。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "没有拿取朱印是瞬时叙事动作，未说明印章或文书状态改变。"
+    },
+    {
+      "auditId": "B038",
+      "sourceRef": "5453b884522dee25",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "模型写出了已结算文书的制作与交付，却漏掉全部获批条款；运行时只补入绑定行动中的闭集原文并重新执行全部发布校验",
+          "正文无来源地断言了文书或证据的认证状态：签押房里四个人都知道，在谁接触县册、谁来见证这件事定下来之前，册子不会挪动。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 误了国策 / 耽搁国策 / 拖延国策 / 迟疑 / 误期"
+        ],
+        "authorityWarnings": [
+          "正文无来源地断言了文书或证据的认证状态：签押房里四个人都知道，在谁接触县册、谁来见证这件事定下来之前，册子不会挪动。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 误了国策 / 耽搁国策 / 拖延国策 / 迟疑 / 误期"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏获批文书条款并新增册子不会挪动的保管保证。"
+    },
+    {
+      "auditId": "B039",
+      "sourceRef": "d309be75e855d743",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的命令或处置：巡抚要求派员到场参与复核——",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 误了国策 / 耽搁国策 / 拖延国策 / 迟疑 / 误期"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的命令或处置：巡抚要求派员到场参与复核——",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 误了国策 / 耽搁国策 / 拖延国策 / 迟疑 / 误期"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家追加派员处置并遗漏必须可见的追责后果。"
+    },
+    {
+      "auditId": "B040",
+      "sourceRef": "93e6595b39cc078d",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "模型把闭集文书写成了与获批条款数冲突的篇幅；运行时按已结算条款数校正表面措辞并重新执行全部发布校验",
+          "正文替获批文书增加了契约之外的政策、权限或处置：改桑田价不得低于今年春市常估",
+          "正文凭空新增了未获当前剧情合同授权的场外行动：中丞说，清流既报疑，复核便不可只由本县自办。中丞的意思是，巡抚衙门要派员到场，与清流县一同开册查验。查验经过，逐日记入复核记录，双方画押存档。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：改桑田价不得低于今年春市常估",
+          "正文凭空新增了未获当前剧情合同授权的场外行动：中丞说，清流既报疑，复核便不可只由本县自办。中丞的意思是，巡抚衙门要派员到场，与清流县一同开册查验。查验经过，逐日记入复核记录，双方画押存档。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县先办第一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增共同开册、画押存档及价格政策，同时遗漏多项获批结果。"
+    },
+    {
+      "auditId": "B041",
+      "sourceRef": "8dd4043f52dc5859",
+      "turnId": "T05",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空引入了新的具名人物：那句问"
+        ],
+        "authorityWarnings": [
+          "正文凭空引入了新的具名人物：那句问"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "“那句问”被误识别为具名人物，是明显分词误判。"
+    },
+    {
+      "auditId": "B042",
+      "sourceRef": "7e46aaebf3ad672b",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文补充了当前因果契约明确禁止的新数量：一日",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "authorityWarnings": [
+          "正文补充了当前因果契约明确禁止的新数量：一日",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏必须可见的拒绝联署结果；附带时长误差不改变该结论。"
+    },
+    {
+      "auditId": "B043",
+      "sourceRef": "1e675a39ed08c356",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 迟疑"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 迟疑"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏本轮已结算的追责或迟疑后果，属于必要结果不可见。"
+    },
+    {
+      "auditId": "B044",
+      "sourceRef": "6d6c3355da7f73c2",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为既有证据新增了无来源的具体属性：字迹"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据新增了无来源的具体属性：字迹"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "字迹是普通表面属性，未改变文书内容、认证或因果状态。"
+    },
+    {
+      "auditId": "B045",
+      "sourceRef": "879af1545b05b918",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的未来承诺：巡抚大人说，既是准了清流先办一批，这批田亩的复核，须得派员到场。到场查验的经过，要据实记入复核记录。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的未来承诺：巡抚大人说，既是准了清流先办一批，这批田亩的复核，须得派员到场。到场查验的经过，要据实记入复核记录。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增正式派员承诺，并遗漏试办、购田限制和写入结果。"
+    },
+    {
+      "auditId": "B046",
+      "sourceRef": "5c5e48248f0251bb",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "未呈现已结算的限定试办结果，命中必要结果遗漏。"
+    },
+    {
+      "auditId": "B047",
+      "sourceRef": "f470bdee72012b9d",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空引入了新的具名人物：须记明"
+        ],
+        "authorityWarnings": [
+          "正文凭空引入了新的具名人物：须记明"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "“须记明”被误识别为人物名称，是明显词法误判。"
+    },
+    {
+      "auditId": "B048",
+      "sourceRef": "c72e6d55eb819b98",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 迟疑"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：耽误国策 / 迟疑"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏必须可见的迟疑或耽误后果，属于结算结果缺失。"
+    },
+    {
+      "auditId": "B049",
+      "sourceRef": "bdf09048644d74e9",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：改桑放行回文 / 放行回文 / 回文",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：改桑放行回文 / 放行回文 / 回文",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：写明 / 书明 / 写进 / 写入 / 写下 / 写的是 / 写了 / 落笔 / 落字 / 提笔 / 批明 / 另起一行 / 补入 / 添入 / 补写"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "正式回文及其写入动作均未呈现，导致结算文书结果不可见。"
+    },
+    {
+      "auditId": "B050",
+      "sourceRef": "af35ae5f5f85834c",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：改桑放行回文 / 放行回文 / 回文"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：改桑放行回文 / 放行回文 / 回文"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏已结算的正式放行回文，属于关键文书结果缺失。"
+    },
+    {
+      "auditId": "B051",
+      "sourceRef": "b89af8efcd14fc08",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 压价买民田 / 低价买田 / 低价买民田 / 趁急难买田 / 趁急难压价买民田 / 购田"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏已结算的购田限制，属于本轮必须可见的政策结果。"
+    },
+    {
+      "auditId": "B052",
+      "sourceRef": "50a715286c61eeed",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：既已放行清流先办"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：既已放行清流先办"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "向获批文书追加放行政策表述，改变正式文书闭集内容。"
+    },
+    {
+      "auditId": "B053",
+      "sourceRef": "501f54fde13d03ab",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各写各的 / 各担各的"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各写各的 / 各担各的"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏各自成文和分别担责的必要结果，改变责任可见性。"
+    },
+    {
+      "auditId": "B054",
+      "sourceRef": "768aeba127ec1787",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文无来源地断言了文书或证据的认证状态：总督把巡抚公文按回案面，掌缘压住纸角，没有去碰砚台旁那方朱印。"
+        ],
+        "authorityWarnings": [
+          "正文无来源地断言了文书或证据的认证状态：总督把巡抚公文按回案面，掌缘压住纸角，没有去碰砚台旁那方朱印。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "按纸和未碰朱印只是瞬时动作，没有落成新的认证状态。"
+    },
+    {
+      "auditId": "B055",
+      "sourceRef": "bda4d6f4173a4db2",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为既有证据新增了无来源的具体属性：折痕",
+          "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚书吏单手托匣，一手来接，指节碰到纸边时顿了一瞬——纸是干的，没有印，没有签押。"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据新增了无来源的具体属性：折痕",
+          "正文凭空新增了未获当前剧情合同授权的场外行动：巡抚书吏单手托匣，一手来接，指节碰到纸边时顿了一瞬——纸是干的，没有印，没有签押。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "明确断言正式文书无印无签押，属于关键认证状态。"
+    },
+    {
+      "auditId": "B056",
+      "sourceRef": "c97bcea4b86d88a6",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为既有证据或文书新增了无来源的明确内容：合计与册尾不符",
+          "正文可能没有清楚呈现已批准剧情 beat：册尾总数 / 册尾所列总数",
+          "正文可能没有清楚呈现已批准剧情 beat：不知道 / 不知 / 没有写 / 没写 / 没有教小的记",
+          "正文可能没有清楚呈现已批准剧情 beat：复核"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据或文书新增了无来源的明确内容：合计与册尾不符"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "为证据新增册尾不符内容，并可能漏掉复核这一必要结果。"
+    },
+    {
+      "auditId": "B057",
+      "sourceRef": "f6577f7ffebecab7",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空确认了新的关键证据或记录存在：底册",
+          "正文替玩家新增了未授权的命令或处置：你回去告诉县尊，",
+          "正文可能没有清楚呈现已批准剧情 beat：没有去拿印 / 朱印未动 / 公文暂压 / 公文往案角 / 公文往案侧"
+        ],
+        "authorityWarnings": [
+          "正文凭空确认了新的关键证据或记录存在：底册",
+          "正文替玩家新增了未授权的命令或处置：你回去告诉县尊，"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "凭空新增底册证据并替玩家发出对外命令。"
+    },
+    {
+      "auditId": "B058",
+      "sourceRef": "0345f4a2b89b12a9",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文凭空确认了新的关键证据或记录存在：底稿",
+          "正文可能没有清楚呈现已批准剧情 beat：耽误国策 / 迟疑"
+        ],
+        "authorityWarnings": [
+          "正文凭空确认了新的关键证据或记录存在：底稿"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "凭空确认底稿这一关键记录存在，属于新增证据。"
+    },
+    {
+      "auditId": "B059",
+      "sourceRef": "bb62fa5133bb761c",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：笔锋在田字末笔收住"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：笔锋在田字末笔收住"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "“笔锋在田字末笔收住”是书写纹理，不是新增政策或权限。"
+    },
+    {
+      "auditId": "B060",
+      "sourceRef": "911aab9e52a458e5",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：写明此批放行以清流县自行复核之册为准",
+          "正文可能没有清楚呈现已批准剧情 beat：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文可能没有清楚呈现已批准剧情 beat：压价买田 / 低价买田 / 趁急难买田 / 购田"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：写明此批放行以清流县自行复核之册为准"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "向正式文书追加以某册为准的政策条件，并可能遗漏已批结果。"
+    },
+    {
+      "auditId": "B061",
+      "sourceRef": "ac2e47f6da814080",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：原催办仍留本督案前",
+          "正文可能没有清楚呈现已批准剧情 beat：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文可能没有清楚呈现已批准剧情 beat：压价买田 / 低价买田 / 趁急难买田 / 购田",
+          "正文可能没有清楚呈现已批准剧情 beat：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：原催办仍留本督案前"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "向正式文书追加公文留置处置，并可能遗漏多个获批结果。"
+    },
+    {
+      "auditId": "B062",
+      "sourceRef": "39663ced9cffc7e9",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为既有证据新增了无来源的具体属性：墨色"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据新增了无来源的具体属性：墨色"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "墨色是普通视觉纹理，不改变证据的内容或持久状态。"
+    },
+    {
+      "auditId": "B063",
+      "sourceRef": "d47749bb383a5018",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的未来承诺：你先候着，回文随后给。",
+          "正文替玩家新增了未授权的命令或处置：你先候着，回文随后给"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的未来承诺：你先候着，回文随后给。",
+          "正文替玩家新增了未授权的命令或处置：你先候着，回文随后给"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家命令对方等待并承诺随后给回文，属于未授权承诺。"
+    },
+    {
+      "auditId": "B064",
+      "sourceRef": "4636c46382bc3654",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：清流县先办一批改桑田亩"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：清流县先办一批改桑田亩"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "向获批正式文书增加试办政策内容，超出闭集合同。"
+    },
+    {
+      "auditId": "B065",
+      "sourceRef": "974b9630245fa6fc",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：改桑放行期间"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：改桑放行期间"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "仅有“放行期间”片段，无法确认是新政策期限还是叙事连接语。"
+    },
+    {
+      "auditId": "B066",
+      "sourceRef": "54f5878637bd1ec5",
+      "turnId": "T04",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的重大行动：总督若肯落印，自然好说",
+          "正文替玩家新增了未授权的未来承诺：传话给中丞：总督衙门这就差人去杭州城里各米铺查实牌价，一家一家抄回来。查清了是涨了多少、涨在哪几处，再坐下来议各县怎么办。",
+          "正文替玩家新增了未授权的命令或处置：传话给中丞：总督衙门这就差人去杭州城里各米铺查实牌价，一家一家抄回来",
+          "正文可能没有清楚呈现已批准剧情 beat：参加复核 / 复核",
+          "正文可能没有清楚呈现已批准剧情 beat：耽误国策 / 迟疑",
+          "正文可能没有清楚呈现已批准剧情 beat：三日限期 / 三日",
+          "正文可能没有清楚呈现已批准剧情 beat：清流县试办 / 压价买田 / 两条 / 照办",
+          "正文可能没有清楚呈现已批准剧情 beat：责任记录 / 责任"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的重大行动：总督若肯落印，自然好说",
+          "正文替玩家新增了未授权的未来承诺：传话给中丞：总督衙门这就差人去杭州城里各米铺查实牌价，一家一家抄回来。查清了是涨了多少、涨在哪几处，再坐下来议各县怎么办。",
+          "正文替玩家新增了未授权的命令或处置：传话给中丞：总督衙门这就差人去杭州城里各米铺查实牌价，一家一家抄回来"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家追加调查命令、未来承诺和落印行动，并漏掉多项必要结果。"
+    },
+    {
+      "auditId": "B067",
+      "sourceRef": "e9e98dc4ae3fb12f",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文补充了当前因果契约明确禁止的新数量：三分",
+          "正文可能没有清楚呈现已批准剧情 beat：嘉靖三十五年五月初九巳时 / 五月初九巳时 / 次日巳时",
+          "正文可能没有清楚呈现已批准剧情 beat：耽误国策 / 迟疑"
+        ],
+        "authorityWarnings": [
+          "正文补充了当前因果契约明确禁止的新数量：三分"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏已批准的明确时点和追责结果；附带数值纹理不影响结论。"
+    },
+    {
+      "auditId": "B068",
+      "sourceRef": "8379c110f8a1b2b7",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的命令或处置：大人暂缓签发，卑职回去不好交代",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：三日限期 / 三日期限 / 三日之限 / 三日之内 / 三日具报"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的命令或处置：大人暂缓签发，卑职回去不好交代",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：三日限期 / 三日期限 / 三日之限 / 三日之内 / 三日具报"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "本轮三日期限未呈现，且片段引入签发处置，必要结果不可见。"
+    },
+    {
+      "auditId": "B069",
+      "sourceRef": "9faf97dabdf2a142",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 低价买田 / 趁急难买田 / 购田"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：压价买田 / 低价买田 / 趁急难买田 / 购田"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏本轮已结算的购田限制，属于必须可见的政策结果。"
+    },
+    {
+      "auditId": "B070",
+      "sourceRef": "8eae0810dc0b6e5b",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：复核"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：复核"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏本轮已结算的复核结果，属于必须可见的行动结果。"
+    },
+    {
+      "auditId": "B071",
+      "sourceRef": "43a5b89c75244ae1",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：三日限期 / 三日期限 / 三日之限 / 三日之内 / 三日具报"
+        ],
+        "authorityWarnings": [
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：三日限期 / 三日期限 / 三日之限 / 三日之内 / 三日具报"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏已结算的三日期限，属于本轮必要结果不可见。"
+    },
+    {
+      "auditId": "B072",
+      "sourceRef": "cf83617be030e1fb",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文补充了当前因果契约明确禁止的新数量：三分",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "authorityWarnings": [
+          "正文补充了当前因果契约明确禁止的新数量：三分",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏拒绝共同具名的结果；额外数值问题不是主要判定依据。"
+    },
+    {
+      "auditId": "B073",
+      "sourceRef": "1055b55e3d0f782d",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文无授权地改变了已登记持久物件状态：巡抚回文匣 CLOSED",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "authorityWarnings": [
+          "正文无授权地改变了已登记持久物件状态：巡抚回文匣 CLOSED",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "无授权改变回文匣持久状态，并遗漏拒绝联署结果。"
+    },
+    {
+      "auditId": "B074",
+      "sourceRef": "da51284ff6287a0f",
+      "turnId": "T02",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为既有证据新增了无来源的具体属性：墨迹"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据新增了无来源的具体属性：墨迹"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "墨迹是普通文书表面属性，没有改变内容、认证或持久状态。"
+    },
+    {
+      "auditId": "B075",
+      "sourceRef": "c78b15e117e9bd15",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的未来承诺：共同具名一事，须中丞本人定夺。卑职无权代为答应，只能将总督的话原样带回。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的未来承诺：共同具名一事，须中丞本人定夺。卑职无权代为答应，只能将总督的话原样带回。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "发言者明确否认代为承诺；缺少完整合同判断是否充分呈现拒绝联署。"
+    },
+    {
+      "auditId": "B076",
+      "sourceRef": "0439fcb040706717",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的命令或处置：中丞要派员与总督一同查验清流县册，到场经过据实记入复核记录",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的命令或处置：中丞要派员与总督一同查验清流县册，到场经过据实记入复核记录",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增共同查验和记录命令，同时遗漏拒绝联署的必要结果。"
+    },
+    {
+      "auditId": "B077",
+      "sourceRef": "11d431aa71a08d55",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为粮价新增了无来源的明确所在地：杭州",
+          "正文替玩家新增了未授权的未来承诺：这两条，总督大人还照办不照办？若照办，只准清流一县试办，其余各县怎么办？若不照办，前一条是耽误国策，后一条是阻人买田——哪一条，中丞都得替总督大人记着。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的未来承诺：这两条，总督大人还照办不照办？若照办，只准清流一县试办，其余各县怎么办？若不照办，前一条是耽误国策，后一条是阻人买田——哪一条，中丞都得替总督大人记着。",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增对玩家决定的未来约束与追责承诺，并遗漏联署拒绝结果。"
+    },
+    {
+      "auditId": "B078",
+      "sourceRef": "cd0456fc90130ee1",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的命令或处置：你把匣子里的回文带回去，请中丞在上面共同具名",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的命令或处置：你把匣子里的回文带回去，请中丞在上面共同具名",
+          "正文没有呈现本轮已结算的关键行动、回应或到期后果：拒绝共同具名 / 不肯共同具名 / 拒绝联署 / 不肯联署 / 不愿具名 / 不具名"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家发出携回文并请求共同具名的正式命令。"
+    },
+    {
+      "auditId": "B079",
+      "sourceRef": "5ffd3ac4cb1da236",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文为期限新增了无来源的明确所在地：巡抚衙门"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文为期限新增了无来源的明确所在地：巡抚衙门"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "只是期限来源地点归属，脱敏片段不足以确认其是否为关键持久位置事实。"
+    },
+    {
+      "auditId": "B080",
+      "sourceRef": "9439b086f93b2b47",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的未来承诺：改桑的事，本督自有章程。三日之内，具报不会误。",
+          "正文替玩家新增了未授权的命令或处置：你回去告诉县尊，"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的未来承诺：改桑的事，本督自有章程。三日之内，具报不会误。",
+          "正文替玩家新增了未授权的命令或处置：你回去告诉县尊，"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家发出传话命令并承诺按期具报，属于未授权行动。"
+    },
+    {
+      "auditId": "B081",
+      "sourceRef": "befe13903a7c42ef",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的命令或处置：你且等着，回文不是不给你。"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的命令或处置：你且等着，回文不是不给你。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家命令等待并隐含将给回文的未来承诺。"
+    },
+    {
+      "auditId": "B082",
+      "sourceRef": "4f438c2a98a4729e",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为既有证据新增了无来源的具体属性：落款"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据新增了无来源的具体属性：落款"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "落款可能是关键文书内容，也可能只是表面描述，缺少上下文确认。"
+    },
+    {
+      "auditId": "B083",
+      "sourceRef": "2171f5026d7fb640",
+      "turnId": "T02",
+      "narration": "总督没有再问亲随。他伸手到案侧，从叠着的空笺里抽出一张，铺在砚台旁，提笔蘸墨。\n\n笔尖悬了一息。巡抚书吏在屏风外微微侧头，听见了墨锋触纸的细声。\n\n总督写得不算快，一行字下去，停笔看了一眼，又写第二行。写完，将笺纸拎起吹了吹，搁在案沿。\n\n\"过来。\"\n\n巡抚书吏快步绕过屏风，到案前躬身站定。总督没有把笺纸递给他，只点了点案沿。\n\n\"收进匣里。\"\n\n书吏一手托匣，一手掀开匣盖，将那张笺纸折好放入，合上匣盖。回文匣的分量变了，他捧着的手微微一沉。\n\n总督的目光已经转回案上那封密信，没有看他。\n\n\"回去告诉你家抚台，改桑的事，只准清流县先办一批。\"他顿了顿，声音没有抬高，\"回文里写了一句话：不得趁急难压价买田。\"\n\n书吏躬身应了\"是\"，捧着合拢的回文匣退了两步，转身走到屏风边，又停住——没有走，是等着。\n\n总督抬眼。\n\n书吏欠身道：\"抚台交代过，若总督准了改桑，抚台要请总督派员到场参与复核，复核时到场查验经过，据实记入复核记录。\"\n\n这是巡抚的话，不是书吏自己的。总督听出来了。他没有立刻答。\n\n案上，巡抚的催办公文仍压在砚台底下，一角露在外面。密信摊在另一侧，薄薄的一张纸，没有原册，没有具结。亲随垂手站在厅角，一声不吭。\n\n回文匣在书吏手里，已经不再空了。",
+      "selectedEffect": {
+        "intent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "consequence": "用较慢的进度换取民田保护与可复核边界",
+        "reversible": false,
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        }
+      },
+      "causalDelta": {
+        "source": "bound-option",
+        "immediateIntent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": "bounded-action",
+        "stopCondition": "只兑现 Reader Action 与已绑定即时意图；在下一项未获授权的主角重大动作之前停下，让玩家决定。",
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        },
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的命令或处置：这是本督给抚院的回文。清流先办一批，其余候札。买田不许压价，这一条写进去了，你带回去交你家大人过目。",
+          "正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的命令或处置：这是本督给抚院的回文。清流先办一批，其余候札。买田不许压价，这一条写进去了，你带回去交你家大人过目。",
+          "正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "UNCERTAIN",
+      "classificationRationale": "文本似在交付已批回文，但警告同时称结果未兑现，脱敏信息内部不足。"
+    },
+    {
+      "auditId": "B084",
+      "sourceRef": "2171f5026d7fb640",
+      "turnId": "T02",
+      "narration": "总督没有再问亲随。他伸手到案侧，从叠着的空笺里抽出一张，铺在砚台旁，提笔蘸墨。\n\n笔尖悬了一息。巡抚书吏在屏风外微微侧头，听见了墨锋触纸的细声。\n\n总督写得不算快，一行字下去，停笔看了一眼，又写第二行。写完，将笺纸拎起吹了吹，搁在案沿。\n\n\"过来。\"\n\n巡抚书吏快步绕过屏风，到案前躬身站定。总督没有把笺纸递给他，只点了点案沿。\n\n\"收进匣里。\"\n\n书吏一手托匣，一手掀开匣盖，将那张笺纸折好放入，合上匣盖。回文匣的分量变了，他捧着的手微微一沉。\n\n总督的目光已经转回案上那封密信，没有看他。\n\n\"回去告诉你家抚台，改桑的事，只准清流县先办一批。\"他顿了顿，声音没有抬高，\"回文里写了一句话：不得趁急难压价买田。\"\n\n书吏躬身应了\"是\"，捧着合拢的回文匣退了两步，转身走到屏风边，又停住——没有走，是等着。\n\n总督抬眼。\n\n书吏欠身道：\"抚台交代过，若总督准了改桑，抚台要请总督派员到场参与复核，复核时到场查验经过，据实记入复核记录。\"\n\n这是巡抚的话，不是书吏自己的。总督听出来了。他没有立刻答。\n\n案上，巡抚的催办公文仍压在砚台底下，一角露在外面。密信摊在另一侧，薄薄的一张纸，没有原册，没有具结。亲随垂手站在厅角，一声不吭。\n\n回文匣在书吏手里，已经不再空了。",
+      "selectedEffect": {
+        "intent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "consequence": "用较慢的进度换取民田保护与可复核边界",
+        "reversible": false,
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        }
+      },
+      "causalDelta": {
+        "source": "bound-option",
+        "immediateIntent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": "bounded-action",
+        "stopCondition": "只兑现 Reader Action 与已绑定即时意图；在下一项未获授权的主角重大动作之前停下，让玩家决定。",
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        },
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的命令或处置：你回去告诉你家县尊：原册封存，不许任何人调阅，等本督衙门委员到县查验。他若办第一批改桑，照此行牌办——田价不许压，册子不许动。",
+          "正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田",
+          "正文没有兑现已批准剧情 beat 的必要结果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的命令或处置：你回去告诉你家县尊：原册封存，不许任何人调阅，等本督衙门委员到县查验。他若办第一批改桑，照此行牌办——田价不许压，册子不许动。",
+          "正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田",
+          "正文没有兑现已批准剧情 beat 的必要结果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家新增封存、禁阅、派员查验和执行政策等一组正式命令。"
+    },
+    {
+      "auditId": "B085",
+      "sourceRef": "2171f5026d7fb640",
+      "turnId": "T02",
+      "narration": "总督没有再问亲随。他伸手到案侧，从叠着的空笺里抽出一张，铺在砚台旁，提笔蘸墨。\n\n笔尖悬了一息。巡抚书吏在屏风外微微侧头，听见了墨锋触纸的细声。\n\n总督写得不算快，一行字下去，停笔看了一眼，又写第二行。写完，将笺纸拎起吹了吹，搁在案沿。\n\n\"过来。\"\n\n巡抚书吏快步绕过屏风，到案前躬身站定。总督没有把笺纸递给他，只点了点案沿。\n\n\"收进匣里。\"\n\n书吏一手托匣，一手掀开匣盖，将那张笺纸折好放入，合上匣盖。回文匣的分量变了，他捧着的手微微一沉。\n\n总督的目光已经转回案上那封密信，没有看他。\n\n\"回去告诉你家抚台，改桑的事，只准清流县先办一批。\"他顿了顿，声音没有抬高，\"回文里写了一句话：不得趁急难压价买田。\"\n\n书吏躬身应了\"是\"，捧着合拢的回文匣退了两步，转身走到屏风边，又停住——没有走，是等着。\n\n总督抬眼。\n\n书吏欠身道：\"抚台交代过，若总督准了改桑，抚台要请总督派员到场参与复核，复核时到场查验经过，据实记入复核记录。\"\n\n这是巡抚的话，不是书吏自己的。总督听出来了。他没有立刻答。\n\n案上，巡抚的催办公文仍压在砚台底下，一角露在外面。密信摊在另一侧，薄薄的一张纸，没有原册，没有具结。亲随垂手站在厅角，一声不吭。\n\n回文匣在书吏手里，已经不再空了。",
+      "selectedEffect": {
+        "intent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "consequence": "用较慢的进度换取民田保护与可复核边界",
+        "reversible": false,
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        }
+      },
+      "causalDelta": {
+        "source": "bound-option",
+        "immediateIntent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": "bounded-action",
+        "stopCondition": "只兑现 Reader Action 与已绑定即时意图；在下一项未获授权的主角重大动作之前停下，让玩家决定。",
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        },
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文无授权地改变了已登记持久物件状态：巡抚回文匣 EMPTY",
+          "正文替玩家新增了未授权的命令或处置：回去告诉你家县尊：先办一批，就照他信上所报那批。县册的事，",
+          "正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写"
+        ],
+        "authorityWarnings": [
+          "正文无授权地改变了已登记持久物件状态：巡抚回文匣 EMPTY",
+          "正文替玩家新增了未授权的命令或处置：回去告诉你家县尊：先办一批，就照他信上所报那批。县册的事，",
+          "正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "改变回文匣持久状态并替玩家发出对外处置命令。"
+    },
+    {
+      "auditId": "B086",
+      "sourceRef": "2171f5026d7fb640",
+      "turnId": "T02",
+      "narration": "总督没有再问亲随。他伸手到案侧，从叠着的空笺里抽出一张，铺在砚台旁，提笔蘸墨。\n\n笔尖悬了一息。巡抚书吏在屏风外微微侧头，听见了墨锋触纸的细声。\n\n总督写得不算快，一行字下去，停笔看了一眼，又写第二行。写完，将笺纸拎起吹了吹，搁在案沿。\n\n\"过来。\"\n\n巡抚书吏快步绕过屏风，到案前躬身站定。总督没有把笺纸递给他，只点了点案沿。\n\n\"收进匣里。\"\n\n书吏一手托匣，一手掀开匣盖，将那张笺纸折好放入，合上匣盖。回文匣的分量变了，他捧着的手微微一沉。\n\n总督的目光已经转回案上那封密信，没有看他。\n\n\"回去告诉你家抚台，改桑的事，只准清流县先办一批。\"他顿了顿，声音没有抬高，\"回文里写了一句话：不得趁急难压价买田。\"\n\n书吏躬身应了\"是\"，捧着合拢的回文匣退了两步，转身走到屏风边，又停住——没有走，是等着。\n\n总督抬眼。\n\n书吏欠身道：\"抚台交代过，若总督准了改桑，抚台要请总督派员到场参与复核，复核时到场查验经过，据实记入复核记录。\"\n\n这是巡抚的话，不是书吏自己的。总督听出来了。他没有立刻答。\n\n案上，巡抚的催办公文仍压在砚台底下，一角露在外面。密信摊在另一侧，薄薄的一张纸，没有原册，没有具结。亲随垂手站在厅角，一声不吭。\n\n回文匣在书吏手里，已经不再空了。",
+      "selectedEffect": {
+        "intent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "consequence": "用较慢的进度换取民田保护与可复核边界",
+        "reversible": false,
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        }
+      },
+      "causalDelta": {
+        "source": "bound-option",
+        "immediateIntent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": "bounded-action",
+        "stopCondition": "只兑现 Reader Action 与已绑定即时意图；在下一项未获授权的主角重大动作之前停下，让玩家决定。",
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        },
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为既有证据新增了无来源的具体属性：字迹",
+          "正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写",
+          "正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田",
+          "正文没有兑现已批准剧情 beat 的必要结果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据新增了无来源的具体属性：字迹",
+          "正文没有兑现已批准剧情 beat 的必要结果：只准清流县先办一批 / 清流县先办一批 / 清流县试办 / 清流试办 / 限定试办",
+          "正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写",
+          "正文没有兑现已批准剧情 beat 的必要结果：压价买田 / 低价买田 / 趁急难买田 / 购田",
+          "正文没有兑现已批准剧情 beat 的必要结果：民田 / 卖田 / 购田 / 买田 / 田契"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "尽管字迹是纹理，但多项已批准文书与政策结果没有兑现。"
+    },
+    {
+      "auditId": "B087",
+      "sourceRef": "2171f5026d7fb640",
+      "turnId": "T02",
+      "narration": "总督没有再问亲随。他伸手到案侧，从叠着的空笺里抽出一张，铺在砚台旁，提笔蘸墨。\n\n笔尖悬了一息。巡抚书吏在屏风外微微侧头，听见了墨锋触纸的细声。\n\n总督写得不算快，一行字下去，停笔看了一眼，又写第二行。写完，将笺纸拎起吹了吹，搁在案沿。\n\n\"过来。\"\n\n巡抚书吏快步绕过屏风，到案前躬身站定。总督没有把笺纸递给他，只点了点案沿。\n\n\"收进匣里。\"\n\n书吏一手托匣，一手掀开匣盖，将那张笺纸折好放入，合上匣盖。回文匣的分量变了，他捧着的手微微一沉。\n\n总督的目光已经转回案上那封密信，没有看他。\n\n\"回去告诉你家抚台，改桑的事，只准清流县先办一批。\"他顿了顿，声音没有抬高，\"回文里写了一句话：不得趁急难压价买田。\"\n\n书吏躬身应了\"是\"，捧着合拢的回文匣退了两步，转身走到屏风边，又停住——没有走，是等着。\n\n总督抬眼。\n\n书吏欠身道：\"抚台交代过，若总督准了改桑，抚台要请总督派员到场参与复核，复核时到场查验经过，据实记入复核记录。\"\n\n这是巡抚的话，不是书吏自己的。总督听出来了。他没有立刻答。\n\n案上，巡抚的催办公文仍压在砚台底下，一角露在外面。密信摊在另一侧，薄薄的一张纸，没有原册，没有具结。亲随垂手站在厅角，一声不吭。\n\n回文匣在书吏手里，已经不再空了。",
+      "selectedEffect": {
+        "intent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "consequence": "用较慢的进度换取民田保护与可复核边界",
+        "reversible": false,
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        }
+      },
+      "causalDelta": {
+        "source": "bound-option",
+        "immediateIntent": "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。",
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": "bounded-action",
+        "stopCondition": "只兑现 Reader Action 与已绑定即时意图；在下一项未获授权的主角重大动作之前停下，让玩家决定。",
+        "beatContract": {
+          "sourceRef": "part-one-event:EVT-P1-02-44EEE94D844A7AF3",
+          "objective": "把两封文书转成可追踪的执行模式、复核启动方式和督抚责任关系。",
+          "moves": [
+            "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。具体兑现：浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录。具体兑现：只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。"
+          ],
+          "requiredAnchorGroups": [
+            [
+              "只准清流县先办一批",
+              "清流县先办一批",
+              "清流县试办",
+              "清流试办",
+              "限定试办"
+            ],
+            [
+              "改桑放行回文",
+              "放行回文",
+              "回文"
+            ],
+            [
+              "写明",
+              "书明",
+              "写进",
+              "写入",
+              "写下",
+              "写的是",
+              "写了",
+              "落笔",
+              "落字",
+              "提笔",
+              "批明",
+              "另起一行",
+              "补入",
+              "添入",
+              "补写"
+            ],
+            [
+              "压价买田",
+              "低价买田",
+              "趁急难买田",
+              "购田"
+            ],
+            [
+              "民田",
+              "卖田",
+              "购田",
+              "买田",
+              "田契"
+            ],
+            [
+              "巡抚书吏",
+              "书吏"
+            ],
+            [
+              "复核"
+            ]
+          ],
+          "constraints": [
+            "浙江总督另取一张普通空笺，当场提笔写成名为“改桑放行回文”的新文书；原先压在案上的巡抚催办公文仍留在总督案前，不得拿来改写或交还。新回文中只写清流县先办一批和不得趁急难压价买田；本回合只写成，不落印、不签押。写成后交给巡抚书吏收进他一直捧着的空回文匣，回文匣由空合变为装有这一份回文。空笺与笔墨只属于写成这份回文的一次性过程，落字后就是同一份改桑放行回文，不得另成第二份文书、底稿、证据或后续物件。",
+            "只写这项已经结算的 NPC 反应，不增加其尚未知晓的事实、文书内容、期限、命令、承诺或场外结果。",
+            "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
+            "不得新增人物、文书、证据、数量、期限、发现、承诺或办理完成结果。",
+            "不得替玩家追加第二个行动或提前回答下一组决策。",
+            "未知保持未知，禁止提前确认幕后主使或暗账全貌。",
+            "本轮始于并结束于嘉靖三十五年五月初八辰时的杭州总督府内厅。",
+            "本轮没有获批的新人物入场。",
+            "本轮没有必须离场的人物。",
+            "只让已点名的在场人物行动，不补写赶路、回报或场外完成结果。",
+            "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。",
+            "总督已经读到三日具报的期限，公文留在总督案前。",
+            "总督已经读过密信中关于县册数字疑有改痕的内容；密信只报疑，不能定罪。",
+            "总督已经写成给巡抚的放行回文，并当场交给巡抚书吏收进回文匣；不得另造第二份文书或增加未经结算的条款。"
+          ],
+          "stopCondition": "浙江巡抚通过巡抚书吏传话：要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
+        },
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写"
+        ],
+        "authorityWarnings": [
+          "正文没有兑现已批准剧情 beat 的必要结果：写明 / 书明 / 写进 / 写入 / 落笔 / 批明 / 另起一行 / 补入 / 添入 / 补写"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏已批准的文书写入结果，属于必须可见的正式文书结算。"
+    },
+    {
+      "auditId": "B088",
+      "sourceRef": "117551878a510731",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有兑现已批准剧情 beat 的必要结果：各自成文 / 分别成文 / 各自担责 / 分别担责",
+          "正文没有兑现已批准剧情 beat 的必要结果：耽误国策 / 迟疑",
+          "正文没有兑现已批准剧情 beat 的必要结果：三日限期 / 三日"
+        ],
+        "authorityWarnings": [
+          "正文没有兑现已批准剧情 beat 的必要结果：各自成文 / 分别成文 / 各自担责 / 分别担责",
+          "正文没有兑现已批准剧情 beat 的必要结果：耽误国策 / 迟疑",
+          "正文没有兑现已批准剧情 beat 的必要结果：三日限期 / 三日"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏期限、分别担责和追责后果等多项必要结算结果。"
+    },
+    {
+      "auditId": "B089",
+      "sourceRef": "117551878a510731",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为粮价新增了无来源的明确所在地：清流",
+          "正文没有兑现已批准剧情 beat 的必要结果：具名 / 署名 / 联署"
+        ],
+        "authorityWarnings": [
+          "正文没有兑现已批准剧情 beat 的必要结果：具名 / 署名 / 联署"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏已结算的具名或联署结果；地点问题不是主要判定依据。"
+    },
+    {
+      "auditId": "B090",
+      "sourceRef": "117551878a510731",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：总督另具责任说明",
+          "正文替玩家新增了未授权的重大行动：次日巳时，总督府签押房",
+          "正文替玩家新增了未授权的未来承诺：总督另具责任说明，小的不敢擅取。只是抚台交代的话，小的不敢不记。总督准了清流先办一批、不许趁急难压价买田，这两条，小的记下了。至于派员参与复核一节——"
+        ],
+        "authorityWarnings": [
+          "正文替获批文书增加了契约之外的政策、权限或处置：总督另具责任说明",
+          "正文替玩家新增了未授权的重大行动：次日巳时，总督府签押房",
+          "正文替玩家新增了未授权的未来承诺：总督另具责任说明，小的不敢擅取。只是抚台交代的话，小的不敢不记。总督准了清流先办一批、不许趁急难压价买田，这两条，小的记下了。至于派员参与复核一节——"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "新增责任说明文书、未来安排和明确场外时点，构成正式状态越权。"
+    },
+    {
+      "auditId": "B091",
+      "sourceRef": "117551878a510731",
+      "turnId": "T03",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文无授权地改变了已登记持久物件状态：巡抚回文匣 EMPTY",
+          "正文替玩家新增了未授权的重大行动：杭州总督府签押房",
+          "正文替玩家新增了未授权的命令或处置：匣里的回文不改，你带回去。",
+          "正文没有兑现已批准剧情 beat 的必要结果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各写各的 / 各担各的"
+        ],
+        "authorityWarnings": [
+          "正文无授权地改变了已登记持久物件状态：巡抚回文匣 EMPTY",
+          "正文替玩家新增了未授权的重大行动：杭州总督府签押房",
+          "正文替玩家新增了未授权的命令或处置：匣里的回文不改，你带回去。",
+          "正文没有兑现已批准剧情 beat 的必要结果：各自成文 / 分别成文 / 各自担责 / 分别担责 / 各写各的 / 各担各的"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "改变回文匣状态、追加交付命令并遗漏分别担责结果。"
+    },
+    {
+      "auditId": "B092",
+      "sourceRef": "f6a885b213c4c2d2",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文替玩家新增了未授权的未来承诺：所以本督更要查清楚再签。",
+          "正文替玩家新增了未授权的命令或处置：你回去告诉县令，原册、经手花名、档房收存簿，一样都不许动，等本督衙的人到。"
+        ],
+        "authorityWarnings": [
+          "正文替玩家新增了未授权的未来承诺：所以本督更要查清楚再签。",
+          "正文替玩家新增了未授权的命令或处置：你回去告诉县令，原册、经手花名、档房收存簿，一样都不许动，等本督衙的人到。"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "替玩家新增封存多项证据、派员到场和未来签署承诺。"
+    },
+    {
+      "auditId": "B093",
+      "sourceRef": "6447bb2a7c484a2b",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文为既有证据或文书新增了无来源的明确内容：亲随答得快，像是来时背熟了的，"
+        ],
+        "authorityWarnings": [
+          "正文为既有证据或文书新增了无来源的明确内容：亲随答得快，像是来时背熟了的，"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "FALSE_POSITIVE",
+      "classificationRationale": "“像是背熟”是叙述者风格性推测，不是证据的明确内容。"
+    },
+    {
+      "auditId": "B094",
+      "sourceRef": "8fa934c05c78249e",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文通过连续问答为原册新增了无来源的明确所在地：清流县"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文通过连续问答为原册新增了无来源的明确所在地：清流县"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "通过问答确定关键原册所在地，仍形成无来源的持久位置事实。"
+    },
+    {
+      "auditId": "B095",
+      "sourceRef": "9cc22db18ba1e084",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文越过了本轮已审定的知识上限：正文通过连续问答为原册新增了无来源的明确所在地：清流"
+        ],
+        "authorityWarnings": [
+          "正文越过了本轮已审定的知识上限：正文通过连续问答为原册新增了无来源的明确所在地：清流"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "连续问答落成关键原册的明确所在地，属于持久位置断言。"
+    },
+    {
+      "auditId": "B096",
+      "sourceRef": "64de28da00cce5ad",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有兑现已批准剧情 beat 的必要结果：暂缓签发 / 暂不签发 / 扣下不签"
+        ],
+        "authorityWarnings": [
+          "正文没有兑现已批准剧情 beat 的必要结果：暂缓签发 / 暂不签发 / 扣下不签"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏已批准的暂缓签发结果，属于本轮必须可见的决定。"
+    },
+    {
+      "auditId": "B097",
+      "sourceRef": "267c53939f076512",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有兑现已批准剧情 beat 的必要结果：暂缓签发 / 暂不签发 / 扣下不签 / 未即刻签发 / 没有即刻签发 / 没有落印 / 没有碰印盒 / 朱印未动"
+        ],
+        "authorityWarnings": [
+          "正文没有兑现已批准剧情 beat 的必要结果：暂缓签发 / 暂不签发 / 扣下不签 / 未即刻签发 / 没有即刻签发 / 没有落印 / 没有碰印盒 / 朱印未动"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏未签发或未落印这一必要认证结果，影响文书状态。"
+    },
+    {
+      "auditId": "B098",
+      "sourceRef": "0a622f1931c435a5",
+      "turnId": "T01",
+      "narration": null,
+      "selectedEffect": null,
+      "causalDelta": {
+        "source": null,
+        "immediateIntent": null,
+        "requiredNarrativeFacts": [],
+        "allowedKnowledge": [],
+        "forbiddenKnowledge": [],
+        "durableHints": [],
+        "evidenceSubjects": [],
+        "protagonistScope": null,
+        "stopCondition": null,
+        "beatContract": null,
+        "knowledgeBoundaryRef": null
+      },
+      "auditFinding": {
+        "severity": "HIGH",
+        "suspectedDurableConflicts": [
+          "正文没有兑现已批准剧情 beat 的必要结果：没有去拿印 / 朱印未动 / 公文暂压 / 公文往案角 / 公文往案侧"
+        ],
+        "authorityWarnings": [
+          "正文没有兑现已批准剧情 beat 的必要结果：没有去拿印 / 朱印未动 / 公文暂压 / 公文往案角 / 公文往案侧"
+        ],
+        "knowledgeWarnings": [],
+        "sectionDriftWarnings": []
+      },
+      "humanClassification": "REAL_P0",
+      "classificationRationale": "遗漏朱印未动和公文暂压等已批准结果，导致决定不可见。"
+    }
+  ]
+}
