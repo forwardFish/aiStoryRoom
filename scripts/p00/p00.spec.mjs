@@ -10,6 +10,7 @@ import { calculateStats, filterRecords, loadCorpus, validateCorpus } from "./cor
 import { inspectTestTarget, parseTestCount } from "./openovel-test-gate.mjs";
 import { buildPnpmInvocation, runPnpm } from "./pnpm-runner.mjs";
 import { inspectWorkspaceScript, LEGACY_ROOT_COMMANDS } from "./workspace-script-gate.mjs";
+import { calculateSourceCounts, loadSourceIndex, validateSourceIndex } from "./source-index.mjs";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 
@@ -81,18 +82,51 @@ test("test output parser rejects zero and No projects matched", () => {
 
 test("historical corpus schema has 98 of 98 complete manual labels", async () => {
   const corpus = await loadCorpus(resolve(root, "p00-historical-blockers.sanitized.json"));
+  const sourceIndex = await loadSourceIndex(resolve(root, "p00-historical-source-index.sanitized.json"));
   assert.deepEqual(validateCorpus(corpus), []);
+  assert.deepEqual(validateSourceIndex(sourceIndex, corpus), []);
   assert.equal(corpus.records.length, 98);
   assert.equal(corpus.records.filter((record) => record.humanClassification === "UNLABELED").length, 0);
   assert.equal(corpus.records.filter((record) => record.classificationRationale.trim().length >= 12).length, 98);
   assert.equal(corpus.records.filter((record) => Object.values(record.reviewEvidence).every((value) => value.trim().length >= 4)).length, 98);
-  const classifications = calculateStats(corpus).classifications;
+  const classifications = calculateStats(corpus, calculateSourceCounts(sourceIndex)).classifications;
   assert.equal(Object.values(classifications).reduce((sum, count) => sum + count, 0), 98);
   assert.equal(classifications.REAL_P0, 0, "sanitized warnings alone must not be promoted to gold REAL_P0 evidence");
   assert.deepEqual(
     corpus.records.filter((record) => ["B004", "B005"].includes(record.auditId)).map((record) => [record.auditId, record.humanClassification]),
     [["B004", "FALSE_POSITIVE"], ["B005", "UNCERTAIN"]],
   );
+});
+
+test("source index recomputes 150/145/290/98 and rejects structural tampering", async () => {
+  const corpus = await loadCorpus(resolve(root, "p00-historical-blockers.sanitized.json"));
+  const sourceIndex = await loadSourceIndex(resolve(root, "p00-historical-source-index.sanitized.json"));
+  assert.deepEqual(calculateSourceCounts(sourceIndex), {
+    runDirectories: 150, shadowAuditFiles: 145, auditRecords: 290, blockingRecords: 98,
+  });
+
+  const changedRecordCount = structuredClone(sourceIndex);
+  changedRecordCount.runs[0].auditRecordCount += 1;
+  assert.match(validateSourceIndex(changedRecordCount, corpus).join("\n"), /counts\.auditRecords does not match calculated/);
+
+  const duplicateRun = structuredClone(sourceIndex);
+  duplicateRun.runs[1].runRef = duplicateRun.runs[0].runRef;
+  assert.match(validateSourceIndex(duplicateRun, corpus).join("\n"), /runRef is duplicated/);
+
+  const invalidNoAudit = structuredClone(sourceIndex);
+  const noAudit = invalidNoAudit.runs.find((run) => !run.hasShadowAudit);
+  assert.ok(noAudit, "fixture must contain a run without an audit");
+  noAudit.auditFileSha256 = "0".repeat(64);
+  noAudit.auditRecordCount = 1;
+  assert.match(validateSourceIndex(invalidNoAudit, corpus).join("\n"), /auditFileSha256 must be null|counts must be zero/);
+
+  const wrongTopLevel = structuredClone(sourceIndex);
+  wrongTopLevel.counts.runDirectories += 1;
+  assert.match(validateSourceIndex(wrongTopLevel, corpus).join("\n"), /counts\.runDirectories does not match calculated/);
+
+  const wrongCorpusCounts = structuredClone(corpus);
+  wrongCorpusCounts.counts.auditRecords += 1;
+  assert.match(validateSourceIndex(sourceIndex, wrongCorpusCounts).join("\n"), /corpus counts\.auditRecords does not match source index calculated/);
 });
 
 test("speech-act review is schema-based and works for an English non-story fixture", async () => {
@@ -117,10 +151,12 @@ test("speech-act review is schema-based and works for an English non-story fixtu
 
 test("query and statistics are stable across equivalent calls", async () => {
   const corpus = await loadCorpus(resolve(root, "p00-historical-blockers.sanitized.json"));
+  const sourceIndex = await loadSourceIndex(resolve(root, "p00-historical-source-index.sanitized.json"));
+  const sourceCounts = calculateSourceCounts(sourceIndex);
   const filters = { classification: "UNCERTAIN", severity: "HIGH", turnId: "T03", keyword: "文书" };
   const first = filterRecords(corpus.records, filters);
   const second = filterRecords([...corpus.records].reverse(), filters);
   assert.deepEqual(first.map((record) => record.auditId), second.map((record) => record.auditId));
-  assert.deepEqual(calculateStats(corpus, first), calculateStats(corpus, second));
+  assert.deepEqual(calculateStats(corpus, sourceCounts, first), calculateStats(corpus, sourceCounts, second));
   assert.ok(first.length > 0);
 });

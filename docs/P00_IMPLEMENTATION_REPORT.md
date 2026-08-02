@@ -2,7 +2,7 @@
 
 ## 结论
 
-P00 Round 2 已在 `main@d5aff3096f901cc41ed4fd9c5e290855a46f480e` 的完整 8-workspace 仓库中返修。实现范围仍仅包括可信基线、历史阻断人工分类/查询、两套 OpenNovel workspace 工程门、Evidence 生成幂等门与离线 replay；没有实现 P01—P08。
+P00 Round 3 已在 `main@d5aff3096f901cc41ed4fd9c5e290855a46f480e` 的完整 8-workspace 仓库中返修。实现范围仍仅包括可信基线、历史阻断人工分类/查询、脱敏来源索引、两套 OpenNovel workspace 工程门、Evidence 生成幂等门与离线 replay；没有实现 P01—P08。
 
 离线重放结果为 150 个 run 目录、145 个 shadow audit 文件、290 条审计记录、98 条阻断记录；98/98 均有合法人工分类、理由和最小审查依据。Round 2 分类为 `REAL_P0=0`、`FALSE_POSITIVE=12`、`UNCERTAIN=86`。零个 `REAL_P0` 仅表示附件不足以独立证明 Gold true positive，不表示历史运行不存在真实 P0。
 
@@ -20,12 +20,15 @@ P00 Round 2 已在 `main@d5aff3096f901cc41ed4fd9c5e290855a46f480e` 的完整 8-w
 10. 98 条记录逐条重审，不再把旧 validator 警告本身当成事实证据；新增四项 `reviewEvidence` 字段。
 11. Evidence 生成 JSON/JSONL 固定 LF，并新增真实 build 前后 Git 清洁度门。
 12. `package.json` 恢复基线 LF，只保留真实脚本差异。
+13. `source-index.mjs` 从 150 条匿名 run 索引重算 150/145/290/98；corpus counts 仅作严格交叉校验，不再作为统计来源。
+14. source-index 负例覆盖记录数篡改、重复 runRef、无 audit 却带 hash/records，以及顶层 counts 篡改。
 
 ## 修改文件
 
 - `package.json`
 - `.gitattributes`
 - `p00-historical-blockers.sanitized.json`
+- `p00-historical-source-index.sanitized.json`
 - `scripts/p00/apply-manual-annotations.mjs`
 - `scripts/p00/corpus-cli.mjs`
 - `scripts/p00/corpus.mjs`
@@ -35,6 +38,7 @@ P00 Round 2 已在 `main@d5aff3096f901cc41ed4fd9c5e290855a46f480e` 的完整 8-w
 - `scripts/p00/pnpm-runner.mjs`
 - `scripts/p00/p00.spec.mjs`
 - `scripts/p00/replay-audit.mjs`
+- `scripts/p00/source-index.mjs`
 - `scripts/p00/workspace-script-gate.mjs`
 - `packages/openovel-runtime/tests/context.spec.ts`
 - `docs/P00_BASELINE_MANIFEST.md`
@@ -58,8 +62,9 @@ P00 Round 2 已在 `main@d5aff3096f901cc41ed4fd9c5e290855a46f480e` 的完整 8-w
 | `pnpm test:openovel-evidence-runtime` | 0 | evidence gate：2 files，33 tests |
 | `pnpm p00:check-evidence-command` | 0 | 无副作用验证 `evidence:build` 确实由 `@ai-story/openovel-runtime` 提供 |
 | `pnpm p00:check-evidence-clean` | 0 | 真实执行 `evidence:build`；`EVIDENCE_BUILD_PASS`，生成目录保持 clean |
-| `pnpm test:p00` | 0 | 10 tests，10 pass；新增 B004/B005 与英语疑问 speech-act fixture |
-| `pnpm p00:replay` | 0 | `providerCalls=0`；98 条统计为 0/12/86，并报告两套 workspace |
+| `pnpm test:p00` | 0 | 11 tests，11 pass；含四类 source-index 篡改负例 |
+| `pnpm p00:replay` | 0 | `providerCalls=0`；从索引重算 150/145/290/98，分类为 0/12/86 |
+| `pnpm p00:corpus -- --stats` | 0 | 使用同一索引重算来源统计，不信任 corpus counts |
 | `git diff --check d5aff3096f901cc41ed4fd9c5e290855a46f480e` | 0 | 无 trailing whitespace；`package.json` 为 LF |
 
 首次环境诊断也如实保留：
@@ -74,7 +79,7 @@ P00 Round 2 已在 `main@d5aff3096f901cc41ed4fd9c5e290855a46f480e` 的完整 8-w
 
 | 层级 | P00 状态 | 说明 |
 |---|---|---|
-| 工程测试 | 已执行，通过 | 10 条 P00、97 条 app runtime、33 条 evidence runtime，以及 Evidence clean gate |
+| 工程测试 | 已执行，通过 | 11 条 P00、97 条 app runtime、33 条 evidence runtime，以及 Evidence clean gate |
 | Mock/fixture | 已执行，通过 | 历史 corpus、英语 speech-act、错误/零测试 fixture、Windows runner 模拟 |
 | 真实模型验证 | 未执行，按阶段禁止 | 未调用 GLM、DeepSeek、Kimi 或其他 provider |
 | 真实玩家验收 | 未执行，按阶段禁止 | P00 不把 Mock 或 G00—T05 当作玩家验收 |

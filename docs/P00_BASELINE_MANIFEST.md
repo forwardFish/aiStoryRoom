@@ -8,12 +8,15 @@
 - 基线提交标题：`refactor(story): adopt OpenNovel-first durable truth gate`
 - 语料：`p00-historical-blockers.sanitized.json`
 - Schema：`p00-historical-blocker-corpus-v1`
+- 来源索引：`p00-historical-source-index.sanitized.json`
+- 来源索引 Schema：`p00-sanitized-source-index-v1`
+- 来源索引 SHA-256：`0dd305dde43068dddfa36e6ff897f00c19ea291ebbc40dc88f324a385bfa3c64`
 
-完整 SHA 已同时固化在语料的 `baselineCommit`、离线校验器常量与本清单中。`pnpm p00:replay` 会交叉验证这些值，而不是信任手写统计。
+完整基线 SHA 已同时固化在语料、来源索引、离线校验器与本清单中。`pnpm p00:replay` 会交叉验证这些值，而不是信任手写统计。
 
 ## 统计口径
 
-语料顶层 `counts` 保存来源汇总，`records` 只保存历史上 `blocksPlayer=true` 的脱敏记录。重放器验证 `records.length === counts.blockingRecords`，并从 98 条记录重新聚合人工分类、严重度与 turnId。
+来源索引包含 150 条匿名 `runRef`，以及 `hasShadowAudit`、审计文件 SHA-256、审计记录数和阻断记录数。代码通过 `runs.length`、布尔计数和逐项求和重算全部来源统计。corpus 顶层 `counts` 只作为冗余校验值，任何字段与重算结果不一致都会失败。重放器同时验证 `sourceIndex.blockingRecords === corpus.records.length === 98`。
 
 ```text
 runDirectories: 150
@@ -36,6 +39,8 @@ Round 2 逐条复核后的可重算结果：`REAL_P0=0`、`FALSE_POSITIVE=12`、
 - `reviewEvidence.excerpt`、`speechAct`、`assertedPredicate`、`expectedPredicateEvidence` 四项最小审查依据。
 
 校验器还检查基线 SHA、schemaVersion、允许分类的稳定顺序、统计字段类型、auditId 唯一性、sourceRef 格式以及 98/98 分类和证据字段覆盖率。
+
+来源索引校验器检查 `runRef` 唯一性和格式、audit SHA-256 完整性、无 audit 条目的 null/零计数约束、`blockingRecordCount <= auditRecordCount`，并严格比较索引 counts、corpus counts 与代码重算结果。索引不含运行名称、路径、正文、请求/响应、Reader Action、用户信息、密钥、Cookie、数据库或浏览器状态。
 
 ## 分类标准
 

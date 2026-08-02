@@ -61,7 +61,8 @@ export function filterRecords(records, filters = {}) {
     .sort((a, b) => a.auditId.localeCompare(b.auditId));
 }
 
-export function calculateStats(corpus, records = corpus.records) {
+export function calculateStats(corpus, sourceCounts, records = corpus.records) {
+  if (!sourceCounts || typeof sourceCounts !== "object") throw new Error("calculated source counts are required");
   const classifications = Object.fromEntries(CLASSIFICATIONS.map((key) => [key, 0]));
   const severity = {};
   const turnId = {};
@@ -71,7 +72,7 @@ export function calculateStats(corpus, records = corpus.records) {
     turnId[record.turnId] = (turnId[record.turnId] ?? 0) + 1;
   }
   return {
-    source: { ...corpus.counts },
+    source: { ...sourceCounts },
     selectedRecords: records.length,
     classifications,
     severity: Object.fromEntries(Object.entries(severity).sort()),
