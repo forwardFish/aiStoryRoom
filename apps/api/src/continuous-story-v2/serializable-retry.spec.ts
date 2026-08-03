@@ -24,3 +24,29 @@ test("non-transaction errors fail immediately and message-only PostgreSQL confli
   assert.equal(isRetryableSerializableError(new Error("deadlock detected while committing")), true);
   assert.equal(isRetryableSerializableError({ code: "P2025", message: "not found" }), false);
 });
+
+test("a read-committed heartbeat retries the whole transaction after P1017", async () => {
+  let attempts = 0;
+  const isolationLevels: string[] = [];
+  const host = {
+    $transaction: async (operation: (tx: any) => Promise<unknown>, options: { isolationLevel: string }) => {
+      attempts += 1;
+      isolationLevels.push(options.isolationLevel);
+      if (attempts === 1) {
+        throw Object.assign(new Error("Server has closed the connection."), { code: "P1017" });
+      }
+      return operation({ marker: "heartbeat-tx" });
+    }
+  };
+
+  const result = await continuousStoryV2Serializable(
+    host as any,
+    async (tx: any) => tx.marker,
+    { attempts: 3, isolationLevel: "ReadCommitted" as any, retryDelayMs: () => 0 }
+  );
+
+  assert.equal(result, "heartbeat-tx");
+  assert.equal(attempts, 2);
+  assert.deepEqual(isolationLevels, ["ReadCommitted", "ReadCommitted"]);
+  assert.equal(isRetryableSerializableError(new Error("Server has closed the connection.")), true);
+});

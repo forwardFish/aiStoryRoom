@@ -1066,7 +1066,7 @@ export class ContinuousStoryV2Service {
     validateHeartbeatCommand(command);
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 45_000);
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await continuousStoryV2Serializable(this.prisma, async (tx) => {
       const context = await this.controlContext(tx, user, roomId);
       const key = { runId: roomId, userId: user.id, sessionInstanceId: command.sessionInstanceId };
       const existing = await tx.presenceSession.findUnique({ where: { runId_userId_sessionInstanceId: key } });
@@ -1130,7 +1130,12 @@ export class ContinuousStoryV2Service {
         control = heartbeatControl;
       }
       return { accepted: true, control };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, maxWait: 10_000, timeout: 30_000 });
+    }, {
+      attempts: 3,
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      maxWaitMs: 10_000,
+      timeoutMs: 30_000
+    });
     return {
       accepted: result.accepted,
       serverNow: now.toISOString(),

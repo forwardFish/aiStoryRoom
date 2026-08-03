@@ -11,6 +11,7 @@ export type SerializableTransactionHost = {
 
 export type ContinuousStorySerializableOptions = {
   attempts?: number;
+  isolationLevel?: PrismaNamespace.TransactionIsolationLevel;
   maxWaitMs?: number;
   timeoutMs?: number;
   retryDelayMs?: (attempt: number) => number;
@@ -30,7 +31,7 @@ export async function continuousStoryV2Serializable<T>(
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       return await prisma.$transaction(operation, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        isolationLevel: options.isolationLevel || Prisma.TransactionIsolationLevel.Serializable,
         maxWait: options.maxWaitMs || 10_000,
         timeout: options.timeoutMs || 45_000
       });
@@ -50,5 +51,6 @@ export function isRetryableSerializableError(error: unknown): boolean {
   return code === "P2034"
     || code === "P2002"
     || code === "P2028"
-    || /40P01|40001|deadlock|write conflict|serialization failure/i.test(message);
+    || code === "P1017"
+    || /40P01|40001|deadlock|write conflict|serialization failure|server has closed the connection|connection (?:was )?closed/i.test(message);
 }
