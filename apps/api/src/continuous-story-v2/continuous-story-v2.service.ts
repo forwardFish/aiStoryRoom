@@ -72,6 +72,7 @@ import { continuousStoryV2Serializable, isRetryableSerializableError } from "./s
 import { acceptOpenNovelRolePublicationReview } from "./openovel-role-publication-review";
 import { reserveMultiplayerCommand } from "./world-sequence-reservation";
 import { tryFastMultiplayerWorldCommit } from "./multiplayer-world-commit-fast";
+import { qualifiedPostgresTable } from "./postgres-qualified-table";
 
 export {
   findEarlierUnfinishedRoleImpact,
@@ -3870,7 +3871,7 @@ export class ContinuousStoryV2Service {
       // waiters resume on the latest world rather than exhausting Serializable
       // retries from a stale snapshot.
       const lockedRuns = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-        SELECT id FROM "StoryRun" WHERE id = ${input.context.run.id} FOR UPDATE
+        SELECT id FROM ${qualifiedPostgresTable("StoryRun")} WHERE id = ${input.context.run.id} FOR UPDATE
       `);
       if (lockedRuns.length !== 1) throw new ConflictException({ code: "ROOM_NOT_FOUND", message: "Multiplayer world no longer exists" });
       const leasedTask = await tx.storyTaskOutbox.findFirst({

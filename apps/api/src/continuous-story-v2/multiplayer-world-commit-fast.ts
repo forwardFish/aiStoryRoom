@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { qualifiedPostgresTable } from "./postgres-qualified-table";
 
 export type MultiplayerWorldCommitFence = {
   taskId: string;
@@ -20,12 +21,22 @@ export type MultiplayerWorldCommitResult = {
 export async function tryFastMultiplayerWorldCommit(
   prisma: Pick<Prisma.TransactionClient, "$queryRaw">,
   entryId: string,
-  fence: MultiplayerWorldCommitFence
+  fence: MultiplayerWorldCommitFence,
+  databaseUrl = process.env.DATABASE_URL
 ): Promise<MultiplayerWorldCommitResult | null> {
+  const storyTaskOutbox = qualifiedPostgresTable("StoryTaskOutbox", databaseUrl);
+  const commitEntry = qualifiedPostgresTable("MultiplayerWorldCommitEntry", databaseUrl);
+  const actorTurn = qualifiedPostgresTable("ActorTurn", databaseUrl);
+  const conditionalAction = qualifiedPostgresTable("ConditionalActionV2", databaseUrl);
+  const storyRun = qualifiedPostgresTable("StoryRun", databaseUrl);
+  const actionResolution = qualifiedPostgresTable("ActionResolution", databaseUrl);
+  const canonFact = qualifiedPostgresTable("CanonFact", databaseUrl);
+  const playerAction = qualifiedPostgresTable("PlayerAction", databaseUrl);
+  const commitment = qualifiedPostgresTable("CommitmentV2", databaseUrl);
   const rows = await prisma.$queryRaw<MultiplayerWorldCommitResult[]>(Prisma.sql`
     WITH valid_lease AS (
       SELECT task.id
-      FROM "StoryTaskOutbox" task
+      FROM ${storyTaskOutbox} task
       WHERE task.id = ${fence.taskId}
         AND task."taskType" = 'ACTOR_RESULT_V2'
         AND task.status = 'RUNNING'
@@ -35,8 +46,8 @@ export async function tryFastMultiplayerWorldCommit(
         AND task."inputRefId" = ${entryId}
     ), candidate AS (
       SELECT entry.*, turn."stageIndex"
-      FROM "MultiplayerWorldCommitEntry" entry
-      JOIN "ActorTurn" turn ON turn.id = entry."turnId"
+      FROM ${commitEntry} entry
+      JOIN ${actorTurn} turn ON turn.id = entry."turnId"
       CROSS JOIN valid_lease
       WHERE entry.id = ${entryId}
         AND entry.state IN ('RESERVED', 'READY')
@@ -47,13 +58,13 @@ export async function tryFastMultiplayerWorldCommit(
         AND jsonb_typeof(entry."mutationJson"#>'{fastWorldCommit,canonFacts}') = 'array'
         AND NOT EXISTS (
           SELECT 1
-          FROM "ConditionalActionV2" condition
+          FROM ${conditionalAction} condition
           WHERE condition."runId" = entry."runId"
             AND condition.status = 'ARMED'
             AND condition."sourceSubmissionId" <> entry."submissionId"
         )
     ), advanced_run AS (
-      UPDATE "StoryRun" run
+      UPDATE ${storyRun} run
       SET "worldSequence" = run."worldSequence" + 1,
           "currentDay" = GREATEST(
             run."currentDay",
@@ -65,7 +76,7 @@ export async function tryFastMultiplayerWorldCommit(
       WHERE run.id = candidate."runId"
       RETURNING run.id AS "runId", run."worldSequence" AS "appliedWorldSequence"
     ), inserted_resolution AS (
-      INSERT INTO "ActionResolution" (
+      INSERT INTO ${actionResolution} (
         id, "runId", "threadId", "turnId", "submissionId", "roleId",
         "playerActionId", "baseWorldSequence", "appliedWorldSequence",
         "outcomeJson", "statePatchJson", "resultNarrative", "nextHook",
@@ -96,7 +107,7 @@ export async function tryFastMultiplayerWorldCommit(
         "knownByRoleIds" jsonb
       )
     ), upserted_facts AS (
-      INSERT INTO "CanonFact" (
+      INSERT INTO ${canonFact} (
         id, "runId", "sourceNodeId", "factKey", content, status, visibility,
         "sourceEventIdsJson", "sourceActionIdsJson", "knownByRoleIdsJson",
         "createdAt", "updatedAt"
@@ -134,7 +145,7 @@ export async function tryFastMultiplayerWorldCommit(
         "updatedAt" = CURRENT_TIMESTAMP
       RETURNING id
     ), committed_entry AS (
-      UPDATE "MultiplayerWorldCommitEntry" entry
+      UPDATE ${commitEntry} entry
       SET state = 'COMMITTED',
           "committedResolutionId" = inserted_resolution."resolutionId",
           "committedAt" = CURRENT_TIMESTAMP,
@@ -143,7 +154,7 @@ export async function tryFastMultiplayerWorldCommit(
       WHERE entry.id = inserted_resolution."resolutionId"
       RETURNING entry.id
     ), updated_action AS (
-      UPDATE "PlayerAction" action
+      UPDATE ${playerAction} action
       SET "resolvedJson" = jsonb_build_object(
             'appliedWorldSequence', inserted_resolution."appliedWorldSequence",
             'storyGenerationStatus', 'PENDING_ROLE_RUNTIME',
@@ -154,7 +165,7 @@ export async function tryFastMultiplayerWorldCommit(
       WHERE action.id = candidate."playerActionId"
       RETURNING action.id
     ), expired_conditions AS (
-      UPDATE "ConditionalActionV2" condition
+      UPDATE ${conditionalAction} condition
       SET status = 'EXPIRED', "expiredAt" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP
       FROM candidate, inserted_resolution
       WHERE condition."runId" = candidate."runId"
@@ -162,7 +173,7 @@ export async function tryFastMultiplayerWorldCommit(
         AND condition."expiresAtStage" < candidate."stageIndex"
       RETURNING condition.id
     ), expired_commitments AS (
-      UPDATE "CommitmentV2" commitment
+      UPDATE ${commitment} commitment
       SET status = 'EXPIRED', "expiredAt" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP
       FROM candidate, inserted_resolution
       WHERE commitment."runId" = candidate."runId"
@@ -171,8 +182,8 @@ export async function tryFastMultiplayerWorldCommit(
       RETURNING commitment.id
     ), replayed AS (
       SELECT resolution.id AS "resolutionId", resolution."appliedWorldSequence"
-      FROM "MultiplayerWorldCommitEntry" entry
-      JOIN "ActionResolution" resolution ON resolution.id = entry."committedResolutionId"
+      FROM ${commitEntry} entry
+      JOIN ${actionResolution} resolution ON resolution.id = entry."committedResolutionId"
       CROSS JOIN valid_lease
       WHERE entry.id = ${entryId}
         AND entry.state IN ('COMMITTED', 'PUBLISHED')

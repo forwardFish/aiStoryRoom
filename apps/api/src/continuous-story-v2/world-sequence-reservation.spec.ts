@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { reserveMultiplayerCommand, type MultiplayerCommandReservationInput } from "./world-sequence-reservation";
+import { tryFastMultiplayerWorldCommit } from "./multiplayer-world-commit-fast";
+import { postgresSchemaFromDatabaseUrl, qualifiedPostgresTable } from "./postgres-qualified-table";
 
 function input(): MultiplayerCommandReservationInput {
   return {
@@ -61,7 +63,7 @@ test("multiplayer command reservation returns the one row sealed without a world
   };
   const reservation = await reserveMultiplayerCommand({
     $queryRaw: async (query: unknown) => { calls.push(query); return [expected]; }
-  } as any, input());
+  } as any, input(), "postgresql://user:pass@localhost/db?schema=openovel_test");
   assert.deepEqual(reservation, expected);
   assert.equal(calls.length, 1);
   const sql = calls[0] as { strings?: readonly string[] };
@@ -72,6 +74,30 @@ test("multiplayer command reservation returns the one row sealed without a world
   assert.match(text, /inserted_task AS/);
   assert.doesNotMatch(text, /reservedWorldSequence/);
   assert.doesNotMatch(text, /inserted_resolution AS/);
+  assert.match(text, /"openovel_test"\."ActorTurn"/);
+  assert.match(text, /"openovel_test"\."MultiplayerWorldCommitEntry"/);
+});
+
+test("multiplayer raw SQL schema is explicit and rejects unsafe identifiers", async () => {
+  assert.equal(postgresSchemaFromDatabaseUrl(""), "public");
+  assert.equal(postgresSchemaFromDatabaseUrl("postgresql://user:pass@localhost/db?schema=openovel_safe"), "openovel_safe");
+  assert.throws(
+    () => postgresSchemaFromDatabaseUrl("postgresql://user:pass@localhost/db?schema=public%22%3BDROP%20SCHEMA%20public"),
+    /DATABASE_SCHEMA_IDENTIFIER_INVALID/
+  );
+  assert.throws(() => qualifiedPostgresTable("StoryRun;DROP"), /DATABASE_TABLE_IDENTIFIER_INVALID/);
+
+  const calls: unknown[] = [];
+  const result = await tryFastMultiplayerWorldCommit({
+    $queryRaw: async (query: unknown) => { calls.push(query); return []; }
+  } as any, "entry-a", { taskId: "task-a", leaseOwner: "worker-a", leaseVersion: 1 },
+  "postgresql://user:pass@localhost/db?schema=openovel_safe");
+  assert.equal(result, null);
+  const sql = calls[0] as { strings?: readonly string[] };
+  const text = sql.strings?.join("?") || "";
+  assert.match(text, /"openovel_safe"\."StoryTaskOutbox"/);
+  assert.match(text, /"openovel_safe"\."MultiplayerWorldCommitEntry"/);
+  assert.match(text, /"openovel_safe"\."StoryRun"/);
 });
 
 test("multiplayer command reservation fails closed when the CTE rejects the turn", async () => {

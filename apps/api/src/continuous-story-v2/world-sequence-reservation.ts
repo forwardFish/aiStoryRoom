@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { qualifiedPostgresTable } from "./postgres-qualified-table";
 
 export type MultiplayerCommandReservationInput = {
   ids: {
@@ -71,18 +72,26 @@ export type MultiplayerCommandReservation = {
  */
 export async function reserveMultiplayerCommand(
   tx: Pick<Prisma.TransactionClient, "$queryRaw">,
-  input: MultiplayerCommandReservationInput
+  input: MultiplayerCommandReservationInput,
+  databaseUrl = process.env.DATABASE_URL
 ): Promise<MultiplayerCommandReservation> {
   const fence = input.agentFence;
+  const actorTurn = qualifiedPostgresTable("ActorTurn", databaseUrl);
+  const roleControl = qualifiedPostgresTable("RoleControl", databaseUrl);
+  const storyTaskOutbox = qualifiedPostgresTable("StoryTaskOutbox", databaseUrl);
+  const playerAction = qualifiedPostgresTable("PlayerAction", databaseUrl);
+  const decisionSubmission = qualifiedPostgresTable("DecisionSubmission", databaseUrl);
+  const creditCharge = qualifiedPostgresTable("CreditCharge", databaseUrl);
+  const commitEntry = qualifiedPostgresTable("MultiplayerWorldCommitEntry", databaseUrl);
   const rows = await tx.$queryRaw<MultiplayerCommandReservation[]>(Prisma.sql`
     WITH claimed_turn AS (
-      UPDATE "ActorTurn" turn_row
+      UPDATE ${actorTurn} turn_row
       SET status = 'RESOLVING', "qualityStatus" = 'GENERATING', "updatedAt" = CURRENT_TIMESTAMP
       WHERE turn_row.id = ${input.turn.id}
         AND turn_row.status = 'OPEN'
         AND turn_row.revision = ${input.turn.revision}
         AND EXISTS (
-          SELECT 1 FROM "RoleControl" control
+          SELECT 1 FROM ${roleControl} control
           WHERE control."runId" = ${input.run.id}
             AND control."roleId" = ${input.turn.roleId}
             AND control.epoch = ${input.control.epoch}
@@ -91,7 +100,7 @@ export async function reserveMultiplayerCommand(
         AND (
           ${!fence}
           OR EXISTS (
-            SELECT 1 FROM "StoryTaskOutbox" lease
+            SELECT 1 FROM ${storyTaskOutbox} lease
             WHERE lease.id = ${fence?.taskId || ""}
               AND lease."taskType" = 'ACTOR_AGENT_TURN_V2'
               AND lease.status = 'RUNNING'
@@ -103,7 +112,7 @@ export async function reserveMultiplayerCommand(
         )
       RETURNING turn_row.*
     ), inserted_action AS (
-      INSERT INTO "PlayerAction" (
+      INSERT INTO ${playerAction} (
         id, "runId", "nodeId", "chapterIndex", "userId", "roleId", "playerType",
         "actionType", "targetType", "targetId", "targetText", method, intent,
         "riskLevel", "freeText", "normalizedJson", "guardStatus", "guardReason",
@@ -131,7 +140,7 @@ export async function reserveMultiplayerCommand(
       FROM claimed_turn
       RETURNING *
     ), inserted_submission AS (
-      INSERT INTO "DecisionSubmission" (
+      INSERT INTO ${decisionSubmission} (
         id, "runId", "threadId", "turnId", "roleId", "userId", "playerActionId",
         "candidateId", "customAction", "normalizedActionJson", "rawIntentJson",
         "normalizedIntentJson", "immutableIntentHash", "guardDecisionJson",
@@ -152,13 +161,13 @@ export async function reserveMultiplayerCommand(
       FROM inserted_action
       RETURNING *
     ), attached_charge AS (
-      UPDATE "CreditCharge" charge
+      UPDATE ${creditCharge} charge
       SET "playerActionId" = ${input.ids.playerActionId}, "updatedAt" = CURRENT_TIMESTAMP
       WHERE charge.id = ${input.creditChargeId}
         AND (charge."playerActionId" IS NULL OR charge."playerActionId" = ${input.ids.playerActionId})
       RETURNING charge.id
     ), inserted_entry AS (
-      INSERT INTO "MultiplayerWorldCommitEntry" (
+      INSERT INTO ${commitEntry} (
         id, "runId", "nodeId", "threadId", "turnId", "roleId", "submissionId",
         "playerActionId", "idempotencyKey", "requestHash", "observedWorldSequence",
         "outcomeJson", "mutationJson", state, "createdAt", "updatedAt"
@@ -175,7 +184,7 @@ export async function reserveMultiplayerCommand(
       WHERE ${input.creditChargeId}::text IS NULL OR EXISTS (SELECT 1 FROM attached_charge)
       RETURNING *
     ), inserted_task AS (
-      INSERT INTO "StoryTaskOutbox" (
+      INSERT INTO ${storyTaskOutbox} (
         id, "runId", "nodeId", "dedupeKey", "roleId", "actionSlot", "controlEpoch",
         "taskType", status, "inputRefId", attempt, "maxAttempts", "nextRetryAt",
         "leaseVersion", "resultJson", "createdAt", "updatedAt"
