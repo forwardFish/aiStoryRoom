@@ -13,10 +13,7 @@ import {
   removeUnsupportedObjectiveClaims,
   unsupportedClaimsFromWarnings,
 } from "./shadow-claims.js";
-import {
-  isBackstageCatchAllBoundary,
-  renderNarratorCausalDelta,
-} from "./causal-delta.js";
+import { renderNarratorCausalDelta } from "./causal-context.js";
 import type {
   CausalDelta,
   CompiledForegroundContext,
@@ -210,44 +207,12 @@ export async function compileForegroundContext(
  * instruction.
  */
 export function projectForegroundGuidance(value: string) {
-  let removedPlayerDirectiveClauses = 0;
   const deduplicated = deduplicateTopLevelGuidanceSections(String(value || ""));
-  const text = deduplicated.text
-    .split(/\r?\n/)
-    .flatMap((line) => {
-      if (!line.trim() || /^#{1,6}\s/.test(line.trim())) return [line];
-      const sentences = line.match(/[^。！？!?]+[。！？!?]?/g) || [line];
-      const projected = sentences.flatMap((sentence) => {
-        if (isBackstageCatchAllBoundary(sentence)) {
-          removedPlayerDirectiveClauses += 1;
-          return [];
-        }
-        if (isBackstagePlayerMenu(sentence)) {
-          removedPlayerDirectiveClauses += 1;
-          return [];
-        }
-        const directiveAt = protagonistDirectiveIndex(sentence);
-        if (directiveAt < 0) return [sentence];
-        removedPlayerDirectiveClauses += 1;
-        const factualPrefix = sentence
-          .slice(0, directiveAt)
-          .replace(/[\s,，;；:：—–-]+$/u, "")
-          .trimEnd();
-        if (/^(?:[-*+]\s*)?(?:面对|面临)\b/u.test(factualPrefix)) return [];
-        if (/^(?:[-*+]\s*)?facing\b/iu.test(factualPrefix)) return [];
-        return /[\p{L}\p{N}]/u.test(factualPrefix) ? [factualPrefix] : [];
-      }).join("");
-      const structuralPrefix = line.match(/^\s*(?:[-*+]|\d+[.)])\s*/)?.[0] || "";
-      const content = projected.trim();
-      if (!content || (structuralPrefix && content === structuralPrefix.trim())) return [];
-      return [content.startsWith(structuralPrefix.trim()) ? content : `${structuralPrefix}${content}`];
-    })
-    .join("\n")
-    .replace(/\n{4,}/g, "\n\n\n")
-    .trim();
   return {
-    text,
-    removedPlayerDirectiveClauses,
+    // The foreground workset is guidance, never a second source of player
+    // authority. P03 deliberately avoids inferring directives from prose.
+    text: deduplicated.text.replace(/\n{4,}/g, "\n\n\n").trim(),
+    removedPlayerDirectiveClauses: 0,
     deduplicatedContextCardSections: deduplicated.removed,
   };
 }
@@ -287,32 +252,12 @@ export function buildNarratorMessages(
   context: CompiledForegroundContext,
 ) {
   const narratorContext = scopeNarratorContext(delta, context);
-  const narrowBeat = (
-    delta.protagonistScope !== "bounded-action"
-    || delta.allowedKnowledge.length > 0
-  );
-  const exclusiveAuthoredBeat = Boolean(
-    delta.beatContract?.constraints?.some((item) =>
-      /(?:文中|其中|回文中|奏报中|公文中|责任说明中)只写/u.test(item)
-    ),
-  );
-  const authoredSceneTransition = Boolean(
-    delta.beatContract?.constraints?.some((item) =>
-      /(?:只有写完已授权的世界行动后，才转到|完成旧场的玩家行动和在场 NPC 即时回应后，直接转到)/u.test(item)
-    ),
-  );
   const hasSettledNarrative = Boolean(
     String(delta.beatContract?.settledNarrative || "").trim(),
   );
   const lengthRegister = hasSettledNarrative
-    ? "已结算动作正文不计入你的输出。你只续写其后的 NPC 回应与新压力，目标 140—260 个汉字，最长 360 个汉字；到下一个玩家必须回应的时刻立即停下。"
-    : authoredSceneTransition
-    ? "这是一个跨场承接 beat：目标 320—480 个汉字，最长 560 个汉字。先收束旧场动作，再用自然段直接进入指定的新时间与地点；不要使用标题、横线或 Markdown 分隔符。新场只使用 This Turn 已列出的角色称呼，不给人物另起姓名；呈现合并后的当面反制后立即停在玩家需要回应之处。"
-    : exclusiveAuthoredBeat
-    ? "这是带正式文书闭集的窄幅行动 beat：目标 220—360 个汉字，最长 440 个汉字。文书只可使用结果上限列出的名称、条款和去向；不要写套语，不要扩展同义制度，不要让人物离场后再返回。"
-    : narrowBeat
-    ? "这是窄幅核问或观察 beat：目标 180—320 个汉字，最长 420 个汉字。直接回应一旦完成就停，不为凑长度另添证据、命令或外部事件。"
-    : "使用工作集指定的小说语言和人物声音，写具体动作、对话和反制。目标 300—500 个汉字，最长 600 个汉字。";
+    ? "已结算动作正文不计入你的输出。只续写其后的 NPC 回应与新压力，到下一个玩家必须回应的时刻立即停下。"
+    : "使用工作集指定的小说语言和人物声音，写一个具体、连续的场景节拍；到下一个玩家必须回应的时刻停下。";
   return [
     {
       role: "system" as const,
@@ -341,11 +286,8 @@ function scopeNarratorContext(
   delta: CausalDelta,
   context: CompiledForegroundContext,
 ): CompiledForegroundContext {
-  if (!delta.beatContract) return context;
-  const hasSourceBoundedKnowledge = Boolean(delta.knowledgeBoundaryRef);
-  const hasAuthoredRuntimeBeat = String(delta.beatContract.sourceRef || "")
-    .startsWith("part-one-event:");
-  if (!hasSourceBoundedKnowledge && !hasAuthoredRuntimeBeat) return context;
+  if (!delta.beatContract && !delta.knowledgeBoundaryRef) return context;
+  const hasAuthoredRuntimeBeat = Boolean(delta.beatContract);
   const allowedSections = hasAuthoredRuntimeBeat
     ? new Set([
         "Story",
@@ -452,18 +394,7 @@ export function buildOptionsMessages(
  * they can anchor the next options call.
  */
 export function sanitizeOptionsGuidance(value: string) {
-  return String(value || "")
-    .split(/\r?\n/)
-    .flatMap((line) => {
-      if (!line.trim()) return [];
-      const sentences = line.match(/[^。！？!?]+[。！？!?]?/g) || [line];
-      return sentences.filter((sentence) => (
-        !/(?:下一回合|本回合|当前回合|眼下).{0,20}(?:方向|选择|选项|行动).{0,6}[：:]/.test(sentence)
-        && !/^(?:[-*+]\s*)?(?:总督|玩家|主角|读者).{0,24}(?:下令|命|派|召|问|查|封|签|写|给|去|留|暂缓)/.test(sentence.trim())
-      ));
-    })
-    .join("\n")
-    .trim();
+  return String(value || "").trim();
 }
 
 export function openingKey(value: string, length = 50) {
@@ -537,33 +468,10 @@ function stripVolatileLines(value: string) {
     .join("\n");
 }
 
-function isBackstagePlayerMenu(value: string) {
-  return /(?:T\d+\s*)?入口节点|由玩家(?:此前)?选择|路径由玩家|玩家选择决定|可实际采取的下一步入口|下一步(?:可以|可|应当|应该)是|(?:next|available|possible)\s+player\s+(?:choice|action)|player\s+(?:chooses|must choose)/iu
-    .test(value);
-}
-
-function protagonistDirectiveIndex(value: string) {
-  const patterns = [
-    /(?:玩家(?:角色)?|读者(?:角色)?|主角|总督|舰长|船长|指挥官|调查员|领主|市长|将军|侦探|当前角色)\s*(?:必须|须|需|应当|应先|需要|务必|不可|不得|不能继续)/u,
-    /(?:必须|须|应当|应先|需要|务必|不能继续)\s*(?:给出|给|作出|做出|回应|答复|选择|决定|行动|采取|签|下令|派|启动|调取|处置|离开|前往|调查|查验)/u,
-    /(?:the\s+)?(?:player|reader|protagonist|governor|captain|commander|investigator|mayor|general|detective)\s+(?:must|should|needs?\s+to|has\s+to|cannot\s+continue|must\s+not)\b/iu,
-  ];
-  return patterns.reduce((earliest, pattern) => {
-    const index = value.search(pattern);
-    if (index < 0) return earliest;
-    return earliest < 0 ? index : Math.min(earliest, index);
-  }, -1);
-}
-
 export function sanitizeDirectedBeat(value: string) {
-  const text = String(value || "").trim();
-  if (!text) return "";
-  const backstageScheduling =
-    /(?:floor\s*T\d+|T\d+\s*(?:floor|前置|入口)|最迟(?:在|于)?(?:本|该|T\d+)?回合|由玩家(?:此前)?选择|路径由玩家|玩家选择决定|下一步入口|若T\d+|如果T\d+|前提(?:是|：|:))/iu;
-  const protagonistAction =
-    /(?:玩家(?:角色)?|读者(?:角色)?|主角|总督|舰长|船长|指挥官|调查员|领主|市长|将军|侦探|当前角色)\s*(?:必须|须|需|应当|应先|需要|务必|不可|不得|不能继续)/u;
-  if (backstageScheduling.test(text) || protagonistAction.test(text)) return "";
-  return text;
+  // Narrative guidance is not parsed for authority. Structured turn data is
+  // the only source of actionable facts; P05 will narrow this projection.
+  return String(value || "").trim();
 }
 
 function deduplicateTopLevelGuidanceSections(value: string) {

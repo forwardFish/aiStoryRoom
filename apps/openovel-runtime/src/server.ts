@@ -9,6 +9,7 @@ import { DurableEventMirror, HttpEventMirror } from "./mirror.js";
 import { StorykeeperDrain } from "./storykeeper.js";
 import { OpenNovelRuntime } from "./runtime.js";
 import { recoverRuntimeRuns } from "./recovery.js";
+import { sangtianDecisionAdapter } from "./sangtian-decisions.js";
 import type { TurnEvent, TurnResult } from "./types.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -27,7 +28,10 @@ const runtime = new OpenNovelRuntime(
   provider,
   storykeeper,
   mirror,
-  { decisionMode: "AUTHORED_WHEN_AVAILABLE" },
+  {
+    decisionMode: "AUTHORED_WHEN_AVAILABLE",
+    authoredDecisionAdapter: sangtianDecisionAdapter,
+  },
 );
 
 const server = createServer(async (request, response) => {

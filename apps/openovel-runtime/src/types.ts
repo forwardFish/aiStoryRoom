@@ -22,7 +22,7 @@ export type ProviderResult = {
 };
 
 export type ProviderRequest = {
-  profile: "narrator" | "options" | "storykeeper";
+  profile: "narrator" | "reviewer" | "repair" | "options" | "storykeeper";
   messages: ModelMessage[];
   temperature: number;
   maxTokens: number;
@@ -49,6 +49,7 @@ export type OpenNovelOptionEffect = {
     authorizedPlayerActions?: string[];
     constraints?: string[];
     settledNarrative?: string;
+    fallbackContinuation?: string;
     stopCondition: string;
   };
   knowledgeBoundary?: {

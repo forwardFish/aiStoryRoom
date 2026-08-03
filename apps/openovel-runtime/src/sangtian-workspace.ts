@@ -23,6 +23,8 @@ type OpeningAsset = {
     description: string;
     intent?: string;
     method?: string;
+    protectedNarrative: string;
+    fallbackContinuation: string;
     evidenceProfileId?: string;
     concreteCost?: string;
     expectedCountermove?: string;
@@ -152,6 +154,11 @@ export async function seedSangtianWorkspace(
     [asset.payload.evidenceProfileId, asset],
   ]));
   for (const decision of opening.decisions) {
+    if (!decision.protectedNarrative?.trim() || !decision.fallbackContinuation?.trim()) {
+      throw new Error(
+        `Sangtian opening decision ${decision.decisionId} is missing protectedNarrative or fallbackContinuation`,
+      );
+    }
     if (decision.evidenceProfileId && !evidenceProfilesById.has(decision.evidenceProfileId)) {
       throw new Error(
         `Sangtian opening decision ${decision.decisionId} references missing evidence profile ${decision.evidenceProfileId}`,
@@ -178,6 +185,8 @@ export async function seedSangtianWorkspace(
             beatContract: {
               sourceRef: evidenceProfile.assetId,
               ...evidenceProfile.payload.openingBeatContract,
+              settledNarrative: decision.protectedNarrative.trim(),
+              fallbackContinuation: decision.fallbackContinuation.trim(),
             },
             knowledgeBoundary: {
               sourceRef: evidenceProfile.assetId,
@@ -186,7 +195,17 @@ export async function seedSangtianWorkspace(
               subjects: evidenceProfile.payload.openingReport.validationSubjects,
             },
           }
-          : {}),
+          : {
+            beatContract: {
+              sourceRef: `opening-decision:${decision.decisionId}`,
+              objective: decision.intent || decision.description,
+              moves: [decision.description],
+              requiredAnchorGroups: [],
+              settledNarrative: decision.protectedNarrative.trim(),
+              fallbackContinuation: decision.fallbackContinuation.trim(),
+              stopCondition: decision.description,
+            },
+          }),
         risk: index === 0 ? "medium" : "high",
         reversible: false,
       },

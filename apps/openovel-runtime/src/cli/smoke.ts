@@ -5,6 +5,7 @@ import { OpenAICompatibleProvider } from "../provider.js";
 import { runtimeRoot } from "../paths.js";
 import { OpenNovelRuntime } from "../runtime.js";
 import { StorykeeperDrain } from "../storykeeper.js";
+import { sangtianDecisionAdapter } from "../sangtian-decisions.js";
 import { FileStoryWorkspace } from "../workspace.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -23,7 +24,10 @@ const runtime = new OpenNovelRuntime(
   provider,
   storykeeper,
   new NoopMirror(),
-  { decisionMode: "AUTHORED_WHEN_AVAILABLE" },
+  {
+    decisionMode: "AUTHORED_WHEN_AVAILABLE",
+    authoredDecisionAdapter: sangtianDecisionAdapter,
+  },
 );
 
 const turns = boundedArg("--turns", 1, 1, 20);

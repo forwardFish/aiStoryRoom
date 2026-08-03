@@ -209,6 +209,8 @@ async function readJsonLines<T>(file: string) {
 function profileMetrics(calls: RecordedCall[]) {
   const profiles = {
     narrator: emptyProfile(),
+    reviewer: emptyProfile(),
+    repair: emptyProfile(),
     options: emptyProfile(),
     storykeeper: emptyProfile(),
   };

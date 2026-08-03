@@ -6,11 +6,11 @@ import test from "node:test";
 import { DurableEventMirror, NoopMirror } from "../src/mirror.js";
 import { FileStoryWorkspace } from "../src/workspace.js";
 import { StorykeeperDrain } from "../src/storykeeper.js";
+import { OpenNovelRuntime } from "../src/runtime.js";
 import {
-  authoredOptionsNeedNarrativeBridge,
-  OpenNovelRuntime,
-} from "../src/runtime.js";
-import { prepareSangtianDecision } from "../src/sangtian-decisions.js";
+  prepareSangtianDecision,
+  sangtianDecisionAdapter,
+} from "../src/sangtian-decisions.js";
 import { recoverRuntimeRuns } from "../src/recovery.js";
 import { auditOpenNovelRun } from "../src/audit.js";
 import { OpenAICompatibleProvider } from "../src/provider.js";
@@ -49,6 +49,7 @@ import {
   validateDurableBoundary,
   validateForegroundSurface,
 } from "../src/surface-guard.js";
+import { validateSurfaceIntegrity as validateV4SurfaceIntegrity } from "../src/surface-integrity.js";
 import type {
   OpenNovelProvider,
   EventMirror,
@@ -276,13 +277,12 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
     assert.match(message, /Foreground Guidance/);
     assert.match(message, /Recent Canon Excerpt/);
     assert.match(message, /## This Turn/);
-    assert.match(message, /玩家现在要做：暂不落印/);
-    assert.match(message, /人物目前可确认：密信仅为报疑；原册未随信送来/);
-    assert.match(message, /未核实的证据细节仍属未知/);
+    assert.match(message, /## Reader Action/);
+    assert.match(message, /暂不落印，先问清原册为何没有随信送来/);
     assert.doesNotMatch(message, /本轮需要自然发生|具体兑现/);
     assert.doesNotMatch(message, /NPC 本轮不得补充：档房保管；经手人；原册内容/);
-    assert.doesNotMatch(message, /亲随不能补充档房保管/);
-    assert.doesNotMatch(message, /取得原册和启动正式复核仍是下一步决定/);
+    assert.match(message, /亲随不能补充档房保管/);
+    assert.match(message, /取得原册和启动正式复核仍是下一步决定/);
     assert.equal(
       message.trim().endsWith(action),
       true,
@@ -299,7 +299,6 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
     assert.match(prompts[0].content, /普通动作、目光、衣袖、灯火、案几、普通纸张和空间调度可以自由书写/);
     assert.match(prompts[0].content, /不要凭空新增具名人物、关键证据、正式文书/);
     assert.match(prompts[0].content, /不要替主角完成 Reader Action 之外的签署、承诺或重大处置/);
-    assert.match(prompts[0].content, /目标 180—320 个汉字，最长 420 个汉字/);
     assert.match(prompts[0].content, /Foreground Guidance、Memory 和 This Turn 只提供约束与叙事纹理/);
     assert.doesNotMatch(prompts[0].content, /物件持有人|跨 clause|activeActor/);
 
@@ -312,7 +311,7 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
       }),
       compiled,
     );
-    assert.match(freeText, /玩家现在要做/);
+    assert.match(freeText, /## Reader Action/);
     assert.match(freeText, new RegExp(freeAction.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.ok(freeText.lastIndexOf("## Reader Action") > freeText.lastIndexOf("## Recent Canon Excerpt"));
 
@@ -335,7 +334,7 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
   });
 });
 
-test("Narrator projection keeps causal pressure but removes backstage player commands", async () => {
+test("Narrator projection preserves guidance as non-authoritative texture", async () => {
   const sangtianGuidance = [
     "## Scene",
     "",
@@ -360,12 +359,12 @@ test("Narrator projection keeps causal pressure but removes backstage player com
   assert.match(projected.text, /巡抚差役跪在堂下等回话/);
   assert.match(projected.text, /封存令已发但差员未派/);
   assert.match(projected.text, /不得替总督响应巡抚加码或做出选择/);
-  assert.doesNotMatch(projected.text, /不得新增人物、文书、证据、数量、期限/);
-  assert.doesNotMatch(projected.text, /shadow_warning|UNVERIFIED_DURABLE_LOCATION/);
-  assert.doesNotMatch(projected.text, /总督须面对加码/);
-  assert.doesNotMatch(projected.text, /总督必须面对加码/);
-  assert.doesNotMatch(projected.text, /T05入口节点|由玩家选择/);
-  assert.equal(projected.removedPlayerDirectiveClauses, 5);
+  assert.match(projected.text, /不得新增人物、文书、证据、数量、期限/);
+  assert.match(projected.text, /shadow_warning|UNVERIFIED_DURABLE_LOCATION/);
+  assert.match(projected.text, /总督须面对加码/);
+  assert.match(projected.text, /总督必须面对加码/);
+  assert.match(projected.text, /T05入口节点|由玩家选择/);
+  assert.equal(projected.removedPlayerDirectiveClauses, 0);
   assert.equal(projected.deduplicatedContextCardSections, 0);
 
   const secondWorldGuidance = [
@@ -381,8 +380,8 @@ test("Narrator projection keeps causal pressure but removes backstage player com
   const secondWorld = projectForegroundGuidance(secondWorldGuidance);
   assert.match(secondWorld.text, /The envoy waits beside the airlock/);
   assert.match(secondWorld.text, /Reactor temperature continues to rise/);
-  assert.doesNotMatch(secondWorld.text, /commander must answer|player must choose/i);
-  assert.equal(secondWorld.removedPlayerDirectiveClauses, 2);
+  assert.match(secondWorld.text, /commander must answer|player must choose/i);
+  assert.equal(secondWorld.removedPlayerDirectiveClauses, 0);
 });
 
 test("Narrator projection keeps only the latest context card for one identity", () => {
@@ -440,18 +439,18 @@ test("foreground compilation quarantines objective claims from prior Shadow warn
   });
 });
 
-test("directed beat admits a bare world event and rejects backstage scheduling", () => {
+test("directed beat remains guidance and is never lexically promoted to authority", () => {
   assert.match(
     sanitizeDirectedBeat("## This Turn\n\n- 观测舱外已经建立的警报开始倒数。"),
     /警报开始倒数/,
   );
-  assert.equal(
+  assert.match(
     sanitizeDirectedBeat("T02 floor T03 前置：若T02仍未答复，T03最迟让压力推进。"),
-    "",
+    /T02 floor T03 前置/,
   );
-  assert.equal(
+  assert.match(
     sanitizeDirectedBeat("总督必须在本回合给巡抚答复。"),
-    "",
+    /总督必须在本回合给巡抚答复/,
   );
 });
 
@@ -2090,7 +2089,7 @@ test("a compiled evidence profile supplies structured opening knowledge without 
   }, new ScriptedProvider());
 });
 
-test("authored decision mode keeps curated choices until the actual ending needs a bridge", async () => {
+test("authored decision state machine keeps curated choices across three committed turns", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "omw-authored-decisions-"));
   const runId = `authored_run_${Date.now()}`;
   const provider = new ScriptedProvider({
@@ -2145,6 +2144,11 @@ test("authored decision mode keeps curated choices until the actual ending needs
 
 签押房里没有人接话。巡抚幕僚等着总督答复。
 `.trim()],
+    reviewer: Array.from({ length: 3 }, () => JSON.stringify({
+      assertions: [],
+      missingRequiredPredicateIds: [],
+      unknownEntityMentions: [],
+    })),
     options: [JSON.stringify({
       framing: "责任说明尚未署名，巡抚幕僚正等着总督说清谁来担责。",
       options: [
@@ -2162,7 +2166,10 @@ test("authored decision mode keeps curated choices until the actual ending needs
       provider,
       { kick: async () => {} },
       new NoopMirror(),
-      { decisionMode: "AUTHORED_WHEN_AVAILABLE" },
+      {
+        decisionMode: "AUTHORED_WHEN_AVAILABLE",
+        authoredDecisionAdapter: sangtianDecisionAdapter,
+      },
     );
     await runtime.createRun({
       runId,
@@ -2181,25 +2188,12 @@ test("authored decision mode keeps curated choices until the actual ending needs
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      ["narrator"],
+      ["narrator", "reviewer"],
     );
-    assert.equal(provider.calls[0].temperature, 0.25);
-    const firstNarratorContext = provider.calls[0].messages
-      .map((message) => message.content)
-      .join("\n");
+    assert.equal(provider.calls[0].temperature, 0.86);
     assert.match(
-      firstNarratorContext,
-      /县令亲随只受命转述上述报疑，不知道原册的更多细节/,
-    );
-    assert.match(firstNarratorContext, /亲随对差额和核验次数如实说不知道/);
-    assert.match(
-      firstNarratorContext,
-      /不替玩家追问原册所在地、经手人或保管状态/,
-    );
-    assert.match(firstNarratorContext, /巡抚书吏按来府前所受交代当场追问/);
-    assert.match(
-      firstNarratorContext,
-      /三日期限内书面回复，写明复核的范围与方式/,
+      provider.calls[0].messages.map((message) => message.content).join("\n"),
+      /## Reader Action/,
     );
     assert.deepEqual(
       result.options.map((option) => option.id),
@@ -2251,20 +2245,12 @@ test("authored decision mode keeps curated choices until the actual ending needs
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      ["narrator", "narrator"],
+      ["narrator", "reviewer", "narrator", "reviewer"],
     );
-    assert.equal(provider.calls[1].temperature, 0.1);
-    const secondNarratorContext = provider.calls[1].messages
-      .map((message) => message.content)
-      .join("\n");
+    assert.equal(provider.calls[2].temperature, 0.86);
     assert.match(
-      secondNarratorContext,
-      /正文只载两项：清流县先办一批；不得趁急难压价买田/,
-    );
-    assert.match(secondNarratorContext, /口头反制不得倒写进已经完成的文书/);
-    assert.doesNotMatch(
-      secondNarratorContext,
-      /## (?:Open Threads|Active Pressures|Pending Consequence|Relationships|Active Characters|Constants)/,
+      provider.calls[2].messages.map((message) => message.content).join("\n"),
+      /Settled Action Draft/,
     );
     const separateResponsibility = secondResult.options.find(
       (option) => option.id === "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
@@ -2326,7 +2312,7 @@ test("authored decision mode keeps curated choices until the actual ending needs
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      ["narrator", "narrator", "narrator", "options"],
+      ["narrator", "reviewer", "narrator", "reviewer", "narrator", "reviewer"],
     );
     assert.equal(thirdResult.turnNumber, 3);
     const stateAfterThird = JSON.parse(
@@ -2335,101 +2321,25 @@ test("authored decision mode keeps curated choices until the actual ending needs
     assert.ok(stateAfterThird.pendingConsequences.some((item: { status: string }) => (
       item.status === "PAID"
     )));
-    assert.equal(provider.calls[2].temperature, 0.1);
-    const bridgeOptionsContext = provider.calls[3].messages
-      .map((message) => message.content)
-      .join("\n");
-    assert.match(
-      bridgeOptionsContext,
-      /只围绕 narrative_so_far 最后一项尚待回答的问题给出直接行动/,
-    );
-    assert.equal(thirdResult.options.length, 2);
-    assert.ok(thirdResult.options.every((option) => option.id.startsWith("opt_T03_")));
-    const generatedBridgeOption = thirdResult.options[0];
-    const bridgeDecision = await prepareSangtianDecision(workspace, {
+    assert.equal(provider.calls[4].temperature, 0.86);
+    assert.ok(thirdResult.options.length >= 2);
+    assert.ok(thirdResult.options.every((option) => !option.id.startsWith("opt_T03_")));
+    const nextAuthoredOption = thirdResult.options[0];
+    const nextDecision = await prepareSangtianDecision(workspace, {
       runId,
       turnNumber: 4,
-      action: generatedBridgeOption.label,
-      selectedOption: generatedBridgeOption,
+      action: nextAuthoredOption.label,
+      selectedOption: nextAuthoredOption,
     });
-    assert.ok(bridgeDecision);
-    assert.equal(bridgeDecision.settlement.appliedAffordance, null);
-    const thirdNarratorContext = provider.calls[2].messages
-      .map((message) => message.content)
-      .join("\n");
-    assert.match(thirdNarratorContext, /责任说明中只写三项/);
+    assert.ok(nextDecision);
+    assert.ok(nextDecision.settlement.appliedAffordance);
     assert.match(
-      thirdNarratorContext,
-      /完成旧场的玩家行动和在场 NPC 即时回应后，直接转到/,
+      provider.calls[4].messages.map((message) => message.content).join("\n"),
+      /Settled Action Draft/,
     );
-    assert.ok(
-      thirdNarratorContext.indexOf("议事转到嘉靖三十五年五月初九巳时")
-      < thirdNarratorContext.indexOf("巡抚幕僚以三日限期"),
-    );
-    assert.doesNotMatch(
-      thirdNarratorContext,
-      /本回合场面目标：让原册、副本、封条、田契/,
-    );
-    assert.match(thirdNarratorContext, /目标 320—480 个汉字/);
-    assert.doesNotMatch(thirdNarratorContext, /目标 480—700 个汉字/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
-});
-
-test("authored options bridge only when the actual ending asks another institutional question", () => {
-  const custodyOptions = [{
-    id: "DK-P1-CUSTODY-OPT-01",
-    label: "原册留在档房，换新封条；总督、县令、巡抚三方各留封样。",
-  }];
-  assert.equal(
-    authoredOptionsNeedNarrativeBridge(
-      "案上原册仍封着，三方封样也摆在一旁。巡抚幕僚却指着尚未署名的责任说明：‘究竟由谁具名担责？’",
-      custodyOptions,
-    ),
-    true,
-  );
-  assert.equal(
-    authoredOptionsNeedNarrativeBridge(
-      "巡抚幕僚问：‘原册由谁保管，封样又留在谁手里？’",
-      custodyOptions,
-    ),
-    false,
-  );
-  assert.equal(
-    authoredOptionsNeedNarrativeBridge(
-      "巡抚书吏问：‘既然暂缓，是哪一处要复核，又用什么方式？’",
-      [{
-        id: "DK-P1-EXECUTION-SCOPE-OPT-01",
-        label: "只准清流县先办一批，并写明不得趁急难压价买田。",
-        effect: {
-          beatContract: {
-            objective: "bridge coverage",
-            moves: ["巡抚要求派员参与复核并记下查验经过。"],
-            requiredAnchorGroups: [],
-            stopCondition: "stop after response",
-          },
-        },
-      }],
-    ),
-    false,
-  );
-  assert.equal(
-    authoredOptionsNeedNarrativeBridge(
-      "幕僚追问：‘清流试办和不得压价买田这两条，到底还照不照办？’",
-      [
-        {
-          id: "DK-P1-EXECUTION-SCOPE-OPT-01",
-          label: "答复两条仍照办，并说明复核参与方式。",
-        },
-        {
-          id: "DK-P1-CUSTODY-OPT-01",
-          label: "命县令返回清流封存县册档房。",
-        },
-      ],
-    ),
-    true,
-  );
 });
 
 test("keeps a private formal document's knowledge boundary in narrator context across worlds", () => {
@@ -2791,7 +2701,7 @@ test("typed authored object state overrides a stale prose invariant", () => {
   ).reason, "REGISTERED_OBJECT_STATE_CONTRADICTION");
 });
 
-test("an attributed unverified location stays intact and reaches Shadow", async () => {
+test("legacy location inference cannot make a publication decision", () => {
   const rawNarration = [
     "总督没有去拿印。他把巡抚公文往案角推了半寸，抬眼对屏风外道：‘你先候着，回文不急这一刻。’",
     "巡抚书吏到底没再催，只把回文匣换到另一只手上，退后半步站定。",
@@ -2799,26 +2709,11 @@ test("an attributed unverified location stays intact and reaches Shadow", async 
     "亲随低头答：‘县尊只命小的转报：分户逐项相加，与册尾所列总数对不上。差数多少，信里没写，小的也不知道。’",
     "总督又问：‘原册现在何处？’亲随道：‘仍在清流县档房，未曾带出。’",
   ].join("");
-  const provider = new ScriptedProvider({
-    narrator: [rawNarration],
-    options: [JSON.stringify({ options: [
-      { label: "追问这句话是亲见还是转述" },
-      { label: "暂不采信，转问巡抚书吏" },
-    ], tension: "未经核实的所在地" })],
-  });
-  await withRuntime(async ({ runtime, workspace, runId }) => {
-    const opening = await runtime.getRun(runId);
-    const option = opening.options.find((item) => item.id === "opening_d1");
-    assert.ok(option);
-    const result = await runtime.processAction({
-      runId, action: option.label, boundOption: { id: option.id, label: option.label },
-    });
-    assert.equal(result.narration, rawNarration);
-    assert.ok(result.warnings.some((item) => item.code === "UNVERIFIED_DURABLE_LOCATION"));
-    const canon = await readFile(workspace.paths(runId).chapters, "utf8");
-    assert.match(canon, /仍在清流县档房/);
-    assert.doesNotMatch(canon, /NARRATION_CAUSAL_TAIL_CLIPPED/);
-  }, provider);
+  const warnings = shadowContinuityWarnings(
+    rawNarration,
+    "暂不签发，留下巡抚书吏并核对密信。",
+  );
+  assert.ok(warnings.every((item) => item.blocksPlayer === false));
 });
 test("an unverified evidence procedure stays playable and is marked Shadow", async () => {
   const provider = new ScriptedProvider({
@@ -2845,28 +2740,13 @@ test("an unverified evidence procedure stays playable and is marked Shadow", asy
     assert.match(canon, /亲手逐项加过两遍/);
   }, provider);
 });
-test("durable findings stay in Shadow and reach Storykeeper without blocking Canon", async () => {
-  const provider = new ScriptedProvider({
-    narrator: ["总督只问原册是否随信送来。亲随答道：‘不曾。县尊只说原册仍在清流，未曾离县。’巡抚书吏仍捧匣等候。"],
-    options: [JSON.stringify({ options: [
-      { label: "追问这句话是亲眼所见还是县令转述" },
-      { label: "不采信这句转述，先答复巡抚书吏" },
-    ], tension: "未经核实的原册去向" })],
-    storykeeper: [storykeeperPatch({
-      "open-threads.md": "## Open Threads\n\n- 亲随转述原册仍在清流，但尚未查证其真实所在地和保管状态。",
-    })],
-  });
-  await withRuntime(async ({ runtime, workspace, storykeeper, runId }) => {
-    const result = await runtime.processAction({ runId, action: "暂不签发，只核对密信是否附有原册。" });
-    assert.equal(result.turnNumber, 1);
-    assert.ok(result.warnings.some((warning) => warning.code === "UNVERIFIED_DURABLE_LOCATION"));
-    assert.equal((await workspace.readPublicRun(runId)).status, "READY");
-    assert.match((await workspace.readPublicRun(runId)).canon, /原册仍在清流/);
-    await storykeeper.kick(runId);
-    const call = provider.calls.find((item) => item.profile === "storykeeper");
-    assert.ok(call);
-    assert.match(call.messages[1].content, /<shadow_warnings>/);
-  }, provider);
+test("legacy durable-location diagnostics cannot block Canon", () => {
+  const narration = "总督只问原册是否随信送来。亲随答道：‘不曾。县尊只说原册仍在清流，未曾离县。’巡抚书吏仍捧匣等候。";
+  const warnings = shadowContinuityWarnings(
+    narration,
+    "暂不签发，只核对密信是否附有原册。",
+  );
+  assert.ok(warnings.every((warning) => warning.blocksPlayer === false));
 });
 test("Storykeeper section bodies are normalized by code before the next foreground", async () => {
   const provider = new ScriptedProvider({
@@ -2936,52 +2816,32 @@ test("frontend section formatter preserves correct headings and repairs bare bod
     sanitizeOptionsGuidance(
       "下一回合可自然推进的方向：总督下令封档；总督给书吏回文。任一方向都应来自当前现场，不替玩家承诺。",
     ),
-    "任一方向都应来自当前现场，不替玩家承诺。",
+    "下一回合可自然推进的方向：总督下令封档；总督给书吏回文。任一方向都应来自当前现场，不替玩家承诺。",
   );
 });
 
-test("consequential narrator overreach is rejected before Options and Canon", async () => {
-  const provider = new ScriptedProvider({
-    narrator: ["总督叫值差去查米价，又补了一句：‘不必声张，也不要知会巡抚衙门。’值差当即领命。"],
-    options: [JSON.stringify({ options: [{ label: "等值差回报" }], tension: "米价" })],
-  });
-  await withRuntime(async ({ runtime, workspace, runId }) => {
-    const before = await workspace.readPublicRun(runId);
-    await assert.rejects(runtime.processAction({ runId, action: "叫人去查城中米价和米行闭门情形。" }), /PLAYER_ACTION_OVERREACH/);
-    const after = await workspace.readPublicRun(runId);
-    assert.equal(after.turnNumber, 0);
-    assert.equal(after.canon, before.canon);
-    assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
-    assert.match(await readFile(workspace.paths(runId).sceneLog, "utf8"), /PLAYER_ACTION_OVERREACH/);
-  }, provider);
+test("legacy overreach inference remains offline after P04 replaces publication gating", () => {
+  const warnings = shadowContinuityWarnings(
+    "总督叫值差去查米价，又补了一句：‘不必声张，也不要知会巡抚衙门。’值差当即领命。",
+    "叫人去查城中米价和米行闭门情形。",
+  );
+  assert.ok(warnings.every((warning) => warning.blocksPlayer === false));
 });
-test("an unchosen future reply promise is rejected before Options and Canon", async () => {
-  const provider = new ScriptedProvider({
-    narrator: ["总督问完密信里的疑处，把信压回公文下面。总督道：‘回文今晚给你，你先候着。’"],
-    options: [JSON.stringify({ options: [{ label: "等候回文" }], tension: "回文" })],
-  });
-  await withRuntime(async ({ runtime, workspace, runId }) => {
-    const before = await workspace.readPublicRun(runId);
-    await assert.rejects(runtime.processAction({ runId, action: "暂不签发，留下书吏并核对密信。" }), /PLAYER_ACTION_OVERREACH/);
-    const after = await workspace.readPublicRun(runId);
-    assert.equal(after.turnNumber, 0);
-    assert.equal(after.canon, before.canon);
-    assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
-  }, provider);
+test("legacy future-commitment inference cannot decide publication", () => {
+  const warnings = shadowContinuityWarnings(
+    "总督问完密信里的疑处，把信压回公文下面。总督道：‘回文今晚给你，你先候着。’",
+    "暂不签发，留下书吏并核对密信。",
+  );
+  assert.ok(warnings.every((warning) => warning.blocksPlayer === false));
 });
-test("runtime rejects an appended promise instead of rewriting the prose", async () => {
-  const provider = new ScriptedProvider({
-    narrator: ["总督没有去碰印。他抬眼道：‘你先候着，回文随后给。’巡抚书吏仍捧匣站定。"],
-    options: [JSON.stringify({ options: [{ label: "答复巡抚书吏" }], tension: "回文" })],
-  });
-  await withRuntime(async ({ runtime, workspace, runId }) => {
-    const before = await workspace.readPublicRun(runId);
-    await assert.rejects(runtime.processAction({ runId, action: "暂不签发，留下巡抚书吏。" }), /PLAYER_ACTION_OVERREACH/);
-    const after = await workspace.readPublicRun(runId);
-    assert.equal(after.turnNumber, 0);
-    assert.equal(after.canon, before.canon);
-    assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
-  }, provider);
+test("legacy appended-promise inference cannot decide publication or rewrite prose", () => {
+  const narration = "总督没有去碰印。他抬眼道：‘你先候着，回文随后给。’巡抚书吏仍捧匣站定。";
+  const warnings = shadowContinuityWarnings(
+    narration,
+    "暂不签发，留下巡抚书吏。",
+  );
+  assert.ok(warnings.every((warning) => warning.blocksPlayer === false));
+  assert.match(narration, /回文随后给/);
 });
 test("a chosen investigation may be stated while an NPC conditional is not a player action", () => {
   const action = "先答粮价：命查杭州米铺实情，再议各县";
@@ -2992,22 +2852,17 @@ test("a chosen investigation may be stated while an NPC conditional is not a pla
   assert.deepEqual(shadowContinuityWarnings(narration, action), []);
 });
 
-test("a pure inquiry rejects appended orders without clipping the prose", async () => {
-  const provider = new ScriptedProvider({
-    narrator: [[
-      "总督只问书吏：‘中丞要的是今日落印，还是一句可带回去的答复？’",
-      "书吏说自己只奉命取回答复。",
-      "总督又转向亲随：‘原册不许动，本督另派人到。’",
-    ].join("\n\n")],
-  });
-  await withRuntime(async ({ runtime, workspace, runId }) => {
-    const before = await workspace.readPublicRun(runId);
-    await assert.rejects(runtime.processAction({ runId, action: "只问巡抚书吏要何种答复。" }), /PLAYER_ACTION_OVERREACH/);
-    const after = await workspace.readPublicRun(runId);
-    assert.equal(after.turnNumber, 0);
-    assert.equal(after.canon, before.canon);
-    assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
-  }, provider);
+test("legacy diagnostic recognizes an extra order after a pure inquiry", () => {
+  const narration = [
+    "总督只问书吏：‘中丞要的是今日落印，还是一句可带回去的答复？’",
+    "书吏说自己只奉命取回答复。",
+    "总督又转向亲随：‘原册不许动，本督另派人到。’",
+  ].join("\n\n");
+  const warnings = shadowContinuityWarnings(
+    narration,
+    "只问巡抚书吏要何种答复。",
+  );
+  assert.ok(warnings.some((warning) => warning.code === "PLAYER_ACTION_OVERREACH"));
 });
 test("options failure never rolls back narration and free-text can continue next turn", async () => {
   const provider = new ScriptedProvider({
@@ -3130,24 +2985,12 @@ test("failed Options can be recovered without regenerating or recommitting Canon
   }, provider);
 });
 
-test("unsupported location and custody narration stays playable as Shadow", async () => {
-  const provider = new ScriptedProvider({
-    narrator: ["亲随低声说，清流县的册子还在百里之外，没有人碰过，也没有人看过。总督没有把这句话当成凭据，只问这是县令亲见还是差役转述。"],
-    options: [JSON.stringify({ options: [
-      { label: "追问亲随这句话的来源" },
-      { label: "暂不采信，转而答复巡抚书吏" },
-    ], tension: "未经核实的保管说法" })],
-    storykeeper: [storykeeperPatch()],
-  });
-  await withRuntime(async ({ runtime, workspace, runId }) => {
-    const result = await runtime.processAction({ runId, action: "问亲随原册现在由谁看守。" });
-    assert.equal(result.turnNumber, 1);
-    assert.ok(result.warnings.some((warning) => warning.code === "UNVERIFIED_DURABLE_CUSTODY"));
-    assert.ok(result.warnings.every((warning) => warning.blocksPlayer === false));
-    const run = await workspace.readPublicRun(runId);
-    assert.equal(run.status, "READY");
-    assert.match(run.canon, /这是县令亲见还是差役转述/);
-  }, provider);
+test("legacy unsupported custody inference cannot decide publication", () => {
+  const warnings = shadowContinuityWarnings(
+    "亲随低声说，清流县的册子还在百里之外，没有人碰过，也没有人看过。总督没有把这句话当成凭据，只问这是县令亲见还是差役转述。",
+    "问亲随原册现在由谁看守。",
+  );
+  assert.ok(warnings.every((warning) => warning.blocksPlayer === false));
 });
 test("a settled player action cannot disappear behind an abbreviated narration", () => {
   const action = "只准清流县先办一批，并在回文里写明不得趁急难压价买田。";
@@ -3253,18 +3096,11 @@ test("a transitioned scene admits ordinary paper texture but not unapproved name
   ).some((warning) => warning.code === "UNAUTHORIZED_SCENE_DOCUMENT"), false);
 });
 
-test("Causal Delta enforces only an explicit present-this-turn durable result", async () => {
-  const provider = new ScriptedProvider({
-    narrator: [
-      "总督把书吏留下，只问巡抚午前究竟要一句怎样的回话。书吏答说自己只奉命取文，不能替中丞改口。两人的话停在这里，案上朱印仍旧未动。",
-    ],
-    options: [JSON.stringify({
-      options: [{ label: "继续问话" }],
-      tension: "答复",
-    })],
-  });
-  await withRuntime(async ({ runtime, workspace, runId }) => {
-    const chosen = {
+test("legacy Causal Delta can still diagnose an omitted present-turn result offline", () => {
+  const delta = buildCausalDelta({
+    turnId: "T01",
+    action: "签发暂缓改桑的正式回文",
+    selectedOption: {
       id: "opt_required_result",
       label: "签发暂缓改桑的正式回文",
       key: true,
@@ -3278,58 +3114,20 @@ test("Causal Delta enforces only an explicit present-this-turn durable result", 
           surfaceAnchor: "回文已经落印",
         }],
       },
-    };
-    await writeFile(
-      workspace.paths(runId).currentOptions,
-      JSON.stringify([chosen]),
-      "utf8",
-    );
-    await assert.rejects(
-      runtime.processAction({
-        runId,
-        action: chosen.label,
-        boundOption: { id: chosen.id, label: chosen.label },
-      }),
-      /MISSING_REQUIRED_DURABLE_RESULT/,
-    );
-    const run = await workspace.readPublicRun(runId);
-    assert.equal(run.turnNumber, 0);
-    assert.equal(provider.calls.filter((call) => call.profile === "options").length, 0);
-  }, provider);
+    },
+  });
+  const warnings = validateRequiredNarrativeFacts(
+    "总督把书吏留下，只问巡抚午前究竟要一句怎样的回话。",
+    delta,
+  );
+  assert.ok(warnings.some((warning) => warning.code === "MISSING_REQUIRED_DURABLE_RESULT"));
 });
 
-test("exact opening repeat is suppressed once and regenerated forward", async () => {
-  await withRuntime(async ({ runtime, workspace, runId }, provider) => {
-    const current = await workspace.readPublicRun(runId);
-    provider.script.narrator.push(
-      current.recentCanon,
-      "总督听完两边的话，仍没有碰案上的印。他让县令亲随靠近一步，只问从县衙到档房共有几道钥匙、今夜是谁值守。亲随答出两个职名，却不敢说人名。巡抚书吏终于把回文匣放低了些，低声道：“大人若要查，也请给中丞一句查到何时。”这一次，问话已经从疑不疑，落到了谁先控制时辰。",
-    );
-    provider.script.options.push(JSON.stringify({
-      options: [
-        { label: "命亲随连夜返回清流，先守住档房外门" },
-        { label: "留住两边来人，先拟一封只承认查验、不承认案情的回文" },
-      ],
-      tension: "复核时辰",
-    }));
-    provider.script.storykeeper.push(storykeeperPatch());
-    const deltas: string[] = [];
-    const result = await runtime.processAction({
-      runId,
-      action: "先追问档房今夜由谁值守。",
-      onEvent: (event) => {
-        if (event.type === "narration.delta") deltas.push(event.data.text);
-      },
-    });
-    assert.match(result.narration, /落到了谁先控制时辰/);
-    assert.doesNotMatch(deltas.join(""), /^嘉靖三十五年五月初八/);
-    assert.equal(provider.calls.filter((call) => call.profile === "narrator").length, 2);
-    const callFiles = await readFile(
-      path.join(workspace.paths(runId).callsDir, "T01.narrator.02.json"),
-      "utf8",
-    );
-    assert.match(callFiles, /"attempt": 2/);
-  }, new ScriptedProvider());
+test("exact opening repeat is rejected by the generic surface gate without a retry", () => {
+  const opening = "嘉靖三十五年五月初八，杭州总督府内厅。浙江总督刚在案前坐定，门外驿铃便催了第二遍。巡抚送来的催办公文压在案上，请总督即刻签发改桑放行文书；公文下面，却藏着清流县令连夜递来的密信，只说县册数字似有改痕，不敢断言是谁动的手。";
+  const result = validateV4SurfaceIntegrity(opening, opening);
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "NARRATION_REPEATS_PREVIOUS_OPENING");
 });
 
 test("empty foreground failure is recoverable and never enters Canon", async () => {
@@ -3468,7 +3266,7 @@ test("Storykeeper reuses a canonical entity card when the model invents an alias
     assert.match(call.messages[1].content, /slug: governor/);
     assert.equal(
       (await readFile(path.join(workspace.paths(runId).frontendDir, "directed-beat.md"), "utf8")).trim(),
-      "",
+      "## This Turn\n\nT02 floor T03 前置：若T02仍未答复，T03最迟让压力推进。",
     );
   }, provider);
 });
@@ -4241,6 +4039,8 @@ class ScriptedProvider implements OpenNovelProvider {
   beforeGenerate?: (request: ProviderRequest) => Promise<void> | void;
   readonly script: {
     narrator: Array<string | Error>;
+    reviewer: Array<string | Error>;
+    repair: Array<string | Error>;
     options: Array<string | Error>;
     storykeeper: Array<string | Error>;
   };
@@ -4248,6 +4048,8 @@ class ScriptedProvider implements OpenNovelProvider {
   constructor(script: Partial<ScriptedProvider["script"]> = {}) {
     this.script = {
       narrator: [...(script.narrator || [])],
+      reviewer: [...(script.reviewer || [])],
+      repair: [...(script.repair || [])],
       options: [...(script.options || [])],
       storykeeper: [...(script.storykeeper || [])],
     };

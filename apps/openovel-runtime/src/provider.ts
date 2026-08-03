@@ -4,6 +4,8 @@ export type ProviderConfig = {
   apiKey: string;
   baseUrl: string;
   narratorModel: string;
+  reviewerModel?: string;
+  repairModel?: string;
   optionsModel: string;
   storykeeperModel: string;
   timeoutMs: number;
@@ -31,6 +33,8 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
       apiKey,
       baseUrl,
       narratorModel: String(env.OPENOVEL_NARRATOR_MODEL || defaultModel).trim(),
+      reviewerModel: String(env.OPENOVEL_REVIEWER_MODEL || defaultModel).trim(),
+      repairModel: String(env.OPENOVEL_REPAIR_MODEL || defaultModel).trim(),
       optionsModel: String(env.OPENOVEL_OPTIONS_MODEL || defaultModel).trim(),
       storykeeperModel: String(env.OPENOVEL_STORYKEEPER_MODEL || defaultModel).trim(),
       timeoutMs: boundedInteger(
@@ -148,6 +152,12 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
   }
 
   private modelFor(profile: ProviderRequest["profile"]) {
+    if (profile === "reviewer") {
+      return this.config.reviewerModel || this.config.narratorModel;
+    }
+    if (profile === "repair") {
+      return this.config.repairModel || this.config.narratorModel;
+    }
     if (profile === "options") return this.config.optionsModel;
     if (profile === "storykeeper") return this.config.storykeeperModel;
     return this.config.narratorModel;

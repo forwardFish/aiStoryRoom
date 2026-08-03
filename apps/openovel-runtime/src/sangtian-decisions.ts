@@ -8,7 +8,10 @@ import {
   type PartOneState,
 } from "@ai-story/templates";
 import { appendJsonl, readJson, writeJsonAtomic } from "./io.js";
-import { durableAnchorGroupPresent } from "./durable-truth-gate.js";
+import type {
+  AuthoredDecisionAdapter,
+  PreparedAuthoredDecision,
+} from "./decision-adapter.js";
 import type { FileStoryWorkspace } from "./workspace.js";
 import type { OpenNovelOption } from "./types.js";
 
@@ -72,19 +75,16 @@ export async function commitSangtianDecision(
   workspace: FileStoryWorkspace,
   runId: string,
   prepared: PreparedSangtianDecision,
-  publishedNarration: string,
 ) {
   const paths = workspace.paths(runId);
-  // A consequence may be paid only after its required visible terms actually
-  // reached Canon. This keeps the state ledger from silently advancing a
-  // countermove that the player never saw.
+  // Settlement, not prose matching, owns causal finalization. P04 guarantees
+  // required visibility through Protected Beat/Reviewer/Fallback before Head
+  // publication; the adapter must never search natural language to decide
+  // whether an authoritative world move happened.
   const paidConsequenceIds = prepared.settlement.event.authoritativeWorldMoves
     .filter((move) => (
       move.sourceType === "DUE_CONSEQUENCE"
       && move.consequenceId
-      && move.requiredTermGroups.every((group) => (
-        durableAnchorGroupPresent(publishedNarration, group)
-      ))
     ))
     .map((move) => move.consequenceId!);
   const finalized = finalizePartOneSettlement(
@@ -265,6 +265,9 @@ function withNarrativeContract(
               .map((item) => String(item.continuityNote || "").trim())
               .filter(Boolean),
           ])],
+          settledNarrative:
+            String(evidenceContract.settledNarrative || "").trim()
+            || plan.settledActionNarrative,
           stopCondition: appendedBeats.length
             ? plan.requiredEndChange
             : evidenceContract.stopCondition,
@@ -304,6 +307,8 @@ function withNarrativeContract(
         ),
         requiredDurableAnchorGroups: hardRequiredGroups,
         settledNarrative: plan.settledActionNarrative,
+        fallbackContinuation:
+          option.effect?.beatContract?.fallbackContinuation,
         authorizedPlayerActions: requiredBeats
           .filter((beat) => beat.sourceType === "PLAYER_ACTION")
           .flatMap((beat) => [
@@ -365,4 +370,163 @@ function partOnePackage(projectRoot: string) {
     "sangtian",
     path.join(projectRoot, "packages", "templates", "config"),
   ).package;
+}
+
+export const sangtianDecisionAdapter: AuthoredDecisionAdapter = {
+  currentOptions: currentSangtianOptions,
+
+  async prepare(workspace, input) {
+    const prepared = await prepareSangtianDecision(workspace, input);
+    if (!prepared) return null;
+    const event = prepared.settlement.event;
+    const protectedText = String(
+      prepared.selectedOption?.effect?.beatContract?.settledNarrative
+        || event.narrativePlan.settledActionNarrative
+        || "",
+    ).trim();
+    return {
+      selectedOption: prepared.selectedOption,
+      settledNarrative: protectedText,
+      sourceRef: `part-one-event:${event.eventId}`,
+      storyComplete:
+        prepared.settlement.proposedState.partCompletionStatus === "HANDOFF_READY",
+      protectedBlocks: protectedText
+        ? [{
+            blockId: `${event.eventId}.protected.player-outcome`,
+            sourceRefs: [event.eventId, ...event.changedStatePaths],
+            text: protectedText,
+            immutable: true as const,
+          }]
+        : [],
+      fallbackText: buildSangtianFallback(prepared),
+      truthContext: buildSangtianTruthContext(prepared),
+      audit: {
+        eventId: event.eventId,
+        decisionKernelId: event.decisionKernelId,
+        affordanceTemplateId: event.affordanceTemplateId,
+        changedStatePaths: event.changedStatePaths,
+      },
+      payload: prepared,
+    } satisfies PreparedAuthoredDecision;
+  },
+
+  async commit(workspace, runId, prepared) {
+    await commitSangtianDecision(
+      workspace,
+      runId,
+      requireSangtianPayload(prepared),
+    );
+  },
+
+  nextOptions(prepared) {
+    return nextSangtianOptions(requireSangtianPayload(prepared));
+  },
+};
+
+function requireSangtianPayload(prepared: PreparedAuthoredDecision) {
+  const payload = prepared.payload as PreparedSangtianDecision | null;
+  if (!payload?.settlement?.event || !payload.package) {
+    throw new Error("AUTHORED_DECISION_PAYLOAD_INVALID");
+  }
+  return payload;
+}
+
+function buildSangtianTruthContext(prepared: PreparedSangtianDecision) {
+  const event = prepared.settlement.event;
+  const scene = event.sceneBefore;
+  const plan = event.narrativePlan;
+  const presentActorLabels = new Map(
+    scene.presentActorRefs.map((id, index) => [
+      id,
+      plan.sceneStartActorLabels[index] || id,
+    ]),
+  );
+  const actors = [...new Set([
+    ...scene.presentActorRefs,
+    ...event.authoritativeNpcReactions.flatMap((reaction) => reaction.actorRefs),
+    ...event.authoritativeWorldMoves.flatMap((move) => move.actorRefs),
+  ])];
+  const originActorId = scene.presentActorRefs.find((id) => (
+    id === prepared.package.perspectiveRoleKey
+    || id.endsWith(`.${prepared.package.perspectiveRoleKey}`)
+  )) || prepared.package.perspectiveRoleKey;
+  const catalog = [
+    ...actors.map((id) => ({
+      id,
+      kind: "ACTOR",
+      displayName: presentActorLabels.get(id) || id,
+    })),
+    {
+      id: `location:${scene.sceneId}`,
+      kind: "LOCATION",
+      displayName: scene.locationLabel,
+    },
+    ...(scene.documentStates || []).map((document) => ({
+      id: document.documentRef,
+      kind: "DOCUMENT",
+      displayName: document.label,
+    })),
+    ...(scene.objectStates || []).map((object) => ({
+      id: object.objectRef,
+      kind: "OBJECT",
+      displayName: object.label,
+    })),
+    ...event.authoritativeNpcReactions.map((reaction) => ({
+      id: reaction.reactionEventId,
+      kind: "CAPABILITY",
+      displayName: reaction.action,
+    })),
+    ...event.authoritativeWorldMoves.map((move) => ({
+      id: move.beatId,
+      kind: "CAPABILITY",
+      displayName: move.action,
+    })),
+  ];
+  const capabilityIds = [
+    "runtime.capability.unspecified_order",
+    ...event.authoritativeNpcReactions.map((reaction) => reaction.reactionEventId),
+    ...event.authoritativeWorldMoves.map((move) => move.beatId),
+  ];
+  return {
+    originActorId,
+    projectionActorId: originActorId,
+    catalog: deduplicateCatalog(catalog),
+    capabilityIds: [...new Set(capabilityIds)],
+    secretIds: [],
+    allowedPredicates: event.authoritativeNpcReactions.flatMap((reaction) =>
+      reaction.actorRefs
+        .filter((actorId) => scene.presentActorRefs.includes(actorId))
+        .map((actorId) => ({
+        type: "ACTOR.ORDERED" as const,
+        constraints: {
+          actorId,
+          capabilityId: reaction.reactionEventId,
+        },
+      }))
+    ),
+    requiredVisiblePredicates: [],
+    forbiddenPredicates: [],
+    // The settled protagonist action is already rendered by an immutable
+    // Protected Beat. Any new protagonist command in the continuation is an
+    // additional action, regardless of its natural-language wording.
+    originActionsInDraft: "FORBIDDEN" as const,
+  };
+}
+
+function buildSangtianFallback(prepared: PreparedSangtianDecision) {
+  const event = prepared.settlement.event;
+  const plan = event.narrativePlan;
+  const authoredContinuation = String(
+    prepared.selectedOption?.effect?.beatContract?.fallbackContinuation || "",
+  ).trim();
+  if (authoredContinuation) return authoredContinuation;
+  return [...new Set([
+    ...event.authoritativeNpcReactions.map((reaction) => reaction.action),
+    ...event.authoritativeWorldMoves.map((move) => move.action),
+    plan.requiredEndChange,
+  ].map((value) => String(value || "").trim()).filter(Boolean))].join("\n\n");
+}
+
+function deduplicateCatalog<T extends { id: string }>(items: T[]) {
+  return [...new Map(items.map((item) => [item.id, item])).values()];
 }
