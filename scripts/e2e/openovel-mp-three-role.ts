@@ -77,7 +77,13 @@ const report: Record<string, unknown> = {
     service: "supabase",
     schema: databaseSchema,
     isolated: true,
-    provisioning: requiredEnv("OPENOVEL_MP_DB_PROVISIONING")
+    provisioning: requiredEnv("OPENOVEL_MP_DB_PROVISIONING"),
+    connectionBudget: {
+      driver: Number(requiredEnv("OPENOVEL_MP_DRIVER_CONNECTION_LIMIT")),
+      api: Number(requiredEnv("OPENOVEL_MP_API_CONNECTION_LIMIT")),
+      supabaseSessionPoolLimit: 15,
+      reserved: 2
+    }
   },
   runId,
   startedAt: new Date().toISOString(),
@@ -117,7 +123,7 @@ async function main() {
     const api = start("api", ["--import", "tsx", "apps/api/src/main.ts"], {
       NODE_ENV: "test",
       PORT: String(apiPort),
-      DATABASE_URL: requiredEnv("DATABASE_URL"),
+      DATABASE_URL: requiredEnv("OPENOVEL_MP_API_DATABASE_URL"),
       MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED: "true",
       CONTINUOUS_OPENOVEL_V1_ENABLED: "true",
       CONTINUOUS_OPENOVEL_ROOM_IDS: runId,

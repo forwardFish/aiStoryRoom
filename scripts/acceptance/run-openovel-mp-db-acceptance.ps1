@@ -59,7 +59,23 @@ if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
 }
 $EvidenceRoot = [System.IO.Path]::GetFullPath($EvidenceRoot)
 New-Item -ItemType Directory -Path $EvidenceRoot -Force | Out-Null
-$env:DATABASE_URL = if ($Lane -in @("performance", "three-role")) { Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 15 60 } else { Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 5 10 }
+$env:DATABASE_URL = if ($Lane -eq "performance") {
+  Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 15 60
+} elseif ($Lane -eq "three-role") {
+  # The driver and product API are separate Prisma clients. Supabase session
+  # mode caps the whole project pool at 15, so never give both clients the full
+  # pool_size. Keep two connections in reserve for control-plane/readback use.
+  Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 3 60
+} else {
+  Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 5 10
+}
+$env:OPENOVEL_MP_API_DATABASE_URL = if ($Lane -eq "three-role") {
+  Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 10 60
+} else {
+  $env:DATABASE_URL
+}
+$env:OPENOVEL_MP_DRIVER_CONNECTION_LIMIT = if ($Lane -eq "three-role") { "3" } else { "" }
+$env:OPENOVEL_MP_API_CONNECTION_LIMIT = if ($Lane -eq "three-role") { "10" } else { "" }
 $env:OPENOVEL_MP_DB_SCHEMA = $schema
 $env:OPENOVEL_MP_DB_PROVISIONING = if ($reuseProvisionedSchema) { "PREPROVISIONED_SCHEMA_REUSED" } else { "FRESH_SCHEMA_MIGRATED_IN_RUN" }
 $env:OPENOVEL_MP_EVIDENCE_DIR = $EvidenceRoot
