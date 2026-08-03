@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 /*
  * Turn ordering and failure behavior are derived from Feed-Scription/openovel:
  * src/runtime/sessionProcessor.js and src/lib/narrator.js.
@@ -20,7 +22,11 @@ import {
   validateForegroundSurface,
 } from "./surface-integrity.js";
 import type { AuthoredDecisionAdapter } from "./decision-adapter.js";
-import { NarrativeSafetyPipeline } from "./narrative-safety.js";
+import {
+  NarrativeSafetyPipeline,
+  type ReviewerFailurePolicy,
+} from "./narrative-safety.js";
+import { FileAtomicTurnRepository, type AtomicNarrativeEvidence } from "./atomic-turn.js";
 import type { FileStoryWorkspace } from "./workspace.js";
 import type {
   BoundOption,
@@ -31,6 +37,8 @@ import type {
   TurnEvent,
   TurnResult,
 } from "./types.js";
+import { isRuntimeActionError } from "./runtime-errors.js";
+import { actionConflict } from "./runtime-errors.js";
 
 export class OpenNovelRuntime {
   private readonly foregroundLocks = new Set<string>();
@@ -43,6 +51,7 @@ export class OpenNovelRuntime {
     private readonly runtimeOptions: {
       decisionMode?: "MODEL" | "AUTHORED_WHEN_AVAILABLE";
       authoredDecisionAdapter?: AuthoredDecisionAdapter;
+      reviewerFailurePolicy?: ReviewerFailurePolicy;
     } = {},
   ) {}
 
@@ -67,6 +76,7 @@ export class OpenNovelRuntime {
     runId: string;
     action: string;
     submissionId?: string;
+    expectedStateRevision?: number;
     boundOption?: BoundOption | null;
     onEvent?: (event: TurnEvent) => void;
   }): Promise<TurnResult> {
@@ -85,9 +95,28 @@ export class OpenNovelRuntime {
       throw error;
     }
     try {
+      if (input.expectedStateRevision !== undefined) {
+        const current = await this.workspace.metadata(input.runId);
+        if (input.expectedStateRevision !== current.turnNumber) {
+          throw actionConflict("STATE_REVISION_CONFLICT");
+        }
+      }
       return await this.runTurn({ ...input, action });
     } catch (error) {
       const message = String((error as Error).message || error);
+      if (isRuntimeActionError(error)) {
+        await this.workspace.updateMetadata(input.runId, {
+          status: "READY",
+          lastError: undefined,
+        }).catch(() => {});
+        await this.workspace.recordSceneEvent(input.runId, {
+          type: "foreground_action_rejected",
+          action,
+          code: error.code,
+          status: error.status,
+        }).catch(() => {});
+        throw error;
+      }
       await this.workspace.updateMetadata(input.runId, {
         status: "FAILED",
         lastError: message.slice(0, 1_000),
@@ -235,15 +264,28 @@ export class OpenNovelRuntime {
     boundOption?: BoundOption | null;
     onEvent?: (event: TurnEvent) => void;
   }) {
+    const authoredAdapter = this.authoredDecisionAdapter();
+    const atomicRepository = authoredAdapter
+      ? new FileAtomicTurnRepository(this.workspace.paths(input.runId))
+      : null;
+    if (atomicRepository) await atomicRepository.restoreMaterializedViews();
     const snapshot = await this.workspace.snapshot(input.runId);
     const turnNumber = snapshot.metadata.turnNumber + 1;
     const turnId = `T${String(turnNumber).padStart(2, "0")}`;
+    const submissionId = normalizeSubmissionId(input.submissionId)
+      || deterministicSubmissionId(input.runId, turnId, input.action);
+    const alreadyCommitted = atomicRepository
+      ? await atomicRepository.resultBySubmission(submissionId, input.action)
+      : null;
+    if (alreadyCommitted) {
+      const currentOptions = await authoredAdapter!.currentOptions(this.workspace, input.runId);
+      return { ...alreadyCommitted, options: currentOptions || alreadyCommitted.options };
+    }
     const resolvedOption = resolveBoundOption(
       input.boundOption || null,
       snapshot.previousOptions,
       input.action,
     );
-    const authoredAdapter = this.authoredDecisionAdapter();
     const preparedDecision = authoredAdapter
       ? await authoredAdapter.prepare(this.workspace, {
           runId: input.runId,
@@ -311,9 +353,23 @@ export class OpenNovelRuntime {
         error: String((error as Error).message || error).slice(0, 500),
       }).catch(() => {});
     }
+    const modelLedger: unknown[] = [{
+      stage: "narrator",
+      model: narrator.model,
+      requestId: narrator.requestId || null,
+      usage: narrator.usage,
+      latencyMs: narrator.latencyMs,
+    }];
+    let atomicNarrative: AtomicNarrativeEvidence = {
+      originalText: narrator.text,
+      disposition: "USE_ORIGINAL",
+    };
     const reviewWarnings: RuntimeWarning[] = [];
     if (preparedDecision) {
-      const safety = await new NarrativeSafetyPipeline(this.provider).resolve({
+      const originalText = narrator.text;
+      const safety = await new NarrativeSafetyPipeline(this.provider, {
+        reviewerFailurePolicy: this.runtimeOptions.reviewerFailurePolicy || "SHADOW",
+      }).resolve({
         turnId,
         draft: narrator.text,
         previousOpening,
@@ -322,6 +378,15 @@ export class OpenNovelRuntime {
         truthContext: preparedDecision.truthContext,
       });
       for (const call of safety.calls) {
+        modelLedger.push({
+          stage: call.stage,
+          attempt: call.attempt,
+          model: call.result?.model || null,
+          requestId: call.result?.requestId || null,
+          usage: call.result?.usage || null,
+          latencyMs: call.result?.latencyMs || null,
+          error: call.error || null,
+        });
         await this.workspace.recordModelCall(
           input.runId,
           turnId,
@@ -333,6 +398,16 @@ export class OpenNovelRuntime {
         ).catch(() => {});
       }
       narrator = { ...narrator, text: safety.finalText };
+      atomicNarrative = {
+        originalText,
+        repairedText: safety.repairText,
+        disposition: safety.disposition,
+        originalReview: safety.originalReview,
+        finalReview: safety.finalReview,
+        originalComparison: safety.originalComparison,
+        finalComparison: safety.finalComparison,
+        fallbackReason: safety.fallbackReason,
+      };
       const shadow = [
         ...(safety.originalComparison?.shadow || []),
         ...(safety.finalComparison?.shadow || []),
@@ -418,18 +493,47 @@ export class OpenNovelRuntime {
       narrator,
       committedAt: new Date().toISOString(),
     };
-    await this.workspace.commitNarration(input.runId, {
-      turnId,
-      action: input.action,
-      result,
-      selectedOption,
-    });
     if (preparedDecision) {
-      await authoredAdapter!.commit(this.workspace, input.runId, preparedDecision);
+      const projection = await authoredAdapter!.projectCommit(
+        this.workspace,
+        input.runId,
+        preparedDecision,
+      );
+      projection.materializedViews = [
+        ...await this.workspace.atomicNarrationViews(input.runId, {
+          turnId,
+          action: input.action,
+          result,
+          selectedOption,
+        }),
+        ...(projection.materializedViews || []),
+      ];
+      await atomicRepository!.commit({
+        runId: input.runId,
+        submissionId,
+        turnId,
+        turnNumber,
+        action: input.action,
+        selectedOption,
+        result,
+        protectedBlocks: preparedDecision.protectedBlocks,
+        narrative: atomicNarrative,
+        projection,
+        modelLedger,
+        previousCanon: currentSnapshot.chapters,
+      });
+      await atomicRepository!.restoreMaterializedViews();
       await this.workspace.recordSceneEvent(input.runId, {
         type: "foreground_authored_state_committed",
         turnId,
         ...preparedDecision.audit,
+      });
+    } else {
+      await this.workspace.commitNarration(input.runId, {
+        turnId,
+        action: input.action,
+        result,
+        selectedOption,
       });
     }
     try {
@@ -682,6 +786,14 @@ function optionsKnownContext(
 function normalizeSubmissionId(value: unknown) {
   const id = String(value || "").trim();
   return /^[A-Za-z0-9_-]{6,128}$/.test(id) ? id : null;
+}
+
+function deterministicSubmissionId(runId: string, turnId: string, action: string) {
+  const digest = createHash("sha256")
+    .update(`${runId}\0${turnId}\0${action}`, "utf8")
+    .digest("hex")
+    .slice(0, 24);
+  return `auto_${turnId}_${digest}`;
 }
 
 function narratorTemperature() {

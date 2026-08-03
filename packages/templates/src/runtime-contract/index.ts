@@ -8,3 +8,4 @@ export * from "./pattern";
 export * from "./access";
 export * from "./event-context";
 export * from "./fixtures";
+export * from "./projection";

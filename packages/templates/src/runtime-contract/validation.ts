@@ -362,12 +362,16 @@ export function validateDurableTurnEnvelope(input: unknown, contractInput: World
   for (const left of allowed) for (const right of forbidden) if (patternsOverlap(left, right)) fail("TURN_ENVELOPE_PATTERN_CONFLICT", left.type);
   if (!Array.isArray(value.requiredVisiblePredicates)) fail("TURN_ENVELOPE_INVALID", "requiredVisiblePredicates");
   const requiredPatterns = (value.requiredVisiblePredicates as unknown[]).map((entry) => {
-    const required = object(entry, "REQUIRED_VISIBLE_INVALID", "requiredVisiblePredicate"); exact(required, ["pattern", "visibility"], "REQUIRED_VISIBLE_INVALID", "requiredVisiblePredicate");
+    const required = object(entry, "REQUIRED_VISIBLE_INVALID", "requiredVisiblePredicate"); exact(required, ["id", "pattern", "visibility", "requiredMeaning", "supportEventIds"], "REQUIRED_VISIBLE_INVALID", "requiredVisiblePredicate");
+    const requiredId = id(required.id, "requiredVisiblePredicate.id");
     const pattern = validatePredicatePattern(required.pattern, ctx); const visibilityValue = object(required.visibility, "VISIBILITY_INVALID", "required.visibility");
     const visibility = validateVisibility(required.visibility, ctx, visibilityValue.scope === "INFERABLE" ? new Set(eventContext.events.keys()) : undefined);
     validateInferableEvidence(visibility, { eventId: String(value.turnEnvelopeId), runId: String(value.runId), createdAtRevision: Number(value.beforeStateRevision) }, eventContext);
-    return { pattern, visibility };
+    const requiredMeaning = text(required.requiredMeaning, "requiredVisiblePredicate.requiredMeaning");
+    const supportEventIds = idArray(required.supportEventIds, "requiredVisiblePredicate.supportEventIds", true);
+    return { id: requiredId, pattern, visibility, requiredMeaning, supportEventIds };
   });
+  unique(requiredPatterns.map((required) => required.id), "requiredVisiblePredicateIds");
   unique(requiredPatterns.map((required) => `${patternKey(required.pattern)}:${visibilityKey(required.visibility)}`), "requiredVisiblePredicates");
   for (const required of requiredPatterns) { if (!allowed.some((pattern) => patternSubsumes(pattern, required.pattern))) fail("REQUIRED_PATTERN_NOT_ALLOWED", required.pattern.type); if (forbidden.some((pattern) => patternsOverlap(pattern, required.pattern))) fail("REQUIRED_PATTERN_FORBIDDEN", required.pattern.type); }
   stringArray(value.unresolvedFacts, "unresolvedFacts"); idArray(value.activeSceneEntityIds, "activeSceneEntityIds").forEach((entity) => requireRef(new Set(ctx.entities.keys()), entity, "DANGLING_ENTITY"));
@@ -376,7 +380,16 @@ export function validateDurableTurnEnvelope(input: unknown, contractInput: World
     if (!Array.isArray(value[field])) fail("TURN_ENVELOPE_INVALID", field);
     for (const inputRef of value[field] as unknown[]) { const ref = object(inputRef, "EVENT_REF_INVALID", field); exact(ref, ["eventId", "expectedStatus"], "EVENT_REF_INVALID", field); const eventId = id(ref.eventId, `${field}.eventId`); if (seenRefs.has(eventId)) fail("EVENT_REF_DUPLICATE", eventId); seenRefs.add(eventId); if (!["SCHEDULED", "APPLIED", "CANCELLED"].includes(String(ref.expectedStatus))) fail("EVENT_STATUS_INVALID", String(ref.expectedStatus)); const event = eventContext.require(eventId); referencedEvents.push(event); if (event.status !== ref.expectedStatus || event.runId !== value.runId || event.worldTurnId !== value.worldTurnId || event.sourceActionId !== value.sourceActionId || event.originActorId !== origin || event.createdAtRevision !== value.beforeStateRevision) fail("TURN_ENVELOPE_EVENT_MISMATCH", eventId); if (!allowed.some((pattern) => predicateMatchesPattern(event.predicate, pattern)) || forbidden.some((pattern) => predicateMatchesPattern(event.predicate, pattern))) fail("TURN_ENVELOPE_EVENT_UNAUTHORIZED", eventId); }
   }
-  for (const required of requiredPatterns) if (!referencedEvents.some((event) => predicateMatchesPattern(event.predicate, required.pattern) && visibilitiesEquivalent(contract, event.visibility, required.visibility))) fail("REQUIRED_VISIBLE_PREDICATE_UNSATISFIED", required.pattern.type);
+  const referencedById = new Map(referencedEvents.map((event) => [event.eventId, event]));
+  for (const required of requiredPatterns) {
+    const supportEvents = required.supportEventIds.map((eventId) => {
+      const event = referencedById.get(eventId);
+      if (!event) fail("REQUIRED_VISIBLE_SUPPORT_NOT_IN_TURN", eventId);
+      if (event.status !== "APPLIED") fail("REQUIRED_VISIBLE_SUPPORT_NOT_APPLIED", eventId);
+      return event;
+    });
+    if (!supportEvents.some((event) => predicateMatchesPattern(event.predicate, required.pattern) && visibilitiesEquivalent(contract, event.visibility, required.visibility))) fail("REQUIRED_VISIBLE_PREDICATE_UNSATISFIED", required.pattern.type);
+  }
   const seed = object(value.narrativeSeed, "NARRATIVE_SEED_INVALID", "narrativeSeed"); exact(seed, ["playerOutcome", "npcOrWorldPressure", "stopCondition"], "NARRATIVE_SEED_INVALID", "narrativeSeed"); text(seed.playerOutcome, "narrativeSeed.playerOutcome"); text(seed.npcOrWorldPressure, "narrativeSeed.npcOrWorldPressure"); text(seed.stopCondition, "narrativeSeed.stopCondition");
   return value as unknown as DurableTurnEnvelope;
 }

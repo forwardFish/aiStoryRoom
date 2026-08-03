@@ -12,20 +12,43 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const sourceDir = path.resolve(currentDir, "..", "src");
 
 test("P03 active Canon path does not import legacy lexical gates or a story adapter", async () => {
-  const runtime = await readFile(path.join(sourceDir, "runtime.ts"), "utf8");
-  const foreground = await readFile(path.join(sourceDir, "foreground.ts"), "utf8");
-  const active = `${runtime}\n${foreground}`;
+  const coreFiles = [
+    "runtime.ts",
+    "workspace.ts",
+    "workspace-seeder.ts",
+    "decision-adapter.ts",
+    "foreground.ts",
+    "causal-context.ts",
+    "truth-review.ts",
+    "narrative-safety.ts",
+    "atomic-turn.ts",
+    "surface-integrity.ts",
+    "deterministic-fallback.ts",
+  ];
+  const core = await Promise.all(coreFiles.map(async (file) => ({
+    file,
+    source: await readFile(path.join(sourceDir, file), "utf8"),
+  })));
+  const runtime = core.find((item) => item.file === "runtime.ts")!.source;
+  const active = core.map((item) => item.source).join("\n");
 
   for (const forbiddenImport of [
     "./durable-truth-gate.js",
     "./surface-guard.js",
     "./causal-delta.js",
     "./sangtian-decisions.js",
+    "./sangtian-workspace.js",
   ]) {
     assert.doesNotMatch(active, new RegExp(escapeRegExp(forbiddenImport)));
   }
   assert.doesNotMatch(runtime, /worldId\s*(?:===|!==|==|!=)/u);
-  assert.doesNotMatch(runtime, /sangtian|caesar|桑田|凯撒|总督|巡抚|县册/iu);
+  for (const item of core) {
+    assert.doesNotMatch(
+      item.source,
+      /sangtian|caesar|桑田|凯撒|总督|巡抚|县册/iu,
+      `${item.file} contains a story-specific core term`,
+    );
+  }
 });
 
 test("P03 causal context copies typed authorization without classifying prose", () => {

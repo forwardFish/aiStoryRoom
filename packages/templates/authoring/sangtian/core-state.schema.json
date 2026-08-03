@@ -73,6 +73,14 @@
           "type": "string",
           "minLength": 1
         },
+        "observableFacts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
         "documentStates": {
           "type": "array",
           "items": {

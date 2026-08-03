@@ -74,6 +74,7 @@ export function buildCausalDelta(input: {
       ? { knowledgeBoundaryRef: knowledgeBoundary.sourceRef }
       : {}),
     beatContract,
+    scenePacket: null,
     durableHints,
     requiredNarrativeFacts: [...new Set(requiredNarrativeFacts)],
   };

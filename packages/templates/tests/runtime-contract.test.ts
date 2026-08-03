@@ -37,6 +37,17 @@ const envelopeFixture = (event: CausalEvent): DurableTurnEnvelope => ({
   crossPlayerEffects: [], worldEffects: [], delayedEffects: [], projectionActorId: event.originActorId,
   narrativeSeed: { playerOutcome: "The selected action settled.", npcOrWorldPressure: "The world responds.", stopCondition: "Stop at the next decision." },
 });
+const requiredVisible = (
+  event: CausalEvent,
+  pattern: DurableTurnEnvelope["allowedPredicates"][number],
+  visibility: CausalEvent["visibility"],
+) => ({
+  id: `${event.eventId}.required`,
+  pattern,
+  visibility,
+  requiredMeaning: "The settled event must be visibly dramatized.",
+  supportEventIds: [event.eventId],
+});
 
 test("same loader validates two structurally different worlds", () => {
   const first = validateWorldRuntimeContract(sangtianRuntimeFixture); const second = validateWorldRuntimeContract(caesarRuntimeFixture);
@@ -210,13 +221,15 @@ test("envelope pattern algebra rejects conflicts without events", () => {
   const event = eventFixture(); const envelope = envelopeFixture(event); envelope.personalEffects = [];
   const narrow = { type: event.predicate.type, constraints: { documentId: "sangtian.document.order" } } as any;
   assert.throws(() => validateDurableTurnEnvelope({ ...envelope, forbiddenPredicatePatterns: [narrow] }, sangtianRuntimeFixture, []), /PATTERN_CONFLICT/);
-  assert.throws(() => validateDurableTurnEnvelope({ ...envelope, requiredVisiblePredicates: [{ pattern: narrow, visibility: { scope: "PUBLIC" } }], forbiddenPredicatePatterns: [narrow] }, sangtianRuntimeFixture, []), /PATTERN_CONFLICT|FORBIDDEN/);
-  assert.throws(() => validateDurableTurnEnvelope({ ...envelope, allowedPredicates: [{ type: "RESOURCE.CHANGED", constraints: {} }], requiredVisiblePredicates: [{ pattern: narrow, visibility: { scope: "PUBLIC" } }] }, sangtianRuntimeFixture, []), /NOT_ALLOWED/);
+  assert.throws(() => validateDurableTurnEnvelope({ ...envelope, requiredVisiblePredicates: [requiredVisible(event, narrow, { scope: "PUBLIC" })], forbiddenPredicatePatterns: [narrow] }, sangtianRuntimeFixture, []), /PATTERN_CONFLICT|FORBIDDEN/);
+  assert.throws(() => validateDurableTurnEnvelope({ ...envelope, allowedPredicates: [{ type: "RESOURCE.CHANGED", constraints: {} }], requiredVisiblePredicates: [requiredVisible(event, narrow, { scope: "PUBLIC" })] }, sangtianRuntimeFixture, []), /NOT_ALLOWED/);
 });
 test("required visible predicates bind both event predicate and visibility", () => {
-  const event = eventFixture(); const envelope = envelopeFixture(event); const required = { pattern: envelope.allowedPredicates[0], visibility: { scope: "PUBLIC" as const } };
+  const event = eventFixture(); const envelope = envelopeFixture(event); const required = requiredVisible(event, envelope.allowedPredicates[0], { scope: "PUBLIC" as const });
   assert.doesNotThrow(() => validateDurableTurnEnvelope({ ...envelope, requiredVisiblePredicates: [required] }, sangtianRuntimeFixture, [event]));
   assert.throws(() => validateDurableTurnEnvelope({ ...envelope, requiredVisiblePredicates: [{ ...required, visibility: { scope: "PRIVATE", actorId: sangtianRuntimeFixture.roles[1].actorId } }] }, sangtianRuntimeFixture, [event]), /UNSATISFIED/);
+  assert.throws(() => validateDurableTurnEnvelope({ ...envelope, requiredVisiblePredicates: [{ ...required, requiredMeaning: "" }] }, sangtianRuntimeFixture, [event]), /requiredMeaning|TEXT/);
+  assert.throws(() => validateDurableTurnEnvelope({ ...envelope, requiredVisiblePredicates: [{ ...required, supportEventIds: ["sangtian.event.ghost"] }] }, sangtianRuntimeFixture, [event]), /SUPPORT_NOT_IN_TURN/);
 });
 test("event status and player summary invariants are enforced", () => {
   const event = eventFixture(); assert.throws(() => validateCausalEvent({ ...event, status: "SCHEDULED" }, sangtianRuntimeFixture), /STATUS_INVARIANT/);
@@ -251,7 +264,7 @@ test("INFERABLE evidence cannot cross run boundaries", () => {
 test("required INFERABLE predicate accepts qualified public evidence", () => {
   const evidence = { ...eventFixture(), eventId: "sangtian.event.public.evidence", idempotencyKey: "sangtian.idempotency.public.evidence" };
   const inferred = { ...eventFixture(), eventId: "sangtian.event.inferred", visibility: { scope: "INFERABLE" as const, evidenceEventIds: [evidence.eventId] }, idempotencyKey: "sangtian.idempotency.inferred" };
-  const envelope = envelopeFixture(inferred); envelope.requiredVisiblePredicates = [{ pattern: envelope.allowedPredicates[0], visibility: inferred.visibility }];
+  const envelope = envelopeFixture(inferred); envelope.requiredVisiblePredicates = [requiredVisible(inferred, envelope.allowedPredicates[0], inferred.visibility)];
   assert.doesNotThrow(() => validateDurableTurnEnvelope(envelope, sangtianRuntimeFixture, [evidence, inferred]));
 });
 test("INFERABLE visibility equivalence ignores evidence ID order", () => {

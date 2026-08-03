@@ -37,8 +37,11 @@ export interface DurablePredicatePattern {
 }
 
 export interface RequiredVisiblePredicate {
+  id: string;
   pattern: DurablePredicatePattern;
   visibility: VisibilityRule;
+  requiredMeaning: string;
+  supportEventIds: string[];
 }
 
 export interface DurableEntity {
@@ -215,3 +218,71 @@ export type SettlementOutcome =
   | { kind: "REPLAYED"; result: SettlementResult }
   | { kind: "CONFLICT"; expectedRevision: number; actualRevision: number }
   | { kind: "REJECTED"; code: string };
+
+export interface ProjectedFact {
+  eventId: string;
+  predicate: DurablePredicate;
+  summary: string;
+  originActorId?: string;
+}
+
+export interface ProjectedSignal {
+  eventId: string;
+  summary: string;
+  evidenceEventIds: string[];
+}
+
+export interface ProjectedEffect {
+  eventId: string;
+  category: EchoCategory;
+  summary: string;
+  predicate?: DurablePredicate;
+  originActorId?: string;
+}
+
+export interface ProjectedRelation {
+  eventId: string;
+  kind: "TRUST" | "SUSPICION";
+  fromActorId: string;
+  toActorId: string;
+  delta: number;
+}
+
+export interface ProjectedDestinyHook {
+  hookId: string;
+  status: "ACTIVE" | "CONVERGING" | "RESOLVED";
+  visibleActorIds: string[];
+  visibleEntityIds: string[];
+}
+
+export interface PlayerTurnProjection {
+  runId: string;
+  worldTurnId: string;
+  actorId: string;
+  stateRevision: number;
+  privateFacts: ProjectedFact[];
+  publicFacts: ProjectedFact[];
+  inferableSignals: ProjectedSignal[];
+  personalEchoes: ProjectedEffect[];
+  crossPlayerEchoes: ProjectedEffect[];
+  worldEchoes: ProjectedEffect[];
+  relationshipChanges: ProjectedRelation[];
+  activeDestinyHooks: ProjectedDestinyHook[];
+  destinyQuestion: string;
+}
+
+export interface DestinyNetProjection {
+  actorId: string;
+  nodes: Array<{
+    id: string;
+    label: string;
+    type: "SELF" | "ACTOR" | "CLUE" | "LOCATION" | "EVENT" | "UNKNOWN";
+    visibility: "KNOWN" | "PUBLIC" | "SUSPECTED";
+  }>;
+  edges: Array<{
+    from: string;
+    to: string;
+    label?: string;
+    visibility: "KNOWN" | "PUBLIC" | "SUSPECTED";
+  }>;
+}

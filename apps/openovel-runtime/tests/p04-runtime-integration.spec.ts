@@ -7,13 +7,17 @@ import { fileURLToPath } from "node:url";
 import { NoopMirror } from "../src/mirror.js";
 import { OpenNovelRuntime } from "../src/runtime.js";
 import { sangtianDecisionAdapter } from "../src/sangtian-decisions.js";
-import { buildTruthReviewUnits } from "../src/truth-review.js";
+import {
+  buildStoryFactReviewUnits,
+  buildTruthReviewUnits,
+} from "../src/truth-review.js";
 import type {
   OpenNovelProvider,
   ProviderRequest,
   ProviderResult,
 } from "../src/types.js";
 import { FileStoryWorkspace } from "../src/workspace.js";
+import { sangtianWorkspaceSeeder } from "../src/sangtian-workspace.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDir, "..", "..", "..");
@@ -34,7 +38,10 @@ test("P04 rejects an extra player order and an incomplete repair, then publishes
       explicitness: "EXPLICIT",
       confidence: 0.99,
     }]), "reviewer-model"),
-    result("巡抚书吏抬眼等候。", "repair-model"),
+    result(JSON.stringify({
+      edits: [{ exactQuote: conflictQuote, replacement: "" }],
+      appendText: "",
+    }), "repair-model"),
     result(reviewJson("巡抚书吏抬眼等候。", []), "reviewer-model"),
   ]);
   await withRuntime(provider, async ({ runtime, workspace, runId }) => {
@@ -55,7 +62,7 @@ test("P04 rejects an extra player order and an incomplete repair, then publishes
       true,
     );
     assert.doesNotMatch(resultValue.narration, /巡抚书吏抬眼等候/);
-    assert.match(resultValue.narration, /只准清流一县先办.*仍候封存回报再议/su);
+    assert.match(resultValue.narration, /巡抚书吏仍候在厅中.*边界执行/su);
     assert.deepEqual(provider.profiles, [
       "narrator",
       "reviewer",
@@ -90,13 +97,92 @@ test("P04 narrator failure uses deterministic fallback and still commits", async
       resultValue.narration.startsWith(resultValue.causalDelta.beatContract.settledNarrative),
       true,
     );
-    assert.match(resultValue.narration, /只准清流一县先办.*仍候封存回报再议/su);
+    assert.match(resultValue.narration, /巡抚书吏仍候在厅中.*边界执行/su);
     assert.deepEqual(provider.profiles, ["narrator"]);
     const events = await readFile(workspace.paths(runId).sceneLog, "utf8");
     assert.match(events, /USE_FALLBACK/);
     const publicRun = await runtime.getRun(runId);
     assert.equal(publicRun.turnNumber, 1);
     assert.notEqual(publicRun.status, "FAILED");
+  });
+});
+
+test("P04 deterministic fallback never invents a responsibility-record handoff", async () => {
+  const provider = new QueueProvider([
+    new Error("T01 narrator unavailable"),
+    new Error("T02 narrator unavailable"),
+    new Error("T03 narrator unavailable"),
+  ]);
+  await withRuntime(provider, async ({ runtime, workspace, runId }) => {
+    const opening = await workspace.snapshot(runId);
+    const inquiry = opening.previousOptions.find((option) => option.id === "opening_d1");
+    assert.ok(inquiry);
+    const first = await runtime.processAction({
+      runId,
+      action: inquiry.label,
+      boundOption: { id: inquiry.id, label: inquiry.label },
+    });
+    const limitedTrial = first.options.find(
+      (option) => option.id === "DK-P1-EXECUTION-SCOPE-OPT-01",
+    );
+    assert.ok(limitedTrial);
+    const second = await runtime.processAction({
+      runId,
+      action: limitedTrial.label,
+      boundOption: { id: limitedTrial.id, label: limitedTrial.label },
+    });
+    const separateResponsibility = second.options.find(
+      (option) => option.id === "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
+    );
+    assert.ok(separateResponsibility);
+    const prepared = await sangtianDecisionAdapter.prepare(workspace, {
+      runId,
+      turnNumber: 3,
+      action: separateResponsibility.label,
+      selectedOption: separateResponsibility,
+    });
+    assert.ok(prepared);
+    assert.match(
+      prepared.settledNarrative,
+      /议事转至嘉靖三十五年五月初九巳时，杭州总督府签押房/u,
+    );
+    assert.match(
+      prepared.settledNarrative,
+      /清流县令、改桑书吏和巡抚幕僚已经到场/u,
+    );
+    assert.deepEqual(
+      prepared.truthContext.requiredVisiblePredicates.map((item) => item.pattern),
+      [{
+        type: "ACTOR.ORDERED",
+        constraints: {
+          actorId: "actor.xunfu_aide",
+          capabilityId: "PAYOFF-P1-XUNFU-COUNTERMOVE-D4E74450",
+        },
+      }],
+    );
+    const third = await runtime.processAction({
+      runId,
+      action: separateResponsibility.label,
+      boundOption: {
+        id: separateResponsibility.id,
+        label: separateResponsibility.label,
+      },
+    });
+
+    assert.match(third.narration, /督抚责任说明.*浙江总督持有/su);
+    assert.match(third.narration, /签押房.*巡抚幕僚/su);
+    assert.doesNotMatch(
+      third.narration,
+      /巡抚书吏(?:接过|收下|持有|带走).*?(?:责任说明|逐项记明异议的回文)/su,
+    );
+    const state = JSON.parse(await readFile(workspace.paths(runId).partOneState, "utf8"));
+    const responsibilityRecord = state.scene.documentStates.find(
+      (document: { documentRef: string }) => (
+        document.documentRef === "document.responsibility_record"
+      ),
+    );
+    assert.equal(responsibilityRecord?.holderRef, "actor.zhejiang_governor");
+    assert.deepEqual(provider.profiles, ["narrator", "narrator", "narrator"]);
   });
 });
 
@@ -110,7 +196,7 @@ async function withRuntime(
 ) {
   const root = await mkdtemp(path.join(os.tmpdir(), "omw-p04-runtime-"));
   const runId = `p04_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-  const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
+  const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
   const runtime = new OpenNovelRuntime(
     workspace,
     provider,
@@ -186,7 +272,12 @@ function reviewJson(draft: string, assertions: unknown[]) {
     }),
     missingRequiredPredicateIds: [],
     unknownEntityMentions: [],
-    factClaims: [],
+    storyFactAssessments: buildStoryFactReviewUnits(draft).map((unit) => ({
+      unitId: unit.unitId,
+      classification: "TEXTURE_OR_TRANSIENT",
+      supportIds: [],
+      confidence: 0.99,
+    })),
   });
 }
 

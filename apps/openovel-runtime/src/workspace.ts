@@ -14,7 +14,8 @@ import {
 } from "./io.js";
 import { composeForeground, getStorySnapshot } from "./foreground.js";
 import { workspacePaths, type WorkspacePaths } from "./paths.js";
-import { seedSangtianWorkspace } from "./sangtian-workspace.js";
+import type { MaterializedTurnView } from "./atomic-turn.js";
+import type { WorkspaceRunSeeder } from "./workspace-seeder.js";
 import {
   OPENOVEL_RUNTIME_MODE,
   type MirrorEnvelope,
@@ -34,6 +35,7 @@ export class FileStoryWorkspace {
     readonly root: string,
     readonly projectRoot: string,
     readonly upstreamCommit: string,
+    private readonly runSeeder: WorkspaceRunSeeder,
     readonly packageVersion = "openovel-v1.0.0",
   ) {}
 
@@ -57,9 +59,7 @@ export class FileStoryWorkspace {
       }
       return this.readPublicRun(runId);
     }
-    if (input.worldId !== "sangtian" || input.roleId !== "zhejiang_governor") {
-      throw new Error("OPENOVEL_V1 currently supports sangtian / zhejiang_governor only");
-    }
+    if (!this.runSeeder.supports(input)) throw new Error("OPENOVEL_WORLD_ROLE_UNSUPPORTED");
     await this.ensureLayout(paths);
     const now = new Date().toISOString();
     const metadata: RunMetadata = {
@@ -77,7 +77,7 @@ export class FileStoryWorkspace {
       status: "READY",
     };
     await writeJsonAtomic(paths.metadata, metadata);
-    const seeded = await seedSangtianWorkspace(paths, metadata, this.projectRoot);
+    const seeded = await this.runSeeder.seed(paths, metadata, this.projectRoot);
     await appendJsonl(paths.sceneLog, this.event("opening_committed", {
       turnId: "G00",
       runtimeMode: OPENOVEL_RUNTIME_MODE,
@@ -321,6 +321,68 @@ export class FileStoryWorkspace {
     });
   }
 
+  async atomicNarrationViews(
+    runId: string,
+    input: {
+      turnId: string;
+      action: string;
+      result: TurnResult;
+      selectedOption: OpenNovelOption | null;
+    },
+  ): Promise<MaterializedTurnView[]> {
+    const paths = this.paths(runId);
+    const currentCanon = await readText(paths.chapters, "");
+    const chapter = [
+      `**读者选择**：${input.action}`,
+      "",
+      input.result.narration.trim(),
+    ].join("\n");
+    const sceneEvents = parseJsonLines(await readText(paths.sceneLog, ""));
+    sceneEvents.push(this.event("foreground_turn", {
+      turnId: input.turnId,
+      action: input.action,
+      selectedOption: input.selectedOption,
+      narration: input.result.narration,
+      causalDelta: input.result.causalDelta,
+      warnings: input.result.warnings,
+      committedAt: input.result.committedAt,
+    }));
+    sceneEvents.push(this.event("turn_committed", {
+      turnId: input.turnId,
+      turnNumber: input.result.turnNumber,
+    }));
+    const metadata = await this.metadata(runId);
+    const committedMetadata: RunMetadata = {
+      ...metadata,
+      turnNumber: input.result.turnNumber,
+      status: "READY",
+      lastError: undefined,
+      updatedAt: input.result.committedAt,
+    };
+    return [
+      {
+        relativePath: relativeRunPath(paths, paths.chapters),
+        format: "text",
+        value: `${currentCanon.trimEnd()}\n\n${chapter}\n`.trimStart(),
+      },
+      {
+        relativePath: relativeRunPath(paths, paths.chaptersRecent),
+        format: "text",
+        value: `${input.result.narration.trim()}\n`,
+      },
+      {
+        relativePath: relativeRunPath(paths, paths.sceneLog),
+        format: "jsonl",
+        value: sceneEvents,
+      },
+      {
+        relativePath: relativeRunPath(paths, paths.metadata),
+        format: "json",
+        value: committedMetadata,
+      },
+    ];
+  }
+
   async publishTurnOptions(
     runId: string,
     input: {
@@ -558,6 +620,21 @@ type WorkspaceLeaseRecord = {
   acquiredAt: string;
   expiresAt: string;
 };
+
+function parseJsonLines(text: string): unknown[] {
+  return text
+    .split(/\r?\n/u)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+function relativeRunPath(paths: WorkspacePaths, target: string) {
+  const relative = path.relative(paths.root, target).split(path.sep).join("/");
+  if (!relative || relative.startsWith("../") || path.posix.isAbsolute(relative)) {
+    throw new Error("ATOMIC_ARTIFACT_PATH_INVALID");
+  }
+  return relative;
+}
 
 function leaseRecord(token: string, ttlMs: number): WorkspaceLeaseRecord {
   const now = Date.now();

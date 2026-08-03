@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { DurableEventMirror, NoopMirror } from "../src/mirror.js";
 import { FileStoryWorkspace } from "../src/workspace.js";
+import { sangtianWorkspaceSeeder } from "../src/sangtian-workspace.js";
 import { StorykeeperDrain } from "../src/storykeeper.js";
 import { OpenNovelRuntime } from "../src/runtime.js";
 import {
@@ -54,7 +55,10 @@ import {
   validateForegroundSurface,
 } from "../src/surface-guard.js";
 import { validateSurfaceIntegrity as validateV4SurfaceIntegrity } from "../src/surface-integrity.js";
-import { buildTruthReviewUnits } from "../src/truth-review.js";
+import {
+  buildStoryFactReviewUnits,
+  buildTruthReviewUnits,
+} from "../src/truth-review.js";
 import type {
   OpenNovelProvider,
   EventMirror,
@@ -253,7 +257,7 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
     const compiled = await compileForegroundContext(workspace.paths(runId), snapshot);
     assert.match(compiled.foregroundGuidance, /## Knowledge Boundary/);
     assert.match(compiled.foregroundGuidance, /未在 Canon 出现的汇总表册/);
-    assert.match(compiled.foregroundGuidance, /持久物件事实：巡抚回文匣当前为空且合拢/);
+    assert.match(compiled.foregroundGuidance, /巡抚书吏捧着回文匣等候答复/);
     const openingEffect = snapshot.previousOptions[0]?.effect;
     assert.match(openingEffect?.intent || "", /核对完成即停/);
     assert.equal(
@@ -279,10 +283,10 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
       },
     });
     const message = buildForegroundUserContext(delta, compiled);
-    assert.match(message, /Foreground Guidance/);
-    assert.match(message, /Recent Player Canon/);
-    assert.match(message, /## This Turn/);
-    assert.match(message, /## Reader Action/);
+    assert.match(message, /## 前景约束/);
+    assert.match(message, /## 最近正文/);
+    assert.match(message, /## 本轮唯一剧情拍/);
+    assert.match(message, /## 玩家行动/);
     assert.match(message, /暂不落印，先问清原册为何没有随信送来/);
     assert.doesNotMatch(message, /本轮需要自然发生|具体兑现/);
     assert.doesNotMatch(message, /NPC 本轮不得补充：档房保管；经手人；原册内容/);
@@ -292,19 +296,19 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
       message.trim().endsWith(action),
       true,
     );
-    assert.ok(message.lastIndexOf("## This Turn") > message.lastIndexOf("## Recent Player Canon"));
-    assert.ok(message.lastIndexOf("## Reader Action") > message.lastIndexOf("## Recent Player Canon"));
+    assert.ok(message.lastIndexOf("## 本轮唯一剧情拍") > message.lastIndexOf("## 最近正文"));
+    assert.ok(message.lastIndexOf("## 玩家行动") > message.lastIndexOf("## 最近正文"));
     assert.doesNotMatch(message, /Settlement|stateJson|Validator Rule|Section Exit Gate/);
 
     const prompts = buildNarratorMessages(delta, compiled);
     assert.equal(prompts.length, 2);
-    assert.match(prompts[0].content, /从 Recent Player Canon 最后一刻继续/);
+    assert.match(prompts[0].content, /从最近正文的最后一刻继续/);
     assert.match(prompts[0].content, /把它圆成可发生的尝试、传话或过渡/);
-    assert.match(prompts[0].content, /Reader Action 是本回合唯一的主角行动/);
+    assert.match(prompts[0].content, /玩家行动是本回合唯一的主角行动/);
     assert.match(prompts[0].content, /普通动作、目光、衣袖、灯火、案几、普通纸张和空间调度可以自由书写/);
     assert.match(prompts[0].content, /不要凭空新增具名人物、关键证据、正式文书/);
-    assert.match(prompts[0].content, /不要替主角完成 Reader Action 之外的签署、承诺或重大处置/);
-    assert.match(prompts[0].content, /Foreground Guidance、Durable Memory 和 This Turn 只提供约束与叙事纹理/);
+    assert.match(prompts[0].content, /不要替主角完成玩家行动之外的签署、承诺或重大处置/);
+    assert.match(prompts[0].content, /其他工作集内容只提供约束与叙事纹理/);
     assert.doesNotMatch(prompts[0].content, /物件持有人|跨 clause|activeActor/);
 
     const freeAction = "让书吏把协办办法说清楚，在他说完之前公文仍不签。";
@@ -316,9 +320,9 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
       }),
       compiled,
     );
-    assert.match(freeText, /## Reader Action/);
+    assert.match(freeText, /## 玩家行动/);
     assert.match(freeText, new RegExp(freeAction.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-    assert.ok(freeText.lastIndexOf("## Reader Action") > freeText.lastIndexOf("## Recent Canon Excerpt"));
+    assert.ok(freeText.lastIndexOf("## 玩家行动") > freeText.lastIndexOf("## 最近正文"));
 
     const optionsPrompts = buildOptionsMessages(action, "书吏仍在等候。", snapshot, compiled);
     assert.match(optionsPrompts[0].content, /给出 2—4 个真正不同/);
@@ -2162,7 +2166,7 @@ test("authored decision state machine keeps curated choices across three committ
     })],
   });
   try {
-    const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
+    const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
     const runtime = new OpenNovelRuntime(
       workspace,
       provider,
@@ -2186,6 +2190,7 @@ test("authored decision state machine keeps curated choices across three committ
     const result = await runtime.processAction({
       runId,
       action: selected.label,
+      submissionId: "authored_submission_01",
       boundOption: { id: selected.id, label: selected.label },
     });
     assert.deepEqual(
@@ -2195,7 +2200,7 @@ test("authored decision state machine keeps curated choices across three committ
     assert.equal(provider.calls[0].temperature, 0.86);
     assert.match(
       provider.calls[0].messages.map((message) => message.content).join("\n"),
-      /## Reader Action/,
+      /## 玩家行动/,
     );
     assert.deepEqual(
       result.options.map((option) => option.id),
@@ -2204,6 +2209,16 @@ test("authored decision state machine keeps curated choices across three committ
         "DK-P1-EXECUTION-SCOPE-OPT-03",
       ],
     );
+    const callsAfterFirstCommit = provider.calls.length;
+    const replayed = await runtime.processAction({
+      runId,
+      action: selected.label,
+      submissionId: "authored_submission_01",
+      boundOption: { id: selected.id, label: selected.label },
+    });
+    assert.equal(replayed.turnId, result.turnId);
+    assert.equal(replayed.narration, result.narration);
+    assert.equal(provider.calls.length, callsAfterFirstCommit);
     assert.deepEqual(
       result.options.map((option) => option.label),
       [
@@ -2253,7 +2268,7 @@ test("authored decision state machine keeps curated choices across three committ
     assert.equal(provider.calls[3].temperature, 0.86);
     assert.match(
       provider.calls[3].messages.map((message) => message.content).join("\n"),
-      /Recent Player Canon/,
+      /## 最近正文/,
     );
     const separateResponsibility = secondResult.options.find(
       (option) => option.id === "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
@@ -2274,17 +2289,17 @@ test("authored decision state machine keeps curated choices across three committ
     }));
     assert.match(
       jointSignatureContext,
-      /服务端已经确定的下一剧情拍/,
+      /本轮只写服务器选定的这一剧情拍/,
     );
     assert.match(
       jointSignatureContext,
       /巡抚拒绝在总督昨日送来的正式回文上共同具名/,
     );
-    assert.match(
+    assert.doesNotMatch(
       jointSignatureContext,
       /署名本身成为责任与利益冲突的行动/,
     );
-    assert.match(
+    assert.doesNotMatch(
       jointSignatureContext,
       /独立巡抚是玩法角色位/,
     );
@@ -2339,7 +2354,7 @@ test("authored decision state machine keeps curated choices across three committ
     assert.ok(nextDecision.settlement.appliedAffordance);
     assert.match(
       provider.calls[6].messages.map((message) => message.content).join("\n"),
-      /Recent Player Canon/,
+      /## 最近正文/,
     );
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -3447,7 +3462,7 @@ test("selected option consequence reaches the next foreground once and is then c
     await storykeeper.kick(runId);
     const narratorCalls = provider.calls.filter((call) => call.profile === "narrator");
     assert.equal(narratorCalls.length, 2);
-    assert.match(narratorCalls[1].messages[1].content, /## Pending Consequence/);
+    assert.match(narratorCalls[1].messages[1].content, /## 待兑现后果/);
     assert.match(narratorCalls[1].messages[1].content, /明确答复时辰/);
     assert.equal(
       (await readFile(
@@ -3538,13 +3553,13 @@ test("director ARC stays out of Narrator context and drives generic background p
 test("workspace survives a new runtime process view and keeps OPENOVEL_V1 frozen", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "omw-openovel-recovery-"));
   try {
-    const workspaceA = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
+    const workspaceA = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
     await workspaceA.createRun({
       runId: "recovery_run_001",
       worldId: "sangtian",
       roleId: "zhejiang_governor",
     });
-    const workspaceB = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
+    const workspaceB = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
     const recovered = await workspaceB.readPublicRun("recovery_run_001");
     assert.equal(recovered.runtimeMode, "OPENOVEL_V1");
     assert.equal(recovered.turnNumber, 0);
@@ -3557,8 +3572,8 @@ test("workspace survives a new runtime process view and keeps OPENOVEL_V1 frozen
 test("workspace foreground lease serializes processes and replaces only expired locks", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "omw-openovel-lease-"));
   try {
-    const workspaceA = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
-    const workspaceB = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
+    const workspaceA = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
+    const workspaceB = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
     const runId = "lease_run_001";
     await workspaceA.createRun({
       runId,
@@ -3603,7 +3618,7 @@ test("workspace foreground lease serializes processes and replaces only expired 
 test("durable database mirror retries a failed delivery without blocking Canon", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "omw-openovel-mirror-"));
   try {
-    const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
+    const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
     const runId = "mirror_run_001";
     await workspace.createRun({
       runId,
@@ -4012,7 +4027,7 @@ test("scripted G00-T05 keeps Canon playable through an options failure without c
 test("restart recovery marks interrupted foreground retryable and kicks background drain", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "omw-openovel-restart-"));
   try {
-    const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
+    const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
     await workspace.createRun({
       runId: "restart_run_001",
       worldId: "sangtian",
@@ -4096,7 +4111,12 @@ function cleanTruthReviewJson(draft: string) {
     })),
     missingRequiredPredicateIds: [],
     unknownEntityMentions: [],
-    factClaims: [],
+    storyFactAssessments: buildStoryFactReviewUnits(draft).map((unit) => ({
+      unitId: unit.unitId,
+      classification: "TEXTURE_OR_TRANSIENT",
+      supportIds: [],
+      confidence: 0.99,
+    })),
   });
 }
 
@@ -4116,7 +4136,7 @@ async function withRuntime(
   const runId = `test_run_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   let storykeeper: StorykeeperDrain | undefined;
   try {
-    const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit);
+    const workspace = new FileStoryWorkspace(root, projectRoot, upstreamCommit, sangtianWorkspaceSeeder);
     storykeeper = new StorykeeperDrain(workspace, provider);
     const runtime = new OpenNovelRuntime(workspace, provider, storykeeper, new NoopMirror());
     await runtime.createRun({

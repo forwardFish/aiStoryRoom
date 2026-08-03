@@ -3,6 +3,7 @@ import templatesPackage from "@ai-story/templates";
 import { readJson, writeAtomic, writeJsonAtomic } from "./io.js";
 import type { OpenNovelOption, RunMetadata } from "./types.js";
 import type { WorkspacePaths } from "./paths.js";
+import type { WorkspaceRunSeeder } from "./workspace-seeder.js";
 
 const {
   createInitialPartOneState,
@@ -78,6 +79,7 @@ type EvidenceProfileAsset = {
     openingBeatContract: {
       objective: string;
       moves: string[];
+      continuationMoves?: string[];
       requiredAnchorGroups: string[][];
       stopCondition: string;
     };
@@ -386,6 +388,13 @@ export async function seedSangtianWorkspace(
     recentOpening,
   };
 }
+
+export const sangtianWorkspaceSeeder: WorkspaceRunSeeder = {
+  supports: ({ worldId, roleId }) => (
+    worldId === "sangtian" && roleId === "zhejiang_governor"
+  ),
+  seed: seedSangtianWorkspace,
+};
 
 function renderEvidenceProfileCard(profile: EvidenceProfileAsset | undefined) {
   if (!profile) {

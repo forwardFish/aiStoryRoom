@@ -10,14 +10,21 @@ import { StorykeeperDrain } from "./storykeeper.js";
 import { OpenNovelRuntime } from "./runtime.js";
 import { recoverRuntimeRuns } from "./recovery.js";
 import { sangtianDecisionAdapter } from "./sangtian-decisions.js";
+import { sangtianWorkspaceSeeder } from "./sangtian-workspace.js";
 import type { TurnEvent, TurnResult } from "./types.js";
+import { isRuntimeActionError } from "./runtime-errors.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(process.env.OPENOVEL_PROJECT_ROOT || path.join(currentDir, "..", "..", ".."));
 const playtestDir = path.resolve(projectRoot, "apps", "openovel-runtime", "public");
 const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
 const provider = OpenAICompatibleProvider.fromEnv();
-const workspace = new FileStoryWorkspace(runtimeRoot(), projectRoot, upstreamCommit);
+const workspace = new FileStoryWorkspace(
+  runtimeRoot(),
+  projectRoot,
+  upstreamCommit,
+  sangtianWorkspaceSeeder,
+);
 const mirrorTransport = HttpEventMirror.fromEnv();
 const mirror = mirrorTransport.configured
   ? new DurableEventMirror(workspace, mirrorTransport)
@@ -96,6 +103,7 @@ const server = createServer(async (request, response) => {
             runId,
             action: String(body.action || ""),
             submissionId: String(body.submissionId || ""),
+            expectedStateRevision: optionalRevision(body.expectedStateRevision),
             boundOption: normalizeBoundOption(body.boundOption),
             onEvent: (event) => writeSse(response, sanitizeEvent(event)),
           });
@@ -118,6 +126,7 @@ const server = createServer(async (request, response) => {
         runId,
         action: String(body.action || ""),
         submissionId: String(body.submissionId || ""),
+        expectedStateRevision: optionalRevision(body.expectedStateRevision),
         boundOption: normalizeBoundOption(body.boundOption),
       });
       return json(response, 200, sanitizeTurn(result));
@@ -125,7 +134,13 @@ const server = createServer(async (request, response) => {
     return json(response, 404, { error: "NOT_FOUND" });
   } catch (error) {
     const message = String((error as Error).message || error);
-    const status = message === "RUN_FOREGROUND_BUSY" ? 409 : /not found/i.test(message) ? 404 : 400;
+    const status = isRuntimeActionError(error)
+      ? error.status
+      : message === "RUN_FOREGROUND_BUSY"
+        ? 409
+        : /not found/i.test(message)
+          ? 404
+          : 400;
     return json(response, status, { error: message });
   }
 });
@@ -225,6 +240,15 @@ function normalizeBoundOption(value: unknown) {
   const id = String(record.id || "").trim();
   const label = String(record.label || "").trim();
   return id && label ? { id, label } : null;
+}
+
+function optionalRevision(value: unknown) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const revision = Number(value);
+  if (!Number.isInteger(revision) || revision < 0) {
+    throw new Error("EXPECTED_STATE_REVISION_INVALID");
+  }
+  return revision;
 }
 
 function sanitizeTurn(result: TurnResult) {

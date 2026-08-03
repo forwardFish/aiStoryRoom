@@ -1,12 +1,21 @@
 import { jsonrepair } from "jsonrepair";
 import templatesPackage from "@ai-story/templates";
 import type {
+  CausalEvent,
   DurablePredicate,
   DurablePredicatePattern,
+  DurableTurnEnvelope,
+  PlayerTurnProjection,
+  WorldRuntimeContract,
 } from "@ai-story/templates";
 import type { ModelMessage } from "./types.js";
 
-const { predicateFields, predicateMatchesPattern } = templatesPackage;
+const {
+  predicateFields,
+  predicateMatchesPattern,
+  validateDurableTurnEnvelope,
+  validateWorldRuntimeContract,
+} = templatesPackage;
 
 export type TruthEntityCatalogItem = {
   id: string;
@@ -18,6 +27,14 @@ export type TruthEntityCatalogItem = {
 export type RequiredTruthPredicate = {
   id: string;
   pattern: DurablePredicatePattern;
+  /**
+   * Server-owned natural-language meaning of the predicate. Review and repair
+   * models need this to recognize or restore the event without guessing what
+   * an opaque predicate ID means. Wording may vary in prose; meaning may not.
+   */
+  requiredMeaning: string;
+  /** Current-world events that authorize this required meaning. */
+  supportIds: string[];
 };
 
 export type NarrativeTruthContext = {
@@ -33,13 +50,102 @@ export type NarrativeTruthContext = {
   supportedStoryFacts?: Array<{
     supportId: string;
     statement: string;
+    /**
+     * False means this support exists only to require a server-owned beat. It
+     * cannot authorize unrelated durable fact claims in free prose.
+     */
+    claimSupport?: boolean;
+  }>;
+  forbiddenStoryClaims?: Array<{
+    boundaryId: string;
+    statement: string;
   }>;
   mechanismOnlyEvidence?: Array<{
     evidenceId: string;
     statement: string;
   }>;
   specificityBoundary?: string;
+  /** The unresolved question/pressure at which this continuation must stop. */
+  stopCondition?: string;
 };
+
+/**
+ * Convert the shared v4 settlement contract into the only semantic contract
+ * accepted by the Reviewer/Comparator pipeline. This keeps world adapters
+ * from inventing a second, story-specific meaning for the same envelope.
+ */
+export function buildNarrativeTruthContextFromEnvelope(input: {
+  contract: WorldRuntimeContract;
+  envelope: DurableTurnEnvelope;
+  events: CausalEvent[];
+  projection: PlayerTurnProjection;
+  originActionsInDraft: NarrativeTruthContext["originActionsInDraft"];
+  supportedStoryFacts?: NarrativeTruthContext["supportedStoryFacts"];
+  mechanismOnlyEvidence?: NarrativeTruthContext["mechanismOnlyEvidence"];
+  forbiddenStoryClaims?: NarrativeTruthContext["forbiddenStoryClaims"];
+  specificityBoundary?: string;
+}): NarrativeTruthContext {
+  const contract = validateWorldRuntimeContract(input.contract);
+  const envelope = validateDurableTurnEnvelope(
+    input.envelope,
+    contract,
+    input.events,
+  );
+  if (
+    input.projection.runId !== envelope.runId
+    || input.projection.worldTurnId !== envelope.worldTurnId
+    || input.projection.actorId !== envelope.projectionActorId
+  ) {
+    throw new Error("TRUTH_CONTEXT_PROJECTION_MISMATCH");
+  }
+  const events = new Map(input.events.map((event) => [event.eventId, event]));
+  const eventFacts = envelope.requiredVisiblePredicates.flatMap((required) =>
+    required.supportEventIds.map((supportId) => {
+      const event = events.get(supportId);
+      if (!event || event.status !== "APPLIED") {
+        throw new Error(`TRUTH_CONTEXT_SUPPORT_EVENT_MISSING:${supportId}`);
+      }
+      const statement = event.affectedPlayerSummaries[envelope.projectionActorId]
+        || event.publicSummary;
+      if (!statement) {
+        throw new Error(`TRUTH_CONTEXT_SUPPORT_NOT_VISIBLE:${supportId}`);
+      }
+      return { supportId, statement, claimSupport: true };
+    })
+  );
+  const supportedStoryFacts = deduplicateSupportedFacts([
+    ...eventFacts,
+    ...(input.supportedStoryFacts || []),
+  ]);
+  return {
+    originActorId: envelope.originActorId,
+    projectionActorId: envelope.projectionActorId,
+    catalog: contract.entities.map((entity) => ({
+      id: entity.id,
+      kind: entity.kind,
+      displayName: entity.displayName,
+      aliases: [...entity.aliases],
+    })),
+    capabilityIds: contract.capabilities.map((capability) => capability.id),
+    secretIds: contract.entities
+      .filter((entity) => entity.kind === "SECRET")
+      .map((entity) => entity.id),
+    allowedPredicates: envelope.allowedPredicates,
+    requiredVisiblePredicates: envelope.requiredVisiblePredicates.map((required) => ({
+      id: required.id,
+      pattern: required.pattern,
+      requiredMeaning: required.requiredMeaning,
+      supportIds: [...required.supportEventIds],
+    })),
+    forbiddenPredicates: envelope.forbiddenPredicatePatterns,
+    originActionsInDraft: input.originActionsInDraft,
+    supportedStoryFacts,
+    forbiddenStoryClaims: input.forbiddenStoryClaims || [],
+    mechanismOnlyEvidence: input.mechanismOnlyEvidence || [],
+    specificityBoundary: input.specificityBoundary || "",
+    stopCondition: envelope.narrativeSeed.stopCondition,
+  };
+}
 
 export type TruthAssertion = {
   predicate: DurablePredicate;
@@ -68,17 +174,43 @@ export type OriginActionAssessment = {
   confidence: number;
 };
 
+export type StoryFactAssessment = {
+  unitId: string;
+  exactQuote: string;
+  quoteStart: number;
+  quoteEnd: number;
+  classification:
+    | "TEXTURE_OR_TRANSIENT"
+    | "SUPPORTED_DURABLE"
+    | "UNSUPPORTED_DURABLE_SHADOW"
+    | "AMBIGUOUS_DURABILITY";
+  supportIds: string[];
+  confidence: number;
+};
+
 export type TruthReview = {
   reviewId: string;
   draftId: string;
   reviewerModel: string;
   assertions: TruthAssertion[];
   originActionAssessments: OriginActionAssessment[];
+  storyFactAssessments: StoryFactAssessment[];
   missingRequiredPredicateIds: string[];
   unknownEntityMentions: Array<{
+    unitId: string;
     exactQuote: string;
+    surfaceName: string;
+    entityKind: "ACTOR" | "DOCUMENT" | "EVIDENCE";
+    introductionMode:
+      | "EXPLICIT_NEW"
+      | "EXPLICIT_UNKNOWN_EXISTING"
+      | "AMBIGUOUS";
     durableImpact: boolean;
     confidence: number;
+  }>;
+  entityCandidateIssues: Array<{
+    reason: string;
+    exactQuote: string;
   }>;
   factClaims: Array<{
     exactQuote: string;
@@ -96,8 +228,7 @@ export type TruthConflict = {
     | "UNAUTHORIZED_PLAYER_ACTION"
     | "FORBIDDEN_PREDICATE"
     | "MISSING_REQUIRED_PREDICATE"
-    | "UNKNOWN_DURABLE_ENTITY"
-    | "UNSUPPORTED_DURABLE_FACT";
+    | "UNKNOWN_DURABLE_ENTITY";
   exactQuote: string;
   predicate?: DurablePredicate;
   requiredPredicateId?: string;
@@ -127,6 +258,7 @@ export function buildTruthReviewerMessages(input: {
   reviewId: string;
   context: NarrativeTruthContext;
 }): ModelMessage[] {
+  validateNarrativeTruthContext(input.context);
   const reviewContract = {
     draftId: input.draftId,
     reviewId: input.reviewId,
@@ -140,9 +272,12 @@ export function buildTruthReviewerMessages(input: {
     forbiddenPredicates: input.context.forbiddenPredicates,
     originActionsInDraft: input.context.originActionsInDraft,
     supportedStoryFacts: input.context.supportedStoryFacts || [],
+    forbiddenStoryClaims: input.context.forbiddenStoryClaims || [],
     mechanismOnlyEvidence: input.context.mechanismOnlyEvidence || [],
     specificityBoundary: input.context.specificityBoundary || "",
+    stopCondition: input.context.stopCondition || "",
     reviewUnits: buildTruthReviewUnits(input.draft),
+    factUnits: buildStoryFactReviewUnits(input.draft),
   };
   return [
     {
@@ -152,16 +287,31 @@ export function buildTruthReviewerMessages(input: {
         "Extract only explicit durable assertions from the supplied draft.",
         "Ordinary scene texture, unnamed incidental people, gestures, furniture, light, footsteps, sleeves, ink and ordinary paper are not durable assertions.",
         "Use only IDs from the supplied catalog and capability list. Never invent an ID.",
-        "If an explicit major order by the origin actor has no matching catalog capability, report its exact quote under unknownEntityMentions with durableImpact=true instead of inventing a capability ID.",
-        "Separately extract explicit factual claims that would persist beyond sentence texture: exact quantities, named places, current shortages or price changes, document/evidence existence, institutional policy, completed acts, identities or relationships.",
-        "For each such claim return one factClaims row. Bind supportId only when a supplied supportedStoryFact directly authorizes that current-world claim. Original mechanisms are inspiration only and can never be used as current-fact support.",
-        "If a factual claim is unsupported, use supportId=null. Mark ordinary weather, gestures, furniture, light and other non-persistent texture as TEXTURE_OR_TRANSIENT or omit it.",
+        "Unknown-entity review is limited to concrete ACTOR, DOCUMENT, or EVIDENCE candidates. Orders and commitments belong in typed assertions/originActionAssessments, never unknownEntityMentions.",
+        "For an unknown entity candidate, select one supplied factUnit, quote an exact span inside that unit, and provide the exact surfaceName appearing inside the quote.",
+        "Use EXPLICIT_NEW only when the prose explicitly introduces the entity as new; EXPLICIT_UNKNOWN_EXISTING only when it explicitly establishes a durable entity that already exists but is absent from the catalog; otherwise use AMBIGUOUS.",
+        "A title, reported speech, generic role, unnamed incidental person, ordinary paper, or passing reference is not by itself a durable unknown entity.",
+        "The server has split the complete draft into factUnits. Every factUnit must receive exactly one storyFactAssessment; never omit, merge or invent a unit.",
+        "Classify each factUnit as TEXTURE_OR_TRANSIENT, SUPPORTED_DURABLE, UNSUPPORTED_DURABLE_SHADOW, or AMBIGUOUS_DURABILITY.",
+        "For SUPPORTED_DURABLE, supportIds must contain only supplied supportedStoryFacts whose claimSupport=true and whose statement directly entails the complete factUnit at the same specificity. A support about an action, pressure, anomaly or general topic does not authorize new quantities, places, document wording, institutions, causes or completed states.",
+        "Use UNSUPPORTED_DURABLE_SHADOW for every unsupported factual claim. Shadow does not become world truth but does not reject otherwise playable prose.",
+        "The five P0 domains are handled separately through typed assertions, originActionAssessments, missingRequiredPredicateIds, unknownEntityMentions, and server ACLs. Never create a sixth generic fact-claim P0 category.",
+        "For every classification except SUPPORTED_DURABLE supportIds must be empty. Original mechanisms are inspiration only and can never support a current-world fact.",
+        "Ordinary weather, gestures, furniture, light and non-persistent texture are TEXTURE_OR_TRANSIENT. Use AMBIGUOUS_DURABILITY only when the unit itself does not make a clear persistent claim.",
         "Do not judge prose quality, rewrite text, settle state or decide publication.",
+        "originActionAssessments evaluates only actions performed by originActorId (the player protagonist). NPC speech, questions, proposals and actions are not origin actions.",
         "Every supplied reviewUnit must receive exactly one originActionAssessment. Never omit a unit, even when it contains no durable action.",
         "Classify each unit as NO_DURABLE_ACTION, AUTHORIZED, UNAUTHORIZED, or AMBIGUOUS. For every non-NO_DURABLE_ACTION assessment, include the exact action quote from that unit.",
-        "Return strict JSON with exactly: assertions, originActionAssessments, missingRequiredPredicateIds, unknownEntityMentions, factClaims.",
+        "Each requiredVisiblePredicate includes a server-owned requiredMeaning and supportIds. If the draft explicitly expresses that meaning, emit an assertion whose predicate realizes that pattern; copy pattern constraints into flat predicate fields. The prose need not quote requiredMeaning verbatim.",
+        "List a required predicate ID under missingRequiredPredicateIds only when its requiredMeaning is not explicitly dramatized in the draft.",
+        "The stopCondition is an unresolved dramatic stopping point, not permission to invent its answer or outcome.",
+        "Return strict JSON with exactly: assertions, originActionAssessments, storyFactAssessments, missingRequiredPredicateIds, unknownEntityMentions.",
         "Each assertion has predicate, exactQuote, quoteStart, quoteEnd, explicitness and confidence.",
-        "Each unknownEntityMention has exactQuote, durableImpact and confidence.",
+        "Each unknownEntityMention has exactly unitId, exactQuote, surfaceName, entityKind, introductionMode, durableImpact and confidence.",
+        "Each originActionAssessment has exactly unitId, classification, exactQuotes (an array), and confidence.",
+        "Each storyFactAssessment has exactly unitId, classification, supportIds (an array), and confidence.",
+        "Predicate fields are flat. Example: {\"type\":\"ACTOR.ORDERED\",\"actorId\":\"actor.id\",\"capabilityId\":\"capability.id\"}; never nest fields under constraints.",
+        "Return raw JSON only, without a Markdown fence.",
       ].join("\n"),
     },
     {
@@ -174,7 +324,55 @@ export function buildTruthReviewerMessages(input: {
   ];
 }
 
+export function validateNarrativeTruthContext(context: NarrativeTruthContext) {
+  const catalogIds = new Set(context.catalog.map((item) => item.id));
+  if (!catalogIds.has(context.originActorId)) {
+    throw new Error(`TRUTH_CONTEXT_ORIGIN_UNKNOWN:${context.originActorId}`);
+  }
+  if (!catalogIds.has(context.projectionActorId)) {
+    throw new Error(`TRUTH_CONTEXT_PROJECTION_UNKNOWN:${context.projectionActorId}`);
+  }
+  const supported = deduplicateSupportedFacts(context.supportedStoryFacts || []);
+  const supportedIds = new Set(supported.map((item) => item.supportId));
+  const requiredIds = new Set<string>();
+  const forbiddenBoundaryIds = new Set<string>();
+  for (const boundary of context.forbiddenStoryClaims || []) {
+    const boundaryId = String(boundary.boundaryId || "").trim();
+    const statement = String(boundary.statement || "").trim();
+    if (!boundaryId || !statement || forbiddenBoundaryIds.has(boundaryId)) {
+      throw new Error(`TRUTH_CONTEXT_FORBIDDEN_BOUNDARY_INVALID:${boundaryId}`);
+    }
+    forbiddenBoundaryIds.add(boundaryId);
+  }
+  for (const required of context.requiredVisiblePredicates) {
+    if (!required.id.trim() || requiredIds.has(required.id)) {
+      throw new Error(`TRUTH_CONTEXT_REQUIRED_ID_INVALID:${required.id}`);
+    }
+    requiredIds.add(required.id);
+    if (!required.requiredMeaning.trim()) {
+      throw new Error(`TRUTH_CONTEXT_REQUIRED_MEANING_MISSING:${required.id}`);
+    }
+    if (
+      !required.supportIds.length
+      || new Set(required.supportIds).size !== required.supportIds.length
+    ) {
+      throw new Error(`TRUTH_CONTEXT_REQUIRED_SUPPORT_INVALID:${required.id}`);
+    }
+    for (const supportId of required.supportIds) {
+      if (!supportedIds.has(supportId)) {
+        throw new Error(`TRUTH_CONTEXT_REQUIRED_SUPPORT_UNKNOWN:${supportId}`);
+      }
+    }
+  }
+  return context;
+}
+
 export function parseTruthReview(input: ReviewParseInput): TruthReview {
+  try {
+    validateNarrativeTruthContext(input.context);
+  } catch (error) {
+    return invalidReview(input, String((error as Error).message || error));
+  }
   let parsed: unknown;
   const candidate = unwrapJsonCandidate(String(input.raw || ""));
   let parseStatus: TruthReview["parseStatus"] = candidate.repaired
@@ -197,9 +395,9 @@ export function parseTruthReview(input: ReviewParseInput): TruthReview {
       [
         "assertions",
         "originActionAssessments",
+        "storyFactAssessments",
         "missingRequiredPredicateIds",
         "unknownEntityMentions",
-        "factClaims",
       ],
       "TRUTH_REVIEW",
     );
@@ -207,14 +405,14 @@ export function parseTruthReview(input: ReviewParseInput): TruthReview {
     if (!Array.isArray(value.originActionAssessments)) {
       throw new Error("ORIGIN_ACTION_ASSESSMENTS_NOT_ARRAY");
     }
+    if (!Array.isArray(value.storyFactAssessments)) {
+      throw new Error("STORY_FACT_ASSESSMENTS_NOT_ARRAY");
+    }
     if (!Array.isArray(value.missingRequiredPredicateIds)) {
       throw new Error("MISSING_REQUIRED_NOT_ARRAY");
     }
     if (!Array.isArray(value.unknownEntityMentions)) {
       throw new Error("UNKNOWN_MENTIONS_NOT_ARRAY");
-    }
-    if (!Array.isArray(value.factClaims)) {
-      throw new Error("FACT_CLAIMS_NOT_ARRAY");
     }
 
     const requiredIds = new Set(
@@ -240,12 +438,13 @@ export function parseTruthReview(input: ReviewParseInput): TruthReview {
         ],
         `ASSERTION_${index}`,
       );
-      const exactQuote = requiredString(item.exactQuote, "EXACT_QUOTE");
+      let exactQuote = requiredString(item.exactQuote, "EXACT_QUOTE");
       let quoteStart = requiredInteger(item.quoteStart, "QUOTE_START");
       let quoteEnd = requiredInteger(item.quoteEnd, "QUOTE_END");
       if (quoteEnd <= quoteStart || input.draft.slice(quoteStart, quoteEnd) !== exactQuote) {
-        const repairedSpan = uniqueQuoteSpan(input.draft, exactQuote);
+        const repairedSpan = resolveUniqueQuote(input.draft, exactQuote);
         if (!repairedSpan) throw new Error(`QUOTE_SPAN_INVALID:${index}`);
+        exactQuote = repairedSpan.exactQuote;
         quoteStart = repairedSpan.quoteStart;
         quoteEnd = repairedSpan.quoteEnd;
         parseStatus = "REPAIRED";
@@ -257,7 +456,7 @@ export function parseTruthReview(input: ReviewParseInput): TruthReview {
       if (explicitness !== item.explicitness) parseStatus = "REPAIRED";
       const confidence = requiredConfidence(item.confidence, `CONFIDENCE_${index}`);
       return {
-        predicate: validateReviewPredicate(item.predicate, input.context),
+        predicate: validateReviewPredicate(normalizeReviewPredicate(item.predicate), input.context),
         exactQuote,
         quoteStart,
         quoteEnd,
@@ -273,14 +472,24 @@ export function parseTruthReview(input: ReviewParseInput): TruthReview {
       let normalizedRaw = raw;
       if (raw && typeof raw === "object" && !Array.isArray(raw)) {
         const record = raw as Record<string, unknown>;
-        if (String(record.classification || "").toUpperCase() === "NO_DURABLE_ACTION") {
-          const additions: Record<string, unknown> = {};
-          if (!("exactQuotes" in record)) additions.exactQuotes = [];
-          if (!("confidence" in record)) additions.confidence = 1;
-          if (Object.keys(additions).length) {
-            normalizedRaw = { ...record, ...additions };
-            parseStatus = "REPAIRED";
-          }
+        const classification = record.classification ?? record.assessment;
+        const exactQuotes = record.exactQuotes
+          ?? (record.exactActionQuote ? [record.exactActionQuote] : []);
+        normalizedRaw = {
+          unitId: record.unitId,
+          classification,
+          exactQuotes,
+          confidence: record.confidence ?? 1,
+        };
+        if (
+          !("classification" in record)
+          || !("exactQuotes" in record)
+          || !("confidence" in record)
+          || Object.keys(record).some((key) => ![
+            "unitId", "classification", "exactQuotes", "confidence",
+          ].includes(key))
+        ) {
+          parseStatus = "REPAIRED";
         }
       }
       const item = exactObject(
@@ -307,19 +516,20 @@ export function parseTruthReview(input: ReviewParseInput): TruthReview {
       if (!Array.isArray(item.exactQuotes)) {
         throw new Error(`ORIGIN_ACTION_QUOTES_INVALID:${unitId}`);
       }
-      const exactQuotes = item.exactQuotes.map((quote) => (
-        requiredString(quote, `ORIGIN_ACTION_QUOTE:${unitId}`)
-      ));
+      const exactQuotes = item.exactQuotes.map((quote) => {
+        const reportedQuote = requiredString(quote, `ORIGIN_ACTION_QUOTE:${unitId}`);
+        const resolved = resolveUniqueQuote(unit.text, reportedQuote);
+        if (!resolved) {
+          throw new Error(`ORIGIN_ACTION_QUOTE_OUTSIDE_UNIT:${unitId}`);
+        }
+        if (resolved.exactQuote !== reportedQuote) parseStatus = "REPAIRED";
+        return resolved.exactQuote;
+      });
       if (classification === "NO_DURABLE_ACTION" && exactQuotes.length) {
         throw new Error(`ORIGIN_ACTION_NONE_HAS_QUOTES:${unitId}`);
       }
       if (classification !== "NO_DURABLE_ACTION" && !exactQuotes.length) {
         throw new Error(`ORIGIN_ACTION_QUOTE_REQUIRED:${unitId}`);
-      }
-      for (const quote of exactQuotes) {
-        if (!unit.text.includes(quote)) {
-          throw new Error(`ORIGIN_ACTION_QUOTE_OUTSIDE_UNIT:${unitId}`);
-        }
       }
       return {
         unitId,
@@ -336,55 +546,168 @@ export function parseTruthReview(input: ReviewParseInput): TruthReview {
       throw new Error(`ORIGIN_ACTION_UNIT_MISSING:${missing?.unitId || "UNKNOWN"}`);
     }
 
-    const unknownEntityMentions = value.unknownEntityMentions.map((raw, index) => {
-      const item = exactObject(
-        raw,
-        ["exactQuote", "durableImpact", "confidence"],
-        `UNKNOWN_MENTION_${index}`,
-      );
-      const exactQuote = requiredString(item.exactQuote, "UNKNOWN_EXACT_QUOTE");
-      if (!input.draft.includes(exactQuote)) {
-        throw new Error(`UNKNOWN_QUOTE_NOT_FOUND:${index}`);
+    const factUnits = buildStoryFactReviewUnits(input.draft);
+    const factUnitById = new Map(factUnits.map((unit) => [unit.unitId, unit]));
+    const entityCandidateIssues: TruthReview["entityCandidateIssues"] = [];
+    const unknownEntityMentions = value.unknownEntityMentions.flatMap((raw, index) => {
+      try {
+        const item = exactObject(
+          raw,
+          [
+            "unitId",
+            "exactQuote",
+            "surfaceName",
+            "entityKind",
+            "introductionMode",
+            "durableImpact",
+            "confidence",
+          ],
+          `UNKNOWN_MENTION_${index}`,
+        );
+        const unitId = requiredString(item.unitId, `UNKNOWN_UNIT_ID:${index}`);
+        const unit = factUnitById.get(unitId);
+        if (!unit) throw new Error(`UNKNOWN_UNIT_INVALID:${unitId}`);
+        const reportedQuote = requiredString(item.exactQuote, "UNKNOWN_EXACT_QUOTE");
+        const resolvedQuote = resolveUniqueQuote(input.draft, reportedQuote);
+        if (!resolvedQuote) throw new Error(`UNKNOWN_QUOTE_NOT_FOUND:${index}`);
+        if (
+          resolvedQuote.quoteStart < unit.quoteStart
+          || resolvedQuote.quoteEnd > unit.quoteEnd
+        ) {
+          throw new Error(`UNKNOWN_QUOTE_OUTSIDE_UNIT:${index}`);
+        }
+        const exactQuote = resolvedQuote.exactQuote;
+        if (exactQuote !== reportedQuote) parseStatus = "REPAIRED";
+        const surfaceName = requiredString(
+          item.surfaceName,
+          `UNKNOWN_SURFACE_NAME:${index}`,
+        );
+        if (!exactQuote.includes(surfaceName)) {
+          throw new Error(`UNKNOWN_SURFACE_OUTSIDE_QUOTE:${index}`);
+        }
+        const entityKind = String(item.entityKind || "").toUpperCase();
+        if (!["ACTOR", "DOCUMENT", "EVIDENCE"].includes(entityKind)) {
+          throw new Error(`UNKNOWN_ENTITY_KIND_INVALID:${index}`);
+        }
+        const introductionMode = String(item.introductionMode || "").toUpperCase();
+        if (![
+          "EXPLICIT_NEW",
+          "EXPLICIT_UNKNOWN_EXISTING",
+          "AMBIGUOUS",
+        ].includes(introductionMode)) {
+          throw new Error(`UNKNOWN_INTRODUCTION_MODE_INVALID:${index}`);
+        }
+        if (typeof item.durableImpact !== "boolean") {
+          throw new Error(`DURABLE_IMPACT_INVALID:${index}`);
+        }
+        return [{
+          unitId,
+          exactQuote,
+          surfaceName,
+          entityKind: entityKind as "ACTOR" | "DOCUMENT" | "EVIDENCE",
+          introductionMode: introductionMode as
+            | "EXPLICIT_NEW"
+            | "EXPLICIT_UNKNOWN_EXISTING"
+            | "AMBIGUOUS",
+          durableImpact: item.durableImpact,
+          confidence: requiredConfidence(
+            item.confidence,
+            `UNKNOWN_CONFIDENCE_${index}`,
+          ),
+        }];
+      } catch (error) {
+        entityCandidateIssues.push({
+          reason: String((error as Error).message || error).slice(0, 300),
+          exactQuote: extractCandidateQuote(raw),
+        });
+        parseStatus = "REPAIRED";
+        return [];
       }
-      if (typeof item.durableImpact !== "boolean") {
-        throw new Error(`DURABLE_IMPACT_INVALID:${index}`);
-      }
-      return {
-        exactQuote,
-        durableImpact: item.durableImpact,
-        confidence: requiredConfidence(item.confidence, `UNKNOWN_CONFIDENCE_${index}`),
-      };
     });
 
-    const supportedFactIds = new Set(
+    const allSupportedFactIds = new Set(
       (input.context.supportedStoryFacts || []).map((item) => item.supportId),
     );
-    const factClaims = value.factClaims.map((raw, index) => {
+    const supportedFactIds = new Set(
+      (input.context.supportedStoryFacts || [])
+        .filter((item) => item.claimSupport !== false)
+        .map((item) => item.supportId),
+    );
+    const seenFactUnitIds = new Set<string>();
+    const storyFactAssessments = value.storyFactAssessments.map((raw, index) => {
       const item = exactObject(
         raw,
-        ["exactQuote", "supportId", "durability", "confidence"],
-        `FACT_CLAIM_${index}`,
+        ["unitId", "classification", "supportIds", "confidence"],
+        `STORY_FACT_ASSESSMENT_${index}`,
       );
-      const exactQuote = requiredString(item.exactQuote, `FACT_CLAIM_QUOTE_${index}`);
-      if (!input.draft.includes(exactQuote)) {
-        throw new Error(`FACT_CLAIM_QUOTE_NOT_FOUND:${index}`);
+      const unitId = requiredString(item.unitId, `STORY_FACT_UNIT_ID_${index}`);
+      if (!factUnitById.has(unitId) || seenFactUnitIds.has(unitId)) {
+        throw new Error(`STORY_FACT_UNIT_INVALID:${unitId}`);
       }
-      const supportId = item.supportId === null
-        ? null
-        : requiredString(item.supportId, `FACT_CLAIM_SUPPORT_${index}`);
-      if (supportId && !supportedFactIds.has(supportId)) {
-        throw new Error(`FACT_CLAIM_SUPPORT_UNKNOWN:${supportId}`);
+      seenFactUnitIds.add(unitId);
+      let classification = String(item.classification || "").toUpperCase();
+      if (![
+        "TEXTURE_OR_TRANSIENT",
+        "SUPPORTED_DURABLE",
+        "UNSUPPORTED_DURABLE_SHADOW",
+        "AMBIGUOUS_DURABILITY",
+      ].includes(classification)) {
+        throw new Error(`STORY_FACT_CLASSIFICATION_INVALID:${unitId}`);
       }
-      const durability = String(item.durability || "").toUpperCase();
-      if (durability !== "DURABLE" && durability !== "TEXTURE_OR_TRANSIENT") {
-        throw new Error(`FACT_CLAIM_DURABILITY_INVALID:${index}`);
+      if (classification !== item.classification) parseStatus = "REPAIRED";
+      if (!Array.isArray(item.supportIds)) {
+        throw new Error(`STORY_FACT_SUPPORTS_INVALID:${unitId}`);
       }
+      let supportIds = item.supportIds.map((supportId) => (
+        requiredString(supportId, `STORY_FACT_SUPPORT_ID:${unitId}`)
+      ));
+      if (new Set(supportIds).size !== supportIds.length) {
+        throw new Error(`STORY_FACT_SUPPORTS_DUPLICATE:${unitId}`);
+      }
+      if (classification === "SUPPORTED_DURABLE") {
+        if (!supportIds.length || supportIds.some((id) => !allSupportedFactIds.has(id))) {
+          throw new Error(`STORY_FACT_SUPPORT_UNKNOWN:${unitId}`);
+        }
+        const claimSupportIds = supportIds.filter((id) => supportedFactIds.has(id));
+        if (!claimSupportIds.length) {
+          classification = "UNSUPPORTED_DURABLE_SHADOW";
+          supportIds = [];
+          parseStatus = "REPAIRED";
+        } else if (claimSupportIds.length !== supportIds.length) {
+          supportIds = claimSupportIds;
+          parseStatus = "REPAIRED";
+        }
+      } else if (supportIds.length) {
+        throw new Error(`STORY_FACT_SUPPORTS_FORBIDDEN:${unitId}`);
+      }
+      const unit = factUnitById.get(unitId)!;
       return {
-        exactQuote,
-        supportId,
-        durability: durability as "DURABLE" | "TEXTURE_OR_TRANSIENT",
-        confidence: requiredConfidence(item.confidence, `FACT_CLAIM_CONFIDENCE_${index}`),
-      };
+        unitId,
+        exactQuote: unit.text,
+        quoteStart: unit.quoteStart,
+        quoteEnd: unit.quoteEnd,
+        classification: classification as StoryFactAssessment["classification"],
+        supportIds,
+        confidence: requiredConfidence(item.confidence, `STORY_FACT_CONFIDENCE:${unitId}`),
+      } satisfies StoryFactAssessment;
+    });
+    if (seenFactUnitIds.size !== factUnits.length) {
+      const missing = factUnits.find((unit) => !seenFactUnitIds.has(unit.unitId));
+      throw new Error(`STORY_FACT_UNIT_MISSING:${missing?.unitId || "UNKNOWN"}`);
+    }
+    const factClaims = storyFactAssessments.flatMap((assessment) => {
+      const unit = factUnitById.get(assessment.unitId)!;
+      if (assessment.classification === "TEXTURE_OR_TRANSIENT") return [];
+      return [{
+        exactQuote: unit.text,
+        supportId: assessment.classification === "SUPPORTED_DURABLE"
+          ? assessment.supportIds[0]!
+          : null,
+        durability: assessment.classification === "AMBIGUOUS_DURABILITY"
+          ? "TEXTURE_OR_TRANSIENT" as const
+          : "DURABLE" as const,
+        confidence: assessment.confidence,
+      }];
     });
 
     return {
@@ -393,8 +716,10 @@ export function parseTruthReview(input: ReviewParseInput): TruthReview {
       reviewerModel: input.reviewerModel,
       assertions,
       originActionAssessments,
+      storyFactAssessments,
       missingRequiredPredicateIds: [...new Set(missingRequiredPredicateIds)],
       unknownEntityMentions,
+      entityCandidateIssues,
       factClaims,
       parseStatus,
     };
@@ -411,25 +736,75 @@ function unwrapJsonCandidate(raw: string) {
     : { text, repaired: false };
 }
 
-function uniqueQuoteSpan(draft: string, exactQuote: string) {
-  const first = draft.indexOf(exactQuote);
-  if (first < 0 || draft.indexOf(exactQuote, first + exactQuote.length) >= 0) {
+function resolveUniqueQuote(draft: string, reportedQuote: string) {
+  const exactStart = uniqueIndexOf(draft, reportedQuote);
+  if (exactStart !== null) {
+    return {
+      exactQuote: reportedQuote,
+      quoteStart: exactStart,
+      quoteEnd: exactStart + reportedQuote.length,
+    };
+  }
+
+  const normalizedDraft = withoutWhitespaceWithOffsets(draft);
+  const normalizedQuote = withoutWhitespaceWithOffsets(reportedQuote).text;
+  if (!normalizedQuote) return null;
+  const normalizedStart = uniqueIndexOf(normalizedDraft.text, normalizedQuote);
+  if (normalizedStart === null) return null;
+  const normalizedEnd = normalizedStart + normalizedQuote.length - 1;
+  const quoteStart = normalizedDraft.offsets[normalizedStart];
+  const finalOffset = normalizedDraft.offsets[normalizedEnd];
+  if (quoteStart === undefined || finalOffset === undefined) return null;
+  const quoteEnd = finalOffset + 1;
+  return {
+    exactQuote: draft.slice(quoteStart, quoteEnd),
+    quoteStart,
+    quoteEnd,
+  };
+}
+
+function uniqueIndexOf(text: string, candidate: string) {
+  const first = text.indexOf(candidate);
+  if (first < 0 || text.indexOf(candidate, first + candidate.length) >= 0) {
     return null;
   }
-  return {
-    quoteStart: first,
-    quoteEnd: first + exactQuote.length,
-  };
+  return first;
+}
+
+function withoutWhitespaceWithOffsets(text: string) {
+  let normalized = "";
+  const offsets: number[] = [];
+  for (let index = 0; index < text.length; index += 1) {
+    const codeUnit = text[index]!;
+    if (/\s/u.test(codeUnit)) continue;
+    normalized += codeUnit;
+    offsets.push(index);
+  }
+  return { text: normalized, offsets };
+}
+
+function deduplicateSupportedFacts(
+  facts: NonNullable<NarrativeTruthContext["supportedStoryFacts"]>,
+) {
+  const byId = new Map<string, { statement: string; claimSupport: boolean }>();
+  for (const fact of facts) {
+    const supportId = String(fact.supportId || "").trim();
+    const statement = String(fact.statement || "").trim();
+    const claimSupport = fact.claimSupport !== false;
+    if (!supportId || !statement) throw new Error("TRUTH_CONTEXT_SUPPORT_INVALID");
+    const prior = byId.get(supportId);
+    if (prior && (prior.statement !== statement || prior.claimSupport !== claimSupport)) {
+      throw new Error(`TRUTH_CONTEXT_SUPPORT_CONFLICT:${supportId}`);
+    }
+    byId.set(supportId, { statement, claimSupport });
+  }
+  return [...byId].map(([supportId, fact]) => ({ supportId, ...fact }));
 }
 
 export function compareTruthReview(input: {
   review: TruthReview;
   context: NarrativeTruthContext;
-  confidenceThreshold?: number;
 }): TruthComparison {
-  const threshold = Number.isFinite(input.confidenceThreshold)
-    ? Math.max(0.5, Math.min(1, Number(input.confidenceThreshold)))
-    : 0.9;
   const conflicts: TruthConflict[] = [];
   const shadow: TruthComparison["shadow"] = [];
   if (input.review.parseStatus === "INVALID") {
@@ -441,11 +816,9 @@ export function compareTruthReview(input: {
   }
 
   for (const assertion of input.review.assertions) {
-    if (assertion.explicitness !== "EXPLICIT" || assertion.confidence < threshold) {
+    if (assertion.explicitness !== "EXPLICIT") {
       shadow.push({
-        reason: assertion.explicitness !== "EXPLICIT"
-          ? "ASSERTION_AMBIGUOUS"
-          : "ASSERTION_LOW_CONFIDENCE",
+        reason: "ASSERTION_AMBIGUOUS",
         exactQuote: assertion.exactQuote,
         predicate: assertion.predicate,
       });
@@ -495,14 +868,9 @@ export function compareTruthReview(input: {
 
   for (const assessment of input.review.originActionAssessments) {
     if (assessment.classification === "NO_DURABLE_ACTION") continue;
-    if (
-      assessment.classification === "AMBIGUOUS"
-      || assessment.confidence < threshold
-    ) {
+    if (assessment.classification === "AMBIGUOUS") {
       shadow.push({
-        reason: assessment.classification === "AMBIGUOUS"
-          ? "ORIGIN_ACTION_AMBIGUOUS"
-          : "ORIGIN_ACTION_LOW_CONFIDENCE",
+        reason: "ORIGIN_ACTION_AMBIGUOUS",
         exactQuote: assessment.exactQuotes.join(" | "),
       });
       continue;
@@ -526,7 +894,6 @@ export function compareTruthReview(input: {
   for (const required of input.context.requiredVisiblePredicates) {
     const visiblyAsserted = input.review.assertions.some((assertion) => (
       assertion.explicitness === "EXPLICIT"
-      && assertion.confidence >= threshold
       && predicateMatchesPattern(assertion.predicate, required.pattern)
     ));
     if (!visiblyAsserted) explicitlyMissingRequired.add(required.id);
@@ -539,36 +906,52 @@ export function compareTruthReview(input: {
     });
   }
   for (const mention of input.review.unknownEntityMentions) {
-    if (mention.durableImpact && mention.confidence >= threshold) {
+    const catalogMatch = findCatalogSurfaceMatch(
+      input.context.catalog,
+      mention.surfaceName,
+    );
+    if (catalogMatch) {
+      shadow.push({
+        reason: "ENTITY_CANDIDATE_ALREADY_CATALOGED",
+        exactQuote: mention.exactQuote,
+      });
+    } else if (
+      mention.durableImpact
+      && mention.introductionMode !== "AMBIGUOUS"
+    ) {
       conflicts.push({
         code: "UNKNOWN_DURABLE_ENTITY",
         exactQuote: mention.exactQuote,
       });
     } else {
       shadow.push({
-        reason: mention.durableImpact
-          ? "UNKNOWN_MENTION_LOW_CONFIDENCE"
-          : "UNKNOWN_MENTION_TEXTURE",
+        reason: !mention.durableImpact
+          ? "UNKNOWN_MENTION_TEXTURE"
+          : "UNKNOWN_ENTITY_AMBIGUOUS",
         exactQuote: mention.exactQuote,
       });
     }
   }
-  for (const claim of input.review.factClaims) {
-    if (
-      claim.durability === "DURABLE"
-      && !claim.supportId
-      && claim.confidence >= threshold
-    ) {
-      conflicts.push({
-        code: "UNSUPPORTED_DURABLE_FACT",
-        exactQuote: claim.exactQuote,
-      });
-    } else if (claim.durability === "DURABLE" && !claim.supportId) {
+  for (const issue of input.review.entityCandidateIssues) {
+    shadow.push({
+      reason: `ENTITY_CANDIDATE_INVALID:${issue.reason}`,
+      exactQuote: issue.exactQuote,
+    });
+  }
+  for (const assessment of input.review.storyFactAssessments) {
+    if (assessment.classification === "UNSUPPORTED_DURABLE_SHADOW") {
       shadow.push({
-        reason: "UNSUPPORTED_FACT_LOW_CONFIDENCE",
-        exactQuote: claim.exactQuote,
+        reason: "UNSUPPORTED_DURABLE_SHADOW",
+        exactQuote: assessment.exactQuote,
       });
     }
+  }
+  for (const assessment of input.review.storyFactAssessments) {
+    if (assessment.classification !== "AMBIGUOUS_DURABILITY") continue;
+    shadow.push({
+      reason: "STORY_FACT_DURABILITY_AMBIGUOUS",
+      exactQuote: assessment.exactQuote,
+    });
   }
   return { conflicts: deduplicateConflicts(conflicts), shadow };
 }
@@ -645,38 +1028,135 @@ function invalidReview(input: ReviewParseInput, invalidReason: string): TruthRev
     reviewerModel: input.reviewerModel,
     assertions: [],
     originActionAssessments: [],
+    storyFactAssessments: [],
     missingRequiredPredicateIds: [],
     unknownEntityMentions: [],
+    entityCandidateIssues: [],
     factClaims: [],
     parseStatus: "INVALID",
     invalidReason: invalidReason.slice(0, 500),
   };
 }
 
+function extractCandidateQuote(input: unknown) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return "";
+  const quote = (input as Record<string, unknown>).exactQuote;
+  return typeof quote === "string" ? quote.slice(0, 500) : "";
+}
+
+function findCatalogSurfaceMatch(
+  catalog: TruthEntityCatalogItem[],
+  surfaceName: string,
+) {
+  const target = normalizeEntitySurface(surfaceName);
+  if (!target) return undefined;
+  return catalog.find((item) => (
+    [item.displayName, ...(item.aliases || [])]
+      .some((name) => normalizeEntitySurface(name) === target)
+  ));
+}
+
+function normalizeEntitySurface(value: string) {
+  return String(value || "")
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/[\s"'“”‘’《》〈〉「」『』【】()\[\]{}.,，。:：;；!?！？—–-]+/gu, "");
+}
+
 export function buildTruthReviewUnits(draft: string): TruthReviewUnit[] {
-  const units: TruthReviewUnit[] = [];
+  const paragraphs: Array<{ quoteStart: number; quoteEnd: number; text: string }> = [];
   const text = String(draft || "");
   const pattern = /\S(?:[\s\S]*?\S)?(?=\r?\n[ \t]*\r?\n|$)/gu;
   for (const match of text.matchAll(pattern)) {
     const quoteStart = match.index;
     const value = match[0];
-    units.push({
-      unitId: `U${String(units.length + 1).padStart(3, "0")}`,
+    paragraphs.push({
       quoteStart,
       quoteEnd: quoteStart + value.length,
       text: value,
     });
   }
-  if (!units.length && text.trim()) {
+  if (!paragraphs.length && text.trim()) {
     const quoteStart = text.indexOf(text.trim());
-    units.push({
-      unitId: "U001",
+    paragraphs.push({
       quoteStart,
       quoteEnd: quoteStart + text.trim().length,
       text: text.trim(),
     });
   }
+  const units: TruthReviewUnit[] = [];
+  for (const paragraph of paragraphs) {
+    const current = units.at(-1);
+    const combinedLength = current
+      ? paragraph.quoteEnd - current.quoteStart
+      : paragraph.text.length;
+    if (current && combinedLength <= 700) {
+      current.quoteEnd = paragraph.quoteEnd;
+      current.text = text.slice(current.quoteStart, current.quoteEnd);
+      continue;
+    }
+    units.push({
+      unitId: `U${String(units.length + 1).padStart(3, "0")}`,
+      ...paragraph,
+    });
+  }
   return units;
+}
+
+/**
+ * Produce complete, stable semantic coverage units without interpreting story
+ * vocabulary. Sentence punctuation and explicit semicolons are durable
+ * boundaries. Ordinary commas stay inside the sentence: splitting every comma
+ * in literary Chinese turns a short scene into dozens of JSON assessments and
+ * can truncate the Reviewer before it reaches the release decision.
+ *
+ * Latin-script coordinating clauses keep one structural exception because a
+ * comma followed by and/but/or/yet/while/whereas/so commonly joins two complete
+ * factual assertions. This remains language-structural, not story-specific.
+ */
+export function buildStoryFactReviewUnits(draft: string): TruthReviewUnit[] {
+  const text = String(draft || "");
+  const units: TruthReviewUnit[] = [];
+  const boundary = /[；;。！？!?\r\n]+|,\s+(?=(?:and|but|or|yet|while|whereas|so)\b)/giu;
+  let start = 0;
+  for (const match of text.matchAll(boundary)) {
+    const end = (match.index || 0) + match[0].length;
+    appendStoryFactUnit(text, start, end, units);
+    start = end;
+  }
+  appendStoryFactUnit(text, start, text.length, units);
+  return units;
+}
+
+function appendStoryFactUnit(
+  draft: string,
+  rawStart: number,
+  rawEnd: number,
+  units: TruthReviewUnit[],
+) {
+  const raw = draft.slice(rawStart, rawEnd);
+  const leading = raw.match(/^[\s"'“”‘’]+/u)?.[0].length || 0;
+  const trailing = raw.match(/[\s"'“”‘’]+$/u)?.[0].length || 0;
+  const quoteStart = rawStart + leading;
+  const quoteEnd = Math.max(quoteStart, rawEnd - trailing);
+  const text = draft.slice(quoteStart, quoteEnd);
+  if (!text.trim()) return;
+  units.push({
+    unitId: `F${String(units.length + 1).padStart(3, "0")}`,
+    quoteStart,
+    quoteEnd,
+    text,
+  });
+}
+
+
+function normalizeReviewPredicate(input: unknown) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return input;
+  const record = input as Record<string, unknown>;
+  if (!record.constraints || typeof record.constraints !== "object" || Array.isArray(record.constraints)) {
+    return input;
+  }
+  return { type: record.type, ...(record.constraints as Record<string, unknown>) };
 }
 
 function exactObject(

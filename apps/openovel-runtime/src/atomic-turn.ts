@@ -11,6 +11,7 @@ import {
 } from "./io.js";
 import type { WorkspacePaths } from "./paths.js";
 import type { OpenNovelOption, TurnResult } from "./types.js";
+import { actionConflict } from "./runtime-errors.js";
 
 export const ATOMIC_HEAD_SCHEMA = "omw.atomic-head.v1" as const;
 
@@ -86,6 +87,18 @@ export class FileAtomicTurnRepository {
   async commit(input: AtomicTurnCommitInput) {
     const current = await this.loadHead();
     if (current?.submissionId === input.submissionId) {
+      const envelope = await this.readArtifactJson<{
+        turnId: string;
+        turnNumber: number;
+        action: string;
+      }>(current, "envelope.json");
+      if (
+        envelope.turnId !== input.turnId
+        || envelope.turnNumber !== input.turnNumber
+        || envelope.action !== input.action
+      ) {
+        throw actionConflict("IDEMPOTENCY_KEY_REUSED");
+      }
       return {
         head: current,
         result: await this.readArtifactJson<TurnResult>(current, "result.json"),
@@ -105,24 +118,7 @@ export class FileAtomicTurnRepository {
       input.result.narration.trim(),
     ].join("\n");
     const fullCanon = `${input.previousCanon.trimEnd()}\n\n${chapter}\n`.trimStart();
-    const views = [
-      {
-        relativePath: relativeInsideRun(this.paths, this.paths.chapters),
-        format: "text" as const,
-        value: fullCanon,
-      },
-      {
-        relativePath: relativeInsideRun(this.paths, this.paths.chaptersRecent),
-        format: "text" as const,
-        value: `${input.result.narration.trim()}\n`,
-      },
-      {
-        relativePath: relativeInsideRun(this.paths, this.paths.currentOptions),
-        format: "json" as const,
-        value: [],
-      },
-      ...(input.projection.materializedViews || []),
-    ];
+    const views = input.projection.materializedViews || [];
     const envelope = {
       runId: input.runId,
       submissionId: input.submissionId,
@@ -188,16 +184,36 @@ export class FileAtomicTurnRepository {
       headHash: sha256(stableStringify(headWithoutHash)),
     };
 
+    // Preserve every signed Head before advancing the mutable pointer. The
+    // previousHeadHash chain is therefore independently replayable instead of
+    // referring to a document that was overwritten by the next turn.
+    await ensureDir(this.paths.headsDir);
+    await writeJsonAtomic(path.join(this.paths.headsDir, `${head.headHash}.json`), head);
     // This replacement is the only commit point. Everything above may leave
     // unreferenced artifacts, but none of them are Canon until Head advances.
     await writeJsonAtomic(this.paths.head, head);
     return { head, result: input.result, alreadyCommitted: false };
   }
 
-  async resultBySubmission(submissionId: string) {
-    const head = await this.loadHead();
-    if (!head || head.submissionId !== submissionId) return null;
-    return this.readArtifactJson<TurnResult>(head, "result.json");
+  async resultBySubmission(submissionId: string, expectedAction?: string) {
+    let head = await this.loadHead();
+    while (head) {
+      if (head.submissionId === submissionId) {
+        const envelope = await this.readArtifactJson<{
+          submissionId: string;
+          action: string;
+        }>(head, "envelope.json");
+        if (
+          envelope.submissionId !== submissionId
+          || (expectedAction !== undefined && envelope.action !== expectedAction)
+        ) {
+          throw actionConflict("IDEMPOTENCY_KEY_REUSED");
+        }
+        return this.readArtifactJson<TurnResult>(head, "result.json");
+      }
+      head = await this.previousHead(head);
+    }
+    return null;
   }
 
   async latestResult() {
@@ -252,7 +268,7 @@ export class FileAtomicTurnRepository {
     }
   }
 
-  private async verifyHead(head: AtomicTurnHead) {
+  private async verifyHead(head: AtomicTurnHead, seen = new Set<string>()) {
     if (
       head?.schema !== ATOMIC_HEAD_SCHEMA
       || head.runId !== this.paths.runId
@@ -269,6 +285,8 @@ export class FileAtomicTurnRepository {
     if (headHash !== sha256(stableStringify(withoutHash))) {
       throw new Error("ATOMIC_HEAD_CORRUPT");
     }
+    if (seen.has(headHash)) throw new Error("ATOMIC_HEAD_CORRUPT");
+    seen.add(headHash);
     const directory = resolveInsideRun(this.paths, head.artifactDirectory);
     for (const [name, expectedHash] of Object.entries(head.artifacts)) {
       if (!/^[A-Za-z0-9._-]+$/u.test(name)) throw new Error("ATOMIC_HEAD_CORRUPT");
@@ -280,6 +298,34 @@ export class FileAtomicTurnRepository {
       }
       if (sha256(content) !== expectedHash) throw new Error("ATOMIC_HEAD_CORRUPT");
     }
+    if (head.previousHeadHash) {
+      const previousPath = path.join(this.paths.headsDir, `${head.previousHeadHash}.json`);
+      let previous: AtomicTurnHead;
+      try {
+        previous = JSON.parse(await readFile(previousPath, "utf8")) as AtomicTurnHead;
+      } catch {
+        throw new Error("ATOMIC_HEAD_CORRUPT");
+      }
+      if (previous.headHash !== head.previousHeadHash) {
+        throw new Error("ATOMIC_HEAD_CORRUPT");
+      }
+      await this.verifyHead(previous, seen);
+    }
+  }
+
+  private async previousHead(head: AtomicTurnHead): Promise<AtomicTurnHead | null> {
+    if (!head.previousHeadHash) return null;
+    const previousPath = path.join(this.paths.headsDir, `${head.previousHeadHash}.json`);
+    let previous: AtomicTurnHead;
+    try {
+      previous = JSON.parse(await readFile(previousPath, "utf8")) as AtomicTurnHead;
+    } catch {
+      throw new Error("ATOMIC_HEAD_CORRUPT");
+    }
+    if (previous.headHash !== head.previousHeadHash) {
+      throw new Error("ATOMIC_HEAD_CORRUPT");
+    }
+    return previous;
   }
 }
 

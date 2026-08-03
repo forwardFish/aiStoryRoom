@@ -57,9 +57,24 @@ export type OpenNovelOptionEffect = {
     fallbackContinuation?: string;
     narrativeSeed?: {
       playerOutcome: string;
+      /**
+       * Server-authored scene actions that occur after the protected player
+       * outcome and before the next decision point. The Narrator renders these
+       * moves in order; it does not choose a different continuation.
+       */
+      continuationMoves?: string[];
+      /** Stable authoritative event IDs selected for this foreground beat. */
+      sourceEventIds?: string[];
+      /** Authoritative events retained backstage for later turns. */
+      deferredEventIds?: string[];
       npcOrWorldPressure: string;
       stopCondition: string;
     };
+    /**
+     * Author-owned continuation plan. This is separate from `moves`, which may
+     * also describe the already-protected player action for audit purposes.
+     */
+    continuationMoves?: string[];
     sceneEvidence?: {
       packetId: string;
       evidenceItems: Array<{
@@ -117,6 +132,20 @@ export type CausalDelta = {
   forbiddenKnowledge: string[];
   knowledgeBoundaryRef?: string;
   evidenceSubjects: string[];
+  scenePacket: {
+    packetId: string;
+    sourceRefs: string[];
+    sourceEventIds: string[];
+    deferredEventIds: string[];
+    presentBeatMoves: string[];
+    stopCondition: string;
+    visibleFacts: string[];
+    allowedKnowledge: string[];
+    forbiddenKnowledge: string[];
+    unresolvedFacts: string[];
+    specificityBoundary: string;
+    relevantSubjects: string[];
+  } | null;
   beatContract: NonNullable<OpenNovelOptionEffect["beatContract"]> | null;
   durableHints: NonNullable<OpenNovelOptionEffect["stateHints"]>;
   requiredNarrativeFacts: string[];

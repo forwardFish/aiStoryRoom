@@ -17,6 +17,9 @@ export function buildCausalDelta(input: {
   const effect = input.selectedOption?.effect;
   const immediateIntent = normalizeReaderAction(effect?.intent || readerAction);
   const authoredBoundary = effect?.knowledgeBoundary;
+  const allowedKnowledge = normalizeList(authoredBoundary?.allowed);
+  const forbiddenKnowledge = normalizeList(authoredBoundary?.forbidden);
+  const evidenceSubjects = normalizeList(authoredBoundary?.subjects);
   const beat = effect?.beatContract;
   const durableHints = (effect?.stateHints || [])
     .filter((hint) => Boolean(hint?.key))
@@ -38,9 +41,9 @@ export function buildCausalDelta(input: {
     stopCondition: normalizeReaderAction(
       beat?.stopCondition || "Stop before the protagonist takes another material action.",
     ),
-    allowedKnowledge: normalizeList(authoredBoundary?.allowed),
-    forbiddenKnowledge: normalizeList(authoredBoundary?.forbidden),
-    evidenceSubjects: normalizeList(authoredBoundary?.subjects),
+    allowedKnowledge,
+    forbiddenKnowledge,
+    evidenceSubjects,
     ...(normalizeReaderAction(authoredBoundary?.sourceRef || "")
       ? { knowledgeBoundaryRef: normalizeReaderAction(authoredBoundary?.sourceRef || "") }
       : {}),
@@ -55,9 +58,13 @@ export function buildCausalDelta(input: {
         constraints: normalizeList(beat.constraints),
         settledNarrative: normalizeReaderAction(beat.settledNarrative || ""),
         fallbackContinuation: normalizeReaderAction(beat.fallbackContinuation || ""),
+        continuationMoves: normalizeList(beat.continuationMoves),
         narrativeSeed: beat.narrativeSeed
           ? {
               playerOutcome: normalizeReaderAction(beat.narrativeSeed.playerOutcome),
+              continuationMoves: normalizeList(beat.narrativeSeed.continuationMoves),
+              sourceEventIds: normalizeList(beat.narrativeSeed.sourceEventIds),
+              deferredEventIds: normalizeList(beat.narrativeSeed.deferredEventIds),
               npcOrWorldPressure: normalizeReaderAction(beat.narrativeSeed.npcOrWorldPressure),
               stopCondition: normalizeReaderAction(beat.narrativeSeed.stopCondition),
             }
@@ -80,8 +87,64 @@ export function buildCausalDelta(input: {
         stopCondition: normalizeReaderAction(beat.stopCondition),
       }
       : null,
+    scenePacket: buildScenePacket({
+      beat,
+      allowedKnowledge,
+      forbiddenKnowledge,
+      evidenceSubjects,
+    }),
     durableHints,
     requiredNarrativeFacts: [...new Set(requiredNarrativeFacts)],
+  };
+}
+
+type BeatContract = NonNullable<NonNullable<OpenNovelOption['effect']>['beatContract']>;
+
+function buildScenePacket(input: {
+  beat: BeatContract | undefined;
+  allowedKnowledge: string[];
+  forbiddenKnowledge: string[];
+  evidenceSubjects: string[];
+}): CausalDelta['scenePacket'] {
+  const seed = input.beat?.narrativeSeed;
+  if (!input.beat || !seed) return null;
+  const evidence = input.beat.sceneEvidence;
+  const presentBeatMoves = normalizeList(
+    seed.continuationMoves?.length
+      ? seed.continuationMoves
+      : [seed.npcOrWorldPressure],
+  );
+  const sourceRefs = normalizeList([
+    input.beat.sourceRef || '',
+    ...(evidence?.evidenceItems || []).flatMap((item) => [
+      item.evidenceId,
+      ...item.sourceClaimIds,
+      ...item.adaptationDecisionIds,
+    ]),
+  ]);
+  const visibleFacts = normalizeList(
+    (evidence?.evidenceItems || [])
+      .filter((item) => (
+        item.useAs === 'OBJECTIVE_FACT'
+        && item.evidenceClass !== 'CURRENT_CANON'
+      ))
+      .map((item) => item.statement),
+  );
+  return {
+    packetId: normalizeReaderAction(
+      evidence?.packetId || ('scene-packet:' + (input.beat.sourceRef || 'unknown')),
+    ),
+    sourceRefs,
+    sourceEventIds: normalizeList(seed.sourceEventIds),
+    deferredEventIds: normalizeList(seed.deferredEventIds),
+    presentBeatMoves,
+    stopCondition: normalizeReaderAction(seed.stopCondition),
+    visibleFacts,
+    allowedKnowledge: input.allowedKnowledge.filter((item) => !visibleFacts.includes(item)),
+    forbiddenKnowledge: input.forbiddenKnowledge,
+    unresolvedFacts: normalizeList(evidence?.unresolvedFacts),
+    specificityBoundary: normalizeReaderAction(evidence?.specificityBoundary || ''),
+    relevantSubjects: input.evidenceSubjects,
   };
 }
 
@@ -90,25 +153,67 @@ export function renderCausalDelta(delta: CausalDelta) {
 }
 
 export function renderNarratorCausalDelta(delta: CausalDelta) {
+  if (delta.scenePacket) return renderScenePacket(delta.scenePacket);
   const seed = delta.beatContract?.narrativeSeed;
   if (delta.beatContract?.sceneEvidence && !seed) {
     throw new Error("NEXT_STORY_BEAT_MISSING_BEFORE_NARRATOR");
   }
   if (seed) {
     const evidence = delta.beatContract?.sceneEvidence;
+    const continuationMoves = normalizeList(
+      seed.continuationMoves?.length
+        ? seed.continuationMoves
+        : delta.beatContract?.continuationMoves,
+    );
+    const currentFacts = (evidence?.evidenceItems || [])
+      .filter((item) => (
+        item.useAs === "OBJECTIVE_FACT"
+        // The protected player outcome is already present exactly once at the
+        // end of Recent Player Canon. Repeating CURRENT_CANON here invites the
+        // Narrator to rewrite the action instead of continuing from it.
+        && item.evidenceClass !== "CURRENT_CANON"
+      ))
+      .map((item) => `  - ${item.statement}`);
     const mechanisms = (evidence?.evidenceItems || [])
       .filter((item) => item.evidenceClass === "ORIGINAL_MECHANISM")
       .map((item) => `  - ${item.statement}`);
     const adaptations = (evidence?.evidenceItems || [])
       .filter((item) => item.evidenceClass === "APPROVED_ADAPTATION")
       .map((item) => `  - ${item.statement}`);
+    const stopAlreadyExpressed = continuationMoves.some((item) => (
+      item === seed.stopCondition || item.includes(seed.stopCondition) || seed.stopCondition.includes(item)
+    )) || seed.npcOrWorldPressure === seed.stopCondition;
     return [
       "- 已发生的玩家结果（已经在 Recent Player Canon 中，不得重写或补充）：",
       "  - 以 Recent Player Canon 末尾的已结算正文为准；本节不重复展示。",
-      "- 服务端已经确定的下一剧情拍（必须写成现场，不得改选其他事件）：",
-      `  - ${seed.npcOrWorldPressure}`,
+      ...(continuationMoves.length
+        ? [
+            "- 服务端已经确定的下一剧情拍（按顺序逐项写成现场，不得改选其他事件）：",
+            ...continuationMoves.map((item) => `  - ${item}`),
+          ]
+        : [
+            "- 服务端已经确定的下一剧情拍（必须写成现场，不得改选其他事件）：",
+            `  - ${seed.npcOrWorldPressure}`,
+          ]),
       "- 本拍停止点（到此立即停下，不得替玩家回答）：",
-      `  - ${seed.stopCondition}`,
+      `  - ${stopAlreadyExpressed
+        ? "最后一项获批动作把问题交到玩家面前时立即结束；不要另加局势总结，也不要换句话重复这项压力。"
+        : seed.stopCondition}`,
+      ...(delta.allowedKnowledge.length
+        ? [
+            "- 本拍允许直接写入的已知事实（每条都是事实精度上限）：",
+            ...delta.allowedKnowledge.map((item) => `  - ${item}`),
+          ]
+        : []),
+      ...(delta.forbiddenKnowledge.length
+        ? [
+            "- 本拍不得新增或写实的内容：",
+            ...delta.forbiddenKnowledge.map((item) => `  - ${item}`),
+          ]
+        : []),
+      ...(currentFacts.length
+        ? ["- 当前可直接使用的客观事实（只限这些事实，不得扩写数字、地点或完成状态）：", ...currentFacts]
+        : []),
       ...(mechanisms.length ? ["- 可借鉴的原著冲突机制（只提供戏剧机制，不自动成为当前事实）：", ...mechanisms] : []),
       ...(adaptations.length ? ["- 已批准的改编映射：", ...adaptations] : []),
       ...(evidence?.unresolvedFacts?.length
@@ -127,6 +232,47 @@ export function renderNarratorCausalDelta(delta: CausalDelta) {
     `- 当前压力：${stopPoint}`,
     "- 停止点：现场人物把当前压力推到必须由玩家再次回应的位置，主角尚未作出下一项行动。",
   ].join("\n");
+}
+
+function renderScenePacket(packet: NonNullable<CausalDelta['scenePacket']>) {
+  if (!packet.presentBeatMoves.length) {
+    throw new Error('SCENE_PACKET_PRESENT_BEAT_MISSING');
+  }
+  const lines = [
+    '- 已结算行动已经写在最近正文末尾；从其最后一刻继续，不得重写。',
+    '- 本轮只写服务器选定的这一剧情拍：',
+    ...packet.presentBeatMoves.map((item) => '  - ' + item),
+    '- 到下列时刻立即停笔，把决定权交还玩家：',
+    '  - ' + packet.stopCondition,
+  ];
+  if (packet.visibleFacts.length) {
+    lines.push(
+      '- 当前可直接使用的客观事实：',
+      ...packet.visibleFacts.map((item) => '  - ' + item),
+    );
+  }
+  if (packet.allowedKnowledge.length) {
+    lines.push(
+      '- 当前人物允许知道的内容：',
+      ...packet.allowedKnowledge.map((item) => '  - ' + item),
+    );
+  }
+  if (packet.forbiddenKnowledge.length) {
+    lines.push(
+      '- 当前不得揭露或写实的内容：',
+      ...packet.forbiddenKnowledge.map((item) => '  - ' + item),
+    );
+  }
+  if (packet.unresolvedFacts.length) {
+    lines.push(
+      '- 仍然未知、不得写死：',
+      ...packet.unresolvedFacts.map((item) => '  - ' + item),
+    );
+  }
+  if (packet.specificityBoundary) {
+    lines.push('- 事实精度边界：', '  - ' + packet.specificityBoundary);
+  }
+  return lines.join(String.fromCharCode(10));
 }
 
 function normalizeList(values: readonly string[] | undefined) {

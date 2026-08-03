@@ -184,6 +184,27 @@ test("the server fixes a source-grounded Next Story Beat before any Narrator cal
 
   const beat = settled.event.narrativePlan.nextStoryBeat;
   assert.equal(settled.event.sectionTransitioned, true);
+  const allScheduledEventIds = new Set([
+    ...settled.event.authoritativeNpcReactions.map((item) => item.reactionEventId),
+    ...settled.event.authoritativeWorldMoves.map((item) => item.beatId),
+  ]);
+  assert.ok(beat.sourceEventIds.length > 0);
+  assert.equal(
+    beat.sourceEventIds.some((eventId) => beat.deferredEventIds.includes(eventId)),
+    false,
+  );
+  assert.deepEqual(
+    new Set([...beat.sourceEventIds, ...beat.deferredEventIds]),
+    allScheduledEventIds,
+  );
+  assert.equal(
+    beat.sourceEventIds.some((eventId) =>
+      settled.event.authoritativeWorldMoves.some((move) =>
+        move.beatId === eventId && move.sourceType === "SECTION_TRANSITION"
+      )
+    ),
+    true,
+  );
   assert.match(beat.playerOutcome, /正式回文|回文/u);
   assert.match(beat.npcOrWorldPressure, /次日.*签押房.*巡抚.*(?:拒绝|不肯).*具名/su);
   assert.match(beat.stopCondition, /复核由谁主持.*经办、见证/u);
@@ -208,6 +229,46 @@ test("the server fixes a source-grounded Next Story Beat before any Narrator cal
     1,
   );
   assert.match(beat.fallbackContinuation, /巡抚不肯.*共同具名.*复核.*主持/su);
+});
+
+test("an actor departure is a current server-owned beat while later events stay deferred", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const settled = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d2",
+      actionText: "动用总督封缄令牌，先保住清流县档房现场，再给巡抚一个暂缓签发的答复。"
+    },
+    1
+  );
+
+  const plan = settled.event.narrativePlan;
+  const currentIds = new Set(plan.nextStoryBeat.sourceEventIds);
+  const deferredIds = new Set(plan.nextStoryBeat.deferredEventIds);
+  assert.equal(currentIds.has("SCENE-DEPARTURE-1"), true);
+  assert.equal(
+    plan.nextStoryBeat.presentMoves[0]?.includes("清流县令亲随"),
+    true,
+  );
+  assert.equal(
+    plan.nextStoryBeat.presentMoves[0]?.includes("只写离场"),
+    true,
+  );
+
+  const reactiveBeats = plan.sceneBeats.filter((beat) => (
+    beat.sourceType === "NPC_REACTION" || beat.sourceType === "WORLD_MOVE"
+  ));
+  for (const sceneBeat of reactiveBeats) {
+    if (currentIds.has(sceneBeat.beatId)) {
+      assert.equal(sceneBeat.mustAppear, true, sceneBeat.beatId);
+    }
+    if (deferredIds.has(sceneBeat.beatId)) {
+      assert.equal(sceneBeat.mustAppear, false, sceneBeat.beatId);
+      assert.equal(sceneBeat.hardRequired, false, sceneBeat.beatId);
+    }
+  }
 });
 
 test("temporarily withholding the release order does not create a written reply", () => {
@@ -295,6 +356,23 @@ test("issuing the limited-trial reply delivers it through the established reply 
   assert.equal(replyBox?.holderRef, "actor.xunfu_clerk");
   assert.equal(replyBox?.contentsState, "CONTAINS_DOCUMENT");
   assert.equal(replyBox?.closureState, "CLOSED");
+  const responsibilityWorkingSet = buildPartOneRuntimeWorkingSet(
+    pkg,
+    issued.proposedState,
+    2
+  );
+  assert.match(
+    responsibilityWorkingSet.decisionPoint.prompt,
+    /清流试办的边界已经由总督写定/u
+  );
+  assert.match(
+    responsibilityWorkingSet.decisionPoint.prompt,
+    /共同具名.*另具责任说明/u
+  );
+  assert.doesNotMatch(
+    responsibilityWorkingSet.decisionPoint.prompt,
+    /准备怎样写进正式回文/u
+  );
   const playerBeat = issued.event.narrativePlan.sceneBeats.find(
     (beat) => beat.sourceType === "PLAYER_ACTION"
   );

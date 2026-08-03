@@ -510,7 +510,8 @@ export function buildPartOneRuntimeWorkingSet(
     kernelId,
     openDecisionKernel,
     continuationDecisionId,
-    nextDecisionPressure
+    nextDecisionPressure,
+    state
   });
   const options = Array.isArray(openDecisionKernel.payload.options) ? openDecisionKernel.payload.options : [];
   const requiredOptionCount = unresolved ? 3 : 2;
@@ -635,6 +636,7 @@ function decisionPointForSelection(input: {
   openDecisionKernel: PartOneRuntimeAsset;
   continuationDecisionId: string | null;
   nextDecisionPressure: PartOneContinuationDecisionTemplate["worldPressure"] | null;
+  state: PartOneState;
 }): PartOneDecisionPoint {
   if (input.kernelId === "PART-02-HANDOFF-PREVIEW") {
     return {
@@ -656,11 +658,17 @@ function decisionPointForSelection(input: {
       resultCeiling: "只把这项新压力带到玩家面前；不得替玩家答复，也不得提前写出两条可选行动的结果。"
     };
   }
-  const raw = input.openDecisionKernel.payload.decisionPrompt;
+  const selectedVariant = (input.openDecisionKernel.payload.decisionPromptVariants || [])
+    .find((variant) => variant.when.every((selector) => (
+      evaluateEntityStateSelector(input.state, selector)
+    )));
+  const raw = selectedVariant || input.openDecisionKernel.payload.decisionPrompt;
   if (!isRecord(raw)) {
     throw new Error(`PART_ONE_RUNTIME_DECISION_PROMPT_MISSING:${input.kernelId}`);
   }
-  const decisionPointId = String(raw.decisionPointId || "");
+  const decisionPointId = selectedVariant
+    ? input.kernelId
+    : String(raw.decisionPointId || "");
   const actorRefs = asStringArray(raw.actorRefs);
   const prompt = String(raw.prompt || "").trim();
   const resultCeiling = String(raw.resultCeiling || "").trim();
@@ -675,6 +683,23 @@ function decisionPointForSelection(input: {
     prompt,
     resultCeiling
   };
+}
+
+function evaluateEntityStateSelector(
+  state: PartOneState,
+  selector: import("./part-one-runtime-types").PartOneEntityStateSelector
+) {
+  const collection = selector.entityKind === "DOCUMENT"
+    ? state.scene.documentStates || []
+    : state.scene.objectStates || [];
+  const refField = selector.entityKind === "DOCUMENT" ? "documentRef" : "objectRef";
+  const entity = collection.find((candidate) => (
+    String((candidate as unknown as Record<string, unknown>)[refField] || "") === selector.entityRef
+  )) as unknown as Record<string, unknown> | undefined;
+  const actual = entity?.[selector.field];
+  return selector.operator === "EQ"
+    ? deepEqual(actual, selector.expectedValue)
+    : !deepEqual(actual, selector.expectedValue);
 }
 
 function terminalHandoffPreviewKernel(pkg: PartOneRuntimePackage, section: PartOneSectionContract) {
@@ -1048,15 +1073,17 @@ function buildNarrativePlan(input: {
   const authorizedActorArrivals = input.sceneAfter.presentActorRefs
     .filter((ref) => !actorRefsAtSceneStart.has(ref))
     .map((ref) => runtimeTargetFor(ref).label);
-  const authorizedActorDepartures = input.sectionTransitioned
+  const authorizedActorDepartureRefs = input.sectionTransitioned
     ? []
     : input.sceneBefore.presentActorRefs
-      .filter((ref) => !actorRefsAtSceneEnd.has(ref))
-      .map((ref) => runtimeTargetFor(ref).label);
+      .filter((ref) => !actorRefsAtSceneEnd.has(ref));
+  const authorizedActorDepartures = authorizedActorDepartureRefs
+    .map((ref) => runtimeTargetFor(ref).label);
   const departureBeats: PartOneNarrativePlan["sceneBeats"] = authorizedActorDepartures.map(
     (label, index) => ({
       beatId: `SCENE-DEPARTURE-${index + 1}`,
       sourceType: "WORLD_MOVE" as const,
+      actorRefs: [authorizedActorDepartureRefs[index]!],
       action: `${label}完成本轮获批的现场动作后领命退出${input.sceneBefore.locationLabel}；只写离场，不得写已经抵达目的地、完成封存或带回结果。`,
       requiredTermGroups: [
         [label],
@@ -1101,6 +1128,7 @@ function buildNarrativePlan(input: {
     ...input.authoritativeNpcReactions.map((reaction) => ({
       beatId: reaction.reactionEventId,
       sourceType: "NPC_REACTION" as const,
+      actorRefs: [...reaction.actorRefs],
       action: reaction.action,
       requiredTermGroups: requiredTermGroupsFor(reaction.action),
       resultCeiling: resultCeilingForNpcReaction(reaction.action),
@@ -1125,6 +1153,7 @@ function buildNarrativePlan(input: {
     actionText: input.action.actionText,
     settledActionNarrative,
     fallbackContinuation: input.fallbackContinuation,
+    foregroundPreludeBeats: departureBeats,
     sceneAfter: input.sceneAfter,
     sectionTransitioned: input.sectionTransitioned,
     authoritativeObservableFacts: input.authoritativeObservableFacts,
@@ -1135,6 +1164,17 @@ function buildNarrativePlan(input: {
       "密信和异常只能证明需要复核，不能直接证明巡抚、商会或任何个人有罪。",
       ...input.section.forbiddenEarlyReveals
     ]
+  });
+  const foregroundSceneBeats = sceneBeats.map((beat) => {
+    if (beat.sourceType !== "NPC_REACTION" && beat.sourceType !== "WORLD_MOVE") {
+      return beat;
+    }
+    const selectedForForeground = nextStoryBeat.sourceEventIds.includes(beat.beatId);
+    return {
+      ...beat,
+      mustAppear: selectedForForeground,
+      hardRequired: selectedForForeground && beat.hardRequired === true
+    };
   });
   return {
     sceneStart: clone(input.sceneBefore),
@@ -1179,7 +1219,7 @@ function buildNarrativePlan(input: {
           "未列人物不得由在场人物陪同带入，也不得借“本人”“落座”或随后用“他”承接的方式间接到场；代表发言不等于其上级本人在场。"
         ],
     incidentalTextureAllowances,
-    sceneBeats,
+    sceneBeats: foregroundSceneBeats,
     requiredEndChange: lastMove,
     narrativeCeiling: [
       "只呈现本计划列出的玩家行动、确认结果、NPC 回应与世界行动。",
@@ -1202,6 +1242,7 @@ function buildNextStoryBeat(input: {
   actionText: string;
   settledActionNarrative?: string;
   fallbackContinuation?: string;
+  foregroundPreludeBeats: Array<{ beatId: string; action: string }>;
   sceneAfter: PartOneSceneState;
   sectionTransitioned: boolean;
   authoritativeObservableFacts: string[];
@@ -1269,13 +1310,36 @@ function buildNextStoryBeat(input: {
   );
   const fallbackPressure = input.authoritativeNpcReactions[0]?.action
     || input.nextDecisionPoint.prompt;
+  const selectedReaction = presentPressure
+    ? null
+    : input.authoritativeNpcReactions[0] || null;
+  const transitionMove = input.sectionTransitioned
+    ? input.authoritativeWorldMoves.find((move) => move.sourceType === 'SECTION_TRANSITION') || null
+    : null;
   const pressureAction = presentPressure?.action || fallbackPressure;
   const npcOrWorldPressure = input.sectionTransitioned
     ? `场景确定转到${input.sceneAfter.timeLabel}的${input.sceneAfter.locationLabel}。${pressureAction}`
     : pressureAction;
+  const sourceEventIds = unique([
+    ...input.foregroundPreludeBeats.map((beat) => beat.beatId),
+    transitionMove?.beatId || '',
+    presentPressure?.beatId || '',
+    selectedReaction?.reactionEventId || ''
+  ]).filter(Boolean);
+  const deferredEventIds = unique([
+    ...input.authoritativeWorldMoves.map((move) => move.beatId),
+    ...input.authoritativeNpcReactions.map((reaction) => reaction.reactionEventId)
+  ]).filter((eventId) => !sourceEventIds.includes(eventId));
+  const presentMoves = unique([
+    ...input.foregroundPreludeBeats.map((beat) => beat.action),
+    npcOrWorldPressure
+  ]);
   const currentFacts = unique([
     `玩家已经执行：${input.actionText}`,
-    ...input.authoritativeObservableFacts
+    ...input.authoritativeObservableFacts,
+    ...(input.sceneAfter.observableFacts || []),
+    ...(input.sceneAfter.documentStates || []).map(renderSceneDocumentFact),
+    ...(input.sceneAfter.objectStates || []).map(renderSceneObjectFact)
   ]);
   const evidenceItems = [
     ...currentFacts.map((statement, index) => ({
@@ -1298,6 +1362,9 @@ function buildNextStoryBeat(input: {
     ].join("|" )).slice(0, 18)}`,
     playerOutcome: String(input.settledActionNarrative || input.actionText).trim(),
     npcOrWorldPressure,
+    sourceEventIds,
+    deferredEventIds,
+    presentMoves,
     stopCondition: input.nextDecisionPoint.prompt,
     evidencePacket: {
       packetId: `SEP-${digest(evidenceItems.map((item) => item.evidenceId).join("|" )).slice(0, 18)}`,
@@ -1307,6 +1374,38 @@ function buildNextStoryBeat(input: {
     },
     fallbackContinuation: String(input.fallbackContinuation || "").trim()
   };
+}
+
+function renderSceneDocumentFact(
+  document: NonNullable<PartOneSceneState["documentStates"]>[number]
+) {
+  const stateLabels: Record<typeof document.accessState, string> = {
+    NOT_PRESENT: "不在当前场景",
+    SEALED: "仍处于封存状态",
+    OPENED: "已经打开",
+    READ: "已经被在场人物读过",
+    WRITTEN: "已经写成"
+  };
+  const holder = document.holderRef
+    ? "，目前由" + runtimeTargetFor(document.holderRef).label + "持有"
+    : "，当前没有明确持有人";
+  return document.label + stateLabels[document.accessState] + holder + "。";
+}
+
+function renderSceneObjectFact(
+  object: NonNullable<PartOneSceneState["objectStates"]>[number]
+) {
+  const facts = [
+    object.holderRef
+      ? object.label + "目前由" + runtimeTargetFor(object.holderRef).label + "持有"
+      : object.label + "当前没有明确持有人"
+  ];
+  if (object.contentsState === "EMPTY") facts.push("其中为空");
+  if (object.contentsState === "UNKNOWN") facts.push("其中内容尚不明确");
+  if (object.contentsState === "CONTAINS_DOCUMENT") facts.push("其中已有文书");
+  if (object.closureState === "CLOSED") facts.push("目前合拢");
+  if (object.closureState === "OPEN") facts.push("目前打开");
+  return facts.join("，") + "。";
 }
 
 function sceneDocumentBoundary(scene: PartOneSceneState) {
@@ -1325,53 +1424,19 @@ function sceneDocumentBoundary(scene: PartOneSceneState) {
 function buildWorldMoveNarrativeBeats(
   moves: PartOneAuthoritativeWorldMove[]
 ): PartOneNarrativePlan["sceneBeats"] {
-  const beats: PartOneNarrativePlan["sceneBeats"] = [];
-  for (let index = 0; index < moves.length;) {
-    const move = moves[index]!;
-    const actorKey = [...move.actorRefs].sort().join("|");
-    const group = [move];
-    let cursor = index + 1;
-    while (
-      move.sourceType !== "SECTION_TRANSITION"
-      && cursor < moves.length
-      && moves[cursor]!.sourceType !== "SECTION_TRANSITION"
-      && [...moves[cursor]!.actorRefs].sort().join("|") === actorKey
-    ) {
-      group.push(moves[cursor]!);
-      cursor += 1;
-    }
-    beats.push({
-      beatId: group.map((item) => item.beatId).join("+"),
-      sourceType: "WORLD_MOVE",
-      action: group.length === 1
-        ? move.action
-        : `${runtimeTargetFor(move.actorRefs[0] || "public_frame").label}在同一次当面反制中一并提出：${group.map((item) => item.action).join("；同时，")}`,
-      requiredTermGroups: uniqueTermGroups(
-        group.flatMap((item) => clone(item.requiredTermGroups))
-      ),
-      resultCeiling: unique(
-        group.map((item) => item.resultCeiling).filter(Boolean)
-      ).join(" "),
-      mustAppear: true,
-      hardRequired: group.some((item) => (
-        item.sourceType === "DUE_CONSEQUENCE"
-        || item.sourceType === "SECTION_TRANSITION"
-        || item.sourceType === "SETTLED_RESPONSE"
-      ))
-    });
-    index = group.length > 1 ? cursor : index + 1;
-  }
-  return beats;
-}
-
-function uniqueTermGroups(groups: string[][]) {
-  const seen = new Set<string>();
-  return groups.filter((group) => {
-    const key = JSON.stringify(group);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return moves.map((move) => ({
+    beatId: move.beatId,
+    sourceType: "WORLD_MOVE" as const,
+    actorRefs: [...move.actorRefs],
+    action: move.action,
+    requiredTermGroups: clone(move.requiredTermGroups),
+    resultCeiling: move.resultCeiling,
+    mustAppear: true,
+    hardRequired:
+      move.sourceType === "DUE_CONSEQUENCE"
+      || move.sourceType === "SECTION_TRANSITION"
+      || move.sourceType === "SETTLED_RESPONSE"
+  }));
 }
 
 function buildIncidentalTextureAllowances(
@@ -1679,6 +1744,11 @@ function normalizeSceneState(
     locationLabel: String(scene.locationLabel),
     presentActorRefs: unique(Array.isArray(scene.presentActorRefs) ? scene.presentActorRefs.map(String) : fallback.presentActorRefs),
     situation: String(scene.situation || fallback.situation),
+    observableFacts: unique(
+      Array.isArray(scene.observableFacts)
+        ? scene.observableFacts.map(String)
+        : fallback.observableFacts || []
+    ),
     documentStates: Array.isArray(scene.documentStates)
       ? clone(scene.documentStates)
       : clone(fallback.documentStates || []),

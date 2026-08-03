@@ -46,6 +46,8 @@ export type PartOneSceneState = {
   locationLabel: string;
   presentActorRefs: string[];
   situation: string;
+  /** Authoritative current-world facts that remain visible in this scene. */
+  observableFacts?: string[];
   documentStates?: PartOneSceneDocumentState[];
   objectStates?: PartOneSceneObjectState[];
 };
@@ -124,6 +126,12 @@ export type PartOneSceneEvidencePacket = {
  */
 export type PartOneNextStoryBeat = {
   beatId: string;
+  /** Authoritative event(s) that must be rendered in this foreground beat. */
+  sourceEventIds: string[];
+  /** Authoritative events kept backstage for future beats. */
+  deferredEventIds: string[];
+  /** Ordered server-authored actions rendered as one continuous foreground beat. */
+  presentMoves: string[];
   playerOutcome: string;
   npcOrWorldPressure: string;
   stopCondition: string;
@@ -162,6 +170,7 @@ export type PartOneNarrativePlan = {
   sceneBeats: Array<{
     beatId: string;
     sourceType: "PLAYER_ACTION" | "CONFIRMED_EFFECT" | "NPC_REACTION" | "WORLD_MOVE";
+    actorRefs?: string[];
     action: string;
     requiredTermGroups: string[][];
     resultCeiling?: string;
@@ -237,6 +246,22 @@ export type PartOneDecisionPoint = {
   resultCeiling: string;
 };
 
+export type PartOneEntityStateSelector = {
+  entityKind: "DOCUMENT" | "OBJECT";
+  entityRef: string;
+  field: string;
+  operator: "EQ" | "NEQ";
+  expectedValue: unknown;
+};
+
+export type PartOneDecisionPromptVariant = {
+  variantId: string;
+  when: PartOneEntityStateSelector[];
+  actorRefs: string[];
+  prompt: string;
+  resultCeiling: string;
+};
+
 export type PartOneContinuationDecisionTemplate = {
   continuationDecisionId: string;
   basedOnDecisionKernelId: string;
@@ -265,6 +290,7 @@ export type PartOneRuntimeAsset = {
   retrievalTags: string[];
   payload: Record<string, unknown> & {
     options?: PartOneAffordanceTemplate[];
+    decisionPromptVariants?: PartOneDecisionPromptVariant[];
     continuationDecisions?: PartOneContinuationDecisionTemplate[];
     payoffBeats?: Array<Omit<PartOneConsequencePayoffBeat, "consequenceId">>;
     exitGateRules?: PartOneStateRule[];

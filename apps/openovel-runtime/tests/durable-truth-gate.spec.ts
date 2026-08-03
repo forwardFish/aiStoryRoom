@@ -396,5 +396,6 @@ function delta(overrides: Partial<CausalDelta> = {}): CausalDelta {
     durableHints: [],
     requiredNarrativeFacts: [],
     ...overrides,
+    scenePacket: overrides.scenePacket ?? null,
   };
 }

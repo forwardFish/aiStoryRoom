@@ -23,6 +23,10 @@
         "actor.qingliu_messenger"
       ],
       "situation": "巡抚书吏候取回文，清流县令亲随留在厅中等候；催办公文与密信都已由总督拆阅并收持，执行方式、复核起点和首份责任记录尚未定下。",
+      "observableFacts": [
+        "朝廷要求浙江在三日内具报改桑执行方案；当前期限尚未届满。",
+        "杭州米价已经连涨，已有米行闭门；尚未建立具体店数、地点或全城粮荒结论。"
+      ],
       "documentStates": [
         {
           "documentRef": "document.xunfu_urging_order",

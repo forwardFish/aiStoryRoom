@@ -6,6 +6,7 @@ import type {
 import { playerIntentTypes } from "./types";
 import { actorCanUseCapability, ReferenceValidator } from "./reference";
 import { conditionSatisfied, predicateKey, validateCausalEvent, validateDurableState, validateDurableTurnEnvelope, validateWorldRuntimeContract } from "./validation";
+import { predicateFields } from "./pattern";
 
 const ID = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/;
 const LOCALE = /^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|-\d{3})?$/;
@@ -137,7 +138,27 @@ export class DeterministicSettlementEngine {
       const allEvents = [...snapshot.events, ...events, ...delayedEvents]; for (const event of [...events, ...delayedEvents]) validateCausalEvent(event, contract, allEvents.filter((item) => item.eventId !== event.eventId));
       const refs = (category: EchoCategory) => binding.echoRoutes.map((route, index) => ({ route, event: events[index] })).filter((item) => item.route.category === category).map((item) => eventRef(item.event));
       const authorizedEffects = [...rules.flatMap((rule) => rule.effects), ...binding.delayedRuleIds.flatMap((ruleId) => contract.delayedRules.find((rule) => rule.id === ruleId)!.effects)];
-      const envelope: DurableTurnEnvelope = { turnEnvelopeId: `${intent.actionId}.envelope`, runId: intent.runId, worldTurnId, beforeStateRevision: state.revision, sourceActionId: intent.actionId, originActorId: intent.actorId, allowedPredicates: [...new Map(authorizedEffects.map((predicate) => [predicate.type, { type: predicate.type, constraints: {} }])).values()], requiredVisiblePredicates: [], forbiddenPredicatePatterns: [], unresolvedFacts: [], activeSceneEntityIds: intent.referencedEntityIds, personalEffects: refs("PERSONAL"), crossPlayerEffects: refs("CROSS_PLAYER"), worldEffects: refs("WORLD"), delayedEffects: delayedEvents.map(eventRef), projectionActorId: intent.actorId, narrativeSeed: { playerOutcome: binding.echoRoutes.find((route) => route.category === "PERSONAL")!.summary, npcOrWorldPressure: binding.echoRoutes.find((route) => route.category === "WORLD")!.summary, stopCondition: config.fallback.nextDecisionPoint } };
+      const requiredVisiblePredicates = binding.echoRoutes.flatMap((route, index) => {
+        if (route.category === "PERSONAL" && binding.renderPolicy === "PROTECTED_TEMPLATE") return [];
+        const event = events[index]!;
+        const visibleToProjection = event.visibility.scope === "PUBLIC"
+          || event.affectedActorIds.includes(intent.actorId);
+        if (!visibleToProjection || event.status !== "APPLIED") return [];
+        const constraints = Object.fromEntries(
+          predicateFields[event.predicate.type].map((field) => [
+            field,
+            (event.predicate as unknown as Record<string, string | number | boolean>)[field],
+          ]),
+        );
+        return [{
+          id: `${event.eventId}.required`,
+          pattern: { type: event.predicate.type, constraints },
+          visibility: event.visibility,
+          requiredMeaning: route.summary,
+          supportEventIds: [event.eventId],
+        }];
+      });
+      const envelope: DurableTurnEnvelope = { turnEnvelopeId: `${intent.actionId}.envelope`, runId: intent.runId, worldTurnId, beforeStateRevision: state.revision, sourceActionId: intent.actionId, originActorId: intent.actorId, allowedPredicates: [...new Map(authorizedEffects.map((predicate) => [predicate.type, { type: predicate.type, constraints: {} }])).values()], requiredVisiblePredicates, forbiddenPredicatePatterns: [], unresolvedFacts: [], activeSceneEntityIds: intent.referencedEntityIds, personalEffects: refs("PERSONAL"), crossPlayerEffects: refs("CROSS_PLAYER"), worldEffects: refs("WORLD"), delayedEffects: delayedEvents.map(eventRef), projectionActorId: intent.actorId, narrativeSeed: { playerOutcome: binding.echoRoutes.find((route) => route.category === "PERSONAL")!.summary, npcOrWorldPressure: binding.echoRoutes.find((route) => route.category === "WORLD")!.summary, stopCondition: config.fallback.nextDecisionPoint } };
       validateDurableTurnEnvelope(envelope, contract, [...events, ...delayedEvents]);
       const protectedBlocks: ProtectedNarrativeBlock[] = binding.renderPolicy === "PROTECTED_TEMPLATE" ? [{ blockId: `${intent.actionId}.protected`, sourcePredicateIds: events.map((event) => event.eventId), locale: config.fallback.locale, text: binding.protectedTemplate!.replace("{summary}", envelope.narrativeSeed.playerOutcome), immutable: true }] : [];
       protectedBlocks.forEach((block) => validateProtectedNarrativeBlock(block, events, config.fallback.locale));

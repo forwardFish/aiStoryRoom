@@ -1,7 +1,7 @@
 {
   "schemaVersion": "sangtian-part-one-authoring-release-validation-v1",
-  "releaseVersion": "sangtian-part-one-authoring-v1.2.0",
-  "assetCount": 54,
+  "releaseVersion": "sangtian-part-one-authoring-v1.3.0",
+  "assetCount": 65,
   "requirementCount": 12,
   "decisionKernelCount": 15,
   "causalArcCount": 4,

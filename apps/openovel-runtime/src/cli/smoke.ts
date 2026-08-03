@@ -6,13 +6,19 @@ import { runtimeRoot } from "../paths.js";
 import { OpenNovelRuntime } from "../runtime.js";
 import { StorykeeperDrain } from "../storykeeper.js";
 import { sangtianDecisionAdapter } from "../sangtian-decisions.js";
+import { sangtianWorkspaceSeeder } from "../sangtian-workspace.js";
 import { FileStoryWorkspace } from "../workspace.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDir, "..", "..", "..", "..");
 const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
 const provider = OpenAICompatibleProvider.fromEnv();
-const workspace = new FileStoryWorkspace(runtimeRoot(), projectRoot, upstreamCommit);
+const workspace = new FileStoryWorkspace(
+  runtimeRoot(),
+  projectRoot,
+  upstreamCommit,
+  sangtianWorkspaceSeeder,
+);
 const storykeeper = process.argv.includes("--no-storykeeper")
   ? {
       kick: async () => {},
@@ -34,6 +40,7 @@ const turns = boundedArg("--turns", 1, 1, 20);
 const runId = arg("--run-id") || `openovel_smoke_${Date.now()}`;
 const waitForStorykeeper = !process.argv.includes("--no-storykeeper-wait");
 const actionOverride = decodeActionArg();
+const optionIdOverride = arg("--option-id");
 const drainOnly = process.argv.includes("--drain-only");
 if (drainOnly && process.argv.includes("--no-storykeeper")) {
   throw new Error("--drain-only cannot be combined with --no-storykeeper");
@@ -62,13 +69,23 @@ if (drainOnly) {
 
 for (let index = 0; index < turns; index += 1) {
   const current = await runtime.getRun(runId);
-  const action = index === 0 && actionOverride
-    ? actionOverride
+  const optionOverride = index === 0 && optionIdOverride
+    ? current.options.find((option) => option.id === optionIdOverride)
+    : undefined;
+  if (index === 0 && optionIdOverride && !optionOverride) {
+    throw new Error(`SMOKE_OPTION_ID_NOT_FOUND:${optionIdOverride}`);
+  }
+  const action = optionOverride
+    ? optionOverride.label
+    : index === 0 && actionOverride
+      ? actionOverride
     : index === 0
       ? "暂不签发放行文书，留下巡抚书吏，同时核对密信中指出的县册疑点。"
       : current.options[0]?.label
         || "先顺着眼前局势追问一层，不作尚无证据支撑的结论。";
-  const selectedOption = current.options.find((option) => option.label === action) || null;
+  const selectedOption = optionOverride
+    || current.options.find((option) => option.label === action)
+    || null;
   process.stdout.write(`\nACTION T${String(current.turnNumber + 1).padStart(2, "0")}: ${action}\n`);
   const result = await runtime.processAction({
     runId,

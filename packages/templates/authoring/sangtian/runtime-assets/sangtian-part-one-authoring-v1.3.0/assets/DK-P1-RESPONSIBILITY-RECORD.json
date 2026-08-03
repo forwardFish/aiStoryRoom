@@ -76,6 +76,25 @@
       "prompt": "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
       "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
     },
+    "decisionPromptVariants": [
+      {
+        "variantId": "existing-execution-reply",
+        "when": [
+          {
+            "entityKind": "DOCUMENT",
+            "entityRef": "document.reform_execution_record",
+            "field": "accessState",
+            "operator": "EQ",
+            "expectedValue": "WRITTEN"
+          }
+        ],
+        "actorRefs": [
+          "actor.xunfu_clerk"
+        ],
+        "prompt": "巡抚书吏捧着已经合拢的回文匣，没有退下。他问：清流试办的边界已经由总督写定，三日内复核若有延误，是请巡抚在这份回文上共同具名，还是另具责任说明，由督抚各担其责？",
+        "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+      }
+    ],
     "availableWhen": [
       "存在待签或待修改的正式文书",
       "至少两方对文书内容或署名有不同利益",

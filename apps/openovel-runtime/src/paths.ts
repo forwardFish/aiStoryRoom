@@ -22,6 +22,7 @@ export function workspacePaths(root: string, rawRunId: string) {
     story,
     metadata: path.join(runRoot, "run.json"),
     head: path.join(runRoot, "head.json"),
+    headsDir: path.join(runRoot, "heads"),
     turnsDir: path.join(runRoot, "turns"),
     brief: path.join(story, "BRIEF.md"),
     canonDir: path.join(story, "canon"),

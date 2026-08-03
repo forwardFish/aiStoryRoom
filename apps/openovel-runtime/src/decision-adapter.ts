@@ -1,6 +1,7 @@
 import type { FileStoryWorkspace } from "./workspace.js";
 import type { OpenNovelOption } from "./types.js";
 import type { NarrativeTruthContext } from "./truth-review.js";
+import type { AtomicTurnProjection } from "./atomic-turn.js";
 
 export type PreparedAuthoredDecision = {
   selectedOption: OpenNovelOption | null;
@@ -40,6 +41,15 @@ export interface AuthoredDecisionAdapter {
     runId: string,
     prepared: PreparedAuthoredDecision,
   ): Promise<void>;
+
+  /** Build authoritative state before Canon advances. Generated prose is
+   * never parsed to decide state; the runtime commits this projection and the
+   * reviewed narrative behind one Head pointer. */
+  projectCommit(
+    workspace: FileStoryWorkspace,
+    runId: string,
+    prepared: PreparedAuthoredDecision,
+  ): Promise<AtomicTurnProjection>;
 
   nextOptions(prepared: PreparedAuthoredDecision): OpenNovelOption[];
 }

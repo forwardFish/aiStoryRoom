@@ -221,30 +221,61 @@ export function buildForegroundUserContext(
   delta: CausalDelta,
   context: CompiledForegroundContext,
 ) {
-  const settledNarrative = String(delta.beatContract?.settledNarrative || "").trim();
+  return buildChineseForegroundCapsule(delta, context);
+}
+
+function buildChineseForegroundCapsule(
+  delta: CausalDelta,
+  context: CompiledForegroundContext,
+) {
+  const settledNarrative = String(delta.beatContract?.settledNarrative || '').trim();
   const recentPlayerCanon = [
     context.recentCanonExcerpt,
     settledNarrative,
-  ].filter(Boolean).join("\n\n");
+  ].filter(Boolean).join(String.fromCharCode(10).repeat(2));
+  const durableMemory = [
+    context.durableMemory,
+    context.storyMemory,
+  ].map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .join(String.fromCharCode(10).repeat(2));
   const blocks = [
-    "# Foreground Context",
-    "",
-    "前面的工作集只提供当前玩家可知的约束和叙事纹理，不是要求逐项写入正文的命令。当前动作、站位、对话和场面衔接以 Recent Player Canon 为准。",
-    fixedSection("Foreground Guidance", context.foregroundGuidance),
-    fixedSection("Durable Memory", context.durableMemory),
-    fixedSection("Recent Player Canon", recentPlayerCanon),
-    // The compiled per-turn boundary belongs next to the Reader Action. Stable
-    // world context and Canon come first; the narrow authorization is the last
-    // thing the Narrator reads before the player's action.
-    fixedSection("This Turn", renderNarratorCausalDelta(delta)),
-    fixedSection("Reader Action", delta.readerAction),
+    '# 当前叙事工作集',
+    '',
+    '前面的内容只提供当前玩家可知的连续事实和叙事纹理，不是要求逐项写进正文的命令。当前动作、站位、对话和场面衔接，以最近正文为准。',
+    fixedSection('前景约束', localizeForegroundHeadings(context.foregroundGuidance)),
+    fixedSection('持久记忆', durableMemory),
+    fixedSection('最近正文', recentPlayerCanon),
+    fixedSection('本轮唯一剧情拍', renderNarratorCausalDelta(delta)),
+    fixedSection('玩家行动', delta.readerAction),
   ].filter(Boolean);
-  const rendered = blocks.join("\n\n").trim();
-  const marker = "## Reader Action";
-  if (rendered.lastIndexOf(marker) < rendered.length - fixedSection("Reader Action", delta.readerAction).length - 2) {
-    throw new Error("Reader Action must remain the final foreground section");
+  const separator = String.fromCharCode(10).repeat(2);
+  const rendered = blocks.join(separator).trim();
+  const finalSection = fixedSection('玩家行动', delta.readerAction);
+  const marker = '## 玩家行动';
+  if (rendered.lastIndexOf(marker) < rendered.length - finalSection.length - 2) {
+    throw new Error('PLAYER_ACTION_MUST_REMAIN_FINAL_FOREGROUND_SECTION');
   }
   return rendered;
+}
+
+function localizeForegroundHeadings(value: string) {
+  const labels: Record<string, string> = {
+    Story: '故事背景',
+    Scene: '当前场景',
+    Tone: '叙事语调',
+    'Active Characters': '在场人物',
+    Relationships: '人物关系',
+    Constants: '稳定事实',
+    'Open Threads': '未决线索',
+    'Active Pressures': '当前压力',
+    'Pending Consequence': '待兑现后果',
+    Forbidden: '不可越界内容',
+  };
+  return String(value || '').replace(
+    /^## (.+)$/gmu,
+    (line, heading: string) => labels[heading] ? '## ' + labels[heading] : line,
+  );
 }
 
 export function buildNarratorMessages(
@@ -252,31 +283,39 @@ export function buildNarratorMessages(
   context: CompiledForegroundContext,
 ) {
   const narratorContext = scopeNarratorContext(delta, context);
+  return buildChineseNarratorMessages(delta, narratorContext);
+}
+
+function buildChineseNarratorMessages(
+  delta: CausalDelta,
+  narratorContext: CompiledForegroundContext,
+) {
   const hasSettledNarrative = Boolean(
-    String(delta.beatContract?.settledNarrative || "").trim(),
+    String(delta.beatContract?.settledNarrative || '').trim(),
   );
   const lengthRegister = hasSettledNarrative
-    ? "已结算动作正文不计入你的输出。只续写其后的 NPC 回应与新压力，到下一个玩家必须回应的时刻立即停下。"
-    : "使用工作集指定的小说语言和人物声音，写一个具体、连续的场景节拍；到下一个玩家必须回应的时刻停下。";
+    ? '已结算动作正文不计入你的输出。只续写其后的现场回应与新压力，到下一个玩家必须回应的时刻立即停下。'
+    : '使用工作集指定的小说语言和人物声音，写一个具体、连续的场景节拍；到下一个玩家必须回应的时刻停下。';
   return [
     {
-      role: "system" as const,
+      role: 'system' as const,
       content: [
-        "你是互动历史小说的前景叙述者。从 Recent Player Canon 最后一刻继续，只写一个自然、具体、可继续游玩的剧情 beat。",
+        '你是互动历史小说的前景叙述者。从最近正文的最后一刻继续，只写服务器已经选定的一个自然、具体、可继续游玩的剧情拍。',
         hasSettledNarrative
-          ? "Recent Player Canon 末尾已经写成本回合唯一的主角行动。不要复述、改写或补充它；只从它的最后一刻继续。"
-          : "Reader Action 是本回合唯一的主角行动。Foreground Guidance、Durable Memory 和 This Turn 只提供约束与叙事纹理，不要逐条复述或解释规则。",
-        "当前镜头的动作、站位、对话与空间衔接以 Recent Player Canon 为准；让现场人物从这一刻自然回应。",
-        "保留玩家意图。字面动作与现场有小冲突时，从 Canon 的现在把它圆成可发生的尝试、传话或过渡；不要拒绝、倒带或瞬移。",
-        "让在场人物依自己的利益和职责主动回应。普通动作、目光、衣袖、灯火、案几、普通纸张和空间调度可以自由书写。",
-        "不要凭空新增具名人物、关键证据、正式文书或主角不知道的秘密；不要替主角完成 Reader Action 之外的签署、承诺或重大处置。",
-        "场面到达下一项真正需要玩家决定的动作时停下。不要写规则说明、状态报告、选择菜单或分支总结。",
+          ? '最近正文末尾已经写成本回合唯一的主角行动。不要复述、改写或补充它；只从它的最后一刻继续。'
+          : '玩家行动是本回合唯一的主角行动。其他工作集内容只提供约束与叙事纹理，不要逐条复述或解释规则。',
+        '当前镜头的动作、站位、对话与空间衔接以最近正文为准；让现场人物从这一刻自然回应。',
+        '保留玩家意图。字面动作与现场有小冲突时，从既有正文的现在把它圆成可发生的尝试、传话或过渡；不要拒绝、倒带或瞬移。',
+        '让在场人物依自己的利益和职责主动回应。普通动作、目光、衣袖、灯火、案几、普通纸张和空间调度可以自由书写。',
+        '不要凭空新增具名人物、关键证据、正式文书或主角不知道的秘密；不要替主角完成玩家行动之外的签署、承诺或重大处置。',
+        '场面到达下一项真正需要玩家决定的动作时停下。不要写规则说明、状态报告、选择菜单或分支总结。',
+        '最后一个现场人物的动作或问话已经把问题交给玩家时，正文就在那里结束；不要再追加局势归纳、利弊总结或换句话重复停止点。',
         lengthRegister,
-        "只返回正文，不要标题、列表、JSON、XML、选项或解释。",
-      ].join("\n"),
+        '只返回小说正文，不要标题、列表、结构化数据、选项或解释。',
+      ].join(String.fromCharCode(10)),
     },
     {
-      role: "user" as const,
+      role: 'user' as const,
       content: buildForegroundUserContext(delta, narratorContext),
     },
   ];
