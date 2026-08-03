@@ -3,6 +3,8 @@ param(
   [string]$ProjectRoot = "",
   [string]$EvidenceRoot = "",
   [string]$ProvisionedSchema = "",
+  [switch]$ProvisionOnly,
+  [ValidateSet("session", "transaction")][string]$DatabaseMode = "session",
   [int]$RuntimePort = 3117
 )
 
@@ -19,11 +21,12 @@ function Import-DotEnv([string]$Path) {
   }
 }
 
-function Set-DatabaseSchema([string]$Url, [string]$Schema, [int]$ConnectionLimit = 5, [int]$PoolTimeout = 10) {
+function Set-DatabaseSchema([string]$Url, [string]$Schema, [int]$ConnectionLimit = 5, [int]$PoolTimeout = 10, [bool]$Pgbouncer = $false) {
   $queryIndex = $Url.IndexOf("?")
-  if ($queryIndex -ge 0) { $prefix = $Url.Substring(0, $queryIndex); $query = @($Url.Substring($queryIndex + 1).Split("&") | Where-Object { $_ -and $_ -notmatch "^(schema|connection_limit|pool_timeout|sslmode)=" }) }
+  if ($queryIndex -ge 0) { $prefix = $Url.Substring(0, $queryIndex); $query = @($Url.Substring($queryIndex + 1).Split("&") | Where-Object { $_ -and $_ -notmatch "^(schema|connection_limit|pool_timeout|sslmode|pgbouncer)=" }) }
   else { $prefix = $Url; $query = @() }
   $query += "sslmode=disable"; $query += "schema=$Schema"; $query += "connection_limit=$ConnectionLimit"; $query += "pool_timeout=$PoolTimeout"
+  if ($Pgbouncer) { $query += "pgbouncer=true" }
   return "${prefix}?" + ($query -join "&")
 }
 
@@ -41,6 +44,13 @@ if (-not (Test-Path -LiteralPath $envPath)) { throw "No repository test environm
 Import-DotEnv $envPath
 if ([string]::IsNullOrWhiteSpace($env:SUPABASE_DATABASE_URL)) { throw "SUPABASE_DATABASE_URL is missing" }
 if ($env:SUPABASE_DATABASE_URL -notmatch "supabase") { throw "OpenNovel DB acceptance requires the isolated Supabase test route" }
+$databaseBaseUrl = if ($DatabaseMode -eq "transaction") {
+  if ($env:SUPABASE_DATABASE_URL -notmatch ':5432(?=/|\?|$)') { throw "Supabase session URL must expose port 5432 before transaction-mode conversion" }
+  $env:SUPABASE_DATABASE_URL -replace ':5432(?=/|\?|$)', ':6543'
+} else {
+  $env:SUPABASE_DATABASE_URL
+}
+$usePgbouncer = $DatabaseMode -eq "transaction"
 if ($Lane -eq "fault") {
   $listeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
   if ($listeners.Port -contains $RuntimePort) { throw "Runtime port $RuntimePort is already listening" }
@@ -49,6 +59,7 @@ if ($Lane -eq "fault") {
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $suffix = [Guid]::NewGuid().ToString("N").Substring(0, 8)
 $reuseProvisionedSchema = -not [string]::IsNullOrWhiteSpace($ProvisionedSchema)
+if ($ProvisionOnly -and $reuseProvisionedSchema) { throw "ProvisionOnly cannot reuse an existing schema" }
 if ($reuseProvisionedSchema -and $ProvisionedSchema -notmatch '^openovel_mp_[a-zA-Z0-9_]+$') {
   throw "ProvisionedSchema must be an isolated openovel_mp_* schema"
 }
@@ -60,22 +71,23 @@ if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
 $EvidenceRoot = [System.IO.Path]::GetFullPath($EvidenceRoot)
 New-Item -ItemType Directory -Path $EvidenceRoot -Force | Out-Null
 $env:DATABASE_URL = if ($Lane -eq "performance") {
-  Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 15 60
+  Set-DatabaseSchema $databaseBaseUrl $schema 15 60 $usePgbouncer
 } elseif ($Lane -eq "three-role") {
   # The driver and product API are separate Prisma clients. Supabase session
   # mode caps the whole project pool at 15, so never give both clients the full
   # pool_size. Keep two connections in reserve for control-plane/readback use.
-  Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 3 60
+  Set-DatabaseSchema $databaseBaseUrl $schema 3 60 $usePgbouncer
 } else {
-  Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 5 10
+  Set-DatabaseSchema $databaseBaseUrl $schema 5 10 $usePgbouncer
 }
 $env:OPENOVEL_MP_API_DATABASE_URL = if ($Lane -eq "three-role") {
-  Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 10 60
+  Set-DatabaseSchema $databaseBaseUrl $schema 10 60 $usePgbouncer
 } else {
   $env:DATABASE_URL
 }
 $env:OPENOVEL_MP_DRIVER_CONNECTION_LIMIT = if ($Lane -eq "three-role") { "3" } else { "" }
 $env:OPENOVEL_MP_API_CONNECTION_LIMIT = if ($Lane -eq "three-role") { "10" } else { "" }
+$env:OPENOVEL_MP_DB_CONNECTION_MODE = $DatabaseMode
 $env:OPENOVEL_MP_DB_SCHEMA = $schema
 $env:OPENOVEL_MP_DB_PROVISIONING = if ($reuseProvisionedSchema) { "PREPROVISIONED_SCHEMA_REUSED" } else { "FRESH_SCHEMA_MIGRATED_IN_RUN" }
 $env:OPENOVEL_MP_EVIDENCE_DIR = $EvidenceRoot
@@ -94,6 +106,25 @@ try {
   if (-not $reuseProvisionedSchema) {
     & pnpm exec prisma migrate deploy
     if ($LASTEXITCODE -ne 0) { throw "Isolated schema migration failed with exit code $LASTEXITCODE" }
+  }
+  $cleanCheckJson = (& node scripts/e2e/openovel-mp-schema-clean-check.mjs | Out-String).Trim()
+  if ($LASTEXITCODE -ne 0) { throw "Isolated schema clean check failed with exit code $LASTEXITCODE" }
+  $cleanCheck = $cleanCheckJson | ConvertFrom-Json
+  if ($ProvisionOnly) {
+    $provisionReport = [ordered]@{
+      schemaVersion = "openovel_mp_schema_provision_v1"
+      status = "PASS"
+      service = "supabase"
+      schema = $schema
+      provisioning = "FRESH_SCHEMA_MIGRATED_IN_RUN"
+      connectionMode = $DatabaseMode
+      cleanCheck = $cleanCheck
+      completedAt = (Get-Date).ToUniversalTime().ToString("o")
+    }
+    $provisionJson = $provisionReport | ConvertTo-Json -Depth 8
+    Set-Content -LiteralPath (Join-Path $EvidenceRoot "provision.json") -Value $provisionJson -Encoding utf8
+    Write-Output $provisionJson
+    return
   }
   if ($Lane -eq "fault") {
     $runtimeOut = Join-Path $EvidenceRoot "runtime.out.log"

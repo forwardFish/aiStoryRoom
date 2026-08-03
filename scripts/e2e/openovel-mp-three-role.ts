@@ -78,6 +78,7 @@ const report: Record<string, unknown> = {
     schema: databaseSchema,
     isolated: true,
     provisioning: requiredEnv("OPENOVEL_MP_DB_PROVISIONING"),
+    connectionMode: requiredEnv("OPENOVEL_MP_DB_CONNECTION_MODE"),
     connectionBudget: {
       driver: Number(requiredEnv("OPENOVEL_MP_DRIVER_CONNECTION_LIMIT")),
       api: Number(requiredEnv("OPENOVEL_MP_API_CONNECTION_LIMIT")),
