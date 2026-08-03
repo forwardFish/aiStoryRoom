@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import {
-  CONTINUOUS_STORY_ENGINE_VERSION,
+  isContinuousActorThreadEngine,
   buildCrossImpacts,
   buildEchoes,
   buildPersonalCards,
@@ -197,7 +197,7 @@ export class StoryService {
         run.id,
         template.id,
         mode,
-        internalVersions.engineVersion !== CONTINUOUS_STORY_ENGINE_VERSION
+        !isContinuousActorThreadEngine(internalVersions.engineVersion)
       );
 
       if (input.ownerAsPlayer !== false || mode === "single" || isAiTrio) {

@@ -1039,8 +1039,21 @@ function looksLikeStructuredOutput(text: string) {
   return lines.length >= 2 && lines.every((line) => /^(?:[-*]|\d+[.)]|[A-D][.)])\s+/.test(line));
 }
 
-function containsInternalLeak(text: string) {
-  return /(?:DATABASE_URL|SUPABASE_|SOLO_STORY_API_KEY|OPENOVEL_API_KEY|DEEPSEEK_API_KEY|stateJson|settlementJson|runtimeMode|system prompt|developer message)/i.test(text);
+export function containsInternalLeak(text: string) {
+  const normalized=String(text||"")
+    .replace(/([a-z0-9])([A-Z])/g,"$1 $2")
+    .replace(/[_-]+/g," ")
+    .replace(/\s+/g," ")
+    .trim()
+    .toLowerCase();
+  return /(?:database url|supabase|solo story api key|openovel api key|deepseek api key|state json|settlement json|state patch|raw provider payload|raw payload|runtime mode|system prompt|developer message|developer prompt|chain of thought|\brationale\b|internal working set|role working set|confirmed resolution|reader action|visible events|visible interactions|secret marker|key marker|api key|secret key|begin system|begin prompt|begin internal|<\/?\s*(?:system|developer|rationale|state patch)>|\bprompt\s*:)/i.test(normalized);
+}
+
+export function containsInternalLeakLeaf(value:unknown):boolean{
+  if(typeof value==="string")return containsInternalLeak(value);
+  if(Array.isArray(value))return value.some(containsInternalLeakLeaf);
+  if(value&&typeof value==="object")return Object.values(value as Record<string,unknown>).some(containsInternalLeakLeaf);
+  return false;
 }
 
 function containsPlayerChoiceLeak(text: string) {

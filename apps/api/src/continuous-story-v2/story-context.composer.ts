@@ -18,6 +18,11 @@ export type PersistedStoryContextV2 = {
   compilation: CompileStoryContextResultV2;
 };
 
+export function canonFactIsSafeAtSequence(sourceActionIdsJson: unknown, appliedActionIds: ReadonlySet<string>): boolean {
+  const sources = stringList(sourceActionIdsJson);
+  return sources.length === 0 || sources.every((sourceActionId) => appliedActionIds.has(sourceActionId));
+}
+
 @Injectable()
 export class StoryContextComposerV2 {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -39,7 +44,7 @@ export class StoryContextComposerV2 {
     const [facts, assets, relations, threads, mind, allRoles] = await Promise.all([
       this.prisma.canonFact.findMany({ where: { runId: input.run.id, status: "confirmed" }, orderBy: { createdAt: "asc" } }),
       this.prisma.roleAsset.findMany({
-        where: { runId: input.run.id, status: "ACTIVE", OR: [{ ownerRoleId: input.role.id }, { visibility: { in: ["PUBLIC", "OBSERVABLE"] } }] },
+        where: { runId: input.run.id, status: "ACTIVE", OR: [{ ownerRoleId: input.role.id }, { visibility: "PUBLIC" }] },
         orderBy: { assetKey: "asc" }
       }),
       this.prisma.roleRelation.findMany({
@@ -194,13 +199,13 @@ export class StoryContextComposerV2 {
     confirmedResolution?: string;
     maxTokenEstimate?: number;
   }): Promise<PersistedStoryContextV2> {
-    const [narratives, facts, commitments, conditions, interactions, assets, relations, threads, mind, allRoles] = await Promise.all([
+    const [narratives, facts, commitments, conditions, interactions, assets, relations, threads, mind, allRoles, appliedActions] = await Promise.all([
       this.prisma.narrativeEntry.findMany({
         where: {
           runId: input.run.id,
           OR: [
             { roleId: input.role.id },
-            { visibility: { in: ["PUBLIC", "public", "OBSERVABLE", "observable"] } }
+            { visibility: { in: ["PUBLIC", "public"] } }
           ]
         },
         orderBy: [{ worldSequence: "desc" }, { createdAt: "desc" }],
@@ -212,7 +217,7 @@ export class StoryContextComposerV2 {
       }),
       this.prisma.canonFact.findMany({ where: { runId: input.run.id, status: "confirmed" }, orderBy: { createdAt: "asc" } }),
       this.prisma.commitmentV2.findMany({
-        where: { runId: input.run.id, status: "ACTIVE", OR: [{ issuerRoleId: input.role.id }, { receiverRoleId: input.role.id }, { visibility: { in: ["PUBLIC", "OBSERVABLE"] } }] },
+        where: { runId: input.run.id, status: "ACTIVE", OR: [{ issuerRoleId: input.role.id }, { receiverRoleId: input.role.id }, { visibility: "PUBLIC" }] },
         include: { issuerRole: true, receiverRole: true },
         orderBy: { createdAt: "asc" }
       }),
@@ -226,7 +231,7 @@ export class StoryContextComposerV2 {
         orderBy: { createdAt: "asc" }
       }),
       this.prisma.roleAsset.findMany({
-        where: { runId: input.run.id, status: "ACTIVE", OR: [{ ownerRoleId: input.role.id }, { visibility: { in: ["PUBLIC", "OBSERVABLE"] } }] },
+        where: { runId: input.run.id, status: "ACTIVE", OR: [{ ownerRoleId: input.role.id }, { visibility: "PUBLIC" }] },
         orderBy: { assetKey: "asc" }
       }),
       this.prisma.roleRelation.findMany({
@@ -236,7 +241,11 @@ export class StoryContextComposerV2 {
       }),
       this.prisma.storyThread.findMany({ where: { runId: input.run.id, status: "active" }, orderBy: { updatedAt: "asc" } }),
       this.prisma.characterMind.findUnique({ where: { roleId: input.role.id } }),
-      this.prisma.storyRole.findMany({ where: { runId: input.run.id }, orderBy: { createdAt: "asc" } })
+      this.prisma.storyRole.findMany({ where: { runId: input.run.id }, orderBy: { createdAt: "asc" } }),
+      this.prisma.actionResolution.findMany({
+        where: { runId: input.run.id, appliedWorldSequence: { lte: input.run.worldSequence }, qualityStatus: { in: ["PASS", "WORLD_COMMITTED"] } },
+        select: { playerActionId: true }
+      })
     ]);
 
     const game = getGameDefinition(input.run.templateKey);
@@ -363,7 +372,8 @@ export class StoryContextComposerV2 {
       ));
     }
 
-    for (const fact of facts) {
+    const appliedActionIds = new Set(appliedActions.map((resolution) => resolution.playerActionId));
+    for (const fact of facts.filter((candidate) => canonFactIsSafeAtSequence(candidate.sourceActionIdsJson, appliedActionIds))) {
       add(contextSource(
         `fact:${fact.id}`,
         "VISIBLE_FACT",

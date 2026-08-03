@@ -1,5 +1,17 @@
 export const CONTINUOUS_ENGINE_VERSION = "continuous_strategy_v1_1" as const;
 export const CONTINUOUS_STORY_ENGINE_VERSION = "continuous_story_v2" as const;
+export const CONTINUOUS_OPENOVEL_ENGINE_VERSION = "continuous_openovel_v1" as const;
+export const OPENOVEL_ROLE_RUNTIME_MODE = "OPENOVEL_ROLE_V1" as const;
+export const CONTINUOUS_ACTOR_THREAD_ENGINE_VERSIONS = [CONTINUOUS_STORY_ENGINE_VERSION, CONTINUOUS_OPENOVEL_ENGINE_VERSION] as const;
+
+export function isContinuousActorThreadEngine(engineVersion: unknown): engineVersion is typeof CONTINUOUS_ACTOR_THREAD_ENGINE_VERSIONS[number] {
+  return CONTINUOUS_ACTOR_THREAD_ENGINE_VERSIONS.includes(engineVersion as typeof CONTINUOUS_ACTOR_THREAD_ENGINE_VERSIONS[number]);
+}
+export const ROLE_NARRATIVE_INPUT_SCHEMA_VERSION = "role_narrative_input_v1" as const;
+export const ROLE_NARRATIVE_OUTPUT_SCHEMA_VERSION = "role_narrative_output_v1" as const;
+export const ROLE_RUNTIME_STATUS_SCHEMA_VERSION = "role_runtime_status_v1" as const;
+export const ROLE_IMPACT_SYNC_SCHEMA_VERSION = "role_impact_sync_v1" as const;
+export const MODEL_CALL_BUDGET_SCHEMA_VERSION = "model_call_budget_v1" as const;
 export const CONTINUOUS_STRATEGY_VERSION = "sangtian_v1_1" as const;
 export const LEGACY_ENGINE_VERSION = "legacy_v1" as const;
 export const LEGACY_STRATEGY_VERSION = "legacy_v1" as const;

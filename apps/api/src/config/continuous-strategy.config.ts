@@ -1,5 +1,6 @@
 import {
   CONTINUOUS_ENGINE_VERSION,
+  CONTINUOUS_OPENOVEL_ENGINE_VERSION,
   CONTINUOUS_STORY_ENGINE_VERSION,
   LEGACY_ENGINE_VERSION,
   LEGACY_STRATEGY_VERSION
@@ -8,6 +9,8 @@ import { findGameDefinition } from "@ai-story/templates";
 
 export type ContinuousStrategyConfig = {
   enabledForNewRooms: boolean;
+  openNovelEnabledForNewRooms: boolean;
+  openNovelRoomIds: string[];
   workerEmbedded: boolean;
   roleAgentProvider: "deepseek" | "rules";
   roleAgentModel: string;
@@ -76,6 +79,9 @@ export function maybeInjectRoleAgentFault(
 export function readContinuousStrategyConfig(env: NodeJS.ProcessEnv = process.env): ContinuousStrategyConfig {
   const nodeEnv = String(env.NODE_ENV || "development").trim().toLowerCase();
   const enabledForNewRooms = strictBoolean(env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED, false, "MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED");
+  const openNovelEnabledForNewRooms = strictBoolean(env.CONTINUOUS_OPENOVEL_V1_ENABLED, false, "CONTINUOUS_OPENOVEL_V1_ENABLED");
+  const openNovelRoomIds = String(env.CONTINUOUS_OPENOVEL_ROOM_IDS || "").split(",").map((item) => item.trim()).filter(Boolean);
+  if (openNovelEnabledForNewRooms && openNovelRoomIds.length === 0) throw new Error("CONTINUOUS_OPENOVEL_ROOM_IDS is required when continuous_openovel_v1 is enabled");
   const workerEmbedded = strictBoolean(
     env.STORY_WORKER_EMBEDDED ?? env.STORY_WORKER_ENABLED,
     false,
@@ -101,6 +107,8 @@ export function readContinuousStrategyConfig(env: NodeJS.ProcessEnv = process.en
   if (providerRaw !== "deepseek" && providerRaw !== "rules") throw new Error(`Unsupported ROLE_AGENT_PROVIDER: ${providerRaw}`);
   return {
     enabledForNewRooms,
+    openNovelEnabledForNewRooms,
+    openNovelRoomIds,
     workerEmbedded,
     roleAgentProvider: providerRaw,
     roleAgentModel: String(env.ROLE_AGENT_MODEL || env.DEEPSEEK_MODEL || "deepseek-chat").trim(),
@@ -114,6 +122,9 @@ export function selectRunVersions(input: {
   mode: string;
   maxPlayers: number;
   enabledForNewRooms: boolean;
+  openNovelEnabledForNewRooms?: boolean;
+  openNovelRoomIds?: readonly string[];
+  runId?: string;
 }) {
   const game = findGameDefinition(input.templateKey);
   const continuous = input.enabledForNewRooms
@@ -123,7 +134,9 @@ export function selectRunVersions(input: {
     && input.maxPlayers >= game.modes.minHumanPlayers
     && input.maxPlayers <= Math.min(game.modes.maxHumanPlayers, game.roles.length);
   return continuous
-    ? { engineVersion: game.engine.engineVersion, strategyVersion: game.engine.strategyVersion }
+    ? { engineVersion: input.openNovelEnabledForNewRooms && Boolean(input.runId) && input.openNovelRoomIds?.includes(input.runId!) && game.engine.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION
+        ? CONTINUOUS_OPENOVEL_ENGINE_VERSION
+        : game.engine.engineVersion, strategyVersion: game.engine.strategyVersion }
     : { engineVersion: LEGACY_ENGINE_VERSION, strategyVersion: LEGACY_STRATEGY_VERSION };
 }
 

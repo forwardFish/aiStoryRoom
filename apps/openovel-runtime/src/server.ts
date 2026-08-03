@@ -10,6 +10,9 @@ import { StorykeeperDrain } from "./storykeeper.js";
 import { OpenNovelRuntime } from "./runtime.js";
 import { recoverRuntimeRuns } from "./recovery.js";
 import type { TurnEvent, TurnResult } from "./types.js";
+import { RoleWorkspace, coded } from "./role-workspace.js";
+import { OpenNovelRoleRuntime } from "./role-runtime.js";
+import { OPENOVEL_ROLE_RUNTIME_MODE, validateImpact, validateNarrativeInput } from "./role-contracts.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(process.env.OPENOVEL_PROJECT_ROOT || path.join(currentDir, "..", "..", ".."));
@@ -29,6 +32,8 @@ const runtime = new OpenNovelRuntime(
   mirror,
   { decisionMode: "AUTHORED_WHEN_AVAILABLE" },
 );
+const roleWorkspace = new RoleWorkspace(runtimeRoot());
+const roleRuntime = new OpenNovelRoleRuntime(roleWorkspace, provider);
 
 const server = createServer(async (request, response) => {
   try {
@@ -39,12 +44,30 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && url.pathname === "/health") {
       return json(response, 200, healthPayload());
     }
-    if (!authorized(request)) return json(response, 401, { error: "UNAUTHORIZED" });
+    if (!authorized(request)) {
+      if (url.pathname.startsWith("/internal/openovel/rooms/")) return json(response, 401, { code:"UNAUTHORIZED",error:"UNAUTHORIZED",message:"Unauthorized" });
+      return json(response, 401, { error: "UNAUTHORIZED" });
+    }
     if (request.method === "GET" && url.pathname === "/internal/openovel/health") {
       return json(response, 200, healthPayload());
     }
     if (request.method === "GET" && url.pathname === "/internal/openovel/providers") {
       return json(response, 200, provider.describe());
+    }
+    const roleMatch=url.pathname.match(/^\/internal\/openovel\/rooms\/([^/]+)\/roles\/([^/]+)$/);
+    const roleTurnsMatch=url.pathname.match(/^\/internal\/openovel\/rooms\/([^/]+)\/roles\/([^/]+)\/turns$/);
+    const roleImpactsMatch=url.pathname.match(/^\/internal\/openovel\/rooms\/([^/]+)\/roles\/([^/]+)\/impacts$/);
+    const roleJobsMatch=url.pathname.match(/^\/internal\/openovel\/rooms\/([^/]+)\/roles\/([^/]+)\/jobs$/);
+    try {
+    if(roleMatch){const roomId=decodeRoleSegment(roleMatch[1]),roleId=decodeRoleSegment(roleMatch[2]);
+      if(request.method==="GET")return json(response,200,await roleRuntime.status(roomId,roleId));
+      if(request.method==="POST"){const body=await roleBodyJson(request);assertBodyIdentity(body,roomId,roleId);if(body.runtimeMode!==OPENOVEL_ROLE_RUNTIME_MODE||!textField(body.worldId)||!textField(body.storyPackageVersion)||!onlyKeys(body,["runtimeMode","roomId","roleId","worldId","storyPackageVersion"]))throw coded("ROLE_WORKSPACE_SCHEMA_INVALID",400);return json(response,201,await roleRuntime.ensure({roomId,roleId,worldId:String(body.worldId),storyPackageVersion:String(body.storyPackageVersion)}));}
+    }
+    if(request.method==="POST"&&roleTurnsMatch){const roomId=decodeRoleSegment(roleTurnsMatch[1]),roleId=decodeRoleSegment(roleTurnsMatch[2]),body=await roleBodyJson(request);assertBodyIdentity(body,roomId,roleId);if(!validateNarrativeInput(body))throw coded("ROLE_NARRATIVE_SCHEMA_INVALID",400);return json(response,200,await roleRuntime.turn(body));}
+    if(request.method==="POST"&&roleImpactsMatch){const roomId=decodeRoleSegment(roleImpactsMatch[1]),roleId=decodeRoleSegment(roleImpactsMatch[2]),body=await roleBodyJson(request);assertBodyIdentity(body,roomId,roleId);if(!validateImpact(body))throw coded("ROLE_IMPACT_SCHEMA_INVALID",400);return json(response,200,await roleRuntime.impacts(body));}
+    if(request.method==="GET"&&roleJobsMatch)return json(response,200,await roleRuntime.jobs(decodeRoleSegment(roleJobsMatch[1]),decodeRoleSegment(roleJobsMatch[2])));
+    } catch (error) {
+      return roleError(response, error);
     }
     if (request.method === "POST" && url.pathname === "/internal/openovel/runs") {
       const body = await bodyJson(request);
@@ -132,12 +155,14 @@ const host = String(
   || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1"),
 ).trim();
 const recovery = await recoverRuntimeRuns(workspace, storykeeper);
+const roleRecovery = { workspaces: 0, recovered: [] as string[], failures: [] as Array<{workspace:string;code:string}>, pending:0 };
+void drainRoleRecovery();
 if (mirror instanceof DurableEventMirror) {
   for (const runId of recovery.recovered) void mirror.kick(runId);
 }
 server.listen(port, host, () => {
   process.stdout.write(
-    `OpenNovel runtime listening on http://${host}:${port}; recovered=${recovery.recovered.length}; interrupted=${recovery.interrupted.length}; failures=${recovery.failures.length}\n`,
+    `OpenNovel runtime listening on http://${host}:${port}; recovered=${recovery.recovered.length}; roleWorkspaces=${roleRecovery.workspaces}; roleJobsRecovered=${roleRecovery.recovered.length}; interrupted=${recovery.interrupted.length}; failures=${recovery.failures.length+roleRecovery.failures.length}\n`,
   );
 });
 
@@ -145,10 +170,21 @@ function healthPayload() {
   return {
     ok: true,
     runtimeMode: "OPENOVEL_V1",
+    capabilities: ["SOLO_RUNS","ROLE_WORKSPACES","DURABLE_ROLE_JOBS","DURABLE_MODEL_BUDGET","ROLE_LEASE_FENCING"],
+    supportedModes: ["OPENOVEL_V1",OPENOVEL_ROLE_RUNTIME_MODE],
     provider: provider.describe(),
     upstreamCommit,
   };
 }
+
+async function drainRoleRecovery(){let delay=25;for(;;){try{const batch=await roleRuntime.recover(8);Object.assign(roleRecovery,batch);if(batch.pending===0)return;delay=batch.failures.length?Math.min(delay*2,5_000):25;}catch{delay=Math.min(delay*2,5_000);}await new Promise(resolve=>setTimeout(resolve,delay));}}
+
+function assertBodyIdentity(body:Record<string,unknown>,roomId:string,roleId:string){if(body.roomId!==undefined&&body.roomId!==roomId)throw coded("ROOM_ID_PATH_BODY_MISMATCH",400);if(body.roleId!==undefined&&body.roleId!==roleId)throw coded("ROLE_ID_PATH_BODY_MISMATCH",400);}
+function textField(v:unknown){return typeof v==="string"&&v.trim().length>0;}
+function onlyKeys(v:Record<string,unknown>,keys:string[]){return Object.keys(v).every(k=>keys.includes(k));}
+function publicErrorMessage(status:number){return status===503?"Role runtime is temporarily unavailable":status===429?"Model call budget exceeded":status===401?"Unauthorized":"Role runtime request rejected";}
+function roleError(response:ServerResponse,error:unknown){const typed=error as{status?:number;code?:string};const allowed=new Set([400,404,409,429,503]),known=allowed.has(Number(typed.status));const status=known?Number(typed.status):503;const code=known&&typed.code&&/^[A-Z0-9_]+$/.test(typed.code)?typed.code:"ROLE_RUNTIME_TRANSIENT";return json(response,status,{code,error:code,message:publicErrorMessage(status)});}
+function decodeRoleSegment(value:string){try{return decodeURIComponent(value);}catch{throw coded("ROLE_PATH_INVALID",400);}}
 
 function authorized(request: IncomingMessage) {
   const expected = String(process.env.OPENOVEL_INTERNAL_TOKEN || "").trim();
@@ -215,6 +251,8 @@ async function bodyJson(request: IncomingMessage) {
   return body.trim() ? JSON.parse(body) as Record<string, unknown> : {};
 }
 
+async function roleBodyJson(request:IncomingMessage){try{return await bodyJson(request);}catch{throw coded("INVALID_JSON",400);}}
+
 function normalizeBoundOption(value: unknown) {
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
@@ -253,4 +291,4 @@ function sanitizeEvent(event: TurnEvent) {
   return event;
 }
 
-export { server, runtime };
+export { server, runtime, roleRuntime };

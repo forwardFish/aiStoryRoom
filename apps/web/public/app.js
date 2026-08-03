@@ -98,6 +98,39 @@ export function createStoryApp({
     }
   }
 
+  async function changeRoleControl(kind) {
+    if (state.busy || typeof storage.changeControl !== "function") return;
+    state.busy = true;
+    state.error = "";
+    render();
+    try {
+      acceptView(await storage.changeControl(kind));
+      state.notice = kind === "handoff" ? "角色已交由 AI 继续推进；你可以随时回来接管。" : "已提交重新接管角色的请求。";
+    } catch (error) {
+      state.error = errorMessage(error);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
+  async function retryRoleGeneration() {
+    if (state.busy || typeof storage.retryGeneration !== "function") return;
+    state.busy = true;
+    state.error = "";
+    render();
+    try {
+      const result = await storage.retryGeneration();
+      acceptView(result.view);
+      state.notice = result.status === "REQUEUED" ? "恢复任务已重新排队。" : "恢复任务正在处理中。";
+    } catch (error) {
+      state.error = errorMessage(error);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
   async function submitDecision() {
     const decision = state.view?.activeDecision;
     const prompt = activePromptForView(state.view);
@@ -535,7 +568,7 @@ export function createStoryApp({
           ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" ? renderDecisionZone(view, state) : ""}
         </main>
         <aside class="causal-right" aria-label="${isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
-          ${renderManeuverPanel(view, state)}
+          ${view.v2Projection?.runtimeMode === "OPENOVEL_ROLE_V1" ? renderContinuousV2Context(view, state) : renderManeuverPanel(view, state)}
           ${roomSessionForView(view) ? renderRoomPartyPanel(view, state) : ""}
           ${state.debugBuild ? renderBuildDiagnostics(view) : ""}
         </aside>
@@ -567,6 +600,9 @@ export function createStoryApp({
     root.querySelector("#v2RoomBtn")?.addEventListener("click", () => browserWindow?.location?.assign?.("/"));
     root.querySelector("#submitDecision")?.addEventListener("click", submitDecision);
     root.querySelector("#maneuverSubmit")?.addEventListener("click", submitManeuver);
+    root.querySelector('[data-v2-control="handoff"]')?.addEventListener("click", () => changeRoleControl("handoff"));
+    root.querySelector('[data-v2-control="reclaim"]')?.addEventListener("click", () => changeRoleControl("reclaim"));
+    root.querySelector("[data-v2-retry-generation]")?.addEventListener("click", retryRoleGeneration);
     root.querySelector("[data-room-resolve]")?.addEventListener("click", resolveRoomRound);
     root.querySelector("#criticalRespondBtn")?.addEventListener("click", () => startCriticalResponse(root.querySelector("#criticalRespondBtn")?.dataset.eventId));
     root.querySelector("#criticalDeferBtn")?.addEventListener("click", () => deferCriticalEvent(root.querySelector("#criticalDeferBtn")?.dataset.eventId));
@@ -607,6 +643,9 @@ export function createStoryApp({
       state.customText = event.target.value;
       const counter = root.querySelector("#customDecisionCount");
       if (counter) counter.textContent = `${event.target.value.length}/200`;
+      const submit = root.querySelector("#submitDecision");
+      const hasServerChoice = root.querySelectorAll('input[name="decision"]:not([value="CUSTOM"])').length > 0;
+      if (submit) submit.disabled = state.busy || (!hasServerChoice && !event.target.value.trim());
     });
   }
 
@@ -885,16 +924,29 @@ function renderEnglishManeuverPanel(view, state) {
   </section>`;
 }
 
-function renderContinuousV2Context(view) {
+function renderContinuousV2Context(view, state = {}) {
   const turn = view.v2CurrentTurn || {};
   const projection = view.v2Projection || {};
   const visibleFacts = array(turn.visibleFacts).slice(0, 4);
-  const interaction = array(projection.pendingInteractions)[0] || null;
+  const interactions = array(projection.pendingInteractions);
+  const interaction = interactions.find((item) => item?.direction === "INCOMING") || null;
+  const outgoing = interactions.filter((item) => item?.direction === "OUTGOING");
+  const pendingImpacts = array(projection.pendingImpacts);
+  const narrativeState = projection.roleNarrativeState || {};
+  const canHandoff = projection.control?.canHumanAct === true;
+  const canReclaim = ["AI_ACTIVE", "HUMAN_RECLAIM_PENDING"].includes(projection.control?.mode);
+  const impactText = pendingImpacts.map((item) => item.appliedWorldSequence == null
+    ? `未识别序号 · ${item.status}`
+    : `世界事件 #${Number(item.appliedWorldSequence)} · ${item.status === "SYNCING" ? "同步中" : item.status === "RECOVERY_REQUIRED" ? "等待恢复" : "等待应用"}`
+  ).join("；");
   return `<section class="maneuver-panel" data-testid="v2-context-panel">
     <div class="maneuver-heading"><h2>此刻的局势</h2><span class="help-dot" aria-hidden="true">?</span></div>
     <section class="maneuver-usage"><span>你需要处理</span><b>${esc(interaction?.pressure || turn.title || "眼前正在发生的事")}</b><small>你的决定提交后会立即单独推演，并续写下一段剧情。</small></section>
     ${visibleFacts.length ? `<section class="maneuver-workbench"><div class="maneuver-workbench-head"><span>你现在确实知道</span><small>只显示本角色能够知道的事实</small></div><div class="maneuver-choice-list">${visibleFacts.map((fact) => `<article class="maneuver-choice-card"><b>${esc(fact.content || fact.label || fact.factKey)}</b></article>`).join("")}</div></section>` : ""}
     ${interaction ? `<section class="maneuver-workbench"><div class="maneuver-workbench-head"><span>${esc(interaction.sourceRoleName || "另一名角色")}正在等你回应</span><small>${esc(interaction.pressure || "这项回应不会阻塞其他角色继续行动。")}</small></div></section>` : ""}
+    ${outgoing.length ? `<section class="maneuver-workbench" data-testid="v2-outgoing-interactions"><div class="maneuver-workbench-head"><span>你发出的请求</span><small>${outgoing.map((item) => `${esc(item.targetRoleName || "另一名角色")} · ${esc(item.pressure || "等待对方独立回应")}`).join("；")}</small></div></section>` : ""}
+    ${pendingImpacts.length || narrativeState.impactStatus === "RECOVERY_REQUIRED" ? `<section class="maneuver-workbench" data-testid="v2-impact-status"><div class="maneuver-workbench-head"><span>${narrativeState.impactStatus === "RECOVERY_REQUIRED" ? "影响同步需要恢复" : "其他行动正在改变你的处境"}</span><small>${esc(impactText || "存在尚未识别的影响任务。")}</small></div></section>` : ""}
+    <section class="maneuver-workbench" data-testid="v2-role-control"><div class="maneuver-workbench-head"><span>角色控制</span><small>${esc(projection.control?.mode || "UNKNOWN")}</small></div><div class="actions">${canHandoff ? `<button type="button" data-v2-control="handoff" ${state.busy ? "disabled" : ""}>交给 AI 继续</button>` : ""}${canReclaim ? `<button type="button" data-v2-control="reclaim" ${state.busy ? "disabled" : ""}>重新接管角色</button>` : ""}${narrativeState.canRetry ? `<button type="button" data-v2-retry-generation ${state.busy ? "disabled" : ""}>恢复剧情同步</button>` : ""}</div></section>
   </section>`;
 }
 
@@ -1119,7 +1171,7 @@ function renderDecisionComposer({ view, state, prompt, decision, options, select
       <div class="custom-decision-label">You may also write your own decision:</div>
       <div class="custom-decision-input"><textarea id="customDecision" ${state.busy ? "disabled" : ""} maxlength="200" placeholder="Describe how you will respond…" aria-label="Custom response">${esc(state.customText)}</textarea><span id="customDecisionCount">${String(state.customText || "").length}/200</span></div>
       ${state.guard ? `<div class="guard-result" data-testid="guard-error"><b>This action cannot be executed yet</b><p>${esc(state.guard.reason)}</p>${state.guard.suggestedRewrite ? `<p>Try: ${esc(state.guard.suggestedRewrite)}</p>` : ""}</div>` : ""}
-      <div class="actions"><span>Once confirmed, this enters the causal record and cannot be withdrawn.</span><button id="submitDecision" type="button" ${state.busy || options.length === 0 ? "disabled" : ""}><i aria-hidden="true">✦</i><b>${state.busy ? "Resolving…" : "Submit Decision"}</b><i aria-hidden="true">✦</i></button></div>
+      <div class="actions"><span>Once confirmed, this enters the causal record and cannot be withdrawn.</span><button id="submitDecision" type="button" ${state.busy || (options.length === 0 && !String(state.customText || "").trim()) ? "disabled" : ""}><i aria-hidden="true">✦</i><b>${state.busy ? "Resolving…" : "Submit Decision"}</b><i aria-hidden="true">✦</i></button></div>
     </section>`;
   }
   return `<section class="decision-zone decision-composer ${storyDecision ? "story-decision" : ""} ${openingDecision ? "opening-decision" : ""}" data-testid="decision-zone" aria-label="提交决策">
@@ -1130,7 +1182,7 @@ function renderDecisionComposer({ view, state, prompt, decision, options, select
     <div class="custom-decision-label">你也可以写下自己的决定：</div>
     <div class="custom-decision-input"><textarea id="customDecision" ${state.busy ? "disabled" : ""} maxlength="200" placeholder="输入你的处理方式……" aria-label="自定义处理方式">${esc(state.customText)}</textarea><span id="customDecisionCount">${String(state.customText || "").length}/200</span></div>
     ${state.guard ? `<div class="guard-result" data-testid="guard-error"><b>这一步暂时无法执行</b><p>${esc(state.guard.reason)}</p>${state.guard.suggestedRewrite ? `<p>可改为：${esc(state.guard.suggestedRewrite)}</p>` : ""}</div>` : ""}
-    <div class="actions"><span>确认后会写入因果账本，无法撤回。</span><button id="submitDecision" type="button" ${state.busy || options.length === 0 ? "disabled" : ""}><i aria-hidden="true">✦</i><b>${state.busy ? "正在推演……" : "提交决策"}</b><i aria-hidden="true">✦</i></button></div>
+    <div class="actions"><span>确认后会写入因果账本，无法撤回。</span><button id="submitDecision" type="button" ${state.busy || (options.length === 0 && !String(state.customText || "").trim()) ? "disabled" : ""}><i aria-hidden="true">✦</i><b>${state.busy ? "正在推演……" : "提交决策"}</b><i aria-hidden="true">✦</i></button></div>
   </section>`;
 }
 

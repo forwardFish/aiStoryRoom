@@ -1,0 +1,80 @@
+{
+  "mode": "native-subagents",
+  "runtime_surface": "codex-app",
+  "orchestrator": "/root",
+  "agents": [
+    {
+      "id": "api_world_audit",
+      "role": "API and world-core builder",
+      "assigned_tasks": [
+        "read-only current-state and integration audit",
+        "local repair batch A: contracts, adapters, projection, budget and DB-authority tests"
+      ],
+      "allowed_paths": [
+        "packages/shared",
+        "apps/api/src/continuous-story-v2",
+        "apps/api/src/continuous-openovel",
+        "necessary API wiring"
+      ],
+      "status": "COMPLETE_ACCEPTED_WITH_RUNTIME_B_BLOCKER",
+      "evidence": [
+        "docs/auto-execute/openovel-multiplayer/04-current-code-gap-audit.md",
+        "docs/auto-execute/evidence/openovel-multiplayer/20260803T004938+0800/batch-a-test-results.md"
+      ]
+    },
+    {
+      "id": "role_runtime_audit",
+      "role": "OpenNovel runtime explorer",
+      "assigned_tasks": ["read-only Solo-to-Role runtime gap audit"],
+      "allowed_paths": ["apps/openovel-runtime", "apps/api/src/openovel-adapter"],
+      "status": "COMPLETE_REQUEST_CHANGES",
+      "evidence": ["docs/auto-execute/openovel-multiplayer/04-current-code-gap-audit.md"]
+    },
+    {
+      "id": "contracts_security_audit",
+      "role": "contracts and security explorer",
+      "assigned_tasks": [
+        "read-only schema, projection, budget and concurrency audit",
+        "independent A-6 security and consistency review"
+      ],
+      "allowed_paths": ["packages/shared", "prisma", "scripts/e2e"],
+      "status": "COMPLETE_ACCEPTED_WITH_RUNTIME_B_BLOCKER",
+      "evidence": [
+        "docs/auto-execute/openovel-multiplayer/04-current-code-gap-audit.md",
+        "docs/auto-execute/evidence/openovel-multiplayer/20260803T004938+0800/batch-a-test-results.md"
+      ]
+    },
+    {
+      "id": "web_e2e_audit",
+      "role": "Web and E2E explorer",
+      "assigned_tasks": ["read-only live UI chain and browser-test audit"],
+      "allowed_paths": ["apps/web", "scripts/e2e", "scripts/acceptance"],
+      "evidence": ["docs/auto-execute/openovel-multiplayer/04-current-code-gap-audit.md"]
+    },
+    {
+      "id": "role_runtime_impl",
+      "role": "OpenNovel Role Runtime builder",
+      "assigned_tasks": ["room-role workspace, locking, CAS, recovery and tests"],
+      "allowed_paths": ["apps/openovel-runtime"],
+      "status": "INTERRUPTED_FOR_SEQUENTIAL_A_B_C_POLICY"
+    },
+    {
+      "id": "web_openovel_impl",
+      "role": "OpenNovel multiplayer Web builder",
+      "assigned_tasks": ["active game-chain projection, role canon, impact, interaction and status UI tests"],
+      "allowed_paths": ["apps/web"],
+      "status": "INTERRUPTED_FOR_SEQUENTIAL_A_B_C_POLICY"
+    }
+  ],
+  "handoff_paths": [
+    "docs/auto-execute/openovel-multiplayer/latest/HANDOFF.md"
+  ],
+  "verification_paths": [
+    "docs/auto-execute/evidence/openovel-multiplayer/20260803T004938+0800/baseline.json",
+    "docs/auto-execute/evidence/openovel-multiplayer/20260803T004938+0800/source-archive-manifest.json",
+    "docs/auto-execute/evidence/openovel-multiplayer/20260803T004938+0800/secret-scan.json",
+    "docs/auto-execute/evidence/openovel-multiplayer/20260803T004938+0800/baseline-test-results.md",
+    "docs/auto-execute/evidence/openovel-multiplayer/20260803T004938+0800/verification-environment.md"
+  ],
+  "fallback_reason": null
+}

@@ -1028,13 +1028,15 @@ test("rejects a decision that repeats a newly completed responsibility record", 
   assert.ok(checked.issues.some((item) => item.code === "DECISION_REPEATS_ENDING_ACTION"));
 });
 
-test("is not imported by API or web player paths", () => {
+test("the Runtime package is not imported directly by API or web player paths", () => {
   const { paths } = setup();
   const roots = [join(paths.repoRoot, "apps", "api", "src"), join(paths.repoRoot, "apps", "web", "src")];
   for (const root of roots) {
     for (const file of walk(root)) {
       if (!/\.(?:ts|js|mjs)$/.test(file)) continue;
-      assert.equal(readFileSync(file, "utf8").includes("openovel-runtime"), false, file);
+      const source = readFileSync(file, "utf8");
+      const specifiers = [...source.matchAll(/(?:\bfrom\s*|\bimport\s*\()\s*["']([^"']+)["']/g)].map((match) => match[1]!);
+      assert.equal(specifiers.some((specifier) => specifier === "@ai-story/openovel-runtime" || /(?:^|\/)packages\/openovel-runtime(?:\/|$)/.test(specifier.replace(/\\/g, "/"))), false, file);
     }
   }
 });

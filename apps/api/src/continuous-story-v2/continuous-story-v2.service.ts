@@ -1,8 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { Prisma, type ActorTurn, type StoryRole } from "@prisma/client";
 import {
+  CONTINUOUS_OPENOVEL_ENGINE_VERSION,
   CONTINUOUS_STORY_ENGINE_VERSION,
   GAME_PROJECTION_V2_SCHEMA_VERSION,
+  OPENOVEL_ROLE_RUNTIME_MODE,
   validateGameProjectionV2,
   type ControlCommandV1,
   type DecisionCandidateV2,
@@ -10,6 +13,7 @@ import {
   type GameProjectionV2,
   type HeartbeatCommandV1,
   type PlayerIntentV2,
+  type RoleNarrativeOutputV1,
   type TurnDecisionCommandV2,
   type TurnDecisionResponseV2
 } from "@ai-story/shared";
@@ -47,12 +51,154 @@ import {
   planIntentAction,
   type PlannedIntentAction
 } from "./player-intent";
-import { StoryContextComposerV2 } from "./story-context.composer";
+import { StoryContextComposerV2, type PersistedStoryContextV2 } from "./story-context.composer";
+import type { StoryContextSnapshotV2 } from "./story-context";
 import { StoryGenerationErrorV2 } from "./story-generation.pipeline";
 import { StoryNarrativeProvider } from "./story-narrative.provider";
+import { NarrativeAdapterSelector } from "../continuous-openovel/narrative-adapter.selector";
+import { projectRoleImpactSync, projectRoleNarrativeInput } from "../continuous-openovel/role-impact-projector";
+import { evaluateCharacterProtection } from "../continuous-openovel/character-protection.policy";
 import { operationalMetrics } from "../observability/operational-metrics";
+import {
+  assertOpenNovelImpactReceiptIdentity,
+  findEarlierUnfinishedRoleImpact,
+  openNovelImpactReceiptDedupeKey,
+  projectPendingImpactTasks,
+  publishOpenNovelImpactReceipt,
+  roleAssetAudienceWhere,
+  roleCommitmentAudienceWhere
+} from "./openovel-impact-receipt";
+import { continuousStoryV2Serializable, isRetryableSerializableError } from "./serializable-retry";
+import { acceptOpenNovelRolePublicationReview } from "./openovel-role-publication-review";
+import { reserveMultiplayerCommand } from "./world-sequence-reservation";
+import { tryFastMultiplayerWorldCommit } from "./multiplayer-world-commit-fast";
+
+export {
+  findEarlierUnfinishedRoleImpact,
+  projectPendingImpactTasks,
+  publishOpenNovelImpactReceipt,
+  roleAssetAudienceWhere,
+  roleCommitmentAudienceWhere
+} from "./openovel-impact-receipt";
+export { isRetryableSerializableError } from "./serializable-retry";
 
 type Tx = Prisma.TransactionClient;
+
+export type OpenNovelPresenceTiming = {
+  heartbeatStaleMs: number;
+  offlineGraceMs: number;
+};
+
+export type OpenNovelPresencePhase = "HUMAN_OFFLINE_GRACE" | "AI_ACTIVE" | null;
+
+const DEFAULT_OPENOVEL_HEARTBEAT_STALE_MS = 15_000;
+const DEFAULT_OPENOVEL_OFFLINE_GRACE_MS = 30_000;
+
+function presenceDuration(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 1_000 && parsed <= 300_000 ? Math.trunc(parsed) : fallback;
+}
+
+export function readOpenNovelPresenceTiming(env: NodeJS.ProcessEnv = process.env): OpenNovelPresenceTiming {
+  return {
+    heartbeatStaleMs: presenceDuration(env.OPENOVEL_HEARTBEAT_STALE_MS || env.HEARTBEAT_STALE_MS, DEFAULT_OPENOVEL_HEARTBEAT_STALE_MS),
+    offlineGraceMs: presenceDuration(env.OPENOVEL_OFFLINE_GRACE_MS, DEFAULT_OPENOVEL_OFFLINE_GRACE_MS)
+  };
+}
+
+export function openNovelPresencePhase(
+  control: { mode: string; lastHeartbeatAt: Date | null; offlineSince: Date | null; createdAt: Date },
+  now: Date,
+  timing: OpenNovelPresenceTiming = readOpenNovelPresenceTiming()
+): OpenNovelPresencePhase {
+  if (control.mode === "HUMAN_ACTIVE") {
+    const latestHeartbeat = control.lastHeartbeatAt || control.createdAt;
+    return now.getTime() - latestHeartbeat.getTime() >= timing.heartbeatStaleMs ? "HUMAN_OFFLINE_GRACE" : null;
+  }
+  if (control.mode === "HUMAN_OFFLINE_GRACE" && control.offlineSince) {
+    return now.getTime() - control.offlineSince.getTime() >= timing.offlineGraceMs ? "AI_ACTIVE" : null;
+  }
+  return null;
+}
+
+export function shouldUseStandingPolicy(input: {
+  reviewedCandidateCount: number;
+  engineVersion: string;
+  controlReason: string | null;
+}) {
+  return input.reviewedCandidateCount === 0
+    || (input.engineVersion === CONTINUOUS_OPENOVEL_ENGINE_VERSION
+      && input.controlReason === "DISCONNECT_TIMEOUT");
+}
+
+export const OPENOVEL_STANDING_POLICY_VERSION = "openovel_standing_policy_v1";
+export const OPENOVEL_STANDING_POLICY_HASH = sha256Canonical({
+  policyVersion: OPENOVEL_STANDING_POLICY_VERSION,
+  behaviors: ["MAINTAIN_POSITION", "DEFER_IRREVERSIBLE"]
+});
+
+export type OpenNovelAgentTaskIdentityV1 = {
+  schemaVersion: "openovel_agent_task_identity_v1";
+  controlEpoch: number;
+  controlReason: string;
+  controlTransitionId: string | null;
+  decisionSourceRule: "STANDING_POLICY_REQUIRED" | "REVIEWED_CANDIDATE_OR_STANDING_FALLBACK";
+  policyVersion: string;
+  policyHash: string;
+  standingPolicyCandidate: DecisionCandidateV2 | null;
+};
+
+export function openNovelAgentTaskDedupeKey(turnId: string, controlEpoch: number) {
+  return `ACTOR_AGENT_TURN_V2:${turnId}:${controlEpoch}`;
+}
+
+export function openNovelAgentTaskIdentity(input: {
+  controlEpoch: number;
+  controlReason: string | null;
+  controlTransitionId?: string | null;
+  standingPolicyCandidate?: DecisionCandidateV2 | null;
+}): OpenNovelAgentTaskIdentityV1 {
+  const controlReason = input.controlReason || "AI_CONTROL_ACTIVE";
+  const standingPolicyCandidate = input.standingPolicyCandidate || null;
+  return {
+    schemaVersion: "openovel_agent_task_identity_v1",
+    controlEpoch: input.controlEpoch,
+    controlReason,
+    controlTransitionId: input.controlTransitionId || null,
+    decisionSourceRule: controlReason === "DISCONNECT_TIMEOUT"
+      ? "STANDING_POLICY_REQUIRED"
+      : "REVIEWED_CANDIDATE_OR_STANDING_FALLBACK",
+    policyVersion: OPENOVEL_STANDING_POLICY_VERSION,
+    policyHash: standingPolicyCandidate
+      ? sha256Canonical({ policyVersion: OPENOVEL_STANDING_POLICY_VERSION, standingPolicyCandidate })
+      : OPENOVEL_STANDING_POLICY_HASH,
+    standingPolicyCandidate
+  };
+}
+
+export function readOpenNovelAgentTaskIdentity(value: unknown): OpenNovelAgentTaskIdentityV1 | null {
+  const record = jsonRecord(value);
+  if (record.schemaVersion !== "openovel_agent_task_identity_v1"
+    || !Number.isSafeInteger(record.controlEpoch)
+    || typeof record.controlReason !== "string"
+    || !["STANDING_POLICY_REQUIRED", "REVIEWED_CANDIDATE_OR_STANDING_FALLBACK"].includes(String(record.decisionSourceRule))
+    || typeof record.policyVersion !== "string"
+    || typeof record.policyHash !== "string") return null;
+  if (record.controlTransitionId !== null && typeof record.controlTransitionId !== "string") return null;
+  if (record.standingPolicyCandidate !== null
+    && (!record.standingPolicyCandidate
+      || typeof record.standingPolicyCandidate !== "object"
+      || typeof (record.standingPolicyCandidate as any).id !== "string")) return null;
+  return record as OpenNovelAgentTaskIdentityV1;
+}
+
+export function isOpenNovelAgentTaskPolicySnapshotValid(identity: OpenNovelAgentTaskIdentityV1) {
+  if (identity.policyVersion !== OPENOVEL_STANDING_POLICY_VERSION) return false;
+  const expectedHash = identity.standingPolicyCandidate
+    ? sha256Canonical({ policyVersion: identity.policyVersion, standingPolicyCandidate: identity.standingPolicyCandidate })
+    : OPENOVEL_STANDING_POLICY_HASH;
+  return identity.policyHash === expectedHash;
+}
 
 class DecisionContextMovedError extends Error {
   constructor() { super("DECISION_CONTEXT_MOVED"); }
@@ -81,6 +227,156 @@ type ResultTaskPayloadV2 = {
   controlEpoch: number;
 };
 
+type OpenInteractionForAgent = {
+  id: string;
+  targetRoleId: string;
+  createdAt: Date;
+};
+
+type StoredOpenNovelRoleContextV1 = {
+  schemaVersion: "openovel_role_context_v1";
+  recordId: string;
+  snapshot: StoryContextSnapshotV2;
+  finalization: FrozenOpenNovelFinalizationContext;
+};
+
+type FrozenOpenNovelAsset = {
+  assetKey: string;
+  ownerRoleId: string | null;
+  ownerActorKey: string | null;
+  quantity: number;
+  status: string;
+  visibility: string;
+};
+
+type FrozenOpenNovelFinalizationContext = {
+  visibleFacts: VisibleFact[];
+  incomingImpacts: Array<{ sourceRoleName: string; content: string }>;
+  assets: FrozenOpenNovelAsset[];
+};
+
+type PersistedOpenNovelRoleContext = PersistedStoryContextV2 & {
+  finalization: FrozenOpenNovelFinalizationContext;
+};
+
+export function bindOldestOpenInteraction(
+  command: TurnDecisionCommandV2,
+  roleId: string,
+  openInteractions: OpenInteractionForAgent[]
+): TurnDecisionCommandV2 {
+  const interaction = [...openInteractions]
+    .filter((candidate) => candidate.targetRoleId === roleId)
+    .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id))[0];
+  return interaction ? { ...command, interactionId: interaction.id } : command;
+}
+
+export function readStoredOpenNovelRoleContext(statePatchJson: unknown): PersistedOpenNovelRoleContext | null {
+  const stored = jsonRecord(jsonRecord(statePatchJson).openNovelRoleContext);
+  const snapshot = stored.snapshot as StoryContextSnapshotV2 | undefined;
+  const finalization = jsonRecord(stored.finalization);
+  if (stored.schemaVersion !== "openovel_role_context_v1" || typeof stored.recordId !== "string" || !snapshot) return null;
+  if (!snapshot.identity || typeof snapshot.identity.snapshotHash !== "string" || !snapshot.contextReport) return null;
+  if (!Array.isArray(finalization.visibleFacts) || !Array.isArray(finalization.incomingImpacts) || !Array.isArray(finalization.assets)) return null;
+  return {
+    recordId: stored.recordId,
+    compilation: { ok: true, snapshot, report: snapshot.contextReport },
+    finalization: finalization as FrozenOpenNovelFinalizationContext
+  };
+}
+
+export function wouldRecompileAfterFutureWorldAdvance(currentWorldSequence: number, appliedWorldSequence: number): boolean {
+  return currentWorldSequence > appliedWorldSequence;
+}
+
+export function interactionSourceSequenceFilter(worldSequence: number) {
+  return { sourceResolution: { appliedWorldSequence: { lte: worldSequence } } } as const;
+}
+
+export function isRoleResultEventInWindow(worldSequence: number | null, baseWorldSequence: number, appliedWorldSequence: number) {
+  return Number.isInteger(worldSequence)
+    && Number(worldSequence) > baseWorldSequence
+    && Number(worldSequence) <= appliedWorldSequence;
+}
+
+export function isImpactTargetTurnEligible(status: string, openNovel: boolean) {
+  return status === "OPEN" || (openNovel && status === "RESOLVING");
+}
+
+export function isRoleGenerationTaskRelevant(
+  task: { taskType: string; inputRefId: string | null },
+  hasRoleCanon: boolean,
+  unresolvedResolutionIds: ReadonlySet<string>
+) {
+  if (task.taskType === "ACTOR_OPENING_V2") return !hasRoleCanon;
+  return task.taskType === "ACTOR_RESULT_V2" && Boolean(task.inputRefId && unresolvedResolutionIds.has(task.inputRefId));
+}
+
+export function visibleFactsThroughCommittedResolution(
+  frozenFacts: VisibleFact[],
+  action: PlannedIntentAction,
+  factCatalog: Array<{ factKey: string; visibility: string }>
+): VisibleFact[] {
+  const byKey = new Map(frozenFacts.map((fact) => [fact.factKey, { ...fact }]));
+  for (const factKey of action.effectFactKeys) {
+    const visibility = factCatalog.find((fact) => fact.factKey === factKey)?.visibility || action.visibility;
+    byKey.set(factKey, {
+      factKey,
+      content: visibility === "OBSERVABLE"
+        ? action.observableTraceText || action.receiptText
+        : action.receiptText
+    });
+  }
+  return [...byKey.values()];
+}
+
+export function canonFactCommitPlans(input: {
+  stageTitle: string;
+  factCatalog: Array<{ factKey: string; visibility: string }>;
+  action: PlannedIntentAction;
+  actorRoleId: string;
+  allRoles: Array<{ id: string; roleKey: string }>;
+}) {
+  const allRoleIds = input.allRoles.map((role) => role.id);
+  const affectedRoleKeys = new Set(input.action.influenceEdges.map((edge) => edge.affectedRoleKey));
+  const affectedRoleIds = input.allRoles.filter((role) => affectedRoleKeys.has(role.roleKey)).map((role) => role.id);
+  return input.action.effectFactKeys.map((factKey) => {
+    const visibility = (input.factCatalog.find((fact) => fact.factKey === factKey)?.visibility
+      || input.action.visibility) as ResolvedStoryAction["visibility"];
+    return {
+      factKey,
+      content: visibility === "OBSERVABLE"
+        ? input.action.observableTraceText || `有人在${input.stageTitle}留下了可核验但尚不能确认来源的行动痕迹。`
+        : input.action.receiptText,
+      visibility: visibility.toLowerCase(),
+      knownByRoleIds: factAudience(visibility, input.action, input.actorRoleId, allRoleIds, affectedRoleIds)
+    };
+  });
+}
+
+export function assetsThroughCommittedResolution(
+  frozenAssets: FrozenOpenNovelAsset[],
+  action: PlannedIntentAction,
+  actorRoleId: string
+): FrozenOpenNovelAsset[] {
+  const assets = frozenAssets.map((asset) => ({ ...asset }));
+  for (const planned of action.leverageDispositions) {
+    const asset = assets.find((candidate) => candidate.assetKey === planned.assetKey);
+    if (!asset) continue;
+    const disposition = planned.disposition === "TRANSFER" && !action.targetRoleId ? "REFERENCE" : planned.disposition;
+    if (disposition === "TRANSFER") {
+      asset.ownerRoleId = action.targetRoleId;
+      asset.ownerActorKey = null;
+    } else if (disposition === "CLAIM") {
+      asset.ownerRoleId = actorRoleId;
+      asset.ownerActorKey = null;
+    } else if (disposition === "CONSUME") {
+      asset.quantity -= 1;
+      if (asset.quantity <= 0) asset.status = "SPENT";
+    }
+  }
+  return assets;
+}
+
 /**
  * Failed result reservations leave the positive world-sequence namespace
  * before later reservations are compacted. A role may fail repeatedly while
@@ -102,6 +398,7 @@ export class ContinuousStoryV2Service {
     @Inject(StoryAccessService) private readonly access: StoryAccessService,
     @Inject(StoryContextComposerV2) private readonly storyContexts: StoryContextComposerV2,
     @Inject(StoryNarrativeProvider) private readonly narrator: StoryNarrativeProvider,
+    @Inject(NarrativeAdapterSelector) private readonly narrativeAdapters: NarrativeAdapterSelector,
     @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never
   ) {}
 
@@ -116,7 +413,7 @@ export class ContinuousStoryV2Service {
       });
       if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
       if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the host can start the room" });
-      this.requireV2(room.engineVersion);
+      this.requireV2(room.engineVersion, room.id);
       const lobby = roomState(room.stateJson);
       const soloNpcMode = isSoloNpcRun(room, lobby);
       if (room.status === "playing") {
@@ -369,11 +666,12 @@ export class ContinuousStoryV2Service {
       }
     });
     if (!run || run.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
-    this.requireV2(run.engineVersion);
+    this.requireV2(run.engineVersion, run.id);
     const membership = run.players.find((player) => player.userId === user.id);
     if (!membership?.role) throw new ForbiddenException({ code: "ROOM_MEMBERSHIP_REQUIRED", message: "A claimed room role is required" });
-    const actorThread = run.actorThreads.find((thread) => thread.roleId === membership.role!.id) || null;
-    const [control, turn, facts, entries, assets, commitments, armedConditions, pendingInteractions, actionResolutions] = await Promise.all([
+    const memberRole = membership.role;
+    const actorThread = run.actorThreads.find((thread) => thread.roleId === memberRole.id) || null;
+    const [control, turn, facts, entries, assets, commitments, armedConditions, pendingInteractions, actionResolutions, pendingImpactTasks, roleGenerationTasks] = await Promise.all([
       this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: roomId, roleId: membership.role.id } } }),
       this.prisma.actorTurn.findFirst({
         where: { runId: roomId, roleId: membership.role.id, status: { in: ["OPEN", "RESOLVING"] } },
@@ -391,21 +689,11 @@ export class ContinuousStoryV2Service {
         take: 120
       }),
       this.prisma.roleAsset.findMany({
-        where: {
-          runId: roomId,
-          OR: [{ ownerRoleId: membership.role.id }, { visibility: { in: ["PUBLIC", "OBSERVABLE"] } }]
-        },
+        where: roleAssetAudienceWhere(roomId, membership.role.id),
         orderBy: { assetKey: "asc" }
       }),
       this.prisma.commitmentV2.findMany({
-        where: {
-          runId: roomId,
-          OR: [
-            { issuerRoleId: membership.role.id },
-            { receiverRoleId: membership.role.id },
-            { visibility: { in: ["PUBLIC", "OBSERVABLE"] } }
-          ]
-        },
+        where: roleCommitmentAudienceWhere(roomId, membership.role.id),
         include: { issuerRole: true, receiverRole: true },
         orderBy: { createdAt: "asc" }
       }),
@@ -413,8 +701,12 @@ export class ContinuousStoryV2Service {
         ? this.prisma.conditionalActionV2.findMany({ where: { ownerThreadId: actorThread.id, status: "ARMED" }, orderBy: { createdAt: "asc" } })
         : Promise.resolve([]),
       this.prisma.interactionRequestV2.findMany({
-        where: { runId: roomId, targetRoleId: membership.role.id, status: "OPEN" },
-        include: { sourceRole: true },
+        where: {
+          runId: roomId,
+          status: "OPEN",
+          OR: [{ targetRoleId: membership.role.id }, { sourceRoleId: membership.role.id }]
+        },
+        include: { sourceRole: true, targetRole: true },
         orderBy: { createdAt: "asc" }
       }),
       this.prisma.actionResolution.findMany({
@@ -422,6 +714,21 @@ export class ContinuousStoryV2Service {
         include: { playerAction: { select: { actionType: true } } },
         orderBy: { appliedWorldSequence: "asc" },
         take: 120
+      }),
+      this.prisma.storyTaskOutbox.findMany({
+        where: { runId: roomId, roleId: membership.role.id, taskType: "ACTOR_IMPACT_V2", status: { in: ["PENDING", "RUNNING", "FAILED"] } },
+        select: { id: true, inputRefId: true, roleId: true, status: true, resultJson: true },
+        orderBy: { createdAt: "asc" }
+      }),
+      this.prisma.storyTaskOutbox.findMany({
+        where: {
+          runId: roomId,
+          roleId: membership.role.id,
+          taskType: { in: ["ACTOR_OPENING_V2", "ACTOR_RESULT_V2"] },
+          status: { in: ["PENDING", "RUNNING", "FAILED"] }
+        },
+        select: { id: true, taskType: true, inputRefId: true, status: true },
+        orderBy: { createdAt: "asc" }
       })
     ]);
     if (!control) throw new ConflictException({ code: "ROLE_CONTROL_NOT_READY", message: "Role control is not ready" });
@@ -439,12 +746,21 @@ export class ContinuousStoryV2Service {
       (this.prisma as any).sponsorshipRequest.findFirst({ where: { runId: run.id, beneficiaryUserId: user.id }, orderBy: { createdAt: "desc" } })
     ]);
     const activeActionBilling = billing.policyVersion === "active_action_v1";
+    const projectedPendingImpacts = projectPendingImpactTasks(pendingImpactTasks, actionResolutions);
+    const hasRoleCanon = entries.some((entry) => ["V2_OPENING", "V2_RESULT", "V2_NEXT_SITUATION", "V2_ENDING"].includes(entry.entryType));
+    const unresolvedResolutionIds = new Set(actionResolutions.filter((resolution) => resolution.qualityStatus !== "PASS").map((resolution) => resolution.id));
+    const relevantGenerationTasks = roleGenerationTasks.filter((task) => isRoleGenerationTaskRelevant(task, hasRoleCanon, unresolvedResolutionIds));
+    const hasFailedGeneration = relevantGenerationTasks.some((task) => task.status === "FAILED");
+    const hasActiveGeneration = relevantGenerationTasks.some((task) => task.status === "PENDING" || task.status === "RUNNING") || turn?.status === "RESOLVING";
+    const hasFailedImpact = projectedPendingImpacts.some((impact) => impact.status === "RECOVERY_REQUIRED");
     const projection: GameProjectionV2 = {
       schemaVersion: GAME_PROJECTION_V2_SCHEMA_VERSION,
+      engineVersion: run.engineVersion as typeof CONTINUOUS_STORY_ENGINE_VERSION | typeof CONTINUOUS_OPENOVEL_ENGINE_VERSION,
+      runtimeMode: run.engineVersion === CONTINUOUS_OPENOVEL_ENGINE_VERSION ? OPENOVEL_ROLE_RUNTIME_MODE : "STRUCTURED_STORY_V2",
       generatedAt: new Date().toISOString(),
       worldSequence: run.worldSequence,
       room: { id: run.id, title: run.title, worldId: run.templateKey, status: run.status, mode: run.maxPlayers === 1 ? "solo" : "multiplayer", ownerUserId: run.ownerUserId },
-      world: gamePageProjection(run.templateKey),
+      world: gamePageProjection(run.templateKey, membership.role.roleKey),
       player: {
         userId: user.id,
         roleId: membership.role.id,
@@ -527,18 +843,21 @@ export class ContinuousStoryV2Service {
         const trace = jsonRecord(interaction.observableTraceJson);
         return {
           id: interaction.id,
+          direction: interaction.targetRoleId === memberRole.id ? "INCOMING" as const : "OUTGOING" as const,
           sourceRoleId: interaction.sourceRoleId,
           sourceRoleName: interaction.sourceRole.roleName,
+          targetRoleId: interaction.targetRoleId,
+          targetRoleName: interaction.targetRole.roleName,
           requestKind: interaction.requestKind,
           pressure: [pressure.objective, pressure.method].filter((value) => typeof value === "string" && value).join("；"),
           observableTrace: typeof trace.content === "string" ? trace.content : null,
           expiresAt: interaction.expiresAt?.toISOString() || null,
-          responseOptions: decisionCandidates.map((candidate) => ({
+          responseOptions: interaction.targetRoleId === memberRole.id ? decisionCandidates.map((candidate) => ({
             id: candidate.id,
             label: candidate.label,
             description: candidate.description,
             intentDraft: candidate.intentDraft
-          }))
+          })) : []
         };
       }),
       observableTraces: entries.filter((entry) => entry.entryType === "V2_OBSERVABLE_TRACE").map((entry) => ({
@@ -547,6 +866,15 @@ export class ContinuousStoryV2Service {
         worldSequence: entry.worldSequence || 0,
         createdAt: entry.createdAt.toISOString()
       })),
+      pendingImpacts: projectedPendingImpacts,
+      roleNarrativeState: {
+        canonStatus: hasRoleCanon ? "READY" : hasActiveGeneration ? "GENERATING" : "EMPTY",
+        generationStatus: hasFailedGeneration ? "RETRY_AVAILABLE" : hasActiveGeneration ? "GENERATING" : "IDLE",
+        impactStatus: hasFailedImpact ? "RECOVERY_REQUIRED"
+          : projectedPendingImpacts.some((impact) => impact.status === "SYNCING") ? "SYNCING"
+          : projectedPendingImpacts.some((impact) => impact.status === "PENDING") ? "PENDING" : "SYNCED",
+        canRetry: hasFailedGeneration || hasFailedImpact
+      },
       access: {
         state: activeActionBilling ? "UNLOCKED" : access.unlocked ? "UNLOCKED" : access.requiresUnlock ? "REQUIRES_UNLOCK" : "FREE",
         requiresUnlock: activeActionBilling ? false : access.requiresUnlock,
@@ -580,6 +908,34 @@ export class ContinuousStoryV2Service {
       select: { roleId: true }
     });
     if (!membership?.roleId) throw new ForbiddenException({ code: "ROOM_MEMBERSHIP_REQUIRED", message: "A claimed room role is required" });
+    const failedImpactTasks = await this.prisma.storyTaskOutbox.findMany({
+      where: { runId: roomId, roleId: membership.roleId, taskType: "ACTOR_IMPACT_V2", status: "FAILED" },
+      select: { id: true, inputRefId: true, roleId: true, status: true, resultJson: true },
+      orderBy: { createdAt: "asc" }
+    });
+    const failedImpact = projectPendingImpactTasks(failedImpactTasks, [])[0];
+    if (failedImpact) {
+      const reset = await this.prisma.storyTaskOutbox.updateMany({
+        where: { id: failedImpact.id, status: "FAILED" },
+        data: {
+          status: "PENDING",
+          attempt: 0,
+          nextRetryAt: new Date(),
+          leaseOwner: null,
+          leaseExpiresAt: null,
+          startedAt: null,
+          completedAt: null,
+          outcome: null,
+          lastError: null
+        }
+      });
+      return {
+        scheduled: reset.count === 1,
+        status: reset.count === 1 ? "REQUEUED" : "MOVED",
+        taskId: failedImpact.id,
+        kind: "IMPACT"
+      };
+    }
     const openingTurn = await this.prisma.actorTurn.findFirst({
       where: { runId: roomId, roleId: membership.roleId, status: "GENERATING" },
       orderBy: { turnIndex: "desc" },
@@ -615,7 +971,7 @@ export class ContinuousStoryV2Service {
       };
     }
     const resolution = await this.prisma.actionResolution.findFirst({
-      where: { runId: roomId, roleId: membership.roleId, qualityStatus: "GENERATING" },
+      where: { runId: roomId, roleId: membership.roleId, qualityStatus: { in: ["GENERATING", "WORLD_COMMITTED"] } },
       orderBy: { appliedWorldSequence: "desc" },
       select: { id: true }
     });
@@ -648,7 +1004,7 @@ export class ContinuousStoryV2Service {
       include: { players: { where: { userId: user.id, status: "active" }, include: { role: true } } }
     });
     if (!run || run.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
-    this.requireV2(run.engineVersion);
+    this.requireV2(run.engineVersion, run.id);
     const role = run.players[0]?.role;
     if (!role) throw new ForbiddenException({ code: "ROOM_MEMBERSHIP_REQUIRED", message: "A claimed role is required" });
     const [thread, resolutions, entries, reviews] = await Promise.all([
@@ -674,6 +1030,38 @@ export class ContinuousStoryV2Service {
     };
   }
 
+  async sweepOpenNovelPresence(now = new Date()) {
+    const timing = readOpenNovelPresenceTiming();
+    const staleCutoff = new Date(now.getTime() - timing.heartbeatStaleMs);
+    const graceCutoff = new Date(now.getTime() - timing.offlineGraceMs);
+    const candidates = await this.prisma.roleControl.findMany({
+      where: {
+        humanPlayerId: { not: null },
+        run: {
+          engineVersion: CONTINUOUS_OPENOVEL_ENGINE_VERSION,
+          mode: "room",
+          status: "playing"
+        },
+        OR: [
+          {
+            mode: "HUMAN_ACTIVE",
+            OR: [{ lastHeartbeatAt: null }, { lastHeartbeatAt: { lte: staleCutoff } }]
+          },
+          { mode: "HUMAN_OFFLINE_GRACE", offlineSince: { lte: graceCutoff } }
+        ]
+      },
+      select: { id: true },
+      orderBy: { updatedAt: "asc" },
+      take: 100
+    });
+    const transitions = await Promise.all(candidates.map((candidate) => this.transitionOpenNovelPresenceCandidate(candidate.id, now, timing)));
+    return {
+      scanned: candidates.length,
+      graceTransitions: transitions.filter((transition) => transition === "HUMAN_OFFLINE_GRACE").length,
+      aiTransitions: transitions.filter((transition) => transition === "AI_ACTIVE").length
+    };
+  }
+
   async heartbeat(user: AuthenticatedUser, roomId: string, command: HeartbeatCommandV1) {
     validateHeartbeatCommand(command);
     const now = new Date();
@@ -685,6 +1073,9 @@ export class ContinuousStoryV2Service {
       if (existing && command.heartbeatSequence <= existing.lastHeartbeatSequence) {
         return { accepted: false, control: context.control };
       }
+      // Lock the control row before recording the session heartbeat. This
+      // orders an on-time recovery ahead of a concurrent offline takeover.
+      const heartbeatControl = await tx.roleControl.update({ where: { id: context.control.id }, data: { lastHeartbeatAt: now } });
       await tx.presenceSession.upsert({
         where: { runId_userId_sessionInstanceId: key },
         update: {
@@ -701,7 +1092,43 @@ export class ContinuousStoryV2Service {
         }
       });
       await tx.storyPlayer.update({ where: { id: context.player.id }, data: { lastActiveAt: now } });
-      const control = await tx.roleControl.update({ where: { id: context.control.id }, data: { lastHeartbeatAt: now } });
+      let control;
+      if (context.run.engineVersion === CONTINUOUS_OPENOVEL_ENGINE_VERSION
+        && context.run.mode === "room"
+        && context.run.status === "playing"
+        && heartbeatControl.mode === "HUMAN_OFFLINE_GRACE") {
+        const recoveryKey = `openovel-heartbeat-recovered:${heartbeatControl.id}:${heartbeatControl.epoch}:${heartbeatControl.offlineSince?.getTime() || 0}`;
+        const recovered = await tx.roleControl.updateMany({
+          where: { id: heartbeatControl.id, mode: "HUMAN_OFFLINE_GRACE", epoch: heartbeatControl.epoch },
+          data: {
+            mode: "HUMAN_ACTIVE",
+            reason: "HEARTBEAT_RECOVERED",
+            lastHeartbeatAt: now,
+            offlineSince: null,
+            takeoverAt: null
+          }
+        });
+        if (recovered.count === 1) {
+          await tx.roleControlTransition.create({
+            data: {
+              roleControlId: heartbeatControl.id,
+              fromMode: "HUMAN_OFFLINE_GRACE",
+              toMode: "HUMAN_ACTIVE",
+              fromEpoch: heartbeatControl.epoch,
+              toEpoch: heartbeatControl.epoch,
+              reason: "HEARTBEAT_RECOVERED",
+              initiatedByUserId: user.id,
+              effectiveSlot: context.turn?.status === "OPEN" ? `TURN:${context.turn.id}` : "NEXT_ACTOR_TURN",
+              idempotencyKey: recoveryKey
+            }
+          });
+          await tx.storyRun.update({ where: { id: roomId }, data: { version: { increment: 1 } } });
+          await this.publishPresenceChange(tx, context, recoveryKey, "ONLINE", "HEARTBEAT_RECOVERED");
+        }
+        control = await tx.roleControl.findUniqueOrThrow({ where: { id: heartbeatControl.id } });
+      } else {
+        control = heartbeatControl;
+      }
       return { accepted: true, control };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, maxWait: 10_000, timeout: 30_000 });
     return {
@@ -726,7 +1153,7 @@ export class ContinuousStoryV2Service {
       const nextEpoch = context.control.epoch + 1;
       await tx.roleControl.update({ where: { id: context.control.id }, data: { mode: "AI_ACTIVE", epoch: nextEpoch, reason: "EXPLICIT_HANDOFF", takeoverAt: new Date(), offlineSince: null } });
       await tx.storyRole.update({ where: { id: context.role.id }, data: { isAiControlled: true, status: "ai_controlled" } });
-      await tx.roleControlTransition.create({
+      const transition = await tx.roleControlTransition.create({
         data: {
           roleControlId: context.control.id, fromMode: context.control.mode, toMode: "AI_ACTIVE",
           fromEpoch: context.control.epoch, toEpoch: nextEpoch, reason: "EXPLICIT_HANDOFF",
@@ -735,17 +1162,27 @@ export class ContinuousStoryV2Service {
         }
       });
       if (context.turn && context.run.currentNodeId) {
+        const taskIdentity = openNovelAgentTaskIdentity({
+          controlEpoch: nextEpoch,
+          controlReason: "EXPLICIT_HANDOFF",
+          controlTransitionId: transition.id
+        });
+        const taskDedupeKey = openNovelAgentTaskDedupeKey(context.turn.id, nextEpoch);
         await tx.storyTaskOutbox.upsert({
-          where: { dedupeKey: `ACTOR_AGENT_TURN_V2:${context.turn.id}` },
+          where: { dedupeKey: taskDedupeKey },
           update: {
             status: "PENDING", outcome: null, inputRefId: context.turn.id, roleId: context.role.id,
             controlEpoch: nextEpoch, nextRetryAt: new Date(), attempt: 0, completedAt: null,
-            leaseOwner: null, leaseExpiresAt: null, lastError: null, resultJson: Prisma.DbNull
+            leaseOwner: null, leaseExpiresAt: null, lastError: null,
+            identityJson: taskIdentity as unknown as Prisma.InputJsonValue,
+            resultJson: Prisma.DbNull
           },
           create: {
             runId: roomId, nodeId: context.run.currentNodeId, roleId: context.role.id, inputRefId: context.turn.id,
             actionSlot: "ACTOR_TURN", controlEpoch: nextEpoch, taskType: "ACTOR_AGENT_TURN_V2", status: "PENDING",
-            dedupeKey: `ACTOR_AGENT_TURN_V2:${context.turn.id}`, maxAttempts: 3
+            dedupeKey: taskDedupeKey,
+            identityJson: taskIdentity as unknown as Prisma.InputJsonValue,
+            maxAttempts: 3
           }
         });
       }
@@ -804,7 +1241,13 @@ export class ContinuousStoryV2Service {
       });
       if (immediate) {
         await tx.storyTaskOutbox.updateMany({
-          where: { runId: roomId, roleId: context.role.id, taskType: "ACTOR_AGENT_TURN_V2", status: { in: ["PENDING", "RUNNING"] } },
+          where: {
+            runId: roomId,
+            roleId: context.role.id,
+            taskType: "ACTOR_AGENT_TURN_V2",
+            controlEpoch: context.control.epoch,
+            status: { in: ["PENDING", "RUNNING"] }
+          },
           data: {
             status: "COMPLETED", outcome: "CONTROL_RECLAIMED", completedAt: new Date(),
             leaseOwner: null, leaseExpiresAt: null, leaseVersion: { increment: 1 }, lastError: null
@@ -929,6 +1372,7 @@ export class ContinuousStoryV2Service {
       return { outcome: "ACTOR_OPENING_READY", turnId: outcome.turnId, decisionSetId: outcome.decisionSetId };
     } catch (error) {
       if (error instanceof AgentLeaseLostError) return { outcome: "LEASE_LOST" };
+      if (exceptionResponseCode(error) === "OPENING_TURN_MOVED") return { outcome: "TURN_ALREADY_MOVED" };
       throw error;
     }
   }
@@ -970,32 +1414,53 @@ export class ContinuousStoryV2Service {
     }
     const snapshot = persistedContext.compilation.snapshot;
     let pipeline;
+    let roleRuntimeOutput: RoleNarrativeOutputV1 | null = null;
     try {
-      pipeline = await this.narrator.resolveContext({
-        context: snapshot,
-        contextRecordId: persistedContext.recordId,
-        actionResolutionId: null,
-        generateDecisions: true,
-        // One publication-gate repair is cheaper and safer than exposing a
-        // broken opening or making the player repeatedly restart the task.
-        // Provider attempts remain observable and never change Credits cost.
-        maxQualityAttempts: 2,
-        getCurrentIdentity: async () => {
-          const [latestTurn, latestRun, latestControl] = await Promise.all([
-            this.prisma.actorTurn.findUnique({ where: { id: turn.id } }),
-            this.prisma.storyRun.findUnique({ where: { id: turn.runId } }),
-            this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: turn.runId, roleId: turn.roleId } } })
-          ]);
-          if (!latestTurn || !latestRun || !latestControl) return { ...snapshot.identity, actorTurnId: "missing" };
-          return {
-            ...snapshot.identity,
-            actorTurnId: latestTurn.id,
-            worldSequence: latestRun.worldSequence,
-            turnRevision: latestTurn.revision,
-            controlEpoch: latestControl.epoch
-          };
-        }
-      });
+      if (this.narrativeAdapters.isOpenNovel(turn.run)) {
+        const runtime = this.narrativeAdapters.openNovel;
+        const status = await runtime.ensureRoleWorkspace({ roomId: turn.runId, roleId: turn.roleId, worldId: turn.run.templateKey, storyPackageVersion: turn.run.strategyVersion });
+        roleRuntimeOutput = await runtime.generateOpening(projectRoleNarrativeInput(snapshot, {
+          turnKind: "OPENING",
+          turnIndex: turn.turnIndex,
+          appliedWorldSequence: null,
+          previousCanonHash: status.canonHash || undefined,
+          idempotencyKey: `opening:${turn.id}:${snapshot.identity.snapshotHash}`
+        }));
+        const decisions = openNovelDecisionCandidates(roleRuntimeOutput, roleContext(turn.role));
+        pipeline = {
+          narrative: { resultNarrative: "", nextSituationNarrative: roleRuntimeOutput.narration },
+          plan: { nextPressure: situationInput.stage.commonContest.title },
+          decisions,
+          promptExecutions: [],
+          finalStoryTextHash: roleRuntimeOutput.canonHash
+        };
+      } else {
+        pipeline = await this.narrativeAdapters.structured.resolveContext({
+          context: snapshot,
+          contextRecordId: persistedContext.recordId,
+          actionResolutionId: null,
+          generateDecisions: true,
+          // One publication-gate repair is cheaper and safer than exposing a
+          // broken opening or making the player repeatedly restart the task.
+          // Provider attempts remain observable and never change Credits cost.
+          maxQualityAttempts: 2,
+          getCurrentIdentity: async () => {
+            const [latestTurn, latestRun, latestControl] = await Promise.all([
+              this.prisma.actorTurn.findUnique({ where: { id: turn.id } }),
+              this.prisma.storyRun.findUnique({ where: { id: turn.runId } }),
+              this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: turn.runId, roleId: turn.roleId } } })
+            ]);
+            if (!latestTurn || !latestRun || !latestControl) return { ...snapshot.identity, actorTurnId: "missing" };
+            return {
+              ...snapshot.identity,
+              actorTurnId: latestTurn.id,
+              worldSequence: latestRun.worldSequence,
+              turnRevision: latestTurn.revision,
+              controlEpoch: latestControl.epoch
+            };
+          }
+        });
+      }
     } catch (error) {
       if (error instanceof StoryGenerationErrorV2) {
         const retryable = error.recoverable;
@@ -1012,13 +1477,18 @@ export class ContinuousStoryV2Service {
     }
     const openingNarrative = `${pipeline.narrative.resultNarrative}\n\n${pipeline.narrative.nextSituationNarrative}`;
     const draft = bindDecisionTargets({ decisions: pipeline.decisions }, allRoles, situationInput.roleStage);
-    const storyReview = reviewStory(openingNarrative, situationInput, "SITUATION");
-    const decisionReview = reviewDecisionSet(draft.decisions, situationInput);
+    const storyReview = acceptOpenNovelRolePublicationReview(
+      reviewStory(openingNarrative, situationInput, "SITUATION"),
+      Boolean(roleRuntimeOutput),
+    );
+    const decisionReview = roleRuntimeOutput
+      ? { status: "PASS" as const, scores: { contract: 5 }, issues: roleRuntimeOutput.options.length ? [] : ["OPTIONS_OPTIONAL_FREE_INPUT_AVAILABLE"] }
+      : reviewDecisionSet(draft.decisions, situationInput);
     assertQuality(storyReview, "OPENING_STORY_QUALITY_FAILED");
     assertQuality(decisionReview, "OPENING_DECISION_QUALITY_FAILED");
     const writerExecution = pipeline.promptExecutions.find((record) => record.pipelineStep === "WRITER");
-    const provider = writerExecution?.provider || "unknown";
-    const modelName = writerExecution?.modelName || "unknown";
+    const provider = roleRuntimeOutput ? "openovel-role-runtime" : writerExecution?.provider || "unknown";
+    const modelName = roleRuntimeOutput ? "OPENOVEL_ROLE_V1" : writerExecution?.modelName || "unknown";
 
     return this.serializable(async (tx) => {
       const [latestTurn, latestControl] = await Promise.all([
@@ -1056,6 +1526,13 @@ export class ContinuousStoryV2Service {
             modelName,
             generationStatus: "READY",
             fakeStoryPublished: false
+            ,...(roleRuntimeOutput ? {
+              roleCanonHash: roleRuntimeOutput.canonHash,
+              roleWorkspaceRevision: roleRuntimeOutput.workspaceRevision,
+              roleAppliedWorldSequence: roleRuntimeOutput.appliedWorldSequence,
+              roleRuntimeUsage: roleRuntimeOutput.usage,
+              roleRuntimeWarnings: roleRuntimeOutput.warnings
+            } : {})
           } as Prisma.InputJsonValue,
           qualityStatus: "PASS"
         }
@@ -1108,6 +1585,26 @@ export class ContinuousStoryV2Service {
         });
       }
       if (latestControl?.mode === "AI_ACTIVE") {
+        const transition = await tx.roleControlTransition.findFirst({
+          where: { roleControlId: latestControl.id, toEpoch: latestControl.epoch, toMode: "AI_ACTIVE" },
+          orderBy: { createdAt: "desc" }
+        });
+        const taskIdentity = openNovelAgentTaskIdentity({
+          controlEpoch: latestControl.epoch,
+          controlReason: transition?.reason || latestControl.reason,
+          controlTransitionId: transition?.id || null,
+          standingPolicyCandidate: (transition?.reason || latestControl.reason) === "DISCONNECT_TIMEOUT"
+            ? standingPolicyDecisionCandidate(this.situationInput(
+                turn.run,
+                turn.role,
+                turn.stageIndex,
+                turn.turnIndex,
+                turn.run.worldSequence,
+                [],
+                []
+              ))
+            : null
+        });
         await tx.storyTaskOutbox.create({
           data: {
             runId: turn.runId,
@@ -1118,7 +1615,8 @@ export class ContinuousStoryV2Service {
             controlEpoch: latestControl.epoch,
             taskType: "ACTOR_AGENT_TURN_V2",
             status: "PENDING",
-            dedupeKey: `ACTOR_AGENT_TURN_V2:${turn.id}`,
+            dedupeKey: openNovelAgentTaskDedupeKey(turn.id, latestControl.epoch),
+            identityJson: taskIdentity as unknown as Prisma.InputJsonValue,
             maxAttempts: 3
           }
         });
@@ -1150,8 +1648,20 @@ export class ContinuousStoryV2Service {
       }
       for (let attempt = 0; attempt < 4; attempt += 1) {
         const context = await this.loadAgentContext(taskId, fence);
-        const candidates = asDecisionCandidates(context.decisionSet?.candidatesJson);
-        if (!candidates.length) throw new ConflictException({ code: "AGENT_DECISION_NOT_AVAILABLE", message: "Agent has no legal decision" });
+        const reviewedCandidates = asDecisionCandidates(context.decisionSet?.candidatesJson);
+        // A human can always use free input when OpenNovel intentionally
+        // publishes no suggested options. AI takeover needs the equivalent
+        // bounded path or the role deadlocks forever. The fallback is a
+        // reversible Standing Policy and still passes through the same Guard,
+        // resolution, Canon and control-epoch fences as every other action.
+        const usesStandingPolicy = shouldUseStandingPolicy({
+          reviewedCandidateCount: reviewedCandidates.length,
+          engineVersion: context.run.engineVersion,
+          controlReason: context.taskIdentity?.controlReason || context.control.reason
+        });
+        const candidates = usesStandingPolicy
+          ? [context.taskIdentity?.standingPolicyCandidate || standingPolicyDecisionCandidate(context.situationInput)]
+          : reviewedCandidates;
         const agentContext = await this.storyContexts.compileForResolution({
           run: context.run,
           role: context.role,
@@ -1172,40 +1682,71 @@ export class ContinuousStoryV2Service {
         let agentChoice;
         try {
           const snapshot = agentContext.compilation.snapshot;
-          agentChoice = await this.narrator.decideAgent({
-            context: snapshot,
-            contextRecordId: agentContext.recordId,
-            finalStory: context.turn.situationNarrative,
-            candidates,
-            getCurrentIdentity: async () => {
-              const [latestTurn, latestRun, latestControl] = await Promise.all([
-                this.prisma.actorTurn.findUnique({ where: { id: context.turn.id } }),
-                this.prisma.storyRun.findUnique({ where: { id: context.run.id } }),
-                this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: context.run.id, roleId: context.role.id } } })
-              ]);
-              if (!latestTurn || !latestRun || !latestControl) return { ...snapshot.identity, actorTurnId: "missing" };
-              return {
-                ...snapshot.identity,
-                actorTurnId: latestTurn.id,
-                worldSequence: latestRun.worldSequence,
-                turnRevision: latestTurn.revision,
-                controlEpoch: latestControl.epoch
-              };
-            }
-          });
+          agentChoice = usesStandingPolicy
+            ? {
+                candidateId: candidates[0]!.id,
+                rationale: context.control.reason === "DISCONNECT_TIMEOUT"
+                  ? "STANDING_POLICY_OFFLINE_TAKEOVER"
+                  : "STANDING_POLICY_NO_REVIEWED_OPTIONS"
+              }
+            : await this.narrator.decideAgent({
+                context: snapshot,
+                contextRecordId: agentContext.recordId,
+                finalStory: context.turn.situationNarrative,
+                candidates,
+                getCurrentIdentity: async () => {
+                  const [latestTurn, latestRun, latestControl] = await Promise.all([
+                    this.prisma.actorTurn.findUnique({ where: { id: context.turn.id } }),
+                    this.prisma.storyRun.findUnique({ where: { id: context.run.id } }),
+                    this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: context.run.id, roleId: context.role.id } } })
+                  ]);
+                  if (!latestTurn || !latestRun || !latestControl) return { ...snapshot.identity, actorTurnId: "missing" };
+                  return {
+                    ...snapshot.identity,
+                    actorTurnId: latestTurn.id,
+                    worldSequence: latestRun.worldSequence,
+                    turnRevision: latestTurn.revision,
+                    controlEpoch: latestControl.epoch
+                  };
+                }
+              });
         } catch (error) {
           if (error instanceof StoryGenerationErrorV2 && error.code === "CONTEXT_SUPERSEDED" && attempt < 3) continue;
           throw error;
         }
         const candidate = candidates.find((item) => item.id === agentChoice.candidateId);
         if (!candidate) throw new ConflictException({ code: "AGENT_DECISION_INVALID", message: "Agent selected a decision outside the reviewed set" });
-        const command: TurnDecisionCommandV2 = {
+        const agentDecisionAudit = {
+          schemaVersion: "openovel_agent_decision_audit_v1",
+          decisionSource: usesStandingPolicy ? "STANDING_POLICY" : "REVIEWED_CANDIDATE",
+          controlReason: context.taskIdentity?.controlReason || context.control.reason || "AI_CONTROL_ACTIVE",
+          controlEpoch: context.control.epoch,
+          controlTransitionId: context.taskIdentity?.controlTransitionId || null,
+          policyVersion: context.taskIdentity?.policyVersion || OPENOVEL_STANDING_POLICY_VERSION,
+          policyHash: context.taskIdentity?.policyHash || OPENOVEL_STANDING_POLICY_HASH,
+          standingPolicyId: usesStandingPolicy ? candidate.id : null,
+          reviewedCandidateCount: reviewedCandidates.length,
+          reviewedCandidatesIgnored: usesStandingPolicy && reviewedCandidates.length > 0
+        };
+        const openInteractions = await this.prisma.interactionRequestV2.findMany({
+          where: {
+            runId: context.run.id,
+            targetRoleId: context.role.id,
+            status: "OPEN",
+            ...interactionSourceSequenceFilter(context.run.worldSequence)
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: { id: true, targetRoleId: true, createdAt: true }
+        });
+        const command = bindOldestOpenInteraction({
           idempotencyKey: `agent-v2:${taskId}`,
           turnRevision: context.turn.revision,
           controlEpoch: context.control.epoch,
-          candidateId: candidate.id,
+          ...(usesStandingPolicy
+            ? { decisionForm: "CUSTOM_PLAN" as const, customAction: candidate.description }
+            : { candidateId: candidate.id }),
           intent: this.intentForCandidate(context as any, candidate)
-        };
+        }, context.role.id, openInteractions);
         const action = this.resolveAction(context as any, command);
         const stageProgress = evaluateStageProgress(action, context.situationInput.stage, context.stageTurnOrdinal, context.run.totalDays);
         try {
@@ -1216,7 +1757,8 @@ export class ContinuousStoryV2Service {
             action,
             stageProgress,
             actorKind: "AI",
-            agentFence: fence
+            agentFence: fence,
+            agentDecisionAudit
           });
           const resolution = await this.executeReservedResultInline(reservation.taskId) as any;
           return { outcome: "ACTOR_TURN_RESOLVED", resolutionId: resolution.id, appliedWorldSequence: resolution.appliedWorldSequence };
@@ -1279,26 +1821,73 @@ export class ContinuousStoryV2Service {
       if (payload.targetRoleId !== task.roleId || payload.playerActionId !== task.inputRefId) {
         throw new ConflictException({ code: "IMPACT_TASK_INVALID", message: "Impact task payload does not match its durable identity" });
       }
-      const [turn, control, sourceResolution, allRoles, facts] = await Promise.all([
+      const impactSeed = payload.mode === "TRACE"
+        ? payload.action.observableTraceText || payload.action.receiptText
+        : payload.action.receiptText;
+      const receiptInput = {
+        runId: task.runId,
+        nodeId: task.nodeId,
+        roleId: task.roleId,
+        threadId: "",
+        playerActionId: payload.playerActionId,
+        mode: payload.mode,
+        impactSeed,
+        appliedWorldSequence: payload.appliedWorldSequence
+      };
+      const existingReceipt = await this.prisma.narrativeEntry.findUnique({
+        where: { dedupeKey: openNovelImpactReceiptDedupeKey(payload.playerActionId, task.roleId) }
+      });
+      const unfinishedRoleImpacts = await this.prisma.storyTaskOutbox.findMany({
+        where: {
+          runId: task.runId,
+          roleId: task.roleId,
+          taskType: "ACTOR_IMPACT_V2",
+          status: { in: ["PENDING", "RUNNING", "FAILED"] }
+        },
+        select: { id: true, roleId: true, status: true, resultJson: true }
+      });
+      const earlierImpact = findEarlierUnfinishedRoleImpact(task.id, task.roleId, payload.appliedWorldSequence, unfinishedRoleImpacts);
+      if (earlierImpact) {
+        throw new ServiceUnavailableException({
+          code: "IMPACT_SEQUENCE_WAIT",
+          message: "An earlier impact for this role must finish before this impact can run",
+          recoverable: true,
+          blockingTaskId: earlierImpact.taskId,
+          blockingWorldSequence: earlierImpact.appliedWorldSequence
+        });
+      }
+      const [turn, control, sourceResolution, allRoles, facts, actorThread] = await Promise.all([
         this.prisma.actorTurn.findFirst({
-          where: { runId: task.runId, roleId: payload.targetRoleId, status: "OPEN", turnIndex: { gt: 0 } },
+          where: { runId: task.runId, roleId: payload.targetRoleId, status: { in: ["OPEN", "RESOLVING"] }, turnIndex: { gt: 0 } },
           include: { decisionSet: true, role: true, run: true },
           orderBy: { turnIndex: "desc" }
         }),
         this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: task.runId, roleId: payload.targetRoleId } } }),
         this.prisma.actionResolution.findUnique({ where: { playerActionId: payload.playerActionId } }),
         this.prisma.storyRole.findMany({ where: { runId: task.runId }, orderBy: { createdAt: "asc" } }),
-        this.prisma.canonFact.findMany({ where: { runId: task.runId, status: "confirmed" }, orderBy: { createdAt: "asc" } })
+        this.prisma.canonFact.findMany({ where: { runId: task.runId, status: "confirmed" }, orderBy: { createdAt: "asc" } }),
+        this.prisma.actorThread.findUnique({ where: { roleId: payload.targetRoleId } })
       ]);
-      if (!turn?.decisionSet || !control) {
+      const useOpenNovel = Boolean(turn && this.narrativeAdapters.isOpenNovel(turn.run));
+      if (!turn?.decisionSet || !control || !isImpactTargetTurnEligible(turn.status, useOpenNovel)) {
         const thread = await this.prisma.actorThread.findUnique({ where: { roleId: payload.targetRoleId } });
         if (thread?.status === "COMPLETED") return { outcome: "TARGET_STORY_COMPLETED", targetRoleId: payload.targetRoleId };
         throw new ConflictException({ code: "IMPACT_TARGET_TURN_NOT_OPEN", message: "Target role is between story beats; retry the impact independently" });
       }
+      if (!actorThread) throw new ConflictException({ code: "IMPACT_TARGET_THREAD_MISSING", message: "Target role thread is missing" });
+      receiptInput.threadId = actorThread.id;
+      if (existingReceipt) {
+        try {
+          assertOpenNovelImpactReceiptIdentity(existingReceipt, receiptInput);
+        } catch {
+          throw new ConflictException({ code: "IMPACT_RECEIPT_IDENTITY_CONFLICT", message: "An existing impact receipt does not match this task" });
+        }
+        return { outcome: "ACTOR_IMPACT_ALREADY_SYNCED", targetTurnId: turn.id, impactEntryId: existingReceipt.id, appliedWorldSequence: payload.appliedWorldSequence };
+      }
+      if (actorThread.lastAppliedSequence >= payload.appliedWorldSequence) {
+        throw new ConflictException({ code: "IMPACT_CURSOR_SUPERSEDED", message: "The role cursor already passed this impact without a matching receipt" });
+      }
       const ownConditionalResult = payload.sourceRoleId === payload.targetRoleId && sourceResolution?.qualityStatus === "GENERATING";
-      const impactSeed = payload.mode === "TRACE"
-        ? payload.action.observableTraceText || payload.action.receiptText
-        : payload.action.receiptText;
       const visibleSourceName = payload.mode === "TRACE" ? "来源不明的行动痕迹" : payload.sourceRoleName;
       const visibleFacts = visibleFactsForRole(facts, turn.roleId);
       const situationInput = this.situationInput(
@@ -1330,7 +1919,73 @@ export class ContinuousStoryV2Service {
         });
       }
       const snapshot = persistedContext.compilation.snapshot;
-      const pipeline = await this.narrator.resolveContext({
+      if (useOpenNovel) {
+        const runtime = this.narrativeAdapters.openNovel;
+        const status = await runtime.ensureRoleWorkspace({
+          roomId: turn.runId,
+          roleId: turn.roleId,
+          worldId: turn.run.templateKey,
+          storyPackageVersion: turn.run.strategyVersion
+        });
+        const turnRuntimeContext = jsonRecord(turn.contextJson);
+        const previousCanonHash = typeof turnRuntimeContext.roleCanonHash === "string"
+          ? turnRuntimeContext.roleCanonHash
+          : undefined;
+        const roleInput = projectRoleNarrativeInput(snapshot, {
+          turnKind: "RESULT",
+          turnIndex: turn.turnIndex,
+          baseWorldSequence: payload.appliedWorldSequence - 1,
+          appliedWorldSequence: payload.appliedWorldSequence,
+          visibleWorldEvents: [{
+            schemaVersion: "role_visible_event_v1",
+            id: payload.playerActionId,
+            worldSequence: payload.appliedWorldSequence,
+            type: payload.mode === "TRACE" ? "OBSERVABLE_TRACE" : "CROSS_ROLE_IMPACT",
+            content: impactSeed,
+            ...(payload.mode === "FULL" ? { sourceRoleId: payload.sourceRoleId } : {})
+          }],
+          previousCanonHash,
+          idempotencyKey: `impact:${payload.playerActionId}:${turn.roleId}:${payload.appliedWorldSequence}`
+        });
+        if (status.appliedWorldSequence > payload.appliedWorldSequence) {
+          throw new ConflictException({ code: "IMPACT_RUNTIME_SUPERSEDED", message: "The role runtime already passed this impact without a matching database receipt" });
+        }
+        const synced = await runtime.syncImpacts(projectRoleImpactSync(roleInput));
+        return this.serializable(async (tx) => {
+          const [leasedTask, latestThread, latestTurn, unfinishedImpacts] = await Promise.all([
+            tx.storyTaskOutbox.findFirst({
+              where: { id: task.id, taskType: "ACTOR_IMPACT_V2", status: "RUNNING", leaseOwner: fence.leaseOwner, leaseVersion: fence.leaseVersion, leaseExpiresAt: { gt: new Date() } }
+            }),
+            tx.actorThread.findUnique({ where: { roleId: turn.roleId } }),
+            tx.actorTurn.findUnique({ where: { id: turn.id } }),
+            tx.storyTaskOutbox.findMany({
+              where: { runId: task.runId, roleId: task.roleId, taskType: "ACTOR_IMPACT_V2", status: { in: ["PENDING", "RUNNING", "FAILED"] } },
+              select: { id: true, roleId: true, status: true, resultJson: true }
+            })
+          ]);
+          if (!leasedTask) throw new AgentLeaseLostError();
+          const blocker = findEarlierUnfinishedRoleImpact(task.id, task.roleId!, payload.appliedWorldSequence, unfinishedImpacts);
+          if (blocker) throw new DecisionContextMovedError();
+          if (!latestThread || latestThread.lastAppliedSequence >= payload.appliedWorldSequence) throw new DecisionContextMovedError();
+          if (!latestTurn || !isImpactTargetTurnEligible(latestTurn.status, true) || latestTurn.revision !== turn.revision) throw new DecisionContextMovedError();
+          const receipt = await publishOpenNovelImpactReceipt(tx, receiptInput);
+          await tx.actorThread.update({ where: { id: latestThread.id }, data: { lastAppliedSequence: payload.appliedWorldSequence } });
+          await tx.actorTurn.update({
+            where: { id: turn.id },
+            data: {
+              contextJson: {
+                ...jsonRecord(turn.contextJson),
+                roleCanonHash: synced.canonHash,
+                roleWorkspaceRevision: synced.workspaceRevision,
+                roleAppliedWorldSequence: synced.appliedWorldSequence,
+                lastImpactContextSnapshotId: persistedContext.recordId
+              } as Prisma.InputJsonValue
+            }
+          });
+          return { outcome: "ACTOR_IMPACT_SYNCED", targetTurnId: turn.id, impactEntryId: receipt.entryId, appliedWorldSequence: synced.appliedWorldSequence };
+        });
+      }
+      const pipeline = await this.narrativeAdapters.structured.resolveContext({
         context: snapshot,
         contextRecordId: persistedContext.recordId,
         actionResolutionId: sourceResolution?.id || null,
@@ -1486,6 +2141,84 @@ export class ContinuousStoryV2Service {
     }
   }
 
+  private async loadMultiplayerCommitEntry(db: any, entryId: string) {
+    const entry = await db.multiplayerWorldCommitEntry.findUnique({ where: { id: entryId } });
+    if (!entry) return null;
+    const [run, role, submission, playerAction, turn] = await Promise.all([
+      db.storyRun.findUnique({ where: { id: entry.runId } }),
+      db.storyRole.findUnique({ where: { id: entry.roleId } }),
+      db.decisionSubmission.findUnique({ where: { id: entry.submissionId } }),
+      db.playerAction.findUnique({ where: { id: entry.playerActionId } }),
+      db.actorTurn.findUnique({ where: { id: entry.turnId }, include: { decisionSet: true, thread: true } })
+    ]);
+    if (!run || !role || !submission || !playerAction || !turn) return null;
+    return { ...entry, run, role, submission, playerAction, turn };
+  }
+
+  private async contextForMultiplayerEntry(entry: any, payload: ResultTaskPayloadV2) {
+    const frozen = frozenRoleContextFromMutation(entry.mutationJson, entry.observedWorldSequence);
+    const [control, facts, impacts, allRoles, stageTurnOrdinal, liveAssets] = await Promise.all([
+      this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: entry.runId, roleId: entry.roleId } } }),
+      this.prisma.canonFact.findMany({ where: { runId: entry.runId, status: "confirmed" }, orderBy: { createdAt: "asc" } }),
+      this.prisma.narrativeEntry.findMany({
+        where: {
+          runId: entry.runId,
+          roleId: entry.roleId,
+          entryType: { in: ["V2_CROSS_IMPACT", "V2_OBSERVABLE_TRACE"] },
+          worldSequence: { lte: entry.observedWorldSequence }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 4
+      }),
+      this.prisma.storyRole.findMany({ where: { runId: entry.runId }, orderBy: { createdAt: "asc" } }),
+      this.prisma.actorTurn.count({
+        where: { runId: entry.runId, roleId: entry.roleId, stageIndex: entry.turn.stageIndex, turnIndex: { gt: 0 } }
+      }),
+      this.prisma.roleAsset.findMany({ where: { runId: entry.runId }, orderBy: { assetKey: "asc" } })
+    ]);
+    if (!control) throw new ConflictException({ code: "ROLE_CONTROL_NOT_READY", message: "Role control is missing for reserved result" });
+    const frozenContent = new Map(frozen.visibleFacts.map((fact) => [fact.factKey, fact.content]));
+    const historicalFacts = facts
+      .filter((fact) => frozenContent.has(fact.factKey))
+      .map((fact) => ({ ...fact, content: frozenContent.get(fact.factKey)! }));
+    const visibleFacts = frozen.visibleFacts.length > 0 ? frozen.visibleFacts : visibleFactsForRole(historicalFacts, entry.roleId);
+    const incomingImpacts = frozen.incomingImpacts.length > 0
+      ? frozen.incomingImpacts
+      : impacts.reverse().map((impact) => ({ sourceRoleName: "Another role", content: impact.content }));
+    const run = { ...entry.run, worldSequence: entry.observedWorldSequence };
+    const situationInput = this.situationInput(
+      run,
+      entry.role,
+      entry.turn.stageIndex,
+      entry.turn.turnIndex,
+      entry.observedWorldSequence,
+      visibleFacts,
+      incomingImpacts
+    );
+    const context = {
+      run,
+      turn: entry.turn,
+      role: entry.role,
+      control: { ...control, epoch: payload.controlEpoch },
+      decisionSet: entry.turn.decisionSet,
+      visibleFacts,
+      incomingImpacts,
+      situationInput,
+      stageTurnOrdinal,
+      allRoles,
+      assets: frozen.assets.length > 0 ? frozen.assets : liveAssets,
+      allFacts: historicalFacts.map((fact) => ({
+        factKey: fact.factKey,
+        content: fact.content,
+        visibility: fact.visibility,
+        knownByRoleIds: stringList(fact.knownByRoleIdsJson)
+      })),
+      membership: { userId: entry.submission.userId },
+      observedWorldSequence: entry.observedWorldSequence
+    } as Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>;
+    return { context, historicalFacts };
+  }
+
   async executeResultTask(taskId: string, fence: { taskId: string; leaseOwner: string; leaseVersion: number }) {
     try {
       const task = await this.prisma.storyTaskOutbox.findFirst({
@@ -1500,7 +2233,7 @@ export class ContinuousStoryV2Service {
       });
       if (!task?.inputRefId || !task.resultJson) throw new AgentLeaseLostError();
       const payload = resultTaskPayload(task.resultJson);
-      const resolution = await this.prisma.actionResolution.findUnique({
+      let resolution = await this.prisma.actionResolution.findUnique({
         where: { id: task.inputRefId },
         include: {
           run: true,
@@ -1510,39 +2243,98 @@ export class ContinuousStoryV2Service {
           turn: { include: { decisionSet: true, thread: true } }
         }
       });
+      if (!resolution) {
+        const entry = await this.loadMultiplayerCommitEntry(this.prisma, task.inputRefId);
+        if (!entry || entry.runId !== task.runId || entry.roleId !== task.roleId) {
+          throw new ConflictException({ code: "RESULT_TASK_INVALID", message: "Result task does not match its multiplayer command reservation" });
+        }
+        const prepared = await this.contextForMultiplayerEntry(entry, payload);
+        if (this.narrativeAdapters.isOpenNovel(entry.run)) {
+          await this.prepareOpenNovelRoleContext({
+            context: prepared.context,
+            action: payload.action,
+            entry,
+            historicalFacts: prepared.historicalFacts
+          });
+        }
+        const committed = await this.commitMultiplayerWorldEntry({
+          entryId: entry.id,
+          context: prepared.context,
+          action: payload.action,
+          stageProgress: payload.stageProgress,
+          resultFence: fence
+        });
+        resolution = await this.prisma.actionResolution.findUnique({
+          where: { id: committed.resolutionId },
+          include: {
+            run: true,
+            role: true,
+            submission: true,
+            playerAction: true,
+            turn: { include: { decisionSet: true, thread: true } }
+          }
+        });
+      }
       if (!resolution || resolution.runId !== task.runId || resolution.roleId !== task.roleId) {
         throw new ConflictException({ code: "RESULT_TASK_INVALID", message: "Result task does not match its action resolution" });
       }
       if (resolution.qualityStatus === "PASS") {
         return { outcome: "ACTOR_RESULT_ALREADY_PUBLISHED", resolutionId: resolution.id, appliedWorldSequence: resolution.appliedWorldSequence };
       }
-      if (resolution.qualityStatus !== "GENERATING" || resolution.turn.status !== "RESOLVING") {
+      const openNovelWorldCommitted = resolution.qualityStatus === "WORLD_COMMITTED";
+      const useOpenNovel = this.narrativeAdapters.isOpenNovel(resolution.run);
+      if (!["GENERATING", "WORLD_COMMITTED"].includes(resolution.qualityStatus) || resolution.turn.status !== "RESOLVING") {
         throw new ConflictException({ code: "RESULT_RESERVATION_MOVED", message: "Reserved action result is no longer generatable" });
       }
-      if (resolution.appliedWorldSequence !== resolution.run.worldSequence + 1) {
+      if (useOpenNovel) {
+        const unfinishedImpacts = await this.prisma.storyTaskOutbox.findMany({
+          where: {
+            runId: resolution.runId,
+            roleId: resolution.roleId,
+            taskType: "ACTOR_IMPACT_V2",
+            status: { in: ["PENDING", "RUNNING", "FAILED"] }
+          },
+          select: { id: true, roleId: true, status: true, resultJson: true }
+        });
+        const blocker = findEarlierUnfinishedRoleImpact(task.id, resolution.roleId, resolution.appliedWorldSequence, unfinishedImpacts);
+        if (blocker) {
+          throw new ServiceUnavailableException({
+            code: "RESULT_IMPACT_SEQUENCE_WAIT",
+            message: "An earlier impact for this role must finish before its own result can advance",
+            recoverable: true,
+            blockingTaskId: blocker.taskId,
+            blockingWorldSequence: blocker.appliedWorldSequence
+          });
+        }
+      }
+      if (!openNovelWorldCommitted && resolution.appliedWorldSequence !== resolution.run.worldSequence + 1) {
         throw new ServiceUnavailableException({
           code: "RESULT_SEQUENCE_WAIT",
           message: "An earlier independent actor result must publish before this reserved result can be generated",
           recoverable: true
         });
       }
-      if (resolution.baseWorldSequence !== resolution.run.worldSequence) {
+      if (!openNovelWorldCommitted && resolution.baseWorldSequence !== resolution.run.worldSequence) {
+        const rebasedStatePatch = {
+          ...jsonRecord(resolution.statePatchJson),
+          baseWorldSequence: resolution.run.worldSequence,
+          nextWorldSequence: resolution.appliedWorldSequence
+        };
         await this.prisma.actionResolution.update({
           where: { id: resolution.id },
           data: {
             baseWorldSequence: resolution.run.worldSequence,
-            statePatchJson: {
-              ...jsonRecord(resolution.statePatchJson),
-              baseWorldSequence: resolution.run.worldSequence,
-              nextWorldSequence: resolution.appliedWorldSequence
-            } as Prisma.InputJsonValue
+            statePatchJson: rebasedStatePatch as Prisma.InputJsonValue
           }
         });
         resolution.baseWorldSequence = resolution.run.worldSequence;
+        resolution.statePatchJson = rebasedStatePatch as Prisma.JsonValue;
       }
       const [control, facts, impacts, allRoles, stageTurnOrdinal, assets] = await Promise.all([
         this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: resolution.runId, roleId: resolution.roleId } } }),
-        this.prisma.canonFact.findMany({ where: { runId: resolution.runId, status: "confirmed" }, orderBy: { createdAt: "asc" } }),
+        useOpenNovel && openNovelWorldCommitted
+          ? Promise.resolve([])
+          : this.prisma.canonFact.findMany({ where: { runId: resolution.runId, status: "confirmed" }, orderBy: { createdAt: "asc" } }),
         this.prisma.narrativeEntry.findMany({
           where: {
             runId: resolution.runId,
@@ -1557,7 +2349,9 @@ export class ContinuousStoryV2Service {
         this.prisma.actorTurn.count({
           where: { runId: resolution.runId, roleId: resolution.roleId, stageIndex: resolution.turn.stageIndex, turnIndex: { gt: 0 } }
         }),
-        this.prisma.roleAsset.findMany({ where: { runId: resolution.runId }, orderBy: { assetKey: "asc" } })
+        useOpenNovel && openNovelWorldCommitted
+          ? Promise.resolve([])
+          : this.prisma.roleAsset.findMany({ where: { runId: resolution.runId }, orderBy: { assetKey: "asc" } })
       ]);
       if (!control) throw new ConflictException({ code: "ROLE_CONTROL_NOT_READY", message: "Role control is missing for reserved result" });
       const visibleFacts = visibleFactsForRole(facts, resolution.roleId);
@@ -1588,6 +2382,46 @@ export class ContinuousStoryV2Service {
         membership: { userId: resolution.submission.userId },
         observedWorldSequence: resolution.baseWorldSequence
       } as Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>;
+      let finalizationVisibleFacts = visibleFacts;
+      let finalizationIncomingImpacts = incomingImpacts;
+      let openNovelWorkingSet: FrozenOpenNovelFinalizationContext | null = null;
+      let openNovelRoleContext: PersistedOpenNovelRoleContext | null = null;
+      if (useOpenNovel) {
+        openNovelRoleContext = await this.prepareOpenNovelRoleContext({
+          context,
+          action: payload.action,
+          resolution,
+          historicalFacts: facts
+        });
+        context.visibleFacts = openNovelRoleContext.finalization.visibleFacts;
+        context.incomingImpacts = openNovelRoleContext.finalization.incomingImpacts;
+        context.assets = openNovelRoleContext.finalization.assets as typeof context.assets;
+        context.situationInput = {
+          ...context.situationInput,
+          visibleFacts: openNovelRoleContext.finalization.visibleFacts,
+          incomingImpacts: openNovelRoleContext.finalization.incomingImpacts
+        };
+        finalizationVisibleFacts = visibleFactsThroughCommittedResolution(
+          openNovelRoleContext.finalization.visibleFacts,
+          payload.action,
+          situationInput.stage.factCatalog
+        );
+        finalizationIncomingImpacts = openNovelRoleContext.finalization.incomingImpacts;
+        openNovelWorkingSet = {
+          visibleFacts: finalizationVisibleFacts,
+          incomingImpacts: finalizationIncomingImpacts,
+          assets: assetsThroughCommittedResolution(openNovelRoleContext.finalization.assets, payload.action, resolution.roleId)
+        };
+        if (!openNovelWorldCommitted) {
+          await this.commitReservedWorldForRoleRuntime({
+            context,
+            action: payload.action,
+            stageProgress: payload.stageProgress,
+            resolutionId: resolution.id,
+            resultFence: fence
+          });
+        }
+      }
       const nextInput = payload.stageProgress.nextStageIndex
         ? this.situationInput(
             generationRun,
@@ -1595,13 +2429,13 @@ export class ContinuousStoryV2Service {
             payload.stageProgress.nextStageIndex,
             resolution.turn.turnIndex + 1,
             resolution.appliedWorldSequence,
-            visibleFacts,
-            incomingImpacts,
+            finalizationVisibleFacts,
+            finalizationIncomingImpacts,
             payload.action,
             payload.action.receiptText
           )
         : null;
-      const generated = await this.generateRealNarrative(context, payload.action, nextInput, resolution.id);
+      const generated = await this.generateRealNarrative(context, payload.action, nextInput, resolution.id, openNovelRoleContext);
       const finalized = await this.finalizeReservedResolution({
         context,
         action: payload.action,
@@ -1615,13 +2449,109 @@ export class ContinuousStoryV2Service {
         actorKind: payload.actorKind,
         controlEpoch: payload.controlEpoch,
         resolutionId: resolution.id,
-        resultFence: fence
+        resultFence: fence,
+        worldAlreadyCommitted: openNovelWorldCommitted,
+        openNovelWorkingSet
       });
       return { outcome: "ACTOR_RESULT_PUBLISHED", ...finalized };
     } catch (error) {
       if (error instanceof AgentLeaseLostError) return { outcome: "LEASE_LOST" };
       throw error;
     }
+  }
+
+  private async failMultiplayerCommitEntry(tx: Tx, task: any, failureCode: string) {
+    const entry = await this.loadMultiplayerCommitEntry(tx, task.inputRefId);
+    if (!entry) return { released: false, reason: "RESULT_RESERVATION_MISSING" };
+    if (["COMMITTED", "PUBLISHED"].includes(entry.state)) {
+      const charge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: entry.playerActionId } });
+      if (charge?.status === "RESERVED") await this.creditConsumption.commitCharge(charge.id, tx);
+      return { released: false, reason: "WORLD_ALREADY_COMMITTED_ROLE_RUNTIME_RETRY_REQUIRED" };
+    }
+    if (entry.state === "FAILED") return { released: true, reason: "ALREADY_RELEASED" };
+    await tx.multiplayerWorldCommitEntry.update({
+      where: { id: entry.id },
+      data: { state: "FAILED", failureCode }
+    });
+    await tx.playerAction.update({
+      where: { id: entry.playerActionId },
+      data: {
+        status: "failed",
+        auditStatus: "generation_failed",
+        resolvedJson: { storyGenerationStatus: "FAIL", failureCode } as Prisma.InputJsonValue,
+        resolvedAt: new Date()
+      }
+    });
+    await tx.decisionSubmission.update({ where: { id: entry.submissionId }, data: { status: "FAILED", resolvedAt: new Date() } });
+    await tx.actorTurn.update({ where: { id: entry.turnId }, data: { status: "FAILED", qualityStatus: "FAIL", resolvedAt: new Date() } });
+    const replacementRevision = entry.turn.revision + 1;
+    const replacementKey = `actor-turn-retry:${entry.turn.id}:${replacementRevision}`;
+    let replacement = await tx.actorTurn.findUnique({ where: { dedupeKey: replacementKey } });
+    if (!replacement) {
+      replacement = await tx.actorTurn.create({
+        data: {
+          runId: entry.runId,
+          threadId: entry.threadId,
+          roleId: entry.roleId,
+          stageIndex: entry.turn.stageIndex,
+          turnIndex: entry.turn.turnIndex,
+          status: "OPEN",
+          baseWorldSequence: entry.run.worldSequence,
+          revision: replacementRevision,
+          situationTitle: entry.turn.situationTitle,
+          situationNarrative: entry.turn.situationNarrative,
+          visibleFactKeysJson: entry.turn.visibleFactKeysJson as Prisma.InputJsonValue,
+          activeThreadKeysJson: entry.turn.activeThreadKeysJson as Prisma.InputJsonValue,
+          contextJson: { ...jsonRecord(entry.turn.contextJson), retryOfTurnId: entry.turn.id, failureCode } as Prisma.InputJsonValue,
+          qualityStatus: "PASS",
+          dedupeKey: replacementKey
+        }
+      });
+      if (entry.turn.decisionSet) {
+        await tx.decisionSet.create({
+          data: {
+            runId: entry.runId,
+            turnId: replacement.id,
+            roleId: entry.roleId,
+            contextHash: entry.turn.decisionSet.contextHash,
+            framing: entry.turn.decisionSet.framing,
+            candidatesJson: entry.turn.decisionSet.candidatesJson as Prisma.InputJsonValue,
+            qualityStatus: entry.turn.decisionSet.qualityStatus,
+            qualityJson: entry.turn.decisionSet.qualityJson as Prisma.InputJsonValue,
+            revision: entry.turn.decisionSet.revision + 1
+          }
+        });
+      }
+    }
+    await tx.storyRun.update({ where: { id: entry.runId }, data: { status: "playing", version: { increment: 1 } } });
+    const charge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: entry.playerActionId } });
+    if (charge?.status === "RESERVED") await this.creditConsumption.releaseCharge(charge.id, failureCode, tx);
+    const control = await tx.roleControl.findUnique({ where: { runId_roleId: { runId: entry.runId, roleId: entry.roleId } } });
+    if (control?.mode === "AI_ACTIVE") {
+      await tx.storyTaskOutbox.create({
+        data: {
+          runId: entry.runId,
+          nodeId: task.nodeId,
+          roleId: entry.roleId,
+          inputRefId: replacement.id,
+          actionSlot: "ACTOR_TURN",
+          controlEpoch: control.epoch,
+          taskType: "ACTOR_AGENT_TURN_V2",
+          status: "PENDING",
+          dedupeKey: openNovelAgentTaskDedupeKey(replacement.id, control.epoch),
+          identityJson: openNovelAgentTaskIdentity({
+            controlEpoch: control.epoch,
+            controlReason: control.reason
+          }) as unknown as Prisma.InputJsonValue,
+          maxAttempts: 3
+        }
+      });
+    }
+    await tx.storyTaskOutbox.updateMany({
+      where: { id: task.id, status: "FAILED", outcome: null },
+      data: { outcome: "NO_OP", completedAt: new Date() }
+    });
+    return { released: true, replacementTurnId: replacement.id };
   }
 
   async failReservedResultTask(taskId: string, failureCode: string) {
@@ -1632,7 +2562,13 @@ export class ContinuousStoryV2Service {
         where: { id: task.inputRefId },
         include: { run: true, playerAction: true, submission: true, turn: { include: { decisionSet: true } } }
       });
-      if (!resolution || resolution.qualityStatus === "PASS") return { released: false, reason: "RESULT_ALREADY_PUBLISHED" };
+      if (!resolution) return this.failMultiplayerCommitEntry(tx, task, failureCode);
+      if (resolution.qualityStatus === "PASS") return { released: false, reason: "RESULT_ALREADY_PUBLISHED" };
+      if (resolution.qualityStatus === "WORLD_COMMITTED") {
+        const charge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: resolution.playerActionId } });
+        if (charge?.status === "RESERVED") await this.creditConsumption.commitCharge(charge.id, tx);
+        return { released: false, reason: "WORLD_ALREADY_COMMITTED_ROLE_RUNTIME_RETRY_REQUIRED" };
+      }
       if (resolution.qualityStatus === "FAIL") {
         await tx.storyTaskOutbox.updateMany({
           where: { id: task.id, status: "FAILED", outcome: null },
@@ -1737,7 +2673,11 @@ export class ContinuousStoryV2Service {
             controlEpoch: control.epoch,
             taskType: "ACTOR_AGENT_TURN_V2",
             status: "PENDING",
-            dedupeKey: `ACTOR_AGENT_TURN_V2:${replacement.id}`,
+            dedupeKey: openNovelAgentTaskDedupeKey(replacement.id, control.epoch),
+            identityJson: openNovelAgentTaskIdentity({
+              controlEpoch: control.epoch,
+              controlReason: control.reason
+            }) as unknown as Prisma.InputJsonValue,
             maxAttempts: 3
           }
         });
@@ -1851,11 +2791,22 @@ export class ContinuousStoryV2Service {
       this.prisma.roleAsset.findMany({ where: { runId: task.runId }, orderBy: { assetKey: "asc" } })
     ]);
     if (!control || control.mode !== "AI_ACTIVE" || control.epoch !== task.controlEpoch) throw new ConflictException({ code: "ROLE_CONTROL_CHANGED", message: "Agent no longer controls this role" });
+    const taskIdentity = readOpenNovelAgentTaskIdentity(task.identityJson);
+    if (turn.run.engineVersion === CONTINUOUS_OPENOVEL_ENGINE_VERSION
+      && (!taskIdentity
+        || taskIdentity.controlEpoch !== task.controlEpoch
+        || !isOpenNovelAgentTaskPolicySnapshotValid(taskIdentity)
+        || (taskIdentity.decisionSourceRule === "STANDING_POLICY_REQUIRED" && !taskIdentity.standingPolicyCandidate))) {
+      throw new ConflictException({
+        code: "OPENOVEL_AGENT_TASK_IDENTITY_INVALID",
+        message: "OpenNovel AI task identity no longer matches its immutable control and policy fence"
+      });
+    }
     const visibleFacts = visibleFactsForRole(facts, turn.roleId);
     const incomingImpacts = impacts.reverse().map((entry) => ({ sourceRoleName: "另一位角色", content: entry.content }));
     const situationInput = this.situationInput(turn.run, turn.role, turn.stageIndex, turn.turnIndex, turn.run.worldSequence, visibleFacts, incomingImpacts);
     return {
-      run: turn.run, turn, role: turn.role, control, decisionSet: turn.decisionSet, visibleFacts, incomingImpacts,
+      run: turn.run, turn, role: turn.role, control, taskIdentity, decisionSet: turn.decisionSet, visibleFacts, incomingImpacts,
       situationInput, stageTurnOrdinal, allRoles, assets,
       allFacts: facts.map((fact) => ({ factKey: fact.factKey, content: fact.content, visibility: fact.visibility, knownByRoleIds: stringList(fact.knownByRoleIdsJson) })),
       membership: { userId: null }, observedWorldSequence: turn.run.worldSequence
@@ -1868,7 +2819,7 @@ export class ContinuousStoryV2Service {
       include: { players: { where: { status: "active" } }, roles: true, roleControls: true }
     });
     if (!run || run.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
-    this.requireV2(run.engineVersion);
+    this.requireV2(run.engineVersion, run.id);
     const player = run.players.find((candidate) => candidate.userId === user.id);
     if (!player?.roleId) throw new ForbiddenException({ code: "ROOM_MEMBERSHIP_REQUIRED", message: "A claimed room role is required" });
     const role = run.roles.find((candidate) => candidate.id === player.roleId);
@@ -1876,6 +2827,202 @@ export class ContinuousStoryV2Service {
     if (!role || !control) throw new ConflictException({ code: "ROLE_CONTROL_NOT_READY", message: "Role control is not ready" });
     const turn = await tx.actorTurn.findFirst({ where: { runId: roomId, roleId: role.id, status: { in: ["OPEN", "RESOLVING"] } }, orderBy: [{ turnIndex: "desc" }, { revision: "desc" }] });
     return { run, player, role, control, turn, memberUserIds: run.players.map((candidate) => candidate.userId).filter((id): id is string => Boolean(id)) };
+  }
+
+  private async transitionOpenNovelPresenceCandidate(controlId: string, now: Date, timing: OpenNovelPresenceTiming) {
+    return this.serializable(async (tx): Promise<OpenNovelPresencePhase> => {
+      const control = await tx.roleControl.findUnique({
+        where: { id: controlId },
+        include: {
+          run: {
+            include: {
+              players: { where: { status: "active" }, select: { userId: true } }
+            }
+          }
+        }
+      });
+      if (!control
+        || !control.humanPlayerId
+        || control.run.engineVersion !== CONTINUOUS_OPENOVEL_ENGINE_VERSION
+        || control.run.mode !== "room"
+        || control.run.status !== "playing") return null;
+
+      const latestSession = await tx.presenceSession.findFirst({
+        where: { runId: control.runId, roleId: control.roleId },
+        orderBy: { lastHeartbeatAt: "desc" },
+        select: { lastHeartbeatAt: true }
+      });
+      const latestHeartbeat = [control.lastHeartbeatAt, latestSession?.lastHeartbeatAt]
+        .filter((value): value is Date => Boolean(value))
+        .sort((left, right) => right.getTime() - left.getTime())[0] || null;
+      const phase = openNovelPresencePhase({ ...control, lastHeartbeatAt: latestHeartbeat }, now, timing);
+      if (!phase) return null;
+      const memberUserIds = control.run.players.map((player) => player.userId).filter((id): id is string => Boolean(id));
+
+      if (phase === "HUMAN_OFFLINE_GRACE") {
+        const transitionKey = `openovel-disconnect-detected:${control.id}:${control.epoch}:${(latestHeartbeat || control.createdAt).getTime()}`;
+        const changed = await tx.roleControl.updateMany({
+          where: {
+            id: control.id,
+            mode: "HUMAN_ACTIVE",
+            epoch: control.epoch,
+            // Compare-and-set the exact heartbeat observed above. A heartbeat
+            // that wins this race keeps the player online.
+            AND: [
+              { lastHeartbeatAt: control.lastHeartbeatAt },
+              { OR: [{ lastHeartbeatAt: null }, { lastHeartbeatAt: { lte: new Date(now.getTime() - timing.heartbeatStaleMs) } }] }
+            ]
+          },
+          data: {
+            mode: "HUMAN_OFFLINE_GRACE",
+            reason: "DISCONNECT_DETECTED",
+            lastHeartbeatAt: latestHeartbeat || control.createdAt,
+            offlineSince: now
+          }
+        });
+        if (changed.count !== 1) return null;
+        const openTurn = await tx.actorTurn.findFirst({
+          where: { runId: control.runId, roleId: control.roleId, status: "OPEN" },
+          orderBy: [{ turnIndex: "desc" }, { revision: "desc" }],
+          select: { id: true, stageIndex: true }
+        });
+        await tx.roleControlTransition.create({
+          data: {
+            roleControlId: control.id,
+            fromMode: "HUMAN_ACTIVE",
+            toMode: "HUMAN_OFFLINE_GRACE",
+            fromEpoch: control.epoch,
+            toEpoch: control.epoch,
+            reason: "DISCONNECT_DETECTED",
+            effectiveSlot: openTurn ? `TURN:${openTurn.id}` : "NEXT_ACTOR_TURN",
+            idempotencyKey: transitionKey
+          }
+        });
+        await tx.storyRun.update({ where: { id: control.runId }, data: { version: { increment: 1 } } });
+        await this.deliveries.publish(tx, {
+          runId: control.runId,
+          nodeId: control.run.currentNodeId || undefined,
+          day: openTurn?.stageIndex || control.run.currentDay,
+          type: "ROLE_PRESENCE_CHANGED_V2",
+          visibility: "PUBLIC",
+          audienceType: "ALL_MEMBERS",
+          audienceUserIds: memberUserIds,
+          audienceRoleIds: [control.roleId],
+          payload: { roleId: control.roleId, presence: "OFFLINE_GRACE", epoch: control.epoch, reason: "DISCONNECT_DETECTED" },
+          dedupeKey: `ROLE_PRESENCE_CHANGED_V2:${transitionKey}`
+        });
+        return phase;
+      }
+
+      const nextEpoch = control.epoch + 1;
+      const transitionKey = `openovel-disconnect-timeout:${control.id}:${control.epoch}:${control.offlineSince?.getTime() || 0}`;
+      const changed = await tx.roleControl.updateMany({
+        where: { id: control.id, mode: "HUMAN_OFFLINE_GRACE", epoch: control.epoch, offlineSince: control.offlineSince },
+        data: { mode: "AI_ACTIVE", epoch: nextEpoch, reason: "DISCONNECT_TIMEOUT", takeoverAt: now }
+      });
+      if (changed.count !== 1) return null;
+      const role = await tx.storyRole.update({ where: { id: control.roleId }, data: { isAiControlled: true, status: "ai_controlled" } });
+      const openTurn = await tx.actorTurn.findFirst({
+        where: { runId: control.runId, roleId: control.roleId, status: "OPEN" },
+        orderBy: [{ turnIndex: "desc" }, { revision: "desc" }]
+      });
+      const transition = await tx.roleControlTransition.create({
+        data: {
+          roleControlId: control.id,
+          fromMode: "HUMAN_OFFLINE_GRACE",
+          toMode: "AI_ACTIVE",
+          fromEpoch: control.epoch,
+          toEpoch: nextEpoch,
+          reason: "DISCONNECT_TIMEOUT",
+          effectiveSlot: openTurn ? `TURN:${openTurn.id}` : "NEXT_ACTOR_TURN",
+          idempotencyKey: transitionKey
+        }
+      });
+      if (openTurn && control.run.currentNodeId) {
+        const standingPolicyCandidate = standingPolicyDecisionCandidate(this.situationInput(
+          control.run,
+          role,
+          openTurn.stageIndex,
+          openTurn.turnIndex,
+          control.run.worldSequence,
+          [],
+          []
+        ));
+        const taskIdentity = openNovelAgentTaskIdentity({
+          controlEpoch: nextEpoch,
+          controlReason: "DISCONNECT_TIMEOUT",
+          controlTransitionId: transition.id,
+          standingPolicyCandidate
+        });
+        const taskDedupeKey = openNovelAgentTaskDedupeKey(openTurn.id, nextEpoch);
+        await tx.storyTaskOutbox.upsert({
+          where: { dedupeKey: taskDedupeKey },
+          update: {
+            status: "PENDING",
+            outcome: null,
+            inputRefId: openTurn.id,
+            roleId: control.roleId,
+            controlEpoch: nextEpoch,
+            nextRetryAt: now,
+            attempt: 0,
+            completedAt: null,
+            leaseOwner: null,
+            leaseExpiresAt: null,
+            lastError: null,
+            identityJson: taskIdentity as unknown as Prisma.InputJsonValue,
+            resultJson: Prisma.DbNull
+          },
+          create: {
+            runId: control.runId,
+            nodeId: control.run.currentNodeId,
+            roleId: control.roleId,
+            inputRefId: openTurn.id,
+            actionSlot: "ACTOR_TURN",
+            controlEpoch: nextEpoch,
+            taskType: "ACTOR_AGENT_TURN_V2",
+            status: "PENDING",
+            dedupeKey: taskDedupeKey,
+            identityJson: taskIdentity as unknown as Prisma.InputJsonValue,
+            maxAttempts: 3
+          }
+        });
+      }
+      await tx.storyRun.update({ where: { id: control.runId }, data: { version: { increment: 1 } } });
+      await this.deliveries.publish(tx, {
+        runId: control.runId,
+        nodeId: control.run.currentNodeId || undefined,
+        day: openTurn?.stageIndex || control.run.currentDay,
+        type: "ROLE_CONTROL_CHANGED_V2",
+        visibility: "PUBLIC",
+        audienceType: "ALL_MEMBERS",
+        audienceUserIds: memberUserIds,
+        audienceRoleIds: [control.roleId],
+        payload: { roleId: control.roleId, controllerKind: "AI", epoch: nextEpoch, independentActorThread: true, reason: "DISCONNECT_TIMEOUT" },
+        dedupeKey: `ROLE_CONTROL_CHANGED_V2:${transitionKey}`
+      });
+      return phase;
+    });
+  }
+
+  private async publishPresenceChange(
+    tx: Tx,
+    context: Awaited<ReturnType<ContinuousStoryV2Service["controlContext"]>>,
+    idempotencyKey: string,
+    presence: "ONLINE" | "OFFLINE_GRACE",
+    reason: string
+  ) {
+    await this.deliveries.publish(tx, {
+      runId: context.run.id,
+      nodeId: context.run.currentNodeId || undefined,
+      day: context.turn?.stageIndex || context.run.currentDay,
+      type: "ROLE_PRESENCE_CHANGED_V2",
+      visibility: "PUBLIC",
+      audienceType: "ALL_MEMBERS",
+      audienceUserIds: context.memberUserIds,
+      audienceRoleIds: [context.role.id],
+      payload: { roleId: context.role.id, presence, epoch: context.control.epoch, reason },
+      dedupeKey: `ROLE_PRESENCE_CHANGED_V2:${idempotencyKey}`
+    });
   }
 
   private async publishControlChange(tx: Tx, context: Awaited<ReturnType<ContinuousStoryV2Service["controlContext"]>>, userId: string, idempotencyKey: string, controllerKind: "HUMAN" | "AI", epoch: number) {
@@ -1891,14 +3038,15 @@ export class ContinuousStoryV2Service {
   private async loadSubmissionContext(user: AuthenticatedUser, roomId: string, turnId: string, command: TurnDecisionCommandV2) {
     const turn = await this.prisma.actorTurn.findUnique({ where: { id: turnId }, include: { decisionSet: true, thread: true, role: true, run: true } });
     if (!turn || turn.runId !== roomId) throw new NotFoundException({ code: "TURN_NOT_FOUND", message: "Actor turn not found" });
-    this.requireV2(turn.run.engineVersion);
+    this.requireV2(turn.run.engineVersion, turn.run.id);
     if (turn.status !== "OPEN") throw new ConflictException({ code: "TURN_MOVED", message: "This situation has already moved" });
-    const [membership, control, facts, impacts, allRoles, stageTurnOrdinal, assets] = await Promise.all([
+    const [membership, control, facts, impacts, allRoles, allControls, stageTurnOrdinal, assets] = await Promise.all([
       this.prisma.storyPlayer.findFirst({ where: { runId: roomId, userId: user.id, roleId: turn.roleId, status: "active" } }),
       this.prisma.roleControl.findUnique({ where: { runId_roleId: { runId: roomId, roleId: turn.roleId } } }),
       this.prisma.canonFact.findMany({ where: { runId: roomId, status: "confirmed" }, orderBy: { createdAt: "asc" } }),
       this.prisma.narrativeEntry.findMany({ where: { runId: roomId, roleId: turn.roleId, entryType: { in: ["V2_CROSS_IMPACT", "V2_OBSERVABLE_TRACE"] } }, orderBy: { createdAt: "desc" }, take: 4 }),
       this.prisma.storyRole.findMany({ where: { runId: roomId }, orderBy: { createdAt: "asc" } }),
+      this.prisma.roleControl.findMany({ where: { runId: roomId } }),
       this.prisma.actorTurn.count({ where: { runId: roomId, roleId: turn.roleId, stageIndex: turn.stageIndex, turnIndex: { gt: 0 } } }),
       this.prisma.roleAsset.findMany({ where: { runId: roomId }, orderBy: { assetKey: "asc" } })
     ]);
@@ -1919,6 +3067,7 @@ export class ContinuousStoryV2Service {
       situationInput,
       stageTurnOrdinal,
       allRoles,
+      allControls,
       assets,
       allFacts: facts.map((fact) => ({ factKey: fact.factKey, content: fact.content, visibility: fact.visibility, knownByRoleIds: stringList(fact.knownByRoleIdsJson) })),
       membership,
@@ -1926,11 +3075,147 @@ export class ContinuousStoryV2Service {
     };
   }
 
+  private async prepareOpenNovelRoleContext(input: {
+    context: Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>;
+    action: PlannedIntentAction;
+    resolution?: {
+      id: string;
+      qualityStatus: string;
+      baseWorldSequence: number;
+      appliedWorldSequence: number;
+      statePatchJson: unknown;
+      run: { worldSequence: number };
+    };
+    entry?: {
+      id: string;
+      state: string;
+      observedWorldSequence: number;
+      mutationJson: unknown;
+      run: { worldSequence: number };
+    };
+    historicalFacts: Array<{
+      id: string;
+      factKey: string;
+      content: string;
+      visibility: string;
+      knownByRoleIdsJson: Prisma.JsonValue;
+    }>;
+  }): Promise<PersistedOpenNovelRoleContext> {
+    const { context, action } = input;
+    const resolution = input.resolution || (input.entry ? {
+      id: input.entry.id,
+      qualityStatus: input.entry.state,
+      baseWorldSequence: input.entry.observedWorldSequence,
+      appliedWorldSequence: input.entry.observedWorldSequence,
+      statePatchJson: input.entry.mutationJson,
+      run: input.entry.run
+    } : null);
+    if (!resolution) throw new ConflictException({ code: "RESULT_RESERVATION_MISSING", message: "OpenNovel role context has no durable reservation" });
+    const stored = readStoredOpenNovelRoleContext(resolution.statePatchJson);
+    if (stored?.compilation.ok) {
+      const identity = stored.compilation.snapshot.identity;
+      const frozenContext = jsonRecord(jsonRecord(resolution.statePatchJson).frozenRoleContext);
+      const frozenObservedSequence = Number(frozenContext.observedWorldSequence);
+      const expectedContextWorldSequence = Number.isInteger(frozenObservedSequence) && frozenObservedSequence >= 0
+        ? frozenObservedSequence
+        : resolution.baseWorldSequence;
+      if (identity.runId !== context.run.id
+        || identity.roleId !== context.role.id
+        || identity.actorTurnId !== context.turn.id
+        || identity.worldSequence !== expectedContextWorldSequence) {
+        throw new ConflictException({
+          code: "OPENOVEL_ROLE_CONTEXT_SNAPSHOT_INVALID",
+          message: "The durable role context does not match this reserved resolution",
+          recoverable: false
+        });
+      }
+      return stored;
+    }
+    if (["WORLD_COMMITTED", "COMMITTED", "PUBLISHED"].includes(resolution.qualityStatus)) {
+      throw new ServiceUnavailableException({
+        code: "OPENOVEL_ROLE_CONTEXT_SNAPSHOT_MISSING",
+        message: wouldRecompileAfterFutureWorldAdvance(resolution.run.worldSequence, resolution.appliedWorldSequence)
+          ? "The run advanced beyond this committed result and its immutable role context is unavailable"
+          : "The committed result has no immutable role context and cannot be safely regenerated",
+        recoverable: false
+      });
+    }
+    const persistedContext = await this.storyContexts.compileForResolution({
+      run: { ...context.run, worldSequence: resolution.baseWorldSequence },
+      role: context.role,
+      turn: context.turn,
+      controlEpoch: context.control.epoch,
+      situation: context.situationInput,
+      action,
+      confirmedResolution: action.receiptText
+    });
+    if (!persistedContext.compilation.ok) {
+      throw new ServiceUnavailableException({
+        code: "STORY_CONTEXT_REJECTED",
+        message: "The action context is incomplete and no replacement story was published",
+        recoverable: true,
+        contextRecordId: persistedContext.recordId,
+        issueCodes: persistedContext.compilation.report.issueCodes
+      });
+    }
+    const includedFactItemIds = new Set(persistedContext.compilation.snapshot.items
+      .filter((item) => item.sourceType === "VISIBLE_FACT")
+      .map((item) => item.itemId));
+    const includedAssetItemIds = new Set(persistedContext.compilation.snapshot.items
+      .filter((item) => item.sourceType === "ASSET_OR_EVIDENCE")
+      .map((item) => item.itemId));
+    const includedImpactContents = new Set(persistedContext.compilation.snapshot.items
+      .filter((item) => item.sourceType === "INCOMING_IMPACT")
+      .map((item) => item.content));
+    const snapshotVisibleFacts = visibleFactsForRole(
+      input.historicalFacts.filter((fact) => includedFactItemIds.has(`fact:${fact.id}`)),
+      context.role.id
+    );
+    const storedContext: StoredOpenNovelRoleContextV1 = {
+      schemaVersion: "openovel_role_context_v1",
+      recordId: persistedContext.recordId,
+      snapshot: persistedContext.compilation.snapshot,
+      finalization: {
+        visibleFacts: snapshotVisibleFacts,
+        incomingImpacts: context.incomingImpacts.filter((impact) => includedImpactContents.has(impact.content)).map((impact) => ({ ...impact })),
+        assets: context.assets.filter((asset) => includedAssetItemIds.has(`asset:${asset.id}`)).map((asset) => ({
+          assetKey: asset.assetKey,
+          ownerRoleId: asset.ownerRoleId,
+          ownerActorKey: asset.ownerActorKey,
+          quantity: asset.quantity,
+          status: asset.status,
+          visibility: asset.visibility
+        }))
+      }
+    };
+    const nextMutation = {
+      ...jsonRecord(resolution.statePatchJson),
+      openNovelRoleContext: storedContext
+    } as unknown as Prisma.InputJsonValue;
+    const persisted = input.entry
+      ? await this.prisma.multiplayerWorldCommitEntry.updateMany({
+          where: { id: resolution.id, state: "RESERVED" },
+          data: { mutationJson: nextMutation, state: "READY", generationArtifactJson: { contextRecordId: persistedContext.recordId }, readyAt: new Date() }
+        })
+      : await this.prisma.actionResolution.updateMany({
+          where: { id: resolution.id, qualityStatus: "GENERATING" },
+          data: { statePatchJson: nextMutation }
+        });
+    if (persisted.count !== 1) {
+      throw new ConflictException({
+        code: "RESULT_RESERVATION_MOVED",
+        message: "Reserved action moved before its immutable role context was persisted"
+      });
+    }
+    return { ...persistedContext, finalization: storedContext.finalization };
+  }
+
   private async generateRealNarrative(
     context: Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>,
     action: PlannedIntentAction,
     nextInput: StorySituationInput | null,
-    actionResolutionId: string | null = null
+    actionResolutionId: string | null = null,
+    immutableRoleContext: PersistedStoryContextV2 | null = null
   ): Promise<{
     contextRecordId: string;
     draft: ResolutionDraft;
@@ -1938,7 +3223,13 @@ export class ContinuousStoryV2Service {
     nextStoryReview: ContentReview | null;
     nextDecisionReview: ContentReview | null;
   }> {
-    const persistedContext = await this.storyContexts.compileForResolution({
+    if (this.narrativeAdapters.isOpenNovel(context.run) && !immutableRoleContext) {
+      throw new ConflictException({
+        code: "OPENOVEL_ROLE_CONTEXT_SNAPSHOT_REQUIRED",
+        message: "OpenNovel result generation requires a pre-commit immutable role context"
+      });
+    }
+    const persistedContext = immutableRoleContext || await this.storyContexts.compileForResolution({
       run: context.run,
       role: context.role,
       turn: context.turn,
@@ -1959,7 +3250,123 @@ export class ContinuousStoryV2Service {
     const snapshot = persistedContext.compilation.snapshot;
 
     try {
-      const pipeline = await this.narrator.resolveContext({
+      if (this.narrativeAdapters.isOpenNovel(context.run)) {
+        const runtime = this.narrativeAdapters.openNovel;
+        const [status, visibleEntries, pendingInteractions] = await Promise.all([
+          runtime.ensureRoleWorkspace({
+          roomId: context.run.id,
+          roleId: context.role.id,
+          worldId: context.run.templateKey,
+          storyPackageVersion: context.run.strategyVersion
+          }),
+          this.prisma.narrativeEntry.findMany({
+            where: {
+              runId: context.run.id,
+              worldSequence: { gt: context.observedWorldSequence, lte: context.run.worldSequence },
+              OR: [{ roleId: context.role.id }, { roleId: null, visibility: { in: ["PUBLIC", "public"] } }]
+            },
+            orderBy: [{ worldSequence: "desc" }, { createdAt: "desc" }],
+            take: 10
+          }),
+          this.prisma.interactionRequestV2.findMany({
+            where: {
+              runId: context.run.id,
+              status: "OPEN",
+              OR: [{ sourceRoleId: context.role.id }, { targetRoleId: context.role.id }],
+              ...interactionSourceSequenceFilter(context.run.worldSequence)
+            },
+            orderBy: { createdAt: "asc" }
+          })
+        ]);
+        const output = await runtime.generateResult(projectRoleNarrativeInput(snapshot, {
+          turnKind: "RESULT",
+          turnIndex: context.turn.turnIndex,
+          baseWorldSequence: context.observedWorldSequence,
+          appliedWorldSequence: context.run.worldSequence,
+          readerAction: `${action.normalizedIntent.objective}\n${action.normalizedIntent.method}`,
+          confirmedResolution: action.receiptText,
+          visibleWorldEvents: visibleEntries
+            .filter((entry) => isRoleResultEventInWindow(entry.worldSequence, context.observedWorldSequence, context.run.worldSequence))
+            .reverse()
+            .map((entry) => ({
+              schemaVersion: "role_visible_event_v1",
+              id: entry.id,
+              worldSequence: entry.worldSequence || 0,
+              type: entry.entryType,
+              content: entry.content
+            })),
+          pendingInteractions: pendingInteractions.map((interaction) => {
+            const pressure = jsonRecord(interaction.pressureJson);
+            const source = context.allRoles.find((role) => role.id === interaction.sourceRoleId);
+            const target = context.allRoles.find((role) => role.id === interaction.targetRoleId);
+            return {
+              schemaVersion: "role_visible_interaction_v1" as const,
+              id: interaction.id,
+              sourceRoleId: interaction.sourceRoleId,
+              requestKind: interaction.requestKind,
+              pressure: {
+                objective: textValue(pressure.objective, interaction.requestKind),
+                method: textValue(pressure.method, "Awaiting the target role's response"),
+                sourceRoleName: textValue(pressure.sourceRoleName, source?.roleName || "Source role"),
+                targetRoleName: textValue(pressure.targetRoleName, target?.roleName || "Target role")
+              },
+              ...(interaction.expiresAt ? { expiresAt: interaction.expiresAt.toISOString() } : {})
+            };
+          }),
+          budgetKind: !nextInput
+            ? "CONVERGENCE"
+            : context.control.mode === "AI_ACTIVE" && pendingInteractions.length > 0
+              ? "AI_TARGET"
+              : "NORMAL",
+          previousCanonHash: status.canonHash || undefined,
+          idempotencyKey: `result:${actionResolutionId || context.turn.id}:${context.run.worldSequence}`
+        }));
+        const recordedRoleRuntime = await this.prisma.actorTurn.updateMany({
+          where: { id: context.turn.id, revision: context.turn.revision, status: "RESOLVING" },
+          data: {
+            contextJson: {
+              ...jsonRecord(context.turn.contextJson),
+              roleCanonHash: output.canonHash,
+              roleWorkspaceRevision: output.workspaceRevision,
+              roleAppliedWorldSequence: output.appliedWorldSequence,
+              roleRuntimeUsage: output.usage,
+              roleRuntimeWarnings: output.warnings,
+              roleContextSnapshotId: persistedContext.recordId
+            } as Prisma.InputJsonValue
+          }
+        });
+        if (recordedRoleRuntime.count !== 1) throw new DecisionContextMovedError();
+        const decisions = openNovelDecisionCandidates(output, roleContext(context.role));
+        const draft: ResolutionDraft = {
+          resultNarrative: output.narration,
+          nextHook: nextInput?.stage.commonContest.title || output.narration,
+          nextSituation: nextInput ? {
+            situationTitle: nextInput.stage.title,
+            situationNarrative: output.narration,
+            framing: nextInput.stage.commonContest.title,
+            decisions,
+            provider: "openovel-role-runtime",
+            modelName: "OPENOVEL_ROLE_V1"
+          } : null,
+          provider: "openovel-role-runtime",
+          modelName: "OPENOVEL_ROLE_V1"
+        };
+        const resultReview = acceptOpenNovelRolePublicationReview(
+          reviewStory(draft.resultNarrative, context.situationInput, "RESULT", action, draft.nextSituation?.situationNarrative || ""),
+          true,
+        );
+        assertQuality(resultReview, "RESULT_STORY_QUALITY_FAILED");
+        const optionalOptionsReview: ContentReview = { status: "PASS", scores: { contract: 5 }, issues: output.options.length ? [] : ["OPTIONS_OPTIONAL_FREE_INPUT_AVAILABLE"] };
+        const nextStoryReview = draft.nextSituation && nextInput
+          ? acceptOpenNovelRolePublicationReview(
+              reviewStory(draft.nextSituation.situationNarrative, nextInput, "SITUATION"),
+              true,
+            )
+          : null;
+        if (nextStoryReview) assertQuality(nextStoryReview, "NEXT_STORY_QUALITY_FAILED");
+        return { contextRecordId: persistedContext.recordId, draft, resultReview, nextStoryReview, nextDecisionReview: draft.nextSituation ? optionalOptionsReview : null };
+      }
+      const pipeline = await this.narrativeAdapters.structured.resolveContext({
         context: snapshot,
         contextRecordId: persistedContext.recordId,
         actionResolutionId,
@@ -2113,6 +3520,36 @@ export class ContinuousStoryV2Service {
       candidate,
       card
     });
+    const targetControl = action.targetRoleId ? context.allControls.find((item) => item.roleId === action.targetRoleId) : null;
+    const targetControllerKind = !targetControl
+      ? null
+      : targetControl.mode === "SYSTEM"
+        ? "SYSTEM" as const
+        : targetControl.mode === "AI_ACTIVE"
+          ? "AI" as const
+          : "HUMAN" as const;
+    const protection = evaluateCharacterProtection({
+      actorRoleId: context.role.id,
+      targetRoleId: action.targetRoleId,
+      targetControllerKind,
+      intent: action.normalizedIntent,
+      isFinale: context.turn.stageIndex >= context.run.totalDays,
+      requestedEffect: action.normalizedIntent.effectClaim || "REQUEST"
+    });
+    if (!protection.accepted) {
+      throw new BadRequestException({
+        code: "GUARD_REJECTED",
+        message: "A human-controlled character cannot be permanently removed before the finale.",
+        decision: "REJECT_CHARACTER_PROTECTION",
+        matchedRules: [protection.code],
+        riskFlags: [],
+        suggestedRewrite: { ...action.normalizedIntent, effectClaim: "CONTEST" }
+      });
+    }
+    if (protection.requiresInteraction || protection.requiresContest) {
+      action.requiresTargetResponse = true;
+      action.interactionRequestKind = protection.requiresContest ? "CONTEST_REQUIRED" : "REQUEST_RESPONSE";
+    }
     const invariantIssues = intentInvariantDiff(guard.normalizedIntent, action.normalizedIntent);
     if (invariantIssues.length) throw new ConflictException({ code: "PLAYER_INTENT_CHANGED", message: "The resolver changed the player's declared intent", issues: invariantIssues });
     return action;
@@ -2156,8 +3593,9 @@ export class ContinuousStoryV2Service {
     stageProgress: StageProgressDecision;
     actorKind: "HUMAN" | "AI";
     agentFence?: { taskId: string; leaseOwner: string; leaseVersion: number };
+    agentDecisionAudit?: Record<string, unknown>;
   }) {
-    const outcome = await this.serializable(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
       const [run, turn, control] = await Promise.all([
         tx.storyRun.findUnique({ where: { id: input.context.run.id } }),
         tx.actorTurn.findUnique({ where: { id: input.context.turn.id }, include: { decisionSet: true, thread: true } }),
@@ -2204,7 +3642,7 @@ export class ContinuousStoryV2Service {
             amount,
             idempotencyKey: `player-action:${run.id}:${input.context.membership.userId}:${input.command.idempotencyKey}`,
             requestHash: input.requestHash,
-            metadata: { engine: CONTINUOUS_STORY_ENGINE_VERSION, policyVersion: billing.policyVersion, turnId: turn.id, decisionForm: input.command.decisionForm || "STORY_CHOICE" },
+            metadata: { engine: run.engineVersion, policyVersion: billing.policyVersion, turnId: turn.id, decisionForm: input.command.decisionForm || "STORY_CHOICE" },
             meteringMode: config.meteringMode,
             tx
           });
@@ -2214,7 +3652,7 @@ export class ContinuousStoryV2Service {
               where: { id: control.id },
               data: { mode: "AI_ACTIVE", epoch: nextEpoch, reason: "CREDITS_INSUFFICIENT", takeoverAt: new Date(), offlineSince: null }
             });
-            await tx.roleControlTransition.create({
+            const transition = await tx.roleControlTransition.create({
               data: {
                 roleControlId: control.id,
                 fromMode: control.mode,
@@ -2237,7 +3675,12 @@ export class ContinuousStoryV2Service {
                 controlEpoch: nextEpoch,
                 taskType: "ACTOR_AGENT_TURN_V2",
                 status: "PENDING",
-                dedupeKey: `ACTOR_AGENT_TURN_V2:${turn.id}`,
+                dedupeKey: openNovelAgentTaskDedupeKey(turn.id, nextEpoch),
+                identityJson: openNovelAgentTaskIdentity({
+                  controlEpoch: nextEpoch,
+                  controlReason: "CREDITS_INSUFFICIENT",
+                  controlTransitionId: transition.id
+                }) as unknown as Prisma.InputJsonValue,
                 maxAttempts: 3
               }
             });
@@ -2247,16 +3690,57 @@ export class ContinuousStoryV2Service {
           creditChargeId = reserved.charge?.id || null;
         }
       }
-      const appliedSequence = Math.max(run.worldSequence, Number((run as any).reservedWorldSequence || run.worldSequence)) + 1;
       const nodeId = run.currentNodeId;
       if (!nodeId) throw new ConflictException({ code: "CURRENT_NODE_REQUIRED", message: "The run has no causal node" });
-      const playerAction = await tx.playerAction.create({
-        data: {
-          runId: run.id,
-          nodeId,
-          chapterIndex: turn.stageIndex,
+      const auditedAction = input.agentDecisionAudit
+        ? { ...input.action, agentDecisionAudit: input.agentDecisionAudit }
+        : input.action;
+      const ids = {
+        playerActionId: randomUUID(),
+        submissionId: randomUUID(),
+        entryId: randomUUID(),
+        taskId: randomUUID()
+      };
+      const fastCommitRoles = Array.isArray(input.context.allRoles) && input.context.allRoles.length > 0
+        ? input.context.allRoles
+        : [input.context.role];
+      const fastCanonFacts = canonFactCommitPlans({
+        stageTitle: input.context.situationInput.stage.title,
+        factCatalog: input.context.situationInput.stage.factCatalog || [],
+        action: input.action,
+        actorRoleId: turn.roleId,
+        allRoles: fastCommitRoles
+      }).map((fact) => ({ id: randomUUID(), ...fact }));
+      const fastWorldCommitEligible = input.action.leverageDispositions.length === 0
+        && !input.command.interactionId
+        && !input.action.normalizedIntent.condition
+        && !input.action.targetRoleId
+        && !input.stageProgress.stageAdvanced
+        && input.action.influenceEdges.length === 0;
+      // Turn CAS, role-private records, durable sequence reservation and the
+      // result outbox are one database statement. The shared StoryRun lock is
+      // acquired only after the private rows are ready and released when this
+      // short transaction returns; provider/model work remains outside.
+      const reservation = await reserveMultiplayerCommand(tx, {
+        ids,
+        run: { id: run.id, nodeId, observedWorldSequence: run.worldSequence },
+        turn: {
+          id: turn.id,
+          threadId: turn.threadId,
+          roleId: turn.roleId,
+          stageIndex: turn.stageIndex,
+          turnIndex: turn.turnIndex,
+          revision: input.command.turnRevision
+        },
+        control: {
+          epoch: input.command.controlEpoch,
+          allowedModes: input.actorKind === "AI"
+            ? ["AI_ACTIVE", "AI_ACTIVE"]
+            : ["HUMAN_ACTIVE", "HUMAN_OFFLINE_GRACE"]
+        },
+        agentFence: input.agentFence,
+        playerAction: {
           userId: input.actorKind === "HUMAN" ? input.context.membership.userId : null,
-          roleId: input.context.role.id,
           playerType: input.actorKind === "HUMAN" ? "human" : "ai",
           actionType: playerActionTypeForDecision(input.command, input.action.source),
           targetType: input.action.normalizedIntent.target.type,
@@ -2265,68 +3749,38 @@ export class ContinuousStoryV2Service {
           method: input.action.description,
           intent: input.action.intent,
           riskLevel: input.action.risk.toLowerCase(),
-          freeText: input.command.customAction,
-          normalizedJson: input.action as unknown as Prisma.InputJsonValue,
-          guardStatus: "ok",
+          freeText: input.command.customAction || null,
+          normalizedJson: auditedAction,
           guardReason: input.action.guardDecision.reason,
-          auditStatus: "ok",
-          status: "accepted",
-          actionSlot: `TURN:${turn.id}`,
           actorKind: input.actorKind === "HUMAN" ? "HUMAN" : "AI_TAKEOVER",
-          controlEpoch: input.command.controlEpoch,
-          policyVersion: "continuous_story_v2",
-          provider: "pending",
-          modelName: "story-generation-v2.1",
-          actionKey: input.action.actionKey,
+          actionKey: input.action.actionKey || null,
           idempotencyKey: `v2-action:${input.command.idempotencyKey}`,
           requestHash: input.requestHash,
           visibility: input.action.visibility,
           targetRoleId: input.action.targetRoleId,
           leverageKey: input.action.requiredAssetKeys[0] || null,
-          sealedAt: new Date(),
-          immediateJson: { receipt: input.action.receiptText } as Prisma.InputJsonValue,
-          resolvedJson: { appliedWorldSequence: appliedSequence, storyGenerationStatus: "GENERATING" } as Prisma.InputJsonValue,
-          resolvedAt: new Date()
-        }
-      });
-      if (creditChargeId) await this.creditConsumption.attachPlayerAction(creditChargeId, playerAction.id, tx);
-      const submission = await tx.decisionSubmission.create({
-        data: {
-          runId: run.id,
-          threadId: turn.threadId,
-          turnId: turn.id,
-          roleId: turn.roleId,
-          userId: playerAction.userId,
-          playerActionId: playerAction.id,
-          candidateId: input.command.candidateId,
-          customAction: input.command.customAction,
-          normalizedActionJson: input.action as unknown as Prisma.InputJsonValue,
-          rawIntentJson: input.command.intent as unknown as Prisma.InputJsonValue,
-          normalizedIntentJson: input.action.normalizedIntent as unknown as Prisma.InputJsonValue,
+          immediateJson: { receipt: input.action.receiptText }
+        },
+        submission: {
+          candidateId: input.command.candidateId || null,
+          customAction: input.command.customAction || null,
+          normalizedActionJson: auditedAction,
+          rawIntentJson: input.command.intent,
+          normalizedIntentJson: input.action.normalizedIntent,
           immutableIntentHash: input.action.immutableIntentHash,
-          guardDecisionJson: input.action.guardDecision as unknown as Prisma.InputJsonValue,
-          selectedLeverageKeysJson: input.action.requiredAssetKeys as unknown as Prisma.InputJsonValue,
-          controlEpoch: input.command.controlEpoch,
+          guardDecisionJson: input.action.guardDecision,
+          selectedLeverageKeysJson: input.action.requiredAssetKeys,
           idempotencyKey: input.command.idempotencyKey,
-          requestHash: input.requestHash,
-          status: "GENERATING"
-        }
-      });
-      const resolution = await tx.actionResolution.create({
-        data: {
-          runId: run.id,
-          threadId: turn.threadId,
-          turnId: turn.id,
-          submissionId: submission.id,
-          roleId: turn.roleId,
-          playerActionId: playerAction.id,
-          baseWorldSequence: run.worldSequence,
-          appliedWorldSequence: appliedSequence,
-          outcomeJson: { receipt: input.action.receiptText, factKeys: input.action.effectFactKeys, influenceEdges: input.action.influenceEdges } as Prisma.InputJsonValue,
-          statePatchJson: {
+          requestHash: input.requestHash
+        },
+        entry: {
+          outcomeJson: {
+            receipt: input.action.receiptText,
+            factKeys: input.action.effectFactKeys,
+            influenceEdges: input.action.influenceEdges
+          },
+          mutationJson: {
             schemaVersion: "pending_world_mutation_v1",
-            baseWorldSequence: run.worldSequence,
-            nextWorldSequence: appliedSequence,
             interactionId: input.command.interactionId || null,
             nextStateKey: input.action.nextStateKey,
             fromStageIndex: turn.stageIndex,
@@ -2334,50 +3788,48 @@ export class ContinuousStoryV2Service {
             stageAdvanced: input.stageProgress.stageAdvanced,
             transitionReason: input.stageProgress.reason,
             transitionFactKeys: input.stageProgress.evidenceFactKeys,
-            actorTurnOrdinal: turn.turnIndex
-          } as Prisma.InputJsonValue,
-          resultNarrative: "",
-          nextHook: "",
-          qualityStatus: "GENERATING"
-        }
-      });
-      // All authoritative world mutations are deliberately deferred until the
-      // generated result passes the publication gate. Only a reservation
-      // counter advances here; it is not exposed as world state.
-      await (tx.storyRun as any).update({
-        where: { id: run.id },
-        data: { reservedWorldSequence: appliedSequence }
-      });
-      await tx.actorTurn.update({
-        where: { id: turn.id },
-        data: { status: "RESOLVING", qualityStatus: "GENERATING" }
-      });
-      const resultTask = await tx.storyTaskOutbox.create({
-        data: {
-          runId: run.id,
-          nodeId,
-          roleId: turn.roleId,
-          inputRefId: resolution.id,
-          actionSlot: "ACTOR_RESULT",
-          controlEpoch: input.command.controlEpoch,
-          taskType: "ACTOR_RESULT_V2",
-          status: "PENDING",
-          dedupeKey: `ACTOR_RESULT_V2:${resolution.id}`,
-          maxAttempts: 5,
+            actorTurnOrdinal: turn.turnIndex,
+            fastWorldCommit: {
+              schemaVersion: "multiplayer_fast_world_commit_v1",
+              eligible: fastWorldCommitEligible,
+              canonFacts: fastCanonFacts
+            },
+            frozenRoleContext: {
+              observedWorldSequence: run.worldSequence,
+              visibleFacts: input.context.visibleFacts,
+              incomingImpacts: input.context.incomingImpacts,
+              assets: input.context.assets.map((asset) => ({
+                id: asset.id,
+                assetKey: asset.assetKey,
+                ownerRoleId: asset.ownerRoleId,
+                ownerActorKey: asset.ownerActorKey,
+                quantity: asset.quantity,
+                status: asset.status,
+                visibility: asset.visibility
+              }))
+            }
+          }
+        },
+        task: {
           resultJson: {
             action: input.action,
             stageProgress: input.stageProgress,
             actorKind: input.actorKind,
             controlEpoch: input.command.controlEpoch
-          } as unknown as Prisma.InputJsonValue
-        }
+          }
+        },
+        creditChargeId
       });
       return {
-        resolutionId: resolution.id,
-        taskId: resultTask.id,
-        appliedWorldSequence: appliedSequence,
-        submissionId: submission.id
+        entryId: reservation.entryId,
+        taskId: reservation.taskId,
+        observedWorldSequence: reservation.observedWorldSequence,
+        submissionId: reservation.submissionId
       };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      maxWait: 30_000,
+      timeout: 45_000
     });
     if ("insufficient" in outcome && outcome.insufficient) {
       const insufficient = outcome.insufficient;
@@ -2392,6 +3844,107 @@ export class ContinuousStoryV2Service {
       }, HttpStatus.PAYMENT_REQUIRED);
     }
     return outcome;
+  }
+
+  private async commitMultiplayerWorldEntry(input: {
+    entryId: string;
+    context: Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>;
+    action: PlannedIntentAction;
+    stageProgress: StageProgressDecision;
+    resultFence: { taskId: string; leaseOwner: string; leaseVersion: number };
+  }) {
+    const fast = await tryFastMultiplayerWorldCommit(this.prisma, input.entryId, input.resultFence);
+    if (fast) return fast;
+    return this.prisma.$transaction(async (tx) => {
+      // This is the only per-room serialization point. Acquire the authoritative
+      // StoryRun row before reading any other commit state so READ COMMITTED
+      // waiters resume on the latest world rather than exhausting Serializable
+      // retries from a stale snapshot.
+      const lockedRuns = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT id FROM "StoryRun" WHERE id = ${input.context.run.id} FOR UPDATE
+      `);
+      if (lockedRuns.length !== 1) throw new ConflictException({ code: "ROOM_NOT_FOUND", message: "Multiplayer world no longer exists" });
+      const leasedTask = await tx.storyTaskOutbox.findFirst({
+        where: {
+          id: input.resultFence.taskId,
+          taskType: "ACTOR_RESULT_V2",
+          status: "RUNNING",
+          leaseOwner: input.resultFence.leaseOwner,
+          leaseVersion: input.resultFence.leaseVersion,
+          leaseExpiresAt: { gt: new Date() },
+          inputRefId: input.entryId
+        }
+      });
+      if (!leasedTask) throw new AgentLeaseLostError();
+      const entry = await this.loadMultiplayerCommitEntry(tx, input.entryId);
+      if (!entry) throw new ConflictException({ code: "RESULT_RESERVATION_MISSING", message: "Multiplayer command reservation no longer exists" });
+      if (["COMMITTED", "PUBLISHED"].includes(entry.state) && entry.committedResolutionId) {
+        const existing = await tx.actionResolution.findUnique({ where: { id: entry.committedResolutionId } });
+        if (!existing) throw new ConflictException({ code: "WORLD_COMMIT_MISSING", message: "Committed multiplayer resolution is missing" });
+        return { resolutionId: existing.id, appliedWorldSequence: existing.appliedWorldSequence };
+      }
+      if (!["RESERVED", "READY"].includes(entry.state) || entry.turn.status !== "RESOLVING") {
+        throw new ConflictException({ code: "RESULT_RESERVATION_MOVED", message: "Multiplayer command cannot commit world state" });
+      }
+      const baseWorldSequence = entry.run.worldSequence;
+      const appliedWorldSequence = baseWorldSequence + 1;
+      const statePatchJson = {
+        ...jsonRecord(entry.mutationJson),
+        baseWorldSequence,
+        nextWorldSequence: appliedWorldSequence
+      } as Prisma.InputJsonValue;
+      const resolution = await tx.actionResolution.create({
+        data: {
+          id: entry.id,
+          runId: entry.runId,
+          threadId: entry.threadId,
+          turnId: entry.turnId,
+          submissionId: entry.submissionId,
+          roleId: entry.roleId,
+          playerActionId: entry.playerActionId,
+          baseWorldSequence,
+          appliedWorldSequence,
+          outcomeJson: entry.outcomeJson as Prisma.InputJsonValue,
+          statePatchJson,
+          resultNarrative: "",
+          nextHook: "",
+          qualityStatus: "WORLD_COMMITTING"
+        }
+      });
+      const authoritativeResolution = {
+        ...resolution,
+        run: entry.run,
+        turn: entry.turn,
+        submission: entry.submission,
+        playerAction: entry.playerAction
+      };
+      await this.applyReservedWorldMutation(tx, {
+        resolution: authoritativeResolution,
+        context: input.context,
+        action: input.action,
+        stageProgress: input.stageProgress
+      });
+      await tx.actionResolution.update({ where: { id: resolution.id }, data: { qualityStatus: "WORLD_COMMITTED" } });
+      await tx.multiplayerWorldCommitEntry.update({
+        where: { id: entry.id },
+        data: { state: "COMMITTED", committedResolutionId: resolution.id, committedAt: new Date() }
+      });
+      await tx.playerAction.update({
+        where: { id: entry.playerActionId },
+        data: {
+          resolvedJson: {
+            appliedWorldSequence,
+            storyGenerationStatus: "PENDING_ROLE_RUNTIME",
+            worldCommitted: true
+          } as Prisma.InputJsonValue
+        }
+      });
+      return { resolutionId: resolution.id, appliedWorldSequence };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      maxWait: 30_000,
+      timeout: 45_000
+    });
   }
 
   private async applyReservedWorldMutation(
@@ -2491,25 +4044,23 @@ export class ContinuousStoryV2Service {
     await tx.conditionalActionV2.updateMany({ where: { runId: run.id, status: "ARMED", expiresAtStage: { lt: turn.stageIndex } }, data: { status: "EXPIRED", expiredAt: new Date() } });
     await tx.commitmentV2.updateMany({ where: { runId: run.id, status: "ACTIVE", expiresAtStage: { lt: turn.stageIndex } }, data: { status: "EXPIRED", expiredAt: new Date() } });
 
-    const allRoleIds = context.allRoles.map((role) => role.id);
-    for (const factKey of action.effectFactKeys) {
-      const factVisibility = context.situationInput.stage.factCatalog.find((fact) => fact.factKey === factKey)?.visibility || action.visibility;
-      const affectedRoleKeys = new Set(action.influenceEdges.map((edge) => edge.affectedRoleKey));
-      const affectedRoleIds = context.allRoles.filter((role) => affectedRoleKeys.has(role.roleKey)).map((role) => role.id);
-      const knownBy = factAudience(factVisibility, action, turn.roleId, allRoleIds, affectedRoleIds);
-      const factContent = factVisibility === "OBSERVABLE"
-        ? action.observableTraceText || `有人在${context.situationInput.stage.title}留下了可核验但尚不能确认来源的行动痕迹。`
-        : action.receiptText;
-      const existingFact = await tx.canonFact.findUnique({ where: { runId_factKey: { runId: run.id, factKey } } });
+    for (const fact of canonFactCommitPlans({
+      stageTitle: context.situationInput.stage.title,
+      factCatalog: context.situationInput.stage.factCatalog,
+      action,
+      actorRoleId: turn.roleId,
+      allRoles: context.allRoles
+    })) {
+      const existingFact = await tx.canonFact.findUnique({ where: { runId_factKey: { runId: run.id, factKey: fact.factKey } } });
       if (existingFact) {
         await tx.canonFact.update({
           where: { id: existingFact.id },
           data: {
-            content: factContent,
+            content: fact.content,
             status: "confirmed",
-            visibility: factVisibility.toLowerCase(),
+            visibility: fact.visibility,
             sourceActionIdsJson: uniqueStrings([...stringList(existingFact.sourceActionIdsJson), playerAction.id]),
-            knownByRoleIdsJson: uniqueStrings([...stringList(existingFact.knownByRoleIdsJson), ...knownBy])
+            knownByRoleIdsJson: uniqueStrings([...stringList(existingFact.knownByRoleIdsJson), ...fact.knownByRoleIds])
           }
         });
       } else {
@@ -2517,18 +4068,20 @@ export class ContinuousStoryV2Service {
           data: {
             runId: run.id,
             sourceNodeId: nodeId,
-            factKey,
-            content: factContent,
+            factKey: fact.factKey,
+            content: fact.content,
             status: "confirmed",
-            visibility: factVisibility.toLowerCase(),
+            visibility: fact.visibility,
             sourceEventIdsJson: [],
             sourceActionIdsJson: [playerAction.id],
-            knownByRoleIdsJson: knownBy
+            knownByRoleIdsJson: fact.knownByRoleIds
           }
         });
       }
     }
-    await this.ensureStageAssets(tx, run.id, stageProgress.nextStageIndex || turn.stageIndex, context.allRoles);
+    if (stageProgress.stageAdvanced && stageProgress.nextStageIndex && stageProgress.nextStageIndex !== turn.stageIndex) {
+      await this.ensureStageAssets(tx, run.id, stageProgress.nextStageIndex, context.allRoles);
+    }
     await this.publishCrossImpacts(tx, {
       runId: run.id,
       nodeId,
@@ -2549,6 +4102,71 @@ export class ContinuousStoryV2Service {
     });
   }
 
+  private async commitReservedWorldForRoleRuntime(input: {
+    context: Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>;
+    action: PlannedIntentAction;
+    stageProgress: StageProgressDecision;
+    resolutionId: string;
+    resultFence: { taskId: string; leaseOwner: string; leaseVersion: number };
+  }) {
+    return this.serializable(async (tx) => {
+      const [leasedTask, resolution] = await Promise.all([
+        tx.storyTaskOutbox.findFirst({
+          where: {
+            id: input.resultFence.taskId,
+            taskType: "ACTOR_RESULT_V2",
+            status: "RUNNING",
+            leaseOwner: input.resultFence.leaseOwner,
+            leaseVersion: input.resultFence.leaseVersion,
+            leaseExpiresAt: { gt: new Date() },
+            inputRefId: input.resolutionId
+          }
+        }),
+        tx.actionResolution.findUnique({
+          where: { id: input.resolutionId },
+          include: { run: true, submission: true, playerAction: true, turn: { include: { thread: true } } }
+        })
+      ]);
+      if (!leasedTask) throw new AgentLeaseLostError();
+      if (!resolution) throw new ConflictException({ code: "RESULT_RESERVATION_MISSING", message: "Reserved result no longer exists" });
+      if (resolution.qualityStatus === "WORLD_COMMITTED" || resolution.qualityStatus === "PASS") {
+        return { resolutionId: resolution.id, appliedWorldSequence: resolution.appliedWorldSequence };
+      }
+      if (resolution.qualityStatus !== "GENERATING" || resolution.turn.status !== "RESOLVING") {
+        throw new ConflictException({ code: "RESULT_RESERVATION_MOVED", message: "Reserved result cannot commit world state" });
+      }
+      const unfinishedImpacts = await tx.storyTaskOutbox.findMany({
+        where: {
+          runId: resolution.runId,
+          roleId: resolution.roleId,
+          taskType: "ACTOR_IMPACT_V2",
+          status: { in: ["PENDING", "RUNNING", "FAILED"] }
+        },
+        select: { id: true, roleId: true, status: true, resultJson: true }
+      });
+      const blocker = findEarlierUnfinishedRoleImpact(leasedTask.id, resolution.roleId, resolution.appliedWorldSequence, unfinishedImpacts);
+      if (blocker) {
+        throw new ServiceUnavailableException({
+          code: "RESULT_IMPACT_SEQUENCE_WAIT",
+          message: "An earlier impact for this role must finish before world state can commit",
+          recoverable: true,
+          blockingTaskId: blocker.taskId,
+          blockingWorldSequence: blocker.appliedWorldSequence
+        });
+      }
+      await this.applyReservedWorldMutation(tx, { resolution, context: input.context, action: input.action, stageProgress: input.stageProgress });
+      await tx.actionResolution.update({
+        where: { id: resolution.id },
+        data: { qualityStatus: "WORLD_COMMITTED" }
+      });
+      await tx.playerAction.update({
+        where: { id: resolution.playerActionId },
+        data: { resolvedJson: { appliedWorldSequence: resolution.appliedWorldSequence, storyGenerationStatus: "PENDING_ROLE_RUNTIME", worldCommitted: true } as Prisma.InputJsonValue }
+      });
+      return { resolutionId: resolution.id, appliedWorldSequence: resolution.appliedWorldSequence };
+    });
+  }
+
   private async finalizeReservedResolution(input: {
     context: Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>;
     action: PlannedIntentAction;
@@ -2563,6 +4181,8 @@ export class ContinuousStoryV2Service {
     controlEpoch: number;
     resolutionId: string;
     resultFence: { taskId: string; leaseOwner: string; leaseVersion: number };
+    worldAlreadyCommitted?: boolean;
+    openNovelWorkingSet?: FrozenOpenNovelFinalizationContext | null;
   }) {
     return this.serializable(async (tx) => {
       const [leasedTask, resolution] = await Promise.all([
@@ -2587,6 +4207,10 @@ export class ContinuousStoryV2Service {
       if (resolution.qualityStatus === "PASS") {
         const existingCharge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: resolution.playerActionId } });
         if (existingCharge?.status === "RESERVED") await this.creditConsumption.commitCharge(existingCharge.id, tx);
+        await tx.multiplayerWorldCommitEntry.updateMany({
+          where: { committedResolutionId: resolution.id, state: "COMMITTED" },
+          data: { state: "PUBLISHED", publishedAt: new Date() }
+        });
         return {
           id: resolution.id,
           submissionId: resolution.submissionId,
@@ -2595,7 +4219,8 @@ export class ContinuousStoryV2Service {
           nextHook: resolution.nextHook
         };
       }
-      if (resolution.qualityStatus !== "GENERATING" || resolution.turn.status !== "RESOLVING") {
+      const expectedStatus = input.worldAlreadyCommitted ? "WORLD_COMMITTED" : "GENERATING";
+      if (resolution.qualityStatus !== expectedStatus || resolution.turn.status !== "RESOLVING") {
         throw new ConflictException({ code: "RESULT_RESERVATION_MOVED", message: "Reserved result cannot be finalized" });
       }
       const run = resolution.run;
@@ -2604,7 +4229,9 @@ export class ContinuousStoryV2Service {
       const playerAction = resolution.playerAction;
       const nodeId = run.currentNodeId;
       if (!nodeId) throw new ConflictException({ code: "CURRENT_NODE_REQUIRED", message: "The run has no causal node" });
-      await this.applyReservedWorldMutation(tx, { resolution, context: input.context, action: input.action, stageProgress: input.stageProgress });
+      if (!input.worldAlreadyCommitted) {
+        await this.applyReservedWorldMutation(tx, { resolution, context: input.context, action: input.action, stageProgress: input.stageProgress });
+      }
       await tx.actionResolution.update({
         where: { id: resolution.id },
         data: {
@@ -2673,7 +4300,8 @@ export class ContinuousStoryV2Service {
               modelName: input.draft.modelName,
               previousResolutionId: resolution.id,
               stageTransition: input.stageProgress,
-              contextSnapshotId: input.contextRecordId
+              contextSnapshotId: input.contextRecordId,
+              ...(input.openNovelWorkingSet ? { openNovelWorkingSet: input.openNovelWorkingSet } : {})
             } as Prisma.InputJsonValue,
             qualityStatus: "PASS",
             dedupeKey: `actor-turn:${turn.threadId}:${turn.turnIndex + 1}`
@@ -2728,7 +4356,14 @@ export class ContinuousStoryV2Service {
               controlEpoch: postActionControl.epoch,
               taskType: "ACTOR_AGENT_TURN_V2",
               status: "PENDING",
-              dedupeKey: `ACTOR_AGENT_TURN_V2:${nextTurn.id}`,
+              dedupeKey: openNovelAgentTaskDedupeKey(nextTurn.id, postActionControl.epoch),
+              identityJson: openNovelAgentTaskIdentity({
+                controlEpoch: postActionControl.epoch,
+                controlReason: postActionControl.reason,
+                standingPolicyCandidate: postActionControl.reason === "DISCONNECT_TIMEOUT"
+                  ? standingPolicyDecisionCandidate(input.nextInput)
+                  : null
+              }) as unknown as Prisma.InputJsonValue,
               maxAttempts: 3
             }
           });
@@ -2745,7 +4380,10 @@ export class ContinuousStoryV2Service {
           }
         });
         const endingContent = `${input.draft.resultNarrative}\n\n${input.draft.nextHook}`;
-        const endingReview = acceptPipelineVerifiedSoloReview(reviewStory(endingContent, input.context.situationInput, "RESULT", input.action), run.maxPlayers === 1);
+        const endingReview = acceptOpenNovelRolePublicationReview(
+          acceptPipelineVerifiedSoloReview(reviewStory(endingContent, input.context.situationInput, "RESULT", input.action), run.maxPlayers === 1),
+          this.narrativeAdapters.isOpenNovel(run),
+        );
         assertQuality(endingReview, "ENDING_STORY_QUALITY_FAILED");
         const endingEntry = await tx.narrativeEntry.create({
           data: {
@@ -2833,6 +4471,10 @@ export class ContinuousStoryV2Service {
       }
       const charge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: playerAction.id } });
       if (charge?.status === "RESERVED") await this.creditConsumption.commitCharge(charge.id, tx);
+      await tx.multiplayerWorldCommitEntry.updateMany({
+        where: { committedResolutionId: resolution.id, state: "COMMITTED" },
+        data: { state: "PUBLISHED", publishedAt: new Date() }
+      });
       return {
         id: resolution.id,
         submissionId: submission.id,
@@ -3140,14 +4782,26 @@ export class ContinuousStoryV2Service {
             data: {
               runId: run.id, nodeId, roleId: turn.roleId, inputRefId: nextTurn.id,
               actionSlot: "ACTOR_TURN", controlEpoch: input.command.controlEpoch, taskType: "ACTOR_AGENT_TURN_V2",
-              status: "PENDING", dedupeKey: `ACTOR_AGENT_TURN_V2:${nextTurn.id}`, maxAttempts: 3
+              status: "PENDING",
+              dedupeKey: openNovelAgentTaskDedupeKey(nextTurn.id, input.command.controlEpoch),
+              identityJson: openNovelAgentTaskIdentity({
+                controlEpoch: input.command.controlEpoch,
+                controlReason: input.context.control.reason,
+                standingPolicyCandidate: input.context.control.reason === "DISCONNECT_TIMEOUT"
+                  ? standingPolicyDecisionCandidate(input.nextInput)
+                  : null
+              }) as unknown as Prisma.InputJsonValue,
+              maxAttempts: 3
             }
           });
         }
       } else {
         await tx.actorThread.update({ where: { id: turn.threadId }, data: { status: "COMPLETED", currentTurnIndex: turn.turnIndex, currentStageIndex: turn.stageIndex, lastAppliedSequence: appliedSequence, completedAt: new Date() } });
         const endingContent = `${input.draft.resultNarrative}\n\n${input.draft.nextHook}`;
-        const endingReview = acceptPipelineVerifiedSoloReview(reviewStory(endingContent, input.context.situationInput, "RESULT", input.action), run.maxPlayers === 1);
+        const endingReview = acceptOpenNovelRolePublicationReview(
+          acceptPipelineVerifiedSoloReview(reviewStory(endingContent, input.context.situationInput, "RESULT", input.action), run.maxPlayers === 1),
+          this.narrativeAdapters.isOpenNovel(run),
+        );
         assertQuality(endingReview, "ENDING_STORY_QUALITY_FAILED");
         const endingEntry = await tx.narrativeEntry.create({
           data: {
@@ -3210,10 +4864,10 @@ export class ContinuousStoryV2Service {
     // Their reactions are written into the human result and next situation.
     if (input.soloNpcMode) return;
     const explicitKeys = new Set(input.action.influenceEdges.map((edge) => edge.affectedRoleKey));
-    const broadlyObservable = input.action.visibility === "PUBLIC" || input.action.visibility === "OBSERVABLE";
     const directedPrivateResponse = input.action.visibility === "PRIVATE" && input.action.requiresTargetResponse;
     const targets = input.allRoles.filter((role) => role.id !== input.sourceRole.id
-      && (broadlyObservable || (explicitKeys.has(role.roleKey) && (input.action.visibility === "LIMITED" || directedPrivateResponse))));
+      && explicitKeys.has(role.roleKey)
+      && (input.action.visibility !== "PRIVATE" || directedPrivateResponse));
     if (!targets.length) return;
     for (const target of targets) {
       await this.enqueueImpactTask(tx, {
@@ -3666,28 +5320,22 @@ export class ContinuousStoryV2Service {
     if (violation) throw new BadRequestException({ code: "GUARD_REJECTED", message: "The role cannot use another role's private knowledge", issues: ["UNKNOWN_PRIVATE_FACT"] });
   }
 
-  private requireV2(engineVersion: string) {
-    if (engineVersion !== CONTINUOUS_STORY_ENGINE_VERSION) throw new ConflictException({ code: "CONTINUOUS_STORY_V2_REQUIRED", message: "This room does not use independent story threads" });
+  private requireV2(engineVersion: string, runId: string) {
+    if (engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return;
+    if (engineVersion === CONTINUOUS_OPENOVEL_ENGINE_VERSION) {
+      // Selection is also the rollout gate: old runs never change engine and
+      // a new-engine run must be explicitly allowlisted.
+      if (!this.narrativeAdapters.isOpenNovel({ id: runId, engineVersion })) {
+        throw new ForbiddenException({ code: "CONTINUOUS_OPENOVEL_V1_DISABLED", message: "This OpenNovel multiplayer room is not enabled" });
+      }
+      return;
+    }
+    throw new ConflictException({ code: "CONTINUOUS_STORY_V2_REQUIRED", message: "This room does not use independent story threads" });
   }
 
   private async serializable<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      try {
-        return await this.prisma.$transaction(operation, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10_000, timeout: 45_000 });
-      } catch (error: any) {
-        if (error instanceof DecisionContextMovedError) throw error;
-        if (!isRetryableSerializableError(error) || attempt === 3) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
-      }
-    }
-    throw new Error("unreachable serializable retry state");
+    return continuousStoryV2Serializable(this.prisma, operation);
   }
-}
-
-export function isRetryableSerializableError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const code = String((error as { code?: unknown }).code || "");
-  return code === "P2034" || code === "P2002" || code === "P2028";
 }
 
 function roleContext(role: StoryRole): StoryRoleContext {
@@ -3698,15 +5346,36 @@ function roleContext(role: StoryRole): StoryRoleContext {
   };
 }
 
+function frozenRoleContextFromMutation(value: unknown, observedWorldSequence: number) {
+  const frozen = jsonRecord(jsonRecord(value).frozenRoleContext);
+  const visibleFacts = Array.isArray(frozen.visibleFacts)
+    ? frozen.visibleFacts.map(jsonRecord).map((fact) => ({ factKey: textValue(fact.factKey, ""), content: textValue(fact.content, "") })).filter((fact) => fact.factKey && fact.content)
+    : [];
+  const incomingImpacts = Array.isArray(frozen.incomingImpacts)
+    ? frozen.incomingImpacts.map(jsonRecord).map((impact) => ({ sourceRoleName: textValue(impact.sourceRoleName, ""), content: textValue(impact.content, "") })).filter((impact) => impact.content)
+    : [];
+  const assets = Array.isArray(frozen.assets) ? frozen.assets.map(jsonRecord) : [];
+  return {
+    observedWorldSequence: Number.isInteger(frozen.observedWorldSequence) ? Number(frozen.observedWorldSequence) : observedWorldSequence,
+    visibleFacts,
+    incomingImpacts,
+    assets
+  };
+}
+
 function visibleFactsForRole(facts: Array<{ factKey: string; content: string; visibility: string; knownByRoleIdsJson: unknown }>, roleId: string): VisibleFact[] {
   return facts
     .filter((fact) => fact.visibility === "public" || stringList(fact.knownByRoleIdsJson).includes(roleId))
     .map((fact) => ({ factKey: fact.factKey, content: fact.content }));
 }
 
-function factAudience(visibility: ResolvedStoryAction["visibility"], action: ResolvedStoryAction, actorRoleId: string, allRoleIds: string[], affectedRoleIds: string[]) {
-  if (visibility === "PUBLIC" || visibility === "OBSERVABLE") return allRoleIds;
+export function factAudience(visibility: ResolvedStoryAction["visibility"], action: ResolvedStoryAction, actorRoleId: string, allRoleIds: string[], affectedRoleIds: string[]) {
+  if (visibility === "PUBLIC") return uniqueStrings(allRoleIds);
   if (visibility === "PRIVATE") return [actorRoleId];
+  // OBSERVABLE means a bounded audience can see a trace, not that every role
+  // automatically learns it. Until the world core has reliable scene-audience
+  // membership, fail closed to the actor, explicit target, and resolver-owned
+  // influence edges. LIMITED intentionally uses the same explicit audience.
   return uniqueStrings([actorRoleId, action.targetRoleId, ...affectedRoleIds].filter((id): id is string => Boolean(id)));
 }
 
@@ -3773,6 +5442,80 @@ function bindDecisionTargets<T extends { decisions: DecisionCandidateV2[] }>(dra
 
 function asDecisionCandidates(value: unknown): DecisionCandidateV2[] {
   return Array.isArray(value) ? value.filter((candidate): candidate is DecisionCandidateV2 => Boolean(candidate && typeof candidate === "object" && typeof (candidate as any).id === "string" && typeof (candidate as any).label === "string")) : [];
+}
+
+export function standingPolicyDecisionCandidate(
+  input: Pick<StorySituationInput, "role" | "stage">
+): DecisionCandidateV2 {
+  const intentDraft: PlayerIntentV2 = {
+    objective: `在“${input.stage.commonContest.title}”获得新证据前维持${input.role.roleName}的职责边界`,
+    target: {
+      type: "PUBLIC_FRAME",
+      id: input.stage.commonContest.contestKey,
+      label: input.stage.commonContest.title
+    },
+    method: "接收并登记现有常规文书，核对经手人与时限，维持当前立场，并推迟任何不可逆答复",
+    leverageKeys: [],
+    visibility: "OBSERVABLE",
+    riskTolerance: "LOW",
+    fallback: null,
+    condition: null
+  };
+  return {
+    id: `standing_policy_${sha256Canonical({ roleKey: input.role.roleKey, contestKey: input.stage.commonContest.contestKey }).slice(0, 16)}`,
+    actionKey: null,
+    label: "维持当前职责并核验文书",
+    description: intentDraft.method,
+    intent: intentDraft.objective,
+    targetRoleId: null,
+    targetRoleName: null,
+    risk: "LOW",
+    basisFactKeys: [],
+    requiredAssetKeys: [],
+    authorityBasis: input.role.abilityText || input.role.identity,
+    intendedOutcome: intentDraft.objective,
+    concreteCost: "局势继续施压，但不会替任何角色作出不可逆决定。",
+    expectedCountermove: "其他角色仍可独立行动，新的可见事实会在下一次角色回合进入判断。",
+    visibility: intentDraft.visibility,
+    effectHooks: ["STANDING_POLICY:MAINTAIN_POSITION", "STANDING_POLICY:DEFER_IRREVERSIBLE"],
+    intentDraft
+  };
+}
+
+function textValue(value: unknown, fallback: string) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || fallback;
+}
+
+function openNovelDecisionCandidates(output: RoleNarrativeOutputV1, role: StoryRoleContext): DecisionCandidateV2[] {
+  return output.options.flatMap((option) => {
+    if (!option.intentProposal) return [];
+    const intentDraft: PlayerIntentV2 = {
+      ...option.intentProposal,
+      fallback: null,
+      condition: null
+    };
+    const targetsRole = intentDraft.target.type === "ROLE";
+    return [{
+      id: option.id,
+      actionKey: null,
+      label: option.label,
+      description: `${intentDraft.method}；目标是${intentDraft.objective}`,
+      intent: intentDraft.objective,
+      targetRoleId: targetsRole ? intentDraft.target.id : null,
+      targetRoleName: targetsRole ? intentDraft.target.label : null,
+      risk: intentDraft.riskTolerance === "MEDIUM" ? "NORMAL" : intentDraft.riskTolerance,
+      basisFactKeys: [],
+      requiredAssetKeys: intentDraft.leverageKeys,
+      authorityBasis: role.abilityText || role.identity,
+      intendedOutcome: intentDraft.objective,
+      concreteCost: "The declared method, evidence and committed leverage remain binding.",
+      expectedCountermove: targetsRole ? "The target role keeps authority over its own response." : "The world resolver determines the consequence.",
+      visibility: intentDraft.visibility,
+      effectHooks: [`OPENOVEL_OPTION:${option.id}`],
+      intentDraft
+    }];
+  });
 }
 
 const DECISION_FORMS = new Set<DecisionFormV2>(["STORY_CHOICE", "CONVERSATION", "INVESTIGATION", "LEVERAGE", "CUSTOM_PLAN"]);

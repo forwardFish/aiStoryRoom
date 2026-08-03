@@ -1,5 +1,5 @@
 import path from "node:path";
-import { safeRunId } from "./io.js";
+import { safeRunId, safeWorkspaceId } from "./io.js";
 
 export type WorkspacePaths = ReturnType<typeof workspacePaths>;
 
@@ -8,6 +8,49 @@ export function runtimeRoot(env: NodeJS.ProcessEnv = process.env) {
     String(env.OPENOVEL_WORKSPACE_ROOT || "").trim()
       || path.join(process.cwd(), ".runtime", "openovel-v1"),
   );
+}
+
+export type RoleWorkspacePaths = ReturnType<typeof roleWorkspacePaths>;
+
+export function roleWorkspacePaths(root: string, rawRoomId: string, rawRoleId: string) {
+  const roomId = safeWorkspaceId(rawRoomId, "roomId");
+  const roleId = safeWorkspaceId(rawRoleId, "roleId");
+  const roomsRoot = path.resolve(root, "rooms");
+  const roomRoot = path.resolve(roomsRoot, roomId);
+  const roleRoot = path.resolve(roomRoot, "roles", roleId);
+  for (const candidate of [roomRoot, roleRoot]) {
+    if (candidate !== roomsRoot && !candidate.startsWith(`${roomsRoot}${path.sep}`)) {
+      throw new Error("workspace path escaped runtime root");
+    }
+  }
+  const stateDir = path.join(roleRoot, "state");
+  return {
+    roomId, roleId, roomsRoot, roomRoot, roleRoot,
+    roomMetadata: path.join(roomRoot, "room", "metadata.json"),
+    metadata: path.join(roleRoot, "metadata.json"),
+    stateDir,
+    state: path.join(stateDir, "runtime.json"),
+    lease: path.join(stateDir, "role.lock"),
+    fence: path.join(stateDir, "fence.json"),
+    writeLock: path.join(stateDir, "write.lock"),
+    initLease: path.join(stateDir, "init.lock"),
+    initManifest: path.join(stateDir, "init.json"),
+    canonDir: path.join(roleRoot, "canon"),
+    canon: path.join(roleRoot, "canon", "chapters.md"),
+    canonCommitsDir: path.join(roleRoot, "canon", "commits"),
+    guidanceDir: path.join(roleRoot, "guidance"),
+    guidance: path.join(roleRoot, "guidance", "FOREGROUND.md"),
+    frontendDir: path.join(roleRoot, "frontend"),
+    memoryDir: path.join(roleRoot, "memory"),
+    memory: path.join(roleRoot, "memory", "MEMORY.md"),
+    cardsDir: path.join(roleRoot, "context-cards"),
+    assetsBundle: path.join(stateDir, "role-assets.json"),
+    inboxDir: path.join(roleRoot, "inbox"),
+    impacts: path.join(roleRoot, "inbox", "impacts.jsonl"),
+    impactJobsDir: path.join(roleRoot, "inbox", "jobs"),
+    jobsDir: path.join(roleRoot, "jobs"),
+    budgetDir: path.join(roleRoot, "jobs", "budgets"),
+  };
 }
 
 export function workspacePaths(root: string, rawRunId: string) {

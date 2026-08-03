@@ -14,7 +14,7 @@ function gameplayProfile(role: GameRoleDefinition, locale: "en" | "zh-CN") {
   };
 }
 
-export function gamePageProjection(worldId: string) {
+export function gamePageProjection(worldId: string, viewerRoleKey?: string) {
   const game = getGameDefinition(worldId);
   const locale = game.presentation.locale || "en";
   return {
@@ -32,20 +32,29 @@ export function gamePageProjection(worldId: string) {
       accentSoft: game.presentation.accentSoft,
       statusMetrics: game.presentation.statusMetrics || []
     },
-    roles: game.roles.map((role) => ({
+    roles: game.roles.map((role) => {
+      const canReadPrivateRoleProfile = role.roleKey === viewerRoleKey;
+      const profile = gameplayProfile(role, locale);
+      return ({
       roleKey: role.roleKey,
       roleName: role.roleName,
       identity: role.identity,
       publicInfo: role.publicInfo,
-      personalGoal: role.personalGoal,
+      personalGoal: canReadPrivateRoleProfile ? role.personalGoal : "",
       currentState: role.currentState,
       abilityText: role.abilityText,
       arcText: role.arcText,
-      knownInfo: role.knownInfo,
+      knownInfo: canReadPrivateRoleProfile ? role.knownInfo : [],
       cannotDo: role.cannotDo,
       portrait: role.portrait,
-      gameplayProfile: gameplayProfile(role, locale)
-    }))
+      gameplayProfile: canReadPrivateRoleProfile ? profile : {
+        ...profile,
+        fateQuestion: "",
+        goals: [],
+        resources: [],
+        leverage: []
+      }
+    }); })
   };
 }
 

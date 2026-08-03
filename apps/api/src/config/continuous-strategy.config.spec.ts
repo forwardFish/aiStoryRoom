@@ -44,6 +44,17 @@ for (const changed of [
 }
 assert.equal(readContinuousStrategyConfig({} as NodeJS.ProcessEnv).enabledForNewRooms, false);
 assert.equal(readContinuousStrategyConfig({ MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED: "true" } as NodeJS.ProcessEnv).enabledForNewRooms, true);
+assert.throws(() => readContinuousStrategyConfig({ CONTINUOUS_OPENOVEL_V1_ENABLED: "true" } as NodeJS.ProcessEnv), /ROOM_IDS is required/);
+const openNovelConfig = readContinuousStrategyConfig({ CONTINUOUS_OPENOVEL_V1_ENABLED: "true", CONTINUOUS_OPENOVEL_ROOM_IDS: "room-test" } as NodeJS.ProcessEnv);
+assert.equal(openNovelConfig.openNovelEnabledForNewRooms, true);
+assert.deepEqual(selectRunVersions({ templateKey: "sangtian", mode: "room", maxPlayers: 3, enabledForNewRooms: true, openNovelEnabledForNewRooms: true, openNovelRoomIds: openNovelConfig.openNovelRoomIds, runId: "room-test" }), {
+  engineVersion: "continuous_openovel_v1",
+  strategyVersion: "sangtian_v1_2"
+});
+assert.deepEqual(selectRunVersions({ templateKey: "sangtian", mode: "room", maxPlayers: 3, enabledForNewRooms: true, openNovelEnabledForNewRooms: true, openNovelRoomIds: openNovelConfig.openNovelRoomIds, runId: "old-room" }), {
+  engineVersion: "continuous_story_v2",
+  strategyVersion: "sangtian_v1_2"
+});
 assert.throws(() => readContinuousStrategyConfig({ MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED: "yes" } as NodeJS.ProcessEnv), /exactly true or false/);
 assert.throws(() => readContinuousStrategyConfig({ NODE_ENV: "production", FAIL_AFTER_CHECKPOINT: "RULES_APPLIED" } as NodeJS.ProcessEnv), /forbidden in production/);
 for (const targetName of ["FAIL_AFTER_CHECKPOINT_RUN_ID", "FAIL_AFTER_CHECKPOINT_WINDOW_ID", "FAIL_AFTER_CHECKPOINT_STAGE", "FAIL_ROLE_AGENT_TASK_ID"]) {

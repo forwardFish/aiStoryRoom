@@ -204,6 +204,7 @@ model StoryRun {
   storyContextSnapshotsV2 StoryContextSnapshotV2[]
   promptExecutionRecords  PromptExecutionRecord[]
   soloGenerationAttempts  SoloGenerationAttempt[]
+  multiplayerCommitEntries MultiplayerWorldCommitEntry[]
 
   @@index([templateId])
   @@index([ownerUserId])
@@ -320,6 +321,7 @@ model StoryRole {
   receivedCommitmentsV2       CommitmentV2[]                  @relation("CommitmentV2Receiver")
   storyContextSnapshotsV2     StoryContextSnapshotV2[]
   promptExecutionRecords      PromptExecutionRecord[]
+  multiplayerCommitEntries    MultiplayerWorldCommitEntry[]
 
   @@unique([runId, roleKey])
   @@index([runId, status])
@@ -399,6 +401,7 @@ model SceneNode {
   actionWindow        ActionWindow?
   interactionRequests InteractionRequest[]
   resolutionWorkflow  ResolutionWorkflow?
+  multiplayerCommitEntries MultiplayerWorldCommitEntry[]
 
   @@unique([runId, chapterIndex, nodeIndex])
   @@index([runId, status])
@@ -460,6 +463,7 @@ model PlayerAction {
   roleAgentDecision           RoleAgentDecision?
   decisionSubmission          DecisionSubmission?
   actionResolution            ActionResolution?
+  multiplayerCommitEntry      MultiplayerWorldCommitEntry?
   aiTasks                     AiTask[]
   events                      EventLog[]
 
@@ -1057,6 +1061,7 @@ model ActorThread {
   submissions        DecisionSubmission[]
   resolutions        ActionResolution[]
   conditionalActions ConditionalActionV2[]
+  multiplayerCommitEntries MultiplayerWorldCommitEntry[]
 
   @@unique([runId, roleId])
   @@index([runId, status])
@@ -1096,6 +1101,7 @@ model ActorTurn {
   interactionResponseRequestV2 InteractionRequestV2? @relation("InteractionV2ResponseTurn")
   storyContextSnapshotsV2      StoryContextSnapshotV2[]
   promptExecutionRecords       PromptExecutionRecord[]
+  multiplayerCommitEntry       MultiplayerWorldCommitEntry?
 
   @@unique([threadId, turnIndex, revision])
   @@index([runId, roleId, status])
@@ -1155,6 +1161,7 @@ model DecisionSubmission {
   playerAction      PlayerAction?        @relation(fields: [playerActionId], references: [id], onDelete: SetNull)
   resolution        ActionResolution?
   conditionalAction ConditionalActionV2?
+  multiplayerCommitEntry MultiplayerWorldCommitEntry?
 
   @@index([runId, roleId, submittedAt])
   @@index([threadId, status])
@@ -1189,10 +1196,52 @@ model ActionResolution {
   triggeredConditionV2  ConditionalActionV2?   @relation("ConditionalV2TriggeredResolution")
   sourceCommitmentsV2   CommitmentV2[]
   promptExecutionRecords PromptExecutionRecord[]
+  multiplayerCommitEntry MultiplayerWorldCommitEntry?
 
   @@unique([runId, appliedWorldSequence])
   @@index([runId, roleId, resolvedAt])
   @@index([threadId, appliedWorldSequence])
+}
+
+/// Multiplayer-only durable ingress. It seals one role command without
+/// allocating an authoritative worldSequence. The formal ActionResolution is
+/// created only by the short shared-world commit after this entry is READY.
+model MultiplayerWorldCommitEntry {
+  id                     String    @id @default(cuid())
+  runId                  String
+  nodeId                 String
+  threadId               String
+  turnId                 String    @unique
+  roleId                 String
+  submissionId           String    @unique
+  playerActionId         String    @unique
+  idempotencyKey         String
+  requestHash            String
+  observedWorldSequence  Int
+  outcomeJson            Json
+  mutationJson           Json
+  generationArtifactJson Json?
+  state                  String    @default("RESERVED")
+  committedResolutionId  String?   @unique
+  failureCode            String?
+  readyAt                DateTime?
+  committedAt            DateTime?
+  publishedAt            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  run                     StoryRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node                    SceneNode          @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  thread                  ActorThread        @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  turn                    ActorTurn          @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  role                    StoryRole          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  submission              DecisionSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  playerAction            PlayerAction       @relation(fields: [playerActionId], references: [id], onDelete: Restrict)
+  committedResolution     ActionResolution?  @relation(fields: [committedResolutionId], references: [id], onDelete: SetNull)
+
+  @@unique([runId, roleId, idempotencyKey])
+  @@index([runId, state, createdAt])
+  @@index([roleId, state, createdAt])
 }
 
 /// A directed request or pressure created by one independently resolved action.
@@ -1568,6 +1617,7 @@ model StoryTaskOutbox {
   leaseVersion   Int       @default(0)
   startedAt      DateTime?
   completedAt    DateTime?
+  identityJson   Json?
   resultJson     Json?
   lastError      String?   @db.Text
   createdAt      DateTime  @default(now())

@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma.service";
 import { ReferralsService } from "../referrals/referrals.service";
 import { ActionWindowService } from "../continuous-strategy/action-window.service";
 import { MemberProjectionService } from "../continuous-strategy/member-projection.service";
-import { CONTINUOUS_ENGINE_VERSION, CONTINUOUS_STORY_ENGINE_VERSION } from "@ai-story/shared";
+import { CONTINUOUS_ENGINE_VERSION, isContinuousActorThreadEngine } from "@ai-story/shared";
 
 @Injectable()
 export class StoryAccessService {
@@ -133,7 +133,7 @@ export class StoryAccessService {
         if (run.engineVersion === CONTINUOUS_ENGINE_VERSION) await this.actionWindows.resumeAfterUnlock(tx, runId, user.id);
         return { alreadyUnlocked: false, creditsCharged: cost, payerUserId: unlock.paidByUserId, engineVersion: run.engineVersion };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10_000, timeout: 30_000 }));
-    if (result.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
+    if (isContinuousActorThreadEngine(result.engineVersion)) {
       const run = await this.prisma.storyRun.findUniqueOrThrow({ where: { id: runId } });
       const access = this.roomAccessState(run, run.currentDay);
       return {

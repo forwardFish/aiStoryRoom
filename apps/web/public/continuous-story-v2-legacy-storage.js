@@ -97,10 +97,10 @@ export class ContinuousStoryV2LegacyStorage {
   async finalize() { return this.getRun(); }
   async createRun() { throw new Error("请返回角色选择页开始新的故事局。"); }
 
-  async heartbeat(sessionInstanceId, heartbeatSequence) {
+  async heartbeat(sessionInstanceId, heartbeatSequence, lastAppliedDeliverySequence = this.projection.worldSequence) {
     return this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/presence/heartbeat`, {
       method: "POST",
-      body: JSON.stringify({ sessionInstanceId, heartbeatSequence, lastAppliedDeliverySequence: this.projection.worldSequence })
+      body: JSON.stringify({ sessionInstanceId, heartbeatSequence, lastAppliedDeliverySequence })
     });
   }
 
@@ -112,6 +112,15 @@ export class ContinuousStoryV2LegacyStorage {
     });
     this.projection = requireProjection(response.gameProjection);
     return adaptProjection(this.projection);
+  }
+
+  async retryGeneration() {
+    const response = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game/generation/retry`, {
+      method: "POST",
+      body: "{}"
+    });
+    const view = await this.getRun();
+    return { ...response, gameProjection: this.projection, view };
   }
 
   async loadResult() {
@@ -136,6 +145,8 @@ export class ContinuousStoryV2LegacyStorage {
       }
       throw error;
     }
+    if (payload?.schemaVersion === SCHEMA) requireProjection(payload);
+    if (payload?.gameProjection) requireProjection(payload.gameProjection);
     return payload;
   }
 }
@@ -164,7 +175,7 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
       : "";
     return {
       id: entry.id,
-      type: entry.kind === "RESULT" ? (maneuverResult ? "maneuver_result" : "decision_result") : entry.kind === "IMPACT" ? "causal_visible" : "system",
+      type: entry.kind === "RESULT" ? (maneuverResult ? "maneuver_result" : "decision_result") : ["IMPACT", "CROSS_IMPACT"].includes(entry.kind) ? "causal_visible" : "system",
       label: entry.kind === "RESULT" ? (maneuverResult ? maneuverLabel(entryDecisionForm) : "你的行动结果") : "剧情",
       title: entry.title,
       body: `${entry.content}${nextStory}`,
@@ -446,7 +457,10 @@ function visibleChoices(projection) {
 }
 
 function activeInteraction(projection) {
-  return projection.pendingInteractions?.[0] || null;
+  return projection.pendingInteractions?.find((interaction) =>
+    interaction?.direction === "INCOMING"
+      || (!interaction?.direction && (!interaction?.targetRoleId || interaction.targetRoleId === projection.player?.roleId))
+  ) || null;
 }
 
 function customIntent(turn, text) {
@@ -483,7 +497,41 @@ function finalJudgement(projection, latestStory) {
 
 function requireProjection(value) {
   if (!value || value.schemaVersion !== SCHEMA) throw new Error("当前故事投影版本不受支持。");
+  const expectedRuntime = value.engineVersion === "continuous_openovel_v1"
+    ? "OPENOVEL_ROLE_V1"
+    : value.engineVersion === "solo_story_v2" ? "SOLO_STORY_V2" : "STRUCTURED_STORY_V2";
+  if (!["continuous_story_v2", "continuous_openovel_v1", "solo_story_v2"].includes(value.engineVersion)
+    || value.runtimeMode !== expectedRuntime
+    || !Array.isArray(value.pendingImpacts)
+    || !value.roleNarrativeState) {
+    throw new Error("当前故事运行合同不完整。");
+  }
+  const forbidden = findForbiddenProjectionKey(value);
+  if (forbidden) throw new Error(`故事投影含有不应公开的内部字段：${forbidden}`);
   return value;
+}
+
+const FORBIDDEN_PROJECTION_KEYS = new Set([
+  "contextjson", "statepatch", "statepatchjson", "prompt", "systemprompt", "developerprompt",
+  "rationale", "internalpayload", "providerpayload", "rawpayload"
+]);
+
+function findForbiddenProjectionKey(value, path = "projection") {
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const found = findForbiddenProjectionKey(value[index], `${path}[${index}]`);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!value || typeof value !== "object") return null;
+  for (const [key, nested] of Object.entries(value)) {
+    const current = `${path}.${key}`;
+    if (FORBIDDEN_PROJECTION_KEYS.has(key.toLowerCase())) return current;
+    const found = findForbiddenProjectionKey(nested, current);
+    if (found) return found;
+  }
+  return null;
 }
 
 function containsStory(existing, next) {

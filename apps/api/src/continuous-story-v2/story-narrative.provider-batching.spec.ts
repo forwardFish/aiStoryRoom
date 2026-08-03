@@ -15,7 +15,7 @@ function candidate(id: string) {
   } as never;
 }
 
-function decisionInput(turnId: string) {
+function decisionInput(turnId: string, roleId = `role-${turnId}`) {
   return {
     contextRecordId: `context-${turnId}`,
     finalStory: `Final story for ${turnId}`,
@@ -25,7 +25,7 @@ function decisionInput(turnId: string) {
         runId: "run-batch",
         templateKey: "sangtian",
         engineVersion: "continuous_story_v2",
-        roleId: `role-${turnId}`,
+        roleId,
         actorTurnId: turnId,
         macroStageKey: "opening",
         worldSequence: 1,
@@ -66,7 +66,7 @@ function providerHarness() {
   return { provider, persisted, providerCalls: () => providerCalls };
 }
 
-test("V2 coalesces multiple AI roles in one run into one provider request", async () => {
+test("V2 never coalesces different roles' private contexts into one provider request", async () => {
   const previous = { enabled: process.env.AI_BATCHING_ENABLED, wait: process.env.AI_BATCH_MAX_WAIT_MS, size: process.env.AI_BATCH_MAX_SIZE };
   process.env.AI_BATCHING_ENABLED = "true";
   process.env.AI_BATCH_MAX_WAIT_MS = "15";
@@ -77,10 +77,29 @@ test("V2 coalesces multiple AI roles in one run into one provider request", asyn
       harness.provider.decideAgent(decisionInput("turn-1")),
       harness.provider.decideAgent(decisionInput("turn-2"))
     ]);
-    assert.equal(harness.providerCalls(), 1);
+    assert.equal(harness.providerCalls(), 2);
     assert.equal(first.candidateId, "turn-1-a");
     assert.equal(second.candidateId, "turn-2-a");
     assert.equal(harness.persisted.length, 2);
+  } finally {
+    restore("AI_BATCHING_ENABLED", previous.enabled);
+    restore("AI_BATCH_MAX_WAIT_MS", previous.wait);
+    restore("AI_BATCH_MAX_SIZE", previous.size);
+  }
+});
+
+test("V2 may coalesce work for the same role without crossing the role boundary", async () => {
+  const previous = { enabled: process.env.AI_BATCHING_ENABLED, wait: process.env.AI_BATCH_MAX_WAIT_MS, size: process.env.AI_BATCH_MAX_SIZE };
+  process.env.AI_BATCHING_ENABLED = "true";
+  process.env.AI_BATCH_MAX_WAIT_MS = "15";
+  process.env.AI_BATCH_MAX_SIZE = "6";
+  try {
+    const harness = providerHarness();
+    await Promise.all([
+      harness.provider.decideAgent(decisionInput("turn-1", "role-one")),
+      harness.provider.decideAgent(decisionInput("turn-2", "role-one"))
+    ]);
+    assert.equal(harness.providerCalls(), 1);
   } finally {
     restore("AI_BATCHING_ENABLED", previous.enabled);
     restore("AI_BATCH_MAX_WAIT_MS", previous.wait);

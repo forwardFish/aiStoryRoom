@@ -150,7 +150,10 @@ export class StoryNarrativeProvider implements StoryModelClientV2 {
 
   private enqueueAgentDecisionBatch(input: AgentDecisionInputV2): Promise<AgentDecisionResultV2> {
     const config = readCreditConsumptionConfig();
-    const batchKey = input.context.identity.runId;
+    // Never place two roles' private context in the same model request. We can
+    // still coalesce retries/work for one role, but room-level batching would
+    // make the model a cross-role data boundary.
+    const batchKey = `${input.context.identity.runId}:${input.context.identity.roleId}`;
     return new Promise<AgentDecisionResultV2>((resolve, reject) => {
       let batch = this.pendingAgentBatches.get(batchKey);
       if (!batch) {

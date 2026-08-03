@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "types": ["node"],
+    "typeRoots": ["../../apps/api/node_modules/@types"]
+  },
+  "files": ["openovel-mp-three-role.ts", "openovel-mp-transport.ts", "openovel-mp-action-receipt.ts", "openovel-mp-action-receipt.spec.ts"]
+}

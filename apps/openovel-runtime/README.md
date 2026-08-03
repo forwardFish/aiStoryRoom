@@ -102,6 +102,59 @@ GET  /internal/openovel/health
 GET  /internal/openovel/providers
 ```
 
+The additive multiplayer role mode is `OPENOVEL_ROLE_V1` and uses these
+private endpoints without changing any Solo route:
+
+```text
+POST /internal/openovel/rooms/:roomId/roles/:roleId
+POST /internal/openovel/rooms/:roomId/roles/:roleId/turns
+POST /internal/openovel/rooms/:roomId/roles/:roleId/impacts
+GET  /internal/openovel/rooms/:roomId/roles/:roleId
+GET  /internal/openovel/rooms/:roomId/roles/:roleId/jobs
+```
+
+Role workspaces live under `rooms/<roomId>/roles/<roleId>` and contain only
+API-filtered POV material. PostgreSQL `ActionResolution` and `worldSequence`
+remain the sole shared-world authority. Role jobs use a durable journal
+(`PREPARED -> MODEL_COMPLETED -> CANON_COMMITTED -> COMPLETE`), while Impact
+sync uses its own event-id/sequence journal and roll-forward stages. Each
+narrative phase (`OPENING` or `RESULT`) within an actor turn owns a durable
+Canon commit manifest, so an older job can
+reconstruct its committed output after later turns have advanced the live
+state. Every durable job, budget, Canon, state, Impact and asset write runs
+inside the same bounded cross-process short-write mutex used by lease
+takeover/renewal, with token, fencing and revision checks inside that boundary.
+An unfinished Impact is only retired when the authoritative Role cursor has
+reached its target sequence. A same-sequence Opening that advances only the
+workspace revision causes the Impact to rebase and rebuild its projection,
+without duplicating events or replacing the Opening's Canon/assets.
+
+Model budget accounting is durable per narrative phase
+(`turnKind + actorTurnId`), not per HTTP idempotency key. This keeps Opening
+and Result budgets independent even when the API correctly uses the same
+actor turn for both, while a changed idempotency key cannot bypass a phase's
+hard limit. Provider attempts move through `RESERVED -> STARTED ->
+COMPLETED|FAILED`; a crash after reservation but before provider start reuses
+the reservation, while a provider failure remains charged. Replaying a
+completed idempotency key returns its stored output without another provider
+call or Canon append. `GET .../jobs` exposes lifecycle and budget accounting
+but omits the filtered working set and full request body.
+
+Role assets are stored as one atomic generation bundle tagged with
+`workspaceRevision` and `actorTurnId`; Guidance, Memory and Context Cards can
+therefore never expose a mixed generation. Stale post-processing is durably
+superseded instead of overwriting a newer bundle. Options and Storykeeper
+errors, including post-Canon budget exhaustion, are
+persisted before completion and represented only by stable, non-blocking,
+redacted warning codes. Valid Options carry the complete frozen
+`intentProposal`; a legitimate empty list remains valid and free input remains
+an API/UI capability owned by the caller. Successful Storykeeper output is
+written only to this Role's Guidance, Memory and Context Cards.
+Every string leaf returned by Narrator, Options or Storykeeper passes the same
+normalized internal-marker gate before reaching Canon, public output, jobs or
+assets. Narrator leakage is a hard redacted failure; Options and Storykeeper
+leakage becomes the corresponding stable non-blocking warning.
+
 Set `OPENOVEL_INTERNAL_TOKEN` in production. The action endpoint streams:
 
 ```text
@@ -115,9 +168,12 @@ turn.committed
 Options and Storykeeper failures do not roll back the narration. Public
 responses omit hidden option effects.
 
-At startup the service scans existing workspaces, marks interrupted foreground
-states retryable without changing Canon, and re-kicks each run's Storykeeper
-drain.
+At startup the service scans existing Solo workspaces, marks interrupted
+foreground states retryable without changing Canon, and re-kicks each run's
+Storykeeper drain. Role recovery starts in a bounded background batch and does
+not delay `server.listen`; it continuously drains bounded batches, rotates past
+failed jobs, and applies capped failure backoff until the durable backlog is
+empty.
 
 ## Railway service contract
 

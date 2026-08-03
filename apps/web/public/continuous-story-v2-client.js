@@ -6,6 +6,15 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
   let storyApp = null;
   let pollTimer = null;
   let heartbeatTimer = null;
+  let streamAbort = null;
+  let streamConnected = false;
+  let streamConnecting = false;
+  let streamTerminal = false;
+  let destroyed = false;
+  let appliedDeliverySequence = loadDeliveryCursor(win, runId, initialProjection?.player?.userId);
+  let receivedDeliverySequence = appliedDeliverySequence;
+  let pendingDeliverySequence = appliedDeliverySequence;
+  let eventFlushInFlight = false;
   let refreshInFlight = false;
   let heartbeatInFlight = false;
   let heartbeatSequence = 0;
@@ -26,7 +35,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
   }
 
   async function refresh(silent = false) {
-    if (!storyApp || refreshInFlight) return;
+    if (!storyApp || refreshInFlight || destroyed) return false;
     refreshInFlight = true;
     const draft = root.querySelector("#customDecision")?.value || "";
     try {
@@ -35,6 +44,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       renderCreditChrome();
       renderOpeningRecovery();
       if (!isSoloProjection(storage.projection)) void refreshHostRequests();
+      return true;
     } finally {
       refreshInFlight = false;
     }
@@ -43,8 +53,106 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
   async function heartbeat() {
     if (heartbeatInFlight || storyApp?.getState()?.busy) return;
     heartbeatInFlight = true;
-    try { await storage.heartbeat(sessionInstanceId, ++heartbeatSequence); } catch {}
+    try { await storage.heartbeat(sessionInstanceId, ++heartbeatSequence, appliedDeliverySequence); } catch {}
     finally { heartbeatInFlight = false; }
+  }
+
+  function transportRefreshAllowed() {
+    const state = storyApp?.getState();
+    if (!storyApp || state?.busy || destroyed) return false;
+    return !(
+      root.querySelector("#customDecision")?.value?.trim()
+      || root.querySelector("#maneuverCustomText")?.value?.trim()
+      || root.querySelector(".maneuver-panel :focus")
+    );
+  }
+
+  async function flushPendingEvents() {
+    if (eventFlushInFlight || pendingDeliverySequence <= appliedDeliverySequence || !transportRefreshAllowed()) return false;
+    eventFlushInFlight = true;
+    const target = pendingDeliverySequence;
+    try {
+      const refreshed = await refresh(true);
+      if (!refreshed) return false;
+      appliedDeliverySequence = Math.max(appliedDeliverySequence, target);
+      saveDeliveryCursor(win, runId, storage.projection?.player?.userId, appliedDeliverySequence);
+      return true;
+    } finally {
+      eventFlushInFlight = false;
+    }
+  }
+
+  async function applyEventPage(page) {
+    const validated = requireEventPage(page, receivedDeliverySequence);
+    receivedDeliverySequence = validated.nextAfterDeliverySequence;
+    if (validated.deliveries.length > 0) {
+      pendingDeliverySequence = Math.max(pendingDeliverySequence, validated.nextAfterDeliverySequence);
+      await flushPendingEvents();
+    }
+    return validated;
+  }
+
+  async function pullMissingEvents() {
+    receivedDeliverySequence = appliedDeliverySequence;
+    for (let pageIndex = 0; pageIndex < 100; pageIndex += 1) {
+      const page = await api(`/api/v4/rooms/${encodeURIComponent(runId)}/events?afterDeliverySequence=${receivedDeliverySequence}`);
+      const validated = await applyEventPage(page);
+      if (!validated.hasMore) return;
+    }
+    throw new Error("EVENT_BACKFILL_LIMIT_EXCEEDED");
+  }
+
+  async function consumeEventStream(body) {
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (!destroyed && !streamTerminal) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      let boundary;
+      while ((boundary = buffer.indexOf("\n\n")) >= 0) {
+        const block = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        const data = block
+          .split("\n")
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trimStart())
+          .join("\n");
+        if (!data) continue;
+        await applyEventPage(JSON.parse(data));
+      }
+    }
+  }
+
+  async function connectEvents() {
+    if (destroyed || streamTerminal || streamConnecting || streamConnected || isSoloProjection(storage.projection)) return;
+    streamConnecting = true;
+    try {
+      await pullMissingEvents();
+      if (destroyed || streamTerminal) return;
+      const AbortControllerImpl = win.AbortController || globalThis.AbortController;
+      streamAbort = new AbortControllerImpl();
+      const response = await fetchImpl(`/api/v4/rooms/${encodeURIComponent(runId)}/events/stream?afterDeliverySequence=${receivedDeliverySequence}`, {
+        method: "GET",
+        credentials: "include",
+        headers: { accept: "text/event-stream" },
+        signal: streamAbort.signal
+      });
+      if (!response.ok) throw await responseError(response, "EVENT_STREAM_FAILED");
+      if (!response.body?.getReader) throw new Error("EVENT_STREAM_UNAVAILABLE");
+      streamConnected = true;
+      await consumeEventStream(response.body);
+    } catch (error) {
+      if (destroyed || error?.name === "AbortError") return;
+      if ([401, 403, 404].includes(error?.status)) streamTerminal = true;
+      // The existing projection poll remains the bounded fallback. The next
+      // poll tick reconnects from the last successfully applied cursor.
+    } finally {
+      streamConnected = false;
+      streamConnecting = false;
+      streamAbort = null;
+    }
   }
 
   async function changeControl(kind) {
@@ -177,6 +285,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       // convergence timers until its transport is migrated separately.
       if (!isSoloProjection(storage.projection)) {
         void refreshHostRequests();
+        void connectEvents();
         pollTimer = win.setInterval(() => {
           const state = storyApp?.getState();
           const openingNeedsRecoveryPoll = Boolean(!storage.projection?.completed && !storage.projection?.currentTurn);
@@ -185,7 +294,9 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
             || root.querySelector("#maneuverCustomText")?.value?.trim()
             || root.querySelector(".maneuver-panel :focus")
           );
-          if (!state?.busy
+          if (!streamConnected && !streamConnecting && !streamTerminal) void connectEvents();
+          void flushPendingEvents();
+          if (!streamConnected && !state?.busy
             && (openingNeedsRecoveryPoll || (!state?.showOpening && !state?.openingStream && !state?.resultStream))
             && !hasDraft) void refresh(true);
         }, 1_500);
@@ -194,8 +305,10 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       return this;
     },
     destroy() {
+      destroyed = true;
       if (pollTimer) win.clearInterval(pollTimer);
       if (heartbeatTimer) win.clearInterval(heartbeatTimer);
+      streamAbort?.abort?.();
       creditMountObserver?.disconnect();
       creditMountObserver = null;
       win.removeEventListener("worldcreditsrequired", onCreditsRequired);
@@ -210,7 +323,13 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     getState: () => ({
       ...(storyApp?.getState() || {}),
       projection: storage.projection,
-      customAction: root.querySelector("#customDecision")?.value || ""
+      customAction: root.querySelector("#customDecision")?.value || "",
+      eventTransport: {
+        connected: streamConnected,
+        terminal: streamTerminal,
+        appliedDeliverySequence,
+        pendingDeliverySequence
+      }
     })
   };
 }
@@ -237,4 +356,52 @@ function sessionId(win, runId) {
     win.sessionStorage.setItem(key, value);
     return value;
   } catch { return `v2-${Math.random().toString(36).slice(2, 14)}`; }
+}
+
+const EVENT_PAGE_SCHEMA = "continuous_event_delivery_page_v1";
+
+function requireEventPage(value, afterDeliverySequence) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("EVENT_PAGE_INVALID");
+  if (value.schemaVersion !== EVENT_PAGE_SCHEMA || !Array.isArray(value.deliveries) || typeof value.hasMore !== "boolean") throw new Error("EVENT_PAGE_INVALID");
+  let expected = afterDeliverySequence + 1;
+  for (const delivery of value.deliveries) {
+    if (!delivery || typeof delivery !== "object" || Array.isArray(delivery)
+      || delivery.deliverySequence !== expected
+      || typeof delivery.eventId !== "string" || !delivery.eventId
+      || typeof delivery.eventType !== "string" || !delivery.eventType
+      || !delivery.payload || typeof delivery.payload !== "object" || Array.isArray(delivery.payload)
+      || typeof delivery.createdAt !== "string" || !delivery.createdAt) {
+      throw new Error("EVENT_PAGE_INVALID");
+    }
+    expected += 1;
+  }
+  if (!Number.isSafeInteger(value.nextAfterDeliverySequence)
+    || value.nextAfterDeliverySequence !== expected - 1
+    || value.nextAfterDeliverySequence < afterDeliverySequence) {
+    throw new Error("EVENT_PAGE_INVALID");
+  }
+  return value;
+}
+
+async function responseError(response, fallbackCode) {
+  const payload = await response.json().catch(() => ({}));
+  const error = new Error(payload.message || payload.code || fallbackCode);
+  error.code = payload.code || fallbackCode;
+  error.status = response.status;
+  return error;
+}
+
+function deliveryCursorKey(runId, userId) {
+  return `many-worlds:v2-delivery:${runId}:${userId || "member"}`;
+}
+
+function loadDeliveryCursor(win, runId, userId) {
+  try {
+    const value = Number(win.sessionStorage.getItem(deliveryCursorKey(runId, userId)) || 0);
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  } catch { return 0; }
+}
+
+function saveDeliveryCursor(win, runId, userId, value) {
+  try { win.sessionStorage.setItem(deliveryCursorKey(runId, userId), String(value)); } catch {}
 }

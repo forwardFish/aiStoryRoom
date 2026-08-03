@@ -9,6 +9,8 @@ import { ContinuousStoryV2LegacyStorage } from "../public/continuous-story-v2-le
 function projection(overrides = {}) {
   return {
     schemaVersion: "continuous_game_projection_v2",
+    engineVersion: "solo_story_v2",
+    runtimeMode: "SOLO_STORY_V2",
     generatedAt: new Date().toISOString(),
     worldSequence: 1,
     room: { id: "room-v2", title: "桑田诏：嘉靖财政危局", worldId: "sangtian", status: "playing", mode: "solo" },
@@ -30,7 +32,8 @@ function projection(overrides = {}) {
     timeline: [],
     otherActors: [{ roleId: "r1", roleName: "浙江总督", controllerKind: "HUMAN", stageIndex: 1 }, { roleId: "r2", roleName: "浙江巡抚", controllerKind: "AI", stageIndex: 2 }],
     visibleAssets: [{ assetKey: "governor_seal", kind: "seal", label: "总督关防", quantity: 1, status: "ACTIVE" }],
-    evidenceHoldings: [], commitments: [], armedConditions: [], pendingInteractions: [], observableTraces: [],
+    evidenceHoldings: [], commitments: [], armedConditions: [], pendingInteractions: [], observableTraces: [], pendingImpacts: [],
+    roleNarrativeState: { canonStatus: "READY", generationStatus: "IDLE", impactStatus: "SYNCED", canRetry: false },
     access: { state: "FREE", requiredCredits: 100, canCurrentUserUnlock: false, unlockEndpoint: "/v4/story-runs/room-v2/unlock" },
     completed: false,
     resultUrl: null,
@@ -40,6 +43,41 @@ function projection(overrides = {}) {
 
 function json(value, status = 200) {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
+}
+
+function deliveryPage(afterDeliverySequence, deliveries = [], hasMore = false) {
+  return {
+    schemaVersion: "continuous_event_delivery_page_v1",
+    deliveries: deliveries.map((delivery, index) => ({
+      deliverySequence: afterDeliverySequence + index + 1,
+      eventId: delivery.eventId || `event-${afterDeliverySequence + index + 1}`,
+      eventType: delivery.eventType || "STORY_PROJECTION_CHANGED",
+      payload: delivery.payload || {},
+      createdAt: delivery.createdAt || new Date().toISOString()
+    })),
+    nextAfterDeliverySequence: afterDeliverySequence + deliveries.length,
+    hasMore
+  };
+}
+
+function sseResponse(...pages) {
+  const encoder = new TextEncoder();
+  return new Response(new ReadableStream({
+    start(controller) {
+      for (const eventPage of pages) controller.enqueue(encoder.encode(`data: ${JSON.stringify(eventPage)}\n\n`));
+      controller.close();
+    }
+  }), { status: 200, headers: { "content-type": "text/event-stream" } });
+}
+
+async function waitFor(assertion, timeoutMs = 1_500) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError;
+  while (Date.now() < deadline) {
+    try { return assertion(); } catch (error) { lastError = error; }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw lastError || new Error("condition was not met");
 }
 
 function page(url = "http://game.test/game?runId=room-v2") {
@@ -120,8 +158,9 @@ test("opening recovery is visible but retries only after an explicit click", asy
 });
 
 test("opening recovery keeps polling the read projection until a turn is published", async () => {
-  const waitingForOpening = projection({ currentTurn: null, completed: false });
-  const published = projection();
+  const multiplayerRoom = { ...projection().room, mode: "multiplayer" };
+  const waitingForOpening = projection({ engineVersion: "continuous_story_v2", runtimeMode: "STRUCTURED_STORY_V2", room: multiplayerRoom, currentTurn: null, completed: false });
+  const published = projection({ engineVersion: "continuous_story_v2", runtimeMode: "STRUCTURED_STORY_V2", room: multiplayerRoom });
   const { dom, root } = page();
   const intervals = [];
   dom.window.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
@@ -149,6 +188,7 @@ test("opening recovery keeps polling the read projection until a turn is publish
 
 test("the World Credits banner stays in the story flow and never covers the primary action", async () => {
   const withCredits = projection({
+    control: { mode: "AI_ACTIVE", epoch: 2, canHumanAct: false },
     creditControl: {
       policyVersion: "active_action_v1",
       available: 30,
@@ -581,17 +621,22 @@ test("polling pauses during opening, custom writing and an active decision", asy
   let gameReads = 0;
   let decisionStarted = false;
   let releaseDecision;
+  const multiplayer = projection({
+    engineVersion: "continuous_story_v2",
+    runtimeMode: "STRUCTURED_STORY_V2",
+    room: { ...projection().room, mode: "multiplayer" }
+  });
   const fetchImpl = async (input) => {
     const path = new URL(String(input), "http://game.test").pathname;
-    if (path.endsWith("/game")) { gameReads += 1; return json(projection()); }
+    if (path.endsWith("/game")) { gameReads += 1; return json(multiplayer); }
     if (path.includes("/decision")) {
       decisionStarted = true;
       await new Promise((resolve) => { releaseDecision = resolve; });
-      return json({ accepted: true, resolution: { id: "r", resultNarrative: "结果" }, gameProjection: projection() });
+      return json({ accepted: true, resolution: { id: "r", resultNarrative: "结果" }, gameProjection: multiplayer });
     }
     return json({ accepted: true });
   };
-  const app = createContinuousStoryV2App({ root, window: dom.window, runId: "room-v2", initialProjection: projection(), fetchImpl });
+  const app = createContinuousStoryV2App({ root, window: dom.window, runId: "room-v2", initialProjection: multiplayer, fetchImpl });
   await app.boot();
   assert.deepEqual(intervals.map((item) => item.delay), [1_500, 10_000]);
   intervals[0].callback();
@@ -640,4 +685,213 @@ test("game bootstrap selects Story V2 while Story V2 itself renders through the 
   assert.equal(v2Booted, true);
   assert.equal(oldSharedRoundLoaded, false);
   dom.window.close();
+});
+
+test("OpenNovel role runtime uses the existing right rail for impact, interaction, and control state", async () => {
+  const openNovel = projection({
+    engineVersion: "continuous_openovel_v1",
+    runtimeMode: "OPENOVEL_ROLE_V1",
+    room: { ...projection().room, mode: "multiplayer" },
+    pendingInteractions: [{
+      id: "incoming", direction: "INCOMING", sourceRoleId: "r2", sourceRoleName: "浙江巡抚",
+      targetRoleId: "r1", targetRoleName: "浙江总督", requestKind: "REQUEST", pressure: "请共同核验粮册",
+      observableTrace: null, expiresAt: null, responseOptions: []
+    }, {
+      id: "outgoing", direction: "OUTGOING", sourceRoleId: "r1", sourceRoleName: "浙江总督",
+      targetRoleId: "r2", targetRoleName: "浙江巡抚", requestKind: "REQUEST", pressure: "等待巡抚交出原始仓单",
+      observableTrace: null, expiresAt: null, responseOptions: []
+    }],
+    pendingImpacts: [{ id: "impact-2", status: "RECOVERY_REQUIRED", appliedWorldSequence: 2 }],
+    roleNarrativeState: { canonStatus: "READY", generationStatus: "IDLE", impactStatus: "RECOVERY_REQUIRED", canRetry: true }
+  });
+  const aiProjection = projection({
+    ...openNovel,
+    control: { mode: "AI_ACTIVE", epoch: 2, canHumanAct: false }
+  });
+  const calls = [];
+  const { dom, root, app } = await bootOldPage(openNovel, async (input) => {
+    const path = new URL(String(input), "http://game.test").pathname;
+    calls.push(path);
+    if (path.endsWith("/handoff-to-ai")) return json({ gameProjection: aiProjection });
+    return json(openNovel);
+  });
+  assert.ok(root.querySelector('[data-testid="v2-context-panel"]'));
+  assert.equal(root.querySelector("[data-maneuver-type]"), null, "OpenNovel must not add a parallel maneuver surface");
+  assert.match(root.textContent, /浙江巡抚正在等你回应/);
+  assert.match(root.textContent, /等待巡抚交出原始仓单/);
+  assert.match(root.textContent, /影响同步需要恢复/);
+  assert.ok(root.querySelector("[data-v2-retry-generation]"));
+  root.querySelector('[data-v2-control="handoff"]').click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls.some((path) => path.endsWith("/handoff-to-ai")), true);
+  assert.ok(root.querySelector('[data-v2-control="reclaim"]'));
+  app.destroy(); dom.window.close();
+});
+
+test("multiplayer backfills missed deliveries, consumes SSE, and heartbeats only the applied cursor", async () => {
+  const multiplayer = projection({
+    engineVersion: "continuous_openovel_v1",
+    runtimeMode: "OPENOVEL_ROLE_V1",
+    room: { ...projection().room, mode: "multiplayer" }
+  });
+  const world2 = projection({ ...multiplayer, worldSequence: 2 });
+  const world3 = projection({ ...multiplayer, worldSequence: 3 });
+  const { dom, root } = page();
+  const intervals = [];
+  const calls = [];
+  const heartbeats = [];
+  dom.window.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
+  let gameReads = 0;
+  const app = createContinuousStoryV2App({
+    root,
+    window: dom.window,
+    runId: multiplayer.room.id,
+    initialProjection: multiplayer,
+    fetchImpl: async (input, init = {}) => {
+      const url = new URL(String(input), "http://game.test");
+      calls.push(`${init.method || "GET"} ${url.pathname}${url.search}`);
+      if (url.pathname.endsWith("/events")) return json(deliveryPage(0, [{ eventId: "missed-1" }]));
+      if (url.pathname.endsWith("/events/stream")) return sseResponse(deliveryPage(1, [{ eventId: "live-2" }]));
+      if (url.pathname.endsWith("/game")) return json(++gameReads === 1 ? world2 : world3);
+      if (url.pathname.endsWith("/presence/heartbeat")) {
+        heartbeats.push(JSON.parse(init.body));
+        return json({ accepted: true });
+      }
+      return json({ accepted: true });
+    }
+  });
+
+  await app.boot();
+  await waitFor(() => assert.equal(app.getState().eventTransport.appliedDeliverySequence, 2));
+
+  assert.equal(gameReads, 2, "each delivery batch must invalidate through the authoritative game projection");
+  assert.ok(calls.some((call) => call.includes("/events?afterDeliverySequence=0")));
+  assert.ok(calls.some((call) => call.includes("/events/stream?afterDeliverySequence=1")));
+  intervals.find((item) => item.delay === 10_000).callback();
+  await waitFor(() => assert.equal(heartbeats.length, 1));
+  assert.equal(heartbeats[0].lastAppliedDeliverySequence, 2);
+  assert.equal(heartbeats[0].lastAppliedDeliverySequence === app.getState().projection.worldSequence, false,
+    "delivery cursor must not be fabricated from worldSequence");
+  app.destroy(); dom.window.close();
+});
+
+test("an SSE delivery received while the player is writing keeps the old cursor until a safe projection refresh", async () => {
+  const multiplayer = projection({
+    engineVersion: "continuous_openovel_v1",
+    runtimeMode: "OPENOVEL_ROLE_V1",
+    room: { ...projection().room, mode: "multiplayer" }
+  });
+  const updated = projection({ ...multiplayer, worldSequence: 4 });
+  const { dom, root } = page();
+  const intervals = [];
+  dom.window.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
+  let gameReads = 0;
+  let releaseStream;
+  const app = createContinuousStoryV2App({
+    root,
+    window: dom.window,
+    runId: multiplayer.room.id,
+    initialProjection: multiplayer,
+    fetchImpl: async (input) => {
+      const url = new URL(String(input), "http://game.test");
+      if (url.pathname.endsWith("/events")) return json(deliveryPage(0));
+      if (url.pathname.endsWith("/events/stream")) {
+        await new Promise((resolve) => { releaseStream = resolve; });
+        return sseResponse(deliveryPage(0, [{ eventId: "live-while-writing" }]));
+      }
+      if (url.pathname.endsWith("/game")) { gameReads += 1; return json(updated); }
+      return json({ accepted: true });
+    }
+  });
+
+  await app.boot();
+  enterSituation(root);
+  const textarea = root.querySelector("#customDecision");
+  textarea.value = "先保留这段尚未提交的玩家输入";
+  textarea.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+  await waitFor(() => assert.equal(typeof releaseStream, "function"));
+  releaseStream();
+  await waitFor(() => assert.equal(app.getState().eventTransport.pendingDeliverySequence, 1));
+  assert.equal(app.getState().eventTransport.appliedDeliverySequence, 0);
+  assert.equal(gameReads, 0);
+
+  textarea.value = "";
+  textarea.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+  intervals.find((item) => item.delay === 1_500).callback();
+  await waitFor(() => assert.equal(app.getState().eventTransport.appliedDeliverySequence, 1));
+  assert.equal(gameReads, 1);
+  app.destroy(); dom.window.close();
+});
+
+test("SSE failure keeps the cursor closed and the existing poll refreshes the authoritative projection", async () => {
+  const multiplayer = projection({
+    engineVersion: "continuous_openovel_v1",
+    runtimeMode: "OPENOVEL_ROLE_V1",
+    room: { ...projection().room, mode: "multiplayer" }
+  });
+  const updated = projection({ ...multiplayer, worldSequence: 2 });
+  const { dom, root } = page();
+  const intervals = [];
+  dom.window.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
+  let streamAttempts = 0;
+  let gameReads = 0;
+  const app = createContinuousStoryV2App({
+    root,
+    window: dom.window,
+    runId: multiplayer.room.id,
+    initialProjection: multiplayer,
+    fetchImpl: async (input) => {
+      const url = new URL(String(input), "http://game.test");
+      if (url.pathname.endsWith("/events")) return json(deliveryPage(0));
+      if (url.pathname.endsWith("/events/stream")) { streamAttempts += 1; return json({ code: "STREAM_DOWN" }, 503); }
+      if (url.pathname.endsWith("/game")) { gameReads += 1; return json(updated); }
+      return json({ accepted: true });
+    }
+  });
+
+  await app.boot();
+  await waitFor(() => assert.equal(streamAttempts, 1));
+  enterSituation(root);
+  intervals.find((item) => item.delay === 1_500).callback();
+  await waitFor(() => assert.equal(app.getState().projection.worldSequence, 2));
+  assert.equal(gameReads, 1);
+  assert.equal(app.getState().eventTransport.appliedDeliverySequence, 0);
+  app.destroy(); dom.window.close();
+});
+
+test("outgoing interaction never replaces the role's own decision", async () => {
+  const outgoingOnly = projection({
+    pendingInteractions: [{
+      id: "outgoing", direction: "OUTGOING", sourceRoleId: "r1", sourceRoleName: "浙江总督",
+      targetRoleId: "r2", targetRoleName: "浙江巡抚", requestKind: "REQUEST", pressure: "这不是当前角色要回答的提示",
+      observableTrace: null, expiresAt: null, responseOptions: []
+    }]
+  });
+  const storage = new ContinuousStoryV2LegacyStorage({ runId: "room-v2", initialProjection: outgoingOnly, fetchImpl: async () => json(outgoingOnly) });
+  const view = await storage.restoreOrCreate();
+  assert.equal(view.activePrompt.prompt, outgoingOnly.currentTurn.framing);
+});
+
+test("free input enables submission without server options and disables again when cleared", async () => {
+  const noOptions = projection({ currentTurn: { ...projection().currentTurn, decisions: [] } });
+  const { dom, root, app } = await bootOldPage(noOptions);
+  enterSituation(root);
+  const textarea = root.querySelector("#customDecision");
+  const submit = root.querySelector("#submitDecision");
+  assert.equal(submit.disabled, true);
+  textarea.value = "先封存原始账册，再逐一核对经手人。";
+  textarea.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+  assert.equal(submit.disabled, false);
+  textarea.value = "";
+  textarea.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+  assert.equal(submit.disabled, true);
+  app.destroy(); dom.window.close();
+});
+
+test("every projection response rejects nested internal fields before rendering", async () => {
+  const safe = projection();
+  const poisoned = projection({ currentTurn: { ...projection().currentTurn, statePatch: { secret: "hidden" } } });
+  assert.throws(() => new ContinuousStoryV2LegacyStorage({ runId: "room-v2", initialProjection: poisoned, fetchImpl: async () => json(safe) }), /内部字段/);
+  const storage = new ContinuousStoryV2LegacyStorage({ runId: "room-v2", initialProjection: safe, fetchImpl: async () => json(poisoned) });
+  await assert.rejects(storage.getRun(), /内部字段/);
 });

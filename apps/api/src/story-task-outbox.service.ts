@@ -33,7 +33,8 @@ function failedStatus(taskType: string) { return isV2Task(taskType) ? "FAILED" :
 
 const NON_RETRYABLE_STORY_GENERATION_CODES = new Set([
   "STORY_GENERATION_REJECTED",
-  "OPENING_STORY_GENERATION_REJECTED"
+  "OPENING_STORY_GENERATION_REJECTED",
+  "OPENOVEL_ROLE_CONTEXT_SNAPSHOT_INVALID"
 ]);
 
 /**
@@ -62,6 +63,14 @@ export function isResultSequenceWait(error: unknown): boolean {
   return Boolean(response && typeof response === "object" && (response as { code?: unknown }).code === "RESULT_SEQUENCE_WAIT");
 }
 
+export function isImpactSequenceWait(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const getResponse = (error as { getResponse?: unknown }).getResponse;
+  if (typeof getResponse !== "function") return false;
+  const response = (getResponse as () => unknown).call(error);
+  return Boolean(response && typeof response === "object" && (response as { code?: unknown }).code === "IMPACT_SEQUENCE_WAIT");
+}
+
 @Injectable()
 export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(StoryTaskOutboxService.name);
@@ -71,6 +80,7 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
   private draining = false;
   private pollFailures = 0;
   private retryAfterMs = 0;
+  private nextOpenNovelPresenceSweepAt = 0;
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -96,6 +106,7 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       if (this.polling || Date.now() < this.retryAfterMs) return;
       this.polling = true;
       void this.lifecycle.sweep()
+        .then(() => this.sweepOpenNovelPresence())
         .then(() => this.recoverTerminalV2Result())
         .then(() => this.drainReadyTasks())
         .then(() => { this.pollFailures = 0; this.retryAfterMs = 0; })
@@ -144,6 +155,16 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
 
   async drainOne() {
     return this.drainReadyTasks(1);
+  }
+
+  private async sweepOpenNovelPresence() {
+    const nowMs = Date.now();
+    if (nowMs < this.nextOpenNovelPresenceSweepAt) return;
+    // The task poll is intentionally frequent for local responsiveness. A
+    // one-second presence cadence is sufficient for 15s/30s thresholds and
+    // avoids multiplying remote database scans by the 250ms task interval.
+    this.nextOpenNovelPresenceSweepAt = nowMs + 1_000;
+    await this.continuousStoryV2.sweepOpenNovelPresence(new Date(nowMs));
   }
 
   async recoverTerminalV2Result() {
@@ -339,7 +360,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       // not a failed generation attempt. Preserve the task's retry budget so
       // a slow earlier result cannot create an endless chain of replacement
       // AI actions behind it.
-      const sequenceWait = task.taskType === "ACTOR_RESULT_V2" && isResultSequenceWait(error);
+      const sequenceWait = (task.taskType === "ACTOR_RESULT_V2" && isResultSequenceWait(error))
+        || (task.taskType === "ACTOR_IMPACT_V2" && isImpactSequenceWait(error));
       const exhausted = !sequenceWait && (nonRetryable || task.attempt >= task.maxAttempts);
       const delayMs = Math.min(30_000, 500 * 2 ** Math.max(0, task.attempt - 1));
       const recorded = await this.prisma.storyTaskOutbox.updateMany({

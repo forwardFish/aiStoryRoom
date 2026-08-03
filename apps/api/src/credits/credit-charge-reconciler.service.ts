@@ -123,7 +123,7 @@ export class CreditChargeReconcilerService implements OnModuleInit, OnModuleDest
           ? { decision: "RELEASE", reason: "RUN_CREATE_FAILED" }
           : { decision: "COMMIT", reason: "SHARED_RUN_DURABLE" };
       }
-      if (run.engineVersion === "continuous_story_v2") {
+      if (["continuous_story_v2", "continuous_openovel_v1"].includes(run.engineVersion)) {
         const playableTurn = await db.actorTurn.findFirst({
           where: {
             runId: run.id,

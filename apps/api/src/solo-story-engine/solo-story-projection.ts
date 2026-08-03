@@ -28,7 +28,7 @@ export type SoloProjectionSource = {
 
 export function buildSoloStoryProjection(source: SoloProjectionSource): GameProjectionV2 {
   const { run, player, role, control, thread, turn, decisionSet } = source;
-  const world = gamePageProjection(run.templateKey);
+  const world = gamePageProjection(run.templateKey, role.roleKey);
   applyPartOneStatusMetrics(world, run);
   const timeline = source.narratives
     .map(toTimelineEntry)
@@ -81,6 +81,8 @@ export function buildSoloStoryProjection(source: SoloProjectionSource): GameProj
 
   return {
     schemaVersion: GAME_PROJECTION_V2_SCHEMA_VERSION,
+    engineVersion: "solo_story_v2",
+    runtimeMode: "SOLO_STORY_V2",
     generatedAt: new Date().toISOString(),
     worldSequence: Number(run.worldSequence || 0),
     prologueNarrative: source.prologueNarrative,
@@ -136,6 +138,13 @@ export function buildSoloStoryProjection(source: SoloProjectionSource): GameProj
     observableTraces: timeline
       .filter((entry) => entry.kind === "OBSERVABLE_TRACE")
       .map((entry) => ({ id: entry.id, content: entry.content, worldSequence: entry.worldSequence, createdAt: entry.createdAt })),
+    pendingImpacts: [],
+    roleNarrativeState: {
+      canonStatus: timeline.length > 0 ? "READY" : turn ? "GENERATING" : "EMPTY",
+      generationStatus: turn?.status === "RESOLVING" ? "GENERATING" : "IDLE",
+      impactStatus: "SYNCED",
+      canRetry: false
+    },
     access: {
       state: "GRANTED",
       requiresUnlock: false,

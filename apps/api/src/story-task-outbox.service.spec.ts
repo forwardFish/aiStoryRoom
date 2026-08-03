@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { isNonRetryableStoryTaskError, isResultSequenceWait, normalizeStoryTaskLeaseMs, requiresOutboxHeartbeat, ROLE_AGENT_TASK_CONCURRENCY, StoryTaskOutboxService } from "./story-task-outbox.service";
+import { isImpactSequenceWait, isNonRetryableStoryTaskError, isResultSequenceWait, normalizeStoryTaskLeaseMs, requiresOutboxHeartbeat, ROLE_AGENT_TASK_CONCURRENCY, StoryTaskOutboxService } from "./story-task-outbox.service";
 
 function futureLease() {
   return new Date(Date.now() + 60_000);
@@ -274,6 +274,9 @@ async function qualityRejectionNeverRepeatsTheFullModelCall() {
   assert.equal(isNonRetryableStoryTaskError(Object.assign(new Error("timeout"), {
     getResponse: () => ({ code: "STORY_GENERATION_RETRYABLE", recoverable: true })
   })), false, "provider failures may still use the bounded retry budget");
+  assert.equal(isNonRetryableStoryTaskError(Object.assign(new Error("snapshot mismatch"), {
+    getResponse: () => ({ code: "OPENOVEL_ROLE_CONTEXT_SNAPSHOT_INVALID", recoverable: false })
+  })), true, "a deterministic durable-context identity mismatch must not consume five blind retries");
 }
 
 async function exhaustedSoloPublishRecoveryCompensatesTheReservedCharge() {
@@ -334,6 +337,32 @@ async function sequenceOrderingWaitDoesNotConsumeTheGenerationRetryBudget() {
   assert.deepEqual(updates[0].data.attempt, { decrement: 1 });
   assert.ok(updates[0].data.nextRetryAt.getTime() - Date.now() >= 900);
   assert.deepEqual(released, [], "ordering waits must never release or replace the reserved action");
+}
+
+async function impactOrderingWaitDoesNotConsumeTheGenerationRetryBudget() {
+  const updates: any[] = [];
+  const current = task({ taskType: "ACTOR_IMPACT_V2", status: "RUNNING", attempt: 5, maxAttempts: 5 });
+  const sequenceWait = Object.assign(new Error("An earlier impact for this role must finish"), {
+    getResponse: () => ({ code: "IMPACT_SEQUENCE_WAIT", recoverable: true })
+  });
+  const prisma = {
+    storyTaskOutbox: {
+      findUnique: async () => current,
+      updateMany: async (args: any) => { updates.push(args); return { count: 1 }; }
+    },
+    storyRun: { updateMany: async () => ({ count: 0 }) }
+  };
+  const { service, workerId } = serviceWith(prisma, {}, {}, {}, {
+    executeImpactTask: async () => { throw sequenceWait; }
+  });
+  current.leaseOwner = workerId;
+
+  await (service as any).process(current.id);
+
+  assert.equal(isImpactSequenceWait(sequenceWait), true);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].data.status, "PENDING");
+  assert.deepEqual(updates[0].data.attempt, { decrement: 1 });
 }
 
 async function terminalV2ResultRecoveryRepairsACompensationInterruptedByPoolPressure() {
@@ -494,6 +523,7 @@ async function run() {
   await retryBoundaryUsesIncrementedAttempt();
   await qualityRejectionNeverRepeatsTheFullModelCall();
   await sequenceOrderingWaitDoesNotConsumeTheGenerationRetryBudget();
+  await impactOrderingWaitDoesNotConsumeTheGenerationRetryBudget();
   await terminalV2ResultRecoveryRepairsACompensationInterruptedByPoolPressure();
   await exhaustedSoloPublishRecoveryCompensatesTheReservedCharge();
   await staleLeaseCannotRecordFailure();

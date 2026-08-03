@@ -74,6 +74,14 @@ export function safeRunId(value: string) {
   return runId;
 }
 
+export function safeWorkspaceId(value: string, label = "workspace id") {
+  const id = String(value || "").trim();
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(id) || id === "." || id === "..") {
+    throw new Error(`${label} must contain 1-128 letters, digits, underscores, or hyphens`);
+  }
+  return id;
+}
+
 export function compactText(value: unknown, maxChars: number) {
   const text = String(value ?? "").trim();
   if (text.length <= maxChars) return text;

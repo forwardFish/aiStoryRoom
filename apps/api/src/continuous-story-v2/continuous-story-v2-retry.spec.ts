@@ -8,6 +8,7 @@ function serviceForOpening(status: "FAILED" | "PENDING" | "RUNNING") {
     storyPlayer: { findFirst: async () => ({ roleId: "role-1" }) },
     actorTurn: { findFirst: async () => ({ id: "opening-turn-1" }) },
     storyTaskOutbox: {
+      findMany: async () => [],
       findUnique: async ({ where }: any) => {
         assert.equal(where.dedupeKey, "ACTOR_OPENING_V2:opening-turn-1");
         return { id: "opening-task-1", status };

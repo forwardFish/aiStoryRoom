@@ -7,7 +7,7 @@ import { CreditsService } from "./credits/credits.service";
 import { ReferralsService } from "./referrals/referrals.service";
 import type { AuthenticatedUser } from "./auth/current-user.decorator";
 import { Observable } from "rxjs";
-import { CONTINUOUS_ENGINE_VERSION, CONTINUOUS_STORY_ENGINE_VERSION, type ControlCommandV1, type HeartbeatCommandV1, type LayoutCommandV1, type SlotCommandV1, type TurnDecisionCommandV2 } from "@ai-story/shared";
+import { CONTINUOUS_ENGINE_VERSION, isContinuousActorThreadEngine, type ControlCommandV1, type HeartbeatCommandV1, type LayoutCommandV1, type SlotCommandV1, type TurnDecisionCommandV2 } from "@ai-story/shared";
 import { findGameDefinition } from "@ai-story/templates";
 import { readContinuousStrategyConfig, selectRunVersions } from "./config/continuous-strategy.config";
 import { ActionWindowService } from "./continuous-strategy/action-window.service";
@@ -237,11 +237,20 @@ export class RoomsService {
     let deterministicRunId = internal.runId;
     let idempotentPublicRequest = false;
     const idempotencyKey = String(input.idempotencyKey || "").trim();
+    if (!internal.skipPublicIdempotency && idempotencyKey) {
+      if (!SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
+      deterministicRunId = sharedRoomRunIdForRequest(user.id, idempotencyKey);
+      idempotentPublicRequest = true;
+    }
+    const continuousConfig = readContinuousStrategyConfig();
     const versions = selectRunVersions({
       templateKey: worldId,
       mode: "room",
       maxPlayers,
-      enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
+      enabledForNewRooms: continuousConfig.enabledForNewRooms,
+      openNovelEnabledForNewRooms: continuousConfig.openNovelEnabledForNewRooms,
+      openNovelRoomIds: continuousConfig.openNovelRoomIds,
+      runId: deterministicRunId
     });
     const creditConfig = readCreditConsumptionConfig();
     const requestedBillingPolicy = internal.billingPolicyVersion || creditConfig.defaultPolicy;
@@ -254,10 +263,7 @@ export class RoomsService {
       throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "An idempotencyKey is required when creating an action-metered Story Run" });
     }
     if (!internal.skipPublicIdempotency && idempotencyKey) {
-      if (!SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
-      deterministicRunId = sharedRoomRunIdForRequest(user.id, idempotencyKey);
-      idempotentPublicRequest = true;
-      const replay = await this.replaySharedRoomCreation(user, deterministicRunId, worldId, maxPlayers, false);
+      const replay = await this.replaySharedRoomCreation(user, deterministicRunId!, worldId, maxPlayers, false);
       if (replay) return replay;
     }
     let runCharge: any = null;
@@ -408,7 +414,7 @@ export class RoomsService {
         await this.prepareSoloLobby(user, created.id, role.id, worldId);
         await this.soloStory.activateNewRun(user, created.id);
         response = soloCreationResponse(created.id, await this.soloStory.start(user, created.id));
-      } else if (versions.engineVersion === CONTINUOUS_ENGINE_VERSION || versions.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
+      } else if (versions.engineVersion === CONTINUOUS_ENGINE_VERSION || isContinuousActorThreadEngine(versions.engineVersion)) {
         const created = await this.create(
           user,
           { worldId, title: roomTitleForCreate(undefined, "solo"), maxPlayers: 1, visibility: "private" },
@@ -535,7 +541,7 @@ export class RoomsService {
           ? { gameProjection: await this.memberProjections.game(user, run.id) }
           : run.engineVersion === SOLO_STORY_ENGINE_VERSION
             ? await this.soloStory.start(user, run.id)
-          : run.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION
+          : isContinuousActorThreadEngine(run.engineVersion)
             // start() is idempotent for a playing V2 run. It resumes a human
             // opening still in GENERATING before returning the projection;
             // without this, one transient model rejection strands the player
@@ -553,7 +559,7 @@ export class RoomsService {
         if (run.engineVersion !== SOLO_STORY_ENGINE_VERSION) await this.soloStory.activateNewRun(user, run.id);
         return soloCreationResponse(run.id, await this.soloStory.start(user, run.id));
       }
-      if (readyToResume && run.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
+      if (readyToResume && isContinuousActorThreadEngine(run.engineVersion)) {
         // A prior request may have durably created/claimed/readied the Solo run
         // and then failed while initializing its independent actor threads or
         // generating the human opening. Retrying the same idempotency key must
@@ -647,7 +653,7 @@ export class RoomsService {
     // reopened without attempting lobby mutations again.
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.start(user, roomId);
-    if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.start(user, roomId);
+    if (isContinuousActorThreadEngine(engine?.engineVersion)) return this.storyV2.start(user, roomId);
     const room = await this.requireWaitingMember(user, roomId);
     if (room.engineVersion === CONTINUOUS_ENGINE_VERSION) {
       const started = await this.actionWindows.start(user, roomId);
@@ -729,7 +735,7 @@ export class RoomsService {
   async game(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.game(user, roomId);
-    if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.game(user, roomId);
+    if (isContinuousActorThreadEngine(engine?.engineVersion)) return this.storyV2.game(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.game(user, roomId);
     const room = await this.get(user, roomId);
     if (room.status === "chapter_generated") return { world: room.world, room, completed: true, currentNode: null, submittedRoleIds: [], access: this.access.roomAccessState(room, 7) };
@@ -758,7 +764,7 @@ export class RoomsService {
   async result(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.result(user, roomId);
-    if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.result(user, roomId);
+    if (isContinuousActorThreadEngine(engine?.engineVersion)) return this.storyV2.result(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.result(user, roomId);
     const room = await this.get(user, roomId);
     if (room.status !== "chapter_generated") {
@@ -782,7 +788,7 @@ export class RoomsService {
 
   async submitGameAction(user: AuthenticatedUser, roomId: string, input: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ConflictException({ code: "LEGACY_ACTION_ENDPOINT_DISABLED", message: "Use the versioned decision endpoint" });
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || isContinuousActorThreadEngine(engine?.engineVersion) || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ConflictException({ code: "LEGACY_ACTION_ENDPOINT_DISABLED", message: "Use the versioned decision endpoint" });
     const room = await this.requirePlayingMember(user, roomId);
     const player = room.players.find((item) => item.userId === user.id);
     if (!player?.roleId) throw new BadRequestException({ code: "ROLE_REQUIRED", message: "Select a role before submitting a game action" });
@@ -805,7 +811,7 @@ export class RoomsService {
 
   async resolveGameNode(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || isContinuousActorThreadEngine(engine?.engineVersion) || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
     const { node } = await this.requireResolvableNode(user, roomId);
     const resolution = await this.story.resolveNode(node.id);
     return { resolution, ...(await this.game(user, roomId)) };
@@ -813,7 +819,7 @@ export class RoomsService {
 
   async resolveGameNodeAsync(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || isContinuousActorThreadEngine(engine?.engineVersion) || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
     const { room, node } = await this.requireResolvableNode(user, roomId);
     const task = await this.outbox.enqueueResolve(room.id, node.id);
     return { ...task, runVersion: room.version + (room.status === "playing" ? 1 : 0), roomStatus: "resolving" };
@@ -837,7 +843,7 @@ export class RoomsService {
       const sequence = after && /^\d+$/.test(after) ? Number(after) : 0;
       return this.soloStory.events(user, roomId, sequence);
     }
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || isContinuousActorThreadEngine(engine?.engineVersion)) {
       const sequence = after && /^\d+$/.test(after) ? Number(after) : 0;
       return this.continuousEvents.page(user, roomId, sequence);
     }
@@ -936,7 +942,7 @@ export class RoomsService {
 
   private async usesStoryV2(roomId: string) {
     const run = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    return run?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION;
+    return isContinuousActorThreadEngine(run?.engineVersion);
   }
 
   private async requireResolvableNode(user: AuthenticatedUser, roomId: string) {

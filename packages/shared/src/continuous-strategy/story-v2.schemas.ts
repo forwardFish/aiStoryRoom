@@ -1,5 +1,10 @@
-import { GAME_PROJECTION_V2_SCHEMA_VERSION } from "./constants";
-import { fail, integerAtLeast, isRecord, nonEmptyString, pass, type ValidationResult } from "./schema-utils";
+import {
+  CONTINUOUS_OPENOVEL_ENGINE_VERSION,
+  CONTINUOUS_STORY_ENGINE_VERSION,
+  GAME_PROJECTION_V2_SCHEMA_VERSION,
+  OPENOVEL_ROLE_RUNTIME_MODE
+} from "./constants";
+import { fail, integerAtLeast, isRecord, nonEmptyString, onlyKeys, pass, type ValidationResult } from "./schema-utils";
 import type { CreditControlProjection } from "./credit-control.schemas";
 
 export type IntentTargetTypeV2 = "ROLE" | "PERSON" | "EVIDENCE" | "RESOURCE" | "LOCATION" | "INSTITUTION" | "PUBLIC_FRAME";
@@ -18,6 +23,7 @@ export type PlayerIntentV2 = {
   leverageKeys: string[];
   visibility: IntentVisibilityV2;
   riskTolerance: IntentRiskToleranceV2;
+  effectClaim?: "REQUEST" | "CONTEST" | "TRANSFER" | "INJURY" | "PERMANENT_REMOVAL" | "OTHER";
   fallback: null | { method: string; triggerOn: "PRIMARY_BLOCKED" | "PRIMARY_PARTIAL" | "TARGET_REFUSED" };
   condition: null | { eventType: string; actorRoleId?: string; targetId?: string; expiresAtStage?: number };
   freeText?: string;
@@ -75,6 +81,21 @@ export type StoryTimelineEntryV2 = {
   decisionForm?: DecisionFormV2;
 };
 
+export type ActorTurnActionAvailabilityItemV2 = {
+  state: "AVAILABLE" | "LOCKED";
+  reason: string;
+  targetIds: string[];
+  assetKeys: string[];
+};
+
+export type ActorTurnActionAvailabilityV2 = {
+  storyChoice: ActorTurnActionAvailabilityItemV2;
+  conversation: ActorTurnActionAvailabilityItemV2;
+  investigation: ActorTurnActionAvailabilityItemV2;
+  leverage: ActorTurnActionAvailabilityItemV2;
+  customPlan: ActorTurnActionAvailabilityItemV2;
+};
+
 export type ActorTurnProjectionV2 = {
   id: string;
   revision: number;
@@ -88,6 +109,7 @@ export type ActorTurnProjectionV2 = {
   framing: string;
   decisions: DecisionCandidateV2[];
   availableTargets: Array<{ type: IntentTargetTypeV2; id: string; label: string }>;
+  actionAvailability?: ActorTurnActionAvailabilityV2;
   customActionAllowed: boolean;
 };
 
@@ -123,8 +145,11 @@ export type ArmedConditionProjectionV2 = {
 
 export type PendingInteractionProjectionV2 = {
   id: string;
+  direction: "INCOMING" | "OUTGOING";
   sourceRoleId: string;
   sourceRoleName: string;
+  targetRoleId: string;
+  targetRoleName: string;
   requestKind: string;
   pressure: string;
   observableTrace: string | null;
@@ -180,8 +205,11 @@ export type GamePageWorldProjectionV1 = {
 
 export type GameProjectionV2 = {
   schemaVersion: typeof GAME_PROJECTION_V2_SCHEMA_VERSION;
+  engineVersion: typeof CONTINUOUS_STORY_ENGINE_VERSION | typeof CONTINUOUS_OPENOVEL_ENGINE_VERSION | "solo_story_v2";
+  runtimeMode: "STRUCTURED_STORY_V2" | typeof OPENOVEL_ROLE_RUNTIME_MODE | "SOLO_STORY_V2";
   generatedAt: string;
   worldSequence: number;
+  prologueNarrative?: string;
   room: { id: string; title: string; worldId: string; status: string; mode: string; ownerUserId?: string };
   world?: GamePageWorldProjectionV1;
   player: { userId: string; roleId: string; roleKey: string; roleName: string; identity: string; personalGoal: string };
@@ -195,6 +223,17 @@ export type GameProjectionV2 = {
   armedConditions: ArmedConditionProjectionV2[];
   pendingInteractions: PendingInteractionProjectionV2[];
   observableTraces: ObservableTraceProjectionV2[];
+  pendingImpacts: Array<{
+    id: string;
+    status: "PENDING" | "SYNCING" | "RECOVERY_REQUIRED";
+    appliedWorldSequence: number | null;
+  }>;
+  roleNarrativeState: {
+    canonStatus: "READY" | "GENERATING" | "EMPTY";
+    generationStatus: "IDLE" | "GENERATING" | "RETRY_AVAILABLE";
+    impactStatus: "SYNCED" | "PENDING" | "SYNCING" | "RECOVERY_REQUIRED";
+    canRetry: boolean;
+  };
   access: { state: string; requiresUnlock: boolean; requiredCredits: number; canCurrentUserUnlock: boolean; unlockEndpoint: string | null };
   creditControl: CreditControlProjection;
   completed: boolean;
@@ -231,18 +270,58 @@ export type TurnDecisionResponseV2 = {
 
 export function validateGameProjectionV2(value: unknown): ValidationResult<GameProjectionV2> {
   if (!isRecord(value)) return fail(["game projection v2 must be an object"]);
-  const errors: string[] = [];
+  const errors: string[] = onlyKeys(value, [
+    "schemaVersion", "engineVersion", "runtimeMode", "generatedAt", "worldSequence", "prologueNarrative", "room", "world", "player", "control",
+    "currentTurn", "timeline", "otherActors", "visibleAssets", "evidenceHoldings", "commitments", "armedConditions",
+    "pendingInteractions", "observableTraces", "pendingImpacts", "roleNarrativeState", "access", "creditControl", "completed", "resultUrl"
+  ]);
   if (value.schemaVersion !== GAME_PROJECTION_V2_SCHEMA_VERSION) errors.push("invalid schemaVersion");
+  if (![CONTINUOUS_STORY_ENGINE_VERSION, CONTINUOUS_OPENOVEL_ENGINE_VERSION, "solo_story_v2"].includes(String(value.engineVersion))) errors.push("invalid engineVersion");
+  const expectedRuntime = value.engineVersion === CONTINUOUS_OPENOVEL_ENGINE_VERSION
+    ? OPENOVEL_ROLE_RUNTIME_MODE
+    : value.engineVersion === "solo_story_v2" ? "SOLO_STORY_V2" : "STRUCTURED_STORY_V2";
+  if (value.runtimeMode !== expectedRuntime) errors.push("runtimeMode does not match engineVersion");
   if (!nonEmptyString(value.generatedAt)) errors.push("generatedAt is required");
   if (!integerAtLeast(value.worldSequence, 0)) errors.push("worldSequence must be >= 0");
   for (const key of ["room", "player", "control", "access", "creditControl"] as const) if (!isRecord(value[key])) errors.push(`${key} must be an object`);
   if (value.currentTurn !== null && !isRecord(value.currentTurn)) errors.push("currentTurn must be an object or null");
   if (!Array.isArray(value.timeline)) errors.push("timeline must be an array");
   if (!Array.isArray(value.otherActors)) errors.push("otherActors must be an array");
-  for (const key of ["visibleAssets", "evidenceHoldings", "commitments", "armedConditions", "pendingInteractions", "observableTraces"] as const) {
+  for (const key of ["visibleAssets", "evidenceHoldings", "commitments", "armedConditions", "pendingInteractions", "observableTraces", "pendingImpacts"] as const) {
     if (!Array.isArray(value[key])) errors.push(`${key} must be an array`);
   }
+  if (Array.isArray(value.pendingImpacts)) for (const impact of value.pendingImpacts) {
+    if (!isRecord(impact)
+      || !nonEmptyString(impact.id)
+      || !["PENDING", "SYNCING", "RECOVERY_REQUIRED"].includes(String(impact.status))
+      || (impact.appliedWorldSequence !== null && !integerAtLeast(impact.appliedWorldSequence, 1))) {
+      errors.push("pendingImpacts contains an invalid item");
+    }
+  }
+  if (!isRecord(value.roleNarrativeState)
+    || !["READY", "GENERATING", "EMPTY"].includes(String(value.roleNarrativeState.canonStatus))
+    || !["IDLE", "GENERATING", "RETRY_AVAILABLE"].includes(String(value.roleNarrativeState.generationStatus))
+    || !["SYNCED", "PENDING", "SYNCING", "RECOVERY_REQUIRED"].includes(String(value.roleNarrativeState.impactStatus))
+    || typeof value.roleNarrativeState.canRetry !== "boolean") errors.push("roleNarrativeState is invalid");
+  for (const forbidden of projectionForbiddenKeys(value)) errors.push(`forbidden projection property: ${forbidden}`);
   if (typeof value.completed !== "boolean") errors.push("completed must be boolean");
   if (value.resultUrl !== null && typeof value.resultUrl !== "string") errors.push("resultUrl must be string or null");
   return errors.length ? fail(errors) : pass(value as GameProjectionV2);
+}
+
+const FORBIDDEN_PROJECTION_KEYS = new Set([
+  "contextjson", "statepatch", "statepatchjson", "prompt", "systemprompt", "developerprompt",
+  "rationale", "internalpayload", "providerpayload", "rawpayload"
+]);
+
+function projectionForbiddenKeys(value: unknown, path = "projection"): string[] {
+  if (Array.isArray(value)) return value.flatMap((item, index) => projectionForbiddenKeys(item, `${path}[${index}]`));
+  if (!isRecord(value)) return [];
+  return Object.entries(value).flatMap(([key, nested]) => {
+    const current = `${path}.${key}`;
+    return [
+      ...(FORBIDDEN_PROJECTION_KEYS.has(key.toLowerCase()) ? [current] : []),
+      ...projectionForbiddenKeys(nested, current)
+    ];
+  });
 }

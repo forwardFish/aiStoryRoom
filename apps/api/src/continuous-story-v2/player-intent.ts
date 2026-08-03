@@ -49,13 +49,13 @@ const TARGET_TYPES = new Set(["ROLE", "PERSON", "EVIDENCE", "RESOURCE", "LOCATIO
 const VISIBILITIES = new Set(["PRIVATE", "LIMITED", "OBSERVABLE", "PUBLIC"]);
 const RISKS = new Set(["LOW", "MEDIUM", "HIGH"]);
 const FALLBACK_TRIGGERS = new Set(["PRIMARY_BLOCKED", "PRIMARY_PARTIAL", "TARGET_REFUSED"]);
+const EFFECT_CLAIMS = new Set(["REQUEST", "CONTEST", "TRANSFER", "INJURY", "PERMANENT_REMOVAL", "OTHER"]);
 
 const OUT_OF_WORLD = /互联网|手机|电话|卫星|摄像头|无人机|飞机|宇宙飞船|外太空|电脑|区块链|社交媒体|电子邮件|短信|现代银行|GPS/i;
 const CONTROL_OTHER = /直接控制(?:所有|其他|对方|该)?角色|替(?:他|她|对方|目标角色)决定|无需(?:他|她|对方|目标角色)同意|强制玩家选择|让所有人服从|控制所有角色/i;
 const DECLARE_RESULT = /必定成功|保证成功|宣布(?:已经)?成功|直接判定|直接处死皇帝|已经迫使|已经让.+(?:交出|背叛|认罪|公开秘密|改变阵营)/i;
 const CAUSAL_GAP = /无需调查|无需证据|无需过程|瞬间完成|凭空得到|直接知道全部|立即掌握所有|跳过(?:审讯|核验|交涉|递送|查验)/i;
 const HIGH_COST = /背叛|抗命|销毁|焚毁|伪造|扣押|查封|公开秘密|越级弹劾|截留|灭口|行贿|威胁/i;
-const REQUEST_TARGET = /要求|请求|劝说|交涉|谈判|索取|请.+(?:交出|承认|公开|签押|作证)|施压|逼问|限期答复|交换/i;
 
 export function normalizePlayerIntentV2(input: PlayerIntentV2): PlayerIntentV2 {
   const targetType = String(input?.target?.type || "").toUpperCase();
@@ -76,6 +76,7 @@ export function normalizePlayerIntentV2(input: PlayerIntentV2): PlayerIntentV2 {
     leverageKeys,
     visibility: (VISIBILITIES.has(visibility) ? visibility : "PRIVATE") as PlayerIntentV2["visibility"],
     riskTolerance: (RISKS.has(risk) ? risk : "MEDIUM") as PlayerIntentV2["riskTolerance"],
+    ...(EFFECT_CLAIMS.has(String(input?.effectClaim || "").toUpperCase()) ? { effectClaim: String(input.effectClaim).toUpperCase() as NonNullable<PlayerIntentV2["effectClaim"]> } : {}),
     fallback: input?.fallback && compact(input.fallback.method, 600) && FALLBACK_TRIGGERS.has(fallbackTrigger)
       ? { method: compact(input.fallback.method, 600), triggerOn: fallbackTrigger as NonNullable<PlayerIntentV2["fallback"]>["triggerOn"] }
       : null,
@@ -218,7 +219,10 @@ export function planIntentAction(input: {
   const conditionText = intent.condition ? `；这项后手只有在“${intent.condition.eventType}”真实发生后才会另行结算` : "";
   const targetText = intent.target.label || input.stage.commonContest.title;
   const receiptText = `${input.role.roleName}已经让经手人按“${intent.method}”开始执行，目标是“${intent.objective}”，对象为${targetText}${leverageText}${claimText}${fallbackText}${conditionText}；执行时辰、传递渠道和第一份回执已经登记，但结果仍要由证据与他人回应决定`;
-  const requiresTargetResponse = intent.target.type === "ROLE" && REQUEST_TARGET.test(`${intent.objective} ${intent.method}`);
+  // Role-targeted intents are structurally non-authoritative. The world core
+  // records the attempt and lets the target respond; phrasing is never used
+  // as the causal switch for another player's agency.
+  const requiresTargetResponse = intent.target.type === "ROLE";
   const observableTraceText = intent.visibility === "OBSERVABLE"
     ? `${input.stage.title}期间，${targetText}附近出现了与“${input.stage.commonContest.title}”有关的新公文、人员调动或查验痕迹；旁观者能确认局势被人推动，却无法仅凭这些痕迹知道行动者、完整方法或秘密目的。`
     : null;
@@ -257,7 +261,9 @@ export function planIntentAction(input: {
     effectHooks,
     observableTraceText,
     requiresTargetResponse,
-    interactionRequestKind: requiresTargetResponse ? inferInteractionKind(intent) : null,
+    interactionRequestKind: requiresTargetResponse
+      ? (["CONTEST", "TRANSFER", "INJURY"].includes(intent.effectClaim || "") ? "CONTEST_REQUIRED" : inferInteractionKind(intent))
+      : null,
     leverageDispositions: source === "SUGGESTED" && input.card
       ? input.card.assetMutations.map((mutation) => ({ assetKey: mutation.assetKey, disposition: cardMutationDisposition(mutation.mutationType) }))
       : intent.leverageKeys.map((assetKey) => ({ assetKey, disposition: leverageDisposition(intent.method) }))
