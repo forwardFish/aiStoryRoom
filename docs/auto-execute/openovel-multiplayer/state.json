@@ -15,6 +15,7 @@
   "chatgpt_pro": {
     "role": "ADVISORY_ONLY",
     "fixed_conversation_url": "https://chatgpt.com/g/g-p-69f810ddfcec8191b7a0d9371ec3ab86-aiduo-ren-ju-qing-tui-yan-aistory/c/6a70a95a-4d40-83ee-a50e-38a0b8a8e934",
+    "required_mode": "聊天",
     "required_visible_model": "GPT-5.6 Sol",
     "required_reasoning_level": "极高",
     "model_identity_probe_forbidden": true,

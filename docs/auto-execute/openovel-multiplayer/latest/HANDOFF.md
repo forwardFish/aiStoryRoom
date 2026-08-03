@@ -16,7 +16,7 @@
   or add/alter a test-only main-game page.
 - ChatGPT Web is advisory only. Reuse the fixed multiplayer project conversation
   `https://chatgpt.com/g/g-p-69f810ddfcec8191b7a0d9371ec3ab86-aiduo-ren-ju-qing-tui-yan-aistory/c/6a70a95a-4d40-83ee-a50e-38a0b8a8e934`
-  only when the visible controls show `GPT-5.6 Sol` and `极高`. Do not send a
+  only in `聊天` mode when the visible controls show `GPT-5.6 Sol` and `极高`. Do not send a
   model-identity probe. Codex owns implementation, local verification, and the
   final verdict. This rule supersedes every historical browser statement below.
 - A single failure signature may be tested at most three times. Each retry must
