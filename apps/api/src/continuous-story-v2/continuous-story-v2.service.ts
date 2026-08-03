@@ -126,7 +126,11 @@ export function shouldUseStandingPolicy(input: {
   engineVersion: string;
   controlReason: string | null;
 }) {
-  return input.reviewedCandidateCount === 0
+  // The agent decision provider needs at least two reviewed choices to make a
+  // real comparison. Zero or one choice is not a meaningful model decision,
+  // so keep the role progressing through the same bounded Standing Policy
+  // path used when OpenNovel intentionally publishes no suggestions.
+  return input.reviewedCandidateCount < 2
     || (input.engineVersion === CONTINUOUS_OPENOVEL_ENGINE_VERSION
       && input.controlReason === "DISCONNECT_TIMEOUT");
 }

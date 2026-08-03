@@ -94,6 +94,14 @@ test("AI control without reviewed options keeps the bounded Standing Policy fall
   }), true);
 });
 
+test("AI control with only one reviewed option uses Standing Policy instead of an invalid model decision", () => {
+  assert.equal(shouldUseStandingPolicy({
+    reviewedCandidateCount: 1,
+    engineVersion: OPENOVEL_ENGINE,
+    controlReason: "INITIAL_AI_AGENT"
+  }), true);
+});
+
 test("OpenNovel agent tasks have epoch-scoped dedupe identities and immutable policy snapshots", () => {
   const first = openNovelAgentTaskIdentity({
     controlEpoch: 8,

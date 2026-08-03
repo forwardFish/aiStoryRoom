@@ -60,6 +60,7 @@ const idempotencyKey = `room-create:openovel-three-role-${Date.now()}`;
 const ownerId = `openovel_e2e_owner_${Date.now().toString(36)}`;
 const runId = sharedRoomRunIdForRequest(ownerId, idempotencyKey);
 const internalToken = `openovel-three-role-${randomBytes(12).toString("hex")}`;
+const heartbeatIntervalMs = 800;
 const users: Session[] = [
   account("governor", ownerId, "governor"),
   account("xunfu", `openovel_e2e_xunfu_${Date.now().toString(36)}`, "xunfu"),
@@ -175,7 +176,7 @@ async function main() {
 
     for (const user of users) heartbeatPumps.push(createHeartbeatPump(apiBase, user));
     await Promise.all(heartbeatPumps.map((pump) => pump.resume()));
-    report.presenceTiming = { heartbeatStaleMs: 2_000, offlineGraceMs: 3_000, heartbeatIntervalMs: 400 };
+    report.presenceTiming = { heartbeatStaleMs: 2_000, offlineGraceMs: 3_000, heartbeatIntervalMs };
 
     const actionEvidence: Array<Record<string, unknown>> = [];
     const first = await projection(apiBase, users[0]!);
@@ -573,7 +574,7 @@ function createHeartbeatPump(apiBase: string, user: Session): HeartbeatPump {
         errors.push(publicError(String((error as Error)?.message || error)));
       }
       schedule();
-    }, 400);
+    }, heartbeatIntervalMs);
     timer.unref?.();
   };
   return {

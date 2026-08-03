@@ -20,7 +20,7 @@ function Import-DotEnv([string]$Path) {
 
 function Set-DatabaseSchema([string]$Url, [string]$Schema, [int]$ConnectionLimit = 5, [int]$PoolTimeout = 10) {
   $queryIndex = $Url.IndexOf("?")
-  if ($queryIndex -ge 0) { $prefix = $Url.Substring(0, $queryIndex); $query = @($Url.Substring($queryIndex + 1).Split("&") | Where-Object { $_ -and $_ -notmatch "^(schema|connection_limit|sslmode)=" }) }
+  if ($queryIndex -ge 0) { $prefix = $Url.Substring(0, $queryIndex); $query = @($Url.Substring($queryIndex + 1).Split("&") | Where-Object { $_ -and $_ -notmatch "^(schema|connection_limit|pool_timeout|sslmode)=" }) }
   else { $prefix = $Url; $query = @() }
   $query += "sslmode=disable"; $query += "schema=$Schema"; $query += "connection_limit=$ConnectionLimit"; $query += "pool_timeout=$PoolTimeout"
   return "${prefix}?" + ($query -join "&")
@@ -54,7 +54,7 @@ if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
 }
 $EvidenceRoot = [System.IO.Path]::GetFullPath($EvidenceRoot)
 New-Item -ItemType Directory -Path $EvidenceRoot -Force | Out-Null
-$env:DATABASE_URL = if ($Lane -eq "performance") { Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 15 60 } else { Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 5 10 }
+$env:DATABASE_URL = if ($Lane -in @("performance", "three-role")) { Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 15 60 } else { Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 5 10 }
 $env:OPENOVEL_MP_DB_SCHEMA = $schema
 $env:OPENOVEL_MP_EVIDENCE_DIR = $EvidenceRoot
 $env:OPENOVEL_MP_LANE = $Lane
