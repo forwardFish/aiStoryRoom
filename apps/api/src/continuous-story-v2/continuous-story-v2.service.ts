@@ -239,9 +239,10 @@ type OpenInteractionForAgent = {
 };
 
 type StoredOpenNovelRoleContextV1 = {
-  schemaVersion: "openovel_role_context_v1";
+  schemaVersion: "openovel_role_context_v2";
   recordId: string;
   snapshot: StoryContextSnapshotV2;
+  previousCanonHash: string | null;
   finalization: FrozenOpenNovelFinalizationContext;
 };
 
@@ -261,6 +262,7 @@ type FrozenOpenNovelFinalizationContext = {
 };
 
 type PersistedOpenNovelRoleContext = PersistedStoryContextV2 & {
+  previousCanonHash: string | null;
   finalization: FrozenOpenNovelFinalizationContext;
 };
 
@@ -279,12 +281,14 @@ export function readStoredOpenNovelRoleContext(statePatchJson: unknown): Persist
   const stored = jsonRecord(jsonRecord(statePatchJson).openNovelRoleContext);
   const snapshot = stored.snapshot as StoryContextSnapshotV2 | undefined;
   const finalization = jsonRecord(stored.finalization);
-  if (stored.schemaVersion !== "openovel_role_context_v1" || typeof stored.recordId !== "string" || !snapshot) return null;
+  if (stored.schemaVersion !== "openovel_role_context_v2" || typeof stored.recordId !== "string" || !snapshot) return null;
+  if (stored.previousCanonHash !== null && typeof stored.previousCanonHash !== "string") return null;
   if (!snapshot.identity || typeof snapshot.identity.snapshotHash !== "string" || !snapshot.contextReport) return null;
   if (!Array.isArray(finalization.visibleFacts) || !Array.isArray(finalization.incomingImpacts) || !Array.isArray(finalization.assets)) return null;
   return {
     recordId: stored.recordId,
     compilation: { ok: true, snapshot, report: snapshot.contextReport },
+    previousCanonHash: stored.previousCanonHash,
     finalization: finalization as FrozenOpenNovelFinalizationContext
   };
 }
@@ -3182,9 +3186,12 @@ export class ContinuousStoryV2Service {
       context.role.id
     );
     const storedContext: StoredOpenNovelRoleContextV1 = {
-      schemaVersion: "openovel_role_context_v1",
+      schemaVersion: "openovel_role_context_v2",
       recordId: persistedContext.recordId,
       snapshot: persistedContext.compilation.snapshot,
+      previousCanonHash: typeof jsonRecord(context.turn.contextJson).roleCanonHash === "string"
+        ? String(jsonRecord(context.turn.contextJson).roleCanonHash)
+        : null,
       finalization: {
         visibleFacts: snapshotVisibleFacts,
         incomingImpacts: context.incomingImpacts.filter((impact) => includedImpactContents.has(impact.content)).map((impact) => ({ ...impact })),
@@ -3217,7 +3224,11 @@ export class ContinuousStoryV2Service {
         message: "Reserved action moved before its immutable role context was persisted"
       });
     }
-    return { ...persistedContext, finalization: storedContext.finalization };
+    return {
+      ...persistedContext,
+      previousCanonHash: storedContext.previousCanonHash,
+      finalization: storedContext.finalization
+    };
   }
 
   private async generateRealNarrative(
@@ -3225,7 +3236,7 @@ export class ContinuousStoryV2Service {
     action: PlannedIntentAction,
     nextInput: StorySituationInput | null,
     actionResolutionId: string | null = null,
-    immutableRoleContext: PersistedStoryContextV2 | null = null
+    immutableRoleContext: PersistedOpenNovelRoleContext | null = null
   ): Promise<{
     contextRecordId: string;
     draft: ResolutionDraft;
@@ -3262,7 +3273,7 @@ export class ContinuousStoryV2Service {
     try {
       if (this.narrativeAdapters.isOpenNovel(context.run)) {
         const runtime = this.narrativeAdapters.openNovel;
-        const [status, visibleEntries, pendingInteractions] = await Promise.all([
+        const [, visibleEntries, pendingInteractions] = await Promise.all([
           runtime.ensureRoleWorkspace({
           roomId: context.run.id,
           roleId: context.role.id,
@@ -3328,7 +3339,7 @@ export class ContinuousStoryV2Service {
             : context.control.mode === "AI_ACTIVE" && pendingInteractions.length > 0
               ? "AI_TARGET"
               : "NORMAL",
-          previousCanonHash: status.canonHash || undefined,
+          previousCanonHash: immutableRoleContext!.previousCanonHash || undefined,
           idempotencyKey: `result:${actionResolutionId || context.turn.id}:${context.run.worldSequence}`
         }));
         const recordedRoleRuntime = await this.prisma.actorTurn.updateMany({

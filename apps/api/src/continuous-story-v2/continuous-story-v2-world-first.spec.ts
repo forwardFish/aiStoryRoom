@@ -134,14 +134,16 @@ test("durable OpenNovel context snapshot is reusable and future-world recompilat
   } as any;
   const stored = readStoredOpenNovelRoleContext({
     openNovelRoleContext: {
-      schemaVersion: "openovel_role_context_v1",
+      schemaVersion: "openovel_role_context_v2",
       recordId: "context-a",
       snapshot,
+      previousCanonHash: "canon-before",
       finalization: { visibleFacts: [], incomingImpacts: [], assets: [] }
     }
   });
   assert.equal(stored?.recordId, "context-a");
   assert.equal(stored?.compilation.ok, true);
+  assert.equal(stored?.previousCanonHash, "canon-before");
   assert.equal(wouldRecompileAfterFutureWorldAdvance(5, 3), true);
   assert.equal(wouldRecompileAfterFutureWorldAdvance(3, 3), false);
   assert.deepEqual(interactionSourceSequenceFilter(3), {
@@ -187,7 +189,7 @@ test("OpenNovel role context is compiled at the reserved base sequence and persi
     context: {
       run: { id: "run-a", worldSequence: 3 },
       role: { id: "role-a" },
-      turn: { id: "turn-a" },
+      turn: { id: "turn-a", contextJson: { roleCanonHash: "canon-before" } },
       control: { epoch: 1 },
       situationInput: {},
       visibleFacts: [{ factKey: "fact-a", content: "冻结事实" }],
@@ -207,6 +209,8 @@ test("OpenNovel role context is compiled at the reserved base sequence and persi
   });
   assert.equal(result.recordId, "context-a");
   assert.deepEqual(events, ["compile:2", "persist:context-a"]);
+  assert.equal(persistedPatch.openNovelRoleContext.schemaVersion, "openovel_role_context_v2");
+  assert.equal(persistedPatch.openNovelRoleContext.previousCanonHash, "canon-before");
   assert.deepEqual(persistedPatch.openNovelRoleContext.finalization, {
     visibleFacts: [{ factKey: "fact-a", content: "冻结事实" }],
     incomingImpacts: [{ sourceRoleName: "role-b", content: "冻结影响" }],
@@ -245,9 +249,10 @@ test("WORLD_COMMITTED retry reuses its durable role context even after the run a
       statePatchJson: {
         frozenRoleContext: { observedWorldSequence: 2 },
         openNovelRoleContext: {
-          schemaVersion: "openovel_role_context_v1",
+          schemaVersion: "openovel_role_context_v2",
           recordId: "context-a",
           snapshot,
+          previousCanonHash: "canon-before",
           finalization: { visibleFacts: [], incomingImpacts: [], assets: [] }
         }
       },
@@ -289,9 +294,10 @@ test("WORLD_COMMITTED multiplayer retry validates the frozen observation sequenc
       statePatchJson: {
         frozenRoleContext: { observedWorldSequence: 2 },
         openNovelRoleContext: {
-          schemaVersion: "openovel_role_context_v1",
+          schemaVersion: "openovel_role_context_v2",
           recordId: "context-a",
           snapshot,
+          previousCanonHash: "canon-before",
           finalization: { visibleFacts: [], incomingImpacts: [], assets: [] }
         }
       },
@@ -431,6 +437,15 @@ test("runtime-before-database crack replays the original impact identity and rep
   assert.doesNotMatch(source, /status\.appliedWorldSequence >= payload\.appliedWorldSequence/);
   assert.ok(impactMethod.indexOf("syncImpacts(") >= 0);
   assert.ok(impactMethod.indexOf("publishOpenNovelImpactReceipt") > impactMethod.indexOf("syncImpacts("));
+});
+
+test("runtime-before-database result retry reuses the frozen pre-result canon hash", () => {
+  const source = readFileSync(join(process.cwd(), "src/continuous-story-v2/continuous-story-v2.service.ts"), "utf8");
+  const resultMethod = source.slice(source.indexOf("private async generateRealNarrative"), source.indexOf("private async finalizeGeneratedResult"));
+  assert.match(source, /schemaVersion: "openovel_role_context_v2"/);
+  assert.match(source, /previousCanonHash: typeof jsonRecord\(context\.turn\.contextJson\)\.roleCanonHash === "string"/);
+  assert.match(resultMethod, /previousCanonHash: immutableRoleContext!\.previousCanonHash \|\| undefined/);
+  assert.doesNotMatch(resultMethod, /previousCanonHash: status\.canonHash/);
 });
 
 test("the durable outbox vocabulary accepts both OpenNovel impact success outcomes", () => {
