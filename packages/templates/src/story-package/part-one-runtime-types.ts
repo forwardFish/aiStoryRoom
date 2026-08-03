@@ -96,6 +96,41 @@ export type NarrativeTextureAllowance = {
   targetEntityLabel: string;
 };
 
+/** A source-grounded fact or mechanism projected into one foreground beat. */
+export type PartOneStoryEvidenceItem = {
+  evidenceId: string;
+  evidenceClass:
+    | "CURRENT_CANON"
+    | "CURRENT_STATE"
+    | "ORIGINAL_MECHANISM"
+    | "APPROVED_ADAPTATION"
+    | "ATTRIBUTED_CLAIM";
+  statement: string;
+  sourceClaimIds: string[];
+  adaptationDecisionIds: string[];
+  useAs: "OBJECTIVE_FACT" | "DRAMATIC_MECHANISM" | "ATTRIBUTED_ONLY";
+};
+
+export type PartOneSceneEvidencePacket = {
+  packetId: string;
+  evidenceItems: PartOneStoryEvidenceItem[];
+  unresolvedFacts: string[];
+  specificityBoundary: string;
+};
+
+/**
+ * The server-owned next beat. The Narrator renders this contract; it does not
+ * decide what happens next.
+ */
+export type PartOneNextStoryBeat = {
+  beatId: string;
+  playerOutcome: string;
+  npcOrWorldPressure: string;
+  stopCondition: string;
+  evidencePacket: PartOneSceneEvidencePacket;
+  fallbackContinuation: string;
+};
+
 export type PartOneNarrativePlan = {
   sceneStart: PartOneSceneState;
   sceneEnd: PartOneSceneState;
@@ -118,6 +153,7 @@ export type PartOneNarrativePlan = {
    * formal document). The Narrator continues after this paragraph.
    */
   settledActionNarrative?: string;
+  nextStoryBeat: PartOneNextStoryBeat;
   confirmedEffects: string[];
   unresolvedFacts: string[];
   npcAgenda: string[];
@@ -182,7 +218,23 @@ export type PartOneAffordanceTemplate = {
   visibleTradeoff: string;
   stateEffects: string[];
   statePatch?: Record<string, unknown>;
+  /** Author-reviewed prose for the already-settled player action. */
+  protectedNarrative?: string;
+  /**
+   * Author-reviewed continuation used only when model prose cannot be
+   * published. This is story prose, never a concatenation of state changes.
+   */
+  fallbackContinuation?: string;
   createsPendingConsequence: boolean;
+};
+
+export type PartOneDecisionPoint = {
+  decisionPointId: string;
+  decisionKernelId: string;
+  sourceAssetId: string;
+  actorRefs: string[];
+  prompt: string;
+  resultCeiling: string;
 };
 
 export type PartOneContinuationDecisionTemplate = {
@@ -304,6 +356,7 @@ export type PartOneRuntimeTarget = {
 
 export type PartOneRuntimeAffordance = PartOneAffordanceTemplate & {
   decisionKernelId: string;
+  decisionPointId: string;
   target: PartOneRuntimeTarget;
 };
 
@@ -332,6 +385,7 @@ export type PartOneCommittedEvent = {
   sceneBefore: PartOneSceneState;
   sceneAfter: PartOneSceneState;
   authoritativeWorldMoves: PartOneAuthoritativeWorldMove[];
+  nextDecisionPoint: PartOneDecisionPoint;
   narrativePlan: PartOneNarrativePlan;
   sectionTransitioned: boolean;
 };
@@ -385,6 +439,7 @@ export type PartOneRuntimeWorkingSet = {
   turnNumber: number;
   stateProjection: Record<string, unknown>;
   openDecisionKernel: PartOneRuntimeAsset;
+  decisionPoint: PartOneDecisionPoint;
   decisionAffordances: PartOneRuntimeAffordance[];
   activeCausalArcs: PartOneRuntimeAsset[];
   actorPolicies: PartOneRuntimeAsset[];

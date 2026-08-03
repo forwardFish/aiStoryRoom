@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01",
+    "SEC-P1-02",
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-REPORT-AUTHORSHIP"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-RESPONSIBILITY-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure",
+    "review.authority",
+    "review.procedureStatus",
+    "report.authorshipMode",
+    "report.firstNarrativeController"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C04-CL-REPORT-OMITS-DELAY",
+    "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+    "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+    "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-THREE-DAY-DEADLINE",
+    "ADAPT-P1-SEPARATE-XUNFU",
+    "ADAPT-P1-QINGLIU-COUNTY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C04",
+    "DM1566-C04-JOINT-REPORT-CONTEST",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure",
+    "review.authority",
+    "review.procedureStatus",
+    "report.authorshipMode",
+    "report.firstNarrativeController"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C04-JOINT-REPORT-CONTEST",
+    "title": "总督府争夺奏疏内容与署名",
+    "sourceRange": {
+      "chapterId": "DM1566-C04",
+      "paragraphStartId": "DM1566-C04-P0074",
+      "paragraphEndId": "DM1566-C04-P0110",
+      "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-01",
+        "statement": "地方执行者以改桑属于国策为由拒绝自行承担延缓责任，要求朝廷先明令改变。",
+        "claimIds": [
+          "DM1566-C04-CL-REPORT-OMITS-DELAY"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-02",
+        "statement": "胡宗宪要求把调粮借贷、百姓生计与延缓改桑写进正式奏疏，用文书内容固定治理责任。",
+        "claimIds": [
+          "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-03",
+        "statement": "杨金水明确表示若奏疏照胡宗宪的方案书写便不署名，署名本身成为责任与利益冲突的行动。",
+        "claimIds": [
+          "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-04",
+        "statement": "新的可核验证据进入现场后，原先拒绝修改奏疏的人才重新谈判；证据必须先出现，不能由叙述者预设。",
+        "claimIds": [
+          "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

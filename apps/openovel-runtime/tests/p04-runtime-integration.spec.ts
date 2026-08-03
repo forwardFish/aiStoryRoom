@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { NoopMirror } from "../src/mirror.js";
 import { OpenNovelRuntime } from "../src/runtime.js";
 import { sangtianDecisionAdapter } from "../src/sangtian-decisions.js";
+import { buildTruthReviewUnits } from "../src/truth-review.js";
 import type {
   OpenNovelProvider,
   ProviderRequest,
@@ -18,12 +19,12 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDir, "..", "..", "..");
 const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
 
-test("P04 runtime repairs an explicit extra player order and commits once", async () => {
+test("P04 rejects an extra player order and an incomplete repair, then publishes the reviewed fallback", async () => {
   const draft = "总督又命人跟牌同去。巡抚书吏抬眼等候。";
   const conflictQuote = "总督又命人跟牌同去";
   const provider = new QueueProvider([
     result(draft, "narrator-model"),
-    result(reviewJson([{
+    result(reviewJson(draft, [{
       predicate: {
         type: "ACTOR.ORDERED",
         actorId: "actor.zhejiang_governor",
@@ -34,7 +35,7 @@ test("P04 runtime repairs an explicit extra player order and commits once", asyn
       confidence: 0.99,
     }]), "reviewer-model"),
     result("巡抚书吏抬眼等候。", "repair-model"),
-    result(reviewJson([]), "reviewer-model"),
+    result(reviewJson("巡抚书吏抬眼等候。", []), "reviewer-model"),
   ]);
   await withRuntime(provider, async ({ runtime, workspace, runId }) => {
     const opening = await workspace.snapshot(runId);
@@ -48,8 +49,13 @@ test("P04 runtime repairs an explicit extra player order and commits once", asyn
     assert.equal(resultValue.turnNumber, 1);
     assert.doesNotMatch(resultValue.narration, /跟牌同去/);
     assert.match(resultValue.narration, /封缄令牌/);
-    assert.match(resultValue.narration, /暂不签发/);
-    assert.match(resultValue.narration, /巡抚书吏抬眼等候/);
+    assert.ok(resultValue.causalDelta.beatContract?.settledNarrative);
+    assert.equal(
+      resultValue.narration.startsWith(resultValue.causalDelta.beatContract.settledNarrative),
+      true,
+    );
+    assert.doesNotMatch(resultValue.narration, /巡抚书吏抬眼等候/);
+    assert.match(resultValue.narration, /只准清流一县先办.*仍候封存回报再议/su);
     assert.deepEqual(provider.profiles, [
       "narrator",
       "reviewer",
@@ -57,7 +63,7 @@ test("P04 runtime repairs an explicit extra player order and commits once", asyn
       "reviewer",
     ]);
     const events = await readFile(workspace.paths(runId).sceneLog, "utf8");
-    assert.match(events, /USE_REPAIRED/);
+    assert.match(events, /USE_FALLBACK/);
     const calls = await readdir(workspace.paths(runId).callsDir);
     assert.equal(calls.filter((name) => /\.narrator(?:\.|$)/.test(name)).length, 1);
     assert.equal(calls.filter((name) => /\.reviewer(?:\.|$)/.test(name)).length, 2);
@@ -79,11 +85,12 @@ test("P04 narrator failure uses deterministic fallback and still commits", async
     assert.equal(resultValue.turnNumber, 1);
     assert.ok(resultValue.narration.length > 20);
     assert.match(resultValue.narration, /封缄令牌/);
-    assert.match(resultValue.narration, /暂不签发/);
+    assert.ok(resultValue.causalDelta.beatContract?.settledNarrative);
     assert.equal(
-      resultValue.narration.match(/巡抚书吏没有退/g)?.length,
-      1,
+      resultValue.narration.startsWith(resultValue.causalDelta.beatContract.settledNarrative),
+      true,
     );
+    assert.match(resultValue.narration, /只准清流一县先办.*仍候封存回报再议/su);
     assert.deepEqual(provider.profiles, ["narrator"]);
     const events = await readFile(workspace.paths(runId).sceneLog, "utf8");
     assert.match(events, /USE_FALLBACK/);
@@ -150,11 +157,36 @@ function result(text: string, model: string): ProviderResult {
   };
 }
 
-function reviewJson(assertions: unknown[]) {
+function reviewJson(draft: string, assertions: unknown[]) {
+  const actionQuotes = assertions.flatMap((value) => {
+    const item = value as Record<string, unknown>;
+    const predicate = item.predicate as Record<string, unknown> | undefined;
+    return (
+      (predicate?.type === "ACTOR.ORDERED" || predicate?.type === "ACTOR.COMMITTED")
+      && predicate.actorId === "actor.zhejiang_governor"
+    ) ? [String(item.exactQuote)] : [];
+  });
   return JSON.stringify({
     assertions,
+    originActionAssessments: buildTruthReviewUnits(draft).map((unit) => {
+      const quotes = actionQuotes.filter((quote) => unit.text.includes(quote));
+      return quotes.length
+        ? {
+            unitId: unit.unitId,
+            classification: "UNAUTHORIZED",
+            exactQuotes: quotes,
+            confidence: 0.99,
+          }
+        : {
+            unitId: unit.unitId,
+            classification: "NO_DURABLE_ACTION",
+            exactQuotes: [],
+            confidence: 0.99,
+          };
+    }),
     missingRequiredPredicateIds: [],
     unknownEntityMentions: [],
+    factClaims: [],
   });
 }
 

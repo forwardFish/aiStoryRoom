@@ -70,6 +70,14 @@
     "pendingConsequences"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-EXECUTION-SCOPE",
+      "actorRefs": [
+        "actor.xunfu_clerk"
+      ],
+      "prompt": "巡抚书吏仍候在厅中，要总督当面定下这道改桑急令究竟按什么边界执行。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "朝廷改桑要求已经到达浙江",
       "玩家仍拥有总督执行与行文权限",
@@ -98,6 +106,8 @@
           "reform.scopeStatus": "QINGLIU_ONLY",
           "land.safeguardStatus": "WRITTEN_NO_DISTRESS_PURCHASE"
         },
+        "protectedNarrative": "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
+        "fallbackContinuation": "巡抚书吏把回文收入匣中，却没有退下。他隔着屏风问道：清流县既只准先办一批，复核若误了三日之限，这份责任是由总督独自写明，还是请巡抚在同一份正式回文上共同具名。问完，他仍捧着回文匣候在原处。",
         "createsPendingConsequence": true
       },
       {
@@ -120,6 +130,8 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
+        "fallbackContinuation": "巡抚书吏听明先行放开的条件，随即追问：三日后复核册若仍不齐，催办、放行与补正的责任准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名。",
         "createsPendingConsequence": true
       },
       {
@@ -142,6 +154,8 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
+        "fallbackContinuation": "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
         "createsPendingConsequence": true
       }
     ],

@@ -21,6 +21,10 @@ import {
   renderNarratorCausalDelta,
   validateRequiredNarrativeFacts,
 } from "../src/causal-delta.js";
+import {
+  buildCausalDelta as buildRuntimeCausalDelta,
+  renderNarratorCausalDelta as renderRuntimeNarratorCausalDelta,
+} from "../src/causal-context.js";
 import { parseOptions } from "../src/options.js";
 import {
   buildForegroundUserContext,
@@ -50,6 +54,7 @@ import {
   validateForegroundSurface,
 } from "../src/surface-guard.js";
 import { validateSurfaceIntegrity as validateV4SurfaceIntegrity } from "../src/surface-integrity.js";
+import { buildTruthReviewUnits } from "../src/truth-review.js";
 import type {
   OpenNovelProvider,
   EventMirror,
@@ -275,31 +280,31 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
     });
     const message = buildForegroundUserContext(delta, compiled);
     assert.match(message, /Foreground Guidance/);
-    assert.match(message, /Recent Canon Excerpt/);
+    assert.match(message, /Recent Player Canon/);
     assert.match(message, /## This Turn/);
     assert.match(message, /## Reader Action/);
     assert.match(message, /暂不落印，先问清原册为何没有随信送来/);
     assert.doesNotMatch(message, /本轮需要自然发生|具体兑现/);
     assert.doesNotMatch(message, /NPC 本轮不得补充：档房保管；经手人；原册内容/);
-    assert.match(message, /亲随不能补充档房保管/);
-    assert.match(message, /取得原册和启动正式复核仍是下一步决定/);
+    assert.doesNotMatch(message, /亲随不能补充档房保管/);
+    assert.doesNotMatch(message, /取得原册和启动正式复核仍是下一步决定/);
     assert.equal(
       message.trim().endsWith(action),
       true,
     );
-    assert.ok(message.lastIndexOf("## This Turn") > message.lastIndexOf("## Recent Canon Excerpt"));
-    assert.ok(message.lastIndexOf("## Reader Action") > message.lastIndexOf("## Recent Canon Excerpt"));
+    assert.ok(message.lastIndexOf("## This Turn") > message.lastIndexOf("## Recent Player Canon"));
+    assert.ok(message.lastIndexOf("## Reader Action") > message.lastIndexOf("## Recent Player Canon"));
     assert.doesNotMatch(message, /Settlement|stateJson|Validator Rule|Section Exit Gate/);
 
     const prompts = buildNarratorMessages(delta, compiled);
     assert.equal(prompts.length, 2);
-    assert.match(prompts[0].content, /从 Recent Canon 最后一刻继续/);
+    assert.match(prompts[0].content, /从 Recent Player Canon 最后一刻继续/);
     assert.match(prompts[0].content, /把它圆成可发生的尝试、传话或过渡/);
     assert.match(prompts[0].content, /Reader Action 是本回合唯一的主角行动/);
     assert.match(prompts[0].content, /普通动作、目光、衣袖、灯火、案几、普通纸张和空间调度可以自由书写/);
     assert.match(prompts[0].content, /不要凭空新增具名人物、关键证据、正式文书/);
     assert.match(prompts[0].content, /不要替主角完成 Reader Action 之外的签署、承诺或重大处置/);
-    assert.match(prompts[0].content, /Foreground Guidance、Memory 和 This Turn 只提供约束与叙事纹理/);
+    assert.match(prompts[0].content, /Foreground Guidance、Durable Memory 和 This Turn 只提供约束与叙事纹理/);
     assert.doesNotMatch(prompts[0].content, /物件持有人|跨 clause|activeActor/);
 
     const freeAction = "让书吏把协办办法说清楚，在他说完之前公文仍不签。";
@@ -2092,8 +2097,7 @@ test("a compiled evidence profile supplies structured opening knowledge without 
 test("authored decision state machine keeps curated choices across three committed turns", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "omw-authored-decisions-"));
   const runId = `authored_run_${Date.now()}`;
-  const provider = new ScriptedProvider({
-    narrator: [`
+  const authoredNarrations = [`
 总督没有去拿印。他把巡抚公文往案角推了半寸，压在镇纸下，抬头看向屏风外。
 
 “回文不急。你且坐着。”
@@ -2143,12 +2147,10 @@ test("authored decision state machine keeps curated choices across three committ
 巡抚幕僚先开了口：“抚台要派人参加下一轮复核。总督此前的迟疑，若因此耽误国策，也须据实记下。三日具报在即，粮价也还在上涨；清流县只准试办、又不许压价买田，这两条是否仍照办，须请部堂明示。”他看了一眼案上尚未署名的责任说明，“这份话既要留下，究竟由谁具名担责？”
 
 签押房里没有人接话。巡抚幕僚等着总督答复。
-`.trim()],
-    reviewer: Array.from({ length: 3 }, () => JSON.stringify({
-      assertions: [],
-      missingRequiredPredicateIds: [],
-      unknownEntityMentions: [],
-    })),
+`.trim()];
+  const provider = new ScriptedProvider({
+    narrator: authoredNarrations,
+    reviewer: authoredNarrations.map(cleanTruthReviewJson),
     options: [JSON.stringify({
       framing: "责任说明尚未署名，巡抚幕僚正等着总督说清谁来担责。",
       options: [
@@ -2188,7 +2190,7 @@ test("authored decision state machine keeps curated choices across three committ
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      ["narrator", "reviewer"],
+      ["narrator", "reviewer", "repair"],
     );
     assert.equal(provider.calls[0].temperature, 0.86);
     assert.match(
@@ -2231,12 +2233,13 @@ test("authored decision state machine keeps curated choices across three committ
       action: limitedTrial.label,
       selectedOption: limitedTrial,
     });
-    assert.deepEqual(
+    assert.equal(
       validateRequiredNarrativeFacts(
         String(provider.script.narrator[0] || ""),
         authoredT02Delta,
-      ),
-      [],
+      ).some((warning) => warning.code === "MISSING_REQUIRED_DURABLE_RESULT"),
+      true,
+      "the old free-running narration is invalid because it omits the server-selected next beat",
     );
     const secondResult = await runtime.processAction({
       runId,
@@ -2245,12 +2248,12 @@ test("authored decision state machine keeps curated choices across three committ
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      ["narrator", "reviewer", "narrator", "reviewer"],
+      ["narrator", "reviewer", "repair", "narrator", "reviewer", "repair"],
     );
-    assert.equal(provider.calls[2].temperature, 0.86);
+    assert.equal(provider.calls[3].temperature, 0.86);
     assert.match(
-      provider.calls[2].messages.map((message) => message.content).join("\n"),
-      /Settled Action Draft/,
+      provider.calls[3].messages.map((message) => message.content).join("\n"),
+      /Recent Player Canon/,
     );
     const separateResponsibility = secondResult.options.find(
       (option) => option.id === "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
@@ -2264,35 +2267,32 @@ test("authored decision state machine keeps curated choices across three committ
       (option) => option.id === "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
     );
     assert.ok(jointSignature);
-    const jointSignatureContext = renderNarratorCausalDelta(buildCausalDelta({
+    const jointSignatureContext = renderRuntimeNarratorCausalDelta(buildRuntimeCausalDelta({
       turnId: "T03",
       action: jointSignature.label,
       selectedOption: jointSignature,
     }));
     assert.match(
       jointSignatureContext,
-      /巡抚书吏当场说明：共同具名须由巡抚本人决定，他无权代为答应/,
+      /服务端已经确定的下一剧情拍/,
     );
     assert.match(
       jointSignatureContext,
-      /巡抚幕僚在次日签押房正式答复：巡抚拒绝在昨日的改桑放行回文上共同具名/,
+      /巡抚拒绝在总督昨日送来的正式回文上共同具名/,
     );
     assert.match(
       jointSignatureContext,
-      /把总督此前的迟疑记作可能耽误国策的理由/,
+      /署名本身成为责任与利益冲突的行动/,
     );
     assert.match(
       jointSignatureContext,
-      /粮价只能定性写成正在上涨或压力在眼前，不得换算为一日一变、每日、每时等频率/,
+      /独立巡抚是玩法角色位/,
     );
     assert.match(
       jointSignatureContext,
-      /新场没有获批的正式文书或证据容器在案/,
+      /不得自行增加人数、涨幅、地点、期限/,
     );
-    assert.ok(
-      jointSignatureContext.indexOf("巡抚书吏当场说明")
-      < jointSignatureContext.indexOf("巡抚幕僚在次日签押房正式答复"),
-    );
+    assert.match(jointSignatureContext, /复核由谁主持/);
     assert.doesNotMatch(jointSignatureContext, /玩家已结算行动必须写实/);
     const thirdResult = await runtime.processAction({
       runId,
@@ -2312,7 +2312,11 @@ test("authored decision state machine keeps curated choices across three committ
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      ["narrator", "reviewer", "narrator", "reviewer", "narrator", "reviewer"],
+      [
+        "narrator", "reviewer", "repair",
+        "narrator", "reviewer", "repair",
+        "narrator", "reviewer", "repair",
+      ],
     );
     assert.equal(thirdResult.turnNumber, 3);
     const stateAfterThird = JSON.parse(
@@ -2321,7 +2325,7 @@ test("authored decision state machine keeps curated choices across three committ
     assert.ok(stateAfterThird.pendingConsequences.some((item: { status: string }) => (
       item.status === "PAID"
     )));
-    assert.equal(provider.calls[4].temperature, 0.86);
+    assert.equal(provider.calls[6].temperature, 0.86);
     assert.ok(thirdResult.options.length >= 2);
     assert.ok(thirdResult.options.every((option) => !option.id.startsWith("opt_T03_")));
     const nextAuthoredOption = thirdResult.options[0];
@@ -2334,8 +2338,8 @@ test("authored decision state machine keeps curated choices across three committ
     assert.ok(nextDecision);
     assert.ok(nextDecision.settlement.appliedAffordance);
     assert.match(
-      provider.calls[4].messages.map((message) => message.content).join("\n"),
-      /Settled Action Draft/,
+      provider.calls[6].messages.map((message) => message.content).join("\n"),
+      /Recent Player Canon/,
     );
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -4079,6 +4083,21 @@ class ScriptedProvider implements OpenNovelProvider {
       latencyMs: 1,
     };
   }
+}
+
+function cleanTruthReviewJson(draft: string) {
+  return JSON.stringify({
+    assertions: [],
+    originActionAssessments: buildTruthReviewUnits(draft).map((unit) => ({
+      unitId: unit.unitId,
+      classification: "NO_DURABLE_ACTION",
+      exactQuotes: [],
+      confidence: 0.99,
+    })),
+    missingRequiredPredicateIds: [],
+    unknownEntityMentions: [],
+    factClaims: [],
+  });
 }
 
 async function withRuntime(

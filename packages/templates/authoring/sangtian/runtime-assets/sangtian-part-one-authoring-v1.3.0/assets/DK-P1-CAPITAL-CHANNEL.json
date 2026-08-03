@@ -61,6 +61,14 @@
     "pendingConsequences"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-CAPITAL-CHANNEL",
+      "actorRefs": [
+        "actor.xunfu_aide"
+      ],
+      "prompt": "奏报和附件已经逼近出府时刻，巡抚幕僚追问它走哪条入京渠道，沿途责任怎样留下记录。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "正式或非正式文书已经进入递送渠道",
       "渠道中介、署名和附件状态可追踪"
@@ -90,6 +98,7 @@
             "status": "SENT"
           }
         },
+        "protectedNarrative": "总督命首报走正式通政渠道，沿途逐站记录交接和到达时辰。",
         "createsPendingConsequence": true
       },
       {
@@ -117,6 +126,7 @@
             "status": "SENT"
           }
         },
+        "protectedNarrative": "总督用自己的封印加封急递，指定送达上级，并在府中留下副本和交接记录。",
         "createsPendingConsequence": true
       },
       {
@@ -137,6 +147,7 @@
           "report.firstNarrativeController": "DUAL_CHANNEL_CONTESTED",
           "evidence.chainStatus": "TRACEABLE"
         },
+        "protectedNarrative": "总督命正本走正式渠道、摘要另走密奏，两份互列封号，以便相互核验。",
         "createsPendingConsequence": true
       }
     ],

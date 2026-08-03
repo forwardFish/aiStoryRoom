@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02",
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "report.attachmentStrength"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+    "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C13",
+    "DM1566-C13-LEDGERS-BURNED",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "report.attachmentStrength"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C13-LEDGERS-BURNED",
+    "title": "地方官亲手焚烧账册",
+    "sourceRange": {
+      "chapterId": "DM1566-C13",
+      "paragraphStartId": "DM1566-C13-P0247",
+      "paragraphEndId": "DM1566-C13-P0265",
+      "textSpanSha256": "05B220471EB8FB6530894B6AF59B01A5326EA75B25952C6534F7D61A16EE0C75"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C13-LEDGERS-BURNED-MOVE-01",
+        "statement": "地方官不让底下人经手，亲自焚烧账册，表明毁证行动会改变保管链与责任链；这一原著事件不得直接移植为本游戏当前已发生事实。",
+        "claimIds": [
+          "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C13-LEDGERS-BURNED-MOVE-02",
+        "statement": "参与者在走投无路时以全面供述相威胁，说明共同利益在问责压力下可能破裂。",
+        "claimIds": [
+          "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

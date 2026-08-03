@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { NarrativeSafetyPipeline } from "../src/narrative-safety.js";
-import type { NarrativeTruthContext } from "../src/truth-review.js";
+import {
+  buildTruthReviewUnits,
+  type NarrativeTruthContext,
+} from "../src/truth-review.js";
 import type {
   OpenNovelProvider,
   ProviderRequest,
@@ -26,7 +29,7 @@ const context: NarrativeTruthContext = {
 test("P04 uses the original continuation after one clean review", async () => {
   const draft = "The aide paused at the threshold and waited for an answer.";
   const provider = new QueueProvider([
-    result(reviewJson([]), "reviewer-model"),
+    result(reviewJson(draft, []), "reviewer-model"),
   ]);
   const resolved = await new NarrativeSafetyPipeline(provider).resolve({
     turnId: "T01",
@@ -46,9 +49,9 @@ test("P04 performs exactly one targeted repair and one final review", async () =
   const conflictQuote = "The player ordered another escort to leave";
   const repaired = "The aide waited at the door.";
   const provider = new QueueProvider([
-    result(reviewJson([assertion(draft, conflictQuote)]), "reviewer-model"),
+    result(reviewJson(draft, [assertion(draft, conflictQuote)]), "reviewer-model"),
     result(repaired, "repair-model"),
-    result(reviewJson([]), "reviewer-model"),
+    result(reviewJson(repaired, []), "reviewer-model"),
   ]);
   const resolved = await new NarrativeSafetyPipeline(provider).resolve({
     turnId: "T01",
@@ -67,9 +70,9 @@ test("P04 uses deterministic fallback when the single repair still conflicts", a
   const draft = "The player ordered another escort to leave.";
   const quote = "The player ordered another escort to leave";
   const provider = new QueueProvider([
-    result(reviewJson([assertion(draft, quote)]), "reviewer-model"),
+    result(reviewJson(draft, [assertion(draft, quote)]), "reviewer-model"),
     result(draft, "repair-model"),
-    result(reviewJson([assertion(draft, quote)]), "reviewer-model"),
+    result(reviewJson(draft, [assertion(draft, quote)]), "reviewer-model"),
   ]);
   const resolved = await new NarrativeSafetyPipeline(provider).resolve({
     turnId: "T01",
@@ -138,11 +141,36 @@ function result(text: string, model: string): ProviderResult {
   };
 }
 
-function reviewJson(assertions: unknown[]) {
+function reviewJson(draft: string, assertions: unknown[]) {
+  const actionQuotes = assertions.flatMap((value) => {
+    const item = value as Record<string, unknown>;
+    const predicate = item.predicate as Record<string, unknown> | undefined;
+    return (
+      (predicate?.type === "ACTOR.ORDERED" || predicate?.type === "ACTOR.COMMITTED")
+      && predicate.actorId === context.originActorId
+    ) ? [String(item.exactQuote)] : [];
+  });
   return JSON.stringify({
     assertions,
+    originActionAssessments: buildTruthReviewUnits(draft).map((unit) => {
+      const quotes = actionQuotes.filter((quote) => unit.text.includes(quote));
+      return quotes.length
+        ? {
+            unitId: unit.unitId,
+            classification: "UNAUTHORIZED",
+            exactQuotes: quotes,
+            confidence: 0.99,
+          }
+        : {
+            unitId: unit.unitId,
+            classification: "NO_DURABLE_ACTION",
+            exactQuotes: [],
+            confidence: 0.99,
+          };
+    }),
     missingRequiredPredicateIds: [],
     unknownEntityMentions: [],
+    factClaims: [],
   });
 }
 

@@ -69,6 +69,15 @@
     "merchant.grantedRights"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-GRAIN-SOURCE",
+      "actorRefs": [
+        "actor.qingliu_magistrate",
+        "actor.jiangnan_merchant_head"
+      ],
+      "prompt": "县令报官仓难支，商会会首却说粮船可以立刻开来；厅上等总督决定第一批救粮从哪里来。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "官仓或可调用粮源不足以同时满足全部需要",
       "粮价或灾民压力已经可见",
@@ -99,6 +108,7 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督决定先动官仓并向邻省借粮，所有借据由总督府承担。",
         "createsPendingConsequence": true
       },
       {
@@ -119,6 +129,7 @@
           "merchant.entryStatus": "CONDITIONAL",
           "land.safeguardStatus": "NO_GRAIN_FOR_LAND"
         },
+        "protectedNarrative": "总督准商会限量开仓，官府为粮路作保，但明令不得借粮价换购灾民田地。",
         "createsPendingConsequence": true
       },
       {
@@ -139,6 +150,7 @@
           "merchant.entryStatus": "CONDITIONAL",
           "evidence.chainStatus": "TRACEABLE"
         },
+        "protectedNarrative": "总督定下官仓先稳城内、商会负责外县运输，两路账目分开核销。",
         "createsPendingConsequence": true
       }
     ],

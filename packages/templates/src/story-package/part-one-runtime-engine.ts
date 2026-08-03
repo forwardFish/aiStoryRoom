@@ -4,6 +4,8 @@ import type {
   PartOneAuthoritativeWorldMove,
   PartOneCommittedEvent,
   PartOneConsequencePayoffBeat,
+  PartOneContinuationDecisionTemplate,
+  PartOneDecisionPoint,
   PartOneNarrativePlan,
   PartOnePendingConsequenceState,
   PartOneRuntimeAffordance,
@@ -155,10 +157,16 @@ const PRESSURE_WORLD_MOVE_ACTORS: Record<string, string[]> = {
   "PRESSURE-P1-S4-XUNFU-WANTS-INTERIM-ORDER": ["actor.xunfu_aide"]
 };
 
-const OPENING_PATCHES: Record<string, { kernelId: string; patch: Record<string, unknown>; targetRef: string }> = {
+const OPENING_PATCHES: Record<string, {
+  kernelId: string;
+  patch: Record<string, unknown>;
+  targetRef: string;
+  canonicalActionText: string;
+}> = {
   opening_d1: {
     kernelId: "DK-P1-REVIEW-INITIATION",
     targetRef: "evidence.qingliu_register_anomaly",
+    canonicalActionText: "暂不签发放行文书，留下巡抚书吏，同时只向清流县令亲随核对密信中已经写明的县册报疑。",
     patch: {
       "review.initiationStatus": "GOVERNOR_PRELIMINARY_INQUIRY",
       "evidence.chainStatus": "FRAGILE",
@@ -176,6 +184,7 @@ const OPENING_PATCHES: Record<string, { kernelId: string; patch: Record<string, 
   opening_d2: {
     kernelId: "DK-P1-REVIEW-INITIATION",
     targetRef: "actor.qingliu_magistrate",
+    canonicalActionText: "将总督封缄令牌交给清流县令亲随，命他向清流县传达封存档房之令；同时当面答复巡抚书吏：暂缓签发，三日内复核。",
     patch: {
       "review.initiationStatus": "GOVERNOR_SEAL_ORDERED",
       "evidence.chainStatus": "FRAGILE",
@@ -230,13 +239,16 @@ export function settlePartOneAction(
   proposedState.pendingConsequences = proposedState.pendingConsequences.map((item) => dueIds.has(item.consequenceId) ? { ...item, status: "DUE" } : item);
 
   const opening = action.decisionId ? OPENING_PATCHES[action.decisionId] : null;
+  const settledAction = opening
+    ? { ...action, actionText: opening.canonicalActionText }
+    : action;
   const currentWorkingSet = buildPartOneRuntimeWorkingSet(pkg, currentState, Math.max(0, turnNumber - 1));
   const appliedAffordance = opening ? null : findAffordance(currentWorkingSet, action);
   const decisionKernelId = opening?.kernelId || appliedAffordance?.decisionKernelId || null;
   const affordanceTemplateId = appliedAffordance?.affordanceTemplateId || null;
   const statePatch = clone(opening?.patch || appliedAffordance?.statePatch || {});
   const targetRef = opening?.targetRef || appliedAffordance?.targetRef || action.targetRef || "public_frame";
-  const eventId = eventIdFor({ turnNumber, beforeState, action, decisionKernelId, affordanceTemplateId, statePatch });
+  const eventId = eventIdFor({ turnNumber, beforeState, action: settledAction, decisionKernelId, affordanceTemplateId, statePatch });
   const changedStatePaths = applyStatePatch(proposedState, statePatch, eventId);
 
   if (decisionKernelId) {
@@ -249,7 +261,7 @@ export function settlePartOneAction(
     const payoffBeats = Array.isArray(pendingRule.payload.payoffBeats)
       ? pendingRule.payload.payoffBeats
       : [];
-    const consequenceIndex = consequenceIndexFor(action, appliedAffordance, consequences.length);
+    const consequenceIndex = consequenceIndexFor(settledAction, appliedAffordance, consequences.length);
     const summary = consequences[consequenceIndex]
       || appliedAffordance?.visibleTradeoff
       || "这道命令引起的反制必须在下一回合兑现。";
@@ -281,7 +293,7 @@ export function settlePartOneAction(
   const sceneAfter = sectionTransitioned
     ? sceneForSection(sectionAfter)
     : clone(sceneBefore);
-  applySceneCustodyEffects(sceneAfter, action);
+  applySceneCustodyEffects(sceneAfter, settledAction);
   proposedState.scene = sceneAfter;
   if (sectionBefore !== sectionAfter) changedStatePaths.push("sectionId");
   if (!deepEqual(sceneBefore, sceneAfter)) changedStatePaths.push("scene");
@@ -292,15 +304,13 @@ export function settlePartOneAction(
   }
   updateArcStages(pkg, proposedState, sectionBefore, sectionAfter, sectionTransitioned);
 
-  const authoritativeObservableFacts = buildAuthoritativeObservableFacts(action, statePatch, proposedState);
-  const authoritativeNpcReactions = buildAuthoritativeNpcReactions(pkg, {
-    eventId,
-    sectionId: sectionBefore,
-    decisionKernelId,
-    targetRef,
-    statePatch
-  });
   const nextWorkingSet = buildPartOneRuntimeWorkingSet(pkg, proposedState, turnNumber);
+  const authoritativeObservableFacts = buildAuthoritativeObservableFacts(settledAction, statePatch, proposedState);
+  const authoritativeNpcReactions = buildAuthoritativeNpcReactions({
+    eventId,
+    sceneAfter,
+    nextWorkingSet
+  });
   const authoritativeWorldMoves = buildAuthoritativeWorldMoves({
     dueConsequences,
     nextWorkingSet,
@@ -320,7 +330,7 @@ export function settlePartOneAction(
     payableDueIds.has(item.consequenceId)
   );
   sceneAfter.situation = reconcileSceneSituationAfterSettlement({
-    action,
+    action: settledAction,
     sceneBefore,
     sceneAfter,
     sectionTransitioned,
@@ -331,7 +341,11 @@ export function settlePartOneAction(
   proposedState.scene = sceneAfter;
   if (!deepEqual(sceneBefore, sceneAfter)) changedStatePaths.push("scene");
   const narrativePlan = buildNarrativePlan({
-    action,
+    pkg,
+    action: settledAction,
+    decisionKernelId,
+    protectedNarrative: appliedAffordance?.protectedNarrative,
+    fallbackContinuation: appliedAffordance?.fallbackContinuation,
     // A transition turn still has to finish the section the player acted in.
     // The next section's broad purpose belongs to subsequent turns; exposing
     // it as this turn's objective invites the Narrator to reveal evidence that
@@ -342,7 +356,8 @@ export function settlePartOneAction(
     sectionTransitioned,
     authoritativeObservableFacts,
     authoritativeNpcReactions,
-    authoritativeWorldMoves
+    authoritativeWorldMoves,
+    nextDecisionPoint: nextWorkingSet.decisionPoint
   });
 
   const event: PartOneCommittedEvent = {
@@ -351,10 +366,10 @@ export function settlePartOneAction(
     turnNumber,
     sectionIdBefore: sectionBefore,
     sectionIdAfter: sectionAfter,
-    actionSource: action.source,
+    actionSource: settledAction.source,
     decisionKernelId,
     affordanceTemplateId,
-    actionText: action.actionText,
+    actionText: settledAction.actionText,
     targetRef,
     statePatch,
     changedStatePaths: unique(changedStatePaths),
@@ -365,6 +380,7 @@ export function settlePartOneAction(
     sceneBefore,
     sceneAfter,
     authoritativeWorldMoves,
+    nextDecisionPoint: clone(nextWorkingSet.decisionPoint),
     narrativePlan,
     sectionTransitioned
   };
@@ -442,7 +458,14 @@ export function buildPartOneTurnProgressReport(
   if ([...changedPaths].some((path) => /^(review\.authority|evidence\.primaryCustodianRef|witness\.accessStatus)/.test(path))) mainlineContributions.push("CONTEST_EVIDENCE");
   if (input.paidPendingConsequenceIds.length) mainlineContributions.push("PAY_CONSEQUENCE");
   if (causalArcTransitions.length) mainlineContributions.push("TRANSFORM_ARC");
-  const objectiveEvidenceCount = advancedDecisionKernelIds.length + sectionExitGateDelta.length + causalArcTransitions.length + input.paidPendingConsequenceIds.length;
+  const surfacedContinuationPressureCount = event.authoritativeWorldMoves.filter(
+    (move) => move.sourceType === "NEXT_DECISION_PRESSURE"
+  ).length;
+  const objectiveEvidenceCount = advancedDecisionKernelIds.length
+    + sectionExitGateDelta.length
+    + causalArcTransitions.length
+    + input.paidPendingConsequenceIds.length
+    + surfacedContinuationPressureCount;
   const hardValidationStatus = event.decisionKernelId && materialChanges.length && objectiveEvidenceCount ? "PASS" : "FAIL";
   const strength = hardValidationStatus === "FAIL"
     ? "FAIL"
@@ -483,12 +506,19 @@ export function buildPartOneRuntimeWorkingSet(
       ? { kernelId: unresolved, openDecisionKernel: requireAsset(pkg, unresolved), continuationDecisionId: null, floorObligationId: null, nextDecisionPressure: null }
       : continuationDecisionForState(pkg, section, state);
   const { kernelId, openDecisionKernel, continuationDecisionId, floorObligationId, nextDecisionPressure } = selection;
+  const decisionPoint = decisionPointForSelection({
+    kernelId,
+    openDecisionKernel,
+    continuationDecisionId,
+    nextDecisionPressure
+  });
   const options = Array.isArray(openDecisionKernel.payload.options) ? openDecisionKernel.payload.options : [];
   const requiredOptionCount = unresolved ? 3 : 2;
   if (options.length < requiredOptionCount) throw new Error(`PART_ONE_RUNTIME_KERNEL_OPTIONS_MISSING:${kernelId}`);
   const authoredAffordances = options.map((option) => adaptAffordanceForCurrentState({
     ...option,
     decisionKernelId: kernelId,
+    decisionPointId: decisionPoint.decisionPointId,
     target: runtimeTargetFor(option.targetRef)
   }, state));
   // The authoring asset keeps three independently reviewable affordances so
@@ -509,6 +539,7 @@ export function buildPartOneRuntimeWorkingSet(
     asset.assetType === "CAUSAL_ARC" ||
     asset.assetType === "SECTION_FLOOR_OBLIGATION" ||
     asset.assetType === "NARRATIVE_SCENE_PATTERN" ||
+    asset.assetType === "SOURCE_SCENE_EVIDENCE" ||
     (relatesToKernel(asset) && ["ACTOR_POLICY", "INSTITUTION_CAPABILITY", "CAUSAL_RULE", "CUSTODY_RULE", "KNOWLEDGE_RULE", "RESOURCE_CONSTRAINT", "PENDING_CONSEQUENCE_RULE"].includes(asset.assetType))
   );
   const narrativeScenePatterns = selectNarrativeScenePatterns(pkg.assets, {
@@ -532,6 +563,7 @@ export function buildPartOneRuntimeWorkingSet(
     turnNumber,
     stateProjection: Object.fromEntries(statePaths.map((path) => [path, getPath(state, path)])),
     openDecisionKernel,
+    decisionPoint,
     decisionAffordances,
     activeCausalArcs: selected.filter((asset) => asset.assetType === "CAUSAL_ARC"),
     actorPolicies: selected.filter((asset) => asset.assetType === "ACTOR_POLICY"),
@@ -595,6 +627,53 @@ function continuationDecisionForState(
     continuationDecisionId: decision.continuationDecisionId,
     floorObligationId,
     nextDecisionPressure: clone(decision.worldPressure)
+  };
+}
+
+function decisionPointForSelection(input: {
+  kernelId: string;
+  openDecisionKernel: PartOneRuntimeAsset;
+  continuationDecisionId: string | null;
+  nextDecisionPressure: PartOneContinuationDecisionTemplate["worldPressure"] | null;
+}): PartOneDecisionPoint {
+  if (input.kernelId === "PART-02-HANDOFF-PREVIEW") {
+    return {
+      decisionPointId: input.kernelId,
+      decisionKernelId: input.kernelId,
+      sourceAssetId: input.kernelId,
+      actorRefs: [],
+      prompt: "第一部分已经完成；玩家下一步只需选择第二部分先查粮路还是先查卖田。",
+      resultCeiling: "只呈现第二部分的两个调查入口，不得提前结算第二部分剧情。"
+    };
+  }
+  if (input.continuationDecisionId && input.nextDecisionPressure) {
+    return {
+      decisionPointId: input.continuationDecisionId,
+      decisionKernelId: input.kernelId,
+      sourceAssetId: input.nextDecisionPressure.sourceFloorAssetId,
+      actorRefs: [...(PRESSURE_WORLD_MOVE_ACTORS[input.nextDecisionPressure.pressureId] || [])],
+      prompt: input.nextDecisionPressure.summary,
+      resultCeiling: "只把这项新压力带到玩家面前；不得替玩家答复，也不得提前写出两条可选行动的结果。"
+    };
+  }
+  const raw = input.openDecisionKernel.payload.decisionPrompt;
+  if (!isRecord(raw)) {
+    throw new Error(`PART_ONE_RUNTIME_DECISION_PROMPT_MISSING:${input.kernelId}`);
+  }
+  const decisionPointId = String(raw.decisionPointId || "");
+  const actorRefs = asStringArray(raw.actorRefs);
+  const prompt = String(raw.prompt || "").trim();
+  const resultCeiling = String(raw.resultCeiling || "").trim();
+  if (decisionPointId !== input.kernelId || !actorRefs.length || !prompt || !resultCeiling) {
+    throw new Error(`PART_ONE_RUNTIME_DECISION_PROMPT_INVALID:${input.kernelId}`);
+  }
+  return {
+    decisionPointId,
+    decisionKernelId: input.kernelId,
+    sourceAssetId: input.openDecisionKernel.assetId,
+    actorRefs,
+    prompt,
+    resultCeiling
   };
 }
 
@@ -682,7 +761,9 @@ function adaptAffordanceForCurrentState(
       statePatch: {
         "reform.executionMode": "TEMPORARILY_PAUSED",
         "responsibility.governorExposure": { $delta: 1 }
-      }
+      },
+      protectedNarrative: "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
+      fallbackContinuation: "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\""
     };
   }
 
@@ -695,10 +776,15 @@ function adaptAffordanceForCurrentState(
     const actionText = existingExecutionReply
       ? "请巡抚在刚刚写成的改桑放行回文上共同具名，与总督共同承担清流试办和复核责任。"
       : `把${executionBoundaryLabel(state)}、复核办法与督抚各自责任写进正式回文，请巡抚共同具名。`;
+    const protectedNarrative = existingExecutionReply
+      ? "总督把刚写成的改桑放行回文重新推到巡抚书吏面前，请巡抚在同一份回文上共同具名，与总督共同承担清流试办和复核责任。"
+      : "总督把暂缓签发的缘由、清流县复核办法和督抚各自应负的责任逐项写入回文。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。";
     return {
       ...affordance,
       actionText,
-      immediateIntent: actionText
+      immediateIntent: actionText,
+      protectedNarrative,
+      fallbackContinuation: "巡抚书吏双手接过回文，低头看了一眼封口，没有当场应承。次日巳时，签押房里仍不见清流县册的原件和抄件，巡抚幕僚却先带回了答复：巡抚不肯在这份回文上共同具名。\n\n清流县令听完没有争辩。巡抚幕僚把话转到即将开始的复核上，问这场复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。两个人都望向总督，等他先定主持权。"
     };
   }
 
@@ -853,6 +939,7 @@ function buildAuthoritativeWorldMoves(input: {
     }
   );
   const moves: PartOneAuthoritativeWorldMove[] = [];
+  let settledResponse: PartOneAuthoritativeWorldMove | null = null;
   if (input.sectionTransitioned) {
     const presentActorLabels = input.sceneAfter.presentActorRefs
       .map((ref) => runtimeTargetFor(ref).label);
@@ -881,30 +968,26 @@ function buildAuthoritativeWorldMoves(input: {
       input.statePatch["responsibility.firstRecordStatus"] === "JOINT_SIGNATURE_REQUESTED"
       && presentActors.has("actor.xunfu_aide")
     ) {
-      moves.push({
+      settledResponse = {
         beatId: "SETTLED-RESPONSE-P1-JOINT-SIGNATURE",
         sourceType: "SETTLED_RESPONSE",
         sourceId: "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
         actorRefs: ["actor.xunfu_aide"],
-        action: "巡抚幕僚在次日签押房正式答复：巡抚拒绝在昨日的改桑放行回文上共同具名；共同具名的请求至此有了明确回应。",
+        action: "次日签押房里，巡抚幕僚正式答复：巡抚拒绝在总督昨日送来的正式回文上共同具名；共同具名的请求至此有了明确回应。",
         requiredTermGroups: [
           ["巡抚幕僚", "幕僚"],
           ["拒绝共同具名", "不肯共同具名", "拒绝联署", "不肯联署", "不愿具名", "不具名"],
-          ["改桑放行回文", "放行回文", "回文"]
+          ["正式回文", "回文"]
         ],
-        resultCeiling: "只答复巡抚拒绝在既有改桑放行回文上共同具名；不得改写回文、另造拒签文书，或让巡抚本人到场。"
-      });
+        resultCeiling: "只答复巡抚拒绝在总督送来的正式回文上共同具名；不得改写回文、另造拒签文书，或让巡抚本人到场。"
+      };
     }
   }
-  // Consequences whose actor only exists in the destination scene must follow
-  // the section transition. Rendering them first would teleport the actor into
-  // the old room and force the Narrator to invent a bridge. When there is no
-  // transition, the same due moves naturally remain in the current scene.
-  moves.push(...dueMoves);
   const pressure = input.nextWorkingSet.nextDecisionPressure;
   const pressureActors = pressure
     ? [...(PRESSURE_WORLD_MOVE_ACTORS[pressure.pressureId] || [])]
     : [];
+  let nextDecisionMove: PartOneAuthoritativeWorldMove | null = null;
   if (
     pressure
     // A section transition already establishes the next playable question in
@@ -918,7 +1001,7 @@ function buildAuthoritativeWorldMoves(input: {
       || pressureActors.some((actorRef) => presentActors.has(actorRef))
     )
   ) {
-    moves.push({
+    nextDecisionMove = {
       beatId: pressure.pressureId,
       sourceType: "NEXT_DECISION_PRESSURE",
       sourceId: pressure.sourceFloorAssetId,
@@ -926,13 +1009,27 @@ function buildAuthoritativeWorldMoves(input: {
       action: pressure.summary,
       requiredTermGroups: requiredTermGroupsFor(pressure.summary),
       resultCeiling: "只把这项新压力带到玩家面前；不得替玩家答复，也不得提前写出两条可选行动的结果。"
-    });
+    };
   }
+  // A turn may surface exactly one NPC/world pressure. A transition is only
+  // staging; after it, prefer the directly settled response, otherwise one due
+  // consequence. In a stable scene, pay one due consequence before introducing
+  // a fresh pressure. Everything else remains DUE for a later turn.
+  // A continuation decision's own pressure must be visible in the same beat as
+  // its options; otherwise the Narrator would have to invent a bridge from an
+  // unrelated due consequence to the actual stop condition. Older due
+  // consequences remain auditable and can surface on a later compatible turn.
+  const presentPressure = settledResponse || nextDecisionMove || dueMoves[0];
+  if (presentPressure) moves.push(presentPressure);
   return moves;
 }
 
 function buildNarrativePlan(input: {
+  pkg: PartOneRuntimePackage;
   action: PartOneIncomingAction;
+  decisionKernelId: string | null;
+  protectedNarrative?: string;
+  fallbackContinuation?: string;
   section: PartOneSectionContract;
   sceneBefore: PartOneSceneState;
   sceneAfter: PartOneSceneState;
@@ -940,6 +1037,7 @@ function buildNarrativePlan(input: {
   authoritativeObservableFacts: string[];
   authoritativeNpcReactions: PartOneCommittedEvent["authoritativeNpcReactions"];
   authoritativeWorldMoves: PartOneAuthoritativeWorldMove[];
+  nextDecisionPoint: PartOneDecisionPoint;
 }): PartOneNarrativePlan {
   const actorRefsAtSceneStart = new Set(input.sceneBefore.presentActorRefs);
   const actorRefsAtSceneEnd = new Set(input.sceneAfter.presentActorRefs);
@@ -1019,6 +1117,25 @@ function buildNarrativePlan(input: {
     input.sceneBefore,
     input.sceneAfter
   );
+  const settledActionNarrative =
+    String(input.protectedNarrative || "").trim();
+  const nextStoryBeat = buildNextStoryBeat({
+    pkg: input.pkg,
+    decisionKernelId: input.decisionKernelId,
+    actionText: input.action.actionText,
+    settledActionNarrative,
+    fallbackContinuation: input.fallbackContinuation,
+    sceneAfter: input.sceneAfter,
+    sectionTransitioned: input.sectionTransitioned,
+    authoritativeObservableFacts: input.authoritativeObservableFacts,
+    authoritativeNpcReactions: input.authoritativeNpcReactions,
+    authoritativeWorldMoves: input.authoritativeWorldMoves,
+    nextDecisionPoint: input.nextDecisionPoint,
+    unresolvedFacts: [
+      "密信和异常只能证明需要复核，不能直接证明巡抚、商会或任何个人有罪。",
+      ...input.section.forbiddenEarlyReveals
+    ]
+  });
   return {
     sceneStart: clone(input.sceneBefore),
     sceneEnd: clone(input.sceneAfter),
@@ -1032,7 +1149,8 @@ function buildNarrativePlan(input: {
     actionAlreadyOccurred: input.action.actionText,
     playerSpeechMode: resolvePlayerSpeechMode(input.action.actionText),
     authorizedPlayerSpeech: extractExplicitPlayerQuotes(input.action.actionText),
-    settledActionNarrative: settledActionNarrativeFor(input.action.actionText),
+    settledActionNarrative,
+    nextStoryBeat,
     confirmedEffects: [...input.authoritativeObservableFacts],
     unresolvedFacts: [
       "密信和异常只能证明需要复核，不能直接证明巡抚、商会或任何个人有罪。",
@@ -1078,29 +1196,117 @@ function buildNarrativePlan(input: {
   };
 }
 
-function settledActionNarrativeFor(action: string) {
-  if (
-    /(?:改桑)?放行回文/.test(action)
-    && /清流县先办一批/.test(action)
-    && /不得趁急难压价买田/.test(action)
-  ) {
-    return [
-      "总督从案头抽过一张公文纸，提笔写成改桑放行回文。正文只写两项：清流县先办一批；不得趁急难压价买田。",
-      "墨迹稍干，他没有落印，也没有签押，只把回文折起递向屏风外：\"收进匣里。\"巡抚书吏双手接过，收进原先捧着的回文匣，合上匣盖。巡抚那封催办公文仍压在总督案前。"
-    ].join("\n\n");
+function buildNextStoryBeat(input: {
+  pkg: PartOneRuntimePackage;
+  decisionKernelId: string | null;
+  actionText: string;
+  settledActionNarrative?: string;
+  fallbackContinuation?: string;
+  sceneAfter: PartOneSceneState;
+  sectionTransitioned: boolean;
+  authoritativeObservableFacts: string[];
+  authoritativeNpcReactions: PartOneCommittedEvent["authoritativeNpcReactions"];
+  authoritativeWorldMoves: PartOneAuthoritativeWorldMove[];
+  nextDecisionPoint: PartOneDecisionPoint;
+  unresolvedFacts: string[];
+}): PartOneNarrativePlan["nextStoryBeat"] {
+  if (!input.decisionKernelId) {
+    throw new Error("PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING");
   }
-  if (
-    /督抚责任说明|责任说明/.test(action)
-    && /巡抚要求派员参与复核/.test(action)
-    && /总督尚未同意/.test(action)
-    && /各自担责|各担其责/.test(action)
-  ) {
-    return [
-      "总督另取一张公文纸，提笔写下督抚责任说明。正文只写三项：巡抚要求派员参与复核；总督尚未同意；巡抚若有异议须另行成文，督抚各担其责。",
-      "写完，他没有落印，也没有签押，只将纸留在案前，并未交给巡抚书吏。纸面朝内，书吏隔着屏风只听见落笔声，看不见正文。"
-    ].join("\n\n");
+  const kernel = requireAsset(input.pkg, input.decisionKernelId);
+  const kernelClaimIds = new Set(kernel.sourceClaimIds);
+  const sourceScenes = input.pkg.assets.filter((asset) =>
+    asset.assetType === "SOURCE_SCENE_EVIDENCE"
+    && asset.sourceClaimIds.some((claimId) => kernelClaimIds.has(claimId))
+  );
+  const sourceEvidenceItems = sourceScenes.flatMap((asset) => {
+    const mechanisms = Array.isArray(asset.payload.mechanisms)
+      ? asset.payload.mechanisms
+      : [];
+    return mechanisms.flatMap((raw) => {
+      if (!isRecord(raw)) return [];
+      const claimIds = asStringArray(raw.claimIds)
+        .filter((claimId) => kernelClaimIds.has(claimId));
+      if (!claimIds.length) return [];
+      const statement = String(raw.statement || "").trim();
+      const evidenceId = String(raw.evidenceId || "").trim();
+      if (!statement || !evidenceId) return [];
+      return [{
+        evidenceId,
+        evidenceClass: "ORIGINAL_MECHANISM" as const,
+        statement,
+        sourceClaimIds: claimIds,
+        adaptationDecisionIds: [],
+        useAs: "DRAMATIC_MECHANISM" as const
+      }];
+    });
+  });
+  const adaptationEvidenceItems = kernel.adaptationDecisionIds.flatMap((adaptationDecisionId) => {
+    const adaptation = input.pkg.approvedAdaptations.find((item) =>
+      item.adaptationDecisionId === adaptationDecisionId
+    );
+    if (!adaptation) return [];
+    const statement = [
+      ...asStringArray(adaptation.invariantsToPreserve),
+      ...asStringArray(adaptation.intentionalDifferences)
+    ].join("；");
+    if (!statement) return [];
+    return [{
+      evidenceId: adaptationDecisionId,
+      evidenceClass: "APPROVED_ADAPTATION" as const,
+      statement,
+      sourceClaimIds: [],
+      adaptationDecisionIds: [adaptationDecisionId],
+      useAs: "DRAMATIC_MECHANISM" as const
+    }];
+  });
+  if (!sourceEvidenceItems.length && !adaptationEvidenceItems.length) {
+    throw new Error(`PART_ONE_NEXT_STORY_BEAT_EVIDENCE_MISSING:${input.decisionKernelId}`);
   }
-  return undefined;
+
+  const presentPressure = input.authoritativeWorldMoves.find((move) =>
+    move.sourceType !== "SECTION_TRANSITION"
+  );
+  const fallbackPressure = input.authoritativeNpcReactions[0]?.action
+    || input.nextDecisionPoint.prompt;
+  const pressureAction = presentPressure?.action || fallbackPressure;
+  const npcOrWorldPressure = input.sectionTransitioned
+    ? `场景确定转到${input.sceneAfter.timeLabel}的${input.sceneAfter.locationLabel}。${pressureAction}`
+    : pressureAction;
+  const currentFacts = unique([
+    `玩家已经执行：${input.actionText}`,
+    ...input.authoritativeObservableFacts
+  ]);
+  const evidenceItems = [
+    ...currentFacts.map((statement, index) => ({
+      evidenceId: `CURRENT-${input.decisionKernelId}-${index + 1}`,
+      evidenceClass: (index === 0 ? "CURRENT_CANON" : "CURRENT_STATE") as "CURRENT_CANON" | "CURRENT_STATE",
+      statement,
+      sourceClaimIds: [],
+      adaptationDecisionIds: [],
+      useAs: "OBJECTIVE_FACT" as const
+    })),
+    ...sourceEvidenceItems,
+    ...adaptationEvidenceItems
+  ];
+  return {
+    beatId: `BEAT-${digest([
+      input.decisionKernelId,
+      input.actionText,
+      npcOrWorldPressure,
+      input.nextDecisionPoint.decisionPointId
+    ].join("|" )).slice(0, 18)}`,
+    playerOutcome: String(input.settledActionNarrative || input.actionText).trim(),
+    npcOrWorldPressure,
+    stopCondition: input.nextDecisionPoint.prompt,
+    evidencePacket: {
+      packetId: `SEP-${digest(evidenceItems.map((item) => item.evidenceId).join("|" )).slice(0, 18)}`,
+      evidenceItems,
+      unresolvedFacts: unique(input.unresolvedFacts),
+      specificityBoundary: "原著材料只授权所列冲突机制；当前事实只能来自已提交 Canon 与服务器状态。不得自行增加人数、涨幅、地点、期限、文书、证据、命令、承诺或幕后关系。"
+    },
+    fallbackContinuation: String(input.fallbackContinuation || "").trim()
+  };
 }
 
 function sceneDocumentBoundary(scene: PartOneSceneState) {
@@ -1706,98 +1912,32 @@ function buildAuthoritativeObservableFacts(
   return unique(facts);
 }
 
-function buildAuthoritativeNpcReactions(
-  pkg: PartOneRuntimePackage,
-  input: {
-    eventId: string;
-    sectionId: string;
-    decisionKernelId: string | null;
-    targetRef: string;
-    statePatch: Record<string, unknown>;
+function buildAuthoritativeNpcReactions(input: {
+  eventId: string;
+  sceneAfter: PartOneSceneState;
+  nextWorkingSet: PartOneRuntimeWorkingSet;
+}): PartOneCommittedEvent["authoritativeNpcReactions"] {
+  // Continuation pressures are already emitted as authoritative world moves.
+  // Emitting the same pressure as an NPC reaction would duplicate the scene
+  // stop. A terminal handoff is player navigation, not an NPC action.
+  if (
+    input.nextWorkingSet.nextDecisionPressure
+    || input.nextWorkingSet.decisionPoint.decisionPointId === "PART-02-HANDOFF-PREVIEW"
+  ) {
+    return [];
   }
-) {
-  if (!input.decisionKernelId) return [];
-  const transfer = isRecord(input.statePatch.knowledgeTransfer) ? input.statePatch.knowledgeTransfer : null;
-  const informedRefs = new Set([input.targetRef, String(transfer?.recipientRef || "")]);
-  const policies = pkg.assets.filter((asset) =>
-    asset.assetType === "ACTOR_POLICY" &&
-    asset.sectionIds.includes(input.sectionId) &&
-    asset.decisionKernelIds.includes(input.decisionKernelId!) &&
-    (asset.actorRefs.some((ref) => informedRefs.has(ref)) ||
-      (asset.assetId.includes("XUNFU") && informedRefs.has("actor.zhejiang_xunfu")))
-  );
-  return policies.slice(0, 1).flatMap((policy) => {
-    const likelyCountermoves = asStringArray(policy.payload.likelyCountermoves);
-    const conditionalReactions = asStringArray(policy.payload.conditionalReactions);
-    const allowedMoves = asStringArray(policy.payload.allowedMoves);
-    const moves = input.decisionKernelId === "DK-P1-REVIEW-INITIATION"
-      ? [
-          ...allowedMoves.filter((move) => move.includes("参与复核") || move.includes("书面回复")),
-          ...allowedMoves,
-          ...likelyCountermoves,
-          ...conditionalReactions
-        ]
-      : [...likelyCountermoves, ...conditionalReactions, ...allowedMoves];
-    if (!moves.length) return [];
-    // These three kernels can occur in immediate succession while the same
-    // clerk is still in the room. Bind each one to the policy move that
-    // answers the newly settled player action; a hash selector can otherwise
-    // repeat the same demand on consecutive turns and make the scene appear
-    // to have forgotten what was just said.
-    const responsibilityRecordStatus = String(
-      input.statePatch["responsibility.firstRecordStatus"] || ""
-    );
-    const preferredMove = input.decisionKernelId === "DK-P1-REVIEW-INITIATION"
-      ? allowedMoves.find((move) => move.includes("书面回复"))
-      : input.decisionKernelId === "DK-P1-EXECUTION-SCOPE"
-        ? allowedMoves.find((move) => move.includes("参与复核"))
-        : input.decisionKernelId === "DK-P1-RESPONSIBILITY-RECORD"
-          ? responsibilityRecordStatus === "DISAGREEMENT_RECORDED"
-            ? allowedMoves.find((move) => move.includes("另行递交"))
-            : allowedMoves.find((move) => move.includes("联署"))
-          : null;
-    const selector = Number.parseInt(
-      digest(`${input.eventId}:${policy.assetId}`).slice(0, 8),
-      16
-    ) % moves.length;
-    const selectedMove = (preferredMove || moves[selector])
-      .replace("依据改编后的巡抚权限", "通过巡抚衙门正式催办");
-    const renderedMove = (
-      input.decisionKernelId === "DK-P1-RESPONSIBILITY-RECORD"
-      && responsibilityRecordStatus === "JOINT_SIGNATURE_REQUESTED"
-    )
-      ? "由巡抚书吏当场说明：共同具名须由巡抚本人决定，他无权代为答应，只能把总督的联署请求原样带回"
-      : (
-      input.decisionKernelId === "DK-P1-RESPONSIBILITY-RECORD"
-      && responsibilityRecordStatus === "DISAGREEMENT_RECORDED"
-      && selectedMove.includes("另行递交")
-    )
-      ? "由巡抚书吏当面说明：他只能记下总督另具责任说明这件事，无权代表巡抚认可其中主张；巡抚若有异议，只能另行成文回应"
-      : selectedMove.includes("催办") && selectedMove.includes("书面回复")
-      ? "正式催办总督，催问为何暂缓签发，并要求在三日期限内书面回复，写明复核的范围与方式"
-      : input.decisionKernelId === "DK-P1-EXECUTION-SCOPE"
-        && selectedMove.includes("参与复核")
-        ? "要求派员到场参与复核，并在复核发生后把到场查验经过据实记入复核记录"
-        : selectedMove;
-    const representativeRef = String(transfer?.representativeRef || "");
-    const deliveryMode = String(transfer?.deliveryMode || "");
-    const xunfuReaction = policy.actorRefs.includes("actor.zhejiang_xunfu")
-      ? renderedMove.startsWith("由巡抚书吏")
-        ? renderedMove
-        : representativeRef === "actor.xunfu_clerk" && deliveryMode === "IN_PERSON_REPRESENTATIVE"
-        ? `巡抚书吏按来府前所受交代当场追问：${renderedMove}`
-        : `浙江巡抚通过巡抚书吏传话：${renderedMove}`
-      : renderedMove;
-    return [{
-      reactionEventId: `NPC-${digest(`${input.eventId}:${policy.assetId}:${xunfuReaction}`).slice(0, 18)}`,
-      actorRefs: unique([
-        ...policy.actorRefs,
-        ...(policy.actorRefs.includes("actor.zhejiang_xunfu") ? ["actor.xunfu_clerk"] : [])
-      ]),
-      action: xunfuReaction,
-      policyAssetId: policy.assetId
-    }];
-  });
+  const point = input.nextWorkingSet.decisionPoint;
+  const presentActors = new Set(input.sceneAfter.presentActorRefs);
+  const actorRefs = point.actorRefs.filter((actorRef) => presentActors.has(actorRef));
+  if (!actorRefs.length) {
+    throw new Error(`PART_ONE_RUNTIME_DECISION_PROMPT_ACTOR_NOT_PRESENT:${point.decisionPointId}`);
+  }
+  return [{
+    reactionEventId: `NEXT-${digest(`${input.eventId}:${point.decisionPointId}`).slice(0, 18)}`,
+    actorRefs,
+    action: point.prompt,
+    policyAssetId: point.sourceAssetId
+  }];
 }
 
 function findAffordance(workingSet: PartOneRuntimeWorkingSet, action: PartOneIncomingAction): PartOneRuntimeAffordance | null {

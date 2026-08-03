@@ -68,6 +68,14 @@
     "pendingConsequences"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-RESPONSIBILITY-RECORD",
+      "actorRefs": [
+        "actor.xunfu_clerk"
+      ],
+      "prompt": "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "存在待签或待修改的正式文书",
       "至少两方对文书内容或署名有不同利益",
@@ -100,6 +108,8 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督把暂缓签发的缘由、清流县复核办法和督抚各自应负的责任逐项写入回文。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+        "fallbackContinuation": "巡抚书吏双手接过回文，低头看了一眼封口，没有当场应承。次日巳时，签押房里仍不见清流县册的原件和抄件，巡抚幕僚却先带回了答复：巡抚不肯在这份回文上共同具名。\n\n清流县令听完没有争辩。巡抚幕僚把话转到即将开始的复核上，问这场复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。两个人都望向总督，等他先定主持权。",
         "createsPendingConsequence": true
       },
       {
@@ -120,6 +130,8 @@
             "$delta": 2
           }
         },
+        "protectedNarrative": "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
+        "fallbackContinuation": "巡抚书吏看见总督独自具名，又看见附后的催办公文，脸色微微一变，仍将文书收好。次日巳时，巡抚幕僚来到签押房，先问的不是改桑进度，而是清流县册的复核究竟由谁主持。清流县令在一旁候着，也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
         "createsPendingConsequence": true
       },
       {
@@ -144,6 +156,8 @@
           "reform.executionMode": "PROVISIONAL_RELEASE",
           "reform.progress": "STARTED"
         },
+        "protectedNarrative": "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
+        "fallbackContinuation": "巡抚书吏接过那份逐项记明异议的回文，沉默片刻才告退。次日巳时，巡抚幕僚在签押房当面说明，巡抚不改自己的催办立场；清流县令则问县衙在复核中究竟是经办、见证，还是只交材料。两边都不肯先退，总督必须先定复核由谁主持。",
         "createsPendingConsequence": true
       }
     ],

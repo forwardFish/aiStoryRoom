@@ -63,6 +63,15 @@
     "evidence.archiveSealStatus"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-EVIDENCE-CUSTODY",
+      "actorRefs": [
+        "actor.qingliu_magistrate",
+        "actor.xunfu_aide"
+      ],
+      "prompt": "清流县令与巡抚幕僚把争执落到同一件事上：可疑县册的原件和抄件由谁保管，开册时由谁见证。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "县册、田契、抄件或封条已经以事件进入房间",
       "行动者具有接触、封存或抄录的合法路径"
@@ -89,6 +98,7 @@
           "evidence.archiveSealStatus": "SEALED_WITH_THREE_SAMPLES",
           "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
         },
+        "protectedNarrative": "总督定下原件仍留清流县档房，换上新封条；总督、县令、巡抚三方各留一份封样。",
         "createsPendingConsequence": true
       },
       {
@@ -114,6 +124,7 @@
             "status": "DELIVERED"
           }
         },
+        "protectedNarrative": "总督命两名见证人在场抄出样册，并逐页记明抄录人和抄录时辰。",
         "createsPendingConsequence": true
       },
       {
@@ -136,6 +147,7 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督命人将可疑册页整封送往总督府，县衙只留下交接清单。",
         "createsPendingConsequence": true
       }
     ],

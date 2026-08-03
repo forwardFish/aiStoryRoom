@@ -19,9 +19,17 @@ const reviewSet = await readJson(resolve(authoringRoot, "reviews/track-b-and-ada
 const adaptationSet = await readJson(resolve(authoringRoot, "adaptation/approved/part-01-v3.adaptation-decisions.json"));
 const styleProfile = await readJson(resolve(authoringRoot, "narrative/style-profile.approved.json"));
 const narrativeScenePatternSet = await readJson(resolve(authoringRoot, "narrative/scene-patterns.section-01.approved.json"));
+const sourceSceneEvidenceSet = await readJson(resolve(
+  authoringRoot,
+  "source-evidence/section-one-scenes.approved.json",
+));
 const requirementSet = await readJson(resolve(authoringRoot, "requirements/part-01.requirements.json"));
 const worldStart = await readJson(resolve(authoringRoot, "world-start.json"));
 const coreStateSchema = await readJson(resolve(authoringRoot, "core-state.schema.json"));
+const approvedEvidenceProfile = await readJson(resolve(
+  authoringRoot,
+  "evidence/part-one-qingliu-register-anomaly.approved.json",
+));
 
 if (reviewSet.verdict !== "PASS" || reviewSet.reviewCount !== 19 || reviewSet.providerCallCount !== 19) {
   throw new Error("T3 compilation blocked: Track B/Adaptation review set is not a complete PASS");
@@ -42,6 +50,31 @@ if (narrativeScenePatternSet.worldId !== "sangtian" || narrativeScenePatternSet.
 }
 if (narrativeScenePatternSet.patterns.length !== 3 || narrativeScenePatternSet.patterns.some((item) => item.reviewStatus !== "APPROVED")) {
   throw new Error("T3 compilation blocked: the three Section One NarrativeScenePatterns must be approved");
+}
+if (
+  sourceSceneEvidenceSet.schemaVersion !== "sangtian-scene-evidence-packet-source-v1"
+  || sourceSceneEvidenceSet.worldId !== "sangtian"
+  || sourceSceneEvidenceSet.reviewStatus !== "APPROVED"
+  || sourceSceneEvidenceSet.verbatimPolicy !== "MECHANISM_ONLY_NO_VERBATIM_REUSE"
+  || !Array.isArray(sourceSceneEvidenceSet.scenes)
+  || sourceSceneEvidenceSet.scenes.length !== 10
+) {
+  throw new Error("T3 compilation blocked: the approved source scene evidence set is missing or invalid");
+}
+for (const scene of sourceSceneEvidenceSet.scenes) {
+  if (
+    !scene.sceneId
+    || !scene.title
+    || !scene.sourceRange?.chapterId
+    || !scene.sourceRange?.paragraphStartId
+    || !scene.sourceRange?.paragraphEndId
+    || !scene.sourceRange?.textSpanSha256
+    || !Array.isArray(scene.mechanisms)
+    || !scene.mechanisms.length
+    || scene.mechanisms.some((item) => !item.evidenceId || !item.statement || !item.claimIds?.length)
+  ) {
+    throw new Error(`T3 compilation blocked: invalid source scene evidence ${scene.sceneId || "UNKNOWN"}`);
+  }
 }
 
 const approvedMechanisms = [];
@@ -132,6 +165,166 @@ const kernelOptions = {
     ["双路互证", "正本走正式渠道，摘要另走密奏；两份互列封号，不让内容悄然替换。", "resource.official_document_channel", "双路校验", "较难截断，却会放大政治敏感和泄露面", ["report.dispatchStatus", "report.firstNarrativeController", "evidence.chainStatus"]],
   ],
 };
+
+// A decision kernel owns the question that brings its options on stage. The
+// runtime carries this stable decision point from the canonical scene ending
+// into every published option, so prose and choices cannot drift onto two
+// different questions. These are story assets, not keyword-matching rules.
+const kernelDecisionPrompts = {
+  "DK-P1-EXECUTION-SCOPE": {
+    actorRefs: ["actor.xunfu_clerk"],
+    prompt: "巡抚书吏仍候在厅中，要总督当面定下这道改桑急令究竟按什么边界执行。",
+  },
+  "DK-P1-REVIEW-INITIATION": {
+    actorRefs: ["actor.qingliu_messenger", "actor.xunfu_clerk"],
+    prompt: "清流县令亲随与巡抚书吏都在等一句明话：县册疑点由谁先启动查验，第一道命令如何传下去。",
+  },
+  "DK-P1-RESPONSIBILITY-RECORD": {
+    actorRefs: ["actor.xunfu_clerk"],
+    prompt: "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
+  },
+  "DK-P1-EVIDENCE-CUSTODY": {
+    actorRefs: ["actor.qingliu_magistrate", "actor.xunfu_aide"],
+    prompt: "清流县令与巡抚幕僚把争执落到同一件事上：可疑县册的原件和抄件由谁保管，开册时由谁见证。",
+  },
+  "DK-P1-WITNESS-ACCESS": {
+    actorRefs: ["actor.reform_clerk", "actor.xunfu_aide"],
+    prompt: "改桑书吏已经成为各方都想接触的经手人；眼下必须定下谁能问他、在哪里问、谁在场见证。",
+  },
+  "DK-P1-REVIEW-AUTHORITY": {
+    actorRefs: ["actor.xunfu_aide", "actor.qingliu_magistrate"],
+    prompt: "巡抚幕僚要求先说清复核由谁主持；县令也等着知道自己是经办、见证，还是只能交出材料。",
+  },
+  "DK-P1-DISCLOSURE-SCOPE": {
+    actorRefs: ["actor.xunfu_aide"],
+    prompt: "巡抚幕僚索要县册异常和书吏说法的范围；总督必须决定哪些可以共享，哪些仍要封住。",
+  },
+  "DK-P1-GRAIN-SOURCE": {
+    actorRefs: ["actor.qingliu_magistrate", "actor.jiangnan_merchant_head"],
+    prompt: "县令报官仓难支，商会会首却说粮船可以立刻开来；厅上等总督决定第一批救粮从哪里来。",
+  },
+  "DK-P1-RELIEF-PRIORITY": {
+    actorRefs: ["actor.qingliu_magistrate"],
+    prompt: "粮数有限，县令请总督定下第一批粮先给谁；不同次序会让另一处饥情或春种继续承压。",
+  },
+  "DK-P1-MERCHANT-CONDITIONS": {
+    actorRefs: ["actor.jiangnan_merchant_head"],
+    prompt: "商会会首把粮路与条件一并摆上案头；总督必须决定官府接受什么，又明确拒绝什么。",
+  },
+  "DK-P1-LAND-SAFEGUARD": {
+    actorRefs: ["actor.qingliu_magistrate", "actor.jiangnan_merchant_head"],
+    prompt: "粮价已经逼近田契，县令与商会都等着总督划出灾期买田和改桑指标的边界。",
+  },
+  "DK-P1-REPORT-AUTHORSHIP": {
+    actorRefs: ["actor.xunfu_aide"],
+    prompt: "第一份入京叙述即将成文，巡抚幕僚要求先定由谁起草、由谁具名，分歧如何写进去。",
+  },
+  "DK-P1-RESPONSIBILITY-SCOPE": {
+    actorRefs: ["actor.xunfu_aide", "actor.qingliu_magistrate"],
+    prompt: "奏报不能只写事成与不成；厅上必须定下总督、巡抚、县令和经手人各自承担哪一段责任。",
+  },
+  "DK-P1-EVIDENCE-ATTACHMENT": {
+    actorRefs: ["actor.qingliu_magistrate", "actor.reform_clerk"],
+    prompt: "奏报正文之外还能附什么，已经牵动县册保管人与书吏安危；总督必须确定附件边界。",
+  },
+  "DK-P1-CAPITAL-CHANNEL": {
+    actorRefs: ["actor.xunfu_aide"],
+    prompt: "奏报和附件已经逼近出府时刻，巡抚幕僚追问它走哪条入京渠道，沿途责任怎样留下记录。",
+  },
+};
+
+const kernelProtectedNarratives = {
+  "DK-P1-EXECUTION-SCOPE": [
+    "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
+    "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
+    "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
+  ],
+  "DK-P1-REVIEW-INITIATION": [
+    "总督把封缄令牌交给县令亲随，命清流县先封档房、记清在场人；原册暂由县令看守，不许擅自启封。",
+    "总督定下督抚共同查验：双方各派一名经手人到清流县，当场核对原册和改桑名册。",
+    "总督准县令先在县内自查两日，只将异常页封样送来，原册暂不离县衙。",
+  ],
+  "DK-P1-RESPONSIBILITY-RECORD": [
+    "总督把暂缓签发的缘由、清流县复核办法和督抚各自应负的责任逐项写入回文。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+    "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
+    "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
+  ],
+  "DK-P1-EVIDENCE-CUSTODY": [
+    "总督定下原件仍留清流县档房，换上新封条；总督、县令、巡抚三方各留一份封样。",
+    "总督命两名见证人在场抄出样册，并逐页记明抄录人和抄录时辰。",
+    "总督命人将可疑册页整封送往总督府，县衙只留下交接清单。",
+  ],
+  "DK-P1-WITNESS-ACCESS": [
+    "总督以核对公文为名，把改桑书吏秘密带到总督府，不公开他的证人身份。",
+    "总督准督抚双方各派一人在场，当面对照书吏说法和样册。",
+    "总督命县令先收一份封缄书面供述，待初始说法留存后再决定是否传人。",
+  ],
+  "DK-P1-REVIEW-AUTHORITY": [
+    "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
+    "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
+    "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
+  ],
+  "DK-P1-DISCLOSURE-SCOPE": [
+    "总督只向巡抚说明册页存在差异，没有透露书吏和密供所在。",
+    "总督准将带见证记录的样册交巡抚查验，原件仍由现保管人封存。",
+    "总督以保管链未稳为由暂不披露细节，只答应限时提交复核结果。",
+  ],
+  "DK-P1-GRAIN-SOURCE": [
+    "总督决定先动官仓并向邻省借粮，所有借据由总督府承担。",
+    "总督准商会限量开仓，官府为粮路作保，但明令不得借粮价换购灾民田地。",
+    "总督定下官仓先稳城内、商会负责外县运输，两路账目分开核销。",
+  ],
+  "DK-P1-RELIEF-PRIORITY": [
+    "总督命第一批现粮先发给无存粮、也无田可抵的百姓。",
+    "总督命人先留下种粮和插秧所需，再按户发放余粮。",
+    "总督决定先稳杭州和清流县米市，再向外围灾村分批送粮。",
+  ],
+  "DK-P1-MERCHANT-CONDITIONS": [
+    "总督接受商会的粮食和运力，同时明令灾期不得收购或代持民田。",
+    "总督只向商会购买船队运输，按程付银，不给收丝或购田优先权。",
+    "总督拒绝商会提出的担保和优先权，改走官府借调粮路。",
+  ],
+  "DK-P1-LAND-SAFEGUARD": [
+    "总督定下灾期田契的公开底价，并命县衙逐契登记买受人。",
+    "总督命赈期内暂禁商会和大户购入灾民田，先以借粮维持。",
+    "总督把改桑指标分到更多非灾县，清流县只承担有限份额。",
+  ],
+  "DK-P1-REPORT-AUTHORSHIP": [
+    "总督决定与巡抚共同具奏，执行、复核和粮食分歧逐项写明，双方确认后共同具名入京。",
+    "总督决定独自具奏，并把巡抚催办和拒签文书一并列作附件。",
+    "总督准巡抚另报，自己同时送出复核结果和异议，两份奏报各自具名。",
+  ],
+  "DK-P1-RESPONSIBILITY-SCOPE": [
+    "总督命奏报写明，执行与复核均由自己裁定，不把责任推给县令。",
+    "总督把责任分项写定：改桑进度由巡抚具名，复核和赈济由总督具名。",
+    "总督命奏报如实列清县令、书吏和各级经手事项，只陈事实，不先定罪。",
+  ],
+  "DK-P1-EVIDENCE-ATTACHMENT": [
+    "总督决定随奏附上见证抄出的样册、封条记录和原件保管人名单。",
+    "总督决定附件只列田亩数字和日期差异，并声明原册仍在复核，不附人名推断。",
+    "总督决定暂不附书吏供述，只附保管链，并说明人证需要保护。",
+  ],
+  "DK-P1-CAPITAL-CHANNEL": [
+    "总督命首报走正式通政渠道，沿途逐站记录交接和到达时辰。",
+    "总督用自己的封印加封急递，指定送达上级，并在府中留下副本和交接记录。",
+    "总督命正本走正式渠道、摘要另走密奏，两份互列封号，以便相互核验。",
+  ],
+};
+
+const kernelFallbackContinuations = {
+  "DK-P1-EXECUTION-SCOPE": [
+    "巡抚书吏把回文收入匣中，却没有退下。他隔着屏风问道：清流县既只准先办一批，复核若误了三日之限，这份责任是由总督独自写明，还是请巡抚在同一份正式回文上共同具名。问完，他仍捧着回文匣候在原处。",
+    "巡抚书吏听明先行放开的条件，随即追问：三日后复核册若仍不齐，催办、放行与补正的责任准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名。",
+    "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
+  ],
+  "DK-P1-RESPONSIBILITY-RECORD": [
+    "巡抚书吏双手接过回文，低头看了一眼封口，没有当场应承。次日巳时，签押房里仍不见清流县册的原件和抄件，巡抚幕僚却先带回了答复：巡抚不肯在这份回文上共同具名。\n\n清流县令听完没有争辩。巡抚幕僚把话转到即将开始的复核上，问这场复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。两个人都望向总督，等他先定主持权。",
+    "巡抚书吏看见总督独自具名，又看见附后的催办公文，脸色微微一变，仍将文书收好。次日巳时，巡抚幕僚来到签押房，先问的不是改桑进度，而是清流县册的复核究竟由谁主持。清流县令在一旁候着，也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
+    "巡抚书吏接过那份逐项记明异议的回文，沉默片刻才告退。次日巳时，巡抚幕僚在签押房当面说明，巡抚不改自己的催办立场；清流县令则问县衙在复核中究竟是经办、见证，还是只交材料。两边都不肯先退，总督必须先定复核由谁主持。",
+  ],
+};
+
+const decisionPromptResultCeiling = "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。";
 
 // A Writer may describe consequences, but it may not decide canonical state.
 // Each authored affordance therefore carries an explicit deterministic patch
@@ -703,6 +896,16 @@ if (continuationCount !== 5) throw new Error(`Expected five non-repeating contin
 const sectionByRequirement = new Map(sections.flatMap((section) => section.requiredRequirementIds.map((id) => [id, section])));
 const assets = [];
 
+if (
+  approvedEvidenceProfile.schemaVersion !== "runtime-story-asset-v1"
+  || approvedEvidenceProfile.assetId !== "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY"
+  || approvedEvidenceProfile.assetType !== "EVIDENCE_PROFILE"
+  || approvedEvidenceProfile.payload?.openingReport?.statementClass !== "ATTRIBUTED_UNVERIFIED_REPORT"
+) {
+  throw new Error("The approved Qingliu evidence profile is missing or invalid");
+}
+assets.push(approvedEvidenceProfile);
+
 function assetBase({ assetId, assetType, sectionIds = null, requirementIds, decisionKernelIds = [], causalArcIds = [], actorRefs = [], stateDependencies = [], sourceClaimIds = [], adaptationDecisionIds = [], retrievalTags = [], payload }) {
   return {
     schemaVersion: "runtime-story-asset-v1",
@@ -746,6 +949,58 @@ for (const pattern of narrativeScenePatternSet.patterns) {
     adaptationDecisionIds: [],
     retrievalTags: [...sectionIds, pattern.sourceSceneId, "NARRATIVE_SCENE_PATTERN", "PLAYER_VISIBLE_PROSE_GRAMMAR"],
     payload: promptSafePattern,
+  }));
+}
+
+const sourceSceneAssetIdsByRequirement = new Map();
+for (const sourceScene of sourceSceneEvidenceSet.scenes) {
+  const sourceClaimIds = [...new Set(
+    sourceScene.mechanisms.flatMap((mechanism) => mechanism.claimIds),
+  )];
+  const matchingRequirements = requirementSet.requirements.filter((requirement) =>
+    requirement.sourceClaimIds.some((claimId) => sourceClaimIds.includes(claimId))
+  );
+  if (!matchingRequirements.length) {
+    throw new Error(`${sourceScene.sceneId} is not bound to a StoryCapabilityRequirement`);
+  }
+  const requirementIds = matchingRequirements.map((item) => item.requirementId);
+  const sectionIds = [...new Set(matchingRequirements.flatMap((item) => item.sectionIds))];
+  const decisionKernelIds = [...new Set(matchingRequirements.flatMap((item) => item.decisionKernelIds))];
+  const assetId = `SOURCE-SCENE-${sourceScene.sceneId}`;
+  for (const requirementId of requirementIds) {
+    const ids = sourceSceneAssetIdsByRequirement.get(requirementId) || [];
+    ids.push(assetId);
+    sourceSceneAssetIdsByRequirement.set(requirementId, ids);
+  }
+  assets.push(assetBase({
+    assetId,
+    assetType: "SOURCE_SCENE_EVIDENCE",
+    sectionIds,
+    requirementIds,
+    decisionKernelIds,
+    causalArcIds: [...new Set(sectionIds.flatMap((sectionId) =>
+      sections.find((item) => item.sectionId === sectionId)?.activeCausalArcIds || []
+    ))],
+    actorRefs: [],
+    stateDependencies: [...new Set(matchingRequirements.flatMap((item) => item.stateEffects))],
+    sourceClaimIds,
+    adaptationDecisionIds: [...new Set(matchingRequirements.flatMap((item) => item.adaptationGapIds))],
+    retrievalTags: [
+      sourceScene.sourceRange.chapterId,
+      sourceScene.sceneId,
+      "SOURCE_SCENE_EVIDENCE",
+      "DRAMATIC_MECHANISM_ONLY",
+    ],
+    payload: {
+      sourceId: sourceSceneEvidenceSet.sourceId,
+      sourceSha256: sourceSceneEvidenceSet.sourceSha256,
+      sourceSceneId: sourceScene.sceneId,
+      title: sourceScene.title,
+      sourceRange: sourceScene.sourceRange,
+      verbatimPolicy: sourceSceneEvidenceSet.verbatimPolicy,
+      mechanisms: sourceScene.mechanisms,
+      applicabilityRule: "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself.",
+    },
   }));
 }
 
@@ -818,8 +1073,10 @@ for (const kernelId of uniqueKernelIds) {
   const requirements = requirementSet.requirements.filter((item) => item.decisionKernelIds.includes(kernelId));
   const section = sectionByRequirement.get(requirements[0].requirementId);
   const options = kernelOptions[kernelId];
+  const decisionPrompt = kernelDecisionPrompts[kernelId];
   const statePatches = kernelStatePatches[kernelId];
   if (!options || options.length < 3) throw new Error(`${kernelId} must define at least three concrete affordance templates`);
+  if (!decisionPrompt?.prompt || !decisionPrompt.actorRefs?.length) throw new Error(`${kernelId} must define one authored decision prompt`);
   if (!statePatches || statePatches.length !== options.length) throw new Error(`${kernelId} must define one deterministic state patch per affordance`);
   assets.push(assetBase({
     assetId: kernelId,
@@ -833,6 +1090,12 @@ for (const kernelId of uniqueKernelIds) {
     adaptationDecisionIds: [...new Set(requirements.flatMap((item) => item.adaptationGapIds))],
     retrievalTags: [section.sectionId, kernelId, "OPEN_DECISION_KERNEL"],
     payload: {
+      decisionPrompt: {
+        decisionPointId: kernelId,
+        actorRefs: decisionPrompt.actorRefs,
+        prompt: decisionPrompt.prompt,
+        resultCeiling: decisionPromptResultCeiling,
+      },
       availableWhen: requirements.flatMap((item) => mechanismByRequirement.get(item.requirementId).preconditions),
       minimumVisibleOptions: 2,
       maximumVisibleOptions: 2,
@@ -847,11 +1110,27 @@ for (const kernelId of uniqueKernelIds) {
         visibleTradeoff: tradeoff,
         stateEffects,
         statePatch: statePatches[index],
+        ...(kernelProtectedNarratives[kernelId]?.[index]
+          ? { protectedNarrative: kernelProtectedNarratives[kernelId][index] }
+          : {}),
+        ...(kernelFallbackContinuations[kernelId]?.[index]
+          ? { fallbackContinuation: kernelFallbackContinuations[kernelId][index] }
+          : {}),
         createsPendingConsequence: true,
       })),
       contrastRules: ["每项必须在目标、方法、即时成本或反制中至少两项不同", "不得把必然后果写成剧透", "玩家应能不用内部 ID 复述行动"],
     },
   }));
+}
+
+for (const asset of assets.filter((asset) => (
+  asset.assetType === "DECISION_KERNEL"
+  && asset.assetId.startsWith("DK-P1-")
+))) {
+  const options = Array.isArray(asset.payload?.options) ? asset.payload.options : [];
+  if (options.some((option) => !String(option?.protectedNarrative || "").trim())) {
+    throw new Error(`DECISION_KERNEL_PROTECTED_OUTCOME_MISSING:${asset.assetId}`);
+  }
 }
 
 for (const section of sections) {
@@ -941,6 +1220,31 @@ assets.push(assetBase({
   payload: styleProfile,
 }));
 
+// A Claim ID is only a traceability pointer; it is not enough context for a
+// Narrator. Every playable kernel must be backed by at least one approved,
+// runtime-readable source-scene mechanism, or by an explicitly approved
+// adaptation gap. Failing here keeps an uncovered kernel out of the package
+// instead of discovering the gap mid-run and asking the model to improvise.
+const sourceSceneAssets = assets.filter((asset) => asset.assetType === "SOURCE_SCENE_EVIDENCE");
+for (const kernel of assets.filter((asset) => asset.assetType === "DECISION_KERNEL")) {
+  const kernelClaimIds = new Set(kernel.sourceClaimIds);
+  const hasReadableSourceMechanism = sourceSceneAssets.some((sceneAsset) =>
+    sceneAsset.sourceClaimIds.some((claimId) => kernelClaimIds.has(claimId))
+    && Array.isArray(sceneAsset.payload?.mechanisms)
+    && sceneAsset.payload.mechanisms.some((mechanism) =>
+      Array.isArray(mechanism?.claimIds)
+      && mechanism.claimIds.some((claimId) => kernelClaimIds.has(claimId))
+      && String(mechanism?.statement || "").trim().length > 0
+    )
+  );
+  const hasApprovedAdaptationGap = kernel.adaptationDecisionIds.some((adaptationId) =>
+    approvedAdaptationIds.has(adaptationId)
+  );
+  if (!hasReadableSourceMechanism && !hasApprovedAdaptationGap) {
+    throw new Error(`DECISION_KERNEL_STORY_EVIDENCE_MISSING:${kernel.assetId}`);
+  }
+}
+
 const assetIds = new Set();
 for (const asset of assets) {
   if (assetIds.has(asset.assetId)) throw new Error(`Duplicate runtime asset ID ${asset.assetId}`);
@@ -958,7 +1262,14 @@ for (const requirement of requirementSet.requirements) {
     .map((pattern) => pattern.patternId);
   requirement.adaptationDecisionIds = requirement.adaptationGapIds;
   requirement.coverageStatus = requirement.adaptationGapIds.length ? "SATISFIED_BY_ADAPTATION" : "SATISFIED_BY_SOURCE";
-  requirement.runtimeAssetIds = [coreAssetId, ...requirement.decisionKernelIds, ...section.activeCausalArcIds, ...requirement.delayedConsequenceRuleIds, ...narrativePatternIds];
+  requirement.runtimeAssetIds = [
+    coreAssetId,
+    ...requirement.decisionKernelIds,
+    ...section.activeCausalArcIds,
+    ...requirement.delayedConsequenceRuleIds,
+    ...narrativePatternIds,
+    ...(sourceSceneAssetIdsByRequirement.get(requirement.requirementId) || []),
+  ];
 }
 if (!skipSourceWrites) {
   await writeJson(resolve(authoringRoot, "requirements/part-01.requirements.json"), requirementSet);

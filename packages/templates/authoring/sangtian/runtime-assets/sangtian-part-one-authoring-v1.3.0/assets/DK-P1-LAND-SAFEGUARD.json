@@ -59,6 +59,15 @@
     "land.safeguardStatus"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-LAND-SAFEGUARD",
+      "actorRefs": [
+        "actor.qingliu_magistrate",
+        "actor.jiangnan_merchant_head"
+      ],
+      "prompt": "粮价已经逼近田契，县令与商会都等着总督划出灾期买田和改桑指标的边界。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "改桑范围、粮食缺口或购田方案至少一项已经确定",
       "百姓生计和田价仍受地方政策影响"
@@ -85,6 +94,7 @@
           "land.riskLevel": "MEDIUM",
           "evidence.chainStatus": "TRACEABLE"
         },
+        "protectedNarrative": "总督定下灾期田契的公开底价，并命县衙逐契登记买受人。",
         "createsPendingConsequence": true
       },
       {
@@ -105,6 +115,7 @@
           "merchant.grantedRights": [],
           "grain.immediatePressure": "RISING"
         },
+        "protectedNarrative": "总督命赈期内暂禁商会和大户购入灾民田，先以借粮维持。",
         "createsPendingConsequence": true
       },
       {
@@ -127,6 +138,7 @@
             "$delta": -1
           }
         },
+        "protectedNarrative": "总督把改桑指标分到更多非灾县，清流县只承担有限份额。",
         "createsPendingConsequence": true
       }
     ],

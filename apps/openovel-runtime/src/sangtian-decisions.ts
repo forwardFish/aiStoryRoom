@@ -14,6 +14,7 @@ import type {
 } from "./decision-adapter.js";
 import type { FileStoryWorkspace } from "./workspace.js";
 import type { OpenNovelOption } from "./types.js";
+import { renderDeterministicFallback } from "./deterministic-fallback.js";
 
 const {
   buildPartOneRuntimeWorkingSet,
@@ -106,7 +107,7 @@ export function nextSangtianOptions(
     state,
     prepared.settlement.event.turnNumber,
   );
-  return workingSet.decisionAffordances.map((affordance) =>
+  const options = workingSet.decisionAffordances.map((affordance) =>
     optionForAffordance(
       prepared.package,
       state,
@@ -114,6 +115,12 @@ export function nextSangtianOptions(
       nextTurnNumber,
     )
   );
+  if (options.some((option) => (
+    option.effect?.decisionPointId !== prepared.settlement.event.nextDecisionPoint.decisionPointId
+  ))) {
+    throw new Error("SANGTIAN_NEXT_OPTIONS_DECISION_POINT_MISMATCH");
+  }
+  return options;
 }
 
 export async function currentSangtianOptions(
@@ -170,7 +177,12 @@ function bindIncomingAction(
   const affordance = workingSet.decisionAffordances.find(
     (candidate) => candidate.affordanceTemplateId === selectedOption.id,
   );
-  if (!affordance || affordance.actionText !== actionText) {
+  if (
+    !affordance
+    || affordance.actionText !== actionText
+    || selectedOption.effect?.decisionPointId !== workingSet.decisionPoint.decisionPointId
+    || affordance.decisionPointId !== workingSet.decisionPoint.decisionPointId
+  ) {
     throw new Error("SANGTIAN_STALE_OR_TAMPERED_AFFORDANCE");
   }
   return incomingForAffordance(affordance);
@@ -209,6 +221,7 @@ function optionForAffordance(
       label: affordance.actionText,
       key: true,
       effect: {
+        decisionPointId: affordance.decisionPointId,
         intent: affordance.immediateIntent,
         consequence: affordance.visibleTradeoff,
         reversible: false,
@@ -243,6 +256,7 @@ function withNarrativeContract(
         ...option.effect,
         beatContract: {
           ...evidenceContract,
+          sourceRef: `part-one-event:${settlement.event.eventId}`,
           moves: [
             ...(evidenceContract.moves || []),
             ...appendedBeats.map(renderNarrativeBeat),
@@ -268,9 +282,16 @@ function withNarrativeContract(
           settledNarrative:
             String(evidenceContract.settledNarrative || "").trim()
             || plan.settledActionNarrative,
-          stopCondition: appendedBeats.length
-            ? plan.requiredEndChange
-            : evidenceContract.stopCondition,
+          fallbackContinuation:
+            String(plan.nextStoryBeat.fallbackContinuation || "").trim()
+            || evidenceContract.fallbackContinuation,
+          narrativeSeed: {
+            playerOutcome: plan.nextStoryBeat.playerOutcome,
+            npcOrWorldPressure: plan.nextStoryBeat.npcOrWorldPressure,
+            stopCondition: plan.nextStoryBeat.stopCondition,
+          },
+          sceneEvidence: plan.nextStoryBeat.evidencePacket,
+          stopCondition: plan.nextStoryBeat.stopCondition,
         },
       },
     };
@@ -301,6 +322,8 @@ function withNarrativeContract(
       beatContract: {
         sourceRef: `part-one-event:${settlement.event.eventId}`,
         objective: plan.dramaticTask,
+        // Kept for audit/reviewer compatibility. The Narrator receives the
+        // server-owned narrativeSeed below, not this backstage beat list.
         moves: requiredBeats.map(renderNarrativeBeat),
         requiredAnchorGroups: requiredBeats.flatMap(
           (beat) => beat.requiredTermGroups,
@@ -308,7 +331,14 @@ function withNarrativeContract(
         requiredDurableAnchorGroups: hardRequiredGroups,
         settledNarrative: plan.settledActionNarrative,
         fallbackContinuation:
-          option.effect?.beatContract?.fallbackContinuation,
+          String(plan.nextStoryBeat.fallbackContinuation || "").trim()
+          || option.effect?.beatContract?.fallbackContinuation,
+        narrativeSeed: {
+          playerOutcome: plan.nextStoryBeat.playerOutcome,
+          npcOrWorldPressure: plan.nextStoryBeat.npcOrWorldPressure,
+          stopCondition: plan.nextStoryBeat.stopCondition,
+        },
+        sceneEvidence: plan.nextStoryBeat.evidencePacket,
         authorizedPlayerActions: requiredBeats
           .filter((beat) => beat.sourceType === "PLAYER_ACTION")
           .flatMap((beat) => [
@@ -317,7 +347,7 @@ function withNarrativeContract(
           ])
           .filter(Boolean),
         constraints,
-        stopCondition: plan.requiredEndChange,
+        stopCondition: plan.nextStoryBeat.stopCondition,
       },
     },
   };
@@ -404,6 +434,7 @@ export const sangtianDecisionAdapter: AuthoredDecisionAdapter = {
         eventId: event.eventId,
         decisionKernelId: event.decisionKernelId,
         affordanceTemplateId: event.affordanceTemplateId,
+        nextDecisionPointId: event.nextDecisionPoint.decisionPointId,
         changedStatePaths: event.changedStatePaths,
       },
       payload: prepared,
@@ -433,7 +464,10 @@ function requireSangtianPayload(prepared: PreparedAuthoredDecision) {
 
 function buildSangtianTruthContext(prepared: PreparedSangtianDecision) {
   const event = prepared.settlement.event;
-  const scene = event.sceneBefore;
+  // Publication happens after the authoritative settlement. A transition turn
+  // must therefore review the destination scene; using sceneBefore makes valid
+  // arrivals look invented and hides the real destination boundaries.
+  const scene = event.sceneAfter;
   const plan = event.narrativePlan;
   const presentActorLabels = new Map(
     scene.presentActorRefs.map((id, index) => [
@@ -487,25 +521,51 @@ function buildSangtianTruthContext(prepared: PreparedSangtianDecision) {
     ...event.authoritativeNpcReactions.map((reaction) => reaction.reactionEventId),
     ...event.authoritativeWorldMoves.map((move) => move.beatId),
   ];
-  return {
-    originActorId,
-    projectionActorId: originActorId,
-    catalog: deduplicateCatalog(catalog),
-    capabilityIds: [...new Set(capabilityIds)],
-    secretIds: [],
-    allowedPredicates: event.authoritativeNpcReactions.flatMap((reaction) =>
-      reaction.actorRefs
-        .filter((actorId) => scene.presentActorRefs.includes(actorId))
-        .map((actorId) => ({
+  const visibleNpcPredicates = event.authoritativeNpcReactions.flatMap((reaction) =>
+    reaction.actorRefs
+      .filter((actorId) => scene.presentActorRefs.includes(actorId))
+      .map((actorId) => ({
         type: "ACTOR.ORDERED" as const,
         constraints: {
           actorId,
           capabilityId: reaction.reactionEventId,
         },
       }))
-    ),
-    requiredVisiblePredicates: [],
+  );
+  const storyEvidence = plan.nextStoryBeat.evidencePacket;
+  const supportedStoryFacts = [
+    ...storyEvidence.evidenceItems
+      .filter((item) => item.useAs === "OBJECTIVE_FACT")
+      .map((item) => ({ supportId: item.evidenceId, statement: item.statement })),
+    {
+      supportId: `${plan.nextStoryBeat.beatId}:PRESSURE`,
+      statement: plan.nextStoryBeat.npcOrWorldPressure,
+    },
+    {
+      supportId: `${plan.nextStoryBeat.beatId}:STOP`,
+      statement: plan.nextStoryBeat.stopCondition,
+    },
+  ];
+  return {
+    originActorId,
+    projectionActorId: originActorId,
+    catalog: deduplicateCatalog(catalog),
+    capabilityIds: [...new Set(capabilityIds)],
+    secretIds: [],
+    allowedPredicates: visibleNpcPredicates,
+    requiredVisiblePredicates: visibleNpcPredicates.map((pattern, index) => ({
+      id: `${event.nextDecisionPoint.decisionPointId}:VISIBLE:${index + 1}`,
+      pattern,
+    })),
     forbiddenPredicates: [],
+    supportedStoryFacts,
+    mechanismOnlyEvidence: storyEvidence.evidenceItems
+      .filter((item) => item.useAs === "DRAMATIC_MECHANISM")
+      .map((item) => ({
+        evidenceId: item.evidenceId,
+        statement: item.statement,
+      })),
+    specificityBoundary: storyEvidence.specificityBoundary,
     // The settled protagonist action is already rendered by an immutable
     // Protected Beat. Any new protagonist command in the continuation is an
     // additional action, regardless of its natural-language wording.
@@ -517,14 +577,21 @@ function buildSangtianFallback(prepared: PreparedSangtianDecision) {
   const event = prepared.settlement.event;
   const plan = event.narrativePlan;
   const authoredContinuation = String(
-    prepared.selectedOption?.effect?.beatContract?.fallbackContinuation || "",
+    prepared.selectedOption?.effect?.beatContract?.fallbackContinuation
+      || plan.nextStoryBeat.fallbackContinuation
+      || "",
   ).trim();
   if (authoredContinuation) return authoredContinuation;
-  return [...new Set([
-    ...event.authoritativeNpcReactions.map((reaction) => reaction.action),
-    ...event.authoritativeWorldMoves.map((move) => move.action),
-    plan.requiredEndChange,
-  ].map((value) => String(value || "").trim()).filter(Boolean))].join("\n\n");
+  return renderDeterministicFallback({
+    seed: plan.nextStoryBeat,
+    protectedPlayerOutcomePresent: Boolean(
+      String(
+        prepared.selectedOption?.effect?.beatContract?.settledNarrative
+          || plan.settledActionNarrative
+          || "",
+      ).trim(),
+    ),
+  });
 }
 
 function deduplicateCatalog<T extends { id: string }>(items: T[]) {

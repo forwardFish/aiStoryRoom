@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01",
+    "SEC-P1-02"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-REVIEW-AUTHORITY"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-DISCLOSURE-SCOPE"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "ARC-P1-CUSTODY-CONTEST"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "review.authority",
+    "review.procedureStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C03-CL-GOVERNOR-INVARIANT",
+    "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+    "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-THREE-DAY-DEADLINE",
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C03",
+    "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "ARC-P1-CUSTODY-CONTEST",
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "review.authority",
+    "review.procedureStatus"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+    "title": "总督划清地方治理与党争边界",
+    "sourceRange": {
+      "chapterId": "DM1566-C03",
+      "paragraphStartId": "DM1566-C03-P0020",
+      "paragraphEndId": "DM1566-C03-P0039",
+      "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-01",
+        "statement": "胡宗宪公开表明不愿改桑造成大规模失田与内乱；这是人物意图，不保证行动必然成功。",
+        "claimIds": [
+          "DM1566-C03-CL-GOVERNOR-INVARIANT"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-02",
+        "statement": "地方总督提出把一年方案分三年完成，证明执行节奏与范围可以成为制度内的争夺对象。",
+        "claimIds": [
+          "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-04",
+        "statement": "谭纶拒绝阅读更多私下公文，明确知道得越多也可能越损害主政者的政治行动空间。",
+        "claimIds": [
+          "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

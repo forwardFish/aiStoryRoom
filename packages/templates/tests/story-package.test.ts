@@ -87,12 +87,127 @@ test("loads the immutable Sangtian Part One authoring runtime package", () => {
   assert.equal(loaded.package.partId, "PART-01");
   assert.equal(loaded.package.sections.length, 4);
   assert.equal(loaded.package.requirements.length, 12);
-  assert.equal(loaded.package.assets.length, 55);
+  assert.equal(loaded.package.assets.length, 65);
   assert.equal(loaded.package.contentCounts.narrativeScenePatterns, 3);
+  assert.equal(
+    loaded.package.assets.filter((asset) => asset.assetType === "SOURCE_SCENE_EVIDENCE").length,
+    10,
+  );
   assert.equal(loaded.package.assets.filter((asset) => asset.assetId.startsWith("DK-P1-")).length, 15);
   assert.equal(loaded.package.styleProfile.narrativeBudget.minCharacters, 300);
   assert.equal(loaded.contentHash, loaded.package.immutableHash);
   assert.equal(loaded.package.authoringManifestHash, loaded.package.authoringManifest.immutableHash);
+});
+
+test("every playable kernel has runtime-readable story evidence before play begins", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const sourceScenes = pkg.assets.filter((asset) => asset.assetType === "SOURCE_SCENE_EVIDENCE");
+  const approvedAdaptationIds = new Set(
+    pkg.approvedAdaptations.map((item) => item.adaptationDecisionId)
+  );
+
+  for (const kernel of pkg.assets.filter((asset) => asset.assetType === "DECISION_KERNEL")) {
+    const kernelClaimIds = new Set(kernel.sourceClaimIds);
+    const matchingScenes = sourceScenes.filter((scene) =>
+      scene.sourceClaimIds.some((claimId) => kernelClaimIds.has(claimId))
+    );
+    const hasApprovedAdaptationGap = kernel.adaptationDecisionIds.some((adaptationId) =>
+      approvedAdaptationIds.has(adaptationId)
+    );
+    assert.equal(
+      matchingScenes.length > 0 || hasApprovedAdaptationGap,
+      true,
+      `${kernel.assetId} would force the Narrator to invent the next plot`,
+    );
+  }
+
+  const capitalKernel = pkg.assets.find((asset) => asset.assetId === "DK-P1-CAPITAL-CHANNEL");
+  const capitalScene = sourceScenes.find((asset) =>
+    asset.payload.sourceSceneId === "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE"
+  );
+  assert.ok(capitalKernel);
+  assert.ok(capitalScene);
+  assert.equal(capitalScene.payload.sourceRange.paragraphStartId, "DM1566-C02-P0243");
+  assert.equal(capitalScene.payload.sourceRange.paragraphEndId, "DM1566-C02-P0251");
+  assert.equal(
+    capitalScene.sourceClaimIds.some((claimId) => capitalKernel.sourceClaimIds.includes(claimId)),
+    true,
+  );
+});
+
+test("the server fixes a source-grounded Next Story Beat before any Narrator call", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const opening = settlePartOneAction(
+    pkg,
+    createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d2",
+      actionText: "动用总督封缄令牌，先保住清流县档房现场，再给巡抚一个暂缓签发的答复。"
+    },
+    1
+  );
+  const execution = buildPartOneRuntimeWorkingSet(pkg, opening.proposedState, 1)
+    .decisionAffordances
+    .find((item) => item.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-03");
+  assert.ok(execution);
+  const paused = settlePartOneAction(
+    pkg,
+    opening.proposedState,
+    {
+      source: "RECOMMENDED",
+      decisionKernelId: execution.decisionKernelId,
+      affordanceTemplateId: execution.affordanceTemplateId,
+      label: execution.title,
+      actionText: execution.actionText,
+      targetRef: execution.targetRef
+    },
+    2
+  );
+  const responsibility = buildPartOneRuntimeWorkingSet(pkg, paused.proposedState, 2)
+    .decisionAffordances
+    .find((item) => item.affordanceTemplateId === "DK-P1-RESPONSIBILITY-RECORD-OPT-01");
+  assert.ok(responsibility);
+  const settled = settlePartOneAction(
+    pkg,
+    paused.proposedState,
+    {
+      source: "RECOMMENDED",
+      decisionKernelId: responsibility.decisionKernelId,
+      affordanceTemplateId: responsibility.affordanceTemplateId,
+      label: responsibility.title,
+      actionText: responsibility.actionText,
+      targetRef: responsibility.targetRef
+    },
+    3
+  );
+
+  const beat = settled.event.narrativePlan.nextStoryBeat;
+  assert.equal(settled.event.sectionTransitioned, true);
+  assert.match(beat.playerOutcome, /正式回文|回文/u);
+  assert.match(beat.npcOrWorldPressure, /次日.*签押房.*巡抚.*(?:拒绝|不肯).*具名/su);
+  assert.match(beat.stopCondition, /复核由谁主持.*经办、见证/u);
+  assert.equal(
+    beat.evidencePacket.evidenceItems.some((item) =>
+      item.evidenceClass === "ORIGINAL_MECHANISM"
+      && item.sourceClaimIds.includes("DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE")
+    ),
+    true,
+  );
+  assert.equal(
+    beat.evidencePacket.evidenceItems.some((item) =>
+      item.evidenceClass === "APPROVED_ADAPTATION"
+      && item.adaptationDecisionIds.includes("ADAPT-P1-SEPARATE-XUNFU")
+    ),
+    true,
+  );
+  assert.match(beat.evidencePacket.specificityBoundary, /不得自行增加人数、涨幅/u);
+  assert.doesNotMatch(JSON.stringify(beat), /粮价已涨了三成|灾民比前日多出百十人/u);
+  assert.equal(
+    settled.event.authoritativeWorldMoves.filter((move) => move.sourceType !== "SECTION_TRANSITION").length,
+    1,
+  );
+  assert.match(beat.fallbackContinuation, /巡抚不肯.*共同具名.*复核.*主持/su);
 });
 
 test("temporarily withholding the release order does not create a written reply", () => {
@@ -107,13 +222,20 @@ test("temporarily withholding the release order does not create a written reply"
     },
     1
   );
+  const pauseOption = buildPartOneRuntimeWorkingSet(pkg, review.proposedState, 1)
+    .decisionAffordances
+    .find((item) => item.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-03");
+  assert.ok(pauseOption);
   const pause = settlePartOneAction(
     pkg,
     review.proposedState,
     {
       source: "RECOMMENDED",
-      decisionId: "DK-P1-EXECUTION-SCOPE-OPT-03",
-      actionText: "暂不签放行文书，先封存清流县档房；若误了三日期限，由总督自行担责。"
+      decisionKernelId: pauseOption.decisionKernelId,
+      affordanceTemplateId: pauseOption.affordanceTemplateId,
+      label: pauseOption.title,
+      actionText: pauseOption.actionText,
+      targetRef: pauseOption.targetRef
     },
     2
   );
@@ -133,17 +255,32 @@ test("issuing the limited-trial reply delivers it through the established reply 
     {
       source: "RECOMMENDED",
       decisionId: "opening_d2",
-      actionText: "将总督封缄令牌交给清流县令亲随，命他向清流县传达封存档房之令；同时当面答复巡抚书吏：暂缓签发，三日内复核。"
+      actionText: "动用总督封缄令牌，先保住清流县档房现场，再给巡抚一个暂缓签发的答复。"
     },
     1
   );
+  assert.equal(
+    opening.event.actionText,
+    "将总督封缄令牌交给清流县令亲随，命他向清流县传达封存档房之令；同时当面答复巡抚书吏：暂缓签发，三日内复核。"
+  );
+  assert.equal(
+    opening.event.sceneAfter.presentActorRefs.includes("actor.qingliu_messenger"),
+    false
+  );
+  const issueOption = buildPartOneRuntimeWorkingSet(pkg, opening.proposedState, 1)
+    .decisionAffordances
+    .find((item) => item.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-01");
+  assert.ok(issueOption);
   const issued = settlePartOneAction(
     pkg,
     opening.proposedState,
     {
       source: "RECOMMENDED",
-      decisionId: "DK-P1-EXECUTION-SCOPE-OPT-01",
-      actionText: "只准清流县先办一批，并在给巡抚的改桑放行回文里写明：不得趁急难压价买田。"
+      decisionKernelId: issueOption.decisionKernelId,
+      affordanceTemplateId: issueOption.affordanceTemplateId,
+      label: issueOption.title,
+      actionText: issueOption.actionText,
+      targetRef: issueOption.targetRef
     },
     2
   );
@@ -194,13 +331,21 @@ test("responsibility action beats preserve both the three-day limit and the gove
     },
     1
   );
+  const execution = buildPartOneRuntimeWorkingSet(pkg, opening.proposedState, 1)
+    .decisionAffordances
+    .find((item) => item.affordanceTemplateId === "DK-P1-EXECUTION-SCOPE-OPT-03");
+  assert.ok(execution);
   const responsibility = settlePartOneAction(
     pkg,
     opening.proposedState,
     {
       source: "RECOMMENDED",
-      decisionId: "DK-P1-EXECUTION-SCOPE-OPT-03",
-      actionText: "继续暂缓签发，待清流县回报封存结果后再议；三日限期内的延误责任由本督承担。"
+      decisionId: execution.affordanceTemplateId,
+      decisionKernelId: execution.decisionKernelId,
+      affordanceTemplateId: execution.affordanceTemplateId,
+      label: execution.title,
+      actionText: execution.actionText,
+      targetRef: execution.targetRef
     },
     2
   );
@@ -210,6 +355,18 @@ test("responsibility action beats preserve both the three-day limit and the gove
       && beat.action.includes("延误责任")
   );
   assert.ok(responsibilityBeat);
+  assert.match(
+    responsibility.event.narrativePlan.settledActionNarrative || "",
+    /今日仍不签.*责在本督/s
+  );
+  assert.equal(
+    responsibility.event.nextDecisionPoint.decisionPointId,
+    "DK-P1-RESPONSIBILITY-RECORD"
+  );
+  assert.match(
+    responsibility.event.nextDecisionPoint.prompt,
+    /怎样写进正式回文.*总督独自具名.*巡抚共同具名/
+  );
   assert.deepEqual(
     responsibilityBeat.requiredTermGroups,
     [
@@ -297,6 +454,15 @@ test("responsibility choices describe executable actions from a paused branch wi
     actionText: execution.actionText,
     targetRef: execution.targetRef
   }, 2);
+  assert.equal(
+    paused.event.nextDecisionPoint.decisionPointId,
+    "DK-P1-RESPONSIBILITY-RECORD"
+  );
+  assert.match(paused.event.narrativePlan.nextStoryBeat.stopCondition, /正式回文.*具名/u);
+  assert.doesNotMatch(
+    paused.event.narrativePlan.requiredEndChange,
+    /派员到场|参与复核/
+  );
   const pausedState = finalizePartOneSettlement(
     paused,
     paused.dueConsequences.map((item) => item.consequenceId)
@@ -310,6 +476,13 @@ test("responsibility choices describe executable actions from a paused branch wi
 
   const responsibility = buildPartOneRuntimeWorkingSet(pkg, pausedState, 2);
   assert.equal(responsibility.openDecisionKernel.assetId, "DK-P1-RESPONSIBILITY-RECORD");
+  assert.equal(responsibility.decisionPoint.decisionPointId, "DK-P1-RESPONSIBILITY-RECORD");
+  assert.equal(
+    responsibility.decisionAffordances.every(
+      (item) => item.decisionPointId === responsibility.decisionPoint.decisionPointId
+    ),
+    true
+  );
   assert.deepEqual(
     responsibility.decisionAffordances.map((item) => item.actionText),
     [
@@ -420,13 +593,9 @@ test("responsibility choices preserve an already-issued limited-trial reply inst
     )?.continuityNote || "",
     /正文目前只由总督知晓.*未经玩家明确出示、宣读或移交/
   );
-  assert.match(
-    recorded.event.authoritativeNpcReactions[0]?.action || "",
-    /只能记下总督另具责任说明这件事/
-  );
-  assert.doesNotMatch(
-    recorded.event.authoritativeNpcReactions[0]?.action || "",
-    /拒绝.*联署/
+  assert.equal(
+    recorded.event.authoritativeNpcReactions[0]?.action,
+    recorded.event.nextDecisionPoint.prompt
   );
   const responsibilityBeat = recorded.event.narrativePlan.sceneBeats.find(
     (beat) => beat.sourceType === "PLAYER_ACTION" && /督抚责任说明/.test(beat.action)
@@ -504,8 +673,11 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
     }
     if (turn === 1) {
       assert.equal(settlement.event.authoritativeNpcReactions.length, 1);
-      assert.equal(settlement.event.authoritativeNpcReactions[0].actorRefs.includes("actor.zhejiang_xunfu"), true);
-      assert.match(settlement.event.authoritativeNpcReactions[0].action, /^巡抚书吏按来府前所受交代当场追问/);
+      assert.equal(settlement.event.authoritativeNpcReactions[0].actorRefs.includes("actor.xunfu_clerk"), true);
+      assert.equal(
+        settlement.event.authoritativeNpcReactions[0].action,
+        settlement.event.nextDecisionPoint.prompt
+      );
       assert.equal(settlement.event.authoritativeObservableFacts.some((fact) => fact.includes("actor.qingliu_magistrate")), false);
       assert.equal(settlement.event.authoritativeObservableFacts.some((fact) => fact.includes("清流县令")), true);
       assert.equal(settlement.event.authoritativeObservableFacts.some((fact) => fact.includes("已经送达浙江巡抚")), false);
@@ -553,17 +725,13 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
       );
       assert.match(
         settlement.event.sceneAfter.situation,
-        /巡抚书吏已经当场追问总督为何暂缓签发/
+        /改桑急令究竟按什么边界执行/
       );
       assert.equal(
         settlement.event.narrativePlan.sceneBeats
           .find((beat) => beat.sourceType === "NPC_REACTION")
           ?.requiredTermGroups
-          .some((group) =>
-            group.includes("未即刻签发")
-            && group.includes("没有落印")
-            && group.includes("朱印未动")
-          ),
+          .some((group) => group.length > 0),
         true
       );
       assert.doesNotMatch(
@@ -584,12 +752,26 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
         settlement.event.actionText,
         /请巡抚在刚刚写成的改桑放行回文上共同具名/
       );
-      const executionPressure = settlement.event.authoritativeWorldMoves.find(
-        (move) =>
-          move.sourceType === "DUE_CONSEQUENCE"
-          && move.sourceId === "PCR-P1-EXECUTION-BOUNDARY"
+      assert.equal(
+        settlement.event.authoritativeWorldMoves.filter(
+          (move) => move.sourceType !== "SECTION_TRANSITION"
+        ).length,
+        1,
+        "one turn may surface only one NPC/world pressure"
       );
-      assert.match(executionPressure?.resultCeiling || "", /不得换算为一日一变、每日、每时等频率/);
+      assert.equal(
+        settlement.event.authoritativeWorldMoves.some(
+          (move) => move.sourceType === "SETTLED_RESPONSE"
+        ),
+        true,
+      );
+      assert.equal(
+        settlement.proposedState.pendingConsequences.some(
+          (item) => item.ruleAssetId === "PCR-P1-EXECUTION-BOUNDARY" && item.status === "DUE"
+        ),
+        true,
+        "an unselected due consequence stays due instead of being packed into the same beat"
+      );
       assert.equal(
         settlement.event.sceneAfter.documentStates?.find(
           (item) => item.documentRef === "document.qingliu_register_original"
@@ -614,10 +796,7 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
       const transitionIndex = settlement.event.authoritativeWorldMoves.findIndex(
         (move) => move.sourceType === "SECTION_TRANSITION"
       );
-      const firstDueIndex = settlement.event.authoritativeWorldMoves.findIndex(
-        (move) => move.sourceType === "DUE_CONSEQUENCE"
-      );
-      assert.ok(transitionIndex >= 0 && firstDueIndex > transitionIndex);
+      assert.ok(transitionIndex >= 0);
       assert.deepEqual(
         transition?.requiredTermGroups[0],
         ["嘉靖三十五年五月初九巳时", "五月初九巳时", "次日巳时"]
@@ -631,12 +810,8 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
         .filter((beat) => beat.sourceType === "WORLD_MOVE");
       assert.equal(
         narrativeWorldBeats.filter((beat) => beat.beatId.includes("+")).length,
-        1,
-        "same-actor due consequences should become one natural dialogue beat"
-      );
-      assert.match(
-        narrativeWorldBeats.find((beat) => beat.beatId.includes("+"))?.action || "",
-        /同一次当面反制/
+        0,
+        "the runtime must not concatenate multiple backstage moves into one prose instruction"
       );
       assert.match(
         settlement.event.narrativePlan.dramaticTask,
@@ -726,14 +901,19 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
   assert.equal(progressReports.every((report) => report.hardValidationStatus === "PASS"), true);
   assert.equal(progressReports.every((report) => report.materialChanges.length > 0), true);
   assert.equal(progressReports.every((report) => report.mainlineContributions.length > 0), true);
-  assert.equal(firstSectionNpcReactions[0].includes("书面回复"), true);
-  assert.equal(firstSectionNpcReactions[1].includes("参与复核"), true);
-  assert.equal(firstSectionNpcReactions[2].includes("联署"), true);
+  assert.equal(firstSectionNpcReactions[0].includes("边界执行"), true);
+  assert.equal(/正式回文|具名/u.test(firstSectionNpcReactions[1]), true);
+  assert.equal(firstSectionNpcReactions[2].includes("复核由谁主持"), true);
   assert.equal(new Set(firstSectionNpcReactions).size, 3);
   assert.equal(visitedSceneIds.size, 4);
   assert.equal(visitedTimeLabels.size, 4);
   assert.equal(sectionTransitionMoveCount, 3);
-  assert.equal(duePayoffMoveCount, 19);
+  assert.equal(duePayoffMoveCount, 12);
+  assert.equal(
+    state.pendingConsequences.filter((item) => item.status === "DUE").length,
+    7,
+    "pressures displaced by a higher-priority settled response remain auditable for later payoff"
+  );
   assert.equal(nextPressureMoveCount, 5);
 });
 

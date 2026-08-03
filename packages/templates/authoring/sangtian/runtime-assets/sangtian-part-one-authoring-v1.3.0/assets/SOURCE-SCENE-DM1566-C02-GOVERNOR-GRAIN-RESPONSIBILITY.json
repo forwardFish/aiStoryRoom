@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+    "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+    "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY"
+  ],
+  "adaptationDecisionIds": [],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C02",
+    "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-GRAIN-RELIEF",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+    "title": "总督府承担粮食与民变责任",
+    "sourceRange": {
+      "chapterId": "DM1566-C02",
+      "paragraphStartId": "DM1566-C02-P0198",
+      "paragraphEndId": "DM1566-C02-P0241",
+      "textSpanSha256": "C2DE1D80210AC35EF7ECD0392ED3B2CCEDD3298F672EC98FAC812EFC91428115"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-01",
+        "statement": "从淳安跟来的百姓跪满总督衙门外大坪与官路，民生后果先作为总督亲眼所见进入场景。",
+        "claimIds": [
+          "DM1566-C02-CL-GOVERNOR-PETITIONERS"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-02",
+        "statement": "地方官只能确认向米行借到的粮很少、外省也不肯多调；原著在此只建立粮源不足，不提供本游戏当前粮价涨幅或灾民人数。",
+        "claimIds": [
+          "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-03",
+        "statement": "胡宗宪先把朝廷降罪和百姓怨责揽到自己名下，再说明无粮强改会把民生危机推成治安危机。",
+        "claimIds": [
+          "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

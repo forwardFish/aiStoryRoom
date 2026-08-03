@@ -57,6 +57,15 @@
     "review.procedureStatus"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-REVIEW-AUTHORITY",
+      "actorRefs": [
+        "actor.xunfu_aide",
+        "actor.qingliu_magistrate"
+      ],
+      "prompt": "巡抚幕僚要求先说清复核由谁主持；县令也等着知道自己是经办、见证，还是只能交出材料。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "复核对象和程序争议已经进入正式议程",
       "参与者只能在自身官职权限和文书渠道内行动"
@@ -85,6 +94,7 @@
             "$delta": -1
           }
         },
+        "protectedNarrative": "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
         "createsPendingConsequence": true
       },
       {
@@ -103,6 +113,7 @@
           "review.authority": "JOINT",
           "review.procedureStatus": "DUAL_SIGNATURE_REQUIRED"
         },
+        "protectedNarrative": "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
         "createsPendingConsequence": true
       },
       {
@@ -123,6 +134,7 @@
           "review.procedureStatus": "LAYERED_REVIEW",
           "evidence.chainStatus": "FRAGILE"
         },
+        "protectedNarrative": "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
         "createsPendingConsequence": true
       }
     ],

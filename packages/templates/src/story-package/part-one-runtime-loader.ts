@@ -103,8 +103,11 @@ export function validatePartOneRuntimePackage(raw: unknown, worldId = "sangtian"
   count(counts.narrativeScenePatterns, narrativePatternIds.length, "narrativeScenePatterns");
   count(authoringManifest.narrativeScenePatternCount, narrativePatternIds.length, "authoringManifest.narrativeScenePatternCount");
 
-  if (sections.length !== 4 || requirements.length !== 12 || assets.length !== 55 || kernelIds.length !== 15 || arcIds.length !== 4 || floorIds.length !== 4 || adaptations.length !== 7 || narrativePatternIds.length !== 3) {
-    fail("frozen Part One cardinalities 4/12/55/15/4/4/7/3");
+  const sourceSceneEvidenceIds = assets
+    .filter((entry) => record(entry, "asset").assetType === "SOURCE_SCENE_EVIDENCE")
+    .map((entry) => String(record(entry, "asset").assetId));
+  if (sections.length !== 4 || requirements.length !== 12 || assets.length !== 65 || kernelIds.length !== 15 || arcIds.length !== 4 || floorIds.length !== 4 || adaptations.length !== 7 || narrativePatternIds.length !== 3 || sourceSceneEvidenceIds.length !== 10) {
+    fail("frozen Part One cardinalities 4/12/65/15/4/4/7/3/10");
   }
   for (const adaptation of adaptations) equal(record(adaptation, "adaptation").reviewStatus, "APPROVED", "adaptation.reviewStatus");
   for (const section of sections) {

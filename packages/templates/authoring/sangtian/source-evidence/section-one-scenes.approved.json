@@ -1,0 +1,296 @@
+{
+  "schemaVersion": "sangtian-scene-evidence-packet-source-v1",
+  "worldId": "sangtian",
+  "scopeId": "PART-01/SEC-P1-01",
+  "sourceId": "dm1566-liuheping",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+  "reviewStatus": "APPROVED",
+  "scenes": [
+    {
+      "sceneId": "DM1566-C01-POLICY-COUNCIL",
+      "title": "御前以浙江改桑填补亏空",
+      "sourceRange": {
+        "chapterId": "DM1566-C01",
+        "paragraphStartId": "DM1566-C01-P0219",
+        "paragraphEndId": "DM1566-C01-P0240",
+        "textSpanSha256": "21B514BD7AE999A5FE625C31DC224D44D583A7958F46995EB170FBEAB4CD5C9F"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-01",
+          "statement": "严世蕃当面说工部有责任，自己也有责任。",
+          "claimIds": ["DM1566-C01-CL-POLICY-RESPONSIBILITY"]
+        },
+        {
+          "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-03",
+          "statement": "嘉靖追问农田改桑后浙江百姓吃粮、调粮价格与桑农是否愿意。",
+          "claimIds": ["DM1566-C01-CL-POLICY-FOOD-QUESTION"]
+        },
+        {
+          "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-04",
+          "statement": "嘉靖命内阁详议方略，再向胡宗宪下急递，把地方执行责任明确压到总督身上。",
+          "claimIds": ["DM1566-C01-CL-POLICY-URGENT-DISPATCH"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+      "title": "总督府承担粮食与民变责任",
+      "sourceRange": {
+        "chapterId": "DM1566-C02",
+        "paragraphStartId": "DM1566-C02-P0198",
+        "paragraphEndId": "DM1566-C02-P0241",
+        "textSpanSha256": "C2DE1D80210AC35EF7ECD0392ED3B2CCEDD3298F672EC98FAC812EFC91428115"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-01",
+          "statement": "从淳安跟来的百姓跪满总督衙门外大坪与官路，民生后果先作为总督亲眼所见进入场景。",
+          "claimIds": ["DM1566-C02-CL-GOVERNOR-PETITIONERS"]
+        },
+        {
+          "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-02",
+          "statement": "地方官只能确认向米行借到的粮很少、外省也不肯多调；原著在此只建立粮源不足，不提供本游戏当前粮价涨幅或灾民人数。",
+          "claimIds": ["DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT"]
+        },
+        {
+          "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-03",
+          "statement": "胡宗宪先把朝廷降罪和百姓怨责揽到自己名下，再说明无粮强改会把民生危机推成治安危机。",
+          "claimIds": ["DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+      "title": "总督划清地方治理与党争边界",
+      "sourceRange": {
+        "chapterId": "DM1566-C03",
+        "paragraphStartId": "DM1566-C03-P0020",
+        "paragraphEndId": "DM1566-C03-P0039",
+        "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-01",
+          "statement": "胡宗宪公开表明不愿改桑造成大规模失田与内乱；这是人物意图，不保证行动必然成功。",
+          "claimIds": ["DM1566-C03-CL-GOVERNOR-INVARIANT"]
+        },
+        {
+          "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-02",
+          "statement": "地方总督提出把一年方案分三年完成，证明执行节奏与范围可以成为制度内的争夺对象。",
+          "claimIds": ["DM1566-C03-CL-GRADUAL-EXECUTION-OPTION"]
+        },
+        {
+          "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-04",
+          "statement": "谭纶拒绝阅读更多私下公文，明确知道得越多也可能越损害主政者的政治行动空间。",
+          "claimIds": ["DM1566-C03-CL-KNOWLEDGE-REFUSAL"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C04-JOINT-REPORT-CONTEST",
+      "title": "总督府争夺奏疏内容与署名",
+      "sourceRange": {
+        "chapterId": "DM1566-C04",
+        "paragraphStartId": "DM1566-C04-P0074",
+        "paragraphEndId": "DM1566-C04-P0110",
+        "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-01",
+          "statement": "地方执行者以改桑属于国策为由拒绝自行承担延缓责任，要求朝廷先明令改变。",
+          "claimIds": ["DM1566-C04-CL-REPORT-OMITS-DELAY"]
+        },
+        {
+          "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-02",
+          "statement": "胡宗宪要求把调粮借贷、百姓生计与延缓改桑写进正式奏疏，用文书内容固定治理责任。",
+          "claimIds": ["DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE"]
+        },
+        {
+          "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-03",
+          "statement": "杨金水明确表示若奏疏照胡宗宪的方案书写便不署名，署名本身成为责任与利益冲突的行动。",
+          "claimIds": ["DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE"]
+        },
+        {
+          "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-04",
+          "statement": "新的可核验证据进入现场后，原先拒绝修改奏疏的人才重新谈判；证据必须先出现，不能由叙述者预设。",
+          "claimIds": ["DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+      "title": "奏疏越过通政司进入严府",
+      "sourceRange": {
+        "chapterId": "DM1566-C02",
+        "paragraphStartId": "DM1566-C02-P0243",
+        "paragraphEndId": "DM1566-C02-P0251",
+        "textSpanSha256": "FC3D2D0A1D3B6764867EB5C44A8D6434CD55B3B797E181759E33F3D9BC6C523A"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-01",
+          "statement": "胡宗宪奏疏没有先送通政使司，而是直接送到西苑内阁值房，递送渠道本身成为政治行动。",
+          "claimIds": ["DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG"]
+        },
+        {
+          "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-02",
+          "statement": "徐阶只看封面便命人将奏疏送严府，严世蕃先行拆看，说明首份叙述会被渠道中的掌权者重新解释。",
+          "claimIds": ["DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE"]
+        },
+        {
+          "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-03",
+          "statement": "严世蕃与罗龙文把绕过通政司的递送方式解释为地方主官的政治示好；这是他们的政治判断，不是客观定罪。",
+          "claimIds": ["DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+      "title": "赈粮、田价与分散改桑的制度取舍",
+      "sourceRange": {
+        "chapterId": "DM1566-C05",
+        "paragraphStartId": "DM1566-C05-P0308",
+        "paragraphEndId": "DM1566-C05-P0325",
+        "textSpanSha256": "57B19E869B868C3E6A8548F2241AB0F3314F31E09C0E2A7885BDCB6BC45EF27D"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-01",
+          "statement": "胡宗宪追问灾后压价买田应由哪一级衙门过问，把土地价格转成制度权限问题。",
+          "claimIds": ["DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION"]
+        },
+        {
+          "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-02",
+          "statement": "胡宗宪提出受灾两县买田不得低于三十石稻谷一亩，以避免全部灾民失田；原著数字只能用于原著机制，不自动成为本游戏当前田价。",
+          "claimIds": ["DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD"]
+        },
+        {
+          "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-03",
+          "statement": "胡宗宪提出把不足的改桑面积分散到未受灾县份，以降低集中兼并和民乱风险。",
+          "claimIds": ["DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE"]
+        },
+        {
+          "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-04",
+          "statement": "胡宗宪表示将赴苏州借粮，为地方争取田价提供短期时间；这是一项意图而非已经到仓的粮食。",
+          "claimIds": ["DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C06-LAND-PRICE-DEBATE",
+      "title": "官议公开争论灾民卖田与改桑指标",
+      "sourceRange": {
+        "chapterId": "DM1566-C06",
+        "paragraphStartId": "DM1566-C06-P0133",
+        "paragraphEndId": "DM1566-C06-P0173",
+        "textSpanSha256": "3B024661F040A870A74A73AA7B59BA64DD226EF1BBC8BB670A1DA0BC2A9DF99F"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-01",
+          "statement": "高翰文指出议案只要求尽快买田，却没有规定压价买田和灾民明年生计的处理办法。",
+          "claimIds": ["DM1566-C06-CL-PLAN-OMITS-LAND-COST"]
+        },
+        {
+          "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-02",
+          "statement": "高翰文主张公开田价底线，并质疑为何全部改桑指标必须压在两个灾县；原著数字不自动成为本游戏当前事实。",
+          "claimIds": ["DM1566-C06-CL-PUBLIC-PRICE-FLOOR"]
+        },
+        {
+          "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-03",
+          "statement": "何茂才以官仓赈粮很快见底反制田价限制，把眼前饥饿与长期失田风险置于冲突；原著期限不自动成为本游戏当前库存。",
+          "claimIds": ["DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+      "title": "商人以账册内情和前程交换改桑合作",
+      "sourceRange": {
+        "chapterId": "DM1566-C07",
+        "paragraphStartId": "DM1566-C07-P0074",
+        "paragraphEndId": "DM1566-C07-P0110",
+        "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-01",
+          "statement": "商人称账册连地方高官都不能看，只选择口述部分内容，区分实物存在、接触权和听闻内容。",
+          "claimIds": ["DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED"]
+        },
+        {
+          "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-02",
+          "statement": "官员只由口述获得有限知识，并未取得账册保管权。",
+          "claimIds": ["DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER"]
+        },
+        {
+          "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-03",
+          "statement": "商人以政治保护交换官员同意灾民尽快卖田，构成带条件的私人交易。",
+          "claimIds": ["DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT"]
+        },
+        {
+          "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-04",
+          "statement": "商人以未来雇佣机会为当前低价卖田辩护；这是商人立场，不是客观保证。",
+          "claimIds": ["DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C13-LEDGERS-BURNED",
+      "title": "地方官亲手焚烧账册",
+      "sourceRange": {
+        "chapterId": "DM1566-C13",
+        "paragraphStartId": "DM1566-C13-P0247",
+        "paragraphEndId": "DM1566-C13-P0265",
+        "textSpanSha256": "05B220471EB8FB6530894B6AF59B01A5326EA75B25952C6534F7D61A16EE0C75"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C13-LEDGERS-BURNED-MOVE-01",
+          "statement": "地方官不让底下人经手，亲自焚烧账册，表明毁证行动会改变保管链与责任链；这一原著事件不得直接移植为本游戏当前已发生事实。",
+          "claimIds": ["DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED"]
+        },
+        {
+          "evidenceId": "DM1566-C13-LEDGERS-BURNED-MOVE-02",
+          "statement": "参与者在走投无路时以全面供述相威胁，说明共同利益在问责压力下可能破裂。",
+          "claimIds": ["DM1566-C13-CL-HE-THREATENS-CONFESSION"]
+        }
+      ]
+    },
+    {
+      "sceneId": "DM1566-C23-TESTIMONY-SEALED",
+      "title": "供词经见证、合卷、封印后急递",
+      "sourceRange": {
+        "chapterId": "DM1566-C23",
+        "paragraphStartId": "DM1566-C23-P0125",
+        "paragraphEndId": "DM1566-C23-P0147",
+        "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+      },
+      "mechanisms": [
+        {
+          "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-01",
+          "statement": "同一份供词由两名见证人先后画押，再交回主持者，见证动作和保管流转必须分开记录。",
+          "claimIds": ["DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES"]
+        },
+        {
+          "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-02",
+          "statement": "原供、翻供、证人供词与签名字据被逐项合入同一封件，附件内容必须先存在才能装入。",
+          "claimIds": ["DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED"]
+        },
+        {
+          "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-03",
+          "statement": "封件经烤漆、盖印和急递标记形成可追溯的递送状态，手续发生顺序不能倒置。",
+          "claimIds": ["DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS"]
+        },
+        {
+          "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-04",
+          "statement": "原文明确区分准备盖印与实际盖印，不能把未完成的印章动作写成已经完成。",
+          "claimIds": ["DM1566-C23-CL-WANG-SEAL-NOT-ADDED"]
+        }
+      ]
+    }
+  ]
+}

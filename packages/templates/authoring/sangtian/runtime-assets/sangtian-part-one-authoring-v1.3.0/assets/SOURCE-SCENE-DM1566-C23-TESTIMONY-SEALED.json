@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02",
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "REQ-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "review.authority",
+    "review.procedureStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus",
+    "report.attachmentStrength"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+    "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+    "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+    "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SEPARATE-XUNFU",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C23",
+    "DM1566-C23-TESTIMONY-SEALED",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-REVIEW-AUTHORITY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-REVIEW-AUTHORITY",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "review.authority",
+    "review.procedureStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus",
+    "report.attachmentStrength"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C23-TESTIMONY-SEALED",
+    "title": "供词经见证、合卷、封印后急递",
+    "sourceRange": {
+      "chapterId": "DM1566-C23",
+      "paragraphStartId": "DM1566-C23-P0125",
+      "paragraphEndId": "DM1566-C23-P0147",
+      "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-01",
+        "statement": "同一份供词由两名见证人先后画押，再交回主持者，见证动作和保管流转必须分开记录。",
+        "claimIds": [
+          "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-02",
+        "statement": "原供、翻供、证人供词与签名字据被逐项合入同一封件，附件内容必须先存在才能装入。",
+        "claimIds": [
+          "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-03",
+        "statement": "封件经烤漆、盖印和急递标记形成可追溯的递送状态，手续发生顺序不能倒置。",
+        "claimIds": [
+          "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-04",
+        "statement": "原文明确区分准备盖印与实际盖印，不能把未完成的印章动作写成已经完成。",
+        "claimIds": [
+          "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

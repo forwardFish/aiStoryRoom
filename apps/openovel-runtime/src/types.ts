@@ -38,6 +38,11 @@ export interface OpenNovelProvider {
 }
 
 export type OpenNovelOptionEffect = {
+  /**
+   * Stable server-owned decision point answered by this option. The latest
+   * canonical scene stop and every published option must share this ID.
+   */
+  decisionPointId?: string;
   intent?: string;
   consequence?: string;
   beatContract?: {
@@ -50,6 +55,24 @@ export type OpenNovelOptionEffect = {
     constraints?: string[];
     settledNarrative?: string;
     fallbackContinuation?: string;
+    narrativeSeed?: {
+      playerOutcome: string;
+      npcOrWorldPressure: string;
+      stopCondition: string;
+    };
+    sceneEvidence?: {
+      packetId: string;
+      evidenceItems: Array<{
+        evidenceId: string;
+        evidenceClass: string;
+        statement: string;
+        sourceClaimIds: string[];
+        adaptationDecisionIds: string[];
+        useAs: string;
+      }>;
+      unresolvedFacts: string[];
+      specificityBoundary: string;
+    };
     stopCondition: string;
   };
   knowledgeBoundary?: {

@@ -70,6 +70,15 @@
     "pendingConsequences"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-REVIEW-INITIATION",
+      "actorRefs": [
+        "actor.qingliu_messenger",
+        "actor.xunfu_clerk"
+      ],
+      "prompt": "清流县令亲随与巡抚书吏都在等一句明话：县册疑点由谁先启动查验，第一道命令如何传下去。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "朝廷改桑要求已经到达浙江",
       "玩家仍拥有总督执行与行文权限",
@@ -98,6 +107,7 @@
           "evidence.chainStatus": "TRACEABLE",
           "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
         },
+        "protectedNarrative": "总督把封缄令牌交给县令亲随，命清流县先封档房、记清在场人；原册暂由县令看守，不许擅自启封。",
         "createsPendingConsequence": true
       },
       {
@@ -120,6 +130,7 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督定下督抚共同查验：双方各派一名经手人到清流县，当场核对原册和改桑名册。",
         "createsPendingConsequence": true
       },
       {
@@ -140,6 +151,7 @@
           "witness.accessStatus": "COUNTY_CONTROLLED",
           "evidence.chainStatus": "FRAGILE"
         },
+        "protectedNarrative": "总督准县令先在县内自查两日，只将异常页封样送来，原册暂不离县衙。",
         "createsPendingConsequence": true
       }
     ],

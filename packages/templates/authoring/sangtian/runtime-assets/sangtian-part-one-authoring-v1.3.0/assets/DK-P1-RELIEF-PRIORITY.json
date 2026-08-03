@@ -71,6 +71,14 @@
     "land.safeguardStatus"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-RELIEF-PRIORITY",
+      "actorRefs": [
+        "actor.qingliu_magistrate"
+      ],
+      "prompt": "粮数有限，县令请总督定下第一批粮先给谁；不同次序会让另一处饥情或春种继续承压。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "官仓或可调用粮源不足以同时满足全部需要",
       "粮价或灾民压力已经可见",
@@ -97,6 +105,7 @@
           "grain.immediatePressure": "RELIEVED_FOR_HUNGRIEST",
           "land.riskLevel": "CONTAINED_BUT_PRESENT"
         },
+        "protectedNarrative": "总督命第一批现粮先发给无存粮、也无田可抵的百姓。",
         "createsPendingConsequence": true
       },
       {
@@ -115,6 +124,7 @@
           "grain.immediatePressure": "ACUTE_FOR_LANDLESS",
           "land.riskLevel": "MEDIUM"
         },
+        "protectedNarrative": "总督命人先留下种粮和插秧所需，再按户发放余粮。",
         "createsPendingConsequence": true
       },
       {
@@ -135,6 +145,7 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督决定先稳杭州和清流县米市，再向外围灾村分批送粮。",
         "createsPendingConsequence": true
       }
     ],

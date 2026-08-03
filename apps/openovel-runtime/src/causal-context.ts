@@ -54,6 +54,29 @@ export function buildCausalDelta(input: {
         authorizedPlayerActions: normalizeList(beat.authorizedPlayerActions),
         constraints: normalizeList(beat.constraints),
         settledNarrative: normalizeReaderAction(beat.settledNarrative || ""),
+        fallbackContinuation: normalizeReaderAction(beat.fallbackContinuation || ""),
+        narrativeSeed: beat.narrativeSeed
+          ? {
+              playerOutcome: normalizeReaderAction(beat.narrativeSeed.playerOutcome),
+              npcOrWorldPressure: normalizeReaderAction(beat.narrativeSeed.npcOrWorldPressure),
+              stopCondition: normalizeReaderAction(beat.narrativeSeed.stopCondition),
+            }
+          : undefined,
+        sceneEvidence: beat.sceneEvidence
+          ? {
+              packetId: normalizeReaderAction(beat.sceneEvidence.packetId),
+              evidenceItems: beat.sceneEvidence.evidenceItems.map((item) => ({
+                evidenceId: normalizeReaderAction(item.evidenceId),
+                evidenceClass: normalizeReaderAction(item.evidenceClass),
+                statement: normalizeReaderAction(item.statement),
+                sourceClaimIds: normalizeList(item.sourceClaimIds),
+                adaptationDecisionIds: normalizeList(item.adaptationDecisionIds),
+                useAs: normalizeReaderAction(item.useAs),
+              })),
+              unresolvedFacts: normalizeList(beat.sceneEvidence.unresolvedFacts),
+              specificityBoundary: normalizeReaderAction(beat.sceneEvidence.specificityBoundary),
+            }
+          : undefined,
         stopCondition: normalizeReaderAction(beat.stopCondition),
       }
       : null,
@@ -67,27 +90,43 @@ export function renderCausalDelta(delta: CausalDelta) {
 }
 
 export function renderNarratorCausalDelta(delta: CausalDelta) {
-  const lines = [`- 玩家行动：${delta.readerAction}`];
-  if (delta.immediateIntent && delta.immediateIntent !== delta.readerAction) {
-    lines.push(`- 已绑定行动意图：${delta.immediateIntent}`);
+  const seed = delta.beatContract?.narrativeSeed;
+  if (delta.beatContract?.sceneEvidence && !seed) {
+    throw new Error("NEXT_STORY_BEAT_MISSING_BEFORE_NARRATOR");
   }
-  if (delta.beatContract?.settledNarrative) {
-    lines.push("- 已结算玩家结果由受保护正文提供；只从其后的 NPC 回应继续。\n");
+  if (seed) {
+    const evidence = delta.beatContract?.sceneEvidence;
+    const mechanisms = (evidence?.evidenceItems || [])
+      .filter((item) => item.evidenceClass === "ORIGINAL_MECHANISM")
+      .map((item) => `  - ${item.statement}`);
+    const adaptations = (evidence?.evidenceItems || [])
+      .filter((item) => item.evidenceClass === "APPROVED_ADAPTATION")
+      .map((item) => `  - ${item.statement}`);
+    return [
+      "- 已发生的玩家结果（已经在 Recent Player Canon 中，不得重写或补充）：",
+      "  - 以 Recent Player Canon 末尾的已结算正文为准；本节不重复展示。",
+      "- 服务端已经确定的下一剧情拍（必须写成现场，不得改选其他事件）：",
+      `  - ${seed.npcOrWorldPressure}`,
+      "- 本拍停止点（到此立即停下，不得替玩家回答）：",
+      `  - ${seed.stopCondition}`,
+      ...(mechanisms.length ? ["- 可借鉴的原著冲突机制（只提供戏剧机制，不自动成为当前事实）：", ...mechanisms] : []),
+      ...(adaptations.length ? ["- 已批准的改编映射：", ...adaptations] : []),
+      ...(evidence?.unresolvedFacts?.length
+        ? ["- 仍然未知、不得写死：", ...evidence.unresolvedFacts.map((item) => `  - ${item}`)]
+        : []),
+      ...(evidence?.specificityBoundary
+        ? ["- 事实精度边界：", `  - ${evidence.specificityBoundary}`]
+        : []),
+    ].join("\n");
   }
-  if (delta.beatContract?.objective) {
-    lines.push(`- 本轮场景目标：${delta.beatContract.objective}`);
-  }
-  if (delta.beatContract?.moves.length) {
-    lines.push(`- 已授权 NPC／世界节拍：${delta.beatContract.moves.join("；")}`);
-  }
-  if (delta.allowedKnowledge.length) {
-    lines.push(`- 当前可确认事实：${delta.allowedKnowledge.join("；")}`);
-  }
-  if (delta.requiredNarrativeFacts.length) {
-    lines.push(`- 本轮必须让玩家感知：${delta.requiredNarrativeFacts.join("；")}`);
-  }
-  lines.push(`- 停止点：${delta.beatContract?.stopCondition || delta.stopCondition}`);
-  return lines.join("\n");
+  const stopPoint = delta.beatContract?.stopCondition || delta.stopCondition;
+  return [
+    delta.beatContract?.settledNarrative
+      ? "- 起点：玩家已结算行动已在 Recent Player Canon 末尾写成；从其后继续。"
+      : "- 起点：从 Recent Player Canon 的最后一刻承接 Reader Action。",
+    `- 当前压力：${stopPoint}`,
+    "- 停止点：现场人物把当前压力推到必须由玩家再次回应的位置，主角尚未作出下一项行动。",
+  ].join("\n");
 }
 
 function normalizeList(values: readonly string[] | undefined) {

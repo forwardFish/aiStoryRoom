@@ -58,6 +58,14 @@
     "grain.reliefChannel"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-MERCHANT-CONDITIONS",
+      "actorRefs": [
+        "actor.jiangnan_merchant_head"
+      ],
+      "prompt": "商会会首把粮路与条件一并摆上案头；总督必须决定官府接受什么，又明确拒绝什么。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "官府需要粮、银或运输能力",
       "商会拥有可验证但非无限的资源"
@@ -86,6 +94,7 @@
           ],
           "land.safeguardStatus": "DISTRESS_PURCHASE_BANNED"
         },
+        "protectedNarrative": "总督接受商会的粮食和运力，同时明令灾期不得收购或代持民田。",
         "createsPendingConsequence": true
       },
       {
@@ -110,6 +119,7 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督只向商会购买船队运输，按程付银，不给收丝或购田优先权。",
         "createsPendingConsequence": true
       },
       {
@@ -130,6 +140,7 @@
           "grain.reliefChannel": "OFFICIAL_ONLY",
           "grain.immediatePressure": "RISING_FAST"
         },
+        "protectedNarrative": "总督拒绝商会提出的担保和优先权，改走官府借调粮路。",
         "createsPendingConsequence": true
       }
     ],

@@ -77,6 +77,15 @@
     "witness.accessStatus"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-WITNESS-ACCESS",
+      "actorRefs": [
+        "actor.reform_clerk",
+        "actor.xunfu_aide"
+      ],
+      "prompt": "改桑书吏已经成为各方都想接触的经手人；眼下必须定下谁能问他、在哪里问、谁在场见证。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "县册、田契、抄件或封条已经以事件进入房间",
       "行动者具有接触、封存或抄录的合法路径",
@@ -105,6 +114,7 @@
             "$delta": -1
           }
         },
+        "protectedNarrative": "总督以核对公文为名，把改桑书吏秘密带到总督府，不公开他的证人身份。",
         "createsPendingConsequence": true
       },
       {
@@ -130,6 +140,7 @@
             "status": "DELIVERED"
           }
         },
+        "protectedNarrative": "总督准督抚双方各派一人在场，当面对照书吏说法和样册。",
         "createsPendingConsequence": true
       },
       {
@@ -148,6 +159,7 @@
           "witness.accessStatus": "SEALED_STATEMENT_HELD",
           "evidence.copyStatus": "SEALED_STATEMENT_ONLY"
         },
+        "protectedNarrative": "总督命县令先收一份封缄书面供述，待初始说法留存后再决定是否传人。",
         "createsPendingConsequence": true
       }
     ],

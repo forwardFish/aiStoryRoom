@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-LAND-RISK"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY",
+    "DK-P1-LAND-SAFEGUARD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+    "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+    "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+    "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C05",
+    "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-LAND-RISK",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY",
+    "DK-P1-LAND-SAFEGUARD",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+    "title": "赈粮、田价与分散改桑的制度取舍",
+    "sourceRange": {
+      "chapterId": "DM1566-C05",
+      "paragraphStartId": "DM1566-C05-P0308",
+      "paragraphEndId": "DM1566-C05-P0325",
+      "textSpanSha256": "57B19E869B868C3E6A8548F2241AB0F3314F31E09C0E2A7885BDCB6BC45EF27D"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-01",
+        "statement": "胡宗宪追问灾后压价买田应由哪一级衙门过问，把土地价格转成制度权限问题。",
+        "claimIds": [
+          "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-02",
+        "statement": "胡宗宪提出受灾两县买田不得低于三十石稻谷一亩，以避免全部灾民失田；原著数字只能用于原著机制，不自动成为本游戏当前田价。",
+        "claimIds": [
+          "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-03",
+        "statement": "胡宗宪提出把不足的改桑面积分散到未受灾县份，以降低集中兼并和民乱风险。",
+        "claimIds": [
+          "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-04",
+        "statement": "胡宗宪表示将赴苏州借粮，为地方争取田价提供短期时间；这是一项意图而非已经到仓的粮食。",
+        "claimIds": [
+          "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-03"
+  ],
+  "requirementIds": [
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-LAND-SAFEGUARD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-GRAIN-LAND-ENTRY"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure",
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+    "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+    "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C06",
+    "DM1566-C06-LAND-PRICE-DEBATE",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-GRAIN-RELIEF",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-RELIEF-PRIORITY",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-LAND-SAFEGUARD",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "grain.officialStockStatus",
+    "grain.reliefChannel",
+    "grain.immediatePressure",
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "land.riskLevel",
+    "land.safeguardStatus"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C06-LAND-PRICE-DEBATE",
+    "title": "官议公开争论灾民卖田与改桑指标",
+    "sourceRange": {
+      "chapterId": "DM1566-C06",
+      "paragraphStartId": "DM1566-C06-P0133",
+      "paragraphEndId": "DM1566-C06-P0173",
+      "textSpanSha256": "3B024661F040A870A74A73AA7B59BA64DD226EF1BBC8BB670A1DA0BC2A9DF99F"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-01",
+        "statement": "高翰文指出议案只要求尽快买田，却没有规定压价买田和灾民明年生计的处理办法。",
+        "claimIds": [
+          "DM1566-C06-CL-PLAN-OMITS-LAND-COST"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-02",
+        "statement": "高翰文主张公开田价底线，并质疑为何全部改桑指标必须压在两个灾县；原著数字不自动成为本游戏当前事实。",
+        "claimIds": [
+          "DM1566-C06-CL-PUBLIC-PRICE-FLOOR"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-03",
+        "statement": "何茂才以官仓赈粮很快见底反制田价限制，把眼前饥饿与长期失田风险置于冲突；原著期限不自动成为本游戏当前库存。",
+        "claimIds": [
+          "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

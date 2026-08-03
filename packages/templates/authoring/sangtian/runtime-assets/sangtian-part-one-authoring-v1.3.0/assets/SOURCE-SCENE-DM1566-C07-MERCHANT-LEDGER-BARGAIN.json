@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02",
+    "SEC-P1-03",
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK",
+    "REQ-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY",
+    "DK-P1-EVIDENCE-ATTACHMENT"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus",
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel",
+    "land.riskLevel",
+    "land.safeguardStatus",
+    "report.attachmentStrength"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+    "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+    "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+    "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-QINGLIU-COUNTY",
+    "ADAPT-P1-REGISTER-ALTERATION",
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY",
+    "ADAPT-P1-MERCHANT-GUILD"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C07",
+    "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-REGISTER-CUSTODY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "REQ-P1-MERCHANT-CONDITIONS",
+    "REQ-P1-LAND-RISK",
+    "REQ-P1-EVIDENCE-ATTACHMENT",
+    "DK-P1-EVIDENCE-CUSTODY",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-MERCHANT-CONDITIONS",
+    "DK-P1-GRAIN-SOURCE",
+    "DK-P1-LAND-SAFEGUARD",
+    "DK-P1-RELIEF-PRIORITY",
+    "DK-P1-EVIDENCE-ATTACHMENT",
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-GRAIN-LAND-ENTRY",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "evidence.chainStatus",
+    "evidence.primaryCustodianRef",
+    "evidence.copyStatus",
+    "evidence.archiveSealStatus",
+    "knowledgeTransfers",
+    "witness.accessStatus",
+    "merchant.entryStatus",
+    "merchant.grantedRights",
+    "grain.reliefChannel",
+    "land.riskLevel",
+    "land.safeguardStatus",
+    "report.attachmentStrength"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+    "title": "商人以账册内情和前程交换改桑合作",
+    "sourceRange": {
+      "chapterId": "DM1566-C07",
+      "paragraphStartId": "DM1566-C07-P0074",
+      "paragraphEndId": "DM1566-C07-P0110",
+      "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-01",
+        "statement": "商人称账册连地方高官都不能看，只选择口述部分内容，区分实物存在、接触权和听闻内容。",
+        "claimIds": [
+          "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-02",
+        "statement": "官员只由口述获得有限知识，并未取得账册保管权。",
+        "claimIds": [
+          "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-03",
+        "statement": "商人以政治保护交换官员同意灾民尽快卖田，构成带条件的私人交易。",
+        "claimIds": [
+          "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-04",
+        "statement": "商人以未来雇佣机会为当前低价卖田辩护；这是商人立场，不是客观保证。",
+        "claimIds": [
+          "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

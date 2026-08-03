@@ -4,7 +4,7 @@
   "partId": "PART-01",
   "perspectiveRoleKey": "zhejiang_governor",
   "authoringReleaseVersion": "sangtian-part-one-authoring-v1.3.0",
-  "authoringManifestHash": "322FDE77C24296062F0BD1FF9481C951D7B02EF836A5543D1625E2FAC002811C",
+  "authoringManifestHash": "305A2A12A21E3614D15F74F93D31B91D8C26B70C413B133B74ED6CD6BE91D218",
   "authoringManifest": {
     "schemaVersion": "sangtian-part-one-authoring-release-v1",
     "releaseVersion": "sangtian-part-one-authoring-v1.3.0",
@@ -14,8 +14,7 @@
     "styleProfileHash": "E6D4C4769C26DBEB4FBA0EE26768149D04E8E121323320C967BC8396DFB19326",
     "narrativeScenePatternSetHash": "72673209998FF496AA2F9B8E4FF5E7827991AFD64BE7DB18395AD784CF47E197",
     "narrativeScenePatternCount": 3,
-    "evidenceProfileCount": 1,
-    "assetCount": 55,
+    "assetCount": 65,
     "decisionKernelCount": 15,
     "causalArcCount": 4,
     "floorObligationCount": 4,
@@ -75,6 +74,16 @@
       "RTA-P1-RESPONSIBILITY-RECORD",
       "RTA-P1-REVIEW-AUTHORITY",
       "RTA-P1-XUNFU-COUNTERMOVE",
+      "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+      "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+      "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+      "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+      "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+      "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+      "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+      "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+      "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+      "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
       "STYLE-SANGTIAN-HISTORICAL-NOVEL"
     ],
     "assetHashes": {
@@ -85,21 +94,21 @@
       "ARC-P1-DEADLINE-RESPONSIBILITY": "3DCA3C6294BF055B4B5E680150C3D03CA1CDFD4AD9036701A588453CDE67E6B4",
       "ARC-P1-FIRST-REPORT-FRAMING": "605EB351734EEA5D24B396910B91041CBB6052680BD99BF245319B7F624C1623",
       "ARC-P1-GRAIN-LAND-ENTRY": "3DE3E9F5AF6F283F121EFD73271A3AA32F83BC12F8A6C9A6800AAE6932CF192D",
-      "DK-P1-CAPITAL-CHANNEL": "8210B060F0E88237F1D41FE916FFF48130DD07F7C859C7A7AEDC83C8317DB0CB",
-      "DK-P1-DISCLOSURE-SCOPE": "85A670C22F34888313B9CB11DA2CFE47F5A3A04B9C71AE31BB7111CCCE7A4444",
-      "DK-P1-EVIDENCE-ATTACHMENT": "F4490B345B52F9C074B23E93BAD5818E53B55ABD76E674F86D7C47CF3BBC4AE5",
-      "DK-P1-EVIDENCE-CUSTODY": "50019D014F7A4D180853D8908744E56260846B2E4C5A61F866A92A8821D268D3",
-      "DK-P1-EXECUTION-SCOPE": "A1DDCEC92EFAEC6419C90F06F03522857072AEE0B9D36E6882BC46EC50387C90",
-      "DK-P1-GRAIN-SOURCE": "06C58D380D71FADD0806714E66C4806DD20E966EB9471FF096B7B501002A4303",
-      "DK-P1-LAND-SAFEGUARD": "82D7727EC932B1A84ACA0F6BCF8587F48B9033FE9AAC7FCBDAF754380DB1536C",
-      "DK-P1-MERCHANT-CONDITIONS": "3CF9739A783F71C757296BC9BCB6E3F91C71923CD19F306A9C59D477D10FD0B3",
-      "DK-P1-RELIEF-PRIORITY": "9BC23087D9DFF22F98B9FB4988B572E6DAC60D55D8322EBA9507F5A8595683F6",
-      "DK-P1-REPORT-AUTHORSHIP": "CD3A8541855E051F30533BA2AC44DB07A3BB0CB9673250498A9A6F70BF7DDC55",
-      "DK-P1-RESPONSIBILITY-RECORD": "2871402F44672F91AB7D626B49BCF0B9D7A9F92C29DDCFD79D150631856C5208",
-      "DK-P1-RESPONSIBILITY-SCOPE": "6BF4C02BE650023BE1752C977D03C8CAEFD9091A25E2B74C474674DAD75FDCE0",
-      "DK-P1-REVIEW-AUTHORITY": "9FCA704B92DAFF55CEF9F68077F0CA381557471E87FA8C6F75257547F35A9540",
-      "DK-P1-REVIEW-INITIATION": "62EC9FC004E21C977518BC45C397A2872994EA3DB23E7D26009E7789B73496AA",
-      "DK-P1-WITNESS-ACCESS": "4CE762A8D8E54EDBAF378AF318AFA31077B3A318C79FAF224250C992B676CB76",
+      "DK-P1-CAPITAL-CHANNEL": "457BB98971AED00050EF7EB0CD294E878BCDF377355ABD3E5C1FBE5486179BFA",
+      "DK-P1-DISCLOSURE-SCOPE": "198D1111B5DE75BFFAE0E2F6EBFB5786514EB1DBE767D19CD5075B4EDAADE3E7",
+      "DK-P1-EVIDENCE-ATTACHMENT": "86E4ACE7AB88DE7C2840F154F9882A7FC427BEFD0960A856DB42231D4AC64D39",
+      "DK-P1-EVIDENCE-CUSTODY": "17AF89B67125CC73ECC10EDFC6E91DFC71C707E47F432D07553B5C91FBE4A323",
+      "DK-P1-EXECUTION-SCOPE": "97184B7C050F990C47C4C92D3828AAB8D66C263B008582B2FD946B9027C0F2B8",
+      "DK-P1-GRAIN-SOURCE": "08BBD66E561333562152983400D45513A811999A62D7A229396F3D94C3CAE255",
+      "DK-P1-LAND-SAFEGUARD": "808FABB30A351235FABDB5F80CE7739B3A3AB305A6FD392B1158F98DE0664E77",
+      "DK-P1-MERCHANT-CONDITIONS": "E15F79F46922BAA19B85F52EEBF0F5191CF127C31050B3D3F6FAF7D0B95AF92B",
+      "DK-P1-RELIEF-PRIORITY": "C788973A227F39A6F4920EBDBB06CA5005C77F00A2BD548A3E25BFF804B1D9B1",
+      "DK-P1-REPORT-AUTHORSHIP": "BF68351D0F0AB093D8302CB0AB29F03020D3BFED927D2E29856CBBA55B886A91",
+      "DK-P1-RESPONSIBILITY-RECORD": "2D28A59A7359A7B5E3B7B755F4455F37DC663B982A320C378964D33912BDF161",
+      "DK-P1-RESPONSIBILITY-SCOPE": "1AD1F57F2E8220111EEA6957F74E94FED19277B79FAFA36A8D6BD221B3AA106B",
+      "DK-P1-REVIEW-AUTHORITY": "A5476E5BBDD32C2F1CBE01C340B5779EBA9766FA5D9B77164F16593F9D293165",
+      "DK-P1-REVIEW-INITIATION": "1EED05D3C4D030636BED6D4856625D6CBCB050E5F1FE083784F5B2271007A61A",
+      "DK-P1-WITNESS-ACCESS": "4B3D1EDCC703E93877253C8BEC3D2A3416A60EDBBC4FDEBFAB329827282DFB3A",
       "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY": "D664C2D34744DF34D022ADC1792DCF39AB828ECDE5EC9DC77FE8441F286EF8B1",
       "FLOOR-P1-S1-XUNFU-RESPONSE": "2642D8983E393BDC45CD767A8D0B0238B1F062BEE3751E1633ADAD8A73FCC736",
       "FLOOR-P1-S2-CUSTODY-DISRUPTION": "E1BFA2A68EBE232E7030936D85C2170992525BB38E243CDC108CB71AEEB73170",
@@ -110,7 +119,7 @@
       "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY": "D3E6B321241CED036986CD47ABD1DCEBB71ECD1A584DDBE4CA38C9D634D229E1",
       "PCR-P1-CAPITAL-FRAMING": "AC1B6C74B1BCFB5C1BACDF14C1553B8511D519F6F7D6121EC856A8C6D4428750",
       "PCR-P1-EVIDENCE-ATTACHMENT": "949BA61299D748163C7709A18203FC4129B9E5E30C187E3556EE88E5443B1B18",
-      "PCR-P1-EXECUTION-BOUNDARY": "B6E49BF61879903DC574A9F14511E9A4CDC884FD70C3C55765A051A3B0848B3F",
+      "PCR-P1-EXECUTION-BOUNDARY": "CF8C8F2831D4B7F22F248356B8EE15E8458BE6398F23C770A3AE050A89FA7473",
       "PCR-P1-GRAIN-RELIEF": "EAD639FE2D313E422FFEFE2A541419E71BAFDB220B09A3A0910F99D6F2A45E3E",
       "PCR-P1-KNOWLEDGE-CHAIN": "86803311C8F296CB1211DAAF727D02399E9F9F14E802E3CFA91C415FA55E4186",
       "PCR-P1-LAND-RISK": "5E01156A8C4D766028096B61884309058788A96754E7010266DA27FF2015D9FF",
@@ -119,10 +128,10 @@
       "PCR-P1-REPORT-AUTHORSHIP": "082B9C05FA30B6F63621356F64BF52E71AACEC453B549ADCCD4BB556F97F1D57",
       "PCR-P1-RESPONSIBILITY-RECORD": "D1AA84C0DE06CECCD53A9FF01582D58C716C1F342E2D2B0F1D2F2CC55E0F0C24",
       "PCR-P1-REVIEW-AUTHORITY": "6934FBCCBD3B3792B8873480EC6F48B648D8D4DC806D811976259778B3B6CA53",
-      "PCR-P1-XUNFU-COUNTERMOVE": "B933BE0BB875D0E4BA516ED89740741F65CA152F9C17006A87E0D26EAB2C24BE",
+      "PCR-P1-XUNFU-COUNTERMOVE": "BF3488F5D99CB69FCA137DA66908FAB1E1C640442765B04E8B855C006C18F2A9",
       "RTA-P1-CAPITAL-FRAMING": "522E4B92291055A5D912885341BA49D34FC8D75DB5D2B69DFA265B713CA55B07",
       "RTA-P1-EVIDENCE-ATTACHMENT": "EE6F4D44B40843154ACFB18B9BF0EAB20E8B5F0A53C23B6F4C7AC4B2E87983EE",
-      "RTA-P1-EXECUTION-BOUNDARY": "4BD7DC0A827F2DA3DE66AEA476234274F6CBFDA8E534AE15C779435C263DE21B",
+      "RTA-P1-EXECUTION-BOUNDARY": "62B375B19C652A92D12E3301B6A80D24AEBFAA3A22476FBC433C0CDBDCC7501E",
       "RTA-P1-GRAIN-RELIEF": "DC74730D2C5C3F992BCD89D59CEAA7B1E8F16E6A7445C6E404999FEA694C2D58",
       "RTA-P1-KNOWLEDGE-CHAIN": "091DFEA5145B4E31E8712191DB9DC0C144CCF4DE6E4DF0CB786631056A7334A4",
       "RTA-P1-LAND-RISK": "FB7A1EE18326D3DAFF63A9B3B7C824C1A9740CDF520DA1986DF08A0597E5D773",
@@ -132,23 +141,32 @@
       "RTA-P1-RESPONSIBILITY-RECORD": "E7B015B3F666E7E4C96FCFCF1DC3ACB7F5E86493E3B2DEE1E0342E1146AADD11",
       "RTA-P1-REVIEW-AUTHORITY": "C068DE392BDC029529D6F44538C51F6C689650766449648A99ADE1714CD9ADB6",
       "RTA-P1-XUNFU-COUNTERMOVE": "8504A007E5670BDDE9E65D08A6BF12AB347F3356BC3FD74F02E936EB61C19CB5",
+      "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL": "0C61F907D6172AF21E5F4B704CD690486F98D456FE9C486FDDF4B0CACD00FAA4",
+      "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY": "7CC8AD06F82E6EA65D12BF6F34DA186753AFF2A62FA103C475A0135AEE2AA31F",
+      "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE": "A82D545786285596BE0F60307A49DDB94017C175A2EF40C4D62204621E52998A",
+      "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY": "74AD0E63D8F103CE82DB3827A7220DC0206DEF8C997526552DCDD27F548D4063",
+      "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST": "120133668E53DDD93EDF0BAB267A9EDCC9E0CECEBDAFCA71A6FDD046619D8A62",
+      "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD": "E0288352F85A37D155623A333FACD1E0C5F56D03D0F323F8368CE53AA85C4627",
+      "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE": "2545992E405C9EE05DBB3BB513B45952D1DA123D72A1B0F522FA84F68A3EE9B4",
+      "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN": "7F3F650DA4898CCE15322849165E35EB8E66FC012DD4D4B57F890528D29FB942",
+      "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED": "AAB445AA0B710E14A43399F638C87BA83FE34E83112E556B222789CDA9534CED",
+      "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED": "EB58760567A34232718B061CC4691CDA3C42E26BA94C8B399641014C63F9BB7F",
       "STYLE-SANGTIAN-HISTORICAL-NOVEL": "AEE1FA9AD6362B8486380A0C4397E0C77572595D6102A1E5D3CA1B786A9EFE76"
     },
-    "runtimeIndexHash": "D7934E427E2D54B46F9411EB4623A49598D4E3F4D9BBD6767AD72F6629010501",
-    "requirementSetHash": "1FAE9CC5B70A845AF6B1FBFD6FA1E361FFBE4D0EAF0452BA7B414DE8AEB5E189",
-    "immutableHash": "322FDE77C24296062F0BD1FF9481C951D7B02EF836A5543D1625E2FAC002811C"
+    "runtimeIndexHash": "C82F754D3B7F66D353D558E2AC24543551B11B8C25AD05C4ED49A4365A8EB0EC",
+    "requirementSetHash": "73F9ABD90626D52024BE2368221EA6F604ECCCAE2AE7D5E52F30305819A0003D",
+    "immutableHash": "305A2A12A21E3614D15F74F93D31B91D8C26B70C413B133B74ED6CD6BE91D218"
   },
   "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
   "contentCounts": {
-    "assets": 55,
+    "assets": 65,
     "requirements": 12,
     "sections": 4,
     "decisionKernels": 15,
     "causalArcs": 4,
     "floorObligations": 4,
     "approvedAdaptations": 7,
-    "narrativeScenePatterns": 3,
-    "evidenceProfiles": 1
+    "narrativeScenePatterns": 3
   },
   "worldStart": {
     "schemaVersion": "sangtian-world-start-v1",
@@ -869,14 +887,16 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-EXECUTION-BOUNDARY",
-        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-REVIEW-INITIATION",
         "ARC-P1-DEADLINE-RESPONSIBILITY",
         "PCR-P1-EXECUTION-BOUNDARY",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
-        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE"
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "stateEffects": [
         "reform.executionMode",
@@ -969,7 +989,9 @@
         "PCR-P1-RESPONSIBILITY-RECORD",
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
-        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE"
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "stateEffects": [
         "responsibility.firstRecordStatus",
@@ -1152,11 +1174,13 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-REGISTER-CUSTODY",
-        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-EVIDENCE-CUSTODY",
         "DK-P1-WITNESS-ACCESS",
         "ARC-P1-CUSTODY-CONTEST",
-        "PCR-P1-REGISTER-CUSTODY"
+        "PCR-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "stateEffects": [
         "evidence.chainStatus",
@@ -1248,7 +1272,10 @@
         "DK-P1-REVIEW-AUTHORITY",
         "DK-P1-DISCLOSURE-SCOPE",
         "ARC-P1-CUSTODY-CONTEST",
-        "PCR-P1-REVIEW-AUTHORITY"
+        "PCR-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "stateEffects": [
         "review.authority",
@@ -1340,11 +1367,13 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-KNOWLEDGE-CHAIN",
-        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-DISCLOSURE-SCOPE",
         "DK-P1-WITNESS-ACCESS",
         "ARC-P1-CUSTODY-CONTEST",
-        "PCR-P1-KNOWLEDGE-CHAIN"
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "stateEffects": [
         "knowledgeTransfers",
@@ -1433,7 +1462,10 @@
         "DK-P1-GRAIN-SOURCE",
         "DK-P1-RELIEF-PRIORITY",
         "ARC-P1-GRAIN-LAND-ENTRY",
-        "PCR-P1-GRAIN-RELIEF"
+        "PCR-P1-GRAIN-RELIEF",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE"
       ],
       "stateEffects": [
         "grain.officialStockStatus",
@@ -1527,7 +1559,9 @@
         "DK-P1-MERCHANT-CONDITIONS",
         "DK-P1-GRAIN-SOURCE",
         "ARC-P1-GRAIN-LAND-ENTRY",
-        "PCR-P1-MERCHANT-CONDITIONS"
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
       ],
       "stateEffects": [
         "merchant.entryStatus",
@@ -1626,7 +1660,10 @@
         "DK-P1-LAND-SAFEGUARD",
         "DK-P1-RELIEF-PRIORITY",
         "ARC-P1-GRAIN-LAND-ENTRY",
-        "PCR-P1-LAND-RISK"
+        "PCR-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
       ],
       "stateEffects": [
         "land.riskLevel",
@@ -1717,7 +1754,9 @@
         "DK-P1-REPORT-AUTHORSHIP",
         "DK-P1-RESPONSIBILITY-SCOPE",
         "ARC-P1-FIRST-REPORT-FRAMING",
-        "PCR-P1-REPORT-AUTHORSHIP"
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE"
       ],
       "stateEffects": [
         "report.authorshipMode",
@@ -1820,7 +1859,10 @@
         "RTA-P1-EVIDENCE-ATTACHMENT",
         "DK-P1-EVIDENCE-ATTACHMENT",
         "ARC-P1-FIRST-REPORT-FRAMING",
-        "PCR-P1-EVIDENCE-ATTACHMENT"
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "stateEffects": [
         "report.attachmentStrength",
@@ -1914,7 +1956,8 @@
         "DK-P1-CAPITAL-CHANNEL",
         "DK-P1-REPORT-AUTHORSHIP",
         "ARC-P1-FIRST-REPORT-FRAMING",
-        "PCR-P1-CAPITAL-FRAMING"
+        "PCR-P1-CAPITAL-FRAMING",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE"
       ],
       "stateEffects": [
         "report.dispatchStatus",
@@ -2861,6 +2904,1153 @@
     },
     {
       "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-01"
+      ],
+      "requirementIds": [
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-RESPONSIBILITY-RECORD"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-RESPONSIBILITY-RECORD"
+      ],
+      "causalArcIds": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "reform.executionMode",
+        "reform.scopeStatus",
+        "reform.progress",
+        "responsibility.firstRecordStatus",
+        "responsibility.governorExposure",
+        "responsibility.xunfuExposure"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+        "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+        "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-THREE-DAY-DEADLINE",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C01",
+        "DM1566-C01-POLICY-COUNCIL",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "reform.executionMode",
+        "reform.scopeStatus",
+        "reform.progress",
+        "responsibility.firstRecordStatus",
+        "responsibility.governorExposure",
+        "responsibility.xunfuExposure"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C01-POLICY-COUNCIL",
+        "title": "御前以浙江改桑填补亏空",
+        "sourceRange": {
+          "chapterId": "DM1566-C01",
+          "paragraphStartId": "DM1566-C01-P0219",
+          "paragraphEndId": "DM1566-C01-P0240",
+          "textSpanSha256": "21B514BD7AE999A5FE625C31DC224D44D583A7958F46995EB170FBEAB4CD5C9F"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-01",
+            "statement": "严世蕃当面说工部有责任，自己也有责任。",
+            "claimIds": [
+              "DM1566-C01-CL-POLICY-RESPONSIBILITY"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-03",
+            "statement": "嘉靖追问农田改桑后浙江百姓吃粮、调粮价格与桑农是否愿意。",
+            "claimIds": [
+              "DM1566-C01-CL-POLICY-FOOD-QUESTION"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-04",
+            "statement": "嘉靖命内阁详议方略，再向胡宗宪下急递，把地方执行责任明确压到总督身上。",
+            "claimIds": [
+              "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-GRAIN-RELIEF"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "causalArcIds": [
+        "ARC-P1-GRAIN-LAND-ENTRY"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "grain.officialStockStatus",
+        "grain.reliefChannel",
+        "grain.immediatePressure"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY"
+      ],
+      "adaptationDecisionIds": [],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C02",
+        "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-GRAIN-RELIEF",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "grain.officialStockStatus",
+        "grain.reliefChannel",
+        "grain.immediatePressure"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "title": "总督府承担粮食与民变责任",
+        "sourceRange": {
+          "chapterId": "DM1566-C02",
+          "paragraphStartId": "DM1566-C02-P0198",
+          "paragraphEndId": "DM1566-C02-P0241",
+          "textSpanSha256": "C2DE1D80210AC35EF7ECD0392ED3B2CCEDD3298F672EC98FAC812EFC91428115"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-01",
+            "statement": "从淳安跟来的百姓跪满总督衙门外大坪与官路，民生后果先作为总督亲眼所见进入场景。",
+            "claimIds": [
+              "DM1566-C02-CL-GOVERNOR-PETITIONERS"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-02",
+            "statement": "地方官只能确认向米行借到的粮很少、外省也不肯多调；原著在此只建立粮源不足，不提供本游戏当前粮价涨幅或灾民人数。",
+            "claimIds": [
+              "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY-MOVE-03",
+            "statement": "胡宗宪先把朝廷降罪和百姓怨责揽到自己名下，再说明无粮强改会把民生危机推成治安危机。",
+            "claimIds": [
+              "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-01",
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-REVIEW-AUTHORITY"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE"
+      ],
+      "causalArcIds": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-CUSTODY-CONTEST"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "reform.executionMode",
+        "reform.scopeStatus",
+        "reform.progress",
+        "review.authority",
+        "review.procedureStatus"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-THREE-DAY-DEADLINE",
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C03",
+        "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-REVIEW-AUTHORITY",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-CUSTODY-CONTEST",
+        "reform.executionMode",
+        "reform.scopeStatus",
+        "reform.progress",
+        "review.authority",
+        "review.procedureStatus"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "title": "总督划清地方治理与党争边界",
+        "sourceRange": {
+          "chapterId": "DM1566-C03",
+          "paragraphStartId": "DM1566-C03-P0020",
+          "paragraphEndId": "DM1566-C03-P0039",
+          "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-01",
+            "statement": "胡宗宪公开表明不愿改桑造成大规模失田与内乱；这是人物意图，不保证行动必然成功。",
+            "claimIds": [
+              "DM1566-C03-CL-GOVERNOR-INVARIANT"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-02",
+            "statement": "地方总督提出把一年方案分三年完成，证明执行节奏与范围可以成为制度内的争夺对象。",
+            "claimIds": [
+              "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY-MOVE-04",
+            "statement": "谭纶拒绝阅读更多私下公文，明确知道得越多也可能越损害主政者的政治行动空间。",
+            "claimIds": [
+              "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-01",
+        "SEC-P1-02",
+        "SEC-P1-04"
+      ],
+      "requirementIds": [
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-RESPONSIBILITY-RECORD",
+        "REQ-P1-REVIEW-AUTHORITY",
+        "REQ-P1-REPORT-AUTHORSHIP"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE"
+      ],
+      "causalArcIds": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "reform.executionMode",
+        "reform.scopeStatus",
+        "reform.progress",
+        "responsibility.firstRecordStatus",
+        "responsibility.governorExposure",
+        "responsibility.xunfuExposure",
+        "review.authority",
+        "review.procedureStatus",
+        "report.authorshipMode",
+        "report.firstNarrativeController"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-PLAYABLE-GOVERNOR",
+        "ADAPT-P1-THREE-DAY-DEADLINE",
+        "ADAPT-P1-SEPARATE-XUNFU",
+        "ADAPT-P1-QINGLIU-COUNTY"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C04",
+        "DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-RESPONSIBILITY-RECORD",
+        "REQ-P1-REVIEW-AUTHORITY",
+        "REQ-P1-REPORT-AUTHORSHIP",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "reform.executionMode",
+        "reform.scopeStatus",
+        "reform.progress",
+        "responsibility.firstRecordStatus",
+        "responsibility.governorExposure",
+        "responsibility.xunfuExposure",
+        "review.authority",
+        "review.procedureStatus",
+        "report.authorshipMode",
+        "report.firstNarrativeController"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C04-JOINT-REPORT-CONTEST",
+        "title": "总督府争夺奏疏内容与署名",
+        "sourceRange": {
+          "chapterId": "DM1566-C04",
+          "paragraphStartId": "DM1566-C04-P0074",
+          "paragraphEndId": "DM1566-C04-P0110",
+          "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-01",
+            "statement": "地方执行者以改桑属于国策为由拒绝自行承担延缓责任，要求朝廷先明令改变。",
+            "claimIds": [
+              "DM1566-C04-CL-REPORT-OMITS-DELAY"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-02",
+            "statement": "胡宗宪要求把调粮借贷、百姓生计与延缓改桑写进正式奏疏，用文书内容固定治理责任。",
+            "claimIds": [
+              "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-03",
+            "statement": "杨金水明确表示若奏疏照胡宗宪的方案书写便不署名，署名本身成为责任与利益冲突的行动。",
+            "claimIds": [
+              "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C04-JOINT-REPORT-CONTEST-MOVE-04",
+            "statement": "新的可核验证据进入现场后，原先拒绝修改奏疏的人才重新谈判；证据必须先出现，不能由叙述者预设。",
+            "claimIds": [
+              "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-02",
+        "SEC-P1-04"
+      ],
+      "requirementIds": [
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "REQ-P1-REPORT-AUTHORSHIP",
+        "REQ-P1-CAPITAL-FRAMING"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "DK-P1-CAPITAL-CHANNEL"
+      ],
+      "causalArcIds": [
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "knowledgeTransfers",
+        "witness.accessStatus",
+        "report.authorshipMode",
+        "report.firstNarrativeController",
+        "responsibility.governorExposure",
+        "responsibility.xunfuExposure",
+        "report.dispatchStatus",
+        "pendingConsequences"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY",
+        "ADAPT-P1-SEPARATE-XUNFU"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C02",
+        "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "REQ-P1-REPORT-AUTHORSHIP",
+        "REQ-P1-CAPITAL-FRAMING",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "DK-P1-CAPITAL-CHANNEL",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "knowledgeTransfers",
+        "witness.accessStatus",
+        "report.authorshipMode",
+        "report.firstNarrativeController",
+        "responsibility.governorExposure",
+        "responsibility.xunfuExposure",
+        "report.dispatchStatus",
+        "pendingConsequences"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "title": "奏疏越过通政司进入严府",
+        "sourceRange": {
+          "chapterId": "DM1566-C02",
+          "paragraphStartId": "DM1566-C02-P0243",
+          "paragraphEndId": "DM1566-C02-P0251",
+          "textSpanSha256": "FC3D2D0A1D3B6764867EB5C44A8D6434CD55B3B797E181759E33F3D9BC6C523A"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-01",
+            "statement": "胡宗宪奏疏没有先送通政使司，而是直接送到西苑内阁值房，递送渠道本身成为政治行动。",
+            "claimIds": [
+              "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-02",
+            "statement": "徐阶只看封面便命人将奏疏送严府，严世蕃先行拆看，说明首份叙述会被渠道中的掌权者重新解释。",
+            "claimIds": [
+              "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-03",
+            "statement": "严世蕃与罗龙文把绕过通政司的递送方式解释为地方主官的政治示好；这是他们的政治判断，不是客观定罪。",
+            "claimIds": [
+              "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-LAND-RISK"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-LAND-SAFEGUARD"
+      ],
+      "causalArcIds": [
+        "ARC-P1-GRAIN-LAND-ENTRY"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "grain.officialStockStatus",
+        "grain.reliefChannel",
+        "grain.immediatePressure",
+        "land.riskLevel",
+        "land.safeguardStatus"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C05",
+        "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-LAND-RISK",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-LAND-SAFEGUARD",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "grain.officialStockStatus",
+        "grain.reliefChannel",
+        "grain.immediatePressure",
+        "land.riskLevel",
+        "land.safeguardStatus"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "title": "赈粮、田价与分散改桑的制度取舍",
+        "sourceRange": {
+          "chapterId": "DM1566-C05",
+          "paragraphStartId": "DM1566-C05-P0308",
+          "paragraphEndId": "DM1566-C05-P0325",
+          "textSpanSha256": "57B19E869B868C3E6A8548F2241AB0F3314F31E09C0E2A7885BDCB6BC45EF27D"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-01",
+            "statement": "胡宗宪追问灾后压价买田应由哪一级衙门过问，把土地价格转成制度权限问题。",
+            "claimIds": [
+              "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-02",
+            "statement": "胡宗宪提出受灾两县买田不得低于三十石稻谷一亩，以避免全部灾民失田；原著数字只能用于原著机制，不自动成为本游戏当前田价。",
+            "claimIds": [
+              "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-03",
+            "statement": "胡宗宪提出把不足的改桑面积分散到未受灾县份，以降低集中兼并和民乱风险。",
+            "claimIds": [
+              "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C05-GRAIN-LAND-SAFEGUARD-MOVE-04",
+            "statement": "胡宗宪表示将赴苏州借粮，为地方争取田价提供短期时间；这是一项意图而非已经到仓的粮食。",
+            "claimIds": [
+              "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-MERCHANT-CONDITIONS",
+        "REQ-P1-LAND-RISK"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-LAND-SAFEGUARD"
+      ],
+      "causalArcIds": [
+        "ARC-P1-GRAIN-LAND-ENTRY"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "grain.officialStockStatus",
+        "grain.reliefChannel",
+        "grain.immediatePressure",
+        "merchant.entryStatus",
+        "merchant.grantedRights",
+        "land.riskLevel",
+        "land.safeguardStatus"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C06",
+        "DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-MERCHANT-CONDITIONS",
+        "REQ-P1-LAND-RISK",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-LAND-SAFEGUARD",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "grain.officialStockStatus",
+        "grain.reliefChannel",
+        "grain.immediatePressure",
+        "merchant.entryStatus",
+        "merchant.grantedRights",
+        "land.riskLevel",
+        "land.safeguardStatus"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C06-LAND-PRICE-DEBATE",
+        "title": "官议公开争论灾民卖田与改桑指标",
+        "sourceRange": {
+          "chapterId": "DM1566-C06",
+          "paragraphStartId": "DM1566-C06-P0133",
+          "paragraphEndId": "DM1566-C06-P0173",
+          "textSpanSha256": "3B024661F040A870A74A73AA7B59BA64DD226EF1BBC8BB670A1DA0BC2A9DF99F"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-01",
+            "statement": "高翰文指出议案只要求尽快买田，却没有规定压价买田和灾民明年生计的处理办法。",
+            "claimIds": [
+              "DM1566-C06-CL-PLAN-OMITS-LAND-COST"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-02",
+            "statement": "高翰文主张公开田价底线，并质疑为何全部改桑指标必须压在两个灾县；原著数字不自动成为本游戏当前事实。",
+            "claimIds": [
+              "DM1566-C06-CL-PUBLIC-PRICE-FLOOR"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C06-LAND-PRICE-DEBATE-MOVE-03",
+            "statement": "何茂才以官仓赈粮很快见底反制田价限制，把眼前饥饿与长期失田风险置于冲突；原著期限不自动成为本游戏当前库存。",
+            "claimIds": [
+              "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-02",
+        "SEC-P1-03",
+        "SEC-P1-04"
+      ],
+      "requirementIds": [
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "REQ-P1-MERCHANT-CONDITIONS",
+        "REQ-P1-LAND-RISK",
+        "REQ-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "causalArcIds": [
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "ARC-P1-FIRST-REPORT-FRAMING"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus",
+        "knowledgeTransfers",
+        "witness.accessStatus",
+        "merchant.entryStatus",
+        "merchant.grantedRights",
+        "grain.reliefChannel",
+        "land.riskLevel",
+        "land.safeguardStatus",
+        "report.attachmentStrength"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-REGISTER-ALTERATION",
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY",
+        "ADAPT-P1-MERCHANT-GUILD"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C07",
+        "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "REQ-P1-MERCHANT-CONDITIONS",
+        "REQ-P1-LAND-RISK",
+        "REQ-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus",
+        "knowledgeTransfers",
+        "witness.accessStatus",
+        "merchant.entryStatus",
+        "merchant.grantedRights",
+        "grain.reliefChannel",
+        "land.riskLevel",
+        "land.safeguardStatus",
+        "report.attachmentStrength"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "title": "商人以账册内情和前程交换改桑合作",
+        "sourceRange": {
+          "chapterId": "DM1566-C07",
+          "paragraphStartId": "DM1566-C07-P0074",
+          "paragraphEndId": "DM1566-C07-P0110",
+          "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-01",
+            "statement": "商人称账册连地方高官都不能看，只选择口述部分内容，区分实物存在、接触权和听闻内容。",
+            "claimIds": [
+              "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-02",
+            "statement": "官员只由口述获得有限知识，并未取得账册保管权。",
+            "claimIds": [
+              "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-03",
+            "statement": "商人以政治保护交换官员同意灾民尽快卖田，构成带条件的私人交易。",
+            "claimIds": [
+              "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN-MOVE-04",
+            "statement": "商人以未来雇佣机会为当前低价卖田辩护；这是商人立场，不是客观保证。",
+            "claimIds": [
+              "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-02",
+        "SEC-P1-04"
+      ],
+      "requirementIds": [
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "causalArcIds": [
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus",
+        "report.attachmentStrength"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-REGISTER-ALTERATION",
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C13",
+        "DM1566-C13-LEDGERS-BURNED",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus",
+        "report.attachmentStrength"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C13-LEDGERS-BURNED",
+        "title": "地方官亲手焚烧账册",
+        "sourceRange": {
+          "chapterId": "DM1566-C13",
+          "paragraphStartId": "DM1566-C13-P0247",
+          "paragraphEndId": "DM1566-C13-P0265",
+          "textSpanSha256": "05B220471EB8FB6530894B6AF59B01A5326EA75B25952C6534F7D61A16EE0C75"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C13-LEDGERS-BURNED-MOVE-01",
+            "statement": "地方官不让底下人经手，亲自焚烧账册，表明毁证行动会改变保管链与责任链；这一原著事件不得直接移植为本游戏当前已发生事实。",
+            "claimIds": [
+              "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C13-LEDGERS-BURNED-MOVE-02",
+            "statement": "参与者在走投无路时以全面供述相威胁，说明共同利益在问责压力下可能破裂。",
+            "claimIds": [
+              "DM1566-C13-CL-HE-THREATENS-CONFESSION"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
+      "assetId": "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
+      "assetType": "SOURCE_SCENE_EVIDENCE",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-02",
+        "SEC-P1-04"
+      ],
+      "requirementIds": [
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-REVIEW-AUTHORITY",
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "REQ-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-EVIDENCE-ATTACHMENT"
+      ],
+      "causalArcIds": [
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING"
+      ],
+      "actorRefs": [],
+      "stateDependencies": [
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus",
+        "review.authority",
+        "review.procedureStatus",
+        "knowledgeTransfers",
+        "witness.accessStatus",
+        "report.attachmentStrength"
+      ],
+      "visibilityRules": [
+        {
+          "visibilityClass": "SERVER_AUTHORITATIVE",
+          "rule": "Only player-projected fields may enter the visible prompt or UI."
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-REGISTER-ALTERATION",
+        "ADAPT-P1-SEPARATE-XUNFU",
+        "ADAPT-P1-SHADOW-LEDGER-ENTRY"
+      ],
+      "retrievalTags": [
+        "PART-01",
+        "DM1566-C23",
+        "DM1566-C23-TESTIMONY-SEALED",
+        "SOURCE_SCENE_EVIDENCE",
+        "DRAMATIC_MECHANISM_ONLY",
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-REVIEW-AUTHORITY",
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "REQ-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "evidence.chainStatus",
+        "evidence.primaryCustodianRef",
+        "evidence.copyStatus",
+        "evidence.archiveSealStatus",
+        "review.authority",
+        "review.procedureStatus",
+        "knowledgeTransfers",
+        "witness.accessStatus",
+        "report.attachmentStrength"
+      ],
+      "payload": {
+        "sourceId": "dm1566-liuheping",
+        "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+        "sourceSceneId": "DM1566-C23-TESTIMONY-SEALED",
+        "title": "供词经见证、合卷、封印后急递",
+        "sourceRange": {
+          "chapterId": "DM1566-C23",
+          "paragraphStartId": "DM1566-C23-P0125",
+          "paragraphEndId": "DM1566-C23-P0147",
+          "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+        },
+        "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+        "mechanisms": [
+          {
+            "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-01",
+            "statement": "同一份供词由两名见证人先后画押，再交回主持者，见证动作和保管流转必须分开记录。",
+            "claimIds": [
+              "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-02",
+            "statement": "原供、翻供、证人供词与签名字据被逐项合入同一封件，附件内容必须先存在才能装入。",
+            "claimIds": [
+              "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-03",
+            "statement": "封件经烤漆、盖印和急递标记形成可追溯的递送状态，手续发生顺序不能倒置。",
+            "claimIds": [
+              "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS"
+            ]
+          },
+          {
+            "evidenceId": "DM1566-C23-TESTIMONY-SEALED-MOVE-04",
+            "statement": "原文明确区分准备盖印与实际盖印，不能把未完成的印章动作写成已经完成。",
+            "claimIds": [
+              "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+            ]
+          }
+        ],
+        "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+      }
+    },
+    {
+      "schemaVersion": "runtime-story-asset-v1",
       "assetId": "RTA-P1-EXECUTION-BOUNDARY",
       "assetType": "INSTITUTION_CAPABILITY",
       "partIds": [
@@ -2942,8 +4132,7 @@
         ],
         "delayedConsequences": [
           "执行速度改变后续粮食与土地压力",
-          "先放行后补册使复核责任落到具体承办人",
-          "暂缓封档把误期与粮价压力集中到总督"
+          "书面边界决定问责时谁能切割责任"
         ],
         "invariantsToPreserve": [
           "玩家不能废除国策",
@@ -3019,8 +4208,7 @@
         "createOnlyFromCommittedEvent": true,
         "consequences": [
           "执行速度改变后续粮食与土地压力",
-          "先放行后补册使复核责任落到具体承办人",
-          "暂缓封档把误期与粮价压力集中到总督"
+          "书面边界决定问责时谁能切割责任"
         ],
         "payoffBeats": [
           {
@@ -3028,7 +4216,7 @@
             "actorRefs": [
               "actor.xunfu_aide"
             ],
-            "action": "巡抚幕僚以三日限期和正在上涨的粮价向总督施压，口头追问为何只准清流县试办、又不许趁急难压价买田，并要总督说明这两条是否仍照办；速度之争由此变成一项可追责的当面催问。",
+            "action": "巡抚幕僚把三日限期和眼前粮价一并压到案前，追问为何只准清流县试办、又不许趁急难压价买田，并要总督说明这两条是否仍照办；速度之争由此变成一项可追责的当面催问。",
             "requiredTermGroups": [
               [
                 "巡抚幕僚",
@@ -3045,68 +4233,37 @@
                 "照办"
               ]
             ],
-            "resultCeiling": "只能形成口头催问与责任压力；眼前粮价只能定性写成正在上涨或压力在眼前，不得换算为一日一变、每日、每时等频率，也不得为期限或粮价另造单帖、报价单、账册或精确数字；不得写成朝廷已经定罪或巡抚已经取得执行权。"
+            "resultCeiling": "只能形成催问与责任压力；眼前粮价只能定性写成正在上涨或压力在眼前，不得换算为一日一变、每日、每时等频率；不得写成朝廷已经定罪或巡抚已经取得执行权。"
           },
           {
-            "beatId": "PAYOFF-P1-EXECUTION-SUPPLEMENT",
+            "beatId": "PAYOFF-P1-EXECUTION-RECORD",
             "actorRefs": [
               "actor.xunfu_aide"
             ],
-            "action": "巡抚幕僚要求总督说明：既已先放行改桑，三日内补齐复核册和经手名册究竟由谁承办、误期由谁担责。",
+            "action": "巡抚幕僚盯住已经写进放行文书的两条边界，要求总督说明由谁具名担责；日后谁想切割责任，都必须先解释这份已经写明的边界。",
             "requiredTermGroups": [
               [
                 "巡抚幕僚",
                 "幕僚"
               ],
               [
-                "先放行",
-                "已经放行",
-                "改桑"
+                "改桑范围",
+                "执行范围",
+                "清流县试办",
+                "清流试办",
+                "何县试办",
+                "划定的范围"
               ],
               [
-                "三日",
-                "复核册",
-                "经手名册"
-              ],
-              [
-                "承办",
-                "担责",
-                "责任"
+                "责任",
+                "具名",
+                "切割首尾",
+                "切割干系",
+                "切割干净",
+                "交代"
               ]
             ],
-            "resultCeiling": "只能追问补册承办与误期责任；不得写成复核册、经手名册已经补齐，也不得新增其中内容或经手人姓名。"
-          },
-          {
-            "beatId": "PAYOFF-P1-EXECUTION-PAUSE",
-            "actorRefs": [
-              "actor.xunfu_aide"
-            ],
-            "action": "巡抚幕僚把三日限期和正在上涨的粮价一并摆到总督面前，追问封存是否已有回报、暂缓要到何时，并把误期责任明白记在总督名下。",
-            "requiredTermGroups": [
-              [
-                "巡抚幕僚",
-                "幕僚"
-              ],
-              [
-                "三日限期",
-                "三日"
-              ],
-              [
-                "粮价",
-                "米价"
-              ],
-              [
-                "封存回报",
-                "封存",
-                "回报"
-              ],
-              [
-                "暂缓",
-                "误期",
-                "责任"
-              ]
-            ],
-            "resultCeiling": "只能形成催问和责任压力；封存仍待回报，不得写成档房、原册或封条已经得到保全，也不得写成朝廷已经定罪。"
+            "resultCeiling": "巡抚幕僚只以巡抚代表身份独自加入现场；不得让巡抚本人或其他随员到场。只能把“清流县试办”和“不得趁急难压价买田”这两项已结算边界带入责任争夺；不得新增乡、里、保、亩数、田地分类、第二份文书或已经完成的签署内容。"
           }
         ],
         "mustRecord": [
@@ -3522,11 +4679,7 @@
               ],
               [
                 "耽误国策",
-                "误了国策",
-                "耽搁国策",
-                "拖延国策",
-                "迟疑",
-                "误期"
+                "迟疑"
               ]
             ],
             "resultCeiling": "只能提出参加与记责要求，不得让巡抚自动取得复核主持权。"
@@ -5735,6 +6888,14 @@
         "pendingConsequences"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-CAPITAL-CHANNEL",
+          "actorRefs": [
+            "actor.xunfu_aide"
+          ],
+          "prompt": "奏报和附件已经逼近出府时刻，巡抚幕僚追问它走哪条入京渠道，沿途责任怎样留下记录。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "正式或非正式文书已经进入递送渠道",
           "渠道中介、署名和附件状态可追踪"
@@ -5764,6 +6925,7 @@
                 "status": "SENT"
               }
             },
+            "protectedNarrative": "总督命首报走正式通政渠道，沿途逐站记录交接和到达时辰。",
             "createsPendingConsequence": true
           },
           {
@@ -5791,6 +6953,7 @@
                 "status": "SENT"
               }
             },
+            "protectedNarrative": "总督用自己的封印加封急递，指定送达上级，并在府中留下副本和交接记录。",
             "createsPendingConsequence": true
           },
           {
@@ -5811,6 +6974,7 @@
               "report.firstNarrativeController": "DUAL_CHANNEL_CONTESTED",
               "evidence.chainStatus": "TRACEABLE"
             },
+            "protectedNarrative": "总督命正本走正式渠道、摘要另走密奏，两份互列封号，以便相互核验。",
             "createsPendingConsequence": true
           }
         ],
@@ -5895,6 +7059,14 @@
         "witness.accessStatus"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-DISCLOSURE-SCOPE",
+          "actorRefs": [
+            "actor.xunfu_aide"
+          ],
+          "prompt": "巡抚幕僚索要县册异常和书吏说法的范围；总督必须决定哪些可以共享，哪些仍要封住。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "复核对象和程序争议已经进入正式议程",
           "参与者只能在自身官职权限和文书渠道内行动",
@@ -5928,6 +7100,7 @@
                 "status": "DELIVERED"
               }
             },
+            "protectedNarrative": "总督只向巡抚说明册页存在差异，没有透露书吏和密供所在。",
             "createsPendingConsequence": true
           },
           {
@@ -5951,6 +7124,7 @@
                 "status": "DELIVERED"
               }
             },
+            "protectedNarrative": "总督准将带见证记录的样册交巡抚查验，原件仍由现保管人封存。",
             "createsPendingConsequence": true
           },
           {
@@ -5973,6 +7147,7 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督以保管链未稳为由暂不披露细节，只答应限时提交复核结果。",
             "createsPendingConsequence": true
           }
         ],
@@ -6044,6 +7219,15 @@
         "evidence.chainStatus"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-EVIDENCE-ATTACHMENT",
+          "actorRefs": [
+            "actor.qingliu_magistrate",
+            "actor.reform_clerk"
+          ],
+          "prompt": "奏报正文之外还能附什么，已经牵动县册保管人与书吏安危；总督必须确定附件边界。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "至少有一种原件、副本、口供、仓单或田契进入证据状态",
           "附件强度和保管链可被服务端读取"
@@ -6070,6 +7254,7 @@
               "evidence.chainStatus": "TRACEABLE",
               "witness.accessStatus": "DISCLOSED_IN_ATTACHMENT"
             },
+            "protectedNarrative": "总督决定随奏附上见证抄出的样册、封条记录和原件保管人名单。",
             "createsPendingConsequence": true
           },
           {
@@ -6090,6 +7275,7 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督决定附件只列田亩数字和日期差异，并声明原册仍在复核，不附人名推断。",
             "createsPendingConsequence": true
           },
           {
@@ -6108,6 +7294,7 @@
               "report.attachmentStrength": "CUSTODY_RECORD_WITHHELD_TESTIMONY",
               "witness.accessStatus": "PROTECTED_FROM_REPORT"
             },
+            "protectedNarrative": "总督决定暂不附书吏供述，只附保管链，并说明人证需要保护。",
             "createsPendingConsequence": true
           }
         ],
@@ -6183,6 +7370,15 @@
         "evidence.archiveSealStatus"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-EVIDENCE-CUSTODY",
+          "actorRefs": [
+            "actor.qingliu_magistrate",
+            "actor.xunfu_aide"
+          ],
+          "prompt": "清流县令与巡抚幕僚把争执落到同一件事上：可疑县册的原件和抄件由谁保管，开册时由谁见证。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "县册、田契、抄件或封条已经以事件进入房间",
           "行动者具有接触、封存或抄录的合法路径"
@@ -6209,6 +7405,7 @@
               "evidence.archiveSealStatus": "SEALED_WITH_THREE_SAMPLES",
               "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
             },
+            "protectedNarrative": "总督定下原件仍留清流县档房，换上新封条；总督、县令、巡抚三方各留一份封样。",
             "createsPendingConsequence": true
           },
           {
@@ -6234,6 +7431,7 @@
                 "status": "DELIVERED"
               }
             },
+            "protectedNarrative": "总督命两名见证人在场抄出样册，并逐页记明抄录人和抄录时辰。",
             "createsPendingConsequence": true
           },
           {
@@ -6256,6 +7454,7 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督命人将可疑册页整封送往总督府，县衙只留下交接清单。",
             "createsPendingConsequence": true
           }
         ],
@@ -6338,6 +7537,14 @@
         "pendingConsequences"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-EXECUTION-SCOPE",
+          "actorRefs": [
+            "actor.xunfu_clerk"
+          ],
+          "prompt": "巡抚书吏仍候在厅中，要总督当面定下这道改桑急令究竟按什么边界执行。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "朝廷改桑要求已经到达浙江",
           "玩家仍拥有总督执行与行文权限",
@@ -6366,6 +7573,8 @@
               "reform.scopeStatus": "QINGLIU_ONLY",
               "land.safeguardStatus": "WRITTEN_NO_DISTRESS_PURCHASE"
             },
+            "protectedNarrative": "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
+            "fallbackContinuation": "巡抚书吏把回文收入匣中，却没有退下。他隔着屏风问道：清流县既只准先办一批，复核若误了三日之限，这份责任是由总督独自写明，还是请巡抚在同一份正式回文上共同具名。问完，他仍捧着回文匣候在原处。",
             "createsPendingConsequence": true
           },
           {
@@ -6388,6 +7597,8 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
+            "fallbackContinuation": "巡抚书吏听明先行放开的条件，随即追问：三日后复核册若仍不齐，催办、放行与补正的责任准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名。",
             "createsPendingConsequence": true
           },
           {
@@ -6410,6 +7621,8 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
+            "fallbackContinuation": "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
             "createsPendingConsequence": true
           }
         ],
@@ -6491,6 +7704,15 @@
         "merchant.grantedRights"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-GRAIN-SOURCE",
+          "actorRefs": [
+            "actor.qingliu_magistrate",
+            "actor.jiangnan_merchant_head"
+          ],
+          "prompt": "县令报官仓难支，商会会首却说粮船可以立刻开来；厅上等总督决定第一批救粮从哪里来。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "官仓或可调用粮源不足以同时满足全部需要",
           "粮价或灾民压力已经可见",
@@ -6521,6 +7743,7 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督决定先动官仓并向邻省借粮，所有借据由总督府承担。",
             "createsPendingConsequence": true
           },
           {
@@ -6541,6 +7764,7 @@
               "merchant.entryStatus": "CONDITIONAL",
               "land.safeguardStatus": "NO_GRAIN_FOR_LAND"
             },
+            "protectedNarrative": "总督准商会限量开仓，官府为粮路作保，但明令不得借粮价换购灾民田地。",
             "createsPendingConsequence": true
           },
           {
@@ -6561,6 +7785,7 @@
               "merchant.entryStatus": "CONDITIONAL",
               "evidence.chainStatus": "TRACEABLE"
             },
+            "protectedNarrative": "总督定下官仓先稳城内、商会负责外县运输，两路账目分开核销。",
             "createsPendingConsequence": true
           }
         ],
@@ -6632,6 +7857,15 @@
         "land.safeguardStatus"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-LAND-SAFEGUARD",
+          "actorRefs": [
+            "actor.qingliu_magistrate",
+            "actor.jiangnan_merchant_head"
+          ],
+          "prompt": "粮价已经逼近田契，县令与商会都等着总督划出灾期买田和改桑指标的边界。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "改桑范围、粮食缺口或购田方案至少一项已经确定",
           "百姓生计和田价仍受地方政策影响"
@@ -6658,6 +7892,7 @@
               "land.riskLevel": "MEDIUM",
               "evidence.chainStatus": "TRACEABLE"
             },
+            "protectedNarrative": "总督定下灾期田契的公开底价，并命县衙逐契登记买受人。",
             "createsPendingConsequence": true
           },
           {
@@ -6678,6 +7913,7 @@
               "merchant.grantedRights": [],
               "grain.immediatePressure": "RISING"
             },
+            "protectedNarrative": "总督命赈期内暂禁商会和大户购入灾民田，先以借粮维持。",
             "createsPendingConsequence": true
           },
           {
@@ -6700,6 +7936,7 @@
                 "$delta": -1
               }
             },
+            "protectedNarrative": "总督把改桑指标分到更多非灾县，清流县只承担有限份额。",
             "createsPendingConsequence": true
           }
         ],
@@ -6770,6 +8007,14 @@
         "grain.reliefChannel"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-MERCHANT-CONDITIONS",
+          "actorRefs": [
+            "actor.jiangnan_merchant_head"
+          ],
+          "prompt": "商会会首把粮路与条件一并摆上案头；总督必须决定官府接受什么，又明确拒绝什么。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "官府需要粮、银或运输能力",
           "商会拥有可验证但非无限的资源"
@@ -6798,6 +8043,7 @@
               ],
               "land.safeguardStatus": "DISTRESS_PURCHASE_BANNED"
             },
+            "protectedNarrative": "总督接受商会的粮食和运力，同时明令灾期不得收购或代持民田。",
             "createsPendingConsequence": true
           },
           {
@@ -6822,6 +8068,7 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督只向商会购买船队运输，按程付银，不给收丝或购田优先权。",
             "createsPendingConsequence": true
           },
           {
@@ -6842,6 +8089,7 @@
               "grain.reliefChannel": "OFFICIAL_ONLY",
               "grain.immediatePressure": "RISING_FAST"
             },
+            "protectedNarrative": "总督拒绝商会提出的担保和优先权，改走官府借调粮路。",
             "createsPendingConsequence": true
           }
         ],
@@ -6925,6 +8173,14 @@
         "land.safeguardStatus"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-RELIEF-PRIORITY",
+          "actorRefs": [
+            "actor.qingliu_magistrate"
+          ],
+          "prompt": "粮数有限，县令请总督定下第一批粮先给谁；不同次序会让另一处饥情或春种继续承压。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "官仓或可调用粮源不足以同时满足全部需要",
           "粮价或灾民压力已经可见",
@@ -6951,6 +8207,7 @@
               "grain.immediatePressure": "RELIEVED_FOR_HUNGRIEST",
               "land.riskLevel": "CONTAINED_BUT_PRESENT"
             },
+            "protectedNarrative": "总督命第一批现粮先发给无存粮、也无田可抵的百姓。",
             "createsPendingConsequence": true
           },
           {
@@ -6969,6 +8226,7 @@
               "grain.immediatePressure": "ACUTE_FOR_LANDLESS",
               "land.riskLevel": "MEDIUM"
             },
+            "protectedNarrative": "总督命人先留下种粮和插秧所需，再按户发放余粮。",
             "createsPendingConsequence": true
           },
           {
@@ -6989,6 +8247,7 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督决定先稳杭州和清流县米市，再向外围灾村分批送粮。",
             "createsPendingConsequence": true
           }
         ],
@@ -7075,6 +8334,14 @@
         "pendingConsequences"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-REPORT-AUTHORSHIP",
+          "actorRefs": [
+            "actor.xunfu_aide"
+          ],
+          "prompt": "第一份入京叙述即将成文，巡抚幕僚要求先定由谁起草、由谁具名，分歧如何写进去。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "存在一份需要形成、修改或决定是否联署的地方奏报",
           "玩家掌握至少一项可写入的执行、民生或证据事实",
@@ -7108,6 +8375,7 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督决定与巡抚共同具奏，执行、复核和粮食分歧逐项写明，双方确认后共同具名入京。",
             "createsPendingConsequence": true
           },
           {
@@ -7130,6 +8398,7 @@
                 "$delta": 2
               }
             },
+            "protectedNarrative": "总督决定独自具奏，并把巡抚催办和拒签文书一并列作附件。",
             "createsPendingConsequence": true
           },
           {
@@ -7152,6 +8421,7 @@
                 "$delta": -2
               }
             },
+            "protectedNarrative": "总督准巡抚另报，自己同时送出复核结果和异议，两份奏报各自具名。",
             "createsPendingConsequence": true
           }
         ],
@@ -7232,6 +8502,14 @@
         "pendingConsequences"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-RESPONSIBILITY-RECORD",
+          "actorRefs": [
+            "actor.xunfu_clerk"
+          ],
+          "prompt": "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "存在待签或待修改的正式文书",
           "至少两方对文书内容或署名有不同利益",
@@ -7264,6 +8542,8 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督把暂缓签发的缘由、清流县复核办法和督抚各自应负的责任逐项写入回文。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+            "fallbackContinuation": "巡抚书吏双手接过回文，低头看了一眼封口，没有当场应承。次日巳时，签押房里仍不见清流县册的原件和抄件，巡抚幕僚却先带回了答复：巡抚不肯在这份回文上共同具名。\n\n清流县令听完没有争辩。巡抚幕僚把话转到即将开始的复核上，问这场复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。两个人都望向总督，等他先定主持权。",
             "createsPendingConsequence": true
           },
           {
@@ -7284,6 +8564,8 @@
                 "$delta": 2
               }
             },
+            "protectedNarrative": "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
+            "fallbackContinuation": "巡抚书吏看见总督独自具名，又看见附后的催办公文，脸色微微一变，仍将文书收好。次日巳时，巡抚幕僚来到签押房，先问的不是改桑进度，而是清流县册的复核究竟由谁主持。清流县令在一旁候着，也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
             "createsPendingConsequence": true
           },
           {
@@ -7308,6 +8590,8 @@
               "reform.executionMode": "PROVISIONAL_RELEASE",
               "reform.progress": "STARTED"
             },
+            "protectedNarrative": "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
+            "fallbackContinuation": "巡抚书吏接过那份逐项记明异议的回文，沉默片刻才告退。次日巳时，巡抚幕僚在签押房当面说明，巡抚不改自己的催办立场；清流县令则问县衙在复核中究竟是经办、见证，还是只交材料。两边都不肯先退，总督必须先定复核由谁主持。",
             "createsPendingConsequence": true
           }
         ],
@@ -7379,6 +8663,15 @@
         "responsibility.xunfuExposure"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-RESPONSIBILITY-SCOPE",
+          "actorRefs": [
+            "actor.xunfu_aide",
+            "actor.qingliu_magistrate"
+          ],
+          "prompt": "奏报不能只写事成与不成；厅上必须定下总督、巡抚、县令和经手人各自承担哪一段责任。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "存在一份需要形成、修改或决定是否联署的地方奏报",
           "玩家掌握至少一项可写入的执行、民生或证据事实"
@@ -7405,6 +8698,7 @@
               },
               "responsibility.xunfuExposure": 0
             },
+            "protectedNarrative": "总督命奏报写明，执行与复核均由自己裁定，不把责任推给县令。",
             "createsPendingConsequence": true
           },
           {
@@ -7431,6 +8725,7 @@
                 "$delta": -1
               }
             },
+            "protectedNarrative": "总督把责任分项写定：改桑进度由巡抚具名，复核和赈济由总督具名。",
             "createsPendingConsequence": true
           },
           {
@@ -7451,6 +8746,7 @@
               "witness.accessStatus": "NAMED_AS_HANDLER",
               "evidence.chainStatus": "TRACEABLE"
             },
+            "protectedNarrative": "总督命奏报如实列清县令、书吏和各级经手事项，只陈事实，不先定罪。",
             "createsPendingConsequence": true
           }
         ],
@@ -7520,6 +8816,15 @@
         "review.procedureStatus"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-REVIEW-AUTHORITY",
+          "actorRefs": [
+            "actor.xunfu_aide",
+            "actor.qingliu_magistrate"
+          ],
+          "prompt": "巡抚幕僚要求先说清复核由谁主持；县令也等着知道自己是经办、见证，还是只能交出材料。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "复核对象和程序争议已经进入正式议程",
           "参与者只能在自身官职权限和文书渠道内行动"
@@ -7548,6 +8853,7 @@
                 "$delta": -1
               }
             },
+            "protectedNarrative": "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
             "createsPendingConsequence": true
           },
           {
@@ -7566,15 +8872,16 @@
               "review.authority": "JOINT",
               "review.procedureStatus": "DUAL_SIGNATURE_REQUIRED"
             },
+            "protectedNarrative": "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
             "createsPendingConsequence": true
           },
           {
             "affordanceTemplateId": "DK-P1-REVIEW-AUTHORITY-OPT-03",
             "title": "县级初核",
-            "actionText": "先由县令初核，督抚只审初核结果和原件。",
+            "actionText": "先由县令按总督列出的项目初核，督抚只审其结果和原件。",
             "targetRef": "actor.qingliu_magistrate",
             "method": "分层复核",
-            "immediateIntent": "先由县令初核，督抚只审初核结果和原件。",
+            "immediateIntent": "先由县令按总督列出的项目初核，督抚只审其结果和原件。",
             "visibleTradeoff": "节省时间，却给县衙留下整理材料的空间",
             "stateEffects": [
               "review.authority",
@@ -7586,6 +8893,7 @@
               "review.procedureStatus": "LAYERED_REVIEW",
               "evidence.chainStatus": "FRAGILE"
             },
+            "protectedNarrative": "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
             "createsPendingConsequence": true
           }
         ],
@@ -7668,6 +8976,15 @@
         "pendingConsequences"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-REVIEW-INITIATION",
+          "actorRefs": [
+            "actor.qingliu_messenger",
+            "actor.xunfu_clerk"
+          ],
+          "prompt": "清流县令亲随与巡抚书吏都在等一句明话：县册疑点由谁先启动查验，第一道命令如何传下去。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "朝廷改桑要求已经到达浙江",
           "玩家仍拥有总督执行与行文权限",
@@ -7696,6 +9013,7 @@
               "evidence.chainStatus": "TRACEABLE",
               "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
             },
+            "protectedNarrative": "总督把封缄令牌交给县令亲随，命清流县先封档房、记清在场人；原册暂由县令看守，不许擅自启封。",
             "createsPendingConsequence": true
           },
           {
@@ -7718,6 +9036,7 @@
                 "$delta": 1
               }
             },
+            "protectedNarrative": "总督定下督抚共同查验：双方各派一名经手人到清流县，当场核对原册和改桑名册。",
             "createsPendingConsequence": true
           },
           {
@@ -7738,6 +9057,7 @@
               "witness.accessStatus": "COUNTY_CONTROLLED",
               "evidence.chainStatus": "FRAGILE"
             },
+            "protectedNarrative": "总督准县令先在县内自查两日，只将异常页封样送来，原册暂不离县衙。",
             "createsPendingConsequence": true
           }
         ],
@@ -7827,6 +9147,15 @@
         "witness.accessStatus"
       ],
       "payload": {
+        "decisionPrompt": {
+          "decisionPointId": "DK-P1-WITNESS-ACCESS",
+          "actorRefs": [
+            "actor.reform_clerk",
+            "actor.xunfu_aide"
+          ],
+          "prompt": "改桑书吏已经成为各方都想接触的经手人；眼下必须定下谁能问他、在哪里问、谁在场见证。",
+          "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+        },
         "availableWhen": [
           "县册、田契、抄件或封条已经以事件进入房间",
           "行动者具有接触、封存或抄录的合法路径",
@@ -7855,6 +9184,7 @@
                 "$delta": -1
               }
             },
+            "protectedNarrative": "总督以核对公文为名，把改桑书吏秘密带到总督府，不公开他的证人身份。",
             "createsPendingConsequence": true
           },
           {
@@ -7880,6 +9210,7 @@
                 "status": "DELIVERED"
               }
             },
+            "protectedNarrative": "总督准督抚双方各派一人在场，当面对照书吏说法和样册。",
             "createsPendingConsequence": true
           },
           {
@@ -7898,6 +9229,7 @@
               "witness.accessStatus": "SEALED_STATEMENT_HELD",
               "evidence.copyStatus": "SEALED_STATEMENT_ONLY"
             },
+            "protectedNarrative": "总督命县令先收一份封缄书面供述，待初始说法留存后再决定是否传人。",
             "createsPendingConsequence": true
           }
         ],
@@ -9969,6 +11301,16 @@
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-REVIEW-AUTHORITY",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ]
     },
@@ -9990,6 +11332,9 @@
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "SEC-P1-02": [
@@ -10009,6 +11354,12 @@
         "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REGISTER-CUSTODY",
         "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "SEC-P1-03": [
@@ -10024,6 +11375,10 @@
         "RTA-P1-GRAIN-RELIEF",
         "RTA-P1-LAND-RISK",
         "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "SEC-P1-04": [
@@ -10039,6 +11394,11 @@
         "RTA-P1-CAPITAL-FRAMING",
         "RTA-P1-EVIDENCE-ATTACHMENT",
         "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ]
     },
@@ -10054,6 +11414,9 @@
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
         "PCR-P1-EXECUTION-BOUNDARY",
         "RTA-P1-EXECUTION-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-REGISTER-CUSTODY": [
@@ -10066,6 +11429,9 @@
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REGISTER-CUSTODY",
         "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-KNOWLEDGE-CHAIN": [
@@ -10079,6 +11445,9 @@
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-KNOWLEDGE-CHAIN",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-RESPONSIBILITY-RECORD": [
@@ -10090,6 +11459,8 @@
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
         "PCR-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-RESPONSIBILITY-RECORD",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-XUNFU-COUNTERMOVE": [
@@ -10105,6 +11476,18 @@
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
+      "REQ-P1-GRAIN-RELIEF": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-GRAIN-RELIEF",
+        "RTA-P1-GRAIN-RELIEF",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
       "REQ-P1-REVIEW-AUTHORITY": [
         "AP-P1-QINGLIU-MAGISTRATE",
         "ARC-P1-CUSTODY-CONTEST",
@@ -10113,33 +11496,9 @@
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REVIEW-AUTHORITY",
         "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "REQ-P1-GRAIN-RELIEF": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-GRAIN-RELIEF",
-        "RTA-P1-GRAIN-RELIEF",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "REQ-P1-MERCHANT-CONDITIONS": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-MERCHANT-CONDITIONS",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "REQ-P1-LAND-RISK": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-REPORT-AUTHORSHIP": [
@@ -10149,14 +11508,8 @@
         "FLOOR-P1-S4-CAPITAL-DEADLINE",
         "PCR-P1-REPORT-AUTHORSHIP",
         "RTA-P1-REPORT-AUTHORSHIP",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "REQ-P1-EVIDENCE-ATTACHMENT": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-CAPITAL-FRAMING": [
@@ -10166,6 +11519,41 @@
         "FLOOR-P1-S4-CAPITAL-DEADLINE",
         "PCR-P1-CAPITAL-FRAMING",
         "RTA-P1-CAPITAL-FRAMING",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "REQ-P1-LAND-RISK": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "REQ-P1-MERCHANT-CONDITIONS": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "REQ-P1-EVIDENCE-ATTACHMENT": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ]
     },
@@ -10182,6 +11570,9 @@
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-EVIDENCE-CUSTODY": [
@@ -10193,6 +11584,9 @@
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REGISTER-CUSTODY",
         "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-DISCLOSURE-SCOPE": [
@@ -10207,6 +11601,11 @@
         "PCR-P1-REVIEW-AUTHORITY",
         "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-WITNESS-ACCESS": [
@@ -10221,6 +11620,10 @@
         "PCR-P1-REGISTER-CUSTODY",
         "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-EXECUTION-SCOPE": [
@@ -10235,6 +11638,9 @@
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-RESPONSIBILITY-RECORD": [
@@ -10249,15 +11655,8 @@
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-XUNFU-COUNTERMOVE",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-REVIEW-AUTHORITY": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-REVIEW-AUTHORITY",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-GRAIN-SOURCE": [
@@ -10268,6 +11667,10 @@
         "PCR-P1-MERCHANT-CONDITIONS",
         "RTA-P1-GRAIN-RELIEF",
         "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-RELIEF-PRIORITY": [
@@ -10278,22 +11681,22 @@
         "PCR-P1-LAND-RISK",
         "RTA-P1-GRAIN-RELIEF",
         "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "DK-P1-MERCHANT-CONDITIONS": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-MERCHANT-CONDITIONS",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-LAND-SAFEGUARD": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-LAND-SAFEGUARD",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-LAND-RISK",
+      "DK-P1-REVIEW-AUTHORITY": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-REVIEW-AUTHORITY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-REPORT-AUTHORSHIP": [
@@ -10304,6 +11707,8 @@
         "PCR-P1-REPORT-AUTHORSHIP",
         "RTA-P1-CAPITAL-FRAMING",
         "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-RESPONSIBILITY-SCOPE": [
@@ -10312,14 +11717,8 @@
         "FLOOR-P1-S4-CAPITAL-DEADLINE",
         "PCR-P1-REPORT-AUTHORSHIP",
         "RTA-P1-REPORT-AUTHORSHIP",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-EVIDENCE-ATTACHMENT": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-CAPITAL-CHANNEL": [
@@ -10328,6 +11727,39 @@
         "FLOOR-P1-S4-CAPITAL-DEADLINE",
         "PCR-P1-CAPITAL-FRAMING",
         "RTA-P1-CAPITAL-FRAMING",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-LAND-SAFEGUARD": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-LAND-SAFEGUARD",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-MERCHANT-CONDITIONS": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-EVIDENCE-ATTACHMENT": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ]
     },
@@ -10349,6 +11781,9 @@
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "ARC-P1-CUSTODY-CONTEST": [
@@ -10368,6 +11803,12 @@
         "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REGISTER-CUSTODY",
         "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "ARC-P1-GRAIN-LAND-ENTRY": [
@@ -10383,6 +11824,10 @@
         "RTA-P1-GRAIN-RELIEF",
         "RTA-P1-LAND-RISK",
         "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "ARC-P1-FIRST-REPORT-FRAMING": [
@@ -10398,6 +11843,11 @@
         "RTA-P1-CAPITAL-FRAMING",
         "RTA-P1-EVIDENCE-ATTACHMENT",
         "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ]
     },
@@ -10640,7 +12090,10 @@
         "PCR-P1-EVIDENCE-ATTACHMENT",
         "PCR-P1-REGISTER-CUSTODY",
         "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-REGISTER-CUSTODY"
+        "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "evidence.primaryCustodianRef": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -10651,7 +12104,10 @@
         "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
+        "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "evidence.copyStatus": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -10662,7 +12118,10 @@
         "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
+        "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "evidence.archiveSealStatus": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -10671,7 +12130,10 @@
         "DK-P1-WITNESS-ACCESS",
         "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
+        "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "knowledgeTransfers": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -10682,6 +12144,9 @@
         "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "PCR-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-KNOWLEDGE-CHAIN",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "reform.executionMode": [
@@ -10692,26 +12157,37 @@
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "FLOOR-P1-S4-CAPITAL-DEADLINE",
         "PCR-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-EXECUTION-BOUNDARY"
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "reform.scopeStatus": [
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-REVIEW-INITIATION",
         "PCR-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-EXECUTION-BOUNDARY"
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "reform.progress": [
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-REVIEW-INITIATION",
         "PCR-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-EXECUTION-BOUNDARY"
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "responsibility.firstRecordStatus": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
         "DK-P1-RESPONSIBILITY-RECORD",
         "FLOOR-P1-S1-XUNFU-RESPONSE",
         "PCR-P1-RESPONSIBILITY-RECORD",
-        "RTA-P1-RESPONSIBILITY-RECORD"
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "responsibility.governorExposure": [
         "DK-P1-REPORT-AUTHORSHIP",
@@ -10720,7 +12196,10 @@
         "PCR-P1-REPORT-AUTHORSHIP",
         "PCR-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-RESPONSIBILITY-RECORD"
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "responsibility.xunfuExposure": [
         "DK-P1-REPORT-AUTHORSHIP",
@@ -10729,61 +12208,10 @@
         "PCR-P1-REPORT-AUTHORSHIP",
         "PCR-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-RESPONSIBILITY-RECORD"
-      ],
-      "relations.governorXunfu": [
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "DK-P1-REVIEW-INITIATION",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-XUNFU-COUNTERMOVE"
-      ],
-      "pendingConsequences": [
-        "AP-P1-XUNFU-AIDE",
-        "DK-P1-CAPITAL-CHANNEL",
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "DK-P1-REVIEW-INITIATION",
-        "PCR-P1-CAPITAL-FRAMING",
-        "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-CAPITAL-FRAMING",
-        "RTA-P1-XUNFU-COUNTERMOVE",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "review.authority": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-REVIEW-AUTHORITY",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-REVIEW-AUTHORITY"
-      ],
-      "review.procedureStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-REVIEW-AUTHORITY",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-REVIEW-AUTHORITY"
-      ],
-      "witness.accessStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-KNOWLEDGE-CHAIN"
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "grain.officialStockStatus": [
         "ARC-P1-GRAIN-LAND-ENTRY",
@@ -10791,7 +12219,10 @@
         "DK-P1-RELIEF-PRIORITY",
         "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
         "PCR-P1-GRAIN-RELIEF",
-        "RTA-P1-GRAIN-RELIEF"
+        "RTA-P1-GRAIN-RELIEF",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE"
       ],
       "grain.reliefChannel": [
         "ARC-P1-FIRST-REPORT-FRAMING",
@@ -10804,7 +12235,11 @@
         "PCR-P1-GRAIN-RELIEF",
         "PCR-P1-MERCHANT-CONDITIONS",
         "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-MERCHANT-CONDITIONS"
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
       ],
       "grain.immediatePressure": [
         "ARC-P1-GRAIN-LAND-ENTRY",
@@ -10812,47 +12247,42 @@
         "DK-P1-RELIEF-PRIORITY",
         "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
         "PCR-P1-GRAIN-RELIEF",
-        "RTA-P1-GRAIN-RELIEF"
+        "RTA-P1-GRAIN-RELIEF",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE"
       ],
-      "merchant.entryStatus": [
+      "review.authority": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "ARC-P1-CUSTODY-CONTEST",
         "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-REVIEW-AUTHORITY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-MERCHANT-CONDITIONS"
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
-      "merchant.grantedRights": [
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-MERCHANT-CONDITIONS"
-      ],
-      "land.riskLevel": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-LAND-RISK"
-      ],
-      "land.safeguardStatus": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-LAND-RISK"
+      "review.procedureStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-REVIEW-AUTHORITY",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "report.authorshipMode": [
         "DK-P1-REPORT-AUTHORSHIP",
         "DK-P1-RESPONSIBILITY-SCOPE",
         "PCR-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-REPORT-AUTHORSHIP"
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
       "report.firstNarrativeController": [
         "ARC-P1-FIRST-REPORT-FRAMING",
@@ -10863,18 +12293,108 @@
         "PCR-P1-CAPITAL-FRAMING",
         "PCR-P1-REPORT-AUTHORSHIP",
         "RTA-P1-CAPITAL-FRAMING",
-        "RTA-P1-REPORT-AUTHORSHIP"
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
       ],
-      "report.attachmentStrength": [
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-EVIDENCE-ATTACHMENT"
+      "witness.accessStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "report.dispatchStatus": [
         "DK-P1-CAPITAL-CHANNEL",
         "DK-P1-REPORT-AUTHORSHIP",
         "PCR-P1-CAPITAL-FRAMING",
-        "RTA-P1-CAPITAL-FRAMING"
+        "RTA-P1-CAPITAL-FRAMING",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE"
+      ],
+      "pendingConsequences": [
+        "AP-P1-XUNFU-AIDE",
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-REVIEW-INITIATION",
+        "PCR-P1-CAPITAL-FRAMING",
+        "PCR-P1-XUNFU-COUNTERMOVE",
+        "RTA-P1-CAPITAL-FRAMING",
+        "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "land.riskLevel": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "land.safeguardStatus": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "merchant.entryStatus": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "merchant.grantedRights": [
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "report.attachmentStrength": [
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "relations.governorXunfu": [
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-REVIEW-INITIATION",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-XUNFU-COUNTERMOVE",
+        "RTA-P1-XUNFU-COUNTERMOVE"
       ],
       "review.initiationStatus": [
         "ARC-P1-DEADLINE-RESPONSIBILITY",
@@ -10943,6 +12463,16 @@
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-REVIEW-AUTHORITY",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "SEC-P1-01": [
@@ -11000,6 +12530,9 @@
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
         "PCR-P1-EXECUTION-BOUNDARY",
         "RTA-P1-EXECUTION-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-REGISTER-CUSTODY": [
@@ -11012,6 +12545,9 @@
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REGISTER-CUSTODY",
         "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "REQ-P1-KNOWLEDGE-CHAIN": [
@@ -11025,6 +12561,9 @@
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-KNOWLEDGE-CHAIN",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-REVIEW-INITIATION": [
@@ -11039,6 +12578,9 @@
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-EVIDENCE-CUSTODY": [
@@ -11050,6 +12592,9 @@
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REGISTER-CUSTODY",
         "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-DISCLOSURE-SCOPE": [
@@ -11064,6 +12609,11 @@
         "PCR-P1-REVIEW-AUTHORITY",
         "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-WITNESS-ACCESS": [
@@ -11078,6 +12628,10 @@
         "PCR-P1-REGISTER-CUSTODY",
         "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "ARC-P1-DEADLINE-RESPONSIBILITY": [
@@ -11097,6 +12651,9 @@
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "ARC-P1-CUSTODY-CONTEST": [
@@ -11116,6 +12673,12 @@
         "RTA-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-REGISTER-CUSTODY",
         "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "actor.zhejiang_governor": [
@@ -11218,7 +12781,10 @@
         "PCR-P1-EVIDENCE-ATTACHMENT",
         "PCR-P1-REGISTER-CUSTODY",
         "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-REGISTER-CUSTODY"
+        "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "evidence.primaryCustodianRef": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -11229,7 +12795,10 @@
         "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
+        "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "evidence.copyStatus": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -11240,7 +12809,10 @@
         "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "FLOOR-P1-S2-CUSTODY-DISRUPTION",
         "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
+        "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "evidence.archiveSealStatus": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -11249,7 +12821,10 @@
         "DK-P1-WITNESS-ACCESS",
         "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "PCR-P1-REGISTER-CUSTODY",
-        "RTA-P1-REGISTER-CUSTODY"
+        "RTA-P1-REGISTER-CUSTODY",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "knowledgeTransfers": [
         "AP-P1-QINGLIU-MAGISTRATE",
@@ -11260,10 +12835,14 @@
         "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "PCR-P1-KNOWLEDGE-CHAIN",
         "RTA-P1-KNOWLEDGE-CHAIN",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DM1566-C01-POLICY-COUNCIL": [
-        "NSP-P1-POLICY-QUESTION-AND-DISPATCH"
+        "NSP-P1-POLICY-QUESTION-AND-DISPATCH",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL"
       ],
       "NARRATIVE_SCENE_PATTERN": [
         "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
@@ -11284,6 +12863,8 @@
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
         "PCR-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-RESPONSIBILITY-RECORD",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-EXECUTION-SCOPE": [
@@ -11298,6 +12879,9 @@
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-EXECUTION-BOUNDARY",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "DK-P1-RESPONSIBILITY-RECORD": [
@@ -11312,6 +12896,8 @@
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "source.jiajing": [
@@ -11327,7 +12913,8 @@
         "NSP-P1-POLICY-QUESTION-AND-DISPATCH"
       ],
       "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY": [
-        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY"
+        "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY"
       ],
       "REQ-P1-XUNFU-COUNTERMOVE": [
         "AP-P1-XUNFU-AIDE",
@@ -11363,7 +12950,538 @@
         "NSP-P1-VISIBLE-PRESSURE-FACT-QUESTIONS-LIABILITY"
       ],
       "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY": [
-        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE"
+        "NSP-P1-DOCUMENT-KNOWLEDGE-AND-POLITICAL-DISTANCE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY"
+      ],
+      "DM1566-C01": [
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL"
+      ],
+      "SOURCE_SCENE_EVIDENCE": [
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "DRAMATIC_MECHANISM_ONLY": [
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "reform.executionMode": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "reform.scopeStatus": [
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "PCR-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "reform.progress": [
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REVIEW-INITIATION",
+        "PCR-P1-EXECUTION-BOUNDARY",
+        "RTA-P1-EXECUTION-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "responsibility.firstRecordStatus": [
+        "ARC-P1-DEADLINE-RESPONSIBILITY",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "FLOOR-P1-S1-XUNFU-RESPONSE",
+        "PCR-P1-RESPONSIBILITY-RECORD",
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "responsibility.governorExposure": [
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "PCR-P1-RESPONSIBILITY-RECORD",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "responsibility.xunfuExposure": [
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "PCR-P1-RESPONSIBILITY-RECORD",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-RESPONSIBILITY-RECORD",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "DM1566-C02": [
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE"
+      ],
+      "REQ-P1-GRAIN-RELIEF": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-GRAIN-RELIEF",
+        "RTA-P1-GRAIN-RELIEF",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-GRAIN-SOURCE": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-GRAIN-RELIEF",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-GRAIN-RELIEF",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-RELIEF-PRIORITY": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-GRAIN-RELIEF",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-GRAIN-RELIEF",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "ARC-P1-GRAIN-LAND-ENTRY": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-GRAIN-RELIEF",
+        "PCR-P1-LAND-RISK",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-GRAIN-RELIEF",
+        "RTA-P1-LAND-RISK",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "grain.officialStockStatus": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-GRAIN-RELIEF",
+        "RTA-P1-GRAIN-RELIEF",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE"
+      ],
+      "grain.reliefChannel": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-GRAIN-RELIEF",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-GRAIN-RELIEF",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "grain.immediatePressure": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-GRAIN-RELIEF",
+        "RTA-P1-GRAIN-RELIEF",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE"
+      ],
+      "DM1566-C03": [
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY"
+      ],
+      "REQ-P1-REVIEW-AUTHORITY": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-REVIEW-AUTHORITY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-REVIEW-AUTHORITY": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-REVIEW-AUTHORITY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "review.authority": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-REVIEW-AUTHORITY",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "review.procedureStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-REVIEW-AUTHORITY",
+        "PCR-P1-REVIEW-AUTHORITY",
+        "RTA-P1-REVIEW-AUTHORITY",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "DM1566-C04": [
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "DM1566-C04-JOINT-REPORT-CONTEST": [
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "REQ-P1-REPORT-AUTHORSHIP": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-REPORT-AUTHORSHIP": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-CAPITAL-FRAMING",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-CAPITAL-FRAMING",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-RESPONSIBILITY-SCOPE": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "ARC-P1-FIRST-REPORT-FRAMING": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-CAPITAL-FRAMING",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-CAPITAL-FRAMING",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "report.authorshipMode": [
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "report.firstNarrativeController": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-SCOPE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-CAPITAL-FRAMING",
+        "PCR-P1-REPORT-AUTHORSHIP",
+        "RTA-P1-CAPITAL-FRAMING",
+        "RTA-P1-REPORT-AUTHORSHIP",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST"
+      ],
+      "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE": [
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE"
+      ],
+      "REQ-P1-CAPITAL-FRAMING": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-CAPITAL-FRAMING",
+        "RTA-P1-CAPITAL-FRAMING",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-CAPITAL-CHANNEL": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-CAPITAL-CHANNEL",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-CAPITAL-FRAMING",
+        "RTA-P1-CAPITAL-FRAMING",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "witness.accessStatus": [
+        "AP-P1-QINGLIU-MAGISTRATE",
+        "AP-P1-REFORM-CLERK",
+        "AP-P1-XUNFU-AIDE",
+        "ARC-P1-CUSTODY-CONTEST",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS",
+        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
+        "PCR-P1-KNOWLEDGE-CHAIN",
+        "RTA-P1-KNOWLEDGE-CHAIN",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "report.dispatchStatus": [
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "PCR-P1-CAPITAL-FRAMING",
+        "RTA-P1-CAPITAL-FRAMING",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE"
+      ],
+      "pendingConsequences": [
+        "AP-P1-XUNFU-AIDE",
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-EXECUTION-SCOPE",
+        "DK-P1-REPORT-AUTHORSHIP",
+        "DK-P1-RESPONSIBILITY-RECORD",
+        "DK-P1-REVIEW-INITIATION",
+        "PCR-P1-CAPITAL-FRAMING",
+        "PCR-P1-XUNFU-COUNTERMOVE",
+        "RTA-P1-CAPITAL-FRAMING",
+        "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DM1566-C05": [
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD"
+      ],
+      "DM1566-C05-GRAIN-LAND-SAFEGUARD": [
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD"
+      ],
+      "REQ-P1-LAND-RISK": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-LAND-SAFEGUARD": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-LAND-SAFEGUARD",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "land.riskLevel": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "land.safeguardStatus": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-LAND-RISK",
+        "RTA-P1-LAND-RISK",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "DM1566-C06": [
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE"
+      ],
+      "DM1566-C06-LAND-PRICE-DEBATE": [
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE"
+      ],
+      "REQ-P1-MERCHANT-CONDITIONS": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-MERCHANT-CONDITIONS": [
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "merchant.entryStatus": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "ARC-P1-GRAIN-LAND-ENTRY",
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "merchant.grantedRights": [
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-MERCHANT-CONDITIONS",
+        "PCR-P1-MERCHANT-CONDITIONS",
+        "RTA-P1-MERCHANT-CONDITIONS",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "DM1566-C07": [
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "DM1566-C07-MERCHANT-LEDGER-BARGAIN": [
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN"
+      ],
+      "REQ-P1-EVIDENCE-ATTACHMENT": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "DK-P1-EVIDENCE-ATTACHMENT": [
+        "ARC-P1-FIRST-REPORT-FRAMING",
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "FLOOR-P1-S4-CAPITAL-DEADLINE",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
+        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
+      ],
+      "report.attachmentStrength": [
+        "DK-P1-EVIDENCE-ATTACHMENT",
+        "PCR-P1-EVIDENCE-ATTACHMENT",
+        "RTA-P1-EVIDENCE-ATTACHMENT",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "DM1566-C13": [
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED"
+      ],
+      "DM1566-C13-LEDGERS-BURNED": [
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED"
+      ],
+      "DM1566-C23": [
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
+      ],
+      "DM1566-C23-TESTIMONY-SEALED": [
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED"
       ],
       "actor.zhejiang_xunfu": [
         "ARC-P1-CUSTODY-CONTEST",
@@ -11403,28 +13521,6 @@
         "RTA-P1-XUNFU-COUNTERMOVE",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "reform.executionMode": [
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-REVIEW-INITIATION",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-EXECUTION-BOUNDARY"
-      ],
-      "reform.scopeStatus": [
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-REVIEW-INITIATION",
-        "PCR-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-EXECUTION-BOUNDARY"
-      ],
-      "reform.progress": [
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-REVIEW-INITIATION",
-        "PCR-P1-EXECUTION-BOUNDARY",
-        "RTA-P1-EXECUTION-BOUNDARY"
-      ],
       "PENDING_CONSEQUENCE": [
         "PCR-P1-CAPITAL-FRAMING",
         "PCR-P1-EVIDENCE-ATTACHMENT",
@@ -11438,31 +13534,6 @@
         "PCR-P1-RESPONSIBILITY-RECORD",
         "PCR-P1-REVIEW-AUTHORITY",
         "PCR-P1-XUNFU-COUNTERMOVE"
-      ],
-      "responsibility.firstRecordStatus": [
-        "ARC-P1-DEADLINE-RESPONSIBILITY",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "FLOOR-P1-S1-XUNFU-RESPONSE",
-        "PCR-P1-RESPONSIBILITY-RECORD",
-        "RTA-P1-RESPONSIBILITY-RECORD"
-      ],
-      "responsibility.governorExposure": [
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "PCR-P1-RESPONSIBILITY-RECORD",
-        "RTA-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-RESPONSIBILITY-RECORD"
-      ],
-      "responsibility.xunfuExposure": [
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "PCR-P1-RESPONSIBILITY-RECORD",
-        "RTA-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-RESPONSIBILITY-RECORD"
       ],
       "actor.xunfu_aide": [
         "AP-P1-XUNFU-AIDE",
@@ -11491,19 +13562,6 @@
         "PCR-P1-XUNFU-COUNTERMOVE",
         "RTA-P1-XUNFU-COUNTERMOVE"
       ],
-      "pendingConsequences": [
-        "AP-P1-XUNFU-AIDE",
-        "DK-P1-CAPITAL-CHANNEL",
-        "DK-P1-EXECUTION-SCOPE",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-RECORD",
-        "DK-P1-REVIEW-INITIATION",
-        "PCR-P1-CAPITAL-FRAMING",
-        "PCR-P1-XUNFU-COUNTERMOVE",
-        "RTA-P1-CAPITAL-FRAMING",
-        "RTA-P1-XUNFU-COUNTERMOVE",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "actor.reform_clerk": [
         "AP-P1-REFORM-CLERK",
         "ARC-P1-CUSTODY-CONTEST",
@@ -11520,54 +13578,6 @@
         "RTA-P1-REGISTER-CUSTODY",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "REQ-P1-REVIEW-AUTHORITY": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-REVIEW-AUTHORITY",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-REVIEW-AUTHORITY": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-REVIEW-AUTHORITY",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-REVIEW-AUTHORITY",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "review.authority": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-REVIEW-AUTHORITY",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-REVIEW-AUTHORITY"
-      ],
-      "review.procedureStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-REVIEW-AUTHORITY",
-        "PCR-P1-REVIEW-AUTHORITY",
-        "RTA-P1-REVIEW-AUTHORITY"
-      ],
-      "witness.accessStatus": [
-        "AP-P1-QINGLIU-MAGISTRATE",
-        "AP-P1-REFORM-CLERK",
-        "AP-P1-XUNFU-AIDE",
-        "ARC-P1-CUSTODY-CONTEST",
-        "DK-P1-DISCLOSURE-SCOPE",
-        "DK-P1-WITNESS-ACCESS",
-        "FLOOR-P1-S2-CUSTODY-DISRUPTION",
-        "PCR-P1-KNOWLEDGE-CHAIN",
-        "RTA-P1-KNOWLEDGE-CHAIN"
-      ],
       "SEC-P1-03": [
         "ARC-P1-GRAIN-LAND-ENTRY",
         "DK-P1-GRAIN-SOURCE",
@@ -11581,50 +13591,6 @@
         "RTA-P1-GRAIN-RELIEF",
         "RTA-P1-LAND-RISK",
         "RTA-P1-MERCHANT-CONDITIONS"
-      ],
-      "REQ-P1-GRAIN-RELIEF": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-GRAIN-RELIEF",
-        "RTA-P1-GRAIN-RELIEF",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-GRAIN-SOURCE": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-GRAIN-RELIEF",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-MERCHANT-CONDITIONS",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-RELIEF-PRIORITY": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-GRAIN-RELIEF",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-LAND-RISK",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "ARC-P1-GRAIN-LAND-ENTRY": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-GRAIN-RELIEF",
-        "PCR-P1-LAND-RISK",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-LAND-RISK",
-        "RTA-P1-MERCHANT-CONDITIONS",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
       "actor.jiangnan_merchant_head": [
         "ARC-P1-FIRST-REPORT-FRAMING",
@@ -11643,103 +13609,6 @@
         "RTA-P1-MERCHANT-CONDITIONS",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ],
-      "grain.officialStockStatus": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-GRAIN-RELIEF",
-        "RTA-P1-GRAIN-RELIEF"
-      ],
-      "grain.reliefChannel": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-GRAIN-RELIEF",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-GRAIN-RELIEF",
-        "RTA-P1-MERCHANT-CONDITIONS"
-      ],
-      "grain.immediatePressure": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-GRAIN-RELIEF",
-        "RTA-P1-GRAIN-RELIEF"
-      ],
-      "REQ-P1-MERCHANT-CONDITIONS": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-MERCHANT-CONDITIONS",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-MERCHANT-CONDITIONS": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-MERCHANT-CONDITIONS",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "merchant.entryStatus": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-MERCHANT-CONDITIONS"
-      ],
-      "merchant.grantedRights": [
-        "DK-P1-GRAIN-SOURCE",
-        "DK-P1-MERCHANT-CONDITIONS",
-        "PCR-P1-MERCHANT-CONDITIONS",
-        "RTA-P1-MERCHANT-CONDITIONS"
-      ],
-      "REQ-P1-LAND-RISK": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-LAND-RISK",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-LAND-SAFEGUARD": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-LAND-SAFEGUARD",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-LAND-RISK",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "land.riskLevel": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-LAND-RISK"
-      ],
-      "land.safeguardStatus": [
-        "ARC-P1-GRAIN-LAND-ENTRY",
-        "DK-P1-LAND-SAFEGUARD",
-        "DK-P1-RELIEF-PRIORITY",
-        "FLOOR-P1-S3-GRAIN-PRICE-MOVE",
-        "PCR-P1-LAND-RISK",
-        "RTA-P1-LAND-RISK"
-      ],
       "SEC-P1-04": [
         "ARC-P1-FIRST-REPORT-FRAMING",
         "DK-P1-CAPITAL-CHANNEL",
@@ -11754,103 +13623,6 @@
         "RTA-P1-EVIDENCE-ATTACHMENT",
         "RTA-P1-REPORT-AUTHORSHIP"
       ],
-      "REQ-P1-REPORT-AUTHORSHIP": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-REPORT-AUTHORSHIP",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-REPORT-AUTHORSHIP": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-CAPITAL-FRAMING",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-CAPITAL-FRAMING",
-        "RTA-P1-REPORT-AUTHORSHIP",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-RESPONSIBILITY-SCOPE": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-REPORT-AUTHORSHIP",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "ARC-P1-FIRST-REPORT-FRAMING": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-CAPITAL-CHANNEL",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-CAPITAL-FRAMING",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-CAPITAL-FRAMING",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-REPORT-AUTHORSHIP",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "report.authorshipMode": [
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-REPORT-AUTHORSHIP"
-      ],
-      "report.firstNarrativeController": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-CAPITAL-CHANNEL",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "DK-P1-RESPONSIBILITY-SCOPE",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-CAPITAL-FRAMING",
-        "PCR-P1-REPORT-AUTHORSHIP",
-        "RTA-P1-CAPITAL-FRAMING",
-        "RTA-P1-REPORT-AUTHORSHIP"
-      ],
-      "REQ-P1-EVIDENCE-ATTACHMENT": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-EVIDENCE-ATTACHMENT": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-EVIDENCE-ATTACHMENT",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "report.attachmentStrength": [
-        "DK-P1-EVIDENCE-ATTACHMENT",
-        "PCR-P1-EVIDENCE-ATTACHMENT",
-        "RTA-P1-EVIDENCE-ATTACHMENT"
-      ],
-      "REQ-P1-CAPITAL-FRAMING": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-CAPITAL-CHANNEL",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-CAPITAL-FRAMING",
-        "RTA-P1-CAPITAL-FRAMING",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
-      "DK-P1-CAPITAL-CHANNEL": [
-        "ARC-P1-FIRST-REPORT-FRAMING",
-        "DK-P1-CAPITAL-CHANNEL",
-        "FLOOR-P1-S4-CAPITAL-DEADLINE",
-        "PCR-P1-CAPITAL-FRAMING",
-        "RTA-P1-CAPITAL-FRAMING",
-        "STYLE-SANGTIAN-HISTORICAL-NOVEL"
-      ],
       "institution.grand_secretariat": [
         "DK-P1-CAPITAL-CHANNEL",
         "DK-P1-REPORT-AUTHORSHIP",
@@ -11858,12 +13630,6 @@
         "RTA-P1-CAPITAL-FRAMING"
       ],
       "institution.sili": [
-        "DK-P1-CAPITAL-CHANNEL",
-        "DK-P1-REPORT-AUTHORSHIP",
-        "PCR-P1-CAPITAL-FRAMING",
-        "RTA-P1-CAPITAL-FRAMING"
-      ],
-      "report.dispatchStatus": [
         "DK-P1-CAPITAL-CHANNEL",
         "DK-P1-REPORT-AUTHORSHIP",
         "PCR-P1-CAPITAL-FRAMING",
@@ -11996,9 +13762,19 @@
         "RTA-P1-RESPONSIBILITY-RECORD",
         "RTA-P1-REVIEW-AUTHORITY",
         "RTA-P1-XUNFU-COUNTERMOVE",
+        "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+        "SOURCE-SCENE-DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+        "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+        "SOURCE-SCENE-DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+        "SOURCE-SCENE-DM1566-C04-JOINT-REPORT-CONTEST",
+        "SOURCE-SCENE-DM1566-C05-GRAIN-LAND-SAFEGUARD",
+        "SOURCE-SCENE-DM1566-C06-LAND-PRICE-DEBATE",
+        "SOURCE-SCENE-DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+        "SOURCE-SCENE-DM1566-C13-LEDGERS-BURNED",
+        "SOURCE-SCENE-DM1566-C23-TESTIMONY-SEALED",
         "STYLE-SANGTIAN-HISTORICAL-NOVEL"
       ]
     }
   },
-  "immutableHash": "B5A88A00EB91FE8281482BDD55683D3AED9B7422B5E3C834DF8CA5BA9EE0208A"
+  "immutableHash": "CFB75E79ACA540706D76332E8677FF6FEE5058A9BA43F8A5A1B6DD8DB17754EB"
 }

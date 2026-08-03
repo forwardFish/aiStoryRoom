@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-02",
+    "SEC-P1-04"
+  ],
+  "requirementIds": [
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-CAPITAL-FRAMING"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "DK-P1-CAPITAL-CHANNEL"
+  ],
+  "causalArcIds": [
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-FIRST-REPORT-FRAMING"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "knowledgeTransfers",
+    "witness.accessStatus",
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure",
+    "report.dispatchStatus",
+    "pendingConsequences"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+    "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+    "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-SHADOW-LEDGER-ENTRY",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C02",
+    "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-KNOWLEDGE-CHAIN",
+    "REQ-P1-REPORT-AUTHORSHIP",
+    "REQ-P1-CAPITAL-FRAMING",
+    "DK-P1-DISCLOSURE-SCOPE",
+    "DK-P1-WITNESS-ACCESS",
+    "DK-P1-REPORT-AUTHORSHIP",
+    "DK-P1-RESPONSIBILITY-SCOPE",
+    "DK-P1-CAPITAL-CHANNEL",
+    "ARC-P1-CUSTODY-CONTEST",
+    "ARC-P1-FIRST-REPORT-FRAMING",
+    "knowledgeTransfers",
+    "witness.accessStatus",
+    "report.authorshipMode",
+    "report.firstNarrativeController",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure",
+    "report.dispatchStatus",
+    "pendingConsequences"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+    "title": "奏疏越过通政司进入严府",
+    "sourceRange": {
+      "chapterId": "DM1566-C02",
+      "paragraphStartId": "DM1566-C02-P0243",
+      "paragraphEndId": "DM1566-C02-P0251",
+      "textSpanSha256": "FC3D2D0A1D3B6764867EB5C44A8D6434CD55B3B797E181759E33F3D9BC6C523A"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-01",
+        "statement": "胡宗宪奏疏没有先送通政使司，而是直接送到西苑内阁值房，递送渠道本身成为政治行动。",
+        "claimIds": [
+          "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-02",
+        "statement": "徐阶只看封面便命人将奏疏送严府，严世蕃先行拆看，说明首份叙述会被渠道中的掌权者重新解释。",
+        "claimIds": [
+          "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE-MOVE-03",
+        "statement": "严世蕃与罗龙文把绕过通政司的递送方式解释为地方主官的政治示好；这是他们的政治判断，不是客观定罪。",
+        "claimIds": [
+          "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

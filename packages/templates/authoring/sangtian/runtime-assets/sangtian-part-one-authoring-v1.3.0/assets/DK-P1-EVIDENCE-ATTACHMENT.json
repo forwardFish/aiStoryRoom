@@ -59,6 +59,15 @@
     "evidence.chainStatus"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-EVIDENCE-ATTACHMENT",
+      "actorRefs": [
+        "actor.qingliu_magistrate",
+        "actor.reform_clerk"
+      ],
+      "prompt": "奏报正文之外还能附什么，已经牵动县册保管人与书吏安危；总督必须确定附件边界。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "至少有一种原件、副本、口供、仓单或田契进入证据状态",
       "附件强度和保管链可被服务端读取"
@@ -85,6 +94,7 @@
           "evidence.chainStatus": "TRACEABLE",
           "witness.accessStatus": "DISCLOSED_IN_ATTACHMENT"
         },
+        "protectedNarrative": "总督决定随奏附上见证抄出的样册、封条记录和原件保管人名单。",
         "createsPendingConsequence": true
       },
       {
@@ -105,6 +115,7 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督决定附件只列田亩数字和日期差异，并声明原册仍在复核，不附人名推断。",
         "createsPendingConsequence": true
       },
       {
@@ -123,6 +134,7 @@
           "report.attachmentStrength": "CUSTODY_RECORD_WITHHELD_TESTIMONY",
           "witness.accessStatus": "PROTECTED_FROM_REPORT"
         },
+        "protectedNarrative": "总督决定暂不附书吏供述，只附保管链，并说明人证需要保护。",
         "createsPendingConsequence": true
       }
     ],

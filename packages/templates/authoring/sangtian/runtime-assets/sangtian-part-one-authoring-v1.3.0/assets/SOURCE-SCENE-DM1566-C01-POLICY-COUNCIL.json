@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "runtime-story-asset-v1",
+  "assetId": "SOURCE-SCENE-DM1566-C01-POLICY-COUNCIL",
+  "assetType": "SOURCE_SCENE_EVIDENCE",
+  "partIds": [
+    "PART-01"
+  ],
+  "sectionIds": [
+    "SEC-P1-01"
+  ],
+  "requirementIds": [
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD"
+  ],
+  "decisionKernelIds": [
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD"
+  ],
+  "causalArcIds": [
+    "ARC-P1-DEADLINE-RESPONSIBILITY"
+  ],
+  "actorRefs": [],
+  "stateDependencies": [
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "visibilityRules": [
+    {
+      "visibilityClass": "SERVER_AUTHORITATIVE",
+      "rule": "Only player-projected fields may enter the visible prompt or UI."
+    }
+  ],
+  "sourceClaimIds": [
+    "DM1566-C01-CL-POLICY-RESPONSIBILITY",
+    "DM1566-C01-CL-POLICY-FOOD-QUESTION",
+    "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+  ],
+  "adaptationDecisionIds": [
+    "ADAPT-P1-PLAYABLE-GOVERNOR",
+    "ADAPT-P1-THREE-DAY-DEADLINE",
+    "ADAPT-P1-SEPARATE-XUNFU"
+  ],
+  "retrievalTags": [
+    "PART-01",
+    "DM1566-C01",
+    "DM1566-C01-POLICY-COUNCIL",
+    "SOURCE_SCENE_EVIDENCE",
+    "DRAMATIC_MECHANISM_ONLY",
+    "REQ-P1-EXECUTION-BOUNDARY",
+    "REQ-P1-RESPONSIBILITY-RECORD",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-RESPONSIBILITY-RECORD",
+    "ARC-P1-DEADLINE-RESPONSIBILITY",
+    "reform.executionMode",
+    "reform.scopeStatus",
+    "reform.progress",
+    "responsibility.firstRecordStatus",
+    "responsibility.governorExposure",
+    "responsibility.xunfuExposure"
+  ],
+  "payload": {
+    "sourceId": "dm1566-liuheping",
+    "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+    "sourceSceneId": "DM1566-C01-POLICY-COUNCIL",
+    "title": "御前以浙江改桑填补亏空",
+    "sourceRange": {
+      "chapterId": "DM1566-C01",
+      "paragraphStartId": "DM1566-C01-P0219",
+      "paragraphEndId": "DM1566-C01-P0240",
+      "textSpanSha256": "21B514BD7AE999A5FE625C31DC224D44D583A7958F46995EB170FBEAB4CD5C9F"
+    },
+    "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+    "mechanisms": [
+      {
+        "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-01",
+        "statement": "严世蕃当面说工部有责任，自己也有责任。",
+        "claimIds": [
+          "DM1566-C01-CL-POLICY-RESPONSIBILITY"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-03",
+        "statement": "嘉靖追问农田改桑后浙江百姓吃粮、调粮价格与桑农是否愿意。",
+        "claimIds": [
+          "DM1566-C01-CL-POLICY-FOOD-QUESTION"
+        ]
+      },
+      {
+        "evidenceId": "DM1566-C01-POLICY-COUNCIL-MOVE-04",
+        "statement": "嘉靖命内阁详议方略，再向胡宗宪下急递，把地方执行责任明确压到总督身上。",
+        "claimIds": [
+          "DM1566-C01-CL-POLICY-URGENT-DISPATCH"
+        ]
+      }
+    ],
+    "applicabilityRule": "The mechanism may guide a server-selected beat; it never becomes a current-world fact by itself."
+  }
+}

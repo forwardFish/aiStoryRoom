@@ -74,6 +74,14 @@
     "pendingConsequences"
   ],
   "payload": {
+    "decisionPrompt": {
+      "decisionPointId": "DK-P1-REPORT-AUTHORSHIP",
+      "actorRefs": [
+        "actor.xunfu_aide"
+      ],
+      "prompt": "第一份入京叙述即将成文，巡抚幕僚要求先定由谁起草、由谁具名，分歧如何写进去。",
+      "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+    },
     "availableWhen": [
       "存在一份需要形成、修改或决定是否联署的地方奏报",
       "玩家掌握至少一项可写入的执行、民生或证据事实",
@@ -107,6 +115,7 @@
             "$delta": 1
           }
         },
+        "protectedNarrative": "总督决定与巡抚共同具奏，执行、复核和粮食分歧逐项写明，双方确认后共同具名入京。",
         "createsPendingConsequence": true
       },
       {
@@ -129,6 +138,7 @@
             "$delta": 2
           }
         },
+        "protectedNarrative": "总督决定独自具奏，并把巡抚催办和拒签文书一并列作附件。",
         "createsPendingConsequence": true
       },
       {
@@ -151,6 +161,7 @@
             "$delta": -2
           }
         },
+        "protectedNarrative": "总督准巡抚另报，自己同时送出复核结果和异议，两份奏报各自具名。",
         "createsPendingConsequence": true
       }
     ],

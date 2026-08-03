@@ -222,26 +222,26 @@ export function buildForegroundUserContext(
   context: CompiledForegroundContext,
 ) {
   const settledNarrative = String(delta.beatContract?.settledNarrative || "").trim();
+  const recentPlayerCanon = [
+    context.recentCanonExcerpt,
+    settledNarrative,
+  ].filter(Boolean).join("\n\n");
   const blocks = [
     "# Foreground Context",
     "",
-    "前面的工作集只提供约束和叙事纹理，不是要求逐项写入正文的命令。当前动作、站位、对话和场面衔接以 Recent Canon Excerpt 为准。",
-    section("Foreground Guidance", context.foregroundGuidance),
-    section("Durable Memory", context.durableMemory),
-    section("Story Memory", context.storyMemory),
-    section("Recent Canon Excerpt", context.recentCanonExcerpt),
-    settledNarrative
-      ? section("Settled Action Draft", settledNarrative)
-      : "",
+    "前面的工作集只提供当前玩家可知的约束和叙事纹理，不是要求逐项写入正文的命令。当前动作、站位、对话和场面衔接以 Recent Player Canon 为准。",
+    fixedSection("Foreground Guidance", context.foregroundGuidance),
+    fixedSection("Durable Memory", context.durableMemory),
+    fixedSection("Recent Player Canon", recentPlayerCanon),
     // The compiled per-turn boundary belongs next to the Reader Action. Stable
     // world context and Canon come first; the narrow authorization is the last
     // thing the Narrator reads before the player's action.
-    section("This Turn", renderNarratorCausalDelta(delta)),
-    section("Reader Action", delta.readerAction),
+    fixedSection("This Turn", renderNarratorCausalDelta(delta)),
+    fixedSection("Reader Action", delta.readerAction),
   ].filter(Boolean);
   const rendered = blocks.join("\n\n").trim();
   const marker = "## Reader Action";
-  if (rendered.lastIndexOf(marker) < rendered.length - section("Reader Action", delta.readerAction).length - 2) {
+  if (rendered.lastIndexOf(marker) < rendered.length - fixedSection("Reader Action", delta.readerAction).length - 2) {
     throw new Error("Reader Action must remain the final foreground section");
   }
   return rendered;
@@ -262,14 +262,14 @@ export function buildNarratorMessages(
     {
       role: "system" as const,
       content: [
-        "你是互动历史小说的前景叙述者。从 Recent Canon 最后一刻继续，只写一个自然、具体、可继续游玩的剧情 beat。",
+        "你是互动历史小说的前景叙述者。从 Recent Player Canon 最后一刻继续，只写一个自然、具体、可继续游玩的剧情 beat。",
         hasSettledNarrative
-          ? "Settled Action Draft 已经精确写成本回合唯一的主角行动。不要复述、改写或补充这段草稿；你的输出只从草稿最后一刻继续，不要包含草稿本身。"
-          : "Reader Action 是本回合唯一的主角行动。Foreground Guidance、Memory 和 This Turn 只提供约束与叙事纹理，不要逐条复述或解释规则。",
-        "当前镜头的动作、站位、对话与空间衔接以 Recent Canon 为准；持久事实变化以 This Turn 为准。让二者在小说场面里自然相接。",
+          ? "Recent Player Canon 末尾已经写成本回合唯一的主角行动。不要复述、改写或补充它；只从它的最后一刻继续。"
+          : "Reader Action 是本回合唯一的主角行动。Foreground Guidance、Durable Memory 和 This Turn 只提供约束与叙事纹理，不要逐条复述或解释规则。",
+        "当前镜头的动作、站位、对话与空间衔接以 Recent Player Canon 为准；让现场人物从这一刻自然回应。",
         "保留玩家意图。字面动作与现场有小冲突时，从 Canon 的现在把它圆成可发生的尝试、传话或过渡；不要拒绝、倒带或瞬移。",
         "让在场人物依自己的利益和职责主动回应。普通动作、目光、衣袖、灯火、案几、普通纸张和空间调度可以自由书写。",
-        "不要凭空新增具名人物、关键证据、正式文书或主角不知道的秘密；不要替主角完成 Reader Action 之外的签署、承诺或重大处置。若获准写正式文书，只使用 This Turn 列出的名称、内容和去向。",
+        "不要凭空新增具名人物、关键证据、正式文书或主角不知道的秘密；不要替主角完成 Reader Action 之外的签署、承诺或重大处置。",
         "场面到达下一项真正需要玩家决定的动作时停下。不要写规则说明、状态报告、选择菜单或分支总结。",
         lengthRegister,
         "只返回正文，不要标题、列表、JSON、XML、选项或解释。",
@@ -293,6 +293,12 @@ function scopeNarratorContext(
         "Story",
         "Scene",
         "Tone",
+        "Active Characters",
+        "Relationships",
+        "Constants",
+        "Open Threads",
+        "Active Pressures",
+        "Pending Consequence",
         "Forbidden",
       ])
     : new Set([
@@ -309,13 +315,10 @@ function scopeNarratorContext(
       context.foregroundGuidance,
       allowedSections,
     ),
-    // For a source-bounded evidence beat or an authored runtime settlement,
-    // Causal Delta already owns this beat's action, staging and result ceiling.
-    // Repeating every durable card and future thread makes later mysteries
-    // salient too early and invites the Narrator to bridge them now. Recent
-    // Canon remains the camera authority.
-    durableMemory: "",
-    storyMemory: "",
+    // The server-owned Next Story Beat decides what happens now. Durable state
+    // and prior Canon remain available only to keep names, relationships and
+    // unresolved facts continuous; they are no longer used as a menu from
+    // which the Narrator chooses the next event.
   };
 }
 
@@ -515,6 +518,18 @@ function canonTail(value: string, maxChars: number) {
 function section(title: string, value: string) {
   const body = String(value || "").trim();
   return body ? `## ${title}\n\n${body}` : "";
+}
+
+function fixedSection(title: string, value: string) {
+  const body = demoteEmbeddedHeadings(String(value || "").trim()) || "无。";
+  return `## ${title}\n\n${body}`;
+}
+
+function demoteEmbeddedHeadings(value: string) {
+  return value.replace(/^(#{1,6})\s+/gmu, (_match, hashes: string) => {
+    const depth = Math.min(6, Math.max(3, hashes.length + 1));
+    return `${"#".repeat(depth)} `;
+  });
 }
 
 export const foregroundInternal = {
