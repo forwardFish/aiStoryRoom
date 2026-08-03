@@ -1,5 +1,28 @@
 # OpenNovel Multiplayer Handoff
 
+## 2026-08-04 current owner rules and acceptance state
+
+- The current source has fresh isolated-Supabase PASS evidence for M09 and M10.
+  M09: `openovel-db-concurrency-20260804-011600-m09c2` and
+  `openovel-db-fault-20260804-011800-m09f`. M10:
+  `openovel-db-three-role-20260804-004532-clean9`.
+- M10 proves 12 human actions plus exactly one disconnect-takeover AI action,
+  formal sequences `1..13`, synchronized private projections, an interaction
+  reply, short-disconnect recovery, takeover/reclaim epoch `1->2->3`, bounded
+  provider calls, and zero unfinished blockers.
+- Remaining gates are M02 (owner-stabilized Solo dependency), M11 (owner joins
+  the real existing `/game` page in three roles), and M12 (final integrated
+  rerun after Solo is stable). Multiplayer must not change Solo quality logic
+  or add/alter a test-only main-game page.
+- ChatGPT Web is advisory only. Reuse the fixed multiplayer project conversation
+  `https://chatgpt.com/g/g-p-69f810ddfcec8191b7a0d9371ec3ab86-aiduo-ren-ju-qing-tui-yan-aistory/c/6a70a95a-4d40-83ee-a50e-38a0b8a8e934`
+  only when the visible controls show `GPT-5.6 Sol` and `极高`. Do not send a
+  model-identity probe. Codex owns implementation, local verification, and the
+  final verdict. This rule supersedes every historical browser statement below.
+- A single failure signature may be tested at most three times. Each retry must
+  use a distinct hypothesis and new evidence; after the third failure, stop and
+  repair the underlying layer before any later test.
+
 - Goal: implement and verify the full v1.0 continuous OpenNovel multiplayer slice.
 - Branch/worktree: `codex/openovel-multiplayer-v1` at `D:\lyh\agent\agent-frame\aiStoryRoom-openovel-multiplayer`.
 - Frozen source: `origin/main` at `d5aff3096f901cc41ed4fd9c5e290855a46f480e`.

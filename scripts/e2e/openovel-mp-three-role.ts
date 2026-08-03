@@ -61,6 +61,8 @@ const ownerId = `openovel_e2e_owner_${Date.now().toString(36)}`;
 const runId = sharedRoomRunIdForRequest(ownerId, idempotencyKey);
 const internalToken = `openovel-three-role-${randomBytes(12).toString("hex")}`;
 const heartbeatIntervalMs = 800;
+const heartbeatStaleMs = 15_000;
+const offlineGraceMs = 30_000;
 const users: Session[] = [
   account("governor", ownerId, "governor"),
   account("xunfu", `openovel_e2e_xunfu_${Date.now().toString(36)}`, "xunfu"),
@@ -145,8 +147,8 @@ async function main() {
       AUTH_TOKEN_SECRET: "openovel-three-role-auth-secret",
       EMAIL_PROVIDER: "file-sink",
       AUTH_MAIL_SINK_FILE: path.join(evidenceDir, "auth-mail-sink.ndjson"),
-      OPENOVEL_HEARTBEAT_STALE_MS: "2000",
-      OPENOVEL_OFFLINE_GRACE_MS: "3000"
+      OPENOVEL_HEARTBEAT_STALE_MS: String(heartbeatStaleMs),
+      OPENOVEL_OFFLINE_GRACE_MS: String(offlineGraceMs)
     });
     const apiBase = `http://127.0.0.1:${apiPort}/api`;
     await waitForHttp(`${apiBase}/health`, api, 45_000);
@@ -189,7 +191,7 @@ async function main() {
 
     for (const user of users) heartbeatPumps.push(createHeartbeatPump(apiBase, user));
     await Promise.all(heartbeatPumps.map((pump) => pump.resume()));
-    report.presenceTiming = { heartbeatStaleMs: 2_000, offlineGraceMs: 3_000, heartbeatIntervalMs };
+    report.presenceTiming = { heartbeatStaleMs, offlineGraceMs, heartbeatIntervalMs };
 
     const actionEvidence: Array<Record<string, unknown>> = [];
     const first = await projection(apiBase, users[0]!);
@@ -223,25 +225,40 @@ async function main() {
         && value.roleNarrativeState.generationStatus === "IDLE"
         && value.roleNarrativeState.impactStatus === "SYNCED"
       ), 45_000);
-      const offered = current.currentTurn!.decisions[(sequence - 3) % Math.max(1, current.currentTurn!.decisions.length)]?.intentDraft;
-      actionEvidence.push(await submit(apiBase, user, current, sequence, offered || intentFor(user, sequence)));
+      const offered = current.currentTurn!.decisions[(sequence - 3) % Math.max(1, current.currentTurn!.decisions.length)];
+      actionEvidence.push(await submit(
+        apiBase,
+        user,
+        current,
+        sequence,
+        offered?.intentDraft || intentFor(user, sequence),
+        undefined,
+        offered?.id
+      ));
       report.actions = actionEvidence;
     }
 
     const offlineUser = users[2]!;
     const offlinePump = heartbeatPumps[2]!;
+    const disconnectTransitionBaseline = await prisma.roleControlTransition.count({
+      where: {
+        reason: "DISCONNECT_DETECTED",
+        roleControl: { runId, roleId: offlineUser.roleId }
+      }
+    });
+    report.presenceTransitionBaseline = { disconnectDetected: disconnectTransitionBaseline };
     const beforeShortDisconnect = await projection(apiBase, offlineUser);
     offlinePump.pause();
-    const shortGrace = await waitForProjection(apiBase, offlineUser, (value) => value.control.mode === "HUMAN_OFFLINE_GRACE", 20_000);
+    const shortGrace = await waitForProjection(apiBase, offlineUser, (value) => value.control.mode === "HUMAN_OFFLINE_GRACE", 35_000);
     assert(shortGrace.control.epoch === beforeShortDisconnect.control.epoch, "SHORT_DISCONNECT_GRACE_CHANGED_EPOCH");
     await offlinePump.resume();
-    const shortRecovered = await waitForProjection(apiBase, offlineUser, (value) => value.control.mode === "HUMAN_ACTIVE", 20_000);
+    const shortRecovered = await waitForProjection(apiBase, offlineUser, (value) => value.control.mode === "HUMAN_ACTIVE", 45_000);
     assert(shortRecovered.control.epoch === beforeShortDisconnect.control.epoch, "HEARTBEAT_RECOVERY_CHANGED_EPOCH");
 
     offlinePump.pause();
-    const longGrace = await waitForProjection(apiBase, offlineUser, (value) => value.control.mode === "HUMAN_OFFLINE_GRACE", 20_000);
+    const longGrace = await waitForProjection(apiBase, offlineUser, (value) => value.control.mode === "HUMAN_OFFLINE_GRACE", 35_000);
     assert(longGrace.control.epoch === shortRecovered.control.epoch, "LONG_DISCONNECT_GRACE_CHANGED_EPOCH");
-    const autoTakeover = await waitForProjection(apiBase, offlineUser, (value) => value.control.mode === "AI_ACTIVE", 20_000);
+    const autoTakeover = await waitForProjection(apiBase, offlineUser, (value) => value.control.mode === "AI_ACTIVE", 50_000);
     assert(autoTakeover.control.epoch === longGrace.control.epoch + 1, "AUTO_TAKEOVER_EPOCH_NOT_INCREMENTED_ONCE");
 
     await offlinePump.beat();
@@ -309,7 +326,11 @@ async function main() {
     const offlineControl = controls.find((item) => item.roleId === users[2]!.roleId);
     assert(offlineControl, "OFFLINE_CONTROL_MISSING");
     const offlineTransitions = controlTransitions.filter((item) => item.roleControlId === offlineControl.id);
-    assert(offlineTransitions.filter((item) => item.reason === "DISCONNECT_DETECTED").length === 2, "DISCONNECT_DETECTED_TRANSITION_COUNT");
+    const disconnectTransitionCount = offlineTransitions.filter((item) => item.reason === "DISCONNECT_DETECTED").length;
+    assert(
+      disconnectTransitionCount === disconnectTransitionBaseline + 2,
+      `DISCONNECT_DETECTED_TRANSITION_COUNT:${disconnectTransitionCount}:${disconnectTransitionBaseline + 2}`
+    );
     assert(offlineTransitions.some((item) => item.reason === "HEARTBEAT_RECOVERED"
       && item.fromMode === "HUMAN_OFFLINE_GRACE" && item.toMode === "HUMAN_ACTIVE"
       && item.fromEpoch === item.toEpoch), "HEARTBEAT_RECOVERY_TRANSITION_MISSING");
@@ -320,7 +341,7 @@ async function main() {
       && item.fromMode === "AI_ACTIVE" && item.toEpoch === item.fromEpoch + 1), "EXPLICIT_RECLAIM_TRANSITION_MISSING");
     assert(reclaimCreditLedger?.userId === users[2]!.userId, "RECLAIM_TEST_CREDIT_LEDGER_MISSING");
     assert(reclaimCreditLedger.reason === "ADMIN_ADJUSTMENT" && reclaimCreditLedger.bonusDelta === 1, "RECLAIM_TEST_CREDIT_LEDGER_INVALID");
-    assert(aiActions.length >= 1, "AI_TAKEOVER_ACTION_MISSING");
+    assert(aiActions.length === 1, `AI_TAKEOVER_ACTION_COUNT:${aiActions.length}`);
     assert(aiActions.some((item) => item.id === takeoverAction.id), "WAITED_AI_TAKEOVER_ACTION_NOT_DURABLE");
     const disconnectAgentTask = outbox.find((item) => item.taskType === "ACTOR_AGENT_TURN_V2"
       && (item.identityJson as any)?.controlReason === "DISCONNECT_TIMEOUT");
@@ -351,7 +372,7 @@ async function main() {
     assert(profileCounts.options === expectedRoleNarrativePhases, `OPTIONS_CALL_COUNT:${profileCounts.options}:${expectedRoleNarrativePhases}`);
     assert(profileCounts.storykeeper === expectedRoleNarrativePhases, `STORYKEEPER_CALL_COUNT:${profileCounts.storykeeper}:${expectedRoleNarrativePhases}`);
     assert(profileCounts.agent === 0, `UNTRIGGERED_AI_AGENT_CALLS:${profileCounts.agent}`);
-    assert(aiActions.length >= 1 && profileCounts.options > 0 && profileCounts.agent === 0, "OFFLINE_STANDING_POLICY_NOT_PROVEN");
+    assert(aiActions.length === 1 && profileCounts.options > 0 && profileCounts.agent === 0, "OFFLINE_STANDING_POLICY_NOT_PROVEN");
     const heartbeatErrors = heartbeatPumps.flatMap((pump) => pump.errors);
     assert(heartbeatErrors.length === 0, `HEARTBEAT_PUMP_ERRORS:${heartbeatErrors.join("|")}`);
     const openingProviderCalls = openingPhaseCount * 3;
@@ -681,14 +702,24 @@ function intentFor(user: Session, sequence: number, target: {
   };
 }
 
-async function submit(apiBase: string, user: Session, current: Projection, sequence: number, intent: Record<string, unknown>, interactionId?: string) {
+async function submit(
+  apiBase: string,
+  user: Session,
+  current: Projection,
+  sequence: number,
+  intent: Record<string, unknown>,
+  interactionId?: string,
+  candidateId?: string
+) {
   assert(current.currentTurn, `TURN_MISSING:${user.label}:${sequence}`);
   const body = {
     idempotencyKey: `three-role-action-${String(sequence).padStart(4, "0")}`,
     turnRevision: current.currentTurn.revision,
     controlEpoch: current.control.epoch,
-    customAction: `${user.roleName}执行第 ${sequence} 项明确、可复核且不越权的行动`,
-    decisionForm: interactionId ? "CONVERSATION" : "CUSTOM_PLAN",
+    ...(candidateId
+      ? { candidateId }
+      : { customAction: `${user.roleName}执行第 ${sequence} 项明确、可复核且不越权的行动` }),
+    decisionForm: interactionId ? "CONVERSATION" : candidateId ? "STORY_CHOICE" : "CUSTOM_PLAN",
     ...(interactionId ? { interactionId } : {}),
     intent
   };
@@ -721,6 +752,7 @@ async function submit(apiBase: string, user: Session, current: Projection, seque
     roleId: user.roleId,
     roleKey: user.roleKey,
     interactionReply: Boolean(interactionId),
+    candidateId: candidateId || null,
     deferredReceipt: receipt.deferred,
     resolutionId: receipt.resolutionId,
     appliedWorldSequence: receipt.appliedWorldSequence

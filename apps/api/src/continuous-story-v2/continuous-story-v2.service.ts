@@ -151,7 +151,17 @@ export type OpenNovelAgentTaskIdentityV1 = {
   policyVersion: string;
   policyHash: string;
   standingPolicyCandidate: DecisionCandidateV2 | null;
+  triggerKind: OpenNovelAgentTriggerKind;
+  triggerPlayerActionId: string | null;
+  triggerWorldSequence: number | null;
 };
+
+export type OpenNovelAgentTriggerKind =
+  | "CROSS_ROLE_IMPACT"
+  | "DISCONNECT_TIMEOUT"
+  | "CREDITS_INSUFFICIENT"
+  | "EXPLICIT_HANDOFF"
+  | "RECOVERY";
 
 export function openNovelAgentTaskDedupeKey(turnId: string, controlEpoch: number) {
   return `ACTOR_AGENT_TURN_V2:${turnId}:${controlEpoch}`;
@@ -162,9 +172,18 @@ export function openNovelAgentTaskIdentity(input: {
   controlReason: string | null;
   controlTransitionId?: string | null;
   standingPolicyCandidate?: DecisionCandidateV2 | null;
+  triggerKind?: OpenNovelAgentTriggerKind;
+  triggerPlayerActionId?: string | null;
+  triggerWorldSequence?: number | null;
 }): OpenNovelAgentTaskIdentityV1 {
   const controlReason = input.controlReason || "AI_CONTROL_ACTIVE";
   const standingPolicyCandidate = input.standingPolicyCandidate || null;
+  const triggerKind = input.triggerKind
+    || (controlReason === "WORLD_IMPACT_TRIGGER" ? "CROSS_ROLE_IMPACT"
+      : controlReason === "DISCONNECT_TIMEOUT" ? "DISCONNECT_TIMEOUT"
+      : controlReason === "CREDITS_INSUFFICIENT" ? "CREDITS_INSUFFICIENT"
+      : controlReason === "EXPLICIT_HANDOFF" ? "EXPLICIT_HANDOFF"
+      : "RECOVERY");
   return {
     schemaVersion: "openovel_agent_task_identity_v1",
     controlEpoch: input.controlEpoch,
@@ -177,7 +196,10 @@ export function openNovelAgentTaskIdentity(input: {
     policyHash: standingPolicyCandidate
       ? sha256Canonical({ policyVersion: OPENOVEL_STANDING_POLICY_VERSION, standingPolicyCandidate })
       : OPENOVEL_STANDING_POLICY_HASH,
-    standingPolicyCandidate
+    standingPolicyCandidate,
+    triggerKind,
+    triggerPlayerActionId: input.triggerPlayerActionId || null,
+    triggerWorldSequence: Number.isSafeInteger(input.triggerWorldSequence) ? input.triggerWorldSequence! : null
   };
 }
 
@@ -188,13 +210,28 @@ export function readOpenNovelAgentTaskIdentity(value: unknown): OpenNovelAgentTa
     || typeof record.controlReason !== "string"
     || !["STANDING_POLICY_REQUIRED", "REVIEWED_CANDIDATE_OR_STANDING_FALLBACK"].includes(String(record.decisionSourceRule))
     || typeof record.policyVersion !== "string"
-    || typeof record.policyHash !== "string") return null;
+    || typeof record.policyHash !== "string"
+    || (record.triggerKind !== undefined
+      && !["CROSS_ROLE_IMPACT", "DISCONNECT_TIMEOUT", "CREDITS_INSUFFICIENT", "EXPLICIT_HANDOFF", "RECOVERY"].includes(String(record.triggerKind)))) return null;
   if (record.controlTransitionId !== null && typeof record.controlTransitionId !== "string") return null;
+  if (record.triggerPlayerActionId !== undefined && record.triggerPlayerActionId !== null && typeof record.triggerPlayerActionId !== "string") return null;
+  if (record.triggerWorldSequence !== undefined && record.triggerWorldSequence !== null && !Number.isSafeInteger(record.triggerWorldSequence)) return null;
   if (record.standingPolicyCandidate !== null
     && (!record.standingPolicyCandidate
       || typeof record.standingPolicyCandidate !== "object"
       || typeof (record.standingPolicyCandidate as any).id !== "string")) return null;
-  return record as OpenNovelAgentTaskIdentityV1;
+  const controlReason = String(record.controlReason);
+  return {
+    ...record,
+    triggerKind: (record.triggerKind
+      || (controlReason === "WORLD_IMPACT_TRIGGER" ? "CROSS_ROLE_IMPACT"
+        : controlReason === "DISCONNECT_TIMEOUT" ? "DISCONNECT_TIMEOUT"
+        : controlReason === "CREDITS_INSUFFICIENT" ? "CREDITS_INSUFFICIENT"
+        : controlReason === "EXPLICIT_HANDOFF" ? "EXPLICIT_HANDOFF"
+        : "RECOVERY")) as OpenNovelAgentTriggerKind,
+    triggerPlayerActionId: typeof record.triggerPlayerActionId === "string" ? record.triggerPlayerActionId : null,
+    triggerWorldSequence: Number.isSafeInteger(record.triggerWorldSequence) ? Number(record.triggerWorldSequence) : null
+  } as OpenNovelAgentTaskIdentityV1;
 }
 
 export function isOpenNovelAgentTaskPolicySnapshotValid(identity: OpenNovelAgentTaskIdentityV1) {
@@ -203,6 +240,18 @@ export function isOpenNovelAgentTaskPolicySnapshotValid(identity: OpenNovelAgent
     ? sha256Canonical({ policyVersion: identity.policyVersion, standingPolicyCandidate: identity.standingPolicyCandidate })
     : OPENOVEL_STANDING_POLICY_HASH;
   return identity.policyHash === expectedHash;
+}
+
+export function shouldResumeAiAfterFailedAction(input: {
+  originalActorKind: string | null | undefined;
+  sourceAgentTaskExists: boolean;
+}) {
+  return input.originalActorKind === "AI_TAKEOVER" || input.sourceAgentTaskExists;
+}
+
+export function isAgentRoleObservationCurrent(latestRoleAppliedSequence: number, observedRoleAppliedSequence: unknown) {
+  return Number.isSafeInteger(observedRoleAppliedSequence)
+    && latestRoleAppliedSequence === Number(observedRoleAppliedSequence);
 }
 
 class DecisionContextMovedError extends Error {
@@ -1598,43 +1647,6 @@ export class ContinuousStoryV2Service {
           data: { status: "COMPLETED", outcome: "ACTOR_OPENING_READY", completedAt: new Date(), leaseOwner: null, leaseExpiresAt: null, lastError: null }
         });
       }
-      if (latestControl?.mode === "AI_ACTIVE") {
-        const transition = await tx.roleControlTransition.findFirst({
-          where: { roleControlId: latestControl.id, toEpoch: latestControl.epoch, toMode: "AI_ACTIVE" },
-          orderBy: { createdAt: "desc" }
-        });
-        const taskIdentity = openNovelAgentTaskIdentity({
-          controlEpoch: latestControl.epoch,
-          controlReason: transition?.reason || latestControl.reason,
-          controlTransitionId: transition?.id || null,
-          standingPolicyCandidate: (transition?.reason || latestControl.reason) === "DISCONNECT_TIMEOUT"
-            ? standingPolicyDecisionCandidate(this.situationInput(
-                turn.run,
-                turn.role,
-                turn.stageIndex,
-                turn.turnIndex,
-                turn.run.worldSequence,
-                [],
-                []
-              ))
-            : null
-        });
-        await tx.storyTaskOutbox.create({
-          data: {
-            runId: turn.runId,
-            nodeId: turn.run.currentNodeId!,
-            roleId: turn.roleId,
-            inputRefId: turn.id,
-            actionSlot: "ACTOR_TURN",
-            controlEpoch: latestControl.epoch,
-            taskType: "ACTOR_AGENT_TURN_V2",
-            status: "PENDING",
-            dedupeKey: openNovelAgentTaskDedupeKey(turn.id, latestControl.epoch),
-            identityJson: taskIdentity as unknown as Prisma.InputJsonValue,
-            maxAttempts: 3
-          }
-        });
-      }
       return { turnId: turn.id, decisionSetId: decisionSet.id };
     });
   }
@@ -1660,7 +1672,7 @@ export class ContinuousStoryV2Service {
       if (claimedRun && isSoloNpcRun(claimedRun)) {
         return { outcome: "NO_OP", reason: "SOLO_NPC_NARRATIVE" };
       }
-      for (let attempt = 0; attempt < 4; attempt += 1) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
         const context = await this.loadAgentContext(taskId, fence);
         const reviewedCandidates = asDecisionCandidates(context.decisionSet?.candidatesJson);
         // A human can always use free input when OpenNovel intentionally
@@ -1725,8 +1737,17 @@ export class ContinuousStoryV2Service {
                 }
               });
         } catch (error) {
-          if (error instanceof StoryGenerationErrorV2 && error.code === "CONTEXT_SUPERSEDED" && attempt < 3) continue;
+          if (error instanceof StoryGenerationErrorV2 && error.code === "CONTEXT_SUPERSEDED" && attempt < 2) continue;
           throw error;
+        }
+        const latestRoleCursor = await this.prisma.actorThread.findUnique({
+          where: { roleId: context.role.id },
+          select: { lastAppliedSequence: true }
+        });
+        if (!latestRoleCursor) throw new ConflictException({ code: "AGENT_THREAD_MISSING", message: "Agent role thread is missing" });
+        if (latestRoleCursor.lastAppliedSequence > context.observedRoleAppliedSequence) {
+          if (attempt < 2) continue;
+          throw new ConflictException({ code: "AGENT_IMPACT_CONTEXT_CHANGED", message: "Agent impact context changed repeatedly" });
         }
         const candidate = candidates.find((item) => item.id === agentChoice.candidateId);
         if (!candidate) throw new ConflictException({ code: "AGENT_DECISION_INVALID", message: "Agent selected a decision outside the reviewed set" });
@@ -1738,6 +1759,10 @@ export class ContinuousStoryV2Service {
           controlTransitionId: context.taskIdentity?.controlTransitionId || null,
           policyVersion: context.taskIdentity?.policyVersion || OPENOVEL_STANDING_POLICY_VERSION,
           policyHash: context.taskIdentity?.policyHash || OPENOVEL_STANDING_POLICY_HASH,
+          triggerKind: context.taskIdentity?.triggerKind || "RECOVERY",
+          triggerPlayerActionId: context.taskIdentity?.triggerPlayerActionId || null,
+          triggerWorldSequence: context.taskIdentity?.triggerWorldSequence || null,
+          observedRoleAppliedSequence: context.observedRoleAppliedSequence,
           standingPolicyId: usesStandingPolicy ? candidate.id : null,
           reviewedCandidateCount: reviewedCandidates.length,
           reviewedCandidatesIgnored: usesStandingPolicy && reviewedCandidates.length > 0
@@ -1777,7 +1802,7 @@ export class ContinuousStoryV2Service {
           const resolution = await this.executeReservedResultInline(reservation.taskId) as any;
           return { outcome: "ACTOR_TURN_RESOLVED", resolutionId: resolution.id, appliedWorldSequence: resolution.appliedWorldSequence };
         } catch (error) {
-          if (error instanceof DecisionContextMovedError && attempt < 3) continue;
+          if (error instanceof DecisionContextMovedError && attempt < 2) continue;
           throw error;
         }
       }
@@ -1896,7 +1921,35 @@ export class ContinuousStoryV2Service {
         } catch {
           throw new ConflictException({ code: "IMPACT_RECEIPT_IDENTITY_CONFLICT", message: "An existing impact receipt does not match this task" });
         }
-        return { outcome: "ACTOR_IMPACT_ALREADY_SYNCED", targetTurnId: turn.id, impactEntryId: existingReceipt.id, appliedWorldSequence: payload.appliedWorldSequence };
+        return this.serializable(async (tx) => {
+          const [leasedTask, replayReceipt, latestTurn, latestControl] = await Promise.all([
+            tx.storyTaskOutbox.findFirst({
+              where: { id: task.id, taskType: "ACTOR_IMPACT_V2", status: "RUNNING", leaseOwner: fence.leaseOwner, leaseVersion: fence.leaseVersion, leaseExpiresAt: { gt: new Date() } }
+            }),
+            tx.narrativeEntry.findUnique({ where: { dedupeKey: openNovelImpactReceiptDedupeKey(payload.playerActionId, payload.targetRoleId) } }),
+            tx.actorTurn.findFirst({
+              where: { runId: task.runId, roleId: payload.targetRoleId, status: { in: ["OPEN", "RESOLVING"] }, turnIndex: { gt: 0 } },
+              orderBy: [{ turnIndex: "desc" }, { revision: "desc" }]
+            }),
+            tx.roleControl.findUnique({ where: { runId_roleId: { runId: task.runId, roleId: payload.targetRoleId } } })
+          ]);
+          if (!leasedTask) throw new AgentLeaseLostError();
+          if (!replayReceipt || !latestTurn) throw new DecisionContextMovedError();
+          try {
+            assertOpenNovelImpactReceiptIdentity(replayReceipt, receiptInput);
+          } catch {
+            throw new ConflictException({ code: "IMPACT_RECEIPT_IDENTITY_CONFLICT", message: "An existing impact receipt does not match this task" });
+          }
+          await this.reconcileImpactTriggeredAgentTask(tx, {
+            runId: task.runId,
+            nodeId: task.nodeId,
+            roleId: payload.targetRoleId,
+            turn: latestTurn,
+            control: latestControl,
+            payload
+          });
+          return { outcome: "ACTOR_IMPACT_ALREADY_SYNCED", targetTurnId: latestTurn.id, impactEntryId: replayReceipt.id, appliedWorldSequence: payload.appliedWorldSequence };
+        });
       }
       if (actorThread.lastAppliedSequence >= payload.appliedWorldSequence) {
         throw new ConflictException({ code: "IMPACT_CURSOR_SUPERSEDED", message: "The role cursor already passed this impact without a matching receipt" });
@@ -1966,12 +2019,13 @@ export class ContinuousStoryV2Service {
         }
         const synced = await runtime.syncImpacts(projectRoleImpactSync(roleInput));
         return this.serializable(async (tx) => {
-          const [leasedTask, latestThread, latestTurn, unfinishedImpacts] = await Promise.all([
+          const [leasedTask, latestThread, latestTurn, latestControl, unfinishedImpacts] = await Promise.all([
             tx.storyTaskOutbox.findFirst({
               where: { id: task.id, taskType: "ACTOR_IMPACT_V2", status: "RUNNING", leaseOwner: fence.leaseOwner, leaseVersion: fence.leaseVersion, leaseExpiresAt: { gt: new Date() } }
             }),
             tx.actorThread.findUnique({ where: { roleId: turn.roleId } }),
             tx.actorTurn.findUnique({ where: { id: turn.id } }),
+            tx.roleControl.findUnique({ where: { runId_roleId: { runId: turn.runId, roleId: turn.roleId } } }),
             tx.storyTaskOutbox.findMany({
               where: { runId: task.runId, roleId: task.roleId, taskType: "ACTOR_IMPACT_V2", status: { in: ["PENDING", "RUNNING", "FAILED"] } },
               select: { id: true, roleId: true, status: true, resultJson: true }
@@ -1984,17 +2038,25 @@ export class ContinuousStoryV2Service {
           if (!latestTurn || !isImpactTargetTurnEligible(latestTurn.status, true) || latestTurn.revision !== turn.revision) throw new DecisionContextMovedError();
           const receipt = await publishOpenNovelImpactReceipt(tx, receiptInput);
           await tx.actorThread.update({ where: { id: latestThread.id }, data: { lastAppliedSequence: payload.appliedWorldSequence } });
-          await tx.actorTurn.update({
+          const updatedTurn = await tx.actorTurn.update({
             where: { id: turn.id },
             data: {
               contextJson: {
-                ...jsonRecord(turn.contextJson),
+                ...jsonRecord(latestTurn.contextJson),
                 roleCanonHash: synced.canonHash,
                 roleWorkspaceRevision: synced.workspaceRevision,
                 roleAppliedWorldSequence: synced.appliedWorldSequence,
                 lastImpactContextSnapshotId: persistedContext.recordId
               } as Prisma.InputJsonValue
             }
+          });
+          await this.reconcileImpactTriggeredAgentTask(tx, {
+            runId: turn.runId,
+            nodeId: task.nodeId,
+            roleId: turn.roleId,
+            turn: updatedTurn,
+            control: latestControl,
+            payload
           });
           return { outcome: "ACTOR_IMPACT_SYNCED", targetTurnId: turn.id, impactEntryId: receipt.entryId, appliedWorldSequence: synced.appliedWorldSequence };
         });
@@ -2090,6 +2152,7 @@ export class ContinuousStoryV2Service {
             situationNarrative: nextSituation.situationNarrative,
             visibleFactKeysJson: visibleFacts.map((fact) => fact.factKey),
             contextJson: {
+              ...jsonRecord(latestTurn.contextJson),
               provider,
               modelName,
               impactEntryId: entry.id,
@@ -2144,6 +2207,14 @@ export class ContinuousStoryV2Service {
             dedupeKey: `${ownConditionalResult ? "ACTOR_CONDITIONAL_RESOLVED_V2" : "CROSS_ROLE_IMPACT_V2"}:${payload.playerActionId}:${turn.roleId}`
           });
         }
+        await this.reconcileImpactTriggeredAgentTask(tx, {
+          runId: turn.runId,
+          nodeId: task.nodeId,
+          roleId: turn.roleId,
+          turn: updatedTurn,
+          control: latestControl,
+          payload
+        });
         return { outcome: "ACTOR_IMPACT_PUBLISHED", targetTurnId: turn.id, impactEntryId: entry.id };
       });
     } catch (error) {
@@ -2540,8 +2611,22 @@ export class ContinuousStoryV2Service {
     await tx.storyRun.update({ where: { id: entry.runId }, data: { status: "playing", version: { increment: 1 } } });
     const charge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: entry.playerActionId } });
     if (charge?.status === "RESERVED") await this.creditConsumption.releaseCharge(charge.id, failureCode, tx);
-    const control = await tx.roleControl.findUnique({ where: { runId_roleId: { runId: entry.runId, roleId: entry.roleId } } });
-    if (control?.mode === "AI_ACTIVE") {
+    const [control, sourceAgentTask] = await Promise.all([
+      tx.roleControl.findUnique({ where: { runId_roleId: { runId: entry.runId, roleId: entry.roleId } } }),
+      tx.storyTaskOutbox.findFirst({
+        where: {
+          runId: entry.runId,
+          roleId: entry.roleId,
+          inputRefId: entry.turnId,
+          taskType: "ACTOR_AGENT_TURN_V2"
+        },
+        select: { id: true }
+      })
+    ]);
+    if (control?.mode === "AI_ACTIVE" && shouldResumeAiAfterFailedAction({
+      originalActorKind: entry.playerAction.actorKind,
+      sourceAgentTaskExists: Boolean(sourceAgentTask)
+    })) {
       await tx.storyTaskOutbox.create({
         data: {
           runId: entry.runId,
@@ -2555,7 +2640,9 @@ export class ContinuousStoryV2Service {
           dedupeKey: openNovelAgentTaskDedupeKey(replacement.id, control.epoch),
           identityJson: openNovelAgentTaskIdentity({
             controlEpoch: control.epoch,
-            controlReason: control.reason
+            controlReason: control.reason,
+            triggerKind: "RECOVERY",
+            triggerPlayerActionId: entry.playerActionId
           }) as unknown as Prisma.InputJsonValue,
           maxAttempts: 3
         }
@@ -2675,8 +2762,22 @@ export class ContinuousStoryV2Service {
       const charge = await (tx as any).creditCharge.findUnique({ where: { playerActionId: resolution.playerActionId } });
       if (charge?.status === "RESERVED") await this.creditConsumption.releaseCharge(charge.id, failureCode, tx);
 
-      const control = await tx.roleControl.findUnique({ where: { runId_roleId: { runId: resolution.runId, roleId: resolution.roleId } } });
-      if (control?.mode === "AI_ACTIVE") {
+      const [control, sourceAgentTask] = await Promise.all([
+        tx.roleControl.findUnique({ where: { runId_roleId: { runId: resolution.runId, roleId: resolution.roleId } } }),
+        tx.storyTaskOutbox.findFirst({
+          where: {
+            runId: resolution.runId,
+            roleId: resolution.roleId,
+            inputRefId: resolution.turnId,
+            taskType: "ACTOR_AGENT_TURN_V2"
+          },
+          select: { id: true }
+        })
+      ]);
+      if (control?.mode === "AI_ACTIVE" && shouldResumeAiAfterFailedAction({
+        originalActorKind: resolution.playerAction.actorKind,
+        sourceAgentTaskExists: Boolean(sourceAgentTask)
+      })) {
         await tx.storyTaskOutbox.create({
           data: {
             runId: resolution.runId,
@@ -2690,7 +2791,9 @@ export class ContinuousStoryV2Service {
             dedupeKey: openNovelAgentTaskDedupeKey(replacement.id, control.epoch),
             identityJson: openNovelAgentTaskIdentity({
               controlEpoch: control.epoch,
-              controlReason: control.reason
+              controlReason: control.reason,
+              triggerKind: "RECOVERY",
+              triggerPlayerActionId: resolution.playerActionId
             }) as unknown as Prisma.InputJsonValue,
             maxAttempts: 3
           }
@@ -2823,7 +2926,8 @@ export class ContinuousStoryV2Service {
       run: turn.run, turn, role: turn.role, control, taskIdentity, decisionSet: turn.decisionSet, visibleFacts, incomingImpacts,
       situationInput, stageTurnOrdinal, allRoles, assets,
       allFacts: facts.map((fact) => ({ factKey: fact.factKey, content: fact.content, visibility: fact.visibility, knownByRoleIds: stringList(fact.knownByRoleIdsJson) })),
-      membership: { userId: null }, observedWorldSequence: turn.run.worldSequence
+      membership: { userId: null }, observedWorldSequence: turn.run.worldSequence,
+      observedRoleAppliedSequence: turn.thread.lastAppliedSequence
     };
   }
 
@@ -3638,6 +3742,11 @@ export class ContinuousStoryV2Service {
         if (!leased) throw new AgentLeaseLostError();
       }
       if (turn.revision !== input.command.turnRevision) throw new DecisionContextMovedError();
+      const reservedAgentObservation = jsonRecord(input.agentDecisionAudit).observedRoleAppliedSequence;
+      if (input.actorKind === "AI"
+        && !isAgentRoleObservationCurrent(turn.thread.lastAppliedSequence, reservedAgentObservation)) {
+        throw new DecisionContextMovedError();
+      }
       const allowedModes = input.actorKind === "AI" ? ["AI_ACTIVE"] : ["HUMAN_ACTIVE", "HUMAN_OFFLINE_GRACE"];
       if (!control || control.epoch !== input.command.controlEpoch || !allowedModes.includes(control.mode)) {
         throw new ConflictException({ code: "ROLE_CONTROL_CHANGED", message: "Role control changed" });
@@ -4248,6 +4357,24 @@ export class ContinuousStoryV2Service {
       const turn = resolution.turn;
       const submission = resolution.submission;
       const playerAction = resolution.playerAction;
+      const playerActionRecord = jsonRecord(playerAction.normalizedJson);
+      const agentDecisionAudit = jsonRecord(playerActionRecord.agentDecisionAudit);
+      const observedRoleAppliedSequence = input.actorKind === "AI" && Number.isSafeInteger(agentDecisionAudit.observedRoleAppliedSequence)
+        ? Number(agentDecisionAudit.observedRoleAppliedSequence)
+        : null;
+      const latestDecisionImpact = observedRoleAppliedSequence === null
+        ? null
+        : await tx.narrativeEntry.findFirst({
+            where: {
+              runId: run.id,
+              roleId: turn.roleId,
+              entryType: "V2_CROSS_IMPACT",
+              worldSequence: { gt: observedRoleAppliedSequence }
+            },
+            orderBy: [{ worldSequence: "desc" }, { createdAt: "desc" }],
+            select: { worldSequence: true, sourceEventIdsJson: true }
+          });
+      const preservedLastAppliedSequence = Math.max(turn.thread.lastAppliedSequence, resolution.appliedWorldSequence);
       const nodeId = run.currentNodeId;
       if (!nodeId) throw new ConflictException({ code: "CURRENT_NODE_REQUIRED", message: "The run has no causal node" });
       if (!input.worldAlreadyCommitted) {
@@ -4303,6 +4430,7 @@ export class ContinuousStoryV2Service {
         ? await tx.roleControl.findUnique({ where: { runId_roleId: { runId: run.id, roleId: turn.roleId } } })
         : null;
       let nextTurnId: string | null = null;
+      let nextTurnForAgentWake: { id: string; status: string; contextJson: unknown } | null = null;
       if (input.draft.nextSituation && input.nextInput && input.nextStoryReview && input.nextDecisionReview) {
         const nextTurn = await tx.actorTurn.create({
           data: {
@@ -4322,6 +4450,9 @@ export class ContinuousStoryV2Service {
               previousResolutionId: resolution.id,
               stageTransition: input.stageProgress,
               contextSnapshotId: input.contextRecordId,
+              ...(observedRoleAppliedSequence !== null
+                ? { agentWakeHandledThroughSequence: observedRoleAppliedSequence }
+                : {}),
               ...(input.openNovelWorkingSet ? { openNovelWorkingSet: input.openNovelWorkingSet } : {})
             } as Prisma.InputJsonValue,
             qualityStatus: "PASS",
@@ -4329,6 +4460,7 @@ export class ContinuousStoryV2Service {
           }
         });
         nextTurnId = nextTurn.id;
+        nextTurnForAgentWake = nextTurn;
         const nextDecisionSet = await tx.decisionSet.create({
           data: {
             runId: run.id,
@@ -4361,34 +4493,11 @@ export class ContinuousStoryV2Service {
           data: {
             currentTurnIndex: nextTurn.turnIndex,
             currentStageIndex: nextTurn.stageIndex,
-            lastAppliedSequence: resolution.appliedWorldSequence
+            lastAppliedSequence: preservedLastAppliedSequence
           }
         });
         await this.writeReview(tx, run.id, turn.roleId, nextTurn.id, "SITUATION", nextTurn.id, input.draft.nextSituation.situationNarrative, input.nextStoryReview, input.draft.provider, input.draft.modelName);
         await this.writeReview(tx, run.id, turn.roleId, nextTurn.id, "DECISION_SET", nextDecisionSet.id, input.draft.nextSituation.decisions, input.nextDecisionReview, input.draft.provider, input.draft.modelName);
-        if (input.actorKind === "AI" && postActionControl?.mode === "AI_ACTIVE") {
-          await tx.storyTaskOutbox.create({
-            data: {
-              runId: run.id,
-              nodeId,
-              roleId: turn.roleId,
-              inputRefId: nextTurn.id,
-              actionSlot: "ACTOR_TURN",
-              controlEpoch: postActionControl.epoch,
-              taskType: "ACTOR_AGENT_TURN_V2",
-              status: "PENDING",
-              dedupeKey: openNovelAgentTaskDedupeKey(nextTurn.id, postActionControl.epoch),
-              identityJson: openNovelAgentTaskIdentity({
-                controlEpoch: postActionControl.epoch,
-                controlReason: postActionControl.reason,
-                standingPolicyCandidate: postActionControl.reason === "DISCONNECT_TIMEOUT"
-                  ? standingPolicyDecisionCandidate(input.nextInput)
-                  : null
-              }) as unknown as Prisma.InputJsonValue,
-              maxAttempts: 3
-            }
-          });
-        }
       } else {
         await tx.actorThread.update({
           where: { id: turn.threadId },
@@ -4396,7 +4505,7 @@ export class ContinuousStoryV2Service {
             status: "COMPLETED",
             currentTurnIndex: turn.turnIndex,
             currentStageIndex: turn.stageIndex,
-            lastAppliedSequence: resolution.appliedWorldSequence,
+            lastAppliedSequence: preservedLastAppliedSequence,
             completedAt: new Date()
           }
         });
@@ -4460,6 +4569,21 @@ export class ContinuousStoryV2Service {
           });
         }
         operationalMetrics.increment("credit_reclaim_total", { result: "effective" });
+      }
+      if (nextTurnForAgentWake && postActionControl && latestDecisionImpact?.worldSequence !== null
+        && latestDecisionImpact?.worldSequence !== undefined) {
+        await this.reconcileImpactTriggeredAgentTask(tx, {
+          runId: run.id,
+          nodeId,
+          roleId: turn.roleId,
+          turn: nextTurnForAgentWake,
+          control: postActionControl,
+          payload: {
+            mode: "FULL",
+            playerActionId: stringList(latestDecisionImpact.sourceEventIdsJson)[0] || `impact-sequence:${latestDecisionImpact.worldSequence}`,
+            appliedWorldSequence: latestDecisionImpact.worldSequence
+          }
+        });
       }
       await this.writeReview(tx, run.id, turn.roleId, turn.id, "RESULT", resolution.id, input.draft.resultNarrative, input.resultReview, input.draft.provider, input.draft.modelName);
       const actorUserId = (await tx.storyPlayer.findFirst({ where: { runId: run.id, roleId: turn.roleId, playerType: "human" } }))?.userId;
@@ -4798,24 +4922,6 @@ export class ContinuousStoryV2Service {
         await tx.actorThread.update({ where: { id: turn.threadId }, data: { currentTurnIndex: nextTurn.turnIndex, currentStageIndex: nextTurn.stageIndex, lastAppliedSequence: appliedSequence } });
         await this.writeReview(tx, run.id, turn.roleId, nextTurn.id, "SITUATION", nextTurn.id, input.draft.nextSituation.situationNarrative, input.nextStoryReview, input.draft.provider, input.draft.modelName);
         await this.writeReview(tx, run.id, turn.roleId, nextTurn.id, "DECISION_SET", nextDecisionSet.id, input.draft.nextSituation.decisions, input.nextDecisionReview, input.draft.provider, input.draft.modelName);
-        if (input.actorKind === "AI") {
-          await tx.storyTaskOutbox.create({
-            data: {
-              runId: run.id, nodeId, roleId: turn.roleId, inputRefId: nextTurn.id,
-              actionSlot: "ACTOR_TURN", controlEpoch: input.command.controlEpoch, taskType: "ACTOR_AGENT_TURN_V2",
-              status: "PENDING",
-              dedupeKey: openNovelAgentTaskDedupeKey(nextTurn.id, input.command.controlEpoch),
-              identityJson: openNovelAgentTaskIdentity({
-                controlEpoch: input.command.controlEpoch,
-                controlReason: input.context.control.reason,
-                standingPolicyCandidate: input.context.control.reason === "DISCONNECT_TIMEOUT"
-                  ? standingPolicyDecisionCandidate(input.nextInput)
-                  : null
-              }) as unknown as Prisma.InputJsonValue,
-              maxAttempts: 3
-            }
-          });
-        }
       } else {
         await tx.actorThread.update({ where: { id: turn.threadId }, data: { status: "COMPLETED", currentTurnIndex: turn.turnIndex, currentStageIndex: turn.stageIndex, lastAppliedSequence: appliedSequence, completedAt: new Date() } });
         const endingContent = `${input.draft.resultNarrative}\n\n${input.draft.nextHook}`;
@@ -4928,6 +5034,81 @@ export class ContinuousStoryV2Service {
         resultJson: input.payload as unknown as Prisma.InputJsonValue
       }
     });
+  }
+
+  private async enqueueImpactTriggeredAgentTask(tx: Tx, input: {
+    runId: string;
+    nodeId: string;
+    turnId: string;
+    roleId: string;
+    control: { mode: string; epoch: number };
+    playerActionId: string;
+    appliedWorldSequence: number;
+  }) {
+    if (input.control.mode !== "AI_ACTIVE") return { enqueued: false, reason: "ROLE_NOT_AI_CONTROLLED" } as const;
+    const created = await tx.storyTaskOutbox.createMany({
+      skipDuplicates: true,
+      data: [{
+        runId: input.runId,
+        nodeId: input.nodeId,
+        roleId: input.roleId,
+        inputRefId: input.turnId,
+        actionSlot: "ACTOR_TURN",
+        controlEpoch: input.control.epoch,
+        taskType: "ACTOR_AGENT_TURN_V2",
+        status: "PENDING",
+        dedupeKey: openNovelAgentTaskDedupeKey(input.turnId, input.control.epoch),
+        identityJson: openNovelAgentTaskIdentity({
+          controlEpoch: input.control.epoch,
+          controlReason: "WORLD_IMPACT_TRIGGER",
+          triggerKind: "CROSS_ROLE_IMPACT",
+          triggerPlayerActionId: input.playerActionId,
+          triggerWorldSequence: input.appliedWorldSequence
+        }) as unknown as Prisma.InputJsonValue,
+        maxAttempts: 3
+      }]
+    });
+    return { enqueued: created.count === 1, reason: created.count === 1 ? "WORLD_IMPACT_TRIGGER" : "ALREADY_ENQUEUED" } as const;
+  }
+
+  private async reconcileImpactTriggeredAgentTask(tx: Tx, input: {
+    runId: string;
+    nodeId: string;
+    roleId: string;
+    turn: { id: string; status: string; contextJson: unknown };
+    control: { mode: string; epoch: number } | null;
+    payload: Pick<ImpactTaskPayloadV2, "mode" | "playerActionId" | "appliedWorldSequence">;
+  }) {
+    if (input.payload.mode !== "FULL") return { enqueued: false, reason: "TRACE_SYNC_ONLY" } as const;
+    if (!input.control || input.control.mode !== "AI_ACTIVE") return { enqueued: false, reason: "ROLE_NOT_AI_CONTROLLED" } as const;
+    if (input.turn.status === "RESOLVING") return { enqueued: false, reason: "DEFERRED_TO_RESULT_FINALIZER" } as const;
+    if (input.turn.status !== "OPEN") return { enqueued: false, reason: "TURN_NOT_OPEN" } as const;
+    const turnContext = jsonRecord(input.turn.contextJson);
+    const handledThrough = Number.isSafeInteger(turnContext.agentWakeHandledThroughSequence)
+      ? Number(turnContext.agentWakeHandledThroughSequence)
+      : -1;
+    if (handledThrough >= input.payload.appliedWorldSequence) {
+      return { enqueued: false, reason: "IMPACT_ALREADY_RECONCILED" } as const;
+    }
+    const scheduled = await this.enqueueImpactTriggeredAgentTask(tx, {
+      runId: input.runId,
+      nodeId: input.nodeId,
+      turnId: input.turn.id,
+      roleId: input.roleId,
+      control: input.control,
+      playerActionId: input.payload.playerActionId,
+      appliedWorldSequence: input.payload.appliedWorldSequence
+    });
+    await tx.actorTurn.update({
+      where: { id: input.turn.id },
+      data: {
+        contextJson: {
+          ...turnContext,
+          agentWakeHandledThroughSequence: input.payload.appliedWorldSequence
+        } as Prisma.InputJsonValue
+      }
+    });
+    return scheduled;
   }
 
   private async enqueueMatchingConditionTasks(tx: Tx, input: {

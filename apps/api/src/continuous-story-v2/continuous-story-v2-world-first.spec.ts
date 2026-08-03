@@ -8,10 +8,12 @@ import {
   ContinuousStoryV2Service,
   findEarlierUnfinishedRoleImpact,
   interactionSourceSequenceFilter,
+  isAgentRoleObservationCurrent,
   isImpactTargetTurnEligible,
   isRoleGenerationTaskRelevant,
   isRoleResultEventInWindow,
   readStoredOpenNovelRoleContext,
+  shouldResumeAiAfterFailedAction,
   standingPolicyDecisionCandidate,
   visibleFactsThroughCommittedResolution,
   wouldRecompileAfterFutureWorldAdvance
@@ -437,6 +439,162 @@ test("runtime-before-database crack replays the original impact identity and rep
   assert.doesNotMatch(source, /status\.appliedWorldSequence >= payload\.appliedWorldSequence/);
   assert.ok(impactMethod.indexOf("syncImpacts(") >= 0);
   assert.ok(impactMethod.indexOf("publishOpenNovelImpactReceipt") > impactMethod.indexOf("syncImpacts("));
+});
+
+test("AI role turns are event-driven instead of opening or self-continuation loops", () => {
+  const source = readFileSync(join(process.cwd(), "src/continuous-story-v2/continuous-story-v2.service.ts"), "utf8");
+  const openingMethod = source.slice(source.indexOf("private async generateOpeningForTurn"), source.indexOf("async executeAgentTask"));
+  const impactMethod = source.slice(source.indexOf("async executeImpactTask"), source.indexOf("async executeResultTask"));
+  const reservedFinalizer = source.slice(source.indexOf("private async finalizeReservedResolution"), source.indexOf("private async applyResolution"));
+  const legacyFinalizer = source.slice(source.indexOf("private async applyResolution"), source.indexOf("private async publishCrossImpacts"));
+
+  assert.doesNotMatch(openingMethod, /taskType: "ACTOR_AGENT_TURN_V2"/, "an unclaimed AI role opening must not immediately act");
+  assert.doesNotMatch(reservedFinalizer, /input\.actorKind === "AI" && postActionControl\?\.mode === "AI_ACTIVE"[\s\S]{0,800}taskType: "ACTOR_AGENT_TURN_V2"/, "an AI result must not create an endless next-agent loop");
+  assert.doesNotMatch(legacyFinalizer, /if \(input\.actorKind === "AI"\) \{[\s\S]{0,800}taskType: "ACTOR_AGENT_TURN_V2"/, "the legacy finalizer must not create an endless next-agent loop");
+  assert.match(impactMethod, /reconcileImpactTriggeredAgentTask/, "a relevant cross-role impact must be durably reconciled as the normal AI action trigger");
+});
+
+test("impact-triggered AI scheduling is fenced to AI control and one turn epoch", async () => {
+  const calls: any[] = [];
+  const tx = {
+    storyTaskOutbox: {
+      createMany: async (args: any) => {
+        calls.push(args);
+        return { count: 1 };
+      }
+    }
+  };
+  const service = new ContinuousStoryV2Service({} as never, null as never, null as never, null as never, null as never, null as never, null as never, null as never);
+  const common = {
+    runId: "run-a",
+    nodeId: "node-a",
+    turnId: "turn-a",
+    roleId: "role-a",
+    playerActionId: "impact-action-a",
+    appliedWorldSequence: 9
+  };
+
+  const human = await (service as any).enqueueImpactTriggeredAgentTask(tx, {
+    ...common,
+    control: { mode: "HUMAN_ACTIVE", epoch: 4 }
+  });
+  assert.deepEqual(human, { enqueued: false, reason: "ROLE_NOT_AI_CONTROLLED" });
+  assert.equal(calls.length, 0);
+
+  const ai = await (service as any).enqueueImpactTriggeredAgentTask(tx, {
+    ...common,
+    control: { mode: "AI_ACTIVE", epoch: 5 }
+  });
+  assert.deepEqual(ai, { enqueued: true, reason: "WORLD_IMPACT_TRIGGER" });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].skipDuplicates, true);
+  assert.deepEqual(calls[0].data.map((item: any) => ({
+    taskType: item.taskType,
+    status: item.status,
+    dedupeKey: item.dedupeKey,
+    controlEpoch: item.controlEpoch,
+    controlReason: item.identityJson.controlReason,
+    triggerKind: item.identityJson.triggerKind,
+    triggerPlayerActionId: item.identityJson.triggerPlayerActionId,
+    triggerWorldSequence: item.identityJson.triggerWorldSequence
+  })), [{
+    taskType: "ACTOR_AGENT_TURN_V2",
+    status: "PENDING",
+    dedupeKey: "ACTOR_AGENT_TURN_V2:turn-a:5",
+    controlEpoch: 5,
+    controlReason: "WORLD_IMPACT_TRIGGER",
+    triggerKind: "CROSS_ROLE_IMPACT",
+    triggerPlayerActionId: "impact-action-a",
+    triggerWorldSequence: 9
+  }]);
+});
+
+test("impact wake reconciliation is durable, decision-only, and resolving-safe", async () => {
+  const created: any[] = [];
+  const updated: any[] = [];
+  const tx = {
+    storyTaskOutbox: {
+      createMany: async (args: any) => {
+        created.push(args);
+        return { count: 1 };
+      }
+    },
+    actorTurn: {
+      update: async (args: any) => {
+        updated.push(args);
+        return { id: args.where.id, status: "OPEN", contextJson: args.data.contextJson };
+      }
+    }
+  };
+  const service = new ContinuousStoryV2Service({} as never, null as never, null as never, null as never, null as never, null as never, null as never, null as never);
+  const common = {
+    runId: "run-a",
+    nodeId: "node-a",
+    roleId: "role-a",
+    control: { mode: "AI_ACTIVE", epoch: 7 },
+    payload: { mode: "FULL", playerActionId: "impact-a", appliedWorldSequence: 11 }
+  };
+
+  const trace = await (service as any).reconcileImpactTriggeredAgentTask(tx, {
+    ...common,
+    turn: { id: "turn-a", status: "OPEN", contextJson: {} },
+    payload: { ...common.payload, mode: "TRACE" }
+  });
+  assert.deepEqual(trace, { enqueued: false, reason: "TRACE_SYNC_ONLY" });
+
+  const resolving = await (service as any).reconcileImpactTriggeredAgentTask(tx, {
+    ...common,
+    turn: { id: "turn-a", status: "RESOLVING", contextJson: {} }
+  });
+  assert.deepEqual(resolving, { enqueued: false, reason: "DEFERRED_TO_RESULT_FINALIZER" });
+
+  const scheduled = await (service as any).reconcileImpactTriggeredAgentTask(tx, {
+    ...common,
+    turn: { id: "turn-a", status: "OPEN", contextJson: { preserved: true } }
+  });
+  assert.deepEqual(scheduled, { enqueued: true, reason: "WORLD_IMPACT_TRIGGER" });
+  assert.equal(created.length, 1);
+  assert.deepEqual(updated[0].data.contextJson, { preserved: true, agentWakeHandledThroughSequence: 11 });
+
+  const replay = await (service as any).reconcileImpactTriggeredAgentTask(tx, {
+    ...common,
+    turn: { id: "turn-a", status: "OPEN", contextJson: { agentWakeHandledThroughSequence: 11 } }
+  });
+  assert.deepEqual(replay, { enqueued: false, reason: "IMPACT_ALREADY_RECONCILED" });
+  assert.equal(created.length, 1);
+  assert.equal(updated.length, 1);
+});
+
+test("AI result finalization preserves newer impact cursors and reconciles late decision impacts", () => {
+  const source = readFileSync(join(process.cwd(), "src/continuous-story-v2/continuous-story-v2.service.ts"), "utf8");
+  const agentMethod = source.slice(source.indexOf("async executeAgentTask"), source.indexOf("async executeConditionalTask"));
+  const finalizer = source.slice(source.indexOf("private async finalizeReservedResolution"), source.indexOf("private async applyResolution"));
+  const replayPath = source.slice(source.indexOf("if (existingReceipt)"), source.indexOf("if (actorThread.lastAppliedSequence"));
+  assert.match(agentMethod, /latestRoleCursor\.lastAppliedSequence > context\.observedRoleAppliedSequence/);
+  assert.match(agentMethod, /observedRoleAppliedSequence: context\.observedRoleAppliedSequence/);
+  assert.match(finalizer, /Math\.max\(turn\.thread\.lastAppliedSequence, resolution\.appliedWorldSequence\)/);
+  assert.match(finalizer, /entryType: "V2_CROSS_IMPACT"/);
+  assert.match(finalizer, /reconcileImpactTriggeredAgentTask/);
+  assert.match(replayPath, /reconcileImpactTriggeredAgentTask/, "receipt replay must repair a crash between the receipt and AI wake creation");
+});
+
+test("failure recovery resumes only an AI-originated or explicitly queued takeover action", () => {
+  assert.equal(shouldResumeAiAfterFailedAction({ originalActorKind: "AI_TAKEOVER", sourceAgentTaskExists: false }), true);
+  assert.equal(shouldResumeAiAfterFailedAction({ originalActorKind: "HUMAN", sourceAgentTaskExists: true }), true);
+  assert.equal(shouldResumeAiAfterFailedAction({ originalActorKind: "HUMAN", sourceAgentTaskExists: false }), false);
+});
+
+test("the reservation transaction rejects an AI decision after the role impact cursor moves", () => {
+  assert.equal(isAgentRoleObservationCurrent(12, 12), true);
+  assert.equal(isAgentRoleObservationCurrent(13, 12), false);
+  assert.equal(isAgentRoleObservationCurrent(12, undefined), false);
+  const source = readFileSync(join(process.cwd(), "src/continuous-story-v2/continuous-story-v2.service.ts"), "utf8");
+  const reservation = source.slice(source.indexOf("private async reserveResolution"), source.indexOf("private async commitMultiplayerEntry"));
+  assert.match(reservation, /turn\.thread\.lastAppliedSequence, reservedAgentObservation/);
+  assert.ok(
+    reservation.indexOf("isAgentRoleObservationCurrent") < reservation.indexOf("reserveMultiplayerCommand"),
+    "the role cursor fence must run inside the reservation transaction before durable command reservation"
+  );
 });
 
 test("runtime-before-database result retry reuses the frozen pre-result canon hash", () => {

@@ -11,21 +11,21 @@
 - [x] M06 interaction and character-protection rules
 - [x] M07 triggered AI, epoch, batch, candidate-only safety
 - [x] M08 provider-call budgets
-- [x] M09 concurrency, idempotency, lease, outbox recovery. Current-head
-      single-SQL evidence is in `openovel-db-concurrency-20260803-150641` and
-      `openovel-db-fault-20260803-151236`: parallel roles commit exact sequences
+- [x] M09 concurrency, idempotency, lease, outbox recovery. Current-source
+      Supabase evidence is in `openovel-db-concurrency-20260804-011600-m09c2`
+      and `openovel-db-fault-20260804-011800-m09f`: parallel roles commit exact sequences
       `1,2`; same-turn double submit writes one record set; contested asset
       failure leaves no sequence gap; expired leases write nothing; a replacement
       worker commits once; pre-commit terminal failure opens a replacement turn
       without changing the world; runtime-before-DB crash recovery remains
       exactly-once and identity conflicts fail closed.
-- [ ] M10 fresh 10-15 event three-role E2E after the epoch-scoped Agent task
-      identity, immutable disconnect Standing Policy snapshot, heartbeat, and
-      reclaim-fencing changes. `openovel-db-three-role-20260803-151654` remains
-      valid historical evidence for the earlier single-SQL architecture, but it
-      is not a PASS for the current source. The newest attempt stopped before
-      room creation with remote PostgreSQL `P1001`; one final lightweight
-      connectivity check is permitted before this route must stop.
+- [x] M10 current-source three-role E2E on isolated Supabase schema. Evidence
+      `openovel-db-three-role-20260804-004532-clean9` records 12 human actions
+      plus exactly one disconnect-takeover AI action, formal sequences `1..13`,
+      three synchronized private projections, an interaction reply, short
+      disconnect recovery without an epoch change, takeover/reclaim epoch
+      `1->2->3`, zero unfinished blockers, and exactly three narrative-provider
+      calls per resolved action with no Agent-decider call.
 - [x] Failure-loop policy: one failure signature is verified no more than three
       times; each attempt has a distinct hypothesis and new evidence; a third
       failure stops the path and records the invalid underlying assumption

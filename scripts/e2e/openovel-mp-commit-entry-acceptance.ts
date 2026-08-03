@@ -243,7 +243,11 @@ async function reserve(service: ContinuousStoryV2Service, fixture: Fixture, key:
     requestHash: `request:${fixture.runId}:${key}`,
     action,
     stageProgress: { stageAdvanced: false, nextStageIndex: null, reason: "STAGE_EVIDENCE_PENDING", evidenceFactKeys: [] },
-    actorKind: "AI"
+    actorKind: "AI",
+    agentDecisionAudit: {
+      schemaVersion: "openovel_agent_decision_audit_v1",
+      observedRoleAppliedSequence: fixture.turn.baseWorldSequence
+    }
   });
   return {
     runId: fixture.runId,
