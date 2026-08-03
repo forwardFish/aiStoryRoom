@@ -2,6 +2,7 @@ param(
   [ValidateSet("concurrency", "fault", "three-role", "performance", "transport")][string]$Lane = "concurrency",
   [string]$ProjectRoot = "",
   [string]$EvidenceRoot = "",
+  [string]$ProvisionedSchema = "",
   [int]$RuntimePort = 3117
 )
 
@@ -47,7 +48,11 @@ if ($Lane -eq "fault") {
 
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $suffix = [Guid]::NewGuid().ToString("N").Substring(0, 8)
-$schema = "openovel_mp_$($stamp.Replace('-','_'))_$suffix"
+$reuseProvisionedSchema = -not [string]::IsNullOrWhiteSpace($ProvisionedSchema)
+if ($reuseProvisionedSchema -and $ProvisionedSchema -notmatch '^openovel_mp_[a-zA-Z0-9_]+$') {
+  throw "ProvisionedSchema must be an isolated openovel_mp_* schema"
+}
+$schema = if ($reuseProvisionedSchema) { $ProvisionedSchema } else { "openovel_mp_$($stamp.Replace('-','_'))_$suffix" }
 if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
   $state = Get-Content -Raw -LiteralPath (Join-Path $ProjectRoot "docs\auto-execute\openovel-multiplayer\state.json") | ConvertFrom-Json
   $EvidenceRoot = Join-Path $ProjectRoot "docs\auto-execute\evidence\openovel-multiplayer\$($state.attempt_id)\test-results\openovel-db-$Lane-$stamp"
@@ -56,6 +61,7 @@ $EvidenceRoot = [System.IO.Path]::GetFullPath($EvidenceRoot)
 New-Item -ItemType Directory -Path $EvidenceRoot -Force | Out-Null
 $env:DATABASE_URL = if ($Lane -in @("performance", "three-role")) { Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 15 60 } else { Set-DatabaseSchema $env:SUPABASE_DATABASE_URL $schema 5 10 }
 $env:OPENOVEL_MP_DB_SCHEMA = $schema
+$env:OPENOVEL_MP_DB_PROVISIONING = if ($reuseProvisionedSchema) { "PREPROVISIONED_SCHEMA_REUSED" } else { "FRESH_SCHEMA_MIGRATED_IN_RUN" }
 $env:OPENOVEL_MP_EVIDENCE_DIR = $EvidenceRoot
 $env:OPENOVEL_MP_LANE = $Lane
 $env:OPENOVEL_RUNTIME_URL = "http://127.0.0.1:$RuntimePort"
@@ -69,8 +75,10 @@ $runtime = $null
 
 try {
   Push-Location $ProjectRoot
-  & pnpm exec prisma migrate deploy
-  if ($LASTEXITCODE -ne 0) { throw "Isolated schema migration failed with exit code $LASTEXITCODE" }
+  if (-not $reuseProvisionedSchema) {
+    & pnpm exec prisma migrate deploy
+    if ($LASTEXITCODE -ne 0) { throw "Isolated schema migration failed with exit code $LASTEXITCODE" }
+  }
   if ($Lane -eq "fault") {
     $runtimeOut = Join-Path $EvidenceRoot "runtime.out.log"
     $runtimeErr = Join-Path $EvidenceRoot "runtime.err.log"

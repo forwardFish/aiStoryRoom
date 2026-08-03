@@ -72,7 +72,13 @@ const report: Record<string, unknown> = {
   status: "RUNNING",
   providerMode: "DETERMINISTIC_TEST_PROVIDER",
   productProcesses: ["apps/openovel-runtime/src/server.ts", "apps/api/src/main.ts"],
-  database: { provider: "postgresql", schema: databaseSchema, isolated: true },
+  database: {
+    provider: "postgresql",
+    service: "supabase",
+    schema: databaseSchema,
+    isolated: true,
+    provisioning: requiredEnv("OPENOVEL_MP_DB_PROVISIONING")
+  },
   runId,
   startedAt: new Date().toISOString(),
   actions: []
