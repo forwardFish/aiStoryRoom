@@ -3,6 +3,7 @@ param(
   [string]$ProjectRoot = "",
   [string]$EvidenceRoot = "",
   [string]$ProvisionedSchema = "",
+  [string]$FreshSchema = "",
   [switch]$ProvisionOnly,
   [ValidateSet("session", "transaction")][string]$DatabaseMode = "session",
   [int]$RuntimePort = 3117
@@ -60,10 +61,21 @@ $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $suffix = [Guid]::NewGuid().ToString("N").Substring(0, 8)
 $reuseProvisionedSchema = -not [string]::IsNullOrWhiteSpace($ProvisionedSchema)
 if ($ProvisionOnly -and $reuseProvisionedSchema) { throw "ProvisionOnly cannot reuse an existing schema" }
+if ($ProvisionOnly -and $DatabaseMode -ne "session") { throw "ProvisionOnly requires session mode for Prisma migrations; use transaction mode only for execution" }
+if ($reuseProvisionedSchema -and -not [string]::IsNullOrWhiteSpace($FreshSchema)) { throw "FreshSchema cannot be combined with ProvisionedSchema" }
 if ($reuseProvisionedSchema -and $ProvisionedSchema -notmatch '^openovel_mp_[a-zA-Z0-9_]+$') {
   throw "ProvisionedSchema must be an isolated openovel_mp_* schema"
 }
-$schema = if ($reuseProvisionedSchema) { $ProvisionedSchema } else { "openovel_mp_$($stamp.Replace('-','_'))_$suffix" }
+if (-not [string]::IsNullOrWhiteSpace($FreshSchema) -and $FreshSchema -notmatch '^openovel_mp_[a-zA-Z0-9_]+$') {
+  throw "FreshSchema must be an isolated openovel_mp_* schema"
+}
+$schema = if ($reuseProvisionedSchema) {
+  $ProvisionedSchema
+} elseif (-not [string]::IsNullOrWhiteSpace($FreshSchema)) {
+  $FreshSchema
+} else {
+  "openovel_mp_$($stamp.Replace('-','_'))_$suffix"
+}
 if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
   $state = Get-Content -Raw -LiteralPath (Join-Path $ProjectRoot "docs\auto-execute\openovel-multiplayer\state.json") | ConvertFrom-Json
   $EvidenceRoot = Join-Path $ProjectRoot "docs\auto-execute\evidence\openovel-multiplayer\$($state.attempt_id)\test-results\openovel-db-$Lane-$stamp"
@@ -107,6 +119,15 @@ try {
     & pnpm exec prisma migrate deploy
     if ($LASTEXITCODE -ne 0) { throw "Isolated schema migration failed with exit code $LASTEXITCODE" }
   }
+  $cleanCheckMode = $DatabaseMode
+  if ($ProvisionOnly -and $DatabaseMode -eq "session") {
+    # Supabase recommends session mode for migrations and transaction mode for
+    # transient Prisma application traffic. Prove the freshly migrated schema
+    # through the same 6543 route that the product execution phase will use.
+    $transactionBaseUrl = $env:SUPABASE_DATABASE_URL -replace ':5432(?=/|\?|$)', ':6543'
+    $env:DATABASE_URL = Set-DatabaseSchema $transactionBaseUrl $schema 1 60 $true
+    $cleanCheckMode = "transaction"
+  }
   $cleanCheckJson = (& node scripts/e2e/openovel-mp-schema-clean-check.mjs | Out-String).Trim()
   if ($LASTEXITCODE -ne 0) { throw "Isolated schema clean check failed with exit code $LASTEXITCODE" }
   $cleanCheck = $cleanCheckJson | ConvertFrom-Json
@@ -117,7 +138,8 @@ try {
       service = "supabase"
       schema = $schema
       provisioning = "FRESH_SCHEMA_MIGRATED_IN_RUN"
-      connectionMode = $DatabaseMode
+      migrationMode = $DatabaseMode
+      cleanCheckMode = $cleanCheckMode
       cleanCheck = $cleanCheck
       completedAt = (Get-Date).ToUniversalTime().ToString("o")
     }
