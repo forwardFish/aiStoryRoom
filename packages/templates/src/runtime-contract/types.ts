@@ -176,3 +176,42 @@ export interface WorldRegistryEntry {
   contractPath: string;
 }
 export interface WorldRegistryIndex { registryVersion: 1; worlds: WorldRegistryEntry[] }
+
+export const playerIntentTypes = ["ASK", "OBSERVE", "DISCLOSE", "WITHHOLD", "NEGOTIATE", "MOVE", "USE_CAPABILITY", "COMMIT", "ORDER", "OTHER"] as const;
+export type PlayerIntentType = (typeof playerIntentTypes)[number];
+export interface PlayerActionIntent {
+  actionId: string; runId: string; actorId: string; rawText: string; submittedAt: string;
+  expectedStateRevision: number; intentType: PlayerIntentType; referencedEntityIds: string[];
+  proposedCapabilityId?: string; explicitCommitment: boolean; explicitOrder: boolean; confidence: number;
+}
+export type NarrativeRenderPolicy = "MODEL_ALLOWED" | "PROTECTED_TEMPLATE";
+export interface ProtectedNarrativeBlock { blockId: string; sourcePredicateIds: string[]; locale: string; text: string; immutable: true }
+export type NarrativeDisposition =
+  | { kind: "USE_ORIGINAL"; draftId: string }
+  | { kind: "USE_REPAIRED"; draftId: string; repairId: string }
+  | { kind: "USE_FALLBACK"; fallbackId: string; reason: string };
+export type EchoCategory = "PERSONAL" | "CROSS_PLAYER" | "WORLD";
+export type EchoAudience =
+  | { kind: "ORIGIN_ACTOR" }
+  | { kind: "OTHER_PLAYERS" }
+  | { kind: "ALL_PLAYERS" }
+  | { kind: "EXPLICIT_ACTORS"; actorIds: string[] }
+  | { kind: "VISIBILITY_ACTORS" };
+export interface EchoRoute { category: EchoCategory; ruleId: string; effectIndex: number; audience: EchoAudience; summary: string }
+export interface SettlementBinding {
+  id: string; intentType: PlayerIntentType; capabilityId: string; immediateRuleIds: string[]; delayedRuleIds: string[];
+  echoRoutes: EchoRoute[]; renderPolicy: NarrativeRenderPolicy; protectedTemplate?: string;
+}
+export interface FallbackAssets { locale: string; playerOutcomePrefix: string; reactionPrefix: string; worldPressurePrefix: string; nextDecisionPoint: string }
+export interface SettlementPackage { bindings: SettlementBinding[]; fallback: FallbackAssets }
+export interface PendingCausalEvent { event: CausalEvent; appliedAtRevision?: number }
+export interface SettlementSnapshot { runId?: string; state: DurableState; events: CausalEvent[]; pending: PendingCausalEvent[] }
+export interface SettlementResult {
+  snapshot: SettlementSnapshot; envelope: DurableTurnEnvelope; events: CausalEvent[];
+  protectedBlocks: ProtectedNarrativeBlock[]; fallbackText: string; disposition: NarrativeDisposition;
+}
+export type SettlementOutcome =
+  | { kind: "ACCEPTED"; result: SettlementResult }
+  | { kind: "REPLAYED"; result: SettlementResult }
+  | { kind: "CONFLICT"; expectedRevision: number; actualRevision: number }
+  | { kind: "REJECTED"; code: string };

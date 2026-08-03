@@ -1,4 +1,4 @@
-import type { DurablePredicatePattern, WorldRuntimeContract } from "./types";
+import type { DurablePredicatePattern, SettlementPackage, WorldRuntimeContract } from "./types";
 
 const pattern = (type: DurablePredicatePattern["type"], constraints: DurablePredicatePattern["constraints"] = {}): DurablePredicatePattern => ({ type, constraints });
 
@@ -12,6 +12,7 @@ export const sangtianRuntimeFixture: WorldRuntimeContract = {
     { id: "sangtian.actor.inspector", kind: "ACTOR", displayName: "巡抚", aliases: [], durable: true, initialStatus: {} },
     { id: "sangtian.institution.council", kind: "INSTITUTION", displayName: "议事机构", aliases: [], durable: true, initialStatus: {} },
     { id: "sangtian.document.order", kind: "DOCUMENT", displayName: "命令文书", aliases: [], durable: true, initialStatus: { sealed: false }, visibilityPolicyId: "sangtian.policy.governor" },
+    { id: "sangtian.document.public_notice", kind: "DOCUMENT", displayName: "公开文告", aliases: [], durable: true, initialStatus: { issued: false } },
     { id: "sangtian.secret.plan", kind: "SECRET", displayName: "隐秘计划", aliases: [], durable: true, initialStatus: {} },
     { id: "sangtian.location.hall", kind: "LOCATION", displayName: "议事厅", aliases: [], durable: true, initialStatus: {} },
     { id: "sangtian.resource.influence", kind: "RESOURCE", displayName: "影响力", aliases: [], durable: true, initialStatus: { amount: 2 } },
@@ -30,7 +31,7 @@ export const sangtianRuntimeFixture: WorldRuntimeContract = {
   ],
   knowledgeAcl: [{ id: "sangtian.acl.plan", secretId: "sangtian.secret.plan", actorIds: ["sangtian.actor.governor"], visibility: { scope: "PRIVATE", actorId: "sangtian.actor.governor" } }],
   destinyHooks: [{ id: "sangtian.hook.crisis", actorIds: ["sangtian.actor.governor", "sangtian.actor.inspector"], entityIds: ["sangtian.document.order", "sangtian.institution.council"], secretIds: ["sangtian.secret.plan"], causalRuleIds: ["sangtian.rule.issue", "sangtian.rule.pressure"], activationCondition: { all: [{ type: "ENTITY.INTRODUCED", entityId: "sangtian.institution.council" }] }, convergenceCondition: { any: [{ type: "DOCUMENT.CREATED", documentId: "sangtian.document.order" }] }, resolutionCondition: { not: { type: "ACTOR.COMMITTED", actorId: "sangtian.actor.inspector", commitmentId: "sangtian.commitment.block" } } }],
-  causalRules: [{ id: "sangtian.rule.issue", capabilityId: "sangtian.capability.issue", condition: { all: [{ type: "ENTITY.INTRODUCED", entityId: "sangtian.institution.council" }] }, effects: [{ type: "DOCUMENT.CREATED", documentId: "sangtian.document.order" }, { type: "RESOURCE.CHANGED", actorId: "sangtian.actor.governor", resourceId: "sangtian.resource.influence", delta: 1 }], visibility: { scope: "PUBLIC" } }],
+  causalRules: [{ id: "sangtian.rule.issue", capabilityId: "sangtian.capability.issue", condition: { all: [{ type: "ENTITY.INTRODUCED", entityId: "sangtian.institution.council" }] }, effects: [{ type: "DOCUMENT.CREATED", documentId: "sangtian.document.order" }, { type: "RESOURCE.CHANGED", actorId: "sangtian.actor.governor", resourceId: "sangtian.resource.influence", delta: 1 }, { type: "DOCUMENT.CREATED", documentId: "sangtian.document.public_notice" }], visibility: { scope: "PUBLIC" } }],
   delayedRules: [{ id: "sangtian.rule.pressure", capabilityId: "sangtian.capability.inspect", condition: { all: [{ type: "DOCUMENT.CREATED", documentId: "sangtian.document.order" }] }, effects: [{ type: "WORLD.PRESSURE_CHANGED", pressureId: "sangtian.pressure.audit", delta: 1 }], visibility: { scope: "ACTOR_SET", actorIds: ["sangtian.actor.governor", "sangtian.actor.inspector"] }, delayRevisions: 2 }],
   styleProfile: { locale: "zh-CN", pov: "THIRD_PERSON_LIMITED", tense: "PAST", tags: ["political", "multi-pov"] },
   openingState: { worldId: "sangtian", revision: 0, predicates: [{ type: "ENTITY.INTRODUCED", entityId: "sangtian.institution.council" }, { type: "ENTITY.LOCATED_AT", entityId: "sangtian.document.order", locationId: "sangtian.location.hall" }], pendingRuleIds: [] },
@@ -71,3 +72,15 @@ export const caesarRuntimeFixture: WorldRuntimeContract = {
   openingState: { worldId: "caesar", revision: 0, predicates: [{ type: "ENTITY.INTRODUCED", entityId: "caesar.actor.senator" }, { type: "ENTITY.LOCATED_AT", entityId: "caesar.evidence.letter", locationId: "caesar.location.forum" }], pendingRuleIds: [] },
   openingProjections: [{ id: "caesar.projection.senator", actorId: "caesar.actor.senator", visibleEntityIds: ["caesar.actor.senator", "caesar.actor.envoy", "caesar.institution.senate", "caesar.evidence.letter", "caesar.location.forum", "caesar.relation.alliance"], knownSecretIds: ["caesar.secret.route"], visiblePredicates: [{ type: "ENTITY.INTRODUCED", entityId: "caesar.actor.senator" }] }, { id: "caesar.projection.envoy", actorId: "caesar.actor.envoy", visibleEntityIds: ["caesar.actor.envoy", "caesar.evidence.letter", "caesar.location.forum"], knownSecretIds: [], visiblePredicates: [{ type: "ENTITY.LOCATED_AT", entityId: "caesar.evidence.letter", locationId: "caesar.location.forum" }] }],
 };
+
+function settlementFixture(contract: WorldRuntimeContract, summaries: [string, string, string], protectedTemplate: string, nextDecisionPoint: string): SettlementPackage {
+  const rule = contract.causalRules[0]; const actors = contract.roles.map((role) => role.actorId);
+  return { bindings: [{ id: `${contract.worldId}.binding.primary`, intentType: "USE_CAPABILITY", capabilityId: rule.capabilityId, immediateRuleIds: [rule.id], delayedRuleIds: [], echoRoutes: [
+    { category: "PERSONAL", ruleId: rule.id, effectIndex: 0, audience: { kind: "ORIGIN_ACTOR" }, summary: summaries[0] },
+    { category: "CROSS_PLAYER", ruleId: rule.id, effectIndex: Math.min(1, rule.effects.length - 1), audience: { kind: "OTHER_PLAYERS" }, summary: summaries[1] },
+    { category: "WORLD", ruleId: rule.id, effectIndex: 2, audience: { kind: "VISIBILITY_ACTORS" }, summary: summaries[2] },
+  ], renderPolicy: "PROTECTED_TEMPLATE", protectedTemplate }], fallback: { locale: contract.styleProfile.locale, playerOutcomePrefix: "Outcome:", reactionPrefix: "Reaction:", worldPressurePrefix: "Pressure:", nextDecisionPoint } };
+}
+
+export const sangtianSettlementFixture = settlementFixture(sangtianRuntimeFixture, ["The order is recorded.", "The inspector receives an authorized reaction.", "Institutional pressure increases."], "Settled: {summary}", "Choose whether to continue or change course.");
+export const caesarSettlementFixture = settlementFixture(caesarRuntimeFixture, ["The deliberation changes the relationship.", "The envoy receives an authorized reaction.", "Civic pressure changes."], "Settled: {summary}", "Choose whether to continue or change course.");
