@@ -18,6 +18,7 @@ import type { MaterializedTurnView } from "./atomic-turn.js";
 import type { WorkspaceRunSeeder } from "./workspace-seeder.js";
 import {
   OPENOVEL_RUNTIME_MODE,
+  type ModelCallStage,
   type MirrorEnvelope,
   type MirrorEvent,
   type OpenNovelOption,
@@ -217,7 +218,7 @@ export class FileStoryWorkspace {
   async recordModelCall(
     runId: string,
     turnId: string,
-    stage: ProviderRequest["profile"],
+    stage: ModelCallStage,
     request: ProviderRequest,
     result?: ProviderResult,
     error?: unknown,
@@ -328,6 +329,8 @@ export class FileStoryWorkspace {
       action: string;
       result: TurnResult;
       selectedOption: OpenNovelOption | null;
+      contextNarration?: string;
+      shadowClaims?: unknown[];
     },
   ): Promise<MaterializedTurnView[]> {
     const paths = this.paths(runId);
@@ -337,6 +340,20 @@ export class FileStoryWorkspace {
       "",
       input.result.narration.trim(),
     ].join("\n");
+    const contextNarration = String(
+      input.contextNarration || input.result.narration,
+    ).trim();
+    const currentContextCanon = await readText(paths.chaptersContext, currentCanon);
+    const contextChapter = [
+      `**读者选择**：${input.action}`,
+      "",
+      contextNarration,
+    ].join("\n");
+    const existingShadowClaims = parseJsonLines(await readText(paths.shadowClaims, ""));
+    const shadowClaims = [
+      ...existingShadowClaims,
+      ...(input.shadowClaims || []),
+    ];
     const sceneEvents = parseJsonLines(await readText(paths.sceneLog, ""));
     sceneEvents.push(this.event("foreground_turn", {
       turnId: input.turnId,
@@ -371,14 +388,35 @@ export class FileStoryWorkspace {
         value: `${input.result.narration.trim()}\n`,
       },
       {
+        relativePath: relativeRunPath(paths, paths.chaptersContext),
+        format: "text",
+        value: `${currentContextCanon.trimEnd()}\n\n${contextChapter}\n`.trimStart(),
+      },
+      {
+        relativePath: relativeRunPath(paths, paths.chaptersContextRecent),
+        format: "text",
+        value: `${contextNarration}\n`,
+      },
+      {
+        relativePath: relativeRunPath(paths, paths.shadowClaims),
+        format: "jsonl",
+        value: shadowClaims,
+      },
+      {
         relativePath: relativeRunPath(paths, paths.sceneLog),
         format: "jsonl",
+        restoreMode: "APPEND_ONLY",
         value: sceneEvents,
       },
       {
         relativePath: relativeRunPath(paths, paths.metadata),
         format: "json",
         value: committedMetadata,
+      },
+      {
+        relativePath: relativeRunPath(paths, paths.currentOptions),
+        format: "json",
+        value: input.result.options,
       },
     ];
   }

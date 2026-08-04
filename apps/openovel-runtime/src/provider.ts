@@ -5,10 +5,11 @@ export type ProviderConfig = {
   baseUrl: string;
   narratorModel: string;
   reviewerModel?: string;
-  repairModel?: string;
   optionsModel: string;
   storykeeperModel: string;
   timeoutMs: number;
+  thinkingMode?: "enabled" | "disabled";
+  reasoningEffort?: "high" | "max";
   fetchImpl?: typeof fetch;
 };
 
@@ -34,7 +35,6 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
       baseUrl,
       narratorModel: String(env.OPENOVEL_NARRATOR_MODEL || defaultModel).trim(),
       reviewerModel: String(env.OPENOVEL_REVIEWER_MODEL || defaultModel).trim(),
-      repairModel: String(env.OPENOVEL_REPAIR_MODEL || defaultModel).trim(),
       optionsModel: String(env.OPENOVEL_OPTIONS_MODEL || defaultModel).trim(),
       storykeeperModel: String(env.OPENOVEL_STORYKEEPER_MODEL || defaultModel).trim(),
       timeoutMs: boundedInteger(
@@ -43,6 +43,8 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
         5_000,
         300_000,
       ),
+      thinkingMode: env.OPENOVEL_DEEPSEEK_THINKING === "disabled" ? "disabled" : "enabled",
+      reasoningEffort: env.OPENOVEL_DEEPSEEK_REASONING_EFFORT === "max" ? "max" : "high",
       fetchImpl,
     });
   }
@@ -106,10 +108,23 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
         max_tokens: request.maxTokens,
         stream: request.stream,
         ...(request.stream ? { stream_options: { include_usage: true } } : {}),
-        ...(request.json && supportsJsonMode(this.config.baseUrl, model)
-          ? { response_format: { type: "json_object" } }
-          : {}),
-        ...thinkingFields(this.config.baseUrl),
+        ...(request.jsonSchema && supportsStructuredOutputs(this.config.baseUrl, model)
+          ? {
+              response_format: {
+                type: "json_schema",
+                json_schema: request.jsonSchema,
+              },
+            }
+          : request.json && supportsJsonMode(this.config.baseUrl, model)
+            ? { response_format: { type: "json_object" } }
+            : {}),
+        ...thinkingFields(
+          this.config.baseUrl,
+          request.profile === "reviewer" || request.profile === "options"
+            ? "disabled"
+            : this.config.thinkingMode,
+          this.config.reasoningEffort,
+        ),
       }),
       signal,
     });
@@ -154,9 +169,6 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
   private modelFor(profile: ProviderRequest["profile"]) {
     if (profile === "reviewer") {
       return this.config.reviewerModel || this.config.narratorModel;
-    }
-    if (profile === "repair") {
-      return this.config.repairModel || this.config.narratorModel;
     }
     if (profile === "options") return this.config.optionsModel;
     if (profile === "storykeeper") return this.config.storykeeperModel;
@@ -205,9 +217,17 @@ async function readStream(response: Response, onDelta?: (text: string) => void) 
   };
 }
 
-function thinkingFields(baseUrl: string) {
+function thinkingFields(
+  baseUrl: string,
+  mode: "enabled" | "disabled" = "enabled",
+  effort: "high" | "max" = "high",
+) {
   const host = new URL(baseUrl).hostname.toLowerCase();
-  if (host.endsWith("deepseek.com")) return { thinking: { type: "disabled" } };
+  if (host.endsWith("deepseek.com")) {
+    return mode === "enabled"
+      ? { thinking: { type: "enabled" }, reasoning_effort: effort }
+      : { thinking: { type: "disabled" } };
+  }
   if (host.includes("siliconflow")) {
     // SiliconFlow documents a 4096-token default thinking budget for
     // reasoning models. Some newly deployed models still spend that budget
@@ -217,8 +237,21 @@ function thinkingFields(baseUrl: string) {
   return {};
 }
 
+function supportsStructuredOutputs(baseUrl: string, model: string) {
+  const host = new URL(baseUrl).hostname.toLowerCase();
+  if (!host.includes("siliconflow")) return false;
+  // SiliconFlow exposes JSON Schema for supported models, but GLM-5.x rejects
+  // response_format at transport level. The complete schema remains embedded
+  // in the Reviewer contract and the response is validated after generation.
+  return !/^zai-org\/GLM-5(?:\.|$)/i.test(model);
+}
+
 function supportsJsonMode(baseUrl: string, model: string) {
   const host = new URL(baseUrl).hostname.toLowerCase();
+  // SiliconFlow currently rejects response_format=json_object for GLM-5.x
+  // even though its general JSON-mode guide describes broad LLM support.
+  // These models still receive the complete output schema in the Reviewer
+  // contract and are validated identically after plain-text transport.
   return !(host.includes("siliconflow") && /^zai-org\/GLM-5(?:\.|$)/i.test(model));
 }
 

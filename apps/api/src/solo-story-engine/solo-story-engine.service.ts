@@ -1102,7 +1102,7 @@ export class SoloStoryEngineService {
           operation: "TURN"
         });
         const amount = priceForCreditAction(actionClass, billing.prices);
-        const reservation = await this.creditConsumption.reserveSoloActionCharge({
+        const reservation = await this.creditConsumption.reserveCharge({
           runId: actor.run.id,
           beneficiaryUserId: String(actor.player.userId),
           chargeType: "PLAYER_ACTION",
@@ -1115,7 +1115,7 @@ export class SoloStoryEngineService {
           tx
         });
         if (reservation.kind === "insufficient") {
-          return { insufficient: reservation } as const;
+          return { kind: "insufficient", credit: reservation } as const;
         }
         if (reservation.kind === "replay" && reservation.charge?.status === "RELEASED") {
           throw new ConflictException({
@@ -1204,10 +1204,13 @@ export class SoloStoryEngineService {
           message: "局势已经变化，请刷新后继续。"
         });
       }
-      return { ...record, turn, rawAction, creditChargeId, runtime };
+      return {
+        kind: "action",
+        reservation: { ...record, turn, rawAction, creditChargeId, runtime }
+      } as const;
     }, PUBLISH_TRANSACTION_OPTIONS);
-    if ("insufficient" in outcome && outcome.insufficient) {
-      const insufficient = outcome.insufficient;
+    if (outcome.kind === "insufficient") {
+      const insufficient = outcome.credit;
       throw new HttpException({
         code: "PLAYER_CREDITS_REQUIRED",
         message: "Not enough World Credits to submit this action",
@@ -1217,7 +1220,7 @@ export class SoloStoryEngineService {
         purchaseUrl: `/credits?intent=PLAYER_RECLAIM&runId=${encodeURIComponent(actor.run.id)}&returnTo=${encodeURIComponent(`/game?runId=${actor.run.id}`)}`
       }, HttpStatus.PAYMENT_REQUIRED);
     }
-    return outcome;
+    return outcome.reservation;
   }
 
   private async resolveRoleTargetId(runId: string, targetType: string, targetId: string): Promise<string | null> {

@@ -98,6 +98,16 @@
             "status": "SENT"
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.dispatchStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "knowledgeTransfers"
+          }
+        ],
         "protectedNarrative": "总督命首报走正式通政渠道，沿途逐站记录交接和到达时辰。",
         "createsPendingConsequence": true
       },
@@ -126,6 +136,20 @@
             "status": "SENT"
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.dispatchStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "knowledgeTransfers"
+          }
+        ],
         "protectedNarrative": "总督用自己的封印加封急递，指定送达上级，并在府中留下副本和交接记录。",
         "createsPendingConsequence": true
       },
@@ -147,6 +171,20 @@
           "report.firstNarrativeController": "DUAL_CHANNEL_CONTESTED",
           "evidence.chainStatus": "TRACEABLE"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.dispatchStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "report.firstNarrativeController"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          }
+        ],
         "protectedNarrative": "总督命正本走正式渠道、摘要另走密奏，两份互列封号，以便相互核验。",
         "createsPendingConsequence": true
       }

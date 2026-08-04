@@ -113,6 +113,16 @@
             "status": "DELIVERED"
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "knowledgeTransfers"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          }
+        ],
         "protectedNarrative": "总督只向巡抚说明册页存在差异，没有透露书吏和密供所在。",
         "createsPendingConsequence": true
       },
@@ -137,6 +147,16 @@
             "status": "DELIVERED"
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "knowledgeTransfers"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.copyStatus"
+          }
+        ],
         "protectedNarrative": "总督准将带见证记录的样册交巡抚查验，原件仍由现保管人封存。",
         "createsPendingConsequence": true
       },
@@ -160,6 +180,16 @@
             "$delta": 1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          }
+        ],
         "protectedNarrative": "总督以保管链未稳为由暂不披露细节，只答应限时提交复核结果。",
         "createsPendingConsequence": true
       }

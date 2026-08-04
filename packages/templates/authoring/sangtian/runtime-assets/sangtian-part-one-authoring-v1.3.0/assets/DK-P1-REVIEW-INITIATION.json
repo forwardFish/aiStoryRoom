@@ -107,6 +107,20 @@
           "evidence.chainStatus": "TRACEABLE",
           "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "review.initiationStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.primaryCustodianRef"
+          }
+        ],
         "protectedNarrative": "总督把封缄令牌交给县令亲随，命清流县先封档房、记清在场人；原册暂由县令看守，不许擅自启封。",
         "createsPendingConsequence": true
       },
@@ -130,6 +144,20 @@
             "$delta": 1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "review.initiationStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "review.authority"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          }
+        ],
         "protectedNarrative": "总督定下督抚共同查验：双方各派一名经手人到清流县，当场核对原册和改桑名册。",
         "createsPendingConsequence": true
       },
@@ -151,6 +179,20 @@
           "witness.accessStatus": "COUNTY_CONTROLLED",
           "evidence.chainStatus": "FRAGILE"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "review.initiationStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "witness.accessStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          }
+        ],
         "protectedNarrative": "总督准县令先在县内自查两日，只将异常页封样送来，原册暂不离县衙。",
         "createsPendingConsequence": true
       }

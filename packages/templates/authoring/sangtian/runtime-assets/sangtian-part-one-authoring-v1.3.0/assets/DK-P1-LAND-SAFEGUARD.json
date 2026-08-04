@@ -94,6 +94,20 @@
           "land.riskLevel": "MEDIUM",
           "evidence.chainStatus": "TRACEABLE"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "land.safeguardStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "land.riskLevel"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          }
+        ],
         "protectedNarrative": "总督定下灾期田契的公开底价，并命县衙逐契登记买受人。",
         "createsPendingConsequence": true
       },
@@ -115,6 +129,20 @@
           "merchant.grantedRights": [],
           "grain.immediatePressure": "RISING"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "land.safeguardStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "merchant.grantedRights"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.immediatePressure"
+          }
+        ],
         "protectedNarrative": "总督命赈期内暂禁商会和大户购入灾民田，先以借粮维持。",
         "createsPendingConsequence": true
       },
@@ -138,6 +166,20 @@
             "$delta": -1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "reform.scopeStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "land.riskLevel"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          }
+        ],
         "protectedNarrative": "总督把改桑指标分到更多非灾县，清流县只承担有限份额。",
         "createsPendingConsequence": true
       }

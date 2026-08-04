@@ -40,6 +40,16 @@ const SECTION_FILES = new Set([
   "forbidden.md",
 ]);
 
+/**
+ * A Storykeeper model reads player POV prose, so its free-form summaries are
+ * advisory rather than a second world-state writer. Only presentation-only
+ * sections may be applied directly. Fact-bearing worksets are materialized
+ * below from server-owned settlement data.
+ */
+const MODEL_WRITABLE_SECTIONS = new Set([
+  "tone.md",
+]);
+
 export class StorykeeperDrain {
   private readonly running = new Map<string, Promise<void>>();
 
@@ -214,23 +224,19 @@ export class StorykeeperDrain {
       parseStorykeeperPatch(result.text),
       item.warnings || [],
     );
-    const resolvedCards = resolveContextCardIdentities(patch.contextCards, registry);
-    for (const card of resolvedCards) {
-      await writeContextCard(paths, card);
-    }
-    if (resolvedCards.some((card) => card.curate)) {
-      await curateContextCards(paths, resolvedCards.filter((card) => card.curate).map((card) => card.slug));
-    }
+    // A model-authored card can silently turn a POV detail or an attributed
+    // report into durable world truth. Runtime-created cards therefore require
+    // a future typed entity/event projection; unreferenced prose candidates are
+    // retained only in the audit record and never enter the foreground.
+    const resolvedCards: ReturnType<typeof resolveContextCardIdentities> = [];
     for (const [name, content] of Object.entries(patch.sections)) {
-      if (!SECTION_FILES.has(name)) continue;
+      if (!SECTION_FILES.has(name) || !MODEL_WRITABLE_SECTIONS.has(name)) continue;
       const normalized = formatFrontendSection(name, content);
       await writeAtomic(path.join(paths.frontendDir, name), normalized ? `${normalized}\n` : "");
     }
+    const deterministicFiles = await applySettlementWorksetProjection(paths, item);
     if (patch.directorArc?.trim()) {
       await writeAtomic(paths.arcLog, `${patch.directorArc.trim()}\n`);
-    }
-    if (patch.storyMemory?.trim()) {
-      await writeAtomic(paths.storyMemory, `${patch.storyMemory.trim()}\n`);
     }
     if (patch.optionsGuidance?.trim()) {
       const reusableGuidance = sanitizeOptionsGuidance(patch.optionsGuidance);
@@ -247,12 +253,15 @@ export class StorykeeperDrain {
       turnId: item.turnId,
       itemId: item.id,
       filesChanged: [
-        ...Object.keys(patch.sections),
+        ...Object.keys(patch.sections).filter((name) => MODEL_WRITABLE_SECTIONS.has(name)),
+        ...deterministicFiles,
         ...resolvedCards.map((card) => `context-cards/${card.slug}/CARD.md`),
         ...(patch.directorArc?.trim() ? ["director/ARC.md"] : []),
-        ...(patch.storyMemory?.trim() ? ["memory/MEMORY.md"] : []),
       ],
       summary: patch.summary,
+      ignoredAdvisoryFactSections: Object.keys(patch.sections)
+        .filter((name) => SECTION_FILES.has(name) && !MODEL_WRITABLE_SECTIONS.has(name)),
+      ignoredAdvisoryContextCards: patch.contextCards.map((card) => card.slug),
     });
   }
 }
@@ -317,7 +326,8 @@ function buildStorykeeperMessages(
       content: [
         "你是互动小说的后台 Storykeeper。前景正文已经发布，绝不能修改、否定或重写 Canon。",
         "你的任务是读取玩家行动、真实正文、Recent Canon、BRIEF 和当前 Foreground Guidance，维护下一轮的小型工作集。",
-        "更新 Scene、Active Characters、Relationships、Constants、Open Threads、Active Pressures、Pending Consequence、Forbidden；只写跨回合仍有用的结论，不写逐句摘要和内部分析。",
+        "published_narration 是玩家实际看到的文学正文，只用于场面连续、文风和质量判断；fact_projection 是移除 Shadow 后的后台投影。两者都不是权威状态源，持久事实只能来自 causal_delta、已结算 effect 与服务器工作集。shadow_claims 没有状态写入权，不能进入 Constants、Memory 或 Context Card。",
+        "世界状态、Scene、Characters、Relationships、Constants、Threads、Pressure、Pending Consequence、Cards 与 Memory 都由服务器从 Settlement/Causal Event 投影；你无权写入这些事实字段。sections 只可返回 tone.md。",
         "Recent Canon 决定当前镜头。Guidance 若与最新正文的站位、时间或刚发生的事冲突，以 Canon 为准。",
         "recent_canon_before 是本轮正文提交前的 Canon；recent_canon 已包含 published_narration。published_narration 出现在 recent_canon 里是正常提交结果，绝不能据此判定复写。判断本轮是否重演旧场景，只比较 recent_canon_before 与 published_narration。",
         "causal_delta 是服务器从真实玩家输入或已绑定选项生成的短因果信封。只把其中已发生的行动和 presentThisTurn 持久结果写入下一轮状态；未来 consequence 仍是待兑现压力，不得提前写成既成事实。",
@@ -337,7 +347,7 @@ function buildStorykeeperMessages(
         "每个正文 beat 至少推进情节、关系或风险之一。若最近两个 beat 都只是在起草、改字、复述、等待或处理同一件微小事务，下一轮必须让一个已埋下的 NPC 或外部压力独立向前走；这不是凭空制造证据，也不是强迫玩家按大纲行动。",
         "directed-beat.md 一旦已在 Canon 中发生就清空；若两轮仍未自然发生，说明前提不成立，应在 directorArc 中改写或延后前提，而不是继续加码。",
         "story_memory 是跨较长距离仍会改变人物行为或后续可行性的紧凑记忆，不是逐回合摘要。只有本轮新增、修正或淘汰了这种持久事实时，才在 storyMemory 返回更新后的完整记忆；普通动作、对白措辞和临时物件不写入。",
-        "只返回严格 JSON：{\"summary\":string,\"sections\":{\"scene.md\"?:string,\"tone.md\"?:string,\"active-characters.md\"?:string,\"relationships.md\"?:string,\"constants.md\"?:string,\"open-threads.md\"?:string,\"active-pressures.md\"?:string,\"directed-beat.md\"?:string,\"pending-consequence.md\"?:string,\"forbidden.md\"?:string},\"directorArc\"?:string,\"storyMemory\"?:string,\"contextCards\"?:Array<{\"slug\":string,\"triggers\":string[],\"body\":string,\"curate\"?:boolean}>,\"optionsGuidance\"?:string,\"qualityNotes\"?:string}",
+        "只返回严格 JSON：{\"summary\":string,\"sections\":{\"tone.md\"?:string},\"directorArc\"?:string,\"optionsGuidance\"?:string,\"qualityNotes\"?:string}。不要返回 storyMemory 或 contextCards。",
       ].join("\n"),
     },
     {
@@ -353,11 +363,13 @@ function buildStorykeeperMessages(
         `<recent_canon_before>\n${compactText(item.recentCanonBefore || "", 12_000)}\n</recent_canon_before>`,
         `<recent_canon>\n${compactText(snapshot.recentCanon, 12_000)}\n</recent_canon>`,
         `<reader_action>\n${item.action}\n</reader_action>`,
-        `<published_narration>\n${item.narration}\n</published_narration>`,
+        `<published_narration>\n${item.publishedNarration || item.narration}\n</published_narration>`,
+        `<fact_projection>\n${item.narration}\n</fact_projection>`,
         item.causalDelta
           ? `<causal_delta>\n${JSON.stringify(item.causalDelta)}\n</causal_delta>`
           : "",
-        `<shadow_warnings>\n${JSON.stringify(item.warnings || [])}\n</shadow_warnings>`,
+        `<shadow_claims>\n${JSON.stringify(storykeeperShadowMetadata(item.shadowClaims))}\n</shadow_claims>`,
+        `<shadow_warnings>\n${JSON.stringify(storykeeperWarningMetadata(item.warnings))}\n</shadow_warnings>`,
         item.selectedEffect
           ? `<selected_effect>\n${JSON.stringify(item.selectedEffect)}\n</selected_effect>`
           : "",
@@ -376,7 +388,8 @@ function buildCompactStorykeeperMessages(
       role: "system" as const,
       content: [
         "你是互动小说的后台 Storykeeper。每回合只做紧凑增量归并，绝不修改 Canon。",
-        "Recent Canon 决定当前镜头。只返回下一轮确实改变的工作集字段；未改变的 tone、关系、常量、人物卡、长期记忆和 ARC 一律省略。",
+        "Recent Canon 只供质量、节奏和连续性判断。世界事实工作集由服务器投影；你只可返回 tone.md、directorArc、optionsGuidance 和 qualityNotes。",
+        "published_narration 是玩家实际看到的文学正文；fact_projection 是移除 Shadow 后的后台投影。它们只供场面连续和质量判断，持久事实只从 causal_delta、已结算 effect 与服务器工作集归并。shadow_claims 绝不能升级为 Constants、Memory 或 Context Card。",
         "recent_canon_before 是本轮正文提交前的 Canon；recent_canon 已包含 published_narration。只用二者差异判断本轮变化，不把正常追加误判成复写。",
         "causal_delta 是服务器生成的短因果信封；只归并已发生行动和 presentThisTurn 结果，未来 consequence 仍保持待兑现。",
         "selected_effect 里的 consequence 只是由选择启动的未来压力，尚未在正文发生时不得写成既成事实。",
@@ -390,7 +403,7 @@ function buildCompactStorykeeperMessages(
         "已有实体必须复用 context_card_registry 的 slug；除非 Canon 首次建立真正持续的新实体，否则不要返回 contextCards。",
         "directed-beat.md 只允许一个已经到达当前镜头的裸世界事件，不写前提、回合号、候选事件或玩家反应；没有就省略。",
         "总输出不超过 1800 个中文字符；summary 和 qualityNotes 各不超过 120 字。",
-        "只返回严格 JSON：{\"summary\":string,\"sections\":{\"scene.md\"?:string,\"active-characters.md\"?:string,\"open-threads.md\"?:string,\"active-pressures.md\"?:string,\"directed-beat.md\"?:string,\"pending-consequence.md\"?:string,\"forbidden.md\"?:string},\"directorArc\"?:string,\"storyMemory\"?:string,\"contextCards\"?:Array<{\"slug\":string,\"triggers\":string[],\"body\":string,\"curate\"?:boolean}>,\"optionsGuidance\"?:string,\"qualityNotes\"?:string}",
+        "只返回严格 JSON：{\"summary\":string,\"sections\":{\"tone.md\"?:string},\"directorArc\"?:string,\"optionsGuidance\"?:string,\"qualityNotes\"?:string}。不要返回 storyMemory 或 contextCards。",
       ].join("\n"),
     },
     {
@@ -405,11 +418,13 @@ function buildCompactStorykeeperMessages(
         `<recent_canon_before>\n${compactText(item.recentCanonBefore || "", 5_000)}\n</recent_canon_before>`,
         `<recent_canon>\n${compactText(snapshot.recentCanon, 7_000)}\n</recent_canon>`,
         `<reader_action>\n${item.action}\n</reader_action>`,
-        `<published_narration>\n${compactText(item.narration, 5_000)}\n</published_narration>`,
+        `<published_narration>\n${compactText(item.publishedNarration || item.narration, 5_000)}\n</published_narration>`,
+        `<fact_projection>\n${compactText(item.narration, 5_000)}\n</fact_projection>`,
         item.causalDelta
           ? `<causal_delta>\n${JSON.stringify(item.causalDelta)}\n</causal_delta>`
           : "",
-        `<shadow_warnings>\n${JSON.stringify(item.warnings || [])}\n</shadow_warnings>`,
+        `<shadow_claims>\n${JSON.stringify(storykeeperShadowMetadata(item.shadowClaims))}\n</shadow_claims>`,
+        `<shadow_warnings>\n${JSON.stringify(storykeeperWarningMetadata(item.warnings))}\n</shadow_warnings>`,
         item.selectedEffect
           ? `<selected_effect>\n${JSON.stringify(item.selectedEffect)}\n</selected_effect>`
           : "",
@@ -467,6 +482,52 @@ function parseStorykeeperPatch(raw: string) {
     optionsGuidance: typeof parsed.optionsGuidance === "string" ? parsed.optionsGuidance : "",
     qualityNotes: typeof parsed.qualityNotes === "string" ? parsed.qualityNotes : "",
   };
+}
+
+/**
+ * Materialize only facts whose provenance is already owned by the server.
+ * Literary narration remains in Player Canon/Recent Canon, while future
+ * consequences remain explicitly pending. This rule is identical for every
+ * world and contains no story vocabulary or language-specific matching.
+ */
+async function applySettlementWorksetProjection(
+  paths: ReturnType<FileStoryWorkspace["paths"]>,
+  item: StorykeeperInboxItem,
+) {
+  const changed: string[] = [];
+  const consequence = String(item.selectedEffect?.consequence || "").trim();
+  if (consequence) {
+    const content = formatFrontendSection(
+      "pending-consequence.md",
+      `- [${item.turnId}] 已由本轮选择启动、尚未兑现：${consequence}`,
+    );
+    await writeAtomic(path.join(paths.frontendDir, "pending-consequence.md"), `${content}\n`);
+    changed.push("pending-consequence.md");
+  }
+  return changed;
+}
+
+function storykeeperShadowMetadata(claims: unknown[] | undefined) {
+  return (claims || []).flatMap((claim) => {
+    if (!claim || typeof claim !== "object" || Array.isArray(claim)) return [];
+    const value = claim as Record<string, unknown>;
+    return [{
+      shadowClaimId: String(value.shadowClaimId || ""),
+      kind: String(value.kind || ""),
+      reason: String(value.reason || ""),
+      stateWriteAllowed: false,
+      durableMemoryWriteAllowed: false,
+    }];
+  });
+}
+
+function storykeeperWarningMetadata(warnings: RuntimeWarning[] | undefined) {
+  return (warnings || []).map((warning) => ({
+    code: warning.code,
+    message: warning.message,
+    severity: warning.severity,
+    blocksPlayer: warning.blocksPlayer,
+  }));
 }
 
 function parseModelJson(source: string) {

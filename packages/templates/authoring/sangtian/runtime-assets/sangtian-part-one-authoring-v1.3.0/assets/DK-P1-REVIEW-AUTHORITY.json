@@ -94,7 +94,26 @@
             "$delta": -1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "review.authority"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "review.procedureStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          }
+        ],
         "protectedNarrative": "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
+          "WORLD_PRESSURE": "巡抚幕僚没有再争主持之名，只提醒在场诸人：谁先接触原册、谁留下封样，往后都要能说清。",
+          "DECISION_STOP": "清流县令随即请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+        },
         "createsPendingConsequence": true
       },
       {
@@ -113,7 +132,22 @@
           "review.authority": "JOINT",
           "review.procedureStatus": "DUAL_SIGNATURE_REQUIRED"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "review.authority"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "review.procedureStatus"
+          }
+        ],
         "protectedNarrative": "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
+          "WORLD_PRESSURE": "共同具名虽锁住了单方动册的机会，也让原件每一次启封都可能被另一方拖住。",
+          "DECISION_STOP": "清流县令请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+        },
         "createsPendingConsequence": true
       },
       {
@@ -134,7 +168,26 @@
           "review.procedureStatus": "LAYERED_REVIEW",
           "evidence.chainStatus": "FRAGILE"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "review.authority"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "review.procedureStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          }
+        ],
         "protectedNarrative": "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
+          "WORLD_PRESSURE": "县令接下初核之责，却也当厅说明：原册若仍由县衙独守，日后任何缺页都可能算在他头上。",
+          "DECISION_STOP": "他请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+        },
         "createsPendingConsequence": true
       }
     ],

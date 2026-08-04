@@ -106,8 +106,95 @@
           "reform.scopeStatus": "QINGLIU_ONLY",
           "land.safeguardStatus": "WRITTEN_NO_DISTRESS_PURCHASE"
         },
+        "durableEffects": [
+          {
+            "type": "DOCUMENT.CREATED",
+            "documentId": "document.reform_execution_record"
+          },
+          {
+            "type": "DOCUMENT.AUTHENTICATED",
+            "documentId": "document.reform_execution_record",
+            "actorId": "actor.zhejiang_governor"
+          },
+          {
+            "type": "DOCUMENT.TRANSFERRED",
+            "documentId": "document.reform_execution_record",
+            "fromActorId": "actor.zhejiang_governor",
+            "toActorId": "actor.xunfu_clerk"
+          },
+          {
+            "type": "ENTITY.HELD_BY",
+            "entityId": "document.reform_execution_record",
+            "actorId": "actor.xunfu_clerk"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.reform_execution_record",
+            "attribute": "accessState",
+            "value": "WRITTEN"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "object.xunfu_reply_box",
+            "attribute": "contentsState",
+            "value": "CONTAINS_DOCUMENT"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "object.xunfu_reply_box",
+            "attribute": "closureState",
+            "value": "CLOSED"
+          }
+        ],
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "reform.executionMode"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "reform.scopeStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "land.safeguardStatus"
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 0
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 1
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 2
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 3
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 4
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 5
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 6
+          }
+        ],
         "protectedNarrative": "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
         "fallbackContinuation": "巡抚书吏把回文收入匣中，却没有退下。他隔着屏风问道：清流县既只准先办一批，复核若误了三日之限，这份责任是由总督独自写明，还是请巡抚在同一份正式回文上共同具名。问完，他仍捧着回文匣候在原处。",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
+          "WORLD_PRESSURE": "巡抚书吏把写定的回文收入匣中，却仍捧着匣子候在屏风外。",
+          "DECISION_STOP": "他隔着屏风问道：清流试办若误了三日之限，这份责任由总督独自写明，还是请巡抚在同一份回文上共同具名？"
+        },
         "createsPendingConsequence": true
       },
       {
@@ -130,8 +217,95 @@
             "$delta": 1
           }
         },
+        "durableEffects": [
+          {
+            "type": "DOCUMENT.CREATED",
+            "documentId": "document.reform_execution_record"
+          },
+          {
+            "type": "DOCUMENT.AUTHENTICATED",
+            "documentId": "document.reform_execution_record",
+            "actorId": "actor.zhejiang_governor"
+          },
+          {
+            "type": "DOCUMENT.TRANSFERRED",
+            "documentId": "document.reform_execution_record",
+            "fromActorId": "actor.zhejiang_governor",
+            "toActorId": "actor.xunfu_clerk"
+          },
+          {
+            "type": "ENTITY.HELD_BY",
+            "entityId": "document.reform_execution_record",
+            "actorId": "actor.xunfu_clerk"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.reform_execution_record",
+            "attribute": "accessState",
+            "value": "WRITTEN"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "object.xunfu_reply_box",
+            "attribute": "contentsState",
+            "value": "CONTAINS_DOCUMENT"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "object.xunfu_reply_box",
+            "attribute": "closureState",
+            "value": "CLOSED"
+          }
+        ],
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "reform.executionMode"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "reform.progress"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.xunfuExposure"
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 0
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 1
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 2
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 3
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 4
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 5
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 6
+          }
+        ],
         "protectedNarrative": "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
         "fallbackContinuation": "巡抚书吏听明先行放开的条件，随即追问：三日后复核册若仍不齐，催办、放行与补正的责任准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名。",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
+          "WORLD_PRESSURE": "巡抚书吏听明先行放开的条件，手仍按着回文匣，没有离开。",
+          "DECISION_STOP": "他追问：三日后复核册若仍不齐，催办、放行与补正的责任由总督独自具名，还是请巡抚共同具名？"
+        },
         "createsPendingConsequence": true
       },
       {
@@ -154,8 +328,28 @@
             "$delta": 1
           }
         },
+        "durableEffects": [],
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "reform.executionMode"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.archiveSealStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          }
+        ],
         "protectedNarrative": "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
         "fallbackContinuation": "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
+          "WORLD_PRESSURE": "巡抚书吏听完，没有去碰那只空回文匣，只在屏风外躬身候着。",
+          "DECISION_STOP": "片刻后，他问道：\"大人既肯担这三日之责，这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\""
+        },
         "createsPendingConsequence": true
       }
     ],

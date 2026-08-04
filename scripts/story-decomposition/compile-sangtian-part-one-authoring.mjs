@@ -100,14 +100,14 @@ const kernelOptions = {
     ["县令自查", "令清流县令连夜自查并送样册，总督府暂不派人接管档房。", "actor.qingliu_magistrate", "限期自查", "动作隐蔽，却把首轮保管风险留在县衙", ["review.initiationStatus", "witness.accessStatus", "evidence.chainStatus"]],
   ],
   "DK-P1-RESPONSIBILITY-RECORD": [
-    ["要求联署", "将当前改桑执行边界、复核办法与督抚各自责任写入正式回文，请巡抚共同具名。", "actor.zhejiang_xunfu", "共同具名", "共同承担能换来合作，也会模糊日后分歧", ["responsibility.firstRecordStatus", "responsibility.governorExposure", "responsibility.xunfuExposure"]],
+    ["要求联署", "将当前改桑执行边界与督抚各自责任写入正式回文，说明县册复核主持权另议，请巡抚共同具名。", "actor.zhejiang_xunfu", "共同具名", "共同承担能换来合作，也会模糊日后分歧", ["responsibility.firstRecordStatus", "responsibility.governorExposure", "responsibility.xunfuExposure"]],
     ["总督单署", "由总督单独具名写明当前改桑执行边界，并把巡抚催办原文作为附件留档。", "actor.zhejiang_xunfu", "单独具名并附原文", "责任集中，但保留了催办来源", ["responsibility.firstRecordStatus", "responsibility.governorExposure"]],
     ["记明异议", "另具正式回文暂准放行，并逐项写明督抚分歧和各自承担的事项。", "actor.zhejiang_xunfu", "分项责任记录", "关系转冷，但后续不易互相改口", ["responsibility.firstRecordStatus", "relations.governorXunfu", "reform.executionMode", "reform.progress"]],
   ],
   "DK-P1-EVIDENCE-CUSTODY": [
-    ["原件封存", "原册留在档房，换新封条；总督、县令、巡抚三方各留封样。", "evidence.qingliu_register_anomaly", "多方封样", "原件少移动，但三方都知道调查已开始", ["evidence.chainStatus", "evidence.archiveSealStatus", "evidence.primaryCustodianRef"]],
-    ["制作副本", "在两名见证人在场时抄出样册，逐页记下抄录人与时辰。", "actor.reform_clerk", "见证抄录", "可保留第二条链，但书吏暴露为关键证人", ["evidence.copyStatus", "witness.accessStatus", "knowledgeTransfers"]],
-    ["移交总督府", "把可疑册页整封送往总督府，县衙只留交接清单。", "evidence.qingliu_register_anomaly", "整封移交", "总督控制原件，也承担途中和保管责任", ["evidence.primaryCustodianRef", "evidence.chainStatus", "responsibility.governorExposure"]],
+    ["命令原件留档", "命清流县将原册留在档房，待总督、县令、巡抚三方见证到场后换封并各留封样。", "document.qingliu_register_original", "下令三方见证换封", "原件不移动，但执行前仍存在保管风险", ["evidence.chainStatus", "evidence.archiveSealStatus", "evidence.primaryCustodianRef", "durableState"]],
+    ["命令制作副本", "命清流县在两名见证人到场后抄出样册，逐页记下抄录人与时辰。", "document.qingliu_register_original", "下令见证抄录", "可建立第二条链，但执行时会暴露经手书吏", ["evidence.copyStatus", "witness.accessStatus", "knowledgeTransfers", "durableState"]],
+    ["命令移交总督府", "命清流县在见证下将可疑册页整封移交总督府，县衙留存交接清单。", "document.qingliu_register_original", "下令见证移交", "总督将取得原件，但在实际交接前仍由县衙保管", ["evidence.primaryCustodianRef", "evidence.chainStatus", "responsibility.governorExposure", "durableState"]],
   ],
   "DK-P1-WITNESS-ACCESS": [
     ["秘密保护", "以核对公文为名把书吏带到总督府，不公开其证人身份。", "actor.reform_clerk", "秘密转移保护", "证人较安全，但巡抚可能指责总督私扣经手人", ["witness.accessStatus", "relations.governorXunfu"]],
@@ -201,7 +201,22 @@ const kernelDecisionPrompts = {
   },
   "DK-P1-EVIDENCE-CUSTODY": {
     actorRefs: ["actor.qingliu_magistrate", "actor.xunfu_aide"],
-    prompt: "清流县令与巡抚幕僚把争执落到同一件事上：可疑县册的原件和抄件由谁保管，开册时由谁见证。",
+    prompt: "清流县令与巡抚幕僚把争执落到县册证据链上：原件由谁保管，是否先制作一份由双方见证的抄件，开册时又由谁在场。",
+    variants: [
+      {
+        variantId: "existing-register-copy",
+        when: [
+          {
+            selectorKind: "STATE_PATH",
+            statePath: "evidence.copyStatus",
+            operator: "NEQ",
+            expectedValue: "NONE",
+          },
+        ],
+        actorRefs: ["actor.qingliu_magistrate", "actor.xunfu_aide"],
+        prompt: "清流县令与巡抚幕僚把争执落到县册证据链上：已经制作的见证抄件与原件分别由谁保管，下一次开册时又由谁在场。",
+      },
+    ],
   },
   "DK-P1-WITNESS-ACCESS": {
     actorRefs: ["actor.reform_clerk", "actor.xunfu_aide"],
@@ -261,14 +276,14 @@ const kernelProtectedNarratives = {
     "总督准县令先在县内自查两日，只将异常页封样送来，原册暂不离县衙。",
   ],
   "DK-P1-RESPONSIBILITY-RECORD": [
-    "总督把暂缓签发的缘由、清流县复核办法和督抚各自应负的责任逐项写入回文。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+    "总督把暂缓签发的缘由和督抚各自应负的责任逐项写入回文，并注明县册复核主持权尚待议定。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
     "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
     "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
   ],
   "DK-P1-EVIDENCE-CUSTODY": [
-    "总督定下原件仍留清流县档房，换上新封条；总督、县令、巡抚三方各留一份封样。",
-    "总督命两名见证人在场抄出样册，并逐页记明抄录人和抄录时辰。",
-    "总督命人将可疑册页整封送往总督府，县衙只留下交接清单。",
+    "总督命清流县将原册留在档房，等三方见证到场后再换封并各留封样；眼下只是命令已经发出，换封尚未完成。",
+    "总督命清流县等两名见证人到场后抄出样册，并逐页记明抄录人和抄录时辰；眼下尚未开始抄录。",
+    "总督命清流县在见证下将可疑册页整封移交总督府，县衙留下交接清单；眼下原册仍在清流县档房，尚未起运。",
   ],
   "DK-P1-WITNESS-ACCESS": [
     "总督以核对公文为名，把改桑书吏秘密带到总督府，不公开他的证人身份。",
@@ -334,10 +349,84 @@ const kernelFallbackContinuations = {
     "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
   ],
   "DK-P1-RESPONSIBILITY-RECORD": [
-    "巡抚书吏双手接过回文，低头看了一眼封口，没有当场应承。次日巳时，签押房里仍不见清流县册的原件和抄件，巡抚幕僚却先带回了答复：巡抚不肯在这份回文上共同具名。\n\n清流县令听完没有争辩。巡抚幕僚把话转到即将开始的复核上，问这场复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。两个人都望向总督，等他先定主持权。",
-    "巡抚书吏看见总督独自具名，又看见附后的催办公文，脸色微微一变，仍将文书收好。次日巳时，巡抚幕僚来到签押房，先问的不是改桑进度，而是清流县册的复核究竟由谁主持。清流县令在一旁候着，也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
-    "巡抚书吏接过那份逐项记明异议的回文，沉默片刻才告退。次日巳时，巡抚幕僚在签押房当面说明，巡抚不改自己的催办立场；清流县令则问县衙在复核中究竟是经办、见证，还是只交材料。两边都不肯先退，总督必须先定复核由谁主持。",
+    "巡抚幕僚没有绕弯，只说巡抚不肯在总督昨日写成的正式回文上共同具名。清流县令听完没有争辩，改桑书吏也停了笔。幕僚随后问，即将开始的县册复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。",
+    "巡抚幕僚对总督昨日单独具名的责任写法不置可否，只把目光转向清流县令。幕僚先问的不是改桑进度，而是清流县册的复核究竟由谁主持；县令也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
+    "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场；清流县令听完没有接话，改桑书吏也停了笔。幕僚随即要求先说清复核由谁主持，县令也问县衙究竟是经办、见证，还是只交材料。",
   ],
+};
+
+const kernelPlayerVisibleFallbacks = {
+  "DK-P1-EXECUTION-SCOPE": [
+    {
+      PLAYER_RESULT: "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
+      WORLD_PRESSURE: "巡抚书吏把写定的回文收入匣中，却仍捧着匣子候在屏风外。",
+      DECISION_STOP: "他隔着屏风问道：清流试办若误了三日之限，这份责任由总督独自写明，还是请巡抚在同一份回文上共同具名？"
+    },
+    {
+      PLAYER_RESULT: "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
+      WORLD_PRESSURE: "巡抚书吏听明先行放开的条件，手仍按着回文匣，没有离开。",
+      DECISION_STOP: "他追问：三日后复核册若仍不齐，催办、放行与补正的责任由总督独自具名，还是请巡抚共同具名？"
+    },
+    {
+      PLAYER_RESULT: "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
+      WORLD_PRESSURE: "巡抚书吏听完，没有去碰那只空回文匣，只在屏风外躬身候着。",
+      DECISION_STOP: "片刻后，他问道：\"大人既肯担这三日之责，这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\""
+    }
+  ],
+  "DK-P1-RESPONSIBILITY-RECORD": [
+    {
+      PLAYER_RESULT: "总督把暂缓签发的缘由和督抚各自应负的责任逐项写入回文，并注明县册复核主持权尚待议定。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+      SCENE_TRANSITION: "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+      WORLD_PRESSURE: "巡抚幕僚开门见山：巡抚不肯在昨日那份回文上共同具名。县令没有争辩，书吏也停了笔。",
+      DECISION_STOP: "幕僚随即问道：即将开始的县册复核由总督府主持，还是督抚共同主持；县衙又是经办、见证，还是只交材料？"
+    },
+    {
+      PLAYER_RESULT: "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
+      SCENE_TRANSITION: "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+      WORLD_PRESSURE: "巡抚幕僚对总督昨日单独具名的责任写法不置可否，只把目光转向清流县令。",
+      DECISION_STOP: "幕僚先问的不是改桑进度，而是县册复核究竟由谁主持；县衙在这场复核中是经办、见证，还是只交材料？"
+    },
+    {
+      PLAYER_RESULT: "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
+      SCENE_TRANSITION: "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+      WORLD_PRESSURE: "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场；清流县令听完没有接话，改桑书吏也停了笔。",
+      DECISION_STOP: "幕僚要求先说清县册复核由谁主持；县衙在这场复核中是经办、见证，还是只交材料？"
+    }
+  ],
+  "DK-P1-REVIEW-AUTHORITY": [
+    {
+      PLAYER_RESULT: "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
+      WORLD_PRESSURE: "巡抚幕僚没有再争主持之名，只提醒在场诸人：谁先接触原册、谁留下封样，往后都要能说清。",
+      DECISION_STOP: "清流县令随即请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+    },
+    {
+      PLAYER_RESULT: "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
+      WORLD_PRESSURE: "共同具名虽锁住了单方动册的机会，也让原件每一次启封都可能被另一方拖住。",
+      DECISION_STOP: "清流县令请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+    },
+    {
+      PLAYER_RESULT: "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
+      WORLD_PRESSURE: "县令接下初核之责，却也当厅说明：原册若仍由县衙独守，日后任何缺页都可能算在他头上。",
+      DECISION_STOP: "他请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+    }
+  ],
+  "DK-P1-EVIDENCE-CUSTODY": [
+    {
+      PLAYER_RESULT: "总督命清流县将原册留在档房，待三方见证到场后再换封并各留封样。",
+      WORLD_PRESSURE: "原册眼下仍在清流县档房，换封尚未执行；负责经手册页的改桑书吏却已经成为下一步绕不开的人。",
+      DECISION_STOP: "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+    },
+    {
+      PLAYER_RESULT: "总督命清流县等两名见证人到场后再抄出样册，并逐页记明抄录人和时辰。",
+      WORLD_PRESSURE: "第二条证据链尚待执行；一旦见证抄录开始，负责经手的改桑书吏便会暴露在督抚双方眼前。",
+      DECISION_STOP: "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+    },
+    {
+      PLAYER_RESULT: "总督命清流县在见证下将可疑册页整封移交总督府，县衙留下交接清单。",
+      WORLD_PRESSURE: "原册眼下仍在清流县档房；交接一旦执行，途中与入府后的保管责任才会转到总督府。",
+      DECISION_STOP: "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+    }
+  ]
 };
 
 const decisionPromptResultCeiling = "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。";
@@ -362,9 +451,9 @@ const kernelStatePatches = {
     { "responsibility.firstRecordStatus": "DISAGREEMENT_RECORDED", "relations.governorXunfu": { $delta: -1 }, "reform.executionMode": "PROVISIONAL_RELEASE", "reform.progress": "STARTED" },
   ],
   "DK-P1-EVIDENCE-CUSTODY": [
-    { "evidence.chainStatus": "TRACEABLE", "evidence.archiveSealStatus": "SEALED_WITH_THREE_SAMPLES", "evidence.primaryCustodianRef": "actor.qingliu_magistrate" },
-    { "evidence.copyStatus": "WITNESSED_COPY_CREATED", "witness.accessStatus": "EXPOSED_AS_KEY_WITNESS", knowledgeTransfer: { topic: "witnessed_register_copy", senderRef: "actor.qingliu_magistrate", recipientRef: "actor.zhejiang_governor", status: "DELIVERED" } },
-    { "evidence.primaryCustodianRef": "institution.zhejiang_governor_yamen", "evidence.chainStatus": "FRAGILE", "responsibility.governorExposure": { $delta: 1 } },
+    { "evidence.chainStatus": "TRACEABLE", "evidence.archiveSealStatus": "RESEAL_ORDERED", "evidence.primaryCustodianRef": "actor.qingliu_magistrate" },
+    { "evidence.copyStatus": "WITNESSED_COPY_ORDERED", "witness.accessStatus": "COPY_EXECUTION_PENDING" },
+    { "evidence.primaryCustodianRef": "actor.qingliu_magistrate", "evidence.chainStatus": "FRAGILE", "responsibility.governorExposure": { $delta: 1 } },
   ],
   "DK-P1-WITNESS-ACCESS": [
     { "witness.accessStatus": "PROTECTED_SECRETLY", "relations.governorXunfu": { $delta: -1 } },
@@ -423,6 +512,72 @@ const kernelStatePatches = {
   ],
 };
 
+const kernelDurableEffects = {
+  "DK-P1-EXECUTION-SCOPE": [
+    [
+      { type: "DOCUMENT.CREATED", documentId: "document.reform_execution_record" },
+      { type: "DOCUMENT.AUTHENTICATED", documentId: "document.reform_execution_record", actorId: "actor.zhejiang_governor" },
+      { type: "DOCUMENT.TRANSFERRED", documentId: "document.reform_execution_record", fromActorId: "actor.zhejiang_governor", toActorId: "actor.xunfu_clerk" },
+      { type: "ENTITY.HELD_BY", entityId: "document.reform_execution_record", actorId: "actor.xunfu_clerk" },
+      { type: "ENTITY.STATE", entityId: "document.reform_execution_record", attribute: "accessState", value: "WRITTEN" },
+      { type: "ENTITY.STATE", entityId: "object.xunfu_reply_box", attribute: "contentsState", value: "CONTAINS_DOCUMENT" },
+      { type: "ENTITY.STATE", entityId: "object.xunfu_reply_box", attribute: "closureState", value: "CLOSED" },
+    ],
+    [
+      { type: "DOCUMENT.CREATED", documentId: "document.reform_execution_record" },
+      { type: "DOCUMENT.AUTHENTICATED", documentId: "document.reform_execution_record", actorId: "actor.zhejiang_governor" },
+      { type: "DOCUMENT.TRANSFERRED", documentId: "document.reform_execution_record", fromActorId: "actor.zhejiang_governor", toActorId: "actor.xunfu_clerk" },
+      { type: "ENTITY.HELD_BY", entityId: "document.reform_execution_record", actorId: "actor.xunfu_clerk" },
+      { type: "ENTITY.STATE", entityId: "document.reform_execution_record", attribute: "accessState", value: "WRITTEN" },
+      { type: "ENTITY.STATE", entityId: "object.xunfu_reply_box", attribute: "contentsState", value: "CONTAINS_DOCUMENT" },
+      { type: "ENTITY.STATE", entityId: "object.xunfu_reply_box", attribute: "closureState", value: "CLOSED" },
+    ],
+    [],
+  ],
+  "DK-P1-RESPONSIBILITY-RECORD": [
+    [
+      { type: "DOCUMENT.CREATED", documentId: "document.reform_execution_record" },
+      { type: "DOCUMENT.AUTHENTICATED", documentId: "document.reform_execution_record", actorId: "actor.zhejiang_governor" },
+      { type: "DOCUMENT.TRANSFERRED", documentId: "document.reform_execution_record", fromActorId: "actor.zhejiang_governor", toActorId: "actor.xunfu_clerk" },
+      { type: "ENTITY.HELD_BY", entityId: "document.reform_execution_record", actorId: "actor.xunfu_clerk" },
+      { type: "ENTITY.STATE", entityId: "document.reform_execution_record", attribute: "accessState", value: "WRITTEN" },
+      { type: "ENTITY.STATE", entityId: "object.xunfu_reply_box", attribute: "contentsState", value: "CONTAINS_DOCUMENT" },
+      { type: "ENTITY.STATE", entityId: "object.xunfu_reply_box", attribute: "closureState", value: "CLOSED" },
+    ],
+    [
+      { type: "DOCUMENT.CREATED", documentId: "document.responsibility_record" },
+      { type: "DOCUMENT.AUTHENTICATED", documentId: "document.responsibility_record", actorId: "actor.zhejiang_governor" },
+      { type: "ENTITY.HELD_BY", entityId: "document.responsibility_record", actorId: "actor.zhejiang_governor" },
+      { type: "ENTITY.LOCATED_AT", entityId: "document.responsibility_record", locationId: "location.zhejiang_governor_yamen" },
+      { type: "ENTITY.STATE", entityId: "document.responsibility_record", attribute: "accessState", value: "WRITTEN" },
+    ],
+    [
+      { type: "DOCUMENT.CREATED", documentId: "document.responsibility_record" },
+      { type: "DOCUMENT.AUTHENTICATED", documentId: "document.responsibility_record", actorId: "actor.zhejiang_governor" },
+      { type: "ENTITY.HELD_BY", entityId: "document.responsibility_record", actorId: "actor.zhejiang_governor" },
+      { type: "ENTITY.LOCATED_AT", entityId: "document.responsibility_record", locationId: "location.zhejiang_governor_yamen" },
+      { type: "ENTITY.STATE", entityId: "document.responsibility_record", attribute: "accessState", value: "WRITTEN" },
+    ],
+  ],
+  "DK-P1-EVIDENCE-CUSTODY": [
+    [
+      { type: "ENTITY.LOCATED_AT", entityId: "document.qingliu_register_original", locationId: "location.qingliu_archive" },
+      { type: "ENTITY.STATE", entityId: "document.qingliu_register_original", attribute: "custodianRef", value: "actor.qingliu_magistrate" },
+      { type: "ENTITY.STATE", entityId: "document.qingliu_register_original", attribute: "sealState", value: "RESEAL_ORDERED" },
+      { type: "ENTITY.STATE", entityId: "document.qingliu_register_original", attribute: "pendingAction", value: "RESEAL_WITH_THREE_PARTY_WITNESS" },
+    ],
+    [
+      { type: "ENTITY.LOCATED_AT", entityId: "document.qingliu_register_original", locationId: "location.qingliu_archive" },
+      { type: "ENTITY.STATE", entityId: "document.qingliu_register_original", attribute: "custodianRef", value: "actor.qingliu_magistrate" },
+      { type: "ENTITY.STATE", entityId: "document.qingliu_register_original", attribute: "pendingAction", value: "CREATE_WITNESSED_COPY" },
+    ],
+    [
+      { type: "ENTITY.LOCATED_AT", entityId: "document.qingliu_register_original", locationId: "location.qingliu_archive" },
+      { type: "ENTITY.STATE", entityId: "document.qingliu_register_original", attribute: "custodianRef", value: "actor.qingliu_magistrate" },
+      { type: "ENTITY.STATE", entityId: "document.qingliu_register_original", attribute: "pendingAction", value: "TRANSFER_TO_GOVERNOR_YAMEN" },
+    ],
+  ],
+};
 const allowedEvidenceChainStatuses = new Set(coreStateSchema.properties.evidence.properties.chainStatus.enum);
 for (const [kernelId, patches] of Object.entries(kernelStatePatches)) {
   for (const [optionIndex, patch] of patches.entries()) {
@@ -1134,11 +1289,22 @@ for (const kernelId of uniqueKernelIds) {
         visibleTradeoff: tradeoff,
         stateEffects,
         statePatch: statePatches[index],
+        ...(kernelDurableEffects[kernelId]?.[index]
+          ? { durableEffects: kernelDurableEffects[kernelId][index] }
+          : {}),
+        protectedEffectRefs: [
+          ...stateEffects.map((path) => ({ kind: "STATE_PATH", path })),
+          ...(kernelDurableEffects[kernelId]?.[index] || [])
+            .map((_, effectIndex) => ({ kind: "DURABLE_EFFECT", effectIndex })),
+        ],
         ...(kernelProtectedNarratives[kernelId]?.[index]
           ? { protectedNarrative: kernelProtectedNarratives[kernelId][index] }
           : {}),
         ...(kernelFallbackContinuations[kernelId]?.[index]
           ? { fallbackContinuation: kernelFallbackContinuations[kernelId][index] }
+          : {}),
+        ...(kernelPlayerVisibleFallbacks[kernelId]?.[index]
+          ? { playerVisibleFallback: kernelPlayerVisibleFallbacks[kernelId][index] }
           : {}),
         createsPendingConsequence: true,
       })),
@@ -1154,6 +1320,34 @@ for (const asset of assets.filter((asset) => (
   const options = Array.isArray(asset.payload?.options) ? asset.payload.options : [];
   if (options.some((option) => !String(option?.protectedNarrative || "").trim())) {
     throw new Error(`DECISION_KERNEL_PROTECTED_OUTCOME_MISSING:${asset.assetId}`);
+  }
+  for (const option of options) {
+    const refs = Array.isArray(option.protectedEffectRefs) ? option.protectedEffectRefs : [];
+    if (!refs.length) {
+      throw new Error(`DECISION_KERNEL_PROTECTED_EFFECT_BINDING_MISSING:${option.affordanceTemplateId}`);
+    }
+    const stateEffects = new Set(Array.isArray(option.stateEffects) ? option.stateEffects : []);
+    const durableEffects = Array.isArray(option.durableEffects) ? option.durableEffects : [];
+    const boundDurableIndexes = new Set();
+    for (const ref of refs) {
+      if (ref?.kind === "STATE_PATH") {
+        if (!stateEffects.has(ref.path)) {
+          throw new Error(`DECISION_KERNEL_PROTECTED_STATE_BINDING_INVALID:${option.affordanceTemplateId}:${ref.path}`);
+        }
+        continue;
+      }
+      if (ref?.kind === "DURABLE_EFFECT") {
+        if (!Number.isInteger(ref.effectIndex) || ref.effectIndex < 0 || ref.effectIndex >= durableEffects.length) {
+          throw new Error(`DECISION_KERNEL_PROTECTED_DURABLE_BINDING_INVALID:${option.affordanceTemplateId}:${ref.effectIndex}`);
+        }
+        boundDurableIndexes.add(ref.effectIndex);
+        continue;
+      }
+      throw new Error(`DECISION_KERNEL_PROTECTED_EFFECT_BINDING_INVALID:${option.affordanceTemplateId}`);
+    }
+    if (durableEffects.some((_, index) => !boundDurableIndexes.has(index))) {
+      throw new Error(`DECISION_KERNEL_PROTECTED_DURABLE_EFFECT_UNBOUND:${option.affordanceTemplateId}`);
+    }
   }
 }
 

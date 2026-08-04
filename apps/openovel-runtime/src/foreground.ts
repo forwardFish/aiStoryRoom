@@ -17,10 +17,12 @@ import { renderNarratorCausalDelta } from "./causal-context.js";
 import type {
   CausalDelta,
   CompiledForegroundContext,
+  NarratorSceneProjection,
   OpenNovelOption,
   StorySnapshot,
 } from "./types.js";
 import type { WorkspacePaths } from "./paths.js";
+import type { BeatManifest } from "./scene-expression.js";
 
 const DEFAULT_BUDGETS = {
   guidance: 12_000,
@@ -131,7 +133,12 @@ export async function activateContextCards(paths: WorkspacePaths, action: string
 
 export async function getStorySnapshot(paths: WorkspacePaths): Promise<StorySnapshot> {
   const chapters = await readText(paths.chapters, "");
-  const recent = await readText(paths.chaptersRecent, "");
+  const publishedRecent = await readText(paths.chaptersRecent, "");
+  const contextChapters = await readText(paths.chaptersContext, chapters);
+  const contextRecent = await readText(
+    paths.chaptersContextRecent,
+    publishedRecent.trim() || canonTail(contextChapters, DEFAULT_BUDGETS.recentCanon),
+  );
   return {
     metadata: await readJson(paths.metadata, null as never),
     brief: await readText(paths.brief, ""),
@@ -140,7 +147,13 @@ export async function getStorySnapshot(paths: WorkspacePaths): Promise<StorySnap
     durableMemory: "",
     storyMemory: await readText(paths.storyMemory, ""),
     chapters,
-    recentCanon: recent.trim() || canonTail(chapters, DEFAULT_BUDGETS.recentCanon),
+    contextChapters,
+    contextRecentCanon: contextRecent.trim()
+      || canonTail(contextChapters, DEFAULT_BUDGETS.recentCanon),
+    // All model-facing consumers use the Shadow-free projection. The public
+    // reader view continues to read chapters.md and chapters.recent.md.
+    recentCanon: contextRecent.trim()
+      || canonTail(contextChapters, DEFAULT_BUDGETS.recentCanon),
     previousOptions: await readJson<OpenNovelOption[]>(paths.currentOptions, []),
     optionsGuidance: await readText(paths.optionsGuidance, ""),
   };
@@ -220,19 +233,17 @@ export function projectForegroundGuidance(value: string) {
 export function buildForegroundUserContext(
   delta: CausalDelta,
   context: CompiledForegroundContext,
+  beatManifest?: BeatManifest,
 ) {
-  return buildChineseForegroundCapsule(delta, context);
+  return buildChineseForegroundCapsule(delta, context, beatManifest);
 }
 
 function buildChineseForegroundCapsule(
   delta: CausalDelta,
   context: CompiledForegroundContext,
+  beatManifest?: BeatManifest,
 ) {
-  const settledNarrative = String(delta.beatContract?.settledNarrative || '').trim();
-  const recentPlayerCanon = [
-    context.recentCanonExcerpt,
-    settledNarrative,
-  ].filter(Boolean).join(String.fromCharCode(10).repeat(2));
+  const recentPlayerCanon = context.recentCanonExcerpt;
   const durableMemory = [
     context.durableMemory,
     context.storyMemory,
@@ -242,11 +253,16 @@ function buildChineseForegroundCapsule(
   const blocks = [
     '# 当前叙事工作集',
     '',
-    '前面的内容只提供当前玩家可知的连续事实和叙事纹理，不是要求逐项写进正文的命令。当前动作、站位、对话和场面衔接，以最近正文为准。',
+    '前面的内容只提供当前玩家可知的连续事实和叙事纹理，不是要求逐项写进正文的命令。最近正文只供语言与未完对话衔接；人物、地点、关键物件和已经发生的行动，以前景约束与本轮唯一剧情拍为准。',
     fixedSection('前景约束', localizeForegroundHeadings(context.foregroundGuidance)),
     fixedSection('持久记忆', durableMemory),
     fixedSection('最近正文', recentPlayerCanon),
-    fixedSection('本轮唯一剧情拍', renderNarratorCausalDelta(delta)),
+    fixedSection(
+      '本轮唯一剧情拍',
+      beatManifest
+        ? renderBeatManifestForNarrator(beatManifest)
+        : renderNarratorCausalDelta(delta),
+    ),
     fixedSection('玩家行动', delta.readerAction),
   ].filter(Boolean);
   const separator = String.fromCharCode(10).repeat(2);
@@ -265,6 +281,7 @@ function localizeForegroundHeadings(value: string) {
     Scene: '当前场景',
     Tone: '叙事语调',
     'Active Characters': '在场人物',
+    'Key Entities': '关键实体',
     Relationships: '人物关系',
     Constants: '稳定事实',
     'Open Threads': '未决线索',
@@ -281,42 +298,63 @@ function localizeForegroundHeadings(value: string) {
 export function buildNarratorMessages(
   delta: CausalDelta,
   context: CompiledForegroundContext,
+  beatManifest?: BeatManifest,
 ) {
-  const narratorContext = scopeNarratorContext(delta, context);
-  return buildChineseNarratorMessages(delta, narratorContext);
-}
-
-function buildChineseNarratorMessages(
-  delta: CausalDelta,
-  narratorContext: CompiledForegroundContext,
-) {
-  const hasSettledNarrative = Boolean(
-    String(delta.beatContract?.settledNarrative || '').trim(),
-  );
-  const lengthRegister = hasSettledNarrative
-    ? '已结算动作正文不计入你的输出。只续写其后的现场回应与新压力，到下一个玩家必须回应的时刻立即停下。'
-    : '使用工作集指定的小说语言和人物声音，写一个具体、连续的场景节拍；到下一个玩家必须回应的时刻停下。';
+  const narratorContext = scopeNarratorContext(delta, context, beatManifest);
+  if (!beatManifest) return buildLegacyNarratorMessages(delta, narratorContext);
   return [
     {
-      role: 'system' as const,
+      role: "system" as const,
       content: [
-        '你是互动历史小说的前景叙述者。从最近正文的最后一刻继续，只写服务器已经选定的一个自然、具体、可继续游玩的剧情拍。',
-        hasSettledNarrative
-          ? '最近正文末尾已经写成本回合唯一的主角行动。不要复述、改写或补充它；只从它的最后一刻继续。'
-          : '玩家行动是本回合唯一的主角行动。其他工作集内容只提供约束与叙事纹理，不要逐条复述或解释规则。',
-        '当前镜头的动作、站位、对话与空间衔接以最近正文为准；让现场人物从这一刻自然回应。',
-        '保留玩家意图。字面动作与现场有小冲突时，从既有正文的现在把它圆成可发生的尝试、传话或过渡；不要拒绝、倒带或瞬移。',
-        '让在场人物依自己的利益和职责主动回应。普通动作、目光、衣袖、灯火、案几、普通纸张和空间调度可以自由书写。',
-        '不要凭空新增具名人物、关键证据、正式文书或主角不知道的秘密；不要替主角完成玩家行动之外的签署、承诺或重大处置。',
-        '场面到达下一项真正需要玩家决定的动作时停下。不要写规则说明、状态报告、选择菜单或分支总结。',
-        '最后一个现场人物的动作或问话已经把问题交给玩家时，正文就在那里结束；不要再追加局势归纳、利弊总结或换句话重复停止点。',
-        lengthRegister,
-        '只返回小说正文，不要标题、列表、结构化数据、选项或解释。',
-      ].join(String.fromCharCode(10)),
+        "Write only the Narrator-owned slots for this turn. The server inserts author-reviewed PROTECTED slots verbatim and will not rewrite your prose.",
+        "Write in the same language, historical register and literary voice as Recent Player Canon.",
+        "Write a lived dramatic scene, not a settlement report, policy summary, task list or decision memo.",
+        "Put pressure on stage through a character's entrance, gesture, refusal, bargaining move, question or visible consequence. Let other characters react before the next choice appears.",
+        "Use the dramaticGuidance as scene grammar and characterization technique only. It is not a list of current-world facts and must never be copied as exposition.",
+        "Never import a name, number, object, location or event from sourceMechanisms into the current world. Borrow only the conflict shape and dramatic technique.",
+        "WORLD_PRESSURE must dramatize an NPC or world countermove in the current scene. DECISION_STOP must arise from that confrontation, not from an abstract sentence saying the protagonist must decide.",
+        "Narrator-owned slots happen after any protected player result. Never replay that result, make the protagonist issue another order, or make the protagonist handle the same key object again.",
+        "Write one focused confrontation. Do not exhaust every possible argument; usually six to ten short paragraphs and one to three dialogue exchanges are enough.",
+        "The Reader Action is the only new protagonist action. Do not add another protagonist order, signature, commitment or major disposition.",
+        "The action happens in ACTION_PHASE. If a transition is authorized, move to AFTER_PHASE only inside SCENE_TRANSITION.",
+        "Render every required semantic slot as natural novel prose. Do not expose slot labels, rules, IDs, state paths or analysis inside prose.",
+        "If PLAYER_RESULT is Narrator-owned, it shows the settled result. If it is protected, omit it. IMMEDIATE_REACTION contains only the old-scene immediate response.",
+        "SCENE_TRANSITION performs only the authorized time/location/cast transition. WORLD_PRESSURE happens in the after-scene.",
+        "DECISION_STOP is the final prose and must leave the real next decision unresolved. Do not add any sentence after it.",
+        "Ordinary movement, gaze, sleeves, furniture, light, weather and incidental objects are free narrative texture.",
+        "Do not invent a key document, evidence, secret, formal order, durable entity state or completed causal event.",
+        "The current-scene key entity inventory is exhaustive for durable documents and evidence-bearing objects. Items absent from it cannot appear as present; ordinary texture remains free.",
+        "Return raw JSON only with exactly schemaVersion, draftId, owner and slots.",
+        "Use schemaVersion omw.scene-draft.v1, draftId " + delta.turnId + ".draft.original and owner NARRATOR.",
+        "slots may contain only the narratorOwnedSlots listed in the user message. Never output a protectedSlots entry.",
+        "Each slot value is prose only, with no heading or label.",
+      ].join("\n"),
     },
     {
-      role: 'user' as const,
-      content: buildForegroundUserContext(delta, narratorContext),
+      role: "user" as const,
+      content: buildForegroundUserContext(delta, narratorContext, beatManifest),
+    },
+  ];
+}
+
+function buildLegacyNarratorMessages(
+  delta: CausalDelta,
+  context: CompiledForegroundContext,
+) {
+  return [
+    {
+      role: "system" as const,
+      content: [
+        "从最近正文的最后一刻继续。",
+        "Continue the interactive novel from the latest Canon.",
+        "Reader Action is the only protagonist action.",
+        "Write one concrete scene in the same language and literary voice as Canon.",
+        "Stop at the next decision. Return prose only.",
+      ].join("\n"),
+    },
+    {
+      role: "user" as const,
+      content: buildForegroundUserContext(delta, context),
     },
   ];
 }
@@ -324,15 +362,29 @@ function buildChineseNarratorMessages(
 function scopeNarratorContext(
   delta: CausalDelta,
   context: CompiledForegroundContext,
+  beatManifest?: BeatManifest,
 ): CompiledForegroundContext {
   if (!delta.beatContract && !delta.knowledgeBoundaryRef) return context;
   const hasAuthoredRuntimeBeat = Boolean(delta.beatContract);
-  const allowedSections = hasAuthoredRuntimeBeat
+  const protectedBeatOwned = Boolean(beatManifest);
+  const allowedSections = protectedBeatOwned
     ? new Set([
         "Story",
         "Scene",
         "Tone",
         "Active Characters",
+        "Key Entities",
+        "Relationships",
+        "Constants",
+        "Forbidden",
+      ])
+    : hasAuthoredRuntimeBeat
+    ? new Set([
+        "Story",
+        "Scene",
+        "Tone",
+        "Active Characters",
+        "Key Entities",
         "Relationships",
         "Constants",
         "Open Threads",
@@ -345,20 +397,214 @@ function scopeNarratorContext(
         "Scene",
         "Tone",
         "Active Characters",
+        "Key Entities",
         "Constants",
         "Forbidden",
       ]);
+  const selectedGuidance = selectMarkdownSections(
+    context.foregroundGuidance,
+    allowedSections,
+  );
+  const projection = delta.beatContract?.sceneProjection;
+  const protectedTransitionOwned = Boolean(
+    beatManifest?.tickets.some((ticket) => (
+      ticket.slot === "SCENE_TRANSITION"
+      && ticket.expressionOwner === "PROTECTED"
+    )),
+  );
+  const currentSceneNeedsProjection = Boolean(
+    projection
+    && (
+      !beatManifest
+      || !beatManifest.transition.transitionRequired
+      || protectedTransitionOwned
+    ),
+  );
+  const phaseScopedCanon = protectedTransitionOwned
+    ? protectedTransitionAnchor(beatManifest)
+    : "";
   return {
     ...context,
-    foregroundGuidance: selectMarkdownSections(
-      context.foregroundGuidance,
-      allowedSections,
-    ),
+    ...(phaseScopedCanon ? { recentCanonExcerpt: phaseScopedCanon } : {}),
+    foregroundGuidance: currentSceneNeedsProjection && projection
+      ? projectSettledSceneGuidance(
+          selectedGuidance,
+          projection,
+        )
+      : selectedGuidance,
     // The server-owned Next Story Beat decides what happens now. Durable state
     // and prior Canon remain available only to keep names, relationships and
     // unresolved facts continuous; they are no longer used as a menu from
     // which the Narrator chooses the next event.
   };
+}
+
+/**
+ * BeatManifest exposes only player-safe semantic obligations and the approved
+ * action/after scene phases. Each slot has exactly one expression owner:
+ * irreversible causal results may be protected while the Narrator owns the
+ * remaining literary scene. Source IDs and hidden mechanisms stay backstage.
+ */
+function protectedTransitionAnchor(manifest?: BeatManifest) {
+  if (!manifest?.transition.transitionRequired) return "";
+  return String(manifest.tickets.find((ticket) => (
+    ticket.slot === "SCENE_TRANSITION"
+    && ticket.expressionOwner === "PROTECTED"
+  ))?.protectedText || "").trim();
+}
+
+function renderBeatManifestForNarrator(manifest: BeatManifest) {
+  const narratorOwnedSlots = manifest.tickets
+    .filter((ticket) => (ticket.expressionOwner || "NARRATOR") === "NARRATOR")
+    .map((ticket) => ({
+      slot: ticket.slot,
+      required: ticket.required,
+      meaning: ticket.requiredMeaning,
+    }));
+  const protectedSlots = manifest.tickets
+    .filter((ticket) => ticket.expressionOwner === "PROTECTED")
+    .map((ticket) => ticket.slot);
+  return JSON.stringify({
+    actionPhase: {
+      time: manifest.transition.narrationScene.timeLabel,
+      location: manifest.transition.narrationScene.locationLabel,
+    },
+    afterPhase: {
+      time: manifest.transition.afterScene.timeLabel,
+      location: manifest.transition.afterScene.locationLabel,
+    },
+    transitionRequired: manifest.transition.transitionRequired,
+    narratorOwnedSlots,
+    protectedSlots,
+    dramaticGuidance: projectDramaticGuidanceForNarrator(manifest.dramaticGuidance),
+  }, null, 2);
+}
+
+function projectDramaticGuidanceForNarrator(
+  guidance: BeatManifest["dramaticGuidance"],
+) {
+  if (!guidance) return null;
+  return {
+    dramaticTask: guidance.dramaticTask,
+    sourceMechanisms: guidance.sourceMechanisms,
+    // Source patterns can contain protagonist moves and source-world props.
+    // The runtime planner may inspect those backstage, but the Narrator gets
+    // only reusable staging/cadence rules so it cannot replay them as current
+    // events.
+    sceneGrammar: guidance.scenePatterns.map((pattern) => ({
+      dialogueCadenceRules: pattern.dialogueTactics.map((item) => item.cadenceRule),
+      blockingPrinciples: pattern.blockingPrinciples,
+      transferableTechniques: pattern.transferableTechniques,
+      forbiddenFlattening: pattern.forbiddenFlattening,
+    })),
+  };
+}
+
+export function projectSettledSceneGuidance(
+  value: string,
+  projection: NarratorSceneProjection,
+) {
+  // A settled scene projection is the only current-scene authority. The
+  // Storykeeper workset can legitimately lag by one turn, so none of its
+  // scene-scoped prose may survive a scene cut as if it were current fact.
+  // Keep only world-level story framing and durable safety boundaries; the
+  // typed projection below rebuilds every current-scene section.
+  const stableGuidance = removeMarkdownSections(value, new Set([
+    "Scene",
+    "Tone",
+    "Active Characters",
+    "Key Entities",
+    "Relationships",
+    "Constants",
+    "Open Threads",
+    "Active Pressures",
+    "Pending Consequence",
+  ]));
+  const sceneLines = [
+    "## Scene",
+    "",
+    `- ${[projection.timeLabel, projection.locationLabel].filter(Boolean).join("，")}`,
+    ...(projection.situation ? [`- ${projection.situation}`] : []),
+  ];
+  const actorLines = [
+    "## Active Characters",
+    "",
+    ...projection.presentActors.map((actor) => `- ${actor.displayName}`),
+  ];
+  const keyEntityLines = renderKeyEntityGuidance(projection);
+  return upsertMarkdownSection(
+    upsertMarkdownSection(
+      upsertMarkdownSection(stableGuidance, "Scene", sceneLines.join("\n")),
+      "Active Characters",
+      actorLines.join("\n"),
+    ),
+    "Key Entities",
+    keyEntityLines,
+  );
+}
+
+function removeMarkdownSections(value: string, removed: Set<string>) {
+  const lines = String(value || "").split(/\r?\n/u);
+  const retained: string[] = [];
+  let keep = true;
+  for (const line of lines) {
+    const heading = line.match(/^##\s+(.+?)\s*$/u)?.[1]?.trim();
+    if (heading) keep = !removed.has(heading);
+    if (keep) retained.push(line);
+  }
+  return retained.join("\n").replace(/\n{3,}/gu, "\n\n").trim();
+}
+
+function renderKeyEntityGuidance(projection: NarratorSceneProjection) {
+  const documentStateLabels: Record<NarratorSceneProjection["documents"][number]["accessState"], string> = {
+    NOT_PRESENT: "不在当前场景",
+    SEALED: "仍处于封存状态",
+    OPENED: "已经打开",
+    READ: "已经被在场人物读过",
+    WRITTEN: "已经写成",
+  };
+  const contentsLabels = {
+    EMPTY: "其中为空",
+    UNKNOWN: "其中内容尚不明确",
+    CONTAINS_DOCUMENT: "其中已有文书",
+  } as const;
+  const closureLabels = {
+    CLOSED: "目前合拢",
+    OPEN: "目前打开",
+    UNKNOWN: "开合状态尚不明确",
+  } as const;
+  const lines = [
+    "## Key Entities",
+    "",
+    "- 以下清单穷尽当前场景中的关键文书与证据容器；未列出的关键实体不在场。普通无字纸张、笔墨、家具与环境细节不受此限制。",
+    ...projection.observableFacts.map((fact) => `- 可见事实：${fact}`),
+    ...projection.documents.map((document) => [
+      document.label,
+      documentStateLabels[document.accessState],
+      document.holderLabel ? `由${document.holderLabel}持有` : "",
+    ].filter(Boolean).join("，")).map((fact) => `- ${fact}`),
+    ...projection.objects.map((object) => [
+      object.label,
+      object.holderLabel ? `由${object.holderLabel}持有` : "",
+      object.contentsState ? contentsLabels[object.contentsState] : "",
+      object.closureState ? closureLabels[object.closureState] : "",
+    ].filter(Boolean).join("，")).map((fact) => `- ${fact}`),
+  ];
+  return lines.join("\n");
+}
+
+function upsertMarkdownSection(value: string, title: string, replacement: string) {
+  const lines = String(value || "").split(/\r?\n/u);
+  const start = lines.findIndex((line) => line.match(/^##\s+(.+?)\s*$/u)?.[1]?.trim() === title);
+  if (start < 0) {
+    return [String(value || "").trim(), replacement].filter(Boolean).join("\n\n");
+  }
+  let end = start + 1;
+  while (end < lines.length && !/^##\s+.+?\s*$/u.test(lines[end])) end += 1;
+  return [...lines.slice(0, start), replacement, ...lines.slice(end)]
+    .join("\n")
+    .replace(/\n{3,}/gu, "\n\n")
+    .trim();
 }
 
 function selectMarkdownSections(value: string, allowed: Set<string>) {

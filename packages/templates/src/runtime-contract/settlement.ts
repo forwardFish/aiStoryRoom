@@ -5,7 +5,7 @@ import type {
 } from "./types";
 import { playerIntentTypes } from "./types";
 import { actorCanUseCapability, ReferenceValidator } from "./reference";
-import { conditionSatisfied, predicateKey, validateCausalEvent, validateDurableState, validateDurableTurnEnvelope, validateWorldRuntimeContract } from "./validation";
+import { conditionSatisfied, mergeDurablePredicates, predicateKey, validateCausalEvent, validateDurableState, validateDurableTurnEnvelope, validateWorldRuntimeContract } from "./validation";
 import { predicateFields } from "./pattern";
 
 const ID = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/;
@@ -84,7 +84,6 @@ export function validatePlayerActionIntent(input: unknown, contractInput: WorldR
 export function validateNarrativeDisposition(input: unknown): NarrativeDisposition {
   const value = object(input, "NARRATIVE_DISPOSITION_INVALID");
   if (value.kind === "USE_ORIGINAL") exact(value, ["kind", "draftId"], "NARRATIVE_DISPOSITION_INVALID");
-  else if (value.kind === "USE_REPAIRED") exact(value, ["kind", "draftId", "repairId"], "NARRATIVE_DISPOSITION_INVALID");
   else if (value.kind === "USE_FALLBACK") exact(value, ["kind", "fallbackId", "reason"], "NARRATIVE_DISPOSITION_INVALID");
   else throw new Error("NARRATIVE_DISPOSITION_INVALID:KIND");
   for (const [key, item] of Object.entries(value)) if (key !== "kind") text(item, `NARRATIVE_DISPOSITION_INVALID:${key}`);
@@ -110,7 +109,7 @@ export function validateSettlementPackage(input: SettlementPackage, contractInpu
 }
 
 const eventRef = (event: CausalEvent) => ({ eventId: event.eventId, expectedStatus: event.status });
-const addPredicates = (state: DurableState, predicates: DurablePredicate[], revision: number): DurableState => { const map = new Map(state.predicates.map((item) => [predicateKey(item), item])); predicates.forEach((item) => map.set(predicateKey(item), item)); return { ...state, revision, predicates: [...map.values()].sort((a, b) => predicateKey(a).localeCompare(predicateKey(b))) }; };
+const addPredicates = (state: DurableState, predicates: DurablePredicate[], revision: number): DurableState => ({ ...state, revision, predicates: mergeDurablePredicates(state.predicates, predicates) });
 
 export function validateSettlementSnapshot(input: SettlementSnapshot, contractInput: WorldRuntimeContract): SettlementSnapshot {
   const contract = validateWorldRuntimeContract(contractInput); const value = object(input, "SETTLEMENT_SNAPSHOT_INVALID"); const optionalRun = value.runId === undefined ? [] : ["runId"]; exact(value, [...optionalRun, "state", "events", "pending"], "SETTLEMENT_SNAPSHOT_INVALID"); const runId = value.runId === undefined ? undefined : id(value.runId, "SNAPSHOT_RUN_ID_INVALID");

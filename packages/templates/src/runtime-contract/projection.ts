@@ -268,6 +268,7 @@ function predicateEntityIds(predicate: DurablePredicate): string[] {
     case "ENTITY.INTRODUCED": return [predicate.entityId];
     case "ENTITY.LOCATED_AT": return [predicate.entityId, predicate.locationId];
     case "ENTITY.HELD_BY": return [predicate.entityId, predicate.actorId];
+    case "ENTITY.STATE": return [predicate.entityId];
     case "DOCUMENT.CREATED": return [predicate.documentId];
     case "DOCUMENT.AUTHENTICATED": return [predicate.documentId, predicate.actorId];
     case "DOCUMENT.TRANSFERRED": return [predicate.documentId, predicate.fromActorId, predicate.toActorId];

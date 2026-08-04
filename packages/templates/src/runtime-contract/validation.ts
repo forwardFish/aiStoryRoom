@@ -77,6 +77,48 @@ function requireKind(ctx: Context, value: string, kind: string): void {
 export function predicateKey(predicate: DurablePredicate): string {
   return JSON.stringify(Object.fromEntries(Object.entries(predicate).sort(([a], [b]) => a.localeCompare(b))));
 }
+
+/**
+ * Returns the identity of a mutable world-state slot. Event-like predicates
+ * have no slot and remain append-only in the causal ledger. State-like
+ * predicates replace the previous value for the same entity (and attribute),
+ * so a durable entity cannot be in two current locations or have two current
+ * holders at once.
+ */
+export function durablePredicateStateSlotKey(predicate: DurablePredicate): string | null {
+  switch (predicate.type) {
+    case "ENTITY.LOCATED_AT":
+    case "ENTITY.HELD_BY":
+      return `${predicate.type}:${predicate.entityId}`;
+    case "ENTITY.STATE":
+      return `${predicate.type}:${predicate.entityId}:${predicate.attribute}`;
+    default:
+      return null;
+  }
+}
+
+export function mergeDurablePredicates(
+  current: readonly DurablePredicate[],
+  incoming: readonly DurablePredicate[],
+): DurablePredicate[] {
+  const predicates = new Map(current.map((predicate) => [predicateKey(predicate), predicate]));
+  const slots = new Map<string, string>();
+  for (const predicate of current) {
+    const slot = durablePredicateStateSlotKey(predicate);
+    if (slot) slots.set(slot, predicateKey(predicate));
+  }
+  for (const predicate of incoming) {
+    const exactKey = predicateKey(predicate);
+    const slot = durablePredicateStateSlotKey(predicate);
+    if (slot) {
+      const previousKey = slots.get(slot);
+      if (previousKey && previousKey !== exactKey) predicates.delete(previousKey);
+      slots.set(slot, exactKey);
+    }
+    predicates.set(exactKey, predicate);
+  }
+  return [...predicates.values()].sort((left, right) => predicateKey(left).localeCompare(predicateKey(right)));
+}
 export function predicatesEqual(left: DurablePredicate, right: DurablePredicate): boolean {
   return predicateKey(left) === predicateKey(right);
 }
@@ -90,11 +132,25 @@ export function validateDurablePredicate(input: unknown, ctx: Context): DurableP
   for (const field of fields) {
     if (field === "delta") {
       if (typeof value[field] !== "number" || !Number.isFinite(value[field])) fail("PREDICATE_VALUE_INVALID", `${type}.${field}`);
+    } else if (type === "ENTITY.STATE" && field === "attribute") {
+      if (typeof value[field] !== "string" || !STATUS_KEY.test(value[field])) fail("PREDICATE_VALUE_INVALID", `${type}.${field}`);
+    } else if (type === "ENTITY.STATE" && field === "value") {
+      if (
+        value[field] !== null
+        && typeof value[field] !== "string"
+        && typeof value[field] !== "number"
+        && typeof value[field] !== "boolean"
+      ) fail("PREDICATE_VALUE_INVALID", `${type}.${field}`);
+      if (typeof value[field] === "number" && !Number.isFinite(value[field])) fail("PREDICATE_VALUE_INVALID", `${type}.${field}`);
     } else {
       id(value[field], `${type}.${field}`);
     }
   }
-  for (const field of fields) if (field !== "delta") ctx.validatePredicateField(field, String(value[field]));
+  for (const field of fields) {
+    if (field !== "delta" && field !== "attribute" && field !== "value") {
+      ctx.validatePredicateField(field, String(value[field]));
+    }
+  }
   return value as unknown as DurablePredicate;
 }
 
@@ -112,6 +168,14 @@ export function validatePredicatePattern(input: unknown, ctx: Context): DurableP
     if (!(field in sample)) continue;
     if (field === "delta") {
       if (typeof sample[field] !== "number" || !Number.isFinite(sample[field])) fail("PATTERN_VALUE_INVALID", field);
+    } else if (value.type === "ENTITY.STATE" && field === "attribute") {
+      if (typeof sample[field] !== "string" || !STATUS_KEY.test(sample[field])) fail("PATTERN_VALUE_INVALID", field);
+    } else if (value.type === "ENTITY.STATE" && field === "value") {
+      if (
+        typeof sample[field] !== "string"
+        && typeof sample[field] !== "number"
+        && typeof sample[field] !== "boolean"
+      ) fail("PATTERN_VALUE_INVALID", field);
     } else id(sample[field], field);
   }
   const pattern = { type: value.type as DurablePredicate["type"], constraints } as DurablePredicatePattern;
@@ -310,7 +374,7 @@ export function validateDurableState(input: unknown, contractInput: WorldRuntime
   const contract = validateWorldRuntimeContract(contractInput, true); const ctx = context(contract); const value = object(input, "STATE_INVALID", "state");
   exact(value, ["worldId", "revision", "predicates", "pendingRuleIds"], "STATE_INVALID", "state");
   if (value.worldId !== contract.worldId) fail("WORLD_MISMATCH", String(value.worldId)); const revision = integer(value.revision, "state.revision"); if (opening && revision !== 0) fail("STATE_REVISION_INVALID", String(revision));
-  if (!Array.isArray(value.predicates)) fail("STATE_INVALID", "predicates"); const predicates = (value.predicates as unknown[]).map((predicate) => validateDurablePredicate(predicate, ctx)); unique(predicates.map(predicateKey), "state.predicates");
+  if (!Array.isArray(value.predicates)) fail("STATE_INVALID", "predicates"); const predicates = (value.predicates as unknown[]).map((predicate) => validateDurablePredicate(predicate, ctx)); unique(predicates.map(predicateKey), "state.predicates"); unique(predicates.map((predicate) => durablePredicateStateSlotKey(predicate)).filter((slot): slot is string => Boolean(slot)), "state.predicateSlots");
   const pendingRuleIds = idArray(value.pendingRuleIds, "state.pendingRuleIds"); pendingRuleIds.forEach((rule) => requireRef(ctx.delayedRules, rule, "DANGLING_RULE"));
   return { worldId: contract.worldId, revision, predicates, pendingRuleIds };
 }

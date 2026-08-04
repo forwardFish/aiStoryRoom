@@ -114,6 +114,16 @@
             "$delta": -1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "witness.accessStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          }
+        ],
         "protectedNarrative": "总督以核对公文为名，把改桑书吏秘密带到总督府，不公开他的证人身份。",
         "createsPendingConsequence": true
       },
@@ -140,6 +150,20 @@
             "status": "DELIVERED"
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "witness.accessStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "knowledgeTransfers"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          }
+        ],
         "protectedNarrative": "总督准督抚双方各派一人在场，当面对照书吏说法和样册。",
         "createsPendingConsequence": true
       },
@@ -159,6 +183,16 @@
           "witness.accessStatus": "SEALED_STATEMENT_HELD",
           "evidence.copyStatus": "SEALED_STATEMENT_ONLY"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "witness.accessStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.copyStatus"
+          }
+        ],
         "protectedNarrative": "总督命县令先收一份封缄书面供述，待初始说法留存后再决定是否传人。",
         "createsPendingConsequence": true
       }

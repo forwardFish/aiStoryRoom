@@ -1,6 +1,41 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { compileProtectedSceneTransition } from "../src/protected-state-transition.js";
+import {
+  compileEstablishedScenePredicates,
+  compileProtectedSceneTransition,
+  selectProtectedTransitionSurface,
+} from "../src/protected-state-transition.js";
+
+test("typed established scene facts are reusable across worlds without prose matching", () => {
+  const predicates = compileEstablishedScenePredicates({
+    sceneRef: "bridge",
+    presentActorRefs: ["actor.captain", "actor.navigator"],
+    documents: [{
+      entityRef: "manifest.departure",
+      label: "departure manifest",
+      status: "WRITTEN",
+      holderRef: "actor.navigator",
+    }],
+    objects: [{
+      entityRef: "relay.cylinder",
+      label: "relay cylinder",
+      holderRef: "actor.captain",
+    }],
+  });
+  assert.deepEqual(predicates, [
+    { type: "ENTITY.LOCATED_AT", entityId: "actor.captain", locationId: "location:bridge" },
+    { type: "ENTITY.LOCATED_AT", entityId: "actor.navigator", locationId: "location:bridge" },
+    {
+      type: "ENTITY.STATE",
+      entityId: "manifest.departure",
+      attribute: "status",
+      value: "WRITTEN",
+    },
+    { type: "DOCUMENT.CREATED", documentId: "manifest.departure" },
+    { type: "ENTITY.HELD_BY", entityId: "manifest.departure", actorId: "actor.navigator" },
+    { type: "ENTITY.HELD_BY", entityId: "relay.cylinder", actorId: "actor.captain" },
+  ]);
+});
 
 test("typed Sangtian state transitions compile every consequential document and container fact", () => {
   const result = compileProtectedSceneTransition({
@@ -128,7 +163,7 @@ test("typed scene cuts protect destination time, location, and authorized arriva
     locale: "zh-CN",
   });
 
-  assert.equal(result.text, "议事转至初九巳时，总督府签押房。县令和幕僚已经到场。");
+  assert.equal(result.text, "到了初九巳时，县令和幕僚已经在总督府签押房候着。");
   assert.deepEqual(result.sourceRefs, [
     "scene:identity",
     "scene:actor:actor.magistrate:present",
@@ -163,6 +198,52 @@ test("the same scene-cut compiler works for an unrelated English world", () => {
 
   assert.equal(
     result.text,
-    "The scene moved to first light, command bridge. the navigator and the engineer were present.",
+    "By first light, the navigator and the engineer were waiting in command bridge.",
   );
+});
+
+test("a second world keeps its authored natural beat while typed transition refs remain auditable", () => {
+  const compiled = compileProtectedSceneTransition({
+    before: {
+      documents: [],
+      objects: [{
+        entityRef: "relay.cylinder",
+        label: "relay cylinder",
+        holderRef: "actor.captain",
+      }],
+    },
+    after: {
+      documents: [],
+      objects: [{
+        entityRef: "relay.cylinder",
+        label: "relay cylinder",
+        holderRef: "actor.navigator",
+      }],
+    },
+    actorLabel: (actorRef) => actorRef === "actor.navigator" ? "the navigator" : "the captain",
+    locale: "en-US",
+  });
+  const selected = selectProtectedTransitionSurface({
+    authoredText: "Mara caught the cylinder without taking her eyes from the darkened chart.",
+    compiled,
+  });
+
+  assert.equal(
+    selected.text,
+    "Mara caught the cylinder without taking her eyes from the darkened chart.",
+  );
+  assert.deepEqual(selected.sourceRefs, ["object:relay.cylinder:holder"]);
+  assert.equal(selected.entityText, "the navigator took custody of relay cylinder.");
+  assert.doesNotMatch(selected.text, /took custody/u);
+});
+
+test("typed transition prose remains the fallback when a world has no authored surface", () => {
+  const selected = selectProtectedTransitionSurface({
+    authoredText: "",
+    compiled: {
+      text: "The navigator took custody of the relay cylinder.",
+      sourceRefs: ["object:relay.cylinder:holder"],
+    },
+  });
+  assert.equal(selected.text, "The navigator took custody of the relay cylinder.");
 });

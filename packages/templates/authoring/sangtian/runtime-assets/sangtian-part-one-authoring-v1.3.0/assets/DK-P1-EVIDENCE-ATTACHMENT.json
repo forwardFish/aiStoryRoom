@@ -94,6 +94,20 @@
           "evidence.chainStatus": "TRACEABLE",
           "witness.accessStatus": "DISCLOSED_IN_ATTACHMENT"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.attachmentStrength"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "witness.accessStatus"
+          }
+        ],
         "protectedNarrative": "总督决定随奏附上见证抄出的样册、封条记录和原件保管人名单。",
         "createsPendingConsequence": true
       },
@@ -115,6 +129,16 @@
             "$delta": 1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.attachmentStrength"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          }
+        ],
         "protectedNarrative": "总督决定附件只列田亩数字和日期差异，并声明原册仍在复核，不附人名推断。",
         "createsPendingConsequence": true
       },
@@ -134,6 +158,16 @@
           "report.attachmentStrength": "CUSTODY_RECORD_WITHHELD_TESTIMONY",
           "witness.accessStatus": "PROTECTED_FROM_REPORT"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.attachmentStrength"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "witness.accessStatus"
+          }
+        ],
         "protectedNarrative": "总督决定暂不附书吏供述，只附保管链，并说明人证需要保护。",
         "createsPendingConsequence": true
       }

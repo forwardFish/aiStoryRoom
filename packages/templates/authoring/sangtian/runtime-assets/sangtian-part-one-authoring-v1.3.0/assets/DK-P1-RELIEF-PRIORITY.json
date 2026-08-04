@@ -105,6 +105,16 @@
           "grain.immediatePressure": "RELIEVED_FOR_HUNGRIEST",
           "land.riskLevel": "CONTAINED_BUT_PRESENT"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.immediatePressure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "land.riskLevel"
+          }
+        ],
         "protectedNarrative": "总督命第一批现粮先发给无存粮、也无田可抵的百姓。",
         "createsPendingConsequence": true
       },
@@ -124,6 +134,16 @@
           "grain.immediatePressure": "ACUTE_FOR_LANDLESS",
           "land.riskLevel": "MEDIUM"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.immediatePressure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "land.riskLevel"
+          }
+        ],
         "protectedNarrative": "总督命人先留下种粮和插秧所需，再按户发放余粮。",
         "createsPendingConsequence": true
       },
@@ -145,6 +165,16 @@
             "$delta": 1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.immediatePressure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          }
+        ],
         "protectedNarrative": "总督决定先稳杭州和清流县米市，再向外围灾村分批送粮。",
         "createsPendingConsequence": true
       }

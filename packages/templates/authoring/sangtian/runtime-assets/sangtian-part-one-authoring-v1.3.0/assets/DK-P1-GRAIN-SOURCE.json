@@ -108,6 +108,20 @@
             "$delta": 1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.officialStockStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.reliefChannel"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          }
+        ],
         "protectedNarrative": "总督决定先动官仓并向邻省借粮，所有借据由总督府承担。",
         "createsPendingConsequence": true
       },
@@ -129,6 +143,20 @@
           "merchant.entryStatus": "CONDITIONAL",
           "land.safeguardStatus": "NO_GRAIN_FOR_LAND"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.reliefChannel"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "merchant.entryStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "land.safeguardStatus"
+          }
+        ],
         "protectedNarrative": "总督准商会限量开仓，官府为粮路作保，但明令不得借粮价换购灾民田地。",
         "createsPendingConsequence": true
       },
@@ -150,6 +178,20 @@
           "merchant.entryStatus": "CONDITIONAL",
           "evidence.chainStatus": "TRACEABLE"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.reliefChannel"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "merchant.entryStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          }
+        ],
         "protectedNarrative": "总督定下官仓先稳城内、商会负责外县运输，两路账目分开核销。",
         "createsPendingConsequence": true
       }

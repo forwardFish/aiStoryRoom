@@ -28,6 +28,8 @@ export function workspacePaths(root: string, rawRunId: string) {
     canonDir: path.join(story, "canon"),
     chapters: path.join(story, "canon", "chapters.md"),
     chaptersRecent: path.join(story, "canon", "chapters.recent.md"),
+    chaptersContext: path.join(story, "canon", "chapters.context.md"),
+    chaptersContextRecent: path.join(story, "canon", "chapters.context.recent.md"),
     sceneLog: path.join(story, "canon", "scene_log.jsonl"),
     guidanceDir: path.join(story, "guidance"),
     foregroundTemplate: path.join(story, "guidance", "FG_template.md"),
@@ -56,6 +58,7 @@ export function workspacePaths(root: string, rawRunId: string) {
     mirrorQueue: path.join(story, "state", "mirror-queue.jsonl"),
     mirrorState: path.join(story, "state", "mirror-state.json"),
     shadowAudit: path.join(story, "state", "shadow-audit.jsonl"),
+    shadowClaims: path.join(story, "state", "shadow-claims.jsonl"),
     contextReport: path.join(story, "state", "context-report.json"),
     callsDir: path.join(story, "state", "model-calls"),
   };

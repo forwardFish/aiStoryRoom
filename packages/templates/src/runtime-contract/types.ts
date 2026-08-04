@@ -17,6 +17,7 @@ export type DurablePredicate =
   | { type: "ENTITY.INTRODUCED"; entityId: string }
   | { type: "ENTITY.LOCATED_AT"; entityId: string; locationId: string }
   | { type: "ENTITY.HELD_BY"; entityId: string; actorId: string }
+  | { type: "ENTITY.STATE"; entityId: string; attribute: string; value: StableScalar }
   | { type: "DOCUMENT.CREATED"; documentId: string }
   | { type: "DOCUMENT.AUTHENTICATED"; documentId: string; actorId: string }
   | { type: "DOCUMENT.TRANSFERRED"; documentId: string; fromActorId: string; toActorId: string }
@@ -191,7 +192,6 @@ export type NarrativeRenderPolicy = "MODEL_ALLOWED" | "PROTECTED_TEMPLATE";
 export interface ProtectedNarrativeBlock { blockId: string; sourcePredicateIds: string[]; locale: string; text: string; immutable: true }
 export type NarrativeDisposition =
   | { kind: "USE_ORIGINAL"; draftId: string }
-  | { kind: "USE_REPAIRED"; draftId: string; repairId: string }
   | { kind: "USE_FALLBACK"; fallbackId: string; reason: string };
 export type EchoCategory = "PERSONAL" | "CROSS_PLAYER" | "WORLD";
 export type EchoAudience =

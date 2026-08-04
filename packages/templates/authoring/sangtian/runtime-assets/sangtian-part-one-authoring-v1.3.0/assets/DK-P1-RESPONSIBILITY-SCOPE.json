@@ -94,6 +94,16 @@
           },
           "responsibility.xunfuExposure": 0
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.xunfuExposure"
+          }
+        ],
         "protectedNarrative": "总督命奏报写明，执行与复核均由自己裁定，不把责任推给县令。",
         "createsPendingConsequence": true
       },
@@ -121,6 +131,20 @@
             "$delta": -1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.xunfuExposure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          }
+        ],
         "protectedNarrative": "总督把责任分项写定：改桑进度由巡抚具名，复核和赈济由总督具名。",
         "createsPendingConsequence": true
       },
@@ -142,6 +166,20 @@
           "witness.accessStatus": "NAMED_AS_HANDLER",
           "evidence.chainStatus": "TRACEABLE"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.firstRecordStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "witness.accessStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "evidence.chainStatus"
+          }
+        ],
         "protectedNarrative": "总督命奏报如实列清县令、书吏和各级经手事项，只陈事实，不先定罪。",
         "createsPendingConsequence": true
       }

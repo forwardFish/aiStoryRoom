@@ -19,6 +19,7 @@ export type MaterializedTurnView = {
   relativePath: string;
   format: "text" | "json" | "jsonl";
   value: unknown;
+  restoreMode?: "REPLACE" | "APPEND_ONLY";
 };
 
 export type AtomicTurnProjection = {
@@ -31,13 +32,18 @@ export type AtomicTurnProjection = {
 
 export type AtomicNarrativeEvidence = {
   originalText: string;
-  repairedText?: string;
+  narrativeOwner?: "COMPOSED" | "NARRATOR" | "FALLBACK" | "PROTECTED_RENDERER";
+  renderPlan?: unknown;
+  contextText?: string;
+  factText?: string;
+  shadowClaims?: unknown[];
   disposition: unknown;
   originalReview?: unknown;
-  finalReview?: unknown;
   originalComparison?: unknown;
-  finalComparison?: unknown;
   fallbackReason?: string;
+  sceneDraft?: unknown;
+  sceneAudit?: unknown;
+  assemblyManifest?: unknown;
 };
 
 export type AtomicTurnCommitInput = {
@@ -48,11 +54,12 @@ export type AtomicTurnCommitInput = {
   action: string;
   selectedOption: OpenNovelOption | null;
   result: TurnResult;
-  protectedBlocks: unknown[];
+  beatManifest: unknown;
   narrative: AtomicNarrativeEvidence;
   projection: AtomicTurnProjection;
   modelLedger: unknown[];
   previousCanon: string;
+  previousContextCanon?: string;
 };
 
 export type AtomicTurnHead = {
@@ -118,6 +125,21 @@ export class FileAtomicTurnRepository {
       input.result.narration.trim(),
     ].join("\n");
     const fullCanon = `${input.previousCanon.trimEnd()}\n\n${chapter}\n`.trimStart();
+    const contextNarration = String(
+      input.narrative.contextText || input.result.narration,
+    ).trim();
+    const factNarration = String(
+      input.narrative.factText || contextNarration,
+    ).trim();
+    const contextChapter = [
+      `**读者选择**：${input.action}`,
+      "",
+      contextNarration,
+    ].join("\n");
+    const previousContextCanon = String(
+      input.previousContextCanon ?? input.previousCanon,
+    );
+    const fullContextCanon = `${previousContextCanon.trimEnd()}\n\n${contextChapter}\n`.trimStart();
     const views = input.projection.materializedViews || [];
     const envelope = {
       runId: input.runId,
@@ -133,25 +155,37 @@ export class FileAtomicTurnRepository {
       ["proposed-state.json", jsonText(input.projection.stateRevision)],
       ["causal-events.json", jsonText(input.projection.causalEvents)],
       ["delayed-events.json", jsonText(input.projection.delayedEvents)],
-      ["protected-blocks.json", jsonText(input.protectedBlocks)],
+      ["beat-manifest.json", jsonText(input.beatManifest)],
+      ["scene-draft.json", jsonText(input.narrative.sceneDraft || null)],
+      ["scene-render-plan.json", jsonText(input.narrative.renderPlan || null)],
+      ["scene-audit.json", jsonText(input.narrative.sceneAudit || null)],
+      ["assembly-manifest.json", jsonText(input.narrative.assemblyManifest || null)],
       ["narrative.original.md", `${input.narrative.originalText.trim()}\n`],
       ["truth-review.original.json", jsonText(input.narrative.originalReview || null)],
-      ["narrative.repaired.md", input.narrative.repairedText
-        ? `${input.narrative.repairedText.trim()}\n`
-        : ""],
-      ["truth-review.final.json", jsonText(input.narrative.finalReview || null)],
       ["narrative.final.md", `${input.result.narration.trim()}\n`],
+      ["published-prose.md", `${input.result.narration.trim()}\n`],
+      ["context-prose.md", `${contextNarration}\n`],
+      ["fact-projection.md", `${factNarration}\n`],
+      ["shadow-claims.json", jsonText(input.narrative.shadowClaims || [])],
+      ["authoritative-canon.json", jsonText({
+        source: "SETTLEMENT",
+        stateRevision: input.projection.stateRevision,
+        causalEvents: input.projection.causalEvents,
+        delayedEvents: input.projection.delayedEvents,
+        beatManifest: input.beatManifest,
+      })],
       ["disposition.json", jsonText({
+        narrativeOwner: input.narrative.narrativeOwner || null,
         disposition: input.narrative.disposition,
         originalComparison: input.narrative.originalComparison || null,
-        finalComparison: input.narrative.finalComparison || null,
         fallbackReason: input.narrative.fallbackReason || null,
       })],
       ["model-calls.json", jsonText(input.modelLedger)],
       ["projection-summary.json", jsonText(input.projection.projectionSummary)],
       ["materialized-views.json", jsonText(views)],
       ["canon.md", `${fullCanon.trimEnd()}\n`],
-      ["options.json", jsonText([])],
+      ["context-canon.md", `${fullContextCanon.trimEnd()}\n`],
+      ["options.json", jsonText(input.result.options)],
       ["result.json", jsonText(input.result)],
     ]);
     const contentHash = sha256([...artifacts.entries()]
@@ -242,8 +276,14 @@ export class FileAtomicTurnRepository {
         await writeJsonAtomic(target, view.value);
       } else if (view.format === "jsonl") {
         const values = Array.isArray(view.value) ? view.value : [];
-        const content = values.length
-          ? `${values.map((item) => JSON.stringify(item)).join("\n")}\n`
+        const materialized = view.restoreMode === "APPEND_ONLY"
+          ? mergeAppendOnlyRecords(
+              values,
+              parseJsonLines(await readText(target, "")),
+            )
+          : values;
+        const content = materialized.length
+          ? `${materialized.map((item) => JSON.stringify(item)).join("\n")}\n`
           : "";
         await writeAtomic(target, content);
       } else {
@@ -327,6 +367,37 @@ export class FileAtomicTurnRepository {
     }
     return previous;
   }
+}
+
+function parseJsonLines(value: string): unknown[] {
+  return value.split(/\r?\n/u).flatMap((line) => {
+    if (!line.trim()) return [];
+    try {
+      return [JSON.parse(line) as unknown];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function mergeAppendOnlyRecords(committed: unknown[], live: unknown[]) {
+  const merged: unknown[] = [];
+  const seen = new Set<string>();
+  for (const item of [...committed, ...live]) {
+    const key = appendOnlyRecordKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+  }
+  return merged;
+}
+
+function appendOnlyRecordKey(value: unknown) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const id = String((value as Record<string, unknown>).id || "").trim();
+    if (id) return `id:${id}`;
+  }
+  return `value:${stableStringify(value)}`;
 }
 
 function jsonText(value: unknown) {

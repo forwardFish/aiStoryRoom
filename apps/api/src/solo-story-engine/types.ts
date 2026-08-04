@@ -219,7 +219,7 @@ export type CompiledStoryContext = {
 };
 
 export type StoryActionTarget = {
-  type: "ROLE" | "PERSON" | "LOCATION" | "INSTITUTION" | "EVIDENCE" | "RESOURCE" | "PUBLIC_FRAME";
+  type: "ROLE" | "PERSON" | "DOCUMENT" | "LOCATION" | "INSTITUTION" | "EVIDENCE" | "RESOURCE" | "PUBLIC_FRAME";
   id: string;
   label: string;
 };

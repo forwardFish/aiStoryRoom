@@ -4,6 +4,7 @@ import { NoopMirror } from "../mirror.js";
 import { OpenAICompatibleProvider } from "../provider.js";
 import { runtimeRoot } from "../paths.js";
 import { OpenNovelRuntime } from "../runtime.js";
+import { scenePipelineModulesFromEnv } from "../scene-pipeline.js";
 import { StorykeeperDrain } from "../storykeeper.js";
 import { sangtianDecisionAdapter } from "../sangtian-decisions.js";
 import { sangtianWorkspaceSeeder } from "../sangtian-workspace.js";
@@ -33,6 +34,7 @@ const runtime = new OpenNovelRuntime(
   {
     decisionMode: "AUTHORED_WHEN_AVAILABLE",
     authoredDecisionAdapter: sangtianDecisionAdapter,
+    scenePipelineModules: scenePipelineModulesFromEnv(provider),
   },
 );
 
@@ -41,6 +43,7 @@ const runId = arg("--run-id") || `openovel_smoke_${Date.now()}`;
 const waitForStorykeeper = !process.argv.includes("--no-storykeeper-wait");
 const actionOverride = decodeActionArg();
 const optionIdOverride = arg("--option-id");
+const choiceSequence = parseChoiceSequence(arg("--choice-sequence"));
 const drainOnly = process.argv.includes("--drain-only");
 if (drainOnly && process.argv.includes("--no-storykeeper")) {
   throw new Error("--drain-only cannot be combined with --no-storykeeper");
@@ -69,6 +72,13 @@ if (drainOnly) {
 
 for (let index = 0; index < turns; index += 1) {
   const current = await runtime.getRun(runId);
+  const choiceIndex = choiceSequence[index] ?? 0;
+  const sequenceOption = current.options[choiceIndex];
+  if (choiceSequence[index] !== undefined && !sequenceOption) {
+    throw new Error(
+      `SMOKE_CHOICE_INDEX_NOT_FOUND:T${String(current.turnNumber + 1).padStart(2, "0")}:${choiceIndex}`,
+    );
+  }
   const optionOverride = index === 0 && optionIdOverride
     ? current.options.find((option) => option.id === optionIdOverride)
     : undefined;
@@ -79,9 +89,7 @@ for (let index = 0; index < turns; index += 1) {
     ? optionOverride.label
     : index === 0 && actionOverride
       ? actionOverride
-    : index === 0
-      ? "暂不签发放行文书，留下巡抚书吏，同时核对密信中指出的县册疑点。"
-      : current.options[0]?.label
+      : sequenceOption?.label
         || "先顺着眼前局势追问一层，不作尚无证据支撑的结论。";
   const selectedOption = optionOverride
     || current.options.find((option) => option.label === action)
@@ -127,4 +135,15 @@ function decodeActionArg() {
   const decoded = Buffer.from(encoded, "base64").toString("utf8").trim();
   if (!decoded) throw new Error("--action-base64 did not contain a UTF-8 action");
   return decoded;
+}
+
+function parseChoiceSequence(value: string) {
+  if (!value.trim()) return [];
+  return value.split(",").map((item, index) => {
+    const parsed = Number(item.trim());
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      throw new Error(`SMOKE_CHOICE_SEQUENCE_INVALID:${index}:${item}`);
+    }
+    return parsed;
+  });
 }

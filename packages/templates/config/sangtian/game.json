@@ -30,6 +30,11 @@
     "engineVersion": "continuous_story_v2",
     "strategyVersion": "sangtian_v1_2",
     "strategyRegistryPath": "strategy-registry.json",
+    "soloEngineVersion": "openovel_v1",
+    "soloRuntime": {
+      "storyPackageVersion": "sangtian-openovel-first-v1",
+      "openingVersion": "sangtian-opening-v1"
+    },
     "fixedRules": {
       "stageCount": 7,
       "mainCardsPerRoleStage": 3

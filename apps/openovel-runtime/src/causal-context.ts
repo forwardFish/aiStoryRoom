@@ -58,6 +58,35 @@ export function buildCausalDelta(input: {
         constraints: normalizeList(beat.constraints),
         settledNarrative: normalizeReaderAction(beat.settledNarrative || ""),
         fallbackContinuation: normalizeReaderAction(beat.fallbackContinuation || ""),
+        sceneProjection: beat.sceneProjection
+          ? {
+              sceneRef: normalizeReaderAction(beat.sceneProjection.sceneRef || ""),
+              timeLabel: normalizeReaderAction(beat.sceneProjection.timeLabel),
+              locationLabel: normalizeReaderAction(beat.sceneProjection.locationLabel),
+              situation: normalizeReaderAction(beat.sceneProjection.situation || ""),
+              presentActors: beat.sceneProjection.presentActors.map((actor) => ({
+                actorRef: normalizeReaderAction(actor.actorRef),
+                displayName: normalizeReaderAction(actor.displayName),
+              })),
+              observableFacts: normalizeList(beat.sceneProjection.observableFacts),
+              keyEntityInventoryIsExhaustive: true,
+              documents: beat.sceneProjection.documents.map((document) => ({
+                label: normalizeReaderAction(document.label),
+                accessState: document.accessState,
+                ...(normalizeReaderAction(document.holderLabel || "")
+                  ? { holderLabel: normalizeReaderAction(document.holderLabel || "") }
+                  : {}),
+              })),
+              objects: beat.sceneProjection.objects.map((object) => ({
+                label: normalizeReaderAction(object.label),
+                ...(normalizeReaderAction(object.holderLabel || "")
+                  ? { holderLabel: normalizeReaderAction(object.holderLabel || "") }
+                  : {}),
+                ...(object.contentsState ? { contentsState: object.contentsState } : {}),
+                ...(object.closureState ? { closureState: object.closureState } : {}),
+              })),
+            }
+          : undefined,
         continuationMoves: normalizeList(beat.continuationMoves),
         narrativeSeed: beat.narrativeSeed
           ? {
@@ -130,6 +159,22 @@ function buildScenePacket(input: {
       ))
       .map((item) => item.statement),
   );
+  const dramaticMechanisms = normalizeList(
+    (evidence?.evidenceItems || [])
+      .filter((item) => (
+        item.evidenceClass === 'ORIGINAL_MECHANISM'
+        || (
+          item.useAs === 'DRAMATIC_MECHANISM'
+          && item.evidenceClass !== 'APPROVED_ADAPTATION'
+        )
+      ))
+      .map((item) => item.statement),
+  );
+  const approvedAdaptations = normalizeList(
+    (evidence?.evidenceItems || [])
+      .filter((item) => item.evidenceClass === 'APPROVED_ADAPTATION')
+      .map((item) => item.statement),
+  );
   return {
     packetId: normalizeReaderAction(
       evidence?.packetId || ('scene-packet:' + (input.beat.sourceRef || 'unknown')),
@@ -140,6 +185,8 @@ function buildScenePacket(input: {
     presentBeatMoves,
     stopCondition: normalizeReaderAction(seed.stopCondition),
     visibleFacts,
+    dramaticMechanisms,
+    approvedAdaptations,
     allowedKnowledge: input.allowedKnowledge.filter((item) => !visibleFacts.includes(item)),
     forbiddenKnowledge: input.forbiddenKnowledge,
     unresolvedFacts: normalizeList(evidence?.unresolvedFacts),
@@ -249,6 +296,18 @@ function renderScenePacket(packet: NonNullable<CausalDelta['scenePacket']>) {
     lines.push(
       '- 当前可直接使用的客观事实：',
       ...packet.visibleFacts.map((item) => '  - ' + item),
+    );
+  }
+  if (packet.dramaticMechanisms.length) {
+    lines.push(
+      '- 原著可借鉴的冲突机制（只决定人物如何施压和反制，不自动成为当前事实）：',
+      ...packet.dramaticMechanisms.map((item) => '  - ' + item),
+    );
+  }
+  if (packet.approvedAdaptations.length) {
+    lines.push(
+      '- 已批准的改编映射（只限所述边界，不得扩大数字、人物、地点或完成状态）：',
+      ...packet.approvedAdaptations.map((item) => '  - ' + item),
     );
   }
   if (packet.allowedKnowledge.length) {

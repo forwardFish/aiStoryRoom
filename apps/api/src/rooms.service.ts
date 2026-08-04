@@ -24,6 +24,8 @@ import { policyForNewRun, readCreditConsumptionConfig, type BillingPriceSnapshot
 import { CreditConsumptionService } from "./credits/credit-consumption.service";
 import { creditRequestHash } from "./credits/credit-policy";
 import { RunSponsorshipService } from "./credits/run-sponsorship.service";
+import { OpenNovelAdapterService } from "./openovel-adapter/openovel-adapter.service";
+import { OPENOVEL_ENGINE_VERSION } from "./openovel-adapter/openovel-runtime.client";
 
 const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const IDEMPOTENCY_REPLAY_ATTEMPTS = 300;
@@ -49,8 +51,9 @@ export function shouldResumeExistingSolo(input: { resumeExisting?: boolean }) {
   return input.resumeExisting !== false;
 }
 
-function usesIsolatedSoloEngine(worldId: string, roleKey: string) {
-  return worldId === "sangtian" && roleKey === "zhejiang_governor";
+function configuredSoloEngine(worldId: string) {
+  const world = findGameDefinition(worldId);
+  return world?.engine.soloEngineVersion || world?.engine.engineVersion || "";
 }
 
 export function officialSoloRoleKey(_worldId: string, roles: Array<{ roleKey: string }>) {
@@ -173,7 +176,8 @@ export class RoomsService {
     @Inject(ContinuousStoryV2Service) private readonly storyV2: ContinuousStoryV2Service,
     @Inject(SoloStoryEngineService) private readonly soloStory: SoloStoryEngineService = null as never,
     @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never,
-    @Inject(RunSponsorshipService) private readonly sponsorships: RunSponsorshipService = null as never
+    @Inject(RunSponsorshipService) private readonly sponsorships: RunSponsorshipService = null as never,
+    @Inject(OpenNovelAdapterService) private readonly openNovel: OpenNovelAdapterService = null as never
   ) {}
 
   async list(worldId?: string, user?: AuthenticatedUser) {
@@ -342,17 +346,19 @@ export class RoomsService {
     }
     const idempotencyKey = String(input.idempotencyKey || "").trim();
     if (idempotencyKey && !SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
-    const useNewSoloEngine = usesIsolatedSoloEngine(worldId, requestedRole);
     const versions = selectRunVersions({
       templateKey: worldId,
       mode: "room",
       maxPlayers: 1,
       enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
     });
+    const soloEngineVersion = configuredSoloEngine(worldId) || versions.engineVersion;
+    const useNewSoloEngine = soloEngineVersion === SOLO_STORY_ENGINE_VERSION;
+    const useOpenNovel = soloEngineVersion === OPENOVEL_ENGINE_VERSION;
     const creditConfig = readCreditConsumptionConfig();
     const billingPolicyVersion = policyForNewRun(
       creditConfig.defaultPolicy,
-      useNewSoloEngine ? SOLO_STORY_ENGINE_VERSION : versions.engineVersion
+      soloEngineVersion
     );
     const billingPriceJson = creditConfig.prices;
     if (billingPolicyVersion === "active_action_v1" && !idempotencyKey) {
@@ -368,6 +374,17 @@ export class RoomsService {
     if (shouldResumeExistingSolo(input)) {
       const activeSolo = await this.findActiveSoloRun(user.id, worldId, requestedRole);
       if (activeSolo) return soloCreationResponse(activeSolo.id, await this.start(user, activeSolo.id));
+    }
+
+    // The product's Solo runtime is selected by the world definition. The
+    // OpenNovel adapter owns its own idempotency and Credits transaction, so
+    // it must not enter the legacy room-creation billing path below.
+    if (useOpenNovel) {
+      return this.openNovel.createProductRun(user, {
+        worldId,
+        roleKey: requestedRole,
+        idempotencyKey,
+      });
     }
 
     const deterministicRunId = idempotencyKey
@@ -549,7 +566,7 @@ export class RoomsService {
         && claimedRole === roleKey
         && lobby?.hostRoleLocked === true
         && Boolean(run.players[0]?.userId && lobby.readyUserIds.includes(run.players[0].userId));
-      if (readyToResume && usesIsolatedSoloEngine(worldId, roleKey)) {
+      if (readyToResume && configuredSoloEngine(worldId) === SOLO_STORY_ENGINE_VERSION) {
         if (run.engineVersion !== SOLO_STORY_ENGINE_VERSION) await this.soloStory.activateNewRun(user, run.id);
         return soloCreationResponse(run.id, await this.soloStory.start(user, run.id));
       }
@@ -646,6 +663,9 @@ export class RoomsService {
     // before the legacy waiting-lobby guard so a playing Solo run can be
     // reopened without attempting lobby mutations again.
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) {
+      return { gameProjection: await this.openNovel.game(user, roomId) };
+    }
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.start(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.start(user, roomId);
     const room = await this.requireWaitingMember(user, roomId);
@@ -728,6 +748,7 @@ export class RoomsService {
 
   async game(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) return this.openNovel.game(user, roomId);
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.game(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.game(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.game(user, roomId);
@@ -782,7 +803,7 @@ export class RoomsService {
 
   async submitGameAction(user: AuthenticatedUser, roomId: string, input: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
-    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ConflictException({ code: "LEGACY_ACTION_ENDPOINT_DISABLED", message: "Use the versioned decision endpoint" });
+    if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ConflictException({ code: "LEGACY_ACTION_ENDPOINT_DISABLED", message: "Use the versioned decision endpoint" });
     const room = await this.requirePlayingMember(user, roomId);
     const player = room.players.find((item) => item.userId === user.id);
     if (!player?.roleId) throw new BadRequestException({ code: "ROLE_REQUIRED", message: "Select a role before submitting a game action" });
@@ -892,6 +913,7 @@ export class RoomsService {
 
   submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) { return this.commands.submitMain(user, roomId, command); }
   async submitTurnDecision(user: AuthenticatedUser, roomId: string, turnId: string, command: TurnDecisionCommandV2) {
+    if (await this.usesOpenNovel(roomId)) return this.openNovel.submitDecision(user, roomId, turnId, command);
     return await this.usesSoloStory(roomId) ? this.soloStory.submit(user, roomId, turnId, command) : this.storyV2.submit(user, roomId, turnId, command);
   }
   async submitTurnDecisionStream(
@@ -901,6 +923,9 @@ export class RoomsService {
     command: TurnDecisionCommandV2,
     onPreview: (preview: SoloStoryPreview) => void | Promise<void>
   ) {
+    if (await this.usesOpenNovel(roomId)) {
+      return this.openNovel.submitDecision(user, roomId, turnId, command);
+    }
     return await this.usesSoloStory(roomId)
       ? this.soloStory.submit(user, roomId, turnId, command, onPreview)
       : this.storyV2.submit(user, roomId, turnId, command);
@@ -932,6 +957,11 @@ export class RoomsService {
   private async usesSoloStory(roomId: string) {
     const run = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
     return run?.engineVersion === SOLO_STORY_ENGINE_VERSION;
+  }
+
+  private async usesOpenNovel(roomId: string) {
+    const run = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    return run?.engineVersion === OPENOVEL_ENGINE_VERSION;
   }
 
   private async usesStoryV2(roomId: string) {

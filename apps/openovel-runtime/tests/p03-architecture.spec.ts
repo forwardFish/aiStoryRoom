@@ -9,7 +9,9 @@ import {
 } from "../src/surface-integrity.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const sourceDir = path.resolve(currentDir, "..", "src");
+const sourceDir = path.basename(process.cwd()) === "openovel-runtime"
+  ? path.resolve(process.cwd(), "src")
+  : path.resolve(currentDir, "..", "src");
 
 test("P03 active Canon path does not import legacy lexical gates or a story adapter", async () => {
   const coreFiles = [
@@ -20,7 +22,8 @@ test("P03 active Canon path does not import legacy lexical gates or a story adap
     "foreground.ts",
     "causal-context.ts",
     "truth-review.ts",
-    "narrative-safety.ts",
+    "scene-expression.ts",
+    "scene-pipeline.ts",
     "atomic-turn.ts",
     "surface-integrity.ts",
     "deterministic-fallback.ts",
@@ -42,6 +45,7 @@ test("P03 active Canon path does not import legacy lexical gates or a story adap
     assert.doesNotMatch(active, new RegExp(escapeRegExp(forbiddenImport)));
   }
   assert.doesNotMatch(runtime, /worldId\s*(?:===|!==|==|!=)/u);
+  assert.doesNotMatch(active, /joinProtected|appendProtected|USE_REPAIRED|profile:\s*"repair"/u);
   for (const item of core) {
     assert.doesNotMatch(
       item.source,

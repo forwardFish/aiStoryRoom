@@ -9,15 +9,27 @@ import {
 } from "@ai-story/templates";
 import { appendJsonl, readJson, readText, writeJsonAtomic } from "./io.js";
 import type { AtomicTurnProjection } from "./atomic-turn.js";
-import type {
-  AuthoredDecisionAdapter,
-  PreparedAuthoredDecision,
+import {
+  composeAuthoredDecisionModules,
+  type FactSettlementModule,
+  type NextBeatPlannerModule,
+  type PreparedAuthoredDecision,
+  type PreparedFactSettlement,
 } from "./decision-adapter.js";
 import type { FileStoryWorkspace } from "./workspace.js";
 import type { OpenNovelOption } from "./types.js";
-import { renderDeterministicFallback } from "./deterministic-fallback.js";
+import {
+  bindProtectedFallbackDraft,
+  SCENE_DRAFT_SCHEMA,
+  narrativeSlotIds,
+  type BeatManifest,
+  type SceneSnapshot,
+} from "./scene-expression.js";
 import { actionRejected } from "./runtime-errors.js";
-import { compileProtectedSceneTransition } from "./protected-state-transition.js";
+import {
+  compileEstablishedScenePredicates,
+  compileProtectedSceneTransition,
+} from "./protected-state-transition.js";
 
 const {
   buildPartOneRuntimeWorkingSet,
@@ -147,6 +159,7 @@ export function nextSangtianOptions(
   prepared: PreparedSangtianDecision,
 ): OpenNovelOption[] {
   const state = prepared.settlement.proposedState;
+  if (state.partCompletionStatus === "HANDOFF_READY") return [];
   const nextTurnNumber = prepared.settlement.event.turnNumber + 1;
   const workingSet = buildPartOneRuntimeWorkingSet(
     prepared.package,
@@ -180,6 +193,7 @@ export async function currentSangtianOptions(
   const paths = workspace.paths(runId);
   const state = await readJson<PartOneState | null>(paths.partOneState, null);
   if (!state) return null;
+  if (state.partCompletionStatus === "HANDOFF_READY") return [];
   const pkg = partOnePackage(workspace.projectRoot);
   const workingSet = buildPartOneRuntimeWorkingSet(pkg, state, metadata.turnNumber);
   return workingSet.decisionAffordances.map((affordance) =>
@@ -331,6 +345,10 @@ function withNarrativeContract(
           fallbackContinuation:
             String(plan.nextStoryBeat.fallbackContinuation || "").trim()
             || evidenceContract.fallbackContinuation,
+          playerVisibleFallback:
+            evidenceContract.playerVisibleFallback
+            || plan.nextStoryBeat.playerVisibleFallback,
+          sceneProjection: narratorSceneProjection(plan),
           narrativeSeed: {
             playerOutcome: plan.nextStoryBeat.playerOutcome,
             continuationMoves: plan.nextStoryBeat.presentMoves,
@@ -382,6 +400,10 @@ function withNarrativeContract(
         fallbackContinuation:
           String(plan.nextStoryBeat.fallbackContinuation || "").trim()
           || option.effect?.beatContract?.fallbackContinuation,
+        playerVisibleFallback:
+          option.effect?.beatContract?.playerVisibleFallback
+          || plan.nextStoryBeat.playerVisibleFallback,
+        sceneProjection: narratorSceneProjection(plan),
         narrativeSeed: {
           playerOutcome: plan.nextStoryBeat.playerOutcome,
           continuationMoves: plan.nextStoryBeat.presentMoves,
@@ -402,6 +424,44 @@ function withNarrativeContract(
         stopCondition: plan.nextStoryBeat.stopCondition,
       },
     },
+  };
+}
+
+function narratorSceneProjection(
+  plan: PartOneActionSettlement["event"]["narrativePlan"],
+) {
+  const actorLabels = new Map(
+    plan.sceneEnd.presentActorRefs.map((actorRef, index) => [
+      actorRef,
+      plan.sceneEndActorLabels[index] || actorRef,
+    ] as const),
+  );
+  return {
+    sceneRef: plan.sceneEnd.sceneId,
+    timeLabel: plan.sceneEnd.timeLabel,
+    locationLabel: plan.sceneEnd.locationLabel,
+    situation: plan.sceneEnd.situation,
+    presentActors: plan.sceneEnd.presentActorRefs.map((actorRef, index) => ({
+      actorRef,
+      displayName: plan.sceneEndActorLabels[index] || actorRef,
+    })),
+    observableFacts: [...(plan.sceneEnd.observableFacts || [])],
+    keyEntityInventoryIsExhaustive: true as const,
+    documents: (plan.sceneEnd.documentStates || []).map((document) => ({
+      label: document.label,
+      accessState: document.accessState,
+      ...(document.holderRef && actorLabels.has(document.holderRef)
+        ? { holderLabel: actorLabels.get(document.holderRef) }
+        : {}),
+    })),
+    objects: (plan.sceneEnd.objectStates || []).map((object) => ({
+      label: object.label,
+      ...(object.holderRef && actorLabels.has(object.holderRef)
+        ? { holderLabel: actorLabels.get(object.holderRef) }
+        : {}),
+      ...(object.contentsState ? { contentsState: object.contentsState } : {}),
+      ...(object.closureState ? { closureState: object.closureState } : {}),
+    })),
   };
 }
 
@@ -454,51 +514,139 @@ function partOnePackage(projectRoot: string) {
   ).package;
 }
 
-export const sangtianDecisionAdapter: AuthoredDecisionAdapter = {
-  currentOptions: currentSangtianOptions,
-
-  async prepare(workspace, input) {
-    const prepared = await prepareSangtianDecision(workspace, input);
-    if (!prepared) return null;
+async function planSangtianNextBeat(
+  settlement: PreparedFactSettlement,
+): Promise<PreparedAuthoredDecision> {
+  // The planner works on a private snapshot. It may construct narrative
+  // manifests, but it cannot mutate the authoritative settlement instance.
+  const prepared = structuredClone(requireSangtianPayload(settlement));
     const event = prepared.settlement.event;
     const authoredProtectedText = String(
       prepared.selectedOption?.effect?.beatContract?.settledNarrative
         || event.narrativePlan.settledActionNarrative
+        || event.narrativePlan.nextStoryBeat.playerOutcome
         || "",
     ).trim();
+    if (!authoredProtectedText) throw new Error("PLAYER_RESULT_SURFACE_MISSING");
     const protectedTransition = compilePartOneProtectedTransition(event);
-    const protectedText = [authoredProtectedText, protectedTransition.text]
-      .filter(Boolean)
-      .join("\n\n");
+    const protectedText = authoredProtectedText;
     const beatContract = prepared.selectedOption?.effect?.beatContract;
-    if (beatContract) {
-      beatContract.settledNarrative = protectedText;
-      if (beatContract.narrativeSeed) {
-        beatContract.narrativeSeed.playerOutcome = protectedText;
-      }
+    const protectedStopText = String(
+      beatContract?.narrativeSeed?.stopCondition
+        || beatContract?.stopCondition
+        || event.narrativePlan.nextStoryBeat.stopCondition
+        || "",
+    ).trim();
+    const protectedPressureText = String(
+      beatContract?.narrativeSeed?.npcOrWorldPressure
+        || event.narrativePlan.nextStoryBeat.npcOrWorldPressure
+        || protectedStopText,
+    ).trim();
+    const fallbackSlots = beatContract?.playerVisibleFallback;
+    if (!fallbackSlots) {
+      throw new Error(
+        `PLAYER_VISIBLE_FALLBACK_MISSING:${event.decisionKernelId}:${prepared.selectedOption?.id || "unknown"}`,
+      );
     }
-    event.narrativePlan.settledActionNarrative = protectedText;
-    event.narrativePlan.nextStoryBeat.playerOutcome = protectedText;
+    const playerSourceRefs = [
+      event.eventId,
+      ...event.changedStatePaths,
+      ...protectedTransition.sourceRefs,
+    ];
+    const pressureSourceRefs = [
+      event.eventId,
+      ...event.narrativePlan.nextStoryBeat.sourceEventIds,
+    ];
+    const stopSourceRefs = [
+      event.eventId,
+      event.nextDecisionPoint.decisionPointId,
+    ];
+    const transition = partOneSceneTransition(event);
+    const protectedSceneTransitionText = transition.transitionRequired
+      ? fallbackSlots.SCENE_TRANSITION
+        || protectedTransition.sceneText
+        || `${transition.afterScene.timeLabel}; ${transition.afterScene.locationLabel}`
+      : "";
+    const beatManifest: BeatManifest = {
+      beatId: event.narrativePlan.nextStoryBeat.beatId,
+      sourceRef: `part-one-event:${event.eventId}`,
+      transition,
+      dramaticGuidance: {
+        ...event.narrativePlan.nextStoryBeat.dramaticGuidance,
+        dramaticTask: event.narrativePlan.dramaticTask
+          || event.narrativePlan.nextStoryBeat.dramaticGuidance.dramaticTask,
+      },
+      tickets: [
+        narrativeTicket(
+          event, "player-result", "PLAYER_RESULT", "ACTION_PHASE",
+          protectedText, playerSourceRefs, true, "PROTECTED", protectedText,
+        ),
+        ...(fallbackSlots.IMMEDIATE_REACTION
+          ? [narrativeTicket(
+              event,
+              "immediate-reaction",
+              "IMMEDIATE_REACTION",
+              "ACTION_PHASE",
+              fallbackSlots.IMMEDIATE_REACTION,
+              pressureSourceRefs,
+              false,
+            )]
+          : []),
+        ...(transition.transitionRequired
+          ? [narrativeTicket(
+              event,
+              "scene-transition",
+              "SCENE_TRANSITION",
+              "AFTER_PHASE",
+              protectedSceneTransitionText,
+              [event.eventId, ...protectedTransition.sourceRefs],
+              true,
+              "PROTECTED",
+              protectedSceneTransitionText,
+            )]
+          : []),
+        narrativeTicket(
+          event,
+          "world-pressure",
+          "WORLD_PRESSURE",
+          "AFTER_PHASE",
+          fallbackSlots.WORLD_PRESSURE || protectedPressureText,
+          pressureSourceRefs,
+        ),
+        narrativeTicket(event, "decision-stop", "DECISION_STOP", "AFTER_PHASE", protectedStopText, stopSourceRefs),
+      ],
+    };
+    const surfaceSourceRef = beatContract.sourceRef || `part-one-event:${event.eventId}`;
+    const surfaceProvenance = Object.fromEntries(
+      narrativeSlotIds
+        .filter((slot) => fallbackSlots[slot])
+        .map((slot) => [slot, {
+          surfaceSource: "STORY_PACKAGE" as const,
+          sourceRef: surfaceSourceRef,
+          coveredTicketIds: beatManifest.tickets
+            .filter((ticket) => ticket.slot === slot)
+            .map((ticket) => ticket.ticketId),
+        }]),
+    );
+    const fallbackDraft = bindProtectedFallbackDraft({
+      schemaVersion: SCENE_DRAFT_SCHEMA,
+      draftId: `${event.eventId}.fallback`,
+      owner: "FALLBACK",
+      slots: fallbackSlots,
+      surfaceProvenance,
+    }, beatManifest);
     return {
       selectedOption: prepared.selectedOption,
       settledNarrative: protectedText,
       sourceRef: `part-one-event:${event.eventId}`,
+      beatManifest,
       storyComplete:
         prepared.settlement.proposedState.partCompletionStatus === "HANDOFF_READY",
-      protectedBlocks: protectedText
-        ? [{
-            blockId: `${event.eventId}.protected.player-outcome`,
-            sourceRefs: [
-              event.eventId,
-              ...event.changedStatePaths,
-              ...protectedTransition.sourceRefs,
-            ],
-            text: protectedText,
-            immutable: true as const,
-          }]
-        : [],
-      fallbackText: buildSangtianFallback(prepared),
-      truthContext: buildSangtianTruthContext(prepared),
+      fallbackDraft,
+      truthContexts: {
+        actionPhase: buildSangtianTruthContext(prepared, "ACTION_PHASE"),
+        afterPhase: buildSangtianTruthContext(prepared, "AFTER_PHASE"),
+      },
       audit: {
         eventId: event.eventId,
         decisionKernelId: event.decisionKernelId,
@@ -508,28 +656,115 @@ export const sangtianDecisionAdapter: AuthoredDecisionAdapter = {
       },
       payload: prepared,
     } satisfies PreparedAuthoredDecision;
+
+}
+
+export const sangtianFactSettlementModule: FactSettlementModule = {
+  moduleId: "sangtian.fact-settlement.v1",
+  currentOptions: currentSangtianOptions,
+
+  async settle(workspace, input) {
+    const prepared = await prepareSangtianDecision(workspace, input);
+    if (!prepared) return null;
+    const event = prepared.settlement.event;
+    return {
+      selectedOption: prepared.selectedOption,
+      storyComplete: prepared.settlement.proposedState.partCompletionStatus === "HANDOFF_READY",
+      audit: {
+        eventId: event.eventId,
+        decisionKernelId: event.decisionKernelId,
+        affordanceTemplateId: event.affordanceTemplateId,
+        changedStatePaths: event.changedStatePaths,
+      },
+      payload: prepared,
+    };
   },
 
-  async commit(workspace, runId, prepared) {
+  async commit(workspace, runId, settlement) {
     await commitSangtianDecision(
       workspace,
       runId,
-      requireSangtianPayload(prepared),
+      requireSangtianPayload(settlement),
     );
   },
 
-  async projectCommit(workspace, runId, prepared) {
+  async projectCommit(workspace, runId, settlement) {
     return projectSangtianDecision(
       workspace,
       runId,
-      requireSangtianPayload(prepared),
+      requireSangtianPayload(settlement),
     );
   },
+};
 
+export const sangtianNextBeatPlannerModule: NextBeatPlannerModule = {
+  moduleId: "sangtian.next-beat-planner.v1",
+  plan: planSangtianNextBeat,
   nextOptions(prepared) {
     return nextSangtianOptions(requireSangtianPayload(prepared));
   },
 };
+
+export const sangtianDecisionAdapter = composeAuthoredDecisionModules({
+  settlement: sangtianFactSettlementModule,
+  nextBeat: sangtianNextBeatPlannerModule,
+});
+
+function partOneSceneTransition(
+  event: PartOneActionSettlement["event"],
+): BeatManifest["transition"] {
+  const beforeScene = partOneSceneSnapshot(event.narrativePlan.sceneStart);
+  const afterScene = partOneSceneSnapshot(event.narrativePlan.sceneEnd);
+  const beforeActors = new Set(beforeScene.presentActorIds);
+  const afterActors = new Set(afterScene.presentActorIds);
+  const transitionRequired = beforeScene.sceneId !== afterScene.sceneId
+    || beforeScene.timeLabel !== afterScene.timeLabel
+    || beforeScene.locationLabel !== afterScene.locationLabel
+    || beforeScene.presentActorIds.length !== afterScene.presentActorIds.length
+    || beforeScene.presentActorIds.some((actorId) => !afterActors.has(actorId));
+  return {
+    beforeScene,
+    narrationScene: beforeScene,
+    afterScene,
+    transitionRequired,
+    arrivingActorIds: afterScene.presentActorIds.filter((actorId) => !beforeActors.has(actorId)),
+    departingActorIds: beforeScene.presentActorIds.filter((actorId) => !afterActors.has(actorId)),
+  };
+}
+
+function partOneSceneSnapshot(
+  scene: PartOneActionSettlement["event"]["narrativePlan"]["sceneStart"],
+): SceneSnapshot {
+  return {
+    sceneId: scene.sceneId,
+    timeLabel: scene.timeLabel,
+    locationLabel: scene.locationLabel,
+    presentActorIds: [...scene.presentActorRefs],
+  };
+}
+
+function narrativeTicket(
+  event: PartOneActionSettlement["event"],
+  suffix: string,
+  slot: BeatManifest["tickets"][number]["slot"],
+  scenePhase: BeatManifest["tickets"][number]["scenePhase"],
+  requiredMeaning: string,
+  sourceRefs: string[],
+  required = true,
+  expressionOwner: "NARRATOR" | "PROTECTED" = "NARRATOR",
+  protectedText?: string,
+): BeatManifest["tickets"][number] {
+  return {
+    ticketId: `${event.eventId}.ticket.${suffix}`,
+    slot,
+    scenePhase,
+    required,
+    requiredMeaning,
+    sourceRefs: [...new Set(sourceRefs.filter(Boolean))],
+    expressionOwner,
+    ...(expressionOwner === "PROTECTED" ? { protectedText } : {}),
+  };
+}
 
 function compilePartOneProtectedTransition(
   event: PartOneActionSettlement["event"],
@@ -584,7 +819,7 @@ function relativeRunPath(root: string, target: string) {
   return relative;
 }
 
-function requireSangtianPayload(prepared: PreparedAuthoredDecision) {
+function requireSangtianPayload(prepared: Pick<PreparedAuthoredDecision, "payload"> | PreparedFactSettlement) {
   const payload = prepared.payload as PreparedSangtianDecision | null;
   if (!payload?.settlement?.event || !payload.package) {
     throw new Error("AUTHORED_DECISION_PAYLOAD_INVALID");
@@ -592,12 +827,12 @@ function requireSangtianPayload(prepared: PreparedAuthoredDecision) {
   return payload;
 }
 
-function buildSangtianTruthContext(prepared: PreparedSangtianDecision) {
+function buildSangtianTruthContext(
+  prepared: PreparedSangtianDecision,
+  phase: "ACTION_PHASE" | "AFTER_PHASE",
+) {
   const event = prepared.settlement.event;
-  // Publication happens after the authoritative settlement. A transition turn
-  // must therefore review the destination scene; using sceneBefore makes valid
-  // arrivals look invented and hides the real destination boundaries.
-  const scene = event.sceneAfter;
+  const scene = phase === "ACTION_PHASE" ? event.sceneBefore : event.sceneAfter;
   const plan = event.narrativePlan;
   const currentSourceEventIds = new Set(
     prepared.selectedOption?.effect?.beatContract?.narrativeSeed?.sourceEventIds
@@ -661,33 +896,26 @@ function buildSangtianTruthContext(prepared: PreparedSangtianDecision) {
     "runtime.capability.unspecified_order",
     ...selectedSceneBeats.map((beat) => beat.beatId),
   ];
+  const establishedPredicates = compileEstablishedScenePredicates({
+    sceneRef: scene.sceneId,
+    timeLabel: scene.timeLabel,
+    locationLabel: scene.locationLabel,
+    presentActorRefs: [...scene.presentActorRefs],
+    documents: (scene.documentStates || []).map((document) => ({
+      entityRef: document.documentRef,
+      label: document.label,
+      status: document.accessState,
+      holderRef: document.holderRef || null,
+    })),
+    objects: (scene.objectStates || []).map((object) => ({
+      entityRef: object.objectRef,
+      label: object.label,
+      contentsState: object.contentsState || null,
+      closureState: object.closureState || null,
+      holderRef: object.holderRef || null,
+    })),
+  });
   const pressureSupportId = `${plan.nextStoryBeat.beatId}:PRESSURE`;
-  const requiredActorBeatIds = new Set([
-    ...event.authoritativeNpcReactions.map((reaction) => reaction.reactionEventId),
-    ...event.authoritativeWorldMoves
-      .filter((move) => (
-        move.sourceType === "DUE_CONSEQUENCE"
-        || move.sourceType === "SETTLED_RESPONSE"
-      ))
-      .map((move) => move.beatId),
-  ]);
-  const visibleRequirements = selectedSceneBeats
-    .filter((beat) => requiredActorBeatIds.has(beat.beatId))
-    .flatMap((beat) =>
-    (beat.actorRefs || [])
-      .filter((actorId) => actorRefsInCurrentBeat.has(actorId))
-      .map((actorId) => ({
-          pattern: {
-            type: "ACTOR.ORDERED" as const,
-            constraints: {
-              actorId,
-              capabilityId: beat.beatId,
-            },
-          },
-          requiredMeaning: beat.action,
-          supportIds: [pressureSupportId],
-      })),
-    );
   const storyEvidence = plan.nextStoryBeat.evidencePacket;
   const knowledgeBoundary = prepared.selectedOption?.effect?.knowledgeBoundary;
   const knowledgeBoundaryRef = String(
@@ -733,13 +961,14 @@ function buildSangtianTruthContext(prepared: PreparedSangtianDecision) {
     catalog: deduplicateCatalog(catalog),
     capabilityIds: [...new Set(capabilityIds)],
     secretIds: [],
-    allowedPredicates: visibleRequirements.map((item) => item.pattern),
-    requiredVisiblePredicates: visibleRequirements.map((item, index) => ({
-      id: `${event.nextDecisionPoint.decisionPointId}:VISIBLE:${index + 1}`,
-      pattern: item.pattern,
-      requiredMeaning: item.requiredMeaning,
-      supportIds: item.supportIds,
-    })),
+    establishedPredicates,
+    // Scene beats are narrative pressure, not durable state transitions. They
+    // remain in the Narrator packet and fallback seed, but must not be forged
+    // into ACTOR.ORDERED predicates merely so a model can prove it mentioned
+    // them. Genuine must-visible durable results are rendered by Protected
+    // Beat assets from the settlement layer.
+    allowedPredicates: [],
+    requiredVisiblePredicates: [],
     forbiddenPredicates: [],
     supportedStoryFacts,
     forbiddenStoryClaims: (knowledgeBoundary?.forbidden || []).map((statement, index) => ({
@@ -754,31 +983,16 @@ function buildSangtianTruthContext(prepared: PreparedSangtianDecision) {
       })),
     specificityBoundary: storyEvidence.specificityBoundary,
     stopCondition: plan.nextStoryBeat.stopCondition,
+    sceneContinuity: {
+      sceneId: scene.sceneId,
+      timeLabel: scene.timeLabel,
+      locationLabel: scene.locationLabel,
+    },
     // The settled protagonist action is already rendered by an immutable
     // Protected Beat. Any new protagonist command in the continuation is an
     // additional action, regardless of its natural-language wording.
     originActionsInDraft: "FORBIDDEN" as const,
   };
-}
-
-function buildSangtianFallback(prepared: PreparedSangtianDecision) {
-  const plan = prepared.settlement.event.narrativePlan;
-  // A fallback is a safety path, not an alternate authored scene. Free-form
-  // continuation prose can silently contain a stale handoff, disclosure, or
-  // arrival that no longer matches the settled state. Render the fallback only
-  // from the server-selected outcome, world pressure, and stop condition. This
-  // keeps the rule world-agnostic and makes custody/knowledge changes possible
-  // only when the settlement layer actually selected them.
-  return renderDeterministicFallback({
-    seed: plan.nextStoryBeat,
-    protectedPlayerOutcomePresent: Boolean(
-      String(
-        prepared.selectedOption?.effect?.beatContract?.settledNarrative
-          || plan.settledActionNarrative
-          || "",
-      ).trim(),
-    ),
-  });
 }
 
 function deduplicateCatalog<T extends { id: string }>(items: T[]) {

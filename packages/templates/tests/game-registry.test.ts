@@ -58,7 +58,10 @@ test("the registered Sangtian strategy and role contract load together", () => {
 });
 
 test("every registered background and role portrait exists in the Web asset tree", () => {
-  const publicRoot = resolve(__dirname, "../../../apps/web/public");
+  const publicRoot = process.cwd().endsWith("packages\\templates")
+    || process.cwd().endsWith("packages/templates")
+    ? resolve(process.cwd(), "../../apps/web/public")
+    : resolve(__dirname, "../../../apps/web/public");
   for (const game of listGameDefinitions()) {
     const urls = [game.catalog.cardCover, game.catalog.heroCover, game.presentation.sceneBackground, ...game.roles.map((role) => role.portrait)];
     if (game.worldActor) urls.push(game.worldActor.portrait);

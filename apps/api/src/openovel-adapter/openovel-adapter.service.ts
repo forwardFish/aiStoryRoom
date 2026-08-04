@@ -8,6 +8,8 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { createHash } from "node:crypto";
+import { getGameDefinition } from "@ai-story/templates";
+import type { TurnDecisionCommandV2 } from "@ai-story/shared";
 import type { AuthenticatedUser } from "../auth/current-user.decorator";
 import { readCreditConsumptionConfig, policyForNewRun } from "../config/credit-consumption.config";
 import {
@@ -27,15 +29,15 @@ import {
   type OpenNovelPublicRun,
   type OpenNovelTurnEvent,
 } from "./openovel-runtime.client";
+import { openNovelGameProjection } from "./openovel-game-projection";
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
-const WORLD_ID = "sangtian";
-const TEMPLATE_ID = "template_sangtian_001";
-const ROLE_KEY = "zhejiang_governor";
 const STRATEGY_VERSION = "openovel_first_v1";
 
 type CreateRunInput = {
   idempotencyKey?: string;
+  worldId?: string;
+  roleKey?: string;
 };
 
 type SubmitActionInput = {
@@ -45,6 +47,7 @@ type SubmitActionInput = {
     id?: string;
     label?: string;
   } | null;
+  expectedStateRevision?: number;
 };
 
 export type OpenNovelMirrorEvent = {
@@ -64,6 +67,7 @@ export class OpenNovelAdapterService {
 
   async createRun(user: AuthenticatedUser, input: CreateRunInput) {
     this.assertEnabled();
+    const product = resolveProduct(input.worldId, input.roleKey);
     const idempotencyKey = requiredIdempotency(input.idempotencyKey);
     const runId = openNovelRunId(user.id, idempotencyKey);
     const existing = await this.prisma.storyRun.findUnique({
@@ -74,7 +78,7 @@ export class OpenNovelAdapterService {
     });
     if (existing) {
       this.assertRunOwner(existing, user);
-      const runtimeRun = await this.runtime.createRun(runtimeCreateInput(runId));
+      const runtimeRun = await this.runtime.createRun(runtimeCreateInput(runId, product));
       await this.persistRunMirror(existing, runtimeRun);
       return this.projection(existing, runtimeRun);
     }
@@ -83,7 +87,7 @@ export class OpenNovelAdapterService {
     // database creation also means a retry can reuse the same deterministic
     // run id without ever invoking the legacy Solo narrator.
     await this.runtime.health();
-    const runtimeRun = await this.runtime.createRun(runtimeCreateInput(runId));
+    const runtimeRun = await this.runtime.createRun(runtimeCreateInput(runId, product));
     const creditConfig = readCreditConsumptionConfig();
     const billingPolicyVersion = policyForNewRun(creditConfig.defaultPolicy, OPENOVEL_ENGINE_VERSION);
     const billingPriceJson = creditConfig.prices;
@@ -96,11 +100,11 @@ export class OpenNovelAdapterService {
         actionClass: "RUN_CREATE",
         amount: billingPriceJson.runCreate,
         idempotencyKey: `openovel-run:${user.id}:${idempotencyKey}`,
-        requestHash: creditRequestHash({ runId, worldId: WORLD_ID, roleKey: ROLE_KEY }),
+        requestHash: creditRequestHash({ runId, worldId: product.worldId, roleKey: product.roleKey }),
         metadata: {
           engine: OPENOVEL_ENGINE_VERSION,
-          worldId: WORLD_ID,
-          roleKey: ROLE_KEY,
+          worldId: product.worldId,
+          roleKey: product.roleKey,
           policyVersion: billingPolicyVersion,
         },
         meteringMode: creditConfig.meteringMode,
@@ -112,7 +116,7 @@ export class OpenNovelAdapterService {
       const created = await this.story.createRun(
         user.openid,
         {
-          templateId: TEMPLATE_ID,
+          templateId: product.templateId,
           mode: "room",
           maxPlayers: 1,
           aiPlayerCount: 0,
@@ -126,13 +130,13 @@ export class OpenNovelAdapterService {
           billingPriceJson,
         },
       );
-      const role = created.roles.find((item: any) => item.roleKey === ROLE_KEY);
+      const role = created.roles.find((item: any) => item.roleKey === product.roleKey);
       if (!role) throw new Error("OPENOVEL_GOVERNOR_ROLE_MISSING");
       await this.story.claimRole(user.openid, runId, role.id);
       const saved = await this.prisma.storyRun.update({
         where: { id: runId },
         data: {
-          selectedRoleKey: ROLE_KEY,
+          selectedRoleKey: product.roleKey,
           status: "playing",
           currentDay: 0,
           completedNodeCount: 0,
@@ -175,6 +179,98 @@ export class OpenNovelAdapterService {
     return this.projection(run, runtimeRun);
   }
 
+  async createProductRun(user: AuthenticatedUser, input: CreateRunInput) {
+    const created = await this.createRun(user, input);
+    return {
+      id: created.runId,
+      runId: created.runId,
+      roomId: created.runId,
+      gameProjection: await this.game(user, created.runId),
+    };
+  }
+
+  async game(user: AuthenticatedUser, runId: string) {
+    this.assertEnabled();
+    const run = await this.authorizedRun(user, runId);
+    const [runtimeRun, nodes, creditAvailability] = await Promise.all([
+      this.runtime.getRun(runId),
+      this.prisma.sceneNode.findMany({
+        where: { runId, status: "resolved" },
+        orderBy: [{ nodeIndex: "asc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          nodeIndex: true,
+          title: true,
+          publicNarration: true,
+          resolvedAt: true,
+          createdAt: true,
+        },
+      }),
+      this.creditConsumption.availableForRun(runId, user.id),
+    ]);
+    const creditConfig = readCreditConsumptionConfig();
+    const billing = parseRunBilling(run, creditConfig.prices);
+    return openNovelGameProjection({
+      userId: user.id,
+      run,
+      runtimeRun,
+      game: getGameDefinition(run.templateKey),
+      nodes,
+      credits: {
+        policyVersion: billing.policyVersion,
+        meteringMode: creditConfig.meteringMode,
+        available: creditAvailability.available,
+        personalAvailable: creditAvailability.personalAvailable,
+        runAllowanceAvailable: creditAvailability.runAllowanceAvailable,
+        standardActionCost: billing.prices.standardAction,
+        customActionCost: billing.prices.customAction,
+      },
+    });
+  }
+
+  async submitDecision(
+    user: AuthenticatedUser,
+    runId: string,
+    turnId: string,
+    command: TurnDecisionCommandV2,
+  ) {
+    const runtimeBefore = await this.runtime.getRun(runId);
+    const expectedTurnId = `T${String(runtimeBefore.turnNumber + 1).padStart(2, "0")}`;
+    if (turnId !== expectedTurnId || command.turnRevision !== runtimeBefore.turnNumber) {
+      throw new ConflictException({
+        code: "TURN_MOVED",
+        message: "The story has already moved to a newer turn.",
+      });
+    }
+    const customAction = String(command.customAction || "").trim();
+    const selected = customAction
+      ? null
+      : runtimeBefore.options.find((option) => option.id === command.candidateId) || null;
+    if (!customAction && !selected) {
+      throw new BadRequestException({
+        code: "OPENOVEL_OPTION_INVALID",
+        message: "Choose one of the current story actions.",
+      });
+    }
+    const action = customAction || selected!.label;
+    const result = await this.submitAction(user, runId, {
+      action,
+      idempotencyKey: command.idempotencyKey,
+      expectedStateRevision: command.turnRevision,
+      boundOption: selected ? { id: selected.id, label: selected.label } : null,
+    }, () => undefined);
+    return {
+      accepted: true as const,
+      resolution: {
+        id: String(result.turnId || expectedTurnId),
+        appliedWorldSequence: Number(result.turnNumber || runtimeBefore.turnNumber + 1),
+        resultNarrative: String(result.narration || ""),
+        nextHook: "",
+      },
+      gameProjection: await this.game(user, runId),
+    };
+  }
+
   async submitAction(
     user: AuthenticatedUser,
     runId: string,
@@ -206,8 +302,11 @@ export class OpenNovelAdapterService {
     const runtimeBefore = await this.runtime.getRun(runId);
     const nextTurn = runtimeBefore.turnNumber + 1;
     const role = run.players[0]?.role;
-    if (!role || role.roleKey !== ROLE_KEY) {
-      throw new ForbiddenException({ code: "OPENOVEL_ROLE_REQUIRED", message: "The Zhejiang Governor role is required." });
+    if (!role || role.roleKey !== run.selectedRoleKey || runtimeBefore.roleId !== role.roleKey) {
+      throw new ForbiddenException({
+        code: "OPENOVEL_ROLE_REQUIRED",
+        message: "The player must control the role selected for this story run.",
+      });
     }
     const syntheticNode = await this.prisma.sceneNode.create({
       data: {
@@ -289,7 +388,13 @@ export class OpenNovelAdapterService {
     let committed: any = null;
     try {
       committed = await this.runtime.streamAction(
-        { runId, action, submissionId: playerAction.id, boundOption },
+        {
+          runId,
+          action,
+          submissionId: playerAction.id,
+          expectedStateRevision: input.expectedStateRevision,
+          boundOption,
+        },
         async (event) => {
           // Hold the final commit marker until the database mirror and charge
           // are settled. Narration and options remain truly streamed.
@@ -425,7 +530,7 @@ export class OpenNovelAdapterService {
     if (run.ownerUserId !== user.id || !run.players?.some((item: any) => item.userId === user.id)) {
       throw new ForbiddenException({ code: "OPENOVEL_RUN_ACCESS_DENIED", message: "This story belongs to another player." });
     }
-    if (run.engineVersion !== OPENOVEL_ENGINE_VERSION || run.templateKey !== WORLD_ID) {
+    if (run.engineVersion !== OPENOVEL_ENGINE_VERSION) {
       throw new ConflictException({ code: "OPENOVEL_RUNTIME_MISMATCH", message: "This run does not use OpenNovel-First." });
     }
   }
@@ -548,13 +653,35 @@ export function openNovelRunId(userId: string, idempotencyKey: string) {
   return `solo_ovl_${createHash("sha256").update(`${userId}\0${idempotencyKey}`).digest("hex").slice(0, 32)}`;
 }
 
-function runtimeCreateInput(runId: string) {
+function runtimeCreateInput(runId: string, product: ReturnType<typeof resolveProduct>) {
   return {
     runId,
-    worldId: WORLD_ID,
-    roleId: ROLE_KEY,
-    storyPackageVersion: "sangtian-openovel-first-v1",
-    openingVersion: "sangtian-opening-v1",
+    worldId: product.worldId,
+    roleId: product.roleKey,
+    storyPackageVersion: product.storyPackageVersion,
+    openingVersion: product.openingVersion,
+  };
+}
+
+function resolveProduct(worldIdValue: unknown, roleKeyValue: unknown) {
+  const worldId = String(worldIdValue || "sangtian");
+  const game = getGameDefinition(worldId);
+  if (game.engine.soloEngineVersion !== OPENOVEL_ENGINE_VERSION || !game.engine.soloRuntime) {
+    throw new ConflictException({
+      code: "OPENOVEL_PRODUCT_NOT_CONFIGURED",
+      message: "This world is not configured for the OpenNovel Solo runtime.",
+    });
+  }
+  const roleKey = String(roleKeyValue || game.roles[0]?.roleKey || "");
+  if (!game.roles.some((role) => role.roleKey === roleKey && role.canBeHumanControlled)) {
+    throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That Solo role is not available." });
+  }
+  return {
+    worldId,
+    roleKey,
+    templateId: game.templateId,
+    storyPackageVersion: game.engine.soloRuntime.storyPackageVersion,
+    openingVersion: game.engine.soloRuntime.openingVersion,
   };
 }
 

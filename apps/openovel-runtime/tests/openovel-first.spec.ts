@@ -37,6 +37,7 @@ import {
   getStorySnapshot,
   activateContextCards,
   projectForegroundGuidance,
+  projectSettledSceneGuidance,
   sanitizeOptionsGuidance,
   sanitizeDirectedBeat,
 } from "../src/foreground.js";
@@ -59,6 +60,11 @@ import {
   buildStoryFactReviewUnits,
   buildTruthReviewUnits,
 } from "../src/truth-review.js";
+import {
+  TRUTH_OBSERVATION_SCHEMA,
+  buildObservationReviewUnits,
+  truthTextHash,
+} from "../src/truth-observation.js";
 import type {
   OpenNovelProvider,
   EventMirror,
@@ -69,7 +75,9 @@ import type {
 } from "../src/types.js";
 
 const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
-const projectRoot = path.resolve(import.meta.dirname, "..", "..", "..");
+const projectRoot = path.basename(process.cwd()) === "openovel-runtime"
+  ? path.resolve(process.cwd(), "..", "..")
+  : path.resolve(import.meta.dirname, "..", "..", "..");
 
 test("provider hard deadline releases a stalled response body", async () => {
   const neverEndingBody = new ReadableStream<Uint8Array>({
@@ -132,7 +140,50 @@ test("provider preserves a streamed length finish reason for the release gate", 
   assert.equal(result.usage.outputTokens, 2_000);
 });
 
-test("SiliconFlow requests explicitly cap hidden thinking at the documented minimum", async () => {
+test("official DeepSeek enables configurable thinking effort", async () => {
+  let sent: Record<string, unknown> = {};
+  const provider = new OpenAICompatibleProvider({
+    apiKey: "test-key",
+    baseUrl: "https://api.deepseek.com/v1",
+    narratorModel: "deepseek-v4-pro",
+    optionsModel: "deepseek-v4-pro",
+    storykeeperModel: "deepseek-v4-pro",
+    timeoutMs: 1_000,
+    thinkingMode: "enabled",
+    reasoningEffort: "max",
+    fetchImpl: async (_url, init) => {
+      sent = JSON.parse(String(init?.body || "{}")) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        model: "deepseek-v4-pro",
+        choices: [{ message: { content: "done" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 2 },
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    },
+  });
+  await provider.generate({
+    profile: "narrator",
+    messages: [{ role: "user", content: "continue" }],
+    temperature: 0.5,
+    maxTokens: 2_000,
+    json: false,
+    stream: false,
+  });
+  assert.deepEqual(sent.thinking, { type: "enabled" });
+  assert.equal(sent.reasoning_effort, "max");
+
+  await provider.generate({
+    profile: "reviewer",
+    messages: [{ role: "user", content: "extract" }],
+    temperature: 0,
+    maxTokens: 500,
+    json: false,
+    stream: false,
+  });
+  assert.deepEqual(sent.thinking, { type: "disabled" });
+  assert.equal("reasoning_effort" in sent, false);
+});
+
+test("SiliconFlow GLM keeps schema-guided plain transport and caps hidden thinking", async () => {
   let sent: Record<string, unknown> = {};
   const provider = new OpenAICompatibleProvider({
     apiKey: "test-key",
@@ -153,17 +204,64 @@ test("SiliconFlow requests explicitly cap hidden thinking at the documented mini
     },
   });
   await provider.generate({
-    profile: "narrator",
+    profile: "reviewer",
     messages: [{ role: "user", content: "continue" }],
     temperature: 0.5,
     maxTokens: 2_000,
-    json: false,
+    json: true,
+    jsonSchema: {
+      name: "truth_review",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { status: { type: "string" } },
+      },
+    },
     stream: false,
   });
   assert.equal(sent.enable_thinking, false);
   assert.equal(sent.thinking_budget, 128);
+  assert.equal(sent.response_format, undefined);
 });
 
+test("SiliconFlow Reviewer sends an API-level JSON Schema instead of prompt-only JSON mode", async () => {
+  let sent: Record<string, unknown> = {};
+  const schema = {
+    type: "object",
+    additionalProperties: false,
+    required: ["classification"],
+    properties: { classification: { enum: ["ALIGNED", "MISSED"] } },
+  };
+  const provider = new OpenAICompatibleProvider({
+    apiKey: "test-key",
+    baseUrl: "https://api.siliconflow.com/v1",
+    narratorModel: "zai-org/GLM-5.2",
+    reviewerModel: "Qwen/Qwen3.5-122B-A10B",
+    optionsModel: "zai-org/GLM-5.2",
+    storykeeperModel: "zai-org/GLM-5.2",
+    timeoutMs: 1_000,
+    fetchImpl: async (_url, init) => {
+      sent = JSON.parse(String(init?.body || "{}")) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        choices: [{ message: { content: '{"classification":"ALIGNED"}' }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 4 },
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    },
+  });
+  await provider.generate({
+    profile: "reviewer",
+    messages: [{ role: "user", content: "extract" }],
+    temperature: 0,
+    maxTokens: 100,
+    json: true,
+    jsonSchema: { name: "truth_review", schema },
+    stream: false,
+  });
+  assert.deepEqual(sent.response_format, {
+    type: "json_schema",
+    json_schema: { name: "truth_review", schema },
+  });
+});
 test("Options repairs relay JSON and does not pre-write results for discovery moves", () => {
   const parsed = parseOptions(
     `{
@@ -303,12 +401,10 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
     const prompts = buildNarratorMessages(delta, compiled);
     assert.equal(prompts.length, 2);
     assert.match(prompts[0].content, /从最近正文的最后一刻继续/);
-    assert.match(prompts[0].content, /把它圆成可发生的尝试、传话或过渡/);
-    assert.match(prompts[0].content, /玩家行动是本回合唯一的主角行动/);
-    assert.match(prompts[0].content, /普通动作、目光、衣袖、灯火、案几、普通纸张和空间调度可以自由书写/);
-    assert.match(prompts[0].content, /不要凭空新增具名人物、关键证据、正式文书/);
-    assert.match(prompts[0].content, /不要替主角完成玩家行动之外的签署、承诺或重大处置/);
-    assert.match(prompts[0].content, /其他工作集内容只提供约束与叙事纹理/);
+    assert.match(prompts[0].content, /Reader Action is the only protagonist action/);
+    assert.match(prompts[0].content, /one concrete scene/);
+    assert.match(prompts[0].content, /same language and literary voice as Canon/);
+    assert.match(prompts[0].content, /Stop at the next decision/);
     assert.doesNotMatch(prompts[0].content, /物件持有人|跨 clause|activeActor/);
 
     const freeAction = "让书吏把协办办法说清楚，在他说完之前公文仍不签。";
@@ -343,6 +439,54 @@ test("foreground capsule keeps Recent Canon authoritative and Reader Action last
   });
 });
 
+test("a settled scene projection replaces lagging foreground sections without leaking IDs", () => {
+  const projected = projectSettledSceneGuidance([
+    "## Story",
+    "",
+    "A second-world command story.",
+    "",
+    "## Scene",
+    "",
+    "- Yesterday, the lower dock.",
+    "",
+    "## Active Characters",
+    "",
+    "- the courier",
+    "",
+    "## Tone",
+    "",
+    "- The courier grips yesterday's dispatch beside the lower dock.",
+    "",
+    "## Constants",
+    "",
+    "- The dispatch remains with the courier.",
+    "",
+    "## Relationships",
+    "",
+    "- The courier is waiting for the old harbor master.",
+  ].join("\n"), {
+    sceneRef: "fixture.scene.relay-deck",
+    timeLabel: "first light",
+    locationLabel: "relay deck",
+    situation: "The sealed relay is awaiting inspection.",
+    presentActors: [
+      { actorRef: "fixture.actor.captain", displayName: "the captain" },
+      { actorRef: "fixture.actor.navigator", displayName: "the navigator" },
+    ],
+    observableFacts: ["The seal is intact."],
+    keyEntityInventoryIsExhaustive: true,
+    documents: [{ label: "sealed dispatch", accessState: "SEALED", holderLabel: "the captain" }],
+    objects: [],
+  });
+
+  assert.match(projected, /first light/u);
+  assert.match(projected, /relay deck/u);
+  assert.match(projected, /the captain/u);
+  assert.match(projected, /the navigator/u);
+  assert.doesNotMatch(projected, /## (?:Tone|Constants|Relationships)/u);
+  assert.doesNotMatch(projected, /Yesterday|yesterday|lower dock|the courier|old harbor master/u);
+  assert.doesNotMatch(projected, /fixture\.(?:scene|actor)/u);
+});
 test("Narrator projection preserves guidance as non-authoritative texture", async () => {
   const sangtianGuidance = [
     "## Scene",
@@ -2195,13 +2339,9 @@ test("authored decision state machine keeps curated choices across three committ
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      ["narrator", "reviewer", "repair"],
+      ["narrator"],
     );
-    assert.equal(provider.calls[0].temperature, 0.86);
-    assert.match(
-      provider.calls[0].messages.map((message) => message.content).join("\n"),
-      /## 玩家行动/,
-    );
+    assert.match(result.narration, /县册疑处|册尾数字/u);
     assert.deepEqual(
       result.options.map((option) => option.id),
       [
@@ -2263,13 +2403,9 @@ test("authored decision state machine keeps curated choices across three committ
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      ["narrator", "reviewer", "repair", "narrator", "reviewer", "repair"],
+      ["narrator", "narrator"],
     );
-    assert.equal(provider.calls[3].temperature, 0.86);
-    assert.match(
-      provider.calls[3].messages.map((message) => message.content).join("\n"),
-      /## 最近正文/,
-    );
+    assert.match(secondResult.narration, /清流县先办一批/u);
     const separateResponsibility = secondResult.options.find(
       (option) => option.id === "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
     );
@@ -2295,13 +2431,13 @@ test("authored decision state machine keeps curated choices across three committ
       jointSignatureContext,
       /巡抚拒绝在总督昨日送来的正式回文上共同具名/,
     );
-    assert.doesNotMatch(
+    assert.match(
       jointSignatureContext,
-      /署名本身成为责任与利益冲突的行动/,
+      /原著可借鉴的冲突机制[\s\S]*署名本身成为责任与利益冲突的行动/u,
     );
-    assert.doesNotMatch(
+    assert.match(
       jointSignatureContext,
-      /独立巡抚是玩法角色位/,
+      /已批准的改编映射[\s\S]*独立巡抚是玩法角色位/u,
     );
     assert.match(
       jointSignatureContext,
@@ -2327,11 +2463,7 @@ test("authored decision state machine keeps curated choices across three committ
     });
     assert.deepEqual(
       provider.calls.map((call) => call.profile),
-      [
-        "narrator", "reviewer", "repair",
-        "narrator", "reviewer", "repair",
-        "narrator", "reviewer", "repair",
-      ],
+      ["narrator", "narrator", "narrator"],
     );
     assert.equal(thirdResult.turnNumber, 3);
     const stateAfterThird = JSON.parse(
@@ -2340,7 +2472,16 @@ test("authored decision state machine keeps curated choices across three committ
     assert.ok(stateAfterThird.pendingConsequences.some((item: { status: string }) => (
       item.status === "PAID"
     )));
-    assert.equal(provider.calls[6].temperature, 0.86);
+    assert.equal(stateAfterThird.scene.timeLabel, "嘉靖三十五年五月初九巳时");
+    assert.equal(stateAfterThird.scene.locationLabel, "杭州总督府签押房");
+    assert.deepEqual(stateAfterThird.scene.presentActorRefs, [
+      "actor.zhejiang_governor",
+      "actor.qingliu_magistrate",
+      "actor.reform_clerk",
+      "actor.xunfu_aide",
+    ]);
+    assert.match(thirdResult.narration, /次日巳时，杭州总督府签押房/u);
+    assert.doesNotMatch(thirdResult.narration, /五月初八.*杭州总督府内厅/su);
     assert.ok(thirdResult.options.length >= 2);
     assert.ok(thirdResult.options.every((option) => !option.id.startsWith("opt_T03_")));
     const nextAuthoredOption = thirdResult.options[0];
@@ -2352,10 +2493,6 @@ test("authored decision state machine keeps curated choices across three committ
     });
     assert.ok(nextDecision);
     assert.ok(nextDecision.settlement.appliedAffordance);
-    assert.match(
-      provider.calls[6].messages.map((message) => message.content).join("\n"),
-      /## 最近正文/,
-    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -3191,7 +3328,7 @@ test("empty foreground failure is recoverable and never enters Canon", async () 
   }, provider);
 });
 
-test("Storykeeper updates next foreground asynchronously without rewriting Canon", async () => {
+test("Storykeeper treats model workset prose as advisory and never rewrites world facts", async () => {
   const provider = new ScriptedProvider({
     narrator: [
       "总督只说了一句：“回去告诉中丞，公文留在这里，午前给他回话。”书吏没有争辩，先问这句话能不能写进回文。县令亲随却在旁边抬起头，显然听出了“午前”两个字留下的余地。门外的人已把新催件送到帘外，封皮上仍是巡抚衙门的印。",
@@ -3228,24 +3365,27 @@ test("Storykeeper updates next foreground asynchronously without rewriting Canon
     assert.equal(after.canon.startsWith(before.canon), true);
     assert.match(after.canon, /午前给他回话/);
     const guidance = await readFile(workspace.paths(runId).foregroundGuidance, "utf8");
-    assert.match(guidance, /午前答复已经成为当前镜头/);
-    assert.match(guidance, /清流县档房今夜值守仍未核实/);
+    assert.doesNotMatch(guidance, /午前答复已经成为当前镜头/);
+    assert.doesNotMatch(guidance, /清流县档房今夜值守仍未核实/);
     const storykeeperCall = provider.calls.find((call) => call.profile === "storykeeper");
     assert.ok(storykeeperCall);
     assert.match(storykeeperCall.messages[0].content, /recent_canon_before 是本轮正文提交前的 Canon/);
     assert.match(storykeeperCall.messages[1].content, /<recent_canon_before>/);
     assert.match(storykeeperCall.messages[1].content, /嘉靖三十五年五月初八/);
-    const custodyCard = await readFile(
-      path.join(workspace.paths(runId).contextCardsDir, "county-register-custody", "CARD.md"),
-      "utf8",
+    await assert.rejects(
+      readFile(path.join(workspace.paths(runId).contextCardsDir, "county-register-custody", "CARD.md"), "utf8"),
+      /ENOENT/,
     );
-    assert.match(custodyCard, /县册原件仍在清流/);
     const cardsManifest = await readFile(workspace.paths(runId).cardsManifest, "utf8");
-    assert.match(cardsManifest, /context-cards\/county-register-custody\/CARD\.md/);
+    assert.doesNotMatch(cardsManifest, /context-cards\/county-register-custody\/CARD\.md/);
+    assert.match(
+      await readFile(workspace.paths(runId).sceneLog, "utf8"),
+      /ignoredAdvisoryFactSections/,
+    );
   }, provider);
 });
 
-test("Storykeeper reuses a canonical entity card when the model invents an alias slug", async () => {
+test("Storykeeper cannot mutate a canonical entity card or directed beat from prose", async () => {
   const provider = new ScriptedProvider({
     storykeeper: [storykeeperPatch({
       "directed-beat.md": "T02 floor T03 前置：若T02仍未答复，T03最迟让压力推进。",
@@ -3273,8 +3413,7 @@ test("Storykeeper reuses a canonical entity card when the model invents an alias
       path.join(workspace.paths(runId).contextCardsDir, "governor", "CARD.md"),
       "utf8",
     );
-    assert.match(canonical, /\n# 浙江总督\n\n## 当前状态/);
-    assert.match(canonical, /已命差员前往清流/);
+    assert.doesNotMatch(canonical, /已命差员前往清流/);
     await assert.rejects(
       readFile(path.join(workspace.paths(runId).contextCardsDir, "zong-du", "CARD.md"), "utf8"),
       /ENOENT/,
@@ -3283,14 +3422,14 @@ test("Storykeeper reuses a canonical entity card when the model invents an alias
     assert.ok(call);
     assert.match(call.messages[1].content, /<context_card_registry>/);
     assert.match(call.messages[1].content, /slug: governor/);
-    assert.equal(
-      (await readFile(path.join(workspace.paths(runId).frontendDir, "directed-beat.md"), "utf8")).trim(),
-      "## This Turn\n\nT02 floor T03 前置：若T02仍未答复，T03最迟让压力推进。",
+    assert.doesNotMatch(
+      await readFile(path.join(workspace.paths(runId).frontendDir, "directed-beat.md"), "utf8"),
+      /T02 floor T03/,
     );
   }, provider);
 });
 
-test("Storykeeper repairs unescaped prose quotes and reuses the recorded model result", async () => {
+test("Storykeeper repairs transport JSON without granting fact-write authority", async () => {
   const provider = new ScriptedProvider({
     storykeeper: [
       `{"summary":"updated","sections":{"scene.md":"## Scene\\n\\n- 书吏说"暂缓"二字不能带回。"},"contextCards":[],"qualityNotes":"quoted prose"}`,
@@ -3308,7 +3447,7 @@ test("Storykeeper repairs unescaped prose quotes and reuses the recorded model r
       createdAt: new Date().toISOString(),
     });
     await storykeeper.kick(runId);
-    assert.match(
+    assert.doesNotMatch(
       await readFile(path.join(workspace.paths(runId).frontendDir, "scene.md"), "utf8"),
       /书吏说"暂缓"二字不能带回/,
     );
@@ -3316,7 +3455,7 @@ test("Storykeeper repairs unescaped prose quotes and reuses the recorded model r
   }, provider);
 });
 
-test("Storykeeper salvages a truncated JSON patch without another provider call", async () => {
+test("Storykeeper salvages a truncated advisory patch without publishing it as fact", async () => {
   const provider = new ScriptedProvider({
     storykeeper: [
       `{"summary":"partial","sections":{"scene.md":"## Scene\\n\\n- 书吏仍在厅中等回文。`,
@@ -3334,7 +3473,7 @@ test("Storykeeper salvages a truncated JSON patch without another provider call"
       createdAt: new Date().toISOString(),
     });
     await storykeeper.kick(runId);
-    assert.match(
+    assert.doesNotMatch(
       await readFile(path.join(workspace.paths(runId).frontendDir, "scene.md"), "utf8"),
       /书吏仍在厅中等回文/,
     );
@@ -3342,7 +3481,7 @@ test("Storykeeper salvages a truncated JSON patch without another provider call"
   }, provider);
 });
 
-test("Storykeeper keeps unsupported durable claims attributed instead of promoting them", async () => {
+test("Storykeeper cannot promote unsupported durable claims in any fact-bearing output", async () => {
   const provider = new ScriptedProvider({
     storykeeper: [storykeeperPatch(
       {
@@ -3385,24 +3524,63 @@ test("Storykeeper keeps unsupported durable claims attributed instead of promoti
 
     const scene = await readFile(path.join(workspace.paths(runId).frontendDir, "scene.md"), "utf8");
     assert.doesNotMatch(scene, /^-\s*原册留在档房/m);
-    assert.match(scene, /亲随称原册留在档房，尚未核实/);
-    assert.match(scene, /总督已命亲随传令保册/);
+    assert.doesNotMatch(scene, /亲随称原册留在档房/);
+    assert.doesNotMatch(scene, /总督已命亲随传令保册/);
     const constants = await readFile(path.join(workspace.paths(runId).frontendDir, "constants.md"), "utf8");
     assert.doesNotMatch(constants, /原册留在档房/);
-    assert.match(constants, /巡抚公文仍扣在案上/);
+    assert.doesNotMatch(constants, /巡抚公文仍扣在案上/);
     const memory = await readFile(workspace.paths(runId).storyMemory, "utf8");
     assert.doesNotMatch(memory, /^-\s*原册留在档房/m);
-    assert.match(memory, /总督已命亲随传令保册/);
+    assert.doesNotMatch(memory, /总督已命亲随传令保册/);
     const card = await readFile(
       path.join(workspace.paths(runId).contextCardsDir, "qingliu-magistrate", "CARD.md"),
       "utf8",
     );
     assert.doesNotMatch(card, /^-\s*原册留在档房/m);
-    assert.match(card, /亲随称原册留在档房，尚未核实/);
+    assert.doesNotMatch(card, /亲随称原册留在档房/);
   }, provider);
 });
 
-test("selected option consequence reaches the next foreground once and is then cleared", async () => {
+test("Storykeeper fact authority is settlement-only in an unrelated space-opera world", async () => {
+  const provider = new ScriptedProvider({
+    storykeeper: [storykeeperPatch({
+      "scene.md": "The navigator reports that three pirate cruisers have entered orbit.",
+      "active-pressures.md": "[URGENT] Three confirmed pirate cruisers are firing on the station.",
+      "constants.md": "The station shields have failed.",
+      "pending-consequence.md": "The reactor has already exploded.",
+    }, [{
+      slug: "pirate-fleet",
+      triggers: ["pirate cruisers"],
+      body: "# Pirate fleet\n\nThree hostile cruisers are confirmed in orbit.",
+      curate: true,
+    }])],
+  });
+  await withRuntime(async ({ workspace, storykeeper, runId }) => {
+    await workspace.enqueueStorykeeper(runId, {
+      id: "inbox_space_report_t01",
+      turnId: "T01",
+      action: "Keep the reactor at minimum output.",
+      narration: "The navigator said the outer scope showed three shadows, but the contact was unverified.",
+      recentCanonBefore: "The bridge was quiet.",
+      selectedEffect: {
+        consequence: "reactor pressure will continue to rise until coolant is restored",
+      },
+      warnings: [],
+      createdAt: new Date().toISOString(),
+    });
+    await storykeeper.kick(runId);
+
+    const guidance = await readFile(workspace.paths(runId).foregroundGuidance, "utf8");
+    assert.doesNotMatch(guidance, /three pirate cruisers|shields have failed|reactor has already exploded/i);
+    assert.match(guidance, /reactor pressure will continue to rise until coolant is restored/);
+    await assert.rejects(
+      readFile(path.join(workspace.paths(runId).contextCardsDir, "pirate-fleet", "CARD.md"), "utf8"),
+      /ENOENT/,
+    );
+  }, provider);
+});
+
+test("selected option consequence reaches foreground from settlement and model prose cannot replace it", async () => {
   const provider = new ScriptedProvider({
     narrator: [
       "总督没有去拿印，把巡抚公文留在案上，只让书吏等候，转而问县令亲随密信写明了什么。亲随只复述：分户田数逐项相加，与册尾总数不符；差额多少他不知道，原册也没有随信送来。书吏听完没有争辩，却把“公文留案”四个字复述了一遍，显然要原样带回巡抚衙门。",
@@ -3452,7 +3630,7 @@ test("selected option consequence reaches the next foreground once and is then c
     assert.match(firstStorykeeper.messages[1].content, /consequence/);
     assert.match(
       await readFile(path.join(workspace.paths(runId).frontendDir, "pending-consequence.md"), "utf8"),
-      /巡抚会把暂缓签发转化为对明确答复时辰的追问/,
+      /巡抚可能借机指责总督拖延急令；巡抚会催促限时答复并追问扣文理由/,
     );
 
     await runtime.processAction({
@@ -3463,18 +3641,15 @@ test("selected option consequence reaches the next foreground once and is then c
     const narratorCalls = provider.calls.filter((call) => call.profile === "narrator");
     assert.equal(narratorCalls.length, 2);
     assert.match(narratorCalls[1].messages[1].content, /## 待兑现后果/);
-    assert.match(narratorCalls[1].messages[1].content, /明确答复时辰/);
-    assert.equal(
-      (await readFile(
-        path.join(workspace.paths(runId).frontendDir, "pending-consequence.md"),
-        "utf8",
-      )).trim(),
-      "",
+    assert.match(narratorCalls[1].messages[1].content, /催促限时答复并追问扣文理由/);
+    assert.match(
+      await readFile(path.join(workspace.paths(runId).frontendDir, "pending-consequence.md"), "utf8"),
+      /催促限时答复并追问扣文理由/,
     );
   }, provider);
 });
 
-test("director ARC stays out of Narrator context and drives generic background pacing", async () => {
+test("director ARC stays backstage while model memory and directed beats remain advisory", async () => {
   const secondWorldArc = [
     "# Arc",
     "",
@@ -3545,8 +3720,8 @@ test("director ARC stays out of Narrator context and drives generic background p
     assert.match(call.messages[1].content, /<options_guidance>/);
     assert.match(call.messages[1].content, /<turn>\n0\n<\/turn>/);
     assert.match(await readFile(paths.arcLog, "utf8"), /handed to This Turn/);
-    assert.match(await readFile(paths.storyMemory, "utf8"), /继续监听观测站/);
-    assert.match(await readFile(path.join(paths.frontendDir, "directed-beat.md"), "utf8"), /警报开始倒数/);
+    assert.doesNotMatch(await readFile(paths.storyMemory, "utf8"), /继续监听观测站/);
+    assert.doesNotMatch(await readFile(path.join(paths.frontendDir, "directed-beat.md"), "utf8"), /警报开始倒数/);
   }, provider);
 });
 
@@ -3700,7 +3875,7 @@ test("Storykeeper recovery replays a recorded result without another model call"
     await storykeeper.kick(runId);
     assert.equal(provider.calls.filter((call) => call.profile === "storykeeper").length, 0);
     assert.deepEqual((await workspace.inbox(runId)).state.processed, [item.id]);
-    assert.match(
+    assert.doesNotMatch(
       await readFile(workspace.paths(runId).foregroundGuidance, "utf8"),
       /不需要再次调用模型/,
     );
@@ -3748,7 +3923,7 @@ test("Storykeeper leaves inbox pending when another process owns the drain lease
     await storykeeper.kick(runId);
     assert.equal(provider.calls.filter((call) => call.profile === "storykeeper").length, 1);
     assert.deepEqual((await workspace.inbox(runId)).state.processed, ["inbox_lease_t01"]);
-    assert.match(
+    assert.doesNotMatch(
       await readFile(workspace.paths(runId).foregroundGuidance, "utf8"),
       /后台租约释放后/,
     );
@@ -4059,7 +4234,6 @@ class ScriptedProvider implements OpenNovelProvider {
   readonly script: {
     narrator: Array<string | Error>;
     reviewer: Array<string | Error>;
-    repair: Array<string | Error>;
     options: Array<string | Error>;
     storykeeper: Array<string | Error>;
   };
@@ -4068,7 +4242,6 @@ class ScriptedProvider implements OpenNovelProvider {
     this.script = {
       narrator: [...(script.narrator || [])],
       reviewer: [...(script.reviewer || [])],
-      repair: [...(script.repair || [])],
       options: [...(script.options || [])],
       storykeeper: [...(script.storykeeper || [])],
     };
@@ -4081,18 +4254,102 @@ class ScriptedProvider implements OpenNovelProvider {
   async generate(request: ProviderRequest): Promise<ProviderResult> {
     await this.beforeGenerate?.(request);
     this.calls.push(request);
-    const value = this.script[request.profile].shift();
+    const boundedReviewerContract = request.profile === "reviewer"
+      ? parseBoundedReviewerContract(request.messages.at(-1)?.content || "")
+      : null;
+    const value = boundedReviewerContract
+      ? ""
+      : this.script[request.profile].shift();
     if (value instanceof Error) throw value;
     if (value === undefined) {
       throw new Error(`No scripted ${request.profile} response`);
     }
+    let text = value;
+    if (
+      request.profile === "narrator"
+      && request.messages[0]?.content.includes("omw.scene-draft.v1")
+    ) {
+      const beat = extractJsonObject(
+        request.messages.at(-1)?.content || "",
+        '"actionPhase"',
+      ) as {
+        requiredSlots?: Array<{ slot: string; meaning: string }>;
+      };
+      text = JSON.stringify({
+        schemaVersion: "omw.scene-draft.v1",
+        draftId: request.messages[0]!.content.match(/draftId (T\d+\.draft\.original)/u)?.[1],
+        owner: "NARRATOR",
+        slots: Object.fromEntries(
+          (beat.requiredSlots || []).map((slot) => [slot.slot, slot.meaning]),
+        ),
+      });
+    }
+    if (request.profile === "reviewer") {
+      const reviewerContent = request.messages.at(-1)?.content || "{}";
+      const contract = JSON.parse(
+        reviewerContent.trim().startsWith("{")
+          ? reviewerContent
+          : reviewerContent.split("# Fixed P0 Contract\n").at(-1) || "{}",
+      ) as {
+        draftId?: string;
+        contracts?: Record<string, {
+          text: string;
+          tickets: Array<{ ticketId: string }>;
+          truthSchema: { properties: Record<string, { const?: unknown }> };
+        }>;
+      };
+      if ((contract as Record<string, unknown>).schemaVersion === "omw.scene-coverage-review.v1") {
+        text = JSON.stringify(scriptedCoverageReview(contract as Record<string, any>));
+      } else if ((contract as Record<string, unknown>).schemaVersion === "omw.scene-p0-review.v1") {
+        text = JSON.stringify(scriptedP0Review(contract as Record<string, any>));
+      } else if (contract.contracts) {
+        text = JSON.stringify({
+          draftId: contract.draftId,
+          coverage: Object.entries(contract.contracts).map(([slot, item]) => ({
+            slot,
+            tickets: item.tickets.map((ticket) => ({
+              ticketId: ticket.ticketId,
+              supportingQuotes: [item.text],
+            })),
+          })),
+          reviews: Object.fromEntries(
+            Object.entries(contract.contracts).map(([slot, item]) => {
+              const props = item.truthSchema.properties;
+              return [slot, {
+                schemaVersion: props.schemaVersion.const,
+                reviewId: props.reviewId.const,
+                draftId: props.draftId.const,
+                runId: props.runId.const,
+                worldRevision: props.worldRevision.const,
+                textHash: props.textHash.const,
+                catalogHash: props.catalogHash.const,
+                assertions: [],
+                unknownEntityMentions: [],
+              }];
+            }),
+          ),
+        });
+      } else {
+        const review = JSON.parse(value) as Record<string, unknown>;
+        const binding = contract as Record<string, unknown>;
+        text = JSON.stringify({
+          ...review,
+          reviewId: binding.reviewId,
+          draftId: binding.draftId,
+          runId: binding.runId,
+          worldRevision: binding.worldRevision,
+          textHash: binding.textHash,
+          catalogHash: binding.catalogHash,
+        });
+      }
+    }
     if (request.stream && request.onDelta) {
-      for (let index = 0; index < value.length; index += 24) {
-        request.onDelta(value.slice(index, index + 24));
+      for (let index = 0; index < text.length; index += 24) {
+        request.onDelta(text.slice(index, index + 24));
       }
     }
     return {
-      text: value,
+      text,
       model: "scripted-test",
       usage: { inputTokens: 100, outputTokens: 50 },
       latencyMs: 1,
@@ -4100,23 +4357,109 @@ class ScriptedProvider implements OpenNovelProvider {
   }
 }
 
+function parseBoundedReviewerContract(value: string) {
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    return parsed.schemaVersion === "omw.scene-coverage-review.v1"
+      || parsed.schemaVersion === "omw.scene-p0-review.v1"
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function scriptedCoverageReview(contract: Record<string, any>) {
+  return {
+    schemaVersion: contract.schemaVersion,
+    draftHash: contract.draftHash,
+    manifestHash: contract.manifestHash,
+    findings: Object.fromEntries(Object.entries(contract.slots).map(([slot, text]) => {
+      const obligation = contract.obligations[slot];
+      const required = Boolean(obligation.mustAppear);
+      return [slot, {
+        obligationId: obligation.obligationId,
+        status: required ? "COVERED_ONCE" : "NOT_REQUIRED",
+        primarySpan: required ? { slot, start: 0, end: String(text).length } : null,
+        duplicateSpan: null,
+      }];
+    })),
+  };
+}
+
+function scriptedP0Review(contract: Record<string, any>) {
+  const none = () => ({
+    presence: "NONE",
+    slot: null,
+    start: null,
+    end: null,
+    claimMode: null,
+    explicitness: null,
+    predicate: null,
+    unknownEntity: null,
+    confidence: null,
+  });
+  return {
+    schemaVersion: contract.schemaVersion,
+    draftHash: contract.draftHash,
+    catalogHash: contract.catalogHash,
+    candidates: {
+      causalIntroduction: none(),
+      keyEntityState: none(),
+      secretLeak: none(),
+      playerAction: none(),
+    },
+  };
+}
+
+function extractJsonObject(value: string, requiredKey: string) {
+  const key = value.indexOf(requiredKey);
+  if (key < 0) throw new Error("SCRIPTED_SCENE_CONTRACT_MISSING");
+  const start = value.lastIndexOf("{", key);
+  let depth = 0;
+  let quoted = false;
+  let escaped = false;
+  for (let index = start; index < value.length; index += 1) {
+    const character = value[index]!;
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') quoted = false;
+      continue;
+    }
+    if (character === '"') quoted = true;
+    else if (character === "{") depth += 1;
+    else if (character === "}" && --depth === 0) {
+      return JSON.parse(value.slice(start, index + 1));
+    }
+  }
+  throw new Error("SCRIPTED_SCENE_CONTRACT_INVALID");
+}
+
 function cleanTruthReviewJson(draft: string) {
+  const clear = {
+    status: "CLEAR",
+    unitId: null,
+    exactQuote: null,
+    claimMode: null,
+    subjectId: null,
+    targetId: null,
+    unknownSurface: null,
+    axis: null,
+    confidence: 0.99,
+  };
   return JSON.stringify({
-    assertions: [],
-    originActionAssessments: buildTruthReviewUnits(draft).map((unit) => ({
-      unitId: unit.unitId,
-      classification: "NO_DURABLE_ACTION",
-      exactQuotes: [],
-      confidence: 0.99,
-    })),
-    missingRequiredPredicateIds: [],
-    unknownEntityMentions: [],
-    storyFactAssessments: buildStoryFactReviewUnits(draft).map((unit) => ({
-      unitId: unit.unitId,
-      classification: "TEXTURE_OR_TRANSIENT",
-      supportIds: [],
-      confidence: 0.99,
-    })),
+    schemaVersion: TRUTH_OBSERVATION_SCHEMA,
+    reviewId: "__FROM_REQUEST__",
+    draftId: "__FROM_REQUEST__",
+    runId: "__FROM_REQUEST__",
+    worldRevision: 0,
+    textHash: truthTextHash(draft),
+    catalogHash: "__FROM_REQUEST__",
+    causalIntroduction: clear,
+    keyEntityState: clear,
+    secretLeak: clear,
+    playerAction: clear,
   });
 }
 

@@ -26,6 +26,13 @@ type OpeningAsset = {
     method?: string;
     protectedNarrative: string;
     fallbackContinuation: string;
+    playerVisibleFallback?: {
+      PLAYER_RESULT: string;
+      IMMEDIATE_REACTION?: string;
+      SCENE_TRANSITION?: string;
+      WORLD_PRESSURE: string;
+      DECISION_STOP: string;
+    };
     evidenceProfileId?: string;
     concreteCost?: string;
     expectedCountermove?: string;
@@ -156,9 +163,10 @@ export async function seedSangtianWorkspace(
     [asset.payload.evidenceProfileId, asset],
   ]));
   for (const decision of opening.decisions) {
-    if (!decision.protectedNarrative?.trim() || !decision.fallbackContinuation?.trim()) {
+    if (!decision.protectedNarrative?.trim() || !decision.fallbackContinuation?.trim()
+      || !decision.playerVisibleFallback) {
       throw new Error(
-        `Sangtian opening decision ${decision.decisionId} is missing protectedNarrative or fallbackContinuation`,
+        `Sangtian opening decision ${decision.decisionId} is missing player-visible fallback assets`,
       );
     }
     if (decision.evidenceProfileId && !evidenceProfilesById.has(decision.evidenceProfileId)) {
@@ -189,6 +197,7 @@ export async function seedSangtianWorkspace(
               ...evidenceProfile.payload.openingBeatContract,
               settledNarrative: decision.protectedNarrative.trim(),
               fallbackContinuation: decision.fallbackContinuation.trim(),
+              playerVisibleFallback: decision.playerVisibleFallback,
             },
             knowledgeBoundary: {
               sourceRef: evidenceProfile.assetId,
@@ -205,6 +214,7 @@ export async function seedSangtianWorkspace(
               requiredAnchorGroups: [],
               settledNarrative: decision.protectedNarrative.trim(),
               fallbackContinuation: decision.fallbackContinuation.trim(),
+              playerVisibleFallback: decision.playerVisibleFallback,
               stopCondition: decision.description,
             },
           }),

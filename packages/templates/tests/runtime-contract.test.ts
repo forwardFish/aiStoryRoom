@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { caesarRuntimeFixture, sangtianRuntimeFixture } from "../src/runtime-contract/fixtures";
 import {
-  applyCausalRule, conditionSatisfied, predicateKey, runtimeContractSha256,
+  applyCausalRule, conditionSatisfied, evaluateStructuredStateSelector, mergeDurablePredicates, predicateKey, runtimeContractSha256,
   validateCausalEvent, validateDurableState, validateDurableTurnEnvelope,
   validateWorldRegistryIndex, validateWorldRuntimeContract, WorldRegistry,
   patternsOverlap, patternSubsumes,
@@ -14,6 +14,77 @@ import {
 import type { CausalEvent, DurableTurnEnvelope, WorldRuntimeContract } from "../src/runtime-contract";
 
 const clone = <T>(value: T): T => structuredClone(value);
+
+test("structured state selectors choose authored beats without story-language matching", () => {
+  const caesarState = {
+    worldId: caesarRuntimeFixture.worldId,
+    evidence: { transcriptCopyStatus: "NONE" },
+    command: { sealed: true }
+  };
+  assert.equal(evaluateStructuredStateSelector(caesarState, {
+    statePath: "evidence.transcriptCopyStatus",
+    operator: "EQ",
+    expectedValue: "NONE"
+  }), true);
+  assert.equal(evaluateStructuredStateSelector(caesarState, {
+    statePath: "evidence.transcriptCopyStatus",
+    operator: "NEQ",
+    expectedValue: "NONE"
+  }), false);
+  assert.equal(evaluateStructuredStateSelector(caesarState, {
+    statePath: "command.sealed",
+    operator: "IN",
+    expectedValue: [true, "PENDING"]
+  }), true);
+});
+test("mutable durable predicate slots keep one current value across worlds", () => {
+  const sangtianDocument = "sangtian.document.order";
+  const sangtianMerged = mergeDurablePredicates(
+    [
+      { type: "ENTITY.LOCATED_AT", entityId: sangtianDocument, locationId: "sangtian.location.hall" },
+      { type: "ENTITY.STATE", entityId: sangtianDocument, attribute: "sealState", value: "ORDERED" },
+      { type: "DOCUMENT.CREATED", documentId: sangtianDocument },
+    ],
+    [
+      { type: "ENTITY.LOCATED_AT", entityId: sangtianDocument, locationId: "sangtian.location.archive" },
+      { type: "ENTITY.STATE", entityId: sangtianDocument, attribute: "sealState", value: "SEALED" },
+    ],
+  );
+  assert.deepEqual(
+    sangtianMerged.filter((predicate) => predicate.type === "ENTITY.LOCATED_AT"),
+    [{ type: "ENTITY.LOCATED_AT", entityId: sangtianDocument, locationId: "sangtian.location.archive" }],
+  );
+  assert.equal(sangtianMerged.some((predicate) => predicate.type === "DOCUMENT.CREATED"), true);
+  assert.equal(sangtianMerged.some((predicate) => predicate.type === "ENTITY.STATE" && predicate.value === "ORDERED"), false);
+
+  const caesarEvidence = "caesar.evidence.letter";
+  const caesarMerged = mergeDurablePredicates(
+    [{ type: "ENTITY.HELD_BY", entityId: caesarEvidence, actorId: "caesar.actor.envoy" }],
+    [{ type: "ENTITY.HELD_BY", entityId: caesarEvidence, actorId: "caesar.actor.senator" }],
+  );
+  assert.deepEqual(caesarMerged, [
+    { type: "ENTITY.HELD_BY", entityId: caesarEvidence, actorId: "caesar.actor.senator" },
+  ]);
+});
+
+test("durable state rejects contradictory current locations", () => {
+  const contract = clone(sangtianRuntimeFixture);
+  contract.entities.push({
+    id: "sangtian.location.archive",
+    kind: "LOCATION",
+    displayName: "Archive",
+    aliases: [],
+    durable: true,
+    initialStatus: {},
+  });
+  const state = clone(contract.openingState);
+  state.predicates.push({
+    type: "ENTITY.LOCATED_AT",
+    entityId: "sangtian.document.order",
+    locationId: "sangtian.location.archive",
+  });
+  assert.throws(() => validateDurableState(state, contract), /state\.predicateSlots/);
+});
 const mutateContract = (mutate: (contract: any) => void, expected: RegExp): void => {
   const contract = clone(sangtianRuntimeFixture); mutate(contract); assert.throws(() => validateWorldRuntimeContract(contract), expected);
 };
@@ -70,6 +141,18 @@ test("all declaration namespaces reject duplicate IDs", () => {
   mutateContract((contract) => { contract.delayedRules[0].id = contract.causalRules[0].id; }, /DUPLICATE_ID/);
 });
 test("durable state rejects unknown predicates, duplicates, bad revisions and references", () => {
+  const knownDocument = sangtianRuntimeFixture.entities.find((entity) =>
+    entity.kind === "DOCUMENT"
+  )!.id;
+  assert.doesNotThrow(() => validateDurableState({
+    ...sangtianRuntimeFixture.openingState,
+    predicates: [{
+      type: "ENTITY.STATE",
+      entityId: knownDocument,
+      attribute: "sealed",
+      value: false,
+    }],
+  }, sangtianRuntimeFixture));
   assert.throws(() => validateDurableState({ ...sangtianRuntimeFixture.openingState, revision: -1 }, sangtianRuntimeFixture), /REVISION_INVALID/);
   assert.throws(() => validateDurableState({ ...sangtianRuntimeFixture.openingState, predicates: [{ type: "STORY.SPECIAL" }] }, sangtianRuntimeFixture), /PREDICATE_KIND_INVALID/);
   assert.throws(() => validateDurableState({ ...sangtianRuntimeFixture.openingState, pendingRuleIds: ["ghost.rule"] }, sangtianRuntimeFixture), /DANGLING_RULE/);

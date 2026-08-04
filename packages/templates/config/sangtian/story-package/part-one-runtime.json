@@ -4,7 +4,7 @@
   "partId": "PART-01",
   "perspectiveRoleKey": "zhejiang_governor",
   "authoringReleaseVersion": "sangtian-part-one-authoring-v1.3.0",
-  "authoringManifestHash": "35572A2D89842CF9A4E0353D2031AE35943D390D80FD6E750CD3FC7C30756C7F",
+  "authoringManifestHash": "DFC9BFD0401C2BF7EBCEF8102734BEEAF7440548520D9AD56B5D6A71A1FE8219",
   "authoringManifest": {
     "schemaVersion": "sangtian-part-one-authoring-release-v1",
     "releaseVersion": "sangtian-part-one-authoring-v1.3.0",
@@ -94,21 +94,21 @@
       "ARC-P1-DEADLINE-RESPONSIBILITY": "3DCA3C6294BF055B4B5E680150C3D03CA1CDFD4AD9036701A588453CDE67E6B4",
       "ARC-P1-FIRST-REPORT-FRAMING": "605EB351734EEA5D24B396910B91041CBB6052680BD99BF245319B7F624C1623",
       "ARC-P1-GRAIN-LAND-ENTRY": "3DE3E9F5AF6F283F121EFD73271A3AA32F83BC12F8A6C9A6800AAE6932CF192D",
-      "DK-P1-CAPITAL-CHANNEL": "457BB98971AED00050EF7EB0CD294E878BCDF377355ABD3E5C1FBE5486179BFA",
-      "DK-P1-DISCLOSURE-SCOPE": "198D1111B5DE75BFFAE0E2F6EBFB5786514EB1DBE767D19CD5075B4EDAADE3E7",
-      "DK-P1-EVIDENCE-ATTACHMENT": "86E4ACE7AB88DE7C2840F154F9882A7FC427BEFD0960A856DB42231D4AC64D39",
-      "DK-P1-EVIDENCE-CUSTODY": "17AF89B67125CC73ECC10EDFC6E91DFC71C707E47F432D07553B5C91FBE4A323",
-      "DK-P1-EXECUTION-SCOPE": "97184B7C050F990C47C4C92D3828AAB8D66C263B008582B2FD946B9027C0F2B8",
-      "DK-P1-GRAIN-SOURCE": "08BBD66E561333562152983400D45513A811999A62D7A229396F3D94C3CAE255",
-      "DK-P1-LAND-SAFEGUARD": "808FABB30A351235FABDB5F80CE7739B3A3AB305A6FD392B1158F98DE0664E77",
-      "DK-P1-MERCHANT-CONDITIONS": "E15F79F46922BAA19B85F52EEBF0F5191CF127C31050B3D3F6FAF7D0B95AF92B",
-      "DK-P1-RELIEF-PRIORITY": "C788973A227F39A6F4920EBDBB06CA5005C77F00A2BD548A3E25BFF804B1D9B1",
-      "DK-P1-REPORT-AUTHORSHIP": "BF68351D0F0AB093D8302CB0AB29F03020D3BFED927D2E29856CBBA55B886A91",
-      "DK-P1-RESPONSIBILITY-RECORD": "46E1F549D4BBCB6EC1BAD10BA6CB31170973F3D78F3B0611489C66DD132955A9",
-      "DK-P1-RESPONSIBILITY-SCOPE": "1AD1F57F2E8220111EEA6957F74E94FED19277B79FAFA36A8D6BD221B3AA106B",
-      "DK-P1-REVIEW-AUTHORITY": "A5476E5BBDD32C2F1CBE01C340B5779EBA9766FA5D9B77164F16593F9D293165",
-      "DK-P1-REVIEW-INITIATION": "1EED05D3C4D030636BED6D4856625D6CBCB050E5F1FE083784F5B2271007A61A",
-      "DK-P1-WITNESS-ACCESS": "4B3D1EDCC703E93877253C8BEC3D2A3416A60EDBBC4FDEBFAB329827282DFB3A",
+      "DK-P1-CAPITAL-CHANNEL": "CB1259ADCC3DCC3A7F9F08BBACAAF87646AC79F226BB8B8338FFB1116639BC45",
+      "DK-P1-DISCLOSURE-SCOPE": "980F408832F92910E431BED7B7D9BBC6A30A1814BB1A1C2C1FC803B88C2030EE",
+      "DK-P1-EVIDENCE-ATTACHMENT": "142D405712F67AE1E55BA173F1BBE92E769272E02846B2FEC6AD863A083A377E",
+      "DK-P1-EVIDENCE-CUSTODY": "C36CBFDECCAAEFDCB2F86AC321C83DD87B055E671BCBD232C620A81B33D02830",
+      "DK-P1-EXECUTION-SCOPE": "349CE6EAEDE2C86C7A3089D3117CDA81B716369BB456C96B6126267295443216",
+      "DK-P1-GRAIN-SOURCE": "F5A547D5097EF611E0B1955247EDEDC9686CD41E4104927AA03AE70395DB4F59",
+      "DK-P1-LAND-SAFEGUARD": "4FAC6BBC43BE1ED9C199589AC53D21DF0A5FDC3C0BA6F7168D2A7DBDBB516748",
+      "DK-P1-MERCHANT-CONDITIONS": "3CA997A10A146142020F3207F1FB89916E2552A5C8D023DA1D8FCE6E3E82D150",
+      "DK-P1-RELIEF-PRIORITY": "14F706E4ACD7676FF86997020CA5146709A2C7C3FE82F2BE79195042D65FFD73",
+      "DK-P1-REPORT-AUTHORSHIP": "A9899A51D58728E4EDB55717F2973A71EF1816304BB2CB854A3D57FA4A51C904",
+      "DK-P1-RESPONSIBILITY-RECORD": "2B7A0446E70E5548ABE8983E26CF433C8F67B8774063456DFE3CBFFB30ED2DFB",
+      "DK-P1-RESPONSIBILITY-SCOPE": "E3CE1A79575D3B7297DF0A1F7EF0E9E8D213C9332454DF596546D337486CC54E",
+      "DK-P1-REVIEW-AUTHORITY": "9E494D0172C054CFD60EF39E5268A424C5A4E8897AF0F8B6F354B7BCB6D55A9F",
+      "DK-P1-REVIEW-INITIATION": "D28F30B4875709F3E4A98BFC98271337B28D47A39E3610DCF70AC0A00FE1CDD0",
+      "DK-P1-WITNESS-ACCESS": "3D0A2CD707643EAEFF2A9924CB764FF7074280D2E654FA3B5F6D5F595D761776",
       "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY": "61C3EA086A062D05ECC8F0C44EC5E1E470F58AA98E939F215383708B5A3A8777",
       "FLOOR-P1-S1-XUNFU-RESPONSE": "2642D8983E393BDC45CD767A8D0B0238B1F062BEE3751E1633ADAD8A73FCC736",
       "FLOOR-P1-S2-CUSTODY-DISRUPTION": "E1BFA2A68EBE232E7030936D85C2170992525BB38E243CDC108CB71AEEB73170",
@@ -155,7 +155,7 @@
     },
     "runtimeIndexHash": "C82F754D3B7F66D353D558E2AC24543551B11B8C25AD05C4ED49A4365A8EB0EC",
     "requirementSetHash": "73F9ABD90626D52024BE2368221EA6F604ECCCAE2AE7D5E52F30305819A0003D",
-    "immutableHash": "35572A2D89842CF9A4E0353D2031AE35943D390D80FD6E750CD3FC7C30756C7F"
+    "immutableHash": "DFC9BFD0401C2BF7EBCEF8102734BEEAF7440548520D9AD56B5D6A71A1FE8219"
   },
   "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
   "contentCounts": {
@@ -183,10 +183,51 @@
       "partId": "PART-01",
       "sectionId": "SEC-P1-01",
       "turnNumber": 0,
+      "durableState": {
+        "worldId": "sangtian",
+        "revision": 0,
+        "predicates": [
+          {
+            "type": "ENTITY.INTRODUCED",
+            "entityId": "document.qingliu_register_original"
+          },
+          {
+            "type": "ENTITY.LOCATED_AT",
+            "entityId": "document.qingliu_register_original",
+            "locationId": "location.qingliu_archive"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.qingliu_register_original",
+            "attribute": "custodianRef",
+            "value": "actor.qingliu_magistrate"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.qingliu_register_original",
+            "attribute": "sealState",
+            "value": "UNKNOWN"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.qingliu_register_original",
+            "attribute": "verificationState",
+            "value": "UNVERIFIED"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.qingliu_register_original",
+            "attribute": "pendingAction",
+            "value": null
+          }
+        ],
+        "pendingRuleIds": []
+      },
       "scene": {
         "sceneId": "SCENE-P1-S1-INNER-HALL",
         "timeLabel": "嘉靖三十五年五月初八辰时",
         "locationLabel": "杭州总督府内厅",
+        "locationRef": "location.zhejiang_governor_yamen",
         "presentActorRefs": [
           "actor.zhejiang_governor",
           "actor.xunfu_clerk",
@@ -6933,6 +6974,16 @@
                 "status": "SENT"
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.dispatchStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "knowledgeTransfers"
+              }
+            ],
             "protectedNarrative": "总督命首报走正式通政渠道，沿途逐站记录交接和到达时辰。",
             "createsPendingConsequence": true
           },
@@ -6961,6 +7012,20 @@
                 "status": "SENT"
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.dispatchStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "knowledgeTransfers"
+              }
+            ],
             "protectedNarrative": "总督用自己的封印加封急递，指定送达上级，并在府中留下副本和交接记录。",
             "createsPendingConsequence": true
           },
@@ -6982,6 +7047,20 @@
               "report.firstNarrativeController": "DUAL_CHANNEL_CONTESTED",
               "evidence.chainStatus": "TRACEABLE"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.dispatchStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "report.firstNarrativeController"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              }
+            ],
             "protectedNarrative": "总督命正本走正式渠道、摘要另走密奏，两份互列封号，以便相互核验。",
             "createsPendingConsequence": true
           }
@@ -7108,6 +7187,16 @@
                 "status": "DELIVERED"
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "knowledgeTransfers"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              }
+            ],
             "protectedNarrative": "总督只向巡抚说明册页存在差异，没有透露书吏和密供所在。",
             "createsPendingConsequence": true
           },
@@ -7132,6 +7221,16 @@
                 "status": "DELIVERED"
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "knowledgeTransfers"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.copyStatus"
+              }
+            ],
             "protectedNarrative": "总督准将带见证记录的样册交巡抚查验，原件仍由现保管人封存。",
             "createsPendingConsequence": true
           },
@@ -7155,6 +7254,16 @@
                 "$delta": 1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              }
+            ],
             "protectedNarrative": "总督以保管链未稳为由暂不披露细节，只答应限时提交复核结果。",
             "createsPendingConsequence": true
           }
@@ -7262,6 +7371,20 @@
               "evidence.chainStatus": "TRACEABLE",
               "witness.accessStatus": "DISCLOSED_IN_ATTACHMENT"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.attachmentStrength"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "witness.accessStatus"
+              }
+            ],
             "protectedNarrative": "总督决定随奏附上见证抄出的样册、封条记录和原件保管人名单。",
             "createsPendingConsequence": true
           },
@@ -7283,6 +7406,16 @@
                 "$delta": 1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.attachmentStrength"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              }
+            ],
             "protectedNarrative": "总督决定附件只列田亩数字和日期差异，并声明原册仍在复核，不附人名推断。",
             "createsPendingConsequence": true
           },
@@ -7302,6 +7435,16 @@
               "report.attachmentStrength": "CUSTODY_RECORD_WITHHELD_TESTIMONY",
               "witness.accessStatus": "PROTECTED_FROM_REPORT"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.attachmentStrength"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "witness.accessStatus"
+              }
+            ],
             "protectedNarrative": "总督决定暂不附书吏供述，只附保管链，并说明人证需要保护。",
             "createsPendingConsequence": true
           }
@@ -7384,9 +7527,28 @@
             "actor.qingliu_magistrate",
             "actor.xunfu_aide"
           ],
-          "prompt": "清流县令与巡抚幕僚把争执落到同一件事上：可疑县册的原件和抄件由谁保管，开册时由谁见证。",
+          "prompt": "清流县令与巡抚幕僚把争执落到县册证据链上：原件由谁保管，是否先制作一份由双方见证的抄件，开册时又由谁在场。",
           "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
         },
+        "decisionPromptVariants": [
+          {
+            "variantId": "existing-register-copy",
+            "when": [
+              {
+                "selectorKind": "STATE_PATH",
+                "statePath": "evidence.copyStatus",
+                "operator": "NEQ",
+                "expectedValue": "NONE"
+              }
+            ],
+            "actorRefs": [
+              "actor.qingliu_magistrate",
+              "actor.xunfu_aide"
+            ],
+            "prompt": "清流县令与巡抚幕僚把争执落到县册证据链上：已经制作的见证抄件与原件分别由谁保管，下一次开册时又由谁在场。",
+            "resultCeiling": "只把这一项尚未回答的争点交给玩家；不得替玩家选择，也不得提前写出任何选项的结果。"
+          }
+        ],
         "availableWhen": [
           "县册、田契、抄件或封条已经以事件进入房间",
           "行动者具有接触、封存或抄录的合法路径"
@@ -7397,72 +7559,241 @@
         "options": [
           {
             "affordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-01",
-            "title": "原件封存",
-            "actionText": "原册留在档房，换新封条；总督、县令、巡抚三方各留封样。",
-            "targetRef": "evidence.qingliu_register_anomaly",
-            "method": "多方封样",
-            "immediateIntent": "原册留在档房，换新封条；总督、县令、巡抚三方各留封样。",
-            "visibleTradeoff": "原件少移动，但三方都知道调查已开始",
+            "title": "命令原件留档",
+            "actionText": "命清流县将原册留在档房，待总督、县令、巡抚三方见证到场后换封并各留封样。",
+            "targetRef": "document.qingliu_register_original",
+            "method": "下令三方见证换封",
+            "immediateIntent": "命清流县将原册留在档房，待总督、县令、巡抚三方见证到场后换封并各留封样。",
+            "visibleTradeoff": "原件不移动，但执行前仍存在保管风险",
             "stateEffects": [
               "evidence.chainStatus",
               "evidence.archiveSealStatus",
-              "evidence.primaryCustodianRef"
+              "evidence.primaryCustodianRef",
+              "durableState"
             ],
             "statePatch": {
               "evidence.chainStatus": "TRACEABLE",
-              "evidence.archiveSealStatus": "SEALED_WITH_THREE_SAMPLES",
+              "evidence.archiveSealStatus": "RESEAL_ORDERED",
               "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
             },
-            "protectedNarrative": "总督定下原件仍留清流县档房，换上新封条；总督、县令、巡抚三方各留一份封样。",
+            "durableEffects": [
+              {
+                "type": "ENTITY.LOCATED_AT",
+                "entityId": "document.qingliu_register_original",
+                "locationId": "location.qingliu_archive"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.qingliu_register_original",
+                "attribute": "custodianRef",
+                "value": "actor.qingliu_magistrate"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.qingliu_register_original",
+                "attribute": "sealState",
+                "value": "RESEAL_ORDERED"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.qingliu_register_original",
+                "attribute": "pendingAction",
+                "value": "RESEAL_WITH_THREE_PARTY_WITNESS"
+              }
+            ],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.archiveSealStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.primaryCustodianRef"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "durableState"
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 0
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 1
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 2
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 3
+              }
+            ],
+            "protectedNarrative": "总督命清流县将原册留在档房，等三方见证到场后再换封并各留封样；眼下只是命令已经发出，换封尚未完成。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督命清流县将原册留在档房，待三方见证到场后再换封并各留封样。",
+              "WORLD_PRESSURE": "原册眼下仍在清流县档房，换封尚未执行；负责经手册页的改桑书吏却已经成为下一步绕不开的人。",
+              "DECISION_STOP": "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+            },
             "createsPendingConsequence": true
           },
           {
             "affordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-02",
-            "title": "制作副本",
-            "actionText": "在两名见证人在场时抄出样册，逐页记下抄录人与时辰。",
-            "targetRef": "actor.reform_clerk",
-            "method": "见证抄录",
-            "immediateIntent": "在两名见证人在场时抄出样册，逐页记下抄录人与时辰。",
-            "visibleTradeoff": "可保留第二条链，但书吏暴露为关键证人",
+            "title": "命令制作副本",
+            "actionText": "命清流县在两名见证人到场后抄出样册，逐页记下抄录人与时辰。",
+            "targetRef": "document.qingliu_register_original",
+            "method": "下令见证抄录",
+            "immediateIntent": "命清流县在两名见证人到场后抄出样册，逐页记下抄录人与时辰。",
+            "visibleTradeoff": "可建立第二条链，但执行时会暴露经手书吏",
             "stateEffects": [
               "evidence.copyStatus",
               "witness.accessStatus",
-              "knowledgeTransfers"
+              "knowledgeTransfers",
+              "durableState"
             ],
             "statePatch": {
-              "evidence.copyStatus": "WITNESSED_COPY_CREATED",
-              "witness.accessStatus": "EXPOSED_AS_KEY_WITNESS",
-              "knowledgeTransfer": {
-                "topic": "witnessed_register_copy",
-                "senderRef": "actor.qingliu_magistrate",
-                "recipientRef": "actor.zhejiang_governor",
-                "status": "DELIVERED"
-              }
+              "evidence.copyStatus": "WITNESSED_COPY_ORDERED",
+              "witness.accessStatus": "COPY_EXECUTION_PENDING"
             },
-            "protectedNarrative": "总督命两名见证人在场抄出样册，并逐页记明抄录人和抄录时辰。",
+            "durableEffects": [
+              {
+                "type": "ENTITY.LOCATED_AT",
+                "entityId": "document.qingliu_register_original",
+                "locationId": "location.qingliu_archive"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.qingliu_register_original",
+                "attribute": "custodianRef",
+                "value": "actor.qingliu_magistrate"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.qingliu_register_original",
+                "attribute": "pendingAction",
+                "value": "CREATE_WITNESSED_COPY"
+              }
+            ],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.copyStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "witness.accessStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "knowledgeTransfers"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "durableState"
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 0
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 1
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 2
+              }
+            ],
+            "protectedNarrative": "总督命清流县等两名见证人到场后抄出样册，并逐页记明抄录人和抄录时辰；眼下尚未开始抄录。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督命清流县等两名见证人到场后再抄出样册，并逐页记明抄录人和时辰。",
+              "WORLD_PRESSURE": "第二条证据链尚待执行；一旦见证抄录开始，负责经手的改桑书吏便会暴露在督抚双方眼前。",
+              "DECISION_STOP": "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+            },
             "createsPendingConsequence": true
           },
           {
             "affordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-03",
-            "title": "移交总督府",
-            "actionText": "把可疑册页整封送往总督府，县衙只留交接清单。",
-            "targetRef": "evidence.qingliu_register_anomaly",
-            "method": "整封移交",
-            "immediateIntent": "把可疑册页整封送往总督府，县衙只留交接清单。",
-            "visibleTradeoff": "总督控制原件，也承担途中和保管责任",
+            "title": "命令移交总督府",
+            "actionText": "命清流县在见证下将可疑册页整封移交总督府，县衙留存交接清单。",
+            "targetRef": "document.qingliu_register_original",
+            "method": "下令见证移交",
+            "immediateIntent": "命清流县在见证下将可疑册页整封移交总督府，县衙留存交接清单。",
+            "visibleTradeoff": "总督将取得原件，但在实际交接前仍由县衙保管",
             "stateEffects": [
               "evidence.primaryCustodianRef",
               "evidence.chainStatus",
-              "responsibility.governorExposure"
+              "responsibility.governorExposure",
+              "durableState"
             ],
             "statePatch": {
-              "evidence.primaryCustodianRef": "institution.zhejiang_governor_yamen",
+              "evidence.primaryCustodianRef": "actor.qingliu_magistrate",
               "evidence.chainStatus": "FRAGILE",
               "responsibility.governorExposure": {
                 "$delta": 1
               }
             },
-            "protectedNarrative": "总督命人将可疑册页整封送往总督府，县衙只留下交接清单。",
+            "durableEffects": [
+              {
+                "type": "ENTITY.LOCATED_AT",
+                "entityId": "document.qingliu_register_original",
+                "locationId": "location.qingliu_archive"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.qingliu_register_original",
+                "attribute": "custodianRef",
+                "value": "actor.qingliu_magistrate"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.qingliu_register_original",
+                "attribute": "pendingAction",
+                "value": "TRANSFER_TO_GOVERNOR_YAMEN"
+              }
+            ],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.primaryCustodianRef"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "durableState"
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 0
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 1
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 2
+              }
+            ],
+            "protectedNarrative": "总督命清流县在见证下将可疑册页整封移交总督府，县衙留下交接清单；眼下原册仍在清流县档房，尚未起运。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督命清流县在见证下将可疑册页整封移交总督府，县衙留下交接清单。",
+              "WORLD_PRESSURE": "原册眼下仍在清流县档房；交接一旦执行，途中与入府后的保管责任才会转到总督府。",
+              "DECISION_STOP": "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+            },
             "createsPendingConsequence": true
           }
         ],
@@ -7581,8 +7912,95 @@
               "reform.scopeStatus": "QINGLIU_ONLY",
               "land.safeguardStatus": "WRITTEN_NO_DISTRESS_PURCHASE"
             },
+            "durableEffects": [
+              {
+                "type": "DOCUMENT.CREATED",
+                "documentId": "document.reform_execution_record"
+              },
+              {
+                "type": "DOCUMENT.AUTHENTICATED",
+                "documentId": "document.reform_execution_record",
+                "actorId": "actor.zhejiang_governor"
+              },
+              {
+                "type": "DOCUMENT.TRANSFERRED",
+                "documentId": "document.reform_execution_record",
+                "fromActorId": "actor.zhejiang_governor",
+                "toActorId": "actor.xunfu_clerk"
+              },
+              {
+                "type": "ENTITY.HELD_BY",
+                "entityId": "document.reform_execution_record",
+                "actorId": "actor.xunfu_clerk"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.reform_execution_record",
+                "attribute": "accessState",
+                "value": "WRITTEN"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "object.xunfu_reply_box",
+                "attribute": "contentsState",
+                "value": "CONTAINS_DOCUMENT"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "object.xunfu_reply_box",
+                "attribute": "closureState",
+                "value": "CLOSED"
+              }
+            ],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "reform.executionMode"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "reform.scopeStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "land.safeguardStatus"
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 0
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 1
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 2
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 3
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 4
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 5
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 6
+              }
+            ],
             "protectedNarrative": "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
             "fallbackContinuation": "巡抚书吏把回文收入匣中，却没有退下。他隔着屏风问道：清流县既只准先办一批，复核若误了三日之限，这份责任是由总督独自写明，还是请巡抚在同一份正式回文上共同具名。问完，他仍捧着回文匣候在原处。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
+              "WORLD_PRESSURE": "巡抚书吏把写定的回文收入匣中，却仍捧着匣子候在屏风外。",
+              "DECISION_STOP": "他隔着屏风问道：清流试办若误了三日之限，这份责任由总督独自写明，还是请巡抚在同一份回文上共同具名？"
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7605,8 +8023,95 @@
                 "$delta": 1
               }
             },
+            "durableEffects": [
+              {
+                "type": "DOCUMENT.CREATED",
+                "documentId": "document.reform_execution_record"
+              },
+              {
+                "type": "DOCUMENT.AUTHENTICATED",
+                "documentId": "document.reform_execution_record",
+                "actorId": "actor.zhejiang_governor"
+              },
+              {
+                "type": "DOCUMENT.TRANSFERRED",
+                "documentId": "document.reform_execution_record",
+                "fromActorId": "actor.zhejiang_governor",
+                "toActorId": "actor.xunfu_clerk"
+              },
+              {
+                "type": "ENTITY.HELD_BY",
+                "entityId": "document.reform_execution_record",
+                "actorId": "actor.xunfu_clerk"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.reform_execution_record",
+                "attribute": "accessState",
+                "value": "WRITTEN"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "object.xunfu_reply_box",
+                "attribute": "contentsState",
+                "value": "CONTAINS_DOCUMENT"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "object.xunfu_reply_box",
+                "attribute": "closureState",
+                "value": "CLOSED"
+              }
+            ],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "reform.executionMode"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "reform.progress"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.xunfuExposure"
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 0
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 1
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 2
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 3
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 4
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 5
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 6
+              }
+            ],
             "protectedNarrative": "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
             "fallbackContinuation": "巡抚书吏听明先行放开的条件，随即追问：三日后复核册若仍不齐，催办、放行与补正的责任准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
+              "WORLD_PRESSURE": "巡抚书吏听明先行放开的条件，手仍按着回文匣，没有离开。",
+              "DECISION_STOP": "他追问：三日后复核册若仍不齐，催办、放行与补正的责任由总督独自具名，还是请巡抚共同具名？"
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7629,8 +8134,28 @@
                 "$delta": 1
               }
             },
+            "durableEffects": [],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "reform.executionMode"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.archiveSealStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              }
+            ],
             "protectedNarrative": "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
             "fallbackContinuation": "巡抚书吏听完，没有去碰那只空回文匣，只躬身问道：\"大人既肯担这三日之责，卑职只问一句——这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\"",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
+              "WORLD_PRESSURE": "巡抚书吏听完，没有去碰那只空回文匣，只在屏风外躬身候着。",
+              "DECISION_STOP": "片刻后，他问道：\"大人既肯担这三日之责，这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\""
+            },
             "createsPendingConsequence": true
           }
         ],
@@ -7751,6 +8276,20 @@
                 "$delta": 1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.officialStockStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.reliefChannel"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              }
+            ],
             "protectedNarrative": "总督决定先动官仓并向邻省借粮，所有借据由总督府承担。",
             "createsPendingConsequence": true
           },
@@ -7772,6 +8311,20 @@
               "merchant.entryStatus": "CONDITIONAL",
               "land.safeguardStatus": "NO_GRAIN_FOR_LAND"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.reliefChannel"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "merchant.entryStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "land.safeguardStatus"
+              }
+            ],
             "protectedNarrative": "总督准商会限量开仓，官府为粮路作保，但明令不得借粮价换购灾民田地。",
             "createsPendingConsequence": true
           },
@@ -7793,6 +8346,20 @@
               "merchant.entryStatus": "CONDITIONAL",
               "evidence.chainStatus": "TRACEABLE"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.reliefChannel"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "merchant.entryStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              }
+            ],
             "protectedNarrative": "总督定下官仓先稳城内、商会负责外县运输，两路账目分开核销。",
             "createsPendingConsequence": true
           }
@@ -7900,6 +8467,20 @@
               "land.riskLevel": "MEDIUM",
               "evidence.chainStatus": "TRACEABLE"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "land.safeguardStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "land.riskLevel"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              }
+            ],
             "protectedNarrative": "总督定下灾期田契的公开底价，并命县衙逐契登记买受人。",
             "createsPendingConsequence": true
           },
@@ -7921,6 +8502,20 @@
               "merchant.grantedRights": [],
               "grain.immediatePressure": "RISING"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "land.safeguardStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "merchant.grantedRights"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.immediatePressure"
+              }
+            ],
             "protectedNarrative": "总督命赈期内暂禁商会和大户购入灾民田，先以借粮维持。",
             "createsPendingConsequence": true
           },
@@ -7944,6 +8539,20 @@
                 "$delta": -1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "reform.scopeStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "land.riskLevel"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              }
+            ],
             "protectedNarrative": "总督把改桑指标分到更多非灾县，清流县只承担有限份额。",
             "createsPendingConsequence": true
           }
@@ -8051,6 +8660,20 @@
               ],
               "land.safeguardStatus": "DISTRESS_PURCHASE_BANNED"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "merchant.entryStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "merchant.grantedRights"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "land.safeguardStatus"
+              }
+            ],
             "protectedNarrative": "总督接受商会的粮食和运力，同时明令灾期不得收购或代持民田。",
             "createsPendingConsequence": true
           },
@@ -8076,6 +8699,20 @@
                 "$delta": 1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "merchant.entryStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "merchant.grantedRights"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              }
+            ],
             "protectedNarrative": "总督只向商会购买船队运输，按程付银，不给收丝或购田优先权。",
             "createsPendingConsequence": true
           },
@@ -8097,6 +8734,20 @@
               "grain.reliefChannel": "OFFICIAL_ONLY",
               "grain.immediatePressure": "RISING_FAST"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "merchant.entryStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.reliefChannel"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.immediatePressure"
+              }
+            ],
             "protectedNarrative": "总督拒绝商会提出的担保和优先权，改走官府借调粮路。",
             "createsPendingConsequence": true
           }
@@ -8215,6 +8866,16 @@
               "grain.immediatePressure": "RELIEVED_FOR_HUNGRIEST",
               "land.riskLevel": "CONTAINED_BUT_PRESENT"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.immediatePressure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "land.riskLevel"
+              }
+            ],
             "protectedNarrative": "总督命第一批现粮先发给无存粮、也无田可抵的百姓。",
             "createsPendingConsequence": true
           },
@@ -8234,6 +8895,16 @@
               "grain.immediatePressure": "ACUTE_FOR_LANDLESS",
               "land.riskLevel": "MEDIUM"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.immediatePressure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "land.riskLevel"
+              }
+            ],
             "protectedNarrative": "总督命人先留下种粮和插秧所需，再按户发放余粮。",
             "createsPendingConsequence": true
           },
@@ -8255,6 +8926,16 @@
                 "$delta": 1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "grain.immediatePressure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              }
+            ],
             "protectedNarrative": "总督决定先稳杭州和清流县米市，再向外围灾村分批送粮。",
             "createsPendingConsequence": true
           }
@@ -8383,6 +9064,20 @@
                 "$delta": 1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.authorshipMode"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.xunfuExposure"
+              }
+            ],
             "protectedNarrative": "总督决定与巡抚共同具奏，执行、复核和粮食分歧逐项写明，双方确认后共同具名入京。",
             "createsPendingConsequence": true
           },
@@ -8406,6 +9101,20 @@
                 "$delta": 2
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.authorshipMode"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "report.firstNarrativeController"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              }
+            ],
             "protectedNarrative": "总督决定独自具奏，并把巡抚催办和拒签文书一并列作附件。",
             "createsPendingConsequence": true
           },
@@ -8429,6 +9138,20 @@
                 "$delta": -2
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "report.authorshipMode"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "report.firstNarrativeController"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              }
+            ],
             "protectedNarrative": "总督准巡抚另报，自己同时送出复核结果和异议，两份奏报各自具名。",
             "createsPendingConsequence": true
           }
@@ -8550,10 +9273,10 @@
           {
             "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
             "title": "要求联署",
-            "actionText": "将当前改桑执行边界、复核办法与督抚各自责任写入正式回文，请巡抚共同具名。",
+            "actionText": "将当前改桑执行边界与督抚各自责任写入正式回文，说明县册复核主持权另议，请巡抚共同具名。",
             "targetRef": "actor.zhejiang_xunfu",
             "method": "共同具名",
-            "immediateIntent": "将当前改桑执行边界、复核办法与督抚各自责任写入正式回文，请巡抚共同具名。",
+            "immediateIntent": "将当前改桑执行边界与督抚各自责任写入正式回文，说明县册复核主持权另议，请巡抚共同具名。",
             "visibleTradeoff": "共同承担能换来合作，也会模糊日后分歧",
             "stateEffects": [
               "responsibility.firstRecordStatus",
@@ -8569,8 +9292,96 @@
                 "$delta": 1
               }
             },
-            "protectedNarrative": "总督把暂缓签发的缘由、清流县复核办法和督抚各自应负的责任逐项写入回文。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
-            "fallbackContinuation": "巡抚书吏双手接过回文，低头看了一眼封口，没有当场应承。次日巳时，签押房里仍不见清流县册的原件和抄件，巡抚幕僚却先带回了答复：巡抚不肯在这份回文上共同具名。\n\n清流县令听完没有争辩。巡抚幕僚把话转到即将开始的复核上，问这场复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。两个人都望向总督，等他先定主持权。",
+            "durableEffects": [
+              {
+                "type": "DOCUMENT.CREATED",
+                "documentId": "document.reform_execution_record"
+              },
+              {
+                "type": "DOCUMENT.AUTHENTICATED",
+                "documentId": "document.reform_execution_record",
+                "actorId": "actor.zhejiang_governor"
+              },
+              {
+                "type": "DOCUMENT.TRANSFERRED",
+                "documentId": "document.reform_execution_record",
+                "fromActorId": "actor.zhejiang_governor",
+                "toActorId": "actor.xunfu_clerk"
+              },
+              {
+                "type": "ENTITY.HELD_BY",
+                "entityId": "document.reform_execution_record",
+                "actorId": "actor.xunfu_clerk"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.reform_execution_record",
+                "attribute": "accessState",
+                "value": "WRITTEN"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "object.xunfu_reply_box",
+                "attribute": "contentsState",
+                "value": "CONTAINS_DOCUMENT"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "object.xunfu_reply_box",
+                "attribute": "closureState",
+                "value": "CLOSED"
+              }
+            ],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.firstRecordStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.xunfuExposure"
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 0
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 1
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 2
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 3
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 4
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 5
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 6
+              }
+            ],
+            "protectedNarrative": "总督把暂缓签发的缘由和督抚各自应负的责任逐项写入回文，并注明县册复核主持权尚待议定。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+            "fallbackContinuation": "巡抚幕僚没有绕弯，只说巡抚不肯在总督昨日写成的正式回文上共同具名。清流县令听完没有争辩，改桑书吏也停了笔。幕僚随后问，即将开始的县册复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督把暂缓签发的缘由和督抚各自应负的责任逐项写入回文，并注明县册复核主持权尚待议定。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+              "SCENE_TRANSITION": "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+              "WORLD_PRESSURE": "巡抚幕僚开门见山：巡抚不肯在昨日那份回文上共同具名。县令没有争辩，书吏也停了笔。",
+              "DECISION_STOP": "幕僚随即问道：即将开始的县册复核由总督府主持，还是督抚共同主持；县衙又是经办、见证，还是只交材料？"
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8591,8 +9402,71 @@
                 "$delta": 2
               }
             },
+            "durableEffects": [
+              {
+                "type": "DOCUMENT.CREATED",
+                "documentId": "document.responsibility_record"
+              },
+              {
+                "type": "DOCUMENT.AUTHENTICATED",
+                "documentId": "document.responsibility_record",
+                "actorId": "actor.zhejiang_governor"
+              },
+              {
+                "type": "ENTITY.HELD_BY",
+                "entityId": "document.responsibility_record",
+                "actorId": "actor.zhejiang_governor"
+              },
+              {
+                "type": "ENTITY.LOCATED_AT",
+                "entityId": "document.responsibility_record",
+                "locationId": "location.zhejiang_governor_yamen"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.responsibility_record",
+                "attribute": "accessState",
+                "value": "WRITTEN"
+              }
+            ],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.firstRecordStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 0
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 1
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 2
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 3
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 4
+              }
+            ],
             "protectedNarrative": "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
-            "fallbackContinuation": "巡抚书吏看见总督独自具名，又看见附后的催办公文，脸色微微一变，仍将文书收好。次日巳时，巡抚幕僚来到签押房，先问的不是改桑进度，而是清流县册的复核究竟由谁主持。清流县令在一旁候着，也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
+            "fallbackContinuation": "巡抚幕僚对总督昨日单独具名的责任写法不置可否，只把目光转向清流县令。幕僚先问的不是改桑进度，而是清流县册的复核究竟由谁主持；县令也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
+              "SCENE_TRANSITION": "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+              "WORLD_PRESSURE": "巡抚幕僚对总督昨日单独具名的责任写法不置可否，只把目光转向清流县令。",
+              "DECISION_STOP": "幕僚先问的不是改桑进度，而是县册复核究竟由谁主持；县衙在这场复核中是经办、见证，还是只交材料？"
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8617,8 +9491,79 @@
               "reform.executionMode": "PROVISIONAL_RELEASE",
               "reform.progress": "STARTED"
             },
+            "durableEffects": [
+              {
+                "type": "DOCUMENT.CREATED",
+                "documentId": "document.responsibility_record"
+              },
+              {
+                "type": "DOCUMENT.AUTHENTICATED",
+                "documentId": "document.responsibility_record",
+                "actorId": "actor.zhejiang_governor"
+              },
+              {
+                "type": "ENTITY.HELD_BY",
+                "entityId": "document.responsibility_record",
+                "actorId": "actor.zhejiang_governor"
+              },
+              {
+                "type": "ENTITY.LOCATED_AT",
+                "entityId": "document.responsibility_record",
+                "locationId": "location.zhejiang_governor_yamen"
+              },
+              {
+                "type": "ENTITY.STATE",
+                "entityId": "document.responsibility_record",
+                "attribute": "accessState",
+                "value": "WRITTEN"
+              }
+            ],
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.firstRecordStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "reform.executionMode"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "reform.progress"
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 0
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 1
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 2
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 3
+              },
+              {
+                "kind": "DURABLE_EFFECT",
+                "effectIndex": 4
+              }
+            ],
             "protectedNarrative": "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
-            "fallbackContinuation": "巡抚书吏接过那份逐项记明异议的回文，沉默片刻才告退。次日巳时，巡抚幕僚在签押房当面说明，巡抚不改自己的催办立场；清流县令则问县衙在复核中究竟是经办、见证，还是只交材料。两边都不肯先退，总督必须先定复核由谁主持。",
+            "fallbackContinuation": "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场；清流县令听完没有接话，改桑书吏也停了笔。幕僚随即要求先说清复核由谁主持，县令也问县衙究竟是经办、见证，还是只交材料。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
+              "SCENE_TRANSITION": "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+              "WORLD_PRESSURE": "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场；清流县令听完没有接话，改桑书吏也停了笔。",
+              "DECISION_STOP": "幕僚要求先说清县册复核由谁主持；县衙在这场复核中是经办、见证，还是只交材料？"
+            },
             "createsPendingConsequence": true
           }
         ],
@@ -8725,6 +9670,16 @@
               },
               "responsibility.xunfuExposure": 0
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.xunfuExposure"
+              }
+            ],
             "protectedNarrative": "总督命奏报写明，执行与复核均由自己裁定，不把责任推给县令。",
             "createsPendingConsequence": true
           },
@@ -8752,6 +9707,20 @@
                 "$delta": -1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.governorExposure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.xunfuExposure"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              }
+            ],
             "protectedNarrative": "总督把责任分项写定：改桑进度由巡抚具名，复核和赈济由总督具名。",
             "createsPendingConsequence": true
           },
@@ -8773,6 +9742,20 @@
               "witness.accessStatus": "NAMED_AS_HANDLER",
               "evidence.chainStatus": "TRACEABLE"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "responsibility.firstRecordStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "witness.accessStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              }
+            ],
             "protectedNarrative": "总督命奏报如实列清县令、书吏和各级经手事项，只陈事实，不先定罪。",
             "createsPendingConsequence": true
           }
@@ -8880,7 +9863,26 @@
                 "$delta": -1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "review.authority"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "review.procedureStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              }
+            ],
             "protectedNarrative": "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
+              "WORLD_PRESSURE": "巡抚幕僚没有再争主持之名，只提醒在场诸人：谁先接触原册、谁留下封样，往后都要能说清。",
+              "DECISION_STOP": "清流县令随即请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8899,7 +9901,22 @@
               "review.authority": "JOINT",
               "review.procedureStatus": "DUAL_SIGNATURE_REQUIRED"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "review.authority"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "review.procedureStatus"
+              }
+            ],
             "protectedNarrative": "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
+              "WORLD_PRESSURE": "共同具名虽锁住了单方动册的机会，也让原件每一次启封都可能被另一方拖住。",
+              "DECISION_STOP": "清流县令请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8920,7 +9937,26 @@
               "review.procedureStatus": "LAYERED_REVIEW",
               "evidence.chainStatus": "FRAGILE"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "review.authority"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "review.procedureStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              }
+            ],
             "protectedNarrative": "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
+            "playerVisibleFallback": {
+              "PLAYER_RESULT": "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
+              "WORLD_PRESSURE": "县令接下初核之责，却也当厅说明：原册若仍由县衙独守，日后任何缺页都可能算在他头上。",
+              "DECISION_STOP": "他请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+            },
             "createsPendingConsequence": true
           }
         ],
@@ -9040,6 +10076,20 @@
               "evidence.chainStatus": "TRACEABLE",
               "evidence.primaryCustodianRef": "actor.qingliu_magistrate"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "review.initiationStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.primaryCustodianRef"
+              }
+            ],
             "protectedNarrative": "总督把封缄令牌交给县令亲随，命清流县先封档房、记清在场人；原册暂由县令看守，不许擅自启封。",
             "createsPendingConsequence": true
           },
@@ -9063,6 +10113,20 @@
                 "$delta": 1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "review.initiationStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "review.authority"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              }
+            ],
             "protectedNarrative": "总督定下督抚共同查验：双方各派一名经手人到清流县，当场核对原册和改桑名册。",
             "createsPendingConsequence": true
           },
@@ -9084,6 +10148,20 @@
               "witness.accessStatus": "COUNTY_CONTROLLED",
               "evidence.chainStatus": "FRAGILE"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "review.initiationStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "witness.accessStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              }
+            ],
             "protectedNarrative": "总督准县令先在县内自查两日，只将异常页封样送来，原册暂不离县衙。",
             "createsPendingConsequence": true
           }
@@ -9211,6 +10289,16 @@
                 "$delta": -1
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "witness.accessStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "relations.governorXunfu"
+              }
+            ],
             "protectedNarrative": "总督以核对公文为名，把改桑书吏秘密带到总督府，不公开他的证人身份。",
             "createsPendingConsequence": true
           },
@@ -9237,6 +10325,20 @@
                 "status": "DELIVERED"
               }
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "witness.accessStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "knowledgeTransfers"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.chainStatus"
+              }
+            ],
             "protectedNarrative": "总督准督抚双方各派一人在场，当面对照书吏说法和样册。",
             "createsPendingConsequence": true
           },
@@ -9256,6 +10358,16 @@
               "witness.accessStatus": "SEALED_STATEMENT_HELD",
               "evidence.copyStatus": "SEALED_STATEMENT_ONLY"
             },
+            "protectedEffectRefs": [
+              {
+                "kind": "STATE_PATH",
+                "path": "witness.accessStatus"
+              },
+              {
+                "kind": "STATE_PATH",
+                "path": "evidence.copyStatus"
+              }
+            ],
             "protectedNarrative": "总督命县令先收一份封缄书面供述，待初始说法留存后再决定是否传人。",
             "createsPendingConsequence": true
           }
@@ -13803,5 +14915,5 @@
       ]
     }
   },
-  "immutableHash": "A391CD91CCFB300F3DE33A2B4D711C5BBE77F458A6E9D621CA0680CCE4C68226"
+  "immutableHash": "A7058A4E6F8228520A265E4671E90010119839DBC04299F7148A48F7DFA864E2"
 }

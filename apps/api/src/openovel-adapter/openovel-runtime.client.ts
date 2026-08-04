@@ -64,6 +64,7 @@ export class OpenNovelRuntimeClient {
       runId: string;
       action: string;
       submissionId: string;
+      expectedStateRevision?: number;
       boundOption?: { id: string; label: string } | null;
     },
     onEvent: (event: OpenNovelTurnEvent) => void | Promise<void>,
@@ -76,6 +77,7 @@ export class OpenNovelRuntimeClient {
         body: JSON.stringify({
           action: input.action,
           submissionId: input.submissionId,
+          expectedStateRevision: input.expectedStateRevision,
           boundOption: input.boundOption || null,
         }),
       });

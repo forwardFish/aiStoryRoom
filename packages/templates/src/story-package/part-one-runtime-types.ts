@@ -1,3 +1,7 @@
+import type { DurablePredicate, DurableState } from "../runtime-contract/types";
+import type { StructuredStateSelector } from "../runtime-contract/selection";
+import type { NarrativeScenePattern } from "./narrative-scene-pattern";
+
 export type PartOneRuleOperator = "EQ" | "NEQ" | "IN" | "NOT_NULL" | "ANY_PENDING";
 
 export type PartOneStateRule = {
@@ -44,6 +48,8 @@ export type PartOneSceneState = {
   sceneId: string;
   timeLabel: string;
   locationLabel: string;
+  /** Stable location identity used to project durable entities into a scene. */
+  locationRef?: string;
   presentActorRefs: string[];
   situation: string;
   /** Authoritative current-world facts that remain visible in this scene. */
@@ -121,6 +127,36 @@ export type PartOneSceneEvidencePacket = {
 };
 
 /**
+ * Source-grounded direction for staging a playable scene. These fields are
+ * dramatic techniques, never current-world facts. Settlement still owns what
+ * actually happened; the Narrator uses this packet to turn it into action,
+ * reaction and dialogue instead of a result summary followed by a new task.
+ */
+export type PartOneDramaticGuidance = {
+  dramaticTask: string;
+  sourceMechanisms: string[];
+  scenePatterns: Array<Pick<
+    NarrativeScenePattern,
+    | "dramaticFunction"
+    | "openingPressure"
+    | "orderedBeats"
+    | "dialogueTactics"
+    | "blockingPrinciples"
+    | "objectPowerMoves"
+    | "transferableTechniques"
+    | "forbiddenFlattening"
+  >>;
+};
+
+export type PartOnePlayerVisibleFallback = {
+  PLAYER_RESULT: string;
+  IMMEDIATE_REACTION?: string;
+  SCENE_TRANSITION?: string;
+  WORLD_PRESSURE: string;
+  DECISION_STOP: string;
+};
+
+/**
  * The server-owned next beat. The Narrator renders this contract; it does not
  * decide what happens next.
  */
@@ -136,7 +172,9 @@ export type PartOneNextStoryBeat = {
   npcOrWorldPressure: string;
   stopCondition: string;
   evidencePacket: PartOneSceneEvidencePacket;
+  dramaticGuidance: PartOneDramaticGuidance;
   fallbackContinuation: string;
+  playerVisibleFallback?: PartOnePlayerVisibleFallback;
 };
 
 export type PartOneNarrativePlan = {
@@ -196,6 +234,7 @@ export type PartOneState = {
   partId: "PART-01";
   sectionId: string;
   turnNumber: number;
+  durableState: DurableState;
   scene: PartOneSceneState;
   reform: { executionMode: string; scopeStatus: string; progress: string };
   review: { initiationStatus: string; authority: string; procedureStatus: string };
@@ -227,6 +266,17 @@ export type PartOneAffordanceTemplate = {
   visibleTradeoff: string;
   stateEffects: string[];
   statePatch?: Record<string, unknown>;
+  /** Typed world-state changes; language is never parsed to derive these effects. */
+  durableEffects?: DurablePredicate[];
+  /**
+   * Explicit bindings from protected prose to the already-declared settlement
+   * effects. The compiler validates these references before the Story Package
+   * can be published; runtime code never infers them from Chinese text.
+   */
+  protectedEffectRefs?: Array<
+    | { kind: "STATE_PATH"; path: string }
+    | { kind: "DURABLE_EFFECT"; effectIndex: number }
+  >;
   /** Author-reviewed prose for the already-settled player action. */
   protectedNarrative?: string;
   /**
@@ -234,6 +284,8 @@ export type PartOneAffordanceTemplate = {
    * published. This is story prose, never a concatenation of state changes.
    */
   fallbackContinuation?: string;
+  /** Complete author-reviewed player prose. Never compiled from semantic constraints. */
+  playerVisibleFallback?: PartOnePlayerVisibleFallback;
   createsPendingConsequence: boolean;
 };
 
@@ -247,6 +299,7 @@ export type PartOneDecisionPoint = {
 };
 
 export type PartOneEntityStateSelector = {
+  selectorKind?: "ENTITY";
   entityKind: "DOCUMENT" | "OBJECT";
   entityRef: string;
   field: string;
@@ -254,9 +307,17 @@ export type PartOneEntityStateSelector = {
   expectedValue: unknown;
 };
 
+export type PartOneStatePathSelector = StructuredStateSelector & {
+  selectorKind: "STATE_PATH";
+};
+
+export type PartOneDecisionPromptSelector =
+  | PartOneEntityStateSelector
+  | PartOneStatePathSelector;
+
 export type PartOneDecisionPromptVariant = {
   variantId: string;
-  when: PartOneEntityStateSelector[];
+  when: PartOneDecisionPromptSelector[];
   actorRefs: string[];
   prompt: string;
   resultCeiling: string;
@@ -375,7 +436,7 @@ export type LoadedPartOneRuntimePackage = {
 };
 
 export type PartOneRuntimeTarget = {
-  type: "ROLE" | "PERSON" | "LOCATION" | "INSTITUTION" | "EVIDENCE" | "RESOURCE" | "PUBLIC_FRAME";
+  type: "ROLE" | "PERSON" | "LOCATION" | "INSTITUTION" | "DOCUMENT" | "EVIDENCE" | "RESOURCE" | "PUBLIC_FRAME";
   id: string;
   label: string;
 };
@@ -398,6 +459,7 @@ export type PartOneCommittedEvent = {
   actionText: string;
   targetRef: string;
   statePatch: Record<string, unknown>;
+  durableEffects: DurablePredicate[];
   changedStatePaths: string[];
   createdPendingConsequenceIds: string[];
   duePendingConsequenceIds: string[];

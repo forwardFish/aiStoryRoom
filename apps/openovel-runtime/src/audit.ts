@@ -27,7 +27,7 @@ export type PlayerCheckpointReview = {
 
 type RecordedCall = {
   turnId: string;
-  stage: ProviderRequest["profile"];
+  stage: ProviderRequest["profile"] | "coverage-reviewer" | "p0-reviewer";
   attempt?: number;
   request?: ProviderRequest;
   result?: ProviderResult | null;
@@ -67,9 +67,29 @@ export async function auditOpenNovelRun(
   const readerActions = sceneLog.filter((event) => event.type === "reader_action").length;
   const failedForegrounds = sceneLog.filter((event) => event.type === "foreground_failed").length;
   const storykeeperApplied = sceneLog.filter((event) => event.type === "storykeeper_applied").length;
+  const optionTurnIds = new Set(
+    sceneLog
+      .filter((event) => event.type === "foreground_options")
+      .map((event) => String(event.turnId || ""))
+      .filter(Boolean),
+  );
   const shadowWarnings = sceneLog.filter((event) => event.type === "shadow_warning");
   const canonTurns = (chapters.match(/^\*\*读者选择\*\*：/gm) || []).length;
   const byProfile = profileMetrics(calls);
+  const committedTurnIds = Array.from(
+    { length: committedTurns },
+    (_, index) => `T${String(index + 1).padStart(2, "0")}`,
+  );
+  const narrativeOwnerTurnIds = new Set(
+    sceneLog
+      .filter((event) => event.type === "foreground_narrative_disposition")
+      .filter((event) => validNarrativeOwner(event))
+      .map((event) => String(event.turnId || ""))
+      .filter(Boolean),
+  );
+  for (const call of calls.filter((item) => item.stage === "narrator" && !item.error)) {
+    narrativeOwnerTurnIds.add(String(call.turnId || ""));
+  }
   const expectedReviewIds = [
     "G00",
     ...Array.from(
@@ -111,8 +131,12 @@ export async function auditOpenNovelRun(
     canonMatchesMetadata: canonTurns === metadata.turnNumber,
     sceneLogMatchesMetadata: committedTurns === metadata.turnNumber,
     noUncommittedReaderAction: readerActions === committedTurns + failedForegrounds,
-    narratorRecordedForEveryCommittedTurn: byProfile.narrator.calls >= committedTurns,
-    optionsRecordedForEveryCommittedTurn: byProfile.options.calls === committedTurns,
+    narrativeOwnerRecordedForEveryCommittedTurn: committedTurnIds.every(
+      (turnId) => narrativeOwnerTurnIds.has(turnId),
+    ),
+    optionsRecordedForEveryCommittedTurn: committedTurnIds.every(
+      (turnId) => optionTurnIds.has(turnId),
+    ),
     canonReady: metadata.status === "READY",
   };
   const technicalPassed = Object.values(technicalChecks).every(Boolean);
@@ -147,6 +171,7 @@ export async function auditOpenNovelRun(
       failedForegrounds,
       storykeeperApplied,
       storykeeperPending: Math.max(0, committedTurns - storykeeperApplied),
+      optionRecords: optionTurnIds.size,
     },
     player: {
       passed: playerPassed,
@@ -185,6 +210,19 @@ export async function auditOpenNovelRun(
   };
 }
 
+function validNarrativeOwner(event: SceneLogEvent) {
+  if (
+    event.narrativeOwner === "PROTECTED_RENDERER"
+    || event.narrativeOwner === "COMPOSED"
+    || event.narrativeOwner === "NARRATOR"
+    || event.narrativeOwner === "FALLBACK"
+  ) return true;
+  const disposition = event.disposition as { kind?: string } | null;
+  return disposition?.kind === "USE_ORIGINAL"
+    || disposition?.kind === "USE_REPAIRED"
+    || disposition?.kind === "USE_FALLBACK";
+}
+
 async function readRecordedCalls(paths: WorkspacePaths) {
   const names = await readdir(paths.callsDir).catch(() => []);
   const callNames = names.filter((name) => /\.json$/i.test(name)).sort();
@@ -210,12 +248,15 @@ function profileMetrics(calls: RecordedCall[]) {
   const profiles = {
     narrator: emptyProfile(),
     reviewer: emptyProfile(),
-    repair: emptyProfile(),
     options: emptyProfile(),
     storykeeper: emptyProfile(),
   };
   for (const call of calls) {
-    const target = profiles[call.stage];
+    const normalizedStage = call.stage === "coverage-reviewer" || call.stage === "p0-reviewer"
+      ? "reviewer"
+      : call.stage;
+    const target = profiles[normalizedStage];
+    if (!target) continue;
     target.calls += 1;
     target.errors += call.error ? 1 : 0;
     target.inputTokens += Number(call.result?.usage?.inputTokens || 0);

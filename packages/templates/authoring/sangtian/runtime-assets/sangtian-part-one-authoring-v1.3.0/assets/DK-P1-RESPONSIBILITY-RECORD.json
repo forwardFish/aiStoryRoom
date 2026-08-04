@@ -108,10 +108,10 @@
       {
         "affordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
         "title": "要求联署",
-        "actionText": "将当前改桑执行边界、复核办法与督抚各自责任写入正式回文，请巡抚共同具名。",
+        "actionText": "将当前改桑执行边界与督抚各自责任写入正式回文，说明县册复核主持权另议，请巡抚共同具名。",
         "targetRef": "actor.zhejiang_xunfu",
         "method": "共同具名",
-        "immediateIntent": "将当前改桑执行边界、复核办法与督抚各自责任写入正式回文，请巡抚共同具名。",
+        "immediateIntent": "将当前改桑执行边界与督抚各自责任写入正式回文，说明县册复核主持权另议，请巡抚共同具名。",
         "visibleTradeoff": "共同承担能换来合作，也会模糊日后分歧",
         "stateEffects": [
           "responsibility.firstRecordStatus",
@@ -127,8 +127,96 @@
             "$delta": 1
           }
         },
-        "protectedNarrative": "总督把暂缓签发的缘由、清流县复核办法和督抚各自应负的责任逐项写入回文。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
-        "fallbackContinuation": "巡抚书吏双手接过回文，低头看了一眼封口，没有当场应承。次日巳时，签押房里仍不见清流县册的原件和抄件，巡抚幕僚却先带回了答复：巡抚不肯在这份回文上共同具名。\n\n清流县令听完没有争辩。巡抚幕僚把话转到即将开始的复核上，问这场复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。两个人都望向总督，等他先定主持权。",
+        "durableEffects": [
+          {
+            "type": "DOCUMENT.CREATED",
+            "documentId": "document.reform_execution_record"
+          },
+          {
+            "type": "DOCUMENT.AUTHENTICATED",
+            "documentId": "document.reform_execution_record",
+            "actorId": "actor.zhejiang_governor"
+          },
+          {
+            "type": "DOCUMENT.TRANSFERRED",
+            "documentId": "document.reform_execution_record",
+            "fromActorId": "actor.zhejiang_governor",
+            "toActorId": "actor.xunfu_clerk"
+          },
+          {
+            "type": "ENTITY.HELD_BY",
+            "entityId": "document.reform_execution_record",
+            "actorId": "actor.xunfu_clerk"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.reform_execution_record",
+            "attribute": "accessState",
+            "value": "WRITTEN"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "object.xunfu_reply_box",
+            "attribute": "contentsState",
+            "value": "CONTAINS_DOCUMENT"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "object.xunfu_reply_box",
+            "attribute": "closureState",
+            "value": "CLOSED"
+          }
+        ],
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.firstRecordStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.xunfuExposure"
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 0
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 1
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 2
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 3
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 4
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 5
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 6
+          }
+        ],
+        "protectedNarrative": "总督把暂缓签发的缘由和督抚各自应负的责任逐项写入回文，并注明县册复核主持权尚待议定。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+        "fallbackContinuation": "巡抚幕僚没有绕弯，只说巡抚不肯在总督昨日写成的正式回文上共同具名。清流县令听完没有争辩，改桑书吏也停了笔。幕僚随后问，即将开始的县册复核究竟由总督府主持，还是督抚共同主持；县令也等着知道自己是经办、见证，还是只能交出材料。",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督把暂缓签发的缘由和督抚各自应负的责任逐项写入回文，并注明县册复核主持权尚待议定。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
+          "SCENE_TRANSITION": "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+          "WORLD_PRESSURE": "巡抚幕僚开门见山：巡抚不肯在昨日那份回文上共同具名。县令没有争辩，书吏也停了笔。",
+          "DECISION_STOP": "幕僚随即问道：即将开始的县册复核由总督府主持，还是督抚共同主持；县衙又是经办、见证，还是只交材料？"
+        },
         "createsPendingConsequence": true
       },
       {
@@ -149,8 +237,71 @@
             "$delta": 2
           }
         },
+        "durableEffects": [
+          {
+            "type": "DOCUMENT.CREATED",
+            "documentId": "document.responsibility_record"
+          },
+          {
+            "type": "DOCUMENT.AUTHENTICATED",
+            "documentId": "document.responsibility_record",
+            "actorId": "actor.zhejiang_governor"
+          },
+          {
+            "type": "ENTITY.HELD_BY",
+            "entityId": "document.responsibility_record",
+            "actorId": "actor.zhejiang_governor"
+          },
+          {
+            "type": "ENTITY.LOCATED_AT",
+            "entityId": "document.responsibility_record",
+            "locationId": "location.zhejiang_governor_yamen"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.responsibility_record",
+            "attribute": "accessState",
+            "value": "WRITTEN"
+          }
+        ],
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.firstRecordStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 0
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 1
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 2
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 3
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 4
+          }
+        ],
         "protectedNarrative": "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
-        "fallbackContinuation": "巡抚书吏看见总督独自具名，又看见附后的催办公文，脸色微微一变，仍将文书收好。次日巳时，巡抚幕僚来到签押房，先问的不是改桑进度，而是清流县册的复核究竟由谁主持。清流县令在一旁候着，也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
+        "fallbackContinuation": "巡抚幕僚对总督昨日单独具名的责任写法不置可否，只把目光转向清流县令。幕僚先问的不是改桑进度，而是清流县册的复核究竟由谁主持；县令也等总督说清县衙在这场复核中是经办、见证，还是只交材料。",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
+          "SCENE_TRANSITION": "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+          "WORLD_PRESSURE": "巡抚幕僚对总督昨日单独具名的责任写法不置可否，只把目光转向清流县令。",
+          "DECISION_STOP": "幕僚先问的不是改桑进度，而是县册复核究竟由谁主持；县衙在这场复核中是经办、见证，还是只交材料？"
+        },
         "createsPendingConsequence": true
       },
       {
@@ -175,8 +326,79 @@
           "reform.executionMode": "PROVISIONAL_RELEASE",
           "reform.progress": "STARTED"
         },
+        "durableEffects": [
+          {
+            "type": "DOCUMENT.CREATED",
+            "documentId": "document.responsibility_record"
+          },
+          {
+            "type": "DOCUMENT.AUTHENTICATED",
+            "documentId": "document.responsibility_record",
+            "actorId": "actor.zhejiang_governor"
+          },
+          {
+            "type": "ENTITY.HELD_BY",
+            "entityId": "document.responsibility_record",
+            "actorId": "actor.zhejiang_governor"
+          },
+          {
+            "type": "ENTITY.LOCATED_AT",
+            "entityId": "document.responsibility_record",
+            "locationId": "location.zhejiang_governor_yamen"
+          },
+          {
+            "type": "ENTITY.STATE",
+            "entityId": "document.responsibility_record",
+            "attribute": "accessState",
+            "value": "WRITTEN"
+          }
+        ],
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.firstRecordStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "reform.executionMode"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "reform.progress"
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 0
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 1
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 2
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 3
+          },
+          {
+            "kind": "DURABLE_EFFECT",
+            "effectIndex": 4
+          }
+        ],
         "protectedNarrative": "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
-        "fallbackContinuation": "巡抚书吏接过那份逐项记明异议的回文，沉默片刻才告退。次日巳时，巡抚幕僚在签押房当面说明，巡抚不改自己的催办立场；清流县令则问县衙在复核中究竟是经办、见证，还是只交材料。两边都不肯先退，总督必须先定复核由谁主持。",
+        "fallbackContinuation": "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场；清流县令听完没有接话，改桑书吏也停了笔。幕僚随即要求先说清复核由谁主持，县令也问县衙究竟是经办、见证，还是只交材料。",
+        "playerVisibleFallback": {
+          "PLAYER_RESULT": "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
+          "SCENE_TRANSITION": "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
+          "WORLD_PRESSURE": "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场；清流县令听完没有接话，改桑书吏也停了笔。",
+          "DECISION_STOP": "幕僚要求先说清县册复核由谁主持；县衙在这场复核中是经办、见证，还是只交材料？"
+        },
         "createsPendingConsequence": true
       }
     ],

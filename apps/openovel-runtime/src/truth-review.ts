@@ -28,9 +28,9 @@ export type RequiredTruthPredicate = {
   id: string;
   pattern: DurablePredicatePattern;
   /**
-   * Server-owned natural-language meaning of the predicate. Review and repair
-   * models need this to recognize or restore the event without guessing what
-   * an opaque predicate ID means. Wording may vary in prose; meaning may not.
+   * Server-owned natural-language meaning of the predicate. The Reviewer uses
+   * this to extract semantic coverage without guessing what an opaque predicate
+   * ID means. Wording may vary in prose; meaning may not.
    */
   requiredMeaning: string;
   /** Current-world events that authorize this required meaning. */
@@ -40,9 +40,13 @@ export type RequiredTruthPredicate = {
 export type NarrativeTruthContext = {
   originActorId: string;
   projectionActorId: string;
+  /** Server-selected entities that are active in the settled scene. */
+  activeSceneEntityIds?: string[];
   catalog: TruthEntityCatalogItem[];
   capabilityIds: string[];
   secretIds: string[];
+  /** Predicates already visible and true at the start of Narrator continuation. */
+  establishedPredicates?: DurablePredicate[];
   allowedPredicates: DurablePredicatePattern[];
   requiredVisiblePredicates: RequiredTruthPredicate[];
   forbiddenPredicates: DurablePredicatePattern[];
@@ -67,6 +71,16 @@ export type NarrativeTruthContext = {
   specificityBoundary?: string;
   /** The unresolved question/pressure at which this continuation must stop. */
   stopCondition?: string;
+  /**
+   * Server-owned scene end-state after settlement. Narration may texture this
+   * scene, but cannot advance time or move elsewhere unless a later settlement
+   * explicitly changes the scene first.
+   */
+  sceneContinuity?: {
+    sceneId: string;
+    timeLabel: string;
+    locationLabel: string;
+  };
 };
 
 /**
@@ -117,9 +131,17 @@ export function buildNarrativeTruthContextFromEnvelope(input: {
     ...eventFacts,
     ...(input.supportedStoryFacts || []),
   ]);
+  const establishedPredicates = deduplicatePredicates([
+    ...input.projection.privateFacts.map((fact) => fact.predicate),
+    ...input.projection.publicFacts.map((fact) => fact.predicate),
+    ...input.projection.personalEchoes.flatMap((effect) => effect.predicate ? [effect.predicate] : []),
+    ...input.projection.crossPlayerEchoes.flatMap((effect) => effect.predicate ? [effect.predicate] : []),
+    ...input.projection.worldEchoes.flatMap((effect) => effect.predicate ? [effect.predicate] : []),
+  ]);
   return {
     originActorId: envelope.originActorId,
     projectionActorId: envelope.projectionActorId,
+    activeSceneEntityIds: [...envelope.activeSceneEntityIds],
     catalog: contract.entities.map((entity) => ({
       id: entity.id,
       kind: entity.kind,
@@ -130,6 +152,7 @@ export function buildNarrativeTruthContextFromEnvelope(input: {
     secretIds: contract.entities
       .filter((entity) => entity.kind === "SECRET")
       .map((entity) => entity.id),
+    establishedPredicates,
     allowedPredicates: envelope.allowedPredicates,
     requiredVisiblePredicates: envelope.requiredVisiblePredicates.map((required) => ({
       id: required.id,
@@ -145,6 +168,10 @@ export function buildNarrativeTruthContextFromEnvelope(input: {
     specificityBoundary: input.specificityBoundary || "",
     stopCondition: envelope.narrativeSeed.stopCondition,
   };
+}
+
+function deduplicatePredicates(predicates: DurablePredicate[]) {
+  return [...new Map(predicates.map((predicate) => [JSON.stringify(predicate), predicate])).values()];
 }
 
 export type TruthAssertion = {

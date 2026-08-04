@@ -5,6 +5,11 @@
   "type": "module",
   "description": "OpenNovel-first foreground and background runtime for Our Many Worlds.",
   "scripts": {
+    "prepare:templates": "pnpm --filter @ai-story/templates build",
+    "predev": "pnpm run prepare:templates",
+    "predev:test": "pnpm run prepare:templates",
+    "presmoke:test": "pnpm run prepare:templates",
+    "prebuild": "pnpm run prepare:templates",
     "dev": "tsx --env-file-if-exists=../../.env src/server.ts",
     "dev:test": "tsx --env-file=../../.env.test src/server.ts",
     "smoke:test": "tsx --env-file=../../.env.test src/cli/smoke.ts",

@@ -8,6 +8,7 @@ import { OpenAICompatibleProvider } from "./provider.js";
 import { DurableEventMirror, HttpEventMirror } from "./mirror.js";
 import { StorykeeperDrain } from "./storykeeper.js";
 import { OpenNovelRuntime } from "./runtime.js";
+import { scenePipelineModulesFromEnv } from "./scene-pipeline.js";
 import { recoverRuntimeRuns } from "./recovery.js";
 import { sangtianDecisionAdapter } from "./sangtian-decisions.js";
 import { sangtianWorkspaceSeeder } from "./sangtian-workspace.js";
@@ -38,6 +39,7 @@ const runtime = new OpenNovelRuntime(
   {
     decisionMode: "AUTHORED_WHEN_AVAILABLE",
     authoredDecisionAdapter: sangtianDecisionAdapter,
+    scenePipelineModules: scenePipelineModulesFromEnv(provider),
   },
 );
 

@@ -94,6 +94,20 @@
           ],
           "land.safeguardStatus": "DISTRESS_PURCHASE_BANNED"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "merchant.entryStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "merchant.grantedRights"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "land.safeguardStatus"
+          }
+        ],
         "protectedNarrative": "总督接受商会的粮食和运力，同时明令灾期不得收购或代持民田。",
         "createsPendingConsequence": true
       },
@@ -119,6 +133,20 @@
             "$delta": 1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "merchant.entryStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "merchant.grantedRights"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          }
+        ],
         "protectedNarrative": "总督只向商会购买船队运输，按程付银，不给收丝或购田优先权。",
         "createsPendingConsequence": true
       },
@@ -140,6 +168,20 @@
           "grain.reliefChannel": "OFFICIAL_ONLY",
           "grain.immediatePressure": "RISING_FAST"
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "merchant.entryStatus"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.reliefChannel"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "grain.immediatePressure"
+          }
+        ],
         "protectedNarrative": "总督拒绝商会提出的担保和优先权，改走官府借调粮路。",
         "createsPendingConsequence": true
       }

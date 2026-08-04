@@ -1,5 +1,5 @@
 import type { DurableState, WorldRuntimeContract } from "./types";
-import { conditionSatisfied, predicateKey, validateDurableState, validateWorldRuntimeContract } from "./validation";
+import { conditionSatisfied, mergeDurablePredicates, validateDurableState, validateWorldRuntimeContract } from "./validation";
 
 export function applyCausalRule(contractInput: WorldRuntimeContract, stateInput: DurableState, ruleId: string): DurableState {
   const contract = validateWorldRuntimeContract(contractInput);
@@ -10,7 +10,9 @@ export function applyCausalRule(contractInput: WorldRuntimeContract, stateInput:
   if ("delayRevisions" in rule) {
     return { ...state, revision: state.revision + 1, pendingRuleIds: [...new Set([...state.pendingRuleIds, rule.id])].sort() };
   }
-  const predicates = new Map(state.predicates.map((predicate) => [predicateKey(predicate), predicate]));
-  rule.effects.forEach((predicate) => predicates.set(predicateKey(predicate), predicate));
-  return { ...state, revision: state.revision + 1, predicates: [...predicates.values()].sort((a, b) => predicateKey(a).localeCompare(predicateKey(b))) };
+  return {
+    ...state,
+    revision: state.revision + 1,
+    predicates: mergeDurablePredicates(state.predicates, rule.effects),
+  };
 }

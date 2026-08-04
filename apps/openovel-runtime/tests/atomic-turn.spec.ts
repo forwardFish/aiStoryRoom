@@ -21,9 +21,18 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
       action: "Hold the order and inspect the register.",
       selectedOption: null,
       result,
-      protectedBlocks: [{ blockId: "p0", text: "The order remains unsigned." }],
+      beatManifest: { beatId: "fixture.beat" },
       narrative: {
         originalText: result.narration,
+        contextText: "The clerk waits beside the order. 〔具体细节尚未确认〕",
+        factText: "The clerk waits beside the order. [Unverified detail omitted.]",
+        shadowClaims: [{
+          shadowClaimId: "T01.shadow.001",
+          exactQuote: "three sealed copies",
+          stateWriteAllowed: false,
+          durableMemoryWriteAllowed: false,
+          promotionPolicy: "SETTLEMENT_ONLY",
+        }],
         disposition: { kind: "USE_ORIGINAL", draftId: "T01.draft.original" },
       },
       projection: {
@@ -34,13 +43,44 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
         materializedViews: [
           { relativePath: "story/canon/chapters.md", format: "text", value: "canon-v1\n" },
           { relativePath: "story/state/world.json", format: "json", value: { revision: 1 } },
+          {
+            relativePath: "story/canon/audit.jsonl",
+            format: "jsonl",
+            restoreMode: "APPEND_ONLY",
+            value: [{ id: "committed", type: "turn_committed" }],
+          },
         ],
       },
       modelLedger: [{ stage: "narrator", callId: "call_1" }],
       previousCanon: "",
+      previousContextCanon: "",
     });
     assert.equal(first.alreadyCommitted, false);
     assert.equal((await repository.loadHead())?.turnNumber, 1);
+    assert.equal(
+      await repository.readArtifactText(first.head, "published-prose.md"),
+      `${result.narration}\n`,
+    );
+    assert.match(
+      await repository.readArtifactText(first.head, "context-prose.md"),
+      /具体细节尚未确认/u,
+    );
+    assert.match(
+      await repository.readArtifactText(first.head, "fact-projection.md"),
+      /Unverified detail omitted/u,
+    );
+    const shadowClaims = await repository.readArtifactJson<Array<Record<string, unknown>>>(
+      first.head,
+      "shadow-claims.json",
+    );
+    assert.equal(shadowClaims[0]?.stateWriteAllowed, false);
+    assert.equal(shadowClaims[0]?.durableMemoryWriteAllowed, false);
+    const authoritative = await repository.readArtifactJson<Record<string, unknown>>(
+      first.head,
+      "authoritative-canon.json",
+    );
+    assert.equal(authoritative.source, "SETTLEMENT");
+    assert.equal(JSON.stringify(authoritative).includes("three sealed copies"), false);
 
     await assert.rejects(() => repository.commit({
       runId: paths.runId,
@@ -50,7 +90,7 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
       action: "This different payload must not be recommitted.",
       selectedOption: null,
       result: { ...result, narration: "different" },
-      protectedBlocks: [],
+      beatManifest: {},
       narrative: { originalText: "different", disposition: { kind: "USE_ORIGINAL" } },
       projection: {
         stateRevision: { revision: 999 },
@@ -74,6 +114,12 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
       JSON.parse(await readFile(path.join(paths.stateDir, "world.json"), "utf8")),
       { revision: 1 },
     );
+    const auditLog = path.join(paths.canonDir, "audit.jsonl");
+    await writeFile(
+      auditLog,
+      `${await readFile(auditLog, "utf8")}${JSON.stringify({ id: "postcommit", type: "foreground_options" })}\n`,
+      "utf8",
+    );
     await writeFile(paths.chapters, "corrupt materialized view", "utf8");
     await writeFile(path.join(paths.stateDir, "world.json"), "{}", "utf8");
     await repository.restoreMaterializedViews();
@@ -81,6 +127,13 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
     assert.deepEqual(
       JSON.parse(await readFile(path.join(paths.stateDir, "world.json"), "utf8")),
       { revision: 1 },
+    );
+    assert.deepEqual(
+      (await readFile(auditLog, "utf8")).trim().split(/\r?\n/u).map((line) => JSON.parse(line)),
+      [
+        { id: "committed", type: "turn_committed" },
+        { id: "postcommit", type: "foreground_options" },
+      ],
     );
     const secondResult = { ...result, turnId: "T02", turnNumber: 2 };
     const second = await repository.commit({
@@ -91,7 +144,7 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
       action: "Continue from the committed state.",
       selectedOption: null,
       result: secondResult,
-      protectedBlocks: [],
+      beatManifest: {},
       narrative: { originalText: secondResult.narration, disposition: { kind: "USE_ORIGINAL" } },
       projection: {
         stateRevision: { revision: 2 },
@@ -134,7 +187,7 @@ test("P07 rejects a corrupt committed artifact instead of accepting split truth"
       action: "Wait.",
       selectedOption: null,
       result: turnResult(),
-      protectedBlocks: [],
+      beatManifest: {},
       narrative: { originalText: "The room stays quiet.", disposition: { kind: "USE_ORIGINAL" } },
       projection: {
         stateRevision: { revision: 1 },

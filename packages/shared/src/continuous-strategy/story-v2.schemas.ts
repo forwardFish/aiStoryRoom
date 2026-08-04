@@ -2,7 +2,7 @@ import { GAME_PROJECTION_V2_SCHEMA_VERSION } from "./constants";
 import { fail, integerAtLeast, isRecord, nonEmptyString, pass, type ValidationResult } from "./schema-utils";
 import type { CreditControlProjection } from "./credit-control.schemas";
 
-export type IntentTargetTypeV2 = "ROLE" | "PERSON" | "EVIDENCE" | "RESOURCE" | "LOCATION" | "INSTITUTION" | "PUBLIC_FRAME";
+export type IntentTargetTypeV2 = "ROLE" | "PERSON" | "DOCUMENT" | "EVIDENCE" | "RESOURCE" | "LOCATION" | "INSTITUTION" | "PUBLIC_FRAME";
 export type IntentVisibilityV2 = "PRIVATE" | "LIMITED" | "OBSERVABLE" | "PUBLIC";
 export type IntentRiskToleranceV2 = "LOW" | "MEDIUM" | "HIGH";
 
@@ -75,6 +75,21 @@ export type StoryTimelineEntryV2 = {
   decisionForm?: DecisionFormV2;
 };
 
+export type ActorTurnActionAvailabilityItemV2 = {
+  state: "AVAILABLE" | "LOCKED";
+  reason: string;
+  targetIds: string[];
+  assetKeys: string[];
+};
+
+export type ActorTurnActionAvailabilityV2 = {
+  storyChoice: ActorTurnActionAvailabilityItemV2;
+  conversation: ActorTurnActionAvailabilityItemV2;
+  investigation: ActorTurnActionAvailabilityItemV2;
+  leverage: ActorTurnActionAvailabilityItemV2;
+  customPlan: ActorTurnActionAvailabilityItemV2;
+};
+
 export type ActorTurnProjectionV2 = {
   id: string;
   revision: number;
@@ -88,6 +103,7 @@ export type ActorTurnProjectionV2 = {
   framing: string;
   decisions: DecisionCandidateV2[];
   availableTargets: Array<{ type: IntentTargetTypeV2; id: string; label: string }>;
+  actionAvailability?: ActorTurnActionAvailabilityV2;
   customActionAllowed: boolean;
 };
 
@@ -182,6 +198,7 @@ export type GameProjectionV2 = {
   schemaVersion: typeof GAME_PROJECTION_V2_SCHEMA_VERSION;
   generatedAt: string;
   worldSequence: number;
+  prologueNarrative?: string;
   room: { id: string; title: string; worldId: string; status: string; mode: string; ownerUserId?: string };
   world?: GamePageWorldProjectionV1;
   player: { userId: string; roleId: string; roleKey: string; roleName: string; identity: string; personalGoal: string };

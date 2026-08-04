@@ -6,11 +6,8 @@ import { createHash } from "node:crypto";
  * Licensed under Apache-2.0. Modified for Our Many Worlds on 2026-07-27.
  */
 import {
-  activateContextCards,
-  buildNarratorMessages,
   buildOptionsMessages,
   compileForegroundContext,
-  openingKey,
   previousNarrationOpening,
 } from "./foreground.js";
 import {
@@ -18,27 +15,54 @@ import {
 } from "./causal-context.js";
 import { parseOptions } from "./options.js";
 import {
-  normalizeNarrativeSurface,
-  validateForegroundSurface,
-} from "./surface-integrity.js";
-import type { AuthoredDecisionAdapter } from "./decision-adapter.js";
+  DefaultOptionsAndMemory,
+  type OptionsAndMemoryModule,
+} from "./options-memory-module.js";import {
+  validatePreparedAuthoredDecision,
+  type AuthoredDecisionAdapter,
+} from "./decision-adapter.js";
+import { SceneExpressionPipeline, type ScenePipelineModules } from "./scene-pipeline.js";
+import type { AtomicNarrativeEvidence } from "./atomic-turn.js";
+import { DefaultActionGateway, type ActionGatewayModule } from "./action-gateway.js";
 import {
-  NarrativeSafetyPipeline,
-  type ReviewerFailurePolicy,
-} from "./narrative-safety.js";
-import { FileAtomicTurnRepository, type AtomicNarrativeEvidence } from "./atomic-turn.js";
-import type { FileStoryWorkspace } from "./workspace.js";
+  FileAtomicCommitter,
+  type AtomicCommitterModule,
+} from "./atomic-committer-module.js";import {
+  DefaultContextCompiler,
+  type ContextCompilerModule,
+} from "./context-compiler-module.js";
+import {
+  DefaultPlayerProjection,
+  type PlayerProjectionModule,
+} from "./player-projection-module.js";import {
+  ProviderNarrativeRenderer,
+  type NarrativeRendererModule,
+} from "./narrative-renderer.js";
+import { DefaultSurfaceGuard, type SurfaceGuardModule } from "./surface-guard-module.js";
+import {
+  DefaultSceneRenderPlanner,
+  DeterministicProtectedSceneRenderer,
+  assertSingleSceneOwner,
+  type ProtectedSceneRendererModule,
+  type SceneRenderPlannerModule,
+} from "./scene-render-plan.js";
+import {
+  executeTurnModule,
+  TurnModuleRegistry,
+  type TurnModuleDescriptor,
+  type TurnModuleExecutionRecord,
+} from "./turn-modules.js";import type { FileStoryWorkspace } from "./workspace.js";
 import type {
   BoundOption,
   EventMirror,
   OpenNovelOption,
   OpenNovelProvider,
+  ProviderResult,
   RuntimeWarning,
   TurnEvent,
   TurnResult,
 } from "./types.js";
 import { isRuntimeActionError } from "./runtime-errors.js";
-import { actionConflict } from "./runtime-errors.js";
 
 export class OpenNovelRuntime {
   private readonly foregroundLocks = new Set<string>();
@@ -51,9 +75,65 @@ export class OpenNovelRuntime {
     private readonly runtimeOptions: {
       decisionMode?: "MODEL" | "AUTHORED_WHEN_AVAILABLE";
       authoredDecisionAdapter?: AuthoredDecisionAdapter;
-      reviewerFailurePolicy?: ReviewerFailurePolicy;
+      /** Replace or disable observation/review without changing Narrator or Settlement. */
+      scenePipelineModules?: ScenePipelineModules;
+      actionGateway?: ActionGatewayModule;
+      atomicCommitter?: AtomicCommitterModule;
+      contextCompiler?: ContextCompilerModule;
+      playerProjection?: PlayerProjectionModule;
+      narrativeRenderer?: NarrativeRendererModule;
+      sceneRenderPlanner?: SceneRenderPlannerModule;
+      protectedSceneRenderer?: ProtectedSceneRendererModule;
+      optionsAndMemory?: OptionsAndMemoryModule;
+      surfaceGuard?: SurfaceGuardModule;
     } = {},
-  ) {}
+  ) {
+    this.describeTurnModules();
+  }
+
+  describeTurnModules(): TurnModuleDescriptor[] {
+    const authored = this.authoredDecisionAdapter();
+    return new TurnModuleRegistry([
+      { kind: "ACTION_GATEWAY", moduleId: this.actionGateway().moduleId, mode: "REQUIRED" },
+      { kind: "PLAYER_PROJECTION", moduleId: this.playerProjection().moduleId, mode: "REQUIRED" },
+      { kind: "CONTEXT_COMPILER", moduleId: this.contextCompiler().moduleId, mode: "REQUIRED" },
+      {
+        kind: "FACT_SETTLEMENT",
+        moduleId: authored?.moduleIds?.factSettlement || "legacy.causal-delta-settlement.v1",
+        mode: "REQUIRED",
+      },
+      {
+        kind: "NEXT_BEAT_PLANNER",
+        moduleId: authored?.moduleIds?.nextBeatPlanner || "legacy.narrator-led-beat.v1",
+        mode: "REQUIRED",
+      },
+      {
+        kind: "SCENE_RENDER_PLANNER",
+        moduleId: this.sceneRenderPlanner().moduleId,
+        mode: "REQUIRED",
+      },
+      {
+        kind: "PROTECTED_SCENE_RENDERER",
+        moduleId: this.protectedSceneRenderer().moduleId,
+        mode: "FALLBACK_ONLY",
+        fallbackModuleId: this.protectedSceneRenderer().moduleId,
+      },
+      { kind: "NARRATIVE_RENDERER", moduleId: this.narrativeRenderer().moduleId, mode: "REQUIRED" },
+      { kind: "SURFACE_GUARD", moduleId: this.surfaceGuard().moduleId, mode: "REQUIRED" },
+      {
+        kind: "TRUTH_OBSERVER",
+        moduleId: "openovel.truth-observer.background-only.v1",
+        mode: "DISABLED",
+      },
+      {
+        kind: "REVIEW_POLICY",
+        moduleId: "openovel.review-policy.background-only.v1",
+        mode: "DISABLED",
+      },
+      { kind: "ATOMIC_COMMITTER", moduleId: this.atomicCommitter().moduleId, mode: "REQUIRED" },
+      { kind: "OPTIONS_AND_MEMORY", moduleId: this.optionsAndMemory().moduleId, mode: "REQUIRED" },
+    ]).list();
+  }
 
   async createRun(input: {
     runId: string;
@@ -80,9 +160,8 @@ export class OpenNovelRuntime {
     boundOption?: BoundOption | null;
     onEvent?: (event: TurnEvent) => void;
   }): Promise<TurnResult> {
-    const action = String(input.action || "").trim();
-    if (!action) throw new Error("action is required");
-    if (action.length > 2_000) throw new Error("action is too long");
+    const rawAction = String(input.action || "");
+    let action = rawAction.trim();
     if (this.foregroundLocks.has(input.runId)) {
       throw new Error("RUN_FOREGROUND_BUSY");
     }
@@ -95,12 +174,31 @@ export class OpenNovelRuntime {
       throw error;
     }
     try {
-      if (input.expectedStateRevision !== undefined) {
-        const current = await this.workspace.metadata(input.runId);
-        if (input.expectedStateRevision !== current.turnNumber) {
-          throw actionConflict("STATE_REVISION_CONFLICT");
-        }
-      }
+      const current = await this.workspace.metadata(input.runId);
+      const turnId = `T${String(current.turnNumber + 1).padStart(2, "0")}`;
+      const gateway = this.actionGateway();
+      const validated = await executeTurnModule({
+        runId: input.runId,
+        turnId,
+        descriptor: {
+          kind: "ACTION_GATEWAY",
+          moduleId: gateway.moduleId,
+          mode: "REQUIRED",
+        },
+        value: {
+          rawAction,
+          expectedStateRevision: input.expectedStateRevision,
+          currentStateRevision: current.turnNumber,
+        },
+        execute: () => gateway.validate({
+          runId: input.runId,
+          rawAction,
+          expectedStateRevision: input.expectedStateRevision,
+          currentStateRevision: current.turnNumber,
+        }),
+        onRecord: (record) => this.recordModuleExecution(input.runId, record),
+      });
+      action = validated.action;
       return await this.runTurn({ ...input, action });
     } catch (error) {
       const message = String((error as Error).message || error);
@@ -186,7 +284,10 @@ export class OpenNovelRuntime {
         }
       }
 
-      const compiled = await compileForegroundContext(this.workspace.paths(runId), snapshot);
+      const compiled = await this.contextCompiler().compileExisting({
+        paths: this.workspace.paths(runId),
+        snapshot,
+      });
       const request = buildOptionsRequest(
         committed.action,
         committed.narration,
@@ -265,8 +366,9 @@ export class OpenNovelRuntime {
     onEvent?: (event: TurnEvent) => void;
   }) {
     const authoredAdapter = this.authoredDecisionAdapter();
+    const atomicCommitter = this.atomicCommitter();
     const atomicRepository = authoredAdapter
-      ? new FileAtomicTurnRepository(this.workspace.paths(input.runId))
+      ? atomicCommitter.open(this.workspace.paths(input.runId))
       : null;
     if (atomicRepository) await atomicRepository.restoreMaterializedViews();
     const snapshot = await this.workspace.snapshot(input.runId);
@@ -281,18 +383,21 @@ export class OpenNovelRuntime {
       const currentOptions = await authoredAdapter!.currentOptions(this.workspace, input.runId);
       return { ...alreadyCommitted, options: currentOptions || alreadyCommitted.options };
     }
-    const resolvedOption = resolveBoundOption(
+    const resolvedOption = this.actionGateway().resolveBoundOption(
       input.boundOption || null,
       snapshot.previousOptions,
       input.action,
     );
-    const preparedDecision = authoredAdapter
+    const preparedDecisionCandidate = authoredAdapter
       ? await authoredAdapter.prepare(this.workspace, {
           runId: input.runId,
           turnNumber,
           action: input.action,
           selectedOption: resolvedOption,
         })
+      : null;
+    const preparedDecision = preparedDecisionCandidate
+      ? validatePreparedAuthoredDecision(preparedDecisionCandidate)
       : null;
     const selectedOption = preparedDecision?.selectedOption || resolvedOption;
     const causalDelta = buildCausalDelta({
@@ -321,63 +426,163 @@ export class OpenNovelRuntime {
     });
 
     const paths = this.workspace.paths(input.runId);
-    await activateContextCards(paths, input.action, snapshot.foregroundGuidance);
-    const currentSnapshot = await this.workspace.snapshot(input.runId);
-    const compiled = await compileForegroundContext(paths, currentSnapshot);
+    const contextCompiler = this.contextCompiler();
+    const compiledTurn = await executeTurnModule({
+      runId: input.runId,
+      turnId,
+      descriptor: {
+        kind: "CONTEXT_COMPILER",
+        moduleId: contextCompiler.moduleId,
+        mode: "REQUIRED",
+      },
+      value: {
+        action: input.action,
+        foregroundGuidance: snapshot.foregroundGuidance,
+        stateRevision: snapshot.metadata.turnNumber,
+      },
+      execute: () => contextCompiler.compileTurn({
+        paths,
+        action: input.action,
+        snapshot,
+        refreshSnapshot: () => this.workspace.snapshot(input.runId),
+      }),
+      onRecord: (record) => this.recordModuleExecution(input.runId, record),
+    });
+    const currentSnapshot = compiledTurn.snapshot;
+    const compiled = compiledTurn.compiled;
     const previousOpening = previousNarrationOpening(currentSnapshot);
+    const sceneRenderPlanner = this.sceneRenderPlanner();
+    const renderPlan = await executeTurnModule({
+      runId: input.runId,
+      turnId,
+      descriptor: {
+        kind: "SCENE_RENDER_PLANNER",
+        moduleId: sceneRenderPlanner.moduleId,
+        mode: "REQUIRED",
+      },
+      value: {
+        preparedDecision: preparedDecision
+          ? { sourceRef: preparedDecision.sourceRef, beatManifest: preparedDecision.beatManifest }
+          : null,
+      },
+      execute: () => sceneRenderPlanner.plan({ turnId, preparedDecision }),
+      onRecord: (record) => this.recordModuleExecution(input.runId, record),
+    });
     const holdNarrationUntilValidated = Boolean(
-      causalDelta.forbiddenKnowledge.length > 0
+      renderPlan.mode === "COMPOSED_SCENE"
+      || causalDelta.forbiddenKnowledge.length > 0
       || causalDelta.beatContract?.sourceRef,
     );
-    let narrator;
-    try {
-      narrator = await this.generateNarration({
-        runId: input.runId,
-        turnId,
+    const projectionModule = this.playerProjection();
+    const narratorProjection = await executeTurnModule({
+      runId: input.runId,
+      turnId,
+      descriptor: {
+        kind: "PLAYER_PROJECTION",
+        moduleId: projectionModule.moduleId,
+        mode: "REQUIRED",
+      },
+      value: {
         causalDelta,
         compiled,
-        previousOpening,
-        onEvent: holdNarrationUntilValidated ? undefined : emit,
-      });
-    } catch (error) {
-      if (!preparedDecision) throw error;
-      narrator = {
-        text: "",
-        model: this.provider.describe().model,
-        usage: { inputTokens: 0, outputTokens: 0 },
-        latencyMs: 0,
-      };
-      await this.workspace.recordSceneEvent(input.runId, {
-        type: "foreground_narrator_unavailable",
-        turnId,
-        error: String((error as Error).message || error).slice(0, 500),
-      }).catch(() => {});
-    }
-    const modelLedger: unknown[] = [{
-      stage: "narrator",
-      model: narrator.model,
-      requestId: narrator.requestId || null,
-      usage: narrator.usage,
-      latencyMs: narrator.latencyMs,
-    }];
-    let atomicNarrative: AtomicNarrativeEvidence = {
-      originalText: narrator.text,
-      disposition: "USE_ORIGINAL",
-    };
+        beatManifest: preparedDecision?.beatManifest || null,
+      },
+      execute: () => projectionModule.project({
+        causalDelta,
+        compiled,
+        beatManifest: preparedDecision?.beatManifest,
+      }),
+      onRecord: (record) => this.recordModuleExecution(input.runId, record),
+    });
+    let narrator: ProviderResult;
+    const modelLedger: unknown[] = [];
+    let atomicNarrative: AtomicNarrativeEvidence;
+    let contextNarration = "";
+    let factNarration = "";
+    let structuredShadowClaims: unknown[] = [];
     const reviewWarnings: RuntimeWarning[] = [];
+    const surfaceGuard = this.surfaceGuard();
+
+    {
+      try {
+        const renderer = this.narrativeRenderer();
+        const rendererInput = {
+          runId: input.runId,
+          turnId,
+          messages: narratorProjection.messages,
+          previousOpening,
+          onEvent: holdNarrationUntilValidated ? undefined : emit,
+        };
+        narrator = await executeTurnModule({
+          runId: input.runId,
+          turnId,
+          descriptor: {
+            kind: "NARRATIVE_RENDERER",
+            moduleId: renderer.moduleId,
+            mode: "REQUIRED",
+          },
+          value: {
+            messages: narratorProjection.messages,
+            previousOpening,
+          },
+          execute: () => renderer.render(rendererInput),
+          telemetry: (result) => ({
+            model: result.model,
+            inputTokens: result.usage.inputTokens,
+            outputTokens: result.usage.outputTokens,
+          }),
+          onRecord: (record) => this.recordModuleExecution(input.runId, record),
+        });
+      } catch (error) {
+        if (!preparedDecision) throw error;
+        narrator = {
+          text: "",
+          model: this.provider.describe().model,
+          usage: { inputTokens: 0, outputTokens: 0 },
+          latencyMs: 0,
+        };
+        await this.workspace.recordSceneEvent(input.runId, {
+          type: "foreground_narrator_unavailable",
+          turnId,
+          error: String((error as Error).message || error).slice(0, 500),
+        }).catch(() => {});
+      }
+      modelLedger.push({
+        stage: "narrator",
+        model: narrator.model,
+        requestId: narrator.requestId || null,
+        usage: narrator.usage,
+        latencyMs: narrator.latencyMs,
+      });
+      atomicNarrative = {
+        originalText: narrator.text,
+        narrativeOwner: "NARRATOR",
+        renderPlan,
+        contextText: narrator.text,
+        factText: narrator.text,
+        shadowClaims: [],
+        disposition: { kind: "USE_ORIGINAL", draftId: turnId + ".draft.original" },
+      };
+      contextNarration = narrator.text;
+      factNarration = narrator.text;
+    }
+
     if (preparedDecision) {
       const originalText = narrator.text;
-      const safety = await new NarrativeSafetyPipeline(this.provider, {
-        reviewerFailurePolicy: this.runtimeOptions.reviewerFailurePolicy || "SHADOW",
-      }).resolve({
+      const scene = await new SceneExpressionPipeline(
+        this.provider,
+        "ADVISORY",
+      ).resolve({
         turnId,
-        draft: narrator.text,
-        previousOpening,
-        protectedBlocks: preparedDecision.protectedBlocks,
-        fallbackText: preparedDecision.fallbackText,
-        truthContext: preparedDecision.truthContext,
+        runId: input.runId,
+        worldRevision: turnNumber,
+        narratorRaw: narrator.text,
+        manifest: preparedDecision.beatManifest,
+        fallbackDraft: preparedDecision.fallbackDraft,
+        truthContexts: preparedDecision.truthContexts,
+        onModuleRecord: (record) => this.recordModuleExecution(input.runId, record),
       });
-      for (const call of safety.calls) {
+      for (const call of scene.calls) {
         modelLedger.push({
           stage: call.stage,
           attempt: call.attempt,
@@ -397,56 +602,74 @@ export class OpenNovelRuntime {
           call.attempt,
         ).catch(() => {});
       }
-      narrator = { ...narrator, text: safety.finalText };
+      narrator = { ...narrator, text: scene.finalText };
+      const narrativeOwner = scene.disposition.kind === "USE_FALLBACK"
+        ? "FALLBACK" as const
+        : scene.draft.owner === "COMPOSED"
+          ? "COMPOSED" as const
+          : "NARRATOR" as const;
+      assertSingleSceneOwner({ plan: renderPlan, actualOwner: narrativeOwner });
+      contextNarration = scene.contextText;
+      factNarration = scene.factText;
+      structuredShadowClaims = scene.shadowClaims;
       atomicNarrative = {
         originalText,
-        repairedText: safety.repairText,
-        disposition: safety.disposition,
-        originalReview: safety.originalReview,
-        finalReview: safety.finalReview,
-        originalComparison: safety.originalComparison,
-        finalComparison: safety.finalComparison,
-        fallbackReason: safety.fallbackReason,
+        narrativeOwner,
+        renderPlan,
+        contextText: scene.contextText,
+        factText: scene.factText,
+        shadowClaims: scene.shadowClaims,
+        disposition: scene.disposition,
+        sceneDraft: scene.draft,
+        sceneAudit: scene.audit,
+        assemblyManifest: scene.assemblyManifest,
+        fallbackReason: scene.fallbackReason,
       };
-      const shadow = [
-        ...(safety.originalComparison?.shadow || []),
-        ...(safety.finalComparison?.shadow || []),
-      ];
-      reviewWarnings.push(...shadow.map((item) => ({
+      reviewWarnings.push(...scene.shadowClaims.map((claim) => ({
         code: "TRUTH_REVIEW_SHADOW",
-        message: item.reason,
+        message: claim.reason,
         severity: "LOW" as const,
         blocksPlayer: false,
-        details: item.exactQuote ? { exactQuote: item.exactQuote } : undefined,
+        details: claim.exactQuote ? { exactQuote: claim.exactQuote } : undefined,
       })));
       await this.workspace.recordSceneEvent(input.runId, {
         type: "foreground_narrative_disposition",
         turnId,
-        disposition: safety.disposition,
-        originalReview: safety.originalReview || null,
-        finalReview: safety.finalReview || null,
-        originalComparison: safety.originalComparison || null,
-        finalComparison: safety.finalComparison || null,
-        fallbackReason: safety.fallbackReason || null,
+        disposition: scene.disposition,
+        sceneAudit: scene.audit,
+        assemblyManifest: scene.assemblyManifest,
+        fallbackReason: scene.fallbackReason || null,
+        reviewObservation: scene.reviewObservation,
       }).catch(() => {});
-    } else {
+    } else if (!preparedDecision) {
       const settledNarrative = String(
         causalDelta.beatContract?.settledNarrative || "",
       ).trim();
       if (settledNarrative) {
         narrator = {
           ...narrator,
-          text: normalizeNarrativeSurface(
-            `${settledNarrative}\n\n${String(narrator.text || "").trim()}`,
+          text: surfaceGuard.normalize(
+            settledNarrative + "\n\n" + String(narrator.text || "").trim(),
           ),
         };
       }
     }
-    narrator = {
-      ...narrator,
-      text: normalizeNarrativeSurface(narrator.text),
-    };
-    const surface = validateForegroundSurface(narrator.text, previousOpening);
+    const guardedSurface = await executeTurnModule({
+      runId: input.runId,
+      turnId,
+      descriptor: {
+        kind: "SURFACE_GUARD",
+        moduleId: surfaceGuard.moduleId,
+        mode: "REQUIRED",
+      },
+      value: { text: narrator.text, previousOpening },
+      execute: () => surfaceGuard.inspect({ text: narrator.text, previousOpening }),
+      onRecord: (record) => this.recordModuleExecution(input.runId, record),
+    });
+    narrator = { ...narrator, text: guardedSurface.text };
+    contextNarration = surfaceGuard.normalize(contextNarration || narrator.text);
+    factNarration = surfaceGuard.normalize(factNarration || contextNarration);
+    const surface = guardedSurface.integrity;
     if (!surface.ok) {
       await this.workspace.updateMetadata(input.runId, {
         status: "FAILED",
@@ -479,15 +702,22 @@ export class OpenNovelRuntime {
       }).catch(() => {});
     }
     await this.workspace.updateMetadata(input.runId, { status: "COMMITTING" });
+    // Authored choices are a deterministic projection of the already-settled
+    // next decision point. Compute them after the final narration is known but
+    // before publishing the atomic Head, so Canon, state and choices recover
+    // together after interruption.
+    const atomicAuthoredOptions = preparedDecision && authoredAdapter && !preparedDecision.storyComplete
+      ? authoredAdapter.nextOptions(preparedDecision)
+      : [];
     const result: TurnResult = {
       runId: input.runId,
       turnId,
       turnNumber,
       narration: narrator.text,
-      options: [],
+      options: atomicAuthoredOptions,
       framing: "",
       tension: "reader-directed",
-      storyComplete: false,
+      storyComplete: preparedDecision?.storyComplete || false,
       causalDelta,
       warnings,
       narrator,
@@ -505,10 +735,12 @@ export class OpenNovelRuntime {
           action: input.action,
           result,
           selectedOption,
+          contextNarration,
+          shadowClaims: structuredShadowClaims,
         }),
         ...(projection.materializedViews || []),
       ];
-      await atomicRepository!.commit({
+      const commitInput = {
         runId: input.runId,
         submissionId,
         turnId,
@@ -516,153 +748,100 @@ export class OpenNovelRuntime {
         action: input.action,
         selectedOption,
         result,
-        protectedBlocks: preparedDecision.protectedBlocks,
+        beatManifest: preparedDecision.beatManifest,
         narrative: atomicNarrative,
         projection,
         modelLedger,
         previousCanon: currentSnapshot.chapters,
+        previousContextCanon: currentSnapshot.contextChapters,
+      };
+      await executeTurnModule({
+        runId: input.runId,
+        turnId,
+        descriptor: {
+          kind: "ATOMIC_COMMITTER",
+          moduleId: atomicCommitter.moduleId,
+          mode: "REQUIRED",
+        },
+        value: commitInput,
+        execute: () => atomicCommitter.commitAuthored(atomicRepository!, commitInput),
+        onRecord: (record) => this.recordModuleExecution(input.runId, record),
       });
-      await atomicRepository!.restoreMaterializedViews();
       await this.workspace.recordSceneEvent(input.runId, {
         type: "foreground_authored_state_committed",
         turnId,
         ...preparedDecision.audit,
       });
     } else {
-      await this.workspace.commitNarration(input.runId, {
+      await executeTurnModule({
+        runId: input.runId,
+        turnId,
+        descriptor: {
+          kind: "ATOMIC_COMMITTER",
+          moduleId: atomicCommitter.moduleId,
+          mode: "REQUIRED",
+        },
+        value: { action: input.action, result, selectedOption },
+        execute: () => atomicCommitter.commitLegacy({
+          workspace: this.workspace,
+          runId: input.runId,
+          turnId,
+          action: input.action,
+          result,
+          selectedOption,
+        }),
+        onRecord: (record) => this.recordModuleExecution(input.runId, record),
+      });
+    }
+    const optionsAndMemory = this.optionsAndMemory();
+    const postCommit = await executeTurnModule({
+      runId: input.runId,
+      turnId,
+      descriptor: {
+        kind: "OPTIONS_AND_MEMORY",
+        moduleId: optionsAndMemory.moduleId,
+        mode: "REQUIRED",
+      },
+      value: {
+        action: input.action,
+        committedAt: result.committedAt,
+        preparedDecision: preparedDecision
+          ? { sourceRef: preparedDecision.sourceRef, storyComplete: preparedDecision.storyComplete }
+          : null,
+        publishedNarration: narrator.text,
+        factNarration,
+        shadowClaims: structuredShadowClaims,
+      },
+      execute: () => optionsAndMemory.afterCommit({
+        runId: input.runId,
         turnId,
         action: input.action,
         result,
-        selectedOption,
-      });
-    }
-    try {
-      await this.workspace.enqueueStorykeeper(input.runId, {
-        id: `inbox_${turnId}_${Date.now()}`,
-        turnId,
-        action: input.action,
-        narration: narrator.text,
-        recentCanonBefore: compiled.recentCanonExcerpt,
-        selectedEffect: selectedOption?.effect || null,
-        causalDelta,
-        warnings,
-        createdAt: result.committedAt,
-      });
-      Promise.resolve(this.storykeeper.kick(input.runId)).catch(() => {});
-    } catch (error) {
-      const warning: RuntimeWarning = {
-        code: "STORYKEEPER_ENQUEUE_DEFERRED",
-        message: String((error as Error).message || error),
-        severity: "LOW",
-        blocksPlayer: false,
-      };
-      result.warnings.push(warning);
-      emit({ type: "runtime.warning", data: warning });
-    }
-
-    let optionsProvider;
-    if (preparedDecision) {
-      result.options = authoredAdapter!.nextOptions(preparedDecision);
-      result.framing = "";
-      result.tension = "reader-directed";
-      result.storyComplete = preparedDecision.storyComplete;
-      emit({
-        type: "options.complete",
-        data: { options: result.options, framing: result.framing },
-      });
-      await this.workspace.recordSceneEvent(input.runId, {
-        type: "foreground_authored_options",
-        turnId,
-        optionIds: result.options.map((option) => option.id),
-      });
-    } else {
-      const optionsRequest = buildOptionsRequest(
-        input.action,
-        narrator.text,
         currentSnapshot,
         compiled,
-      );
-      try {
-        optionsProvider = await this.provider.generate(optionsRequest);
-        await this.workspace.recordModelCall(
-          input.runId,
-          turnId,
-          "options",
-          optionsRequest,
-          optionsProvider,
-        ).catch(() => {});
-        const parsed = parseOptions(
-          optionsProvider.text,
-          turnId,
-          input.action,
-          currentSnapshot.previousOptions,
-          optionsKnownContext(compiled, narrator.text),
-        );
-        result.framing = parsed.framing;
-        result.options = parsed.options;
-        result.tension = parsed.tension;
-        result.storyComplete = parsed.storyComplete;
-        result.optionsProvider = optionsProvider;
-        emit({ type: "options.complete", data: { options: result.options, framing: result.framing } });
-      } catch (error) {
-        const message = String((error as Error).message || error);
-        await this.workspace.recordModelCall(
-          input.runId,
-          turnId,
-          "options",
-          optionsRequest,
-          optionsProvider,
-          error,
-        ).catch(() => {});
-        const warning: RuntimeWarning = {
-          code: "OPTIONS_UNAVAILABLE",
-          message,
-          severity: "LOW",
-          blocksPlayer: false,
-        };
-        warnings.push(warning);
-        emit({ type: "runtime.warning", data: warning });
-        emit({ type: "options.complete", data: { options: [], framing: "", error: message } });
-        await this.workspace.recordSceneEvent(input.runId, {
-          type: "shadow_warning",
-          turnId,
-          ...warning,
-        }).catch(() => {});
-      }
-    }
+        publishedNarration: narrator.text,
+        factNarration,
+        shadowClaims: structuredShadowClaims,
+        selectedOption,
+        causalDelta,
+        preparedDecision,
+        authoredAdapter,
+        emit,
+      }),
+      telemetry: (output) => ({
+        model: output.optionsProvider?.model || null,
+        inputTokens: output.optionsProvider?.usage.inputTokens || null,
+        outputTokens: output.optionsProvider?.usage.outputTokens || null,
+      }),
+      onRecord: (record) => this.recordModuleExecution(input.runId, record),
+    });
+    result.options = postCommit.options;
+    result.framing = postCommit.framing;
+    result.tension = postCommit.tension;
+    result.storyComplete = postCommit.storyComplete;
+    result.optionsProvider = postCommit.optionsProvider;
+    result.warnings.push(...postCommit.warnings);
 
-    try {
-      await this.workspace.publishTurnOptions(input.runId, {
-        turnId,
-        options: result.options,
-        framing: result.framing,
-        tension: result.tension,
-        storyComplete: result.storyComplete,
-        warnings: result.warnings,
-        completedAt: new Date().toISOString(),
-      });
-    } catch (error) {
-      const warning: RuntimeWarning = {
-        code: "OPTIONS_PERSIST_FAILED",
-        message: String((error as Error).message || error),
-        severity: "LOW",
-        blocksPlayer: false,
-      };
-      result.options = [];
-      result.framing = "";
-      result.warnings.push(warning);
-      emit({ type: "runtime.warning", data: warning });
-      emit({ type: "options.complete", data: { options: [], framing: "", error: warning.message } });
-      await this.workspace.publishTurnOptions(input.runId, {
-        turnId,
-        options: [],
-        framing: "",
-        tension: result.tension,
-        storyComplete: false,
-        warnings: result.warnings,
-        completedAt: new Date().toISOString(),
-      }).catch(() => {});
-    }
     await this.mirror.publish({
       kind: "turn.committed",
       runId: input.runId,
@@ -684,57 +863,53 @@ export class OpenNovelRuntime {
     return result;
   }
 
-  private async generateNarration(input: {
-    runId: string;
-    turnId: string;
-    causalDelta: ReturnType<typeof buildCausalDelta>;
-    compiled: Awaited<ReturnType<typeof compileForegroundContext>>;
-    previousOpening: string;
-    onEvent?: (event: TurnEvent) => void;
-  }) {
-    const messages = buildNarratorMessages(
-      input.causalDelta,
-      input.compiled,
-    );
-    const stream = new RepeatAwareStream(input.previousOpening, (text) => {
-      input.onEvent?.({ type: "narration.delta", data: { text } });
-    });
-    const request = {
-      profile: "narrator" as const,
-      messages,
-      temperature: narratorTemperature(),
-      maxTokens: narratorMaxTokens(),
-      json: false,
-      stream: true,
-      onDelta: (text: string) => stream.push(text),
-    };
-    let generatedResult;
-    try {
-      const result = await this.provider.generate(request);
-      generatedResult = result;
-      stream.finish(result.text);
-      if (result.finishReason === "length") {
-        throw new Error("MODEL_OUTPUT_TRUNCATED");
-      }
-      await this.workspace.recordModelCall(
-        input.runId,
-        input.turnId,
-        "narrator",
-        request,
-        result,
-      ).catch(() => {});
-      return result;
-    } catch (error) {
-      await this.workspace.recordModelCall(
-        input.runId,
-        input.turnId,
-        "narrator",
-        request,
-        generatedResult,
-        error,
-      ).catch(() => {});
-      throw error;
-    }
+  private atomicCommitter() {
+    return this.runtimeOptions.atomicCommitter || new FileAtomicCommitter();
+  }
+
+  private actionGateway() {
+    return this.runtimeOptions.actionGateway || new DefaultActionGateway();
+  }
+
+  private contextCompiler() {
+    return this.runtimeOptions.contextCompiler || new DefaultContextCompiler();
+  }
+
+  private playerProjection() {
+    return this.runtimeOptions.playerProjection || new DefaultPlayerProjection();
+  }
+
+  private optionsAndMemory() {
+    return this.runtimeOptions.optionsAndMemory
+      || new DefaultOptionsAndMemory(this.workspace, this.provider, this.storykeeper);
+  }
+
+  private narrativeRenderer() {
+    return this.runtimeOptions.narrativeRenderer
+      || new ProviderNarrativeRenderer(this.provider, this.workspace);
+  }
+
+  private sceneRenderPlanner() {
+    return this.runtimeOptions.sceneRenderPlanner || new DefaultSceneRenderPlanner();
+  }
+
+  private protectedSceneRenderer() {
+    return this.runtimeOptions.protectedSceneRenderer
+      || new DeterministicProtectedSceneRenderer();
+  }
+
+  private surfaceGuard() {
+    return this.runtimeOptions.surfaceGuard || new DefaultSurfaceGuard();
+  }
+
+  private async recordModuleExecution(
+    runId: string,
+    record: TurnModuleExecutionRecord,
+  ) {
+    await this.workspace.recordSceneEvent(runId, {
+      type: "turn_module_execution",
+      ...record,
+    }).catch(() => {});
   }
 }
 
@@ -744,11 +919,6 @@ function optionsTimeoutMs() {
   return Math.min(180_000, Math.max(5_000, Math.trunc(configured)));
 }
 
-function narratorMaxTokens() {
-  const configured = Number(process.env.OPENOVEL_NARRATOR_MAX_TOKENS || 4_000);
-  if (!Number.isFinite(configured)) return 4_000;
-  return Math.min(8_000, Math.max(2_000, Math.trunc(configured)));
-}
 
 function buildOptionsRequest(
   action: string,
@@ -794,67 +964,4 @@ function deterministicSubmissionId(runId: string, turnId: string, action: string
     .digest("hex")
     .slice(0, 24);
   return `auto_${turnId}_${digest}`;
-}
-
-function narratorTemperature() {
-  const configured = Number(process.env.OPENOVEL_NARRATOR_TEMPERATURE || 0.86);
-  return Number.isFinite(configured)
-    ? Math.max(0.2, Math.min(1.2, configured))
-    : 0.86;
-}
-
-class RepeatAwareStream {
-  private buffer = "";
-  private decided = false;
-  private repeated = false;
-
-  constructor(
-    private readonly previousOpening: string,
-    private readonly forward: (text: string) => void,
-  ) {}
-
-  push(text: string) {
-    if (this.decided) {
-      if (!this.repeated) this.forward(text);
-      return;
-    }
-    this.buffer += text;
-    const current = openingKey(this.buffer);
-    if (!this.previousOpening) {
-      this.decide(false);
-      return;
-    }
-    if (!this.previousOpening.startsWith(current)) {
-      this.decide(false);
-      return;
-    }
-    if (current.length >= this.previousOpening.length) this.decide(true);
-  }
-
-  finish(fullText: string) {
-    if (!this.decided) {
-      const repeated = Boolean(this.previousOpening)
-        && openingKey(fullText) === this.previousOpening;
-      this.decide(repeated);
-    }
-    return this.repeated;
-  }
-
-  private decide(repeated: boolean) {
-    this.decided = true;
-    this.repeated = repeated;
-    if (!repeated && this.buffer) this.forward(this.buffer);
-    this.buffer = "";
-  }
-}
-
-function resolveBoundOption(
-  bound: BoundOption | null,
-  options: OpenNovelOption[],
-  action: string,
-) {
-  if (!bound) return null;
-  const match = options.find((option) => option.id === bound.id && option.label === bound.label);
-  if (!match || match.label !== action) return null;
-  return match;
 }

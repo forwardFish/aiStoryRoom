@@ -104,9 +104,22 @@ export function validateGameDefinition(value: unknown): GameDefinition {
   if (minHumanPlayers < 1 || maxHumanPlayers < minHumanPlayers) fail("human player limits are invalid");
 
   const engine = record(root.engine, "engine");
-  exactKeys(engine, "engine", ["engineVersion", "strategyVersion", "strategyRegistryPath", "fixedRules"]);
+  requiredAndOptionalKeys(
+    engine,
+    "engine",
+    ["engineVersion", "strategyVersion", "strategyRegistryPath", "fixedRules"],
+    ["soloEngineVersion", "soloRuntime"]
+  );
   const engineVersion = text(engine.engineVersion, "engine.engineVersion");
   text(engine.strategyVersion, "engine.strategyVersion");
+  if (engine.soloEngineVersion !== undefined) text(engine.soloEngineVersion, "engine.soloEngineVersion");
+  if (engine.soloRuntime !== undefined) {
+    const soloRuntime = record(engine.soloRuntime, "engine.soloRuntime");
+    exactKeys(soloRuntime, "engine.soloRuntime", ["storyPackageVersion", "openingVersion"]);
+    text(soloRuntime.storyPackageVersion, "engine.soloRuntime.storyPackageVersion");
+    text(soloRuntime.openingVersion, "engine.soloRuntime.openingVersion");
+    if (engine.soloEngineVersion === undefined) fail("engine.soloRuntime requires engine.soloEngineVersion");
+  }
   safeRelativePath(engine.strategyRegistryPath, "engine.strategyRegistryPath", true);
   if (engine.fixedRules !== null) {
     const rules = record(engine.fixedRules, "engine.fixedRules");

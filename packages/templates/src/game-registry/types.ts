@@ -58,6 +58,11 @@ export type GameDefinition = {
     engineVersion: string;
     strategyVersion: string;
     strategyRegistryPath: string | null;
+    soloEngineVersion?: string;
+    soloRuntime?: {
+      storyPackageVersion: string;
+      openingVersion: string;
+    };
     fixedRules: null | {
       stageCount: 7;
       mainCardsPerRoleStage: 3;

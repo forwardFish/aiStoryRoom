@@ -207,6 +207,8 @@ test("the server fixes a source-grounded Next Story Beat before any Narrator cal
   );
   assert.match(beat.playerOutcome, /正式回文|回文/u);
   assert.match(beat.npcOrWorldPressure, /次日.*签押房.*巡抚.*(?:拒绝|不肯).*具名/su);
+  assert.doesNotMatch(beat.npcOrWorldPressure, /场景确定|状态|Revision/u);
+  assert.equal(beat.presentMoves.filter((move) => /签押房/u.test(move)).length, 1);
   assert.match(beat.stopCondition, /复核由谁主持.*经办、见证/u);
   assert.equal(
     beat.evidencePacket.evidenceItems.some((item) =>
@@ -564,7 +566,7 @@ test("responsibility choices describe executable actions from a paused branch wi
   assert.deepEqual(
     responsibility.decisionAffordances.map((item) => item.actionText),
     [
-      "把暂缓签发的缘由、复核办法与督抚各自责任写进正式回文，请巡抚共同具名。",
+      "把暂缓签发的缘由与督抚各自责任写进正式回文，说明县册复核主持权另议，请巡抚共同具名。",
       "另具正式回文暂准放行，并逐项写明督抚分歧和各自承担的事项。"
     ]
   );
@@ -669,8 +671,18 @@ test("responsibility choices preserve an already-issued limited-trial reply inst
     recorded.event.sceneAfter.documentStates?.find(
       (item) => item.documentRef === "document.responsibility_record"
     )?.continuityNote || "",
-    /正文目前只由总督知晓.*未经玩家明确出示、宣读或移交/
+    /Durable Effect/
   );
+  assert.equal(recorded.proposedState.durableState.predicates.some((predicate) =>
+    predicate.type === "ENTITY.HELD_BY"
+    && predicate.entityId === "document.responsibility_record"
+    && predicate.actorId === "actor.zhejiang_governor"
+  ), true);
+  assert.equal(recorded.proposedState.durableState.predicates.some((predicate) =>
+    predicate.type === "ENTITY.LOCATED_AT"
+    && predicate.entityId === "document.responsibility_record"
+    && predicate.locationId === "location.zhejiang_governor_yamen"
+  ), true);
   assert.equal(
     recorded.event.authoritativeNpcReactions[0]?.action,
     recorded.event.nextDecisionPoint.prompt
@@ -683,6 +695,116 @@ test("responsibility choices preserve an already-issued limited-trial reply inst
   assert.match(responsibilityBeat?.resultCeiling || "", /不得补写原册所在地、保管人、移交办法、材料披露范围/);
 });
 
+test("decision prompts respect durable entity prerequisites instead of presupposing evidence", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const noCopyState = createInitialPartOneState(pkg);
+  noCopyState.sectionId = "SEC-P1-02";
+  noCopyState.completedKernelIds = ["DK-P1-REVIEW-AUTHORITY"];
+  noCopyState.evidence.copyStatus = "NONE";
+
+  const noCopyDecision = buildPartOneRuntimeWorkingSet(pkg, noCopyState, 4).decisionPoint;
+  assert.equal(noCopyDecision.decisionKernelId, "DK-P1-EVIDENCE-CUSTODY");
+  assert.match(noCopyDecision.prompt, /是否先制作一份由双方见证的抄件/);
+  assert.doesNotMatch(noCopyDecision.prompt, /原件和抄件由谁保管/);
+
+  const existingCopyState = structuredClone(noCopyState);
+  existingCopyState.evidence.copyStatus = "WITNESSED_COPY_CREATED";
+  const existingCopyDecision = buildPartOneRuntimeWorkingSet(pkg, existingCopyState, 4).decisionPoint;
+  assert.match(existingCopyDecision.prompt, /已经制作的见证抄件与原件分别由谁保管/);
+});
+test("key register decisions remain pending durable orders until a later authorized scene executes them", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  const custodyKernel = pkg.assets.find((asset) => asset.assetId === "DK-P1-EVIDENCE-CUSTODY");
+  assert.ok(custodyKernel);
+  const options = custodyKernel.payload.options as Array<{
+    targetRef: string;
+    statePatch: Record<string, unknown>;
+    durableEffects: Array<Record<string, unknown>>;
+    protectedNarrative: string;
+  }>;
+  assert.equal(options.length, 3);
+  for (const option of options) {
+    assert.equal(option.targetRef, "document.qingliu_register_original");
+    assert.equal(option.durableEffects.some((effect) =>
+      effect.type === "ENTITY.LOCATED_AT"
+      && effect.entityId === "document.qingliu_register_original"
+      && effect.locationId === "location.qingliu_archive"
+    ), true);
+    assert.equal(option.durableEffects.some((effect) =>
+      effect.type === "ENTITY.STATE"
+      && effect.entityId === "document.qingliu_register_original"
+      && effect.attribute === "pendingAction"
+    ), true);
+    assert.doesNotMatch(JSON.stringify(option.statePatch), /SEALED_WITH_THREE_SAMPLES|WITNESSED_COPY_CREATED|TRANSFERRED_TO_GOVERNOR/);
+    assert.match(option.protectedNarrative, /下令|命清流县/);
+    assert.match(option.protectedNarrative, /尚未|仍由|并未/);
+  }
+});
+test("the original register stays in Qingliu archive after the custody order and the next scene reads that authority", () => {
+  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
+  let state = createInitialPartOneState(pkg);
+  let action = {
+    source: "RECOMMENDED",
+    decisionId: "opening_d2",
+    actionText: "动用总督封缄令牌，先保住清流县档房现场，再给巡抚一个暂缓签发的答复。"
+  };
+  let custodySettlement: ReturnType<typeof settlePartOneAction> | null = null;
+  for (let turn = 1; turn <= 5; turn += 1) {
+    const settlement = settlePartOneAction(pkg, state, action, turn);
+    if (turn === 1) {
+      assert.equal(settlement.proposedState.durableState.revision, 1);
+      assert.equal(settlement.proposedState.durableState.predicates.some((predicate) =>
+        predicate.type === "ENTITY.STATE"
+        && predicate.entityId === "document.qingliu_register_original"
+        && predicate.attribute === "pendingAction"
+        && predicate.value === "SEAL_ARCHIVE"
+      ), true);
+    }
+    if (turn === 5) custodySettlement = settlement;
+    state = finalizePartOneSettlement(
+      settlement,
+      settlement.dueConsequences.map((item) => item.consequenceId)
+    ).proposedState;
+    if (turn < 5) {
+      const option = buildPartOneRuntimeWorkingSet(pkg, state, turn).decisionAffordances[0];
+      action = {
+        source: "RECOMMENDED",
+        decisionId: option.affordanceTemplateId,
+        decisionKernelId: option.decisionKernelId,
+        affordanceTemplateId: option.affordanceTemplateId,
+        label: option.title,
+        actionText: option.actionText,
+        targetRef: option.targetRef
+      };
+    }
+  }
+
+  assert.ok(custodySettlement);
+  assert.equal(custodySettlement.event.targetRef, "document.qingliu_register_original");
+  assert.equal(custodySettlement.event.durableEffects.length > 0, true);
+  assert.equal(custodySettlement.proposedState.durableState.revision, 5);
+  assert.equal(custodySettlement.proposedState.durableState.predicates.some((predicate) =>
+    predicate.type === "ENTITY.LOCATED_AT"
+    && predicate.entityId === "document.qingliu_register_original"
+    && predicate.locationId === "location.qingliu_archive"
+  ), true);
+  assert.equal(custodySettlement.proposedState.durableState.predicates.some((predicate) =>
+    predicate.type === "ENTITY.STATE"
+    && predicate.entityId === "document.qingliu_register_original"
+    && predicate.attribute === "pendingAction"
+    && predicate.value === "RESEAL_WITH_THREE_PARTY_WITNESS"
+  ), true);
+  const projectedOriginal = custodySettlement.event.sceneAfter.documentStates?.find(
+    (document) => document.documentRef === "document.qingliu_register_original"
+  );
+  assert.equal(projectedOriginal?.accessState, "NOT_PRESENT");
+  assert.equal(projectedOriginal?.holderRef, null);
+  assert.match(projectedOriginal?.continuityNote || "", /仍在清流县档房.*不在当前场景/);
+  assert.doesNotMatch(
+    JSON.stringify(custodySettlement.proposedState),
+    /SEALED_WITH_THREE_SAMPLES|WITNESSED_COPY_CREATED|TRANSFERRED_TO_GOVERNOR/
+  );
+});
 test("rejects a tampered Sangtian Part One authoring runtime package", () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "part-one-runtime-tamper-"));
   cpSync(resolve(configRoot, "sangtian"), resolve(tempRoot, "sangtian"), { recursive: true });
@@ -719,6 +841,26 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
   let nextPressureMoveCount = 0;
   for (let turn = 1; turn <= 20; turn += 1) {
     const settlement = settlePartOneAction(pkg, state, nextAction, turn);
+    const visibleFallback = settlement.event.narrativePlan.nextStoryBeat.playerVisibleFallback;
+    assert.ok(visibleFallback, `T${turn} must compile a complete player-visible scene`);
+    assert.ok(visibleFallback.PLAYER_RESULT.trim(), `T${turn} player result must be visible`);
+    assert.ok(visibleFallback.WORLD_PRESSURE.trim(), `T${turn} world pressure must be visible`);
+    assert.ok(visibleFallback.DECISION_STOP.trim(), `T${turn} decision stop must be visible`);
+    assert.equal(
+      new Set([
+        visibleFallback.PLAYER_RESULT.trim(),
+        visibleFallback.WORLD_PRESSURE.trim(),
+        visibleFallback.DECISION_STOP.trim()
+      ]).size,
+      3,
+      `T${turn} result, pressure and decision stop must have distinct narrative jobs`
+    );
+    assert.equal(
+      visibleFallback.WORLD_PRESSURE.includes(visibleFallback.DECISION_STOP)
+        || visibleFallback.DECISION_STOP.includes(visibleFallback.WORLD_PRESSURE),
+      false,
+      `T${turn} world pressure and decision stop must not restate one another`
+    );
     visitedSceneIds.add(settlement.event.sceneAfter.sceneId);
     visitedTimeLabels.add(settlement.event.sceneAfter.timeLabel);
     const duePayoffMoves = settlement.event.authoritativeWorldMoves.filter(
@@ -783,11 +925,17 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
         )?.closureState,
         "CLOSED"
       );
+      assert.equal(settlement.proposedState.durableState.predicates.some((predicate) =>
+        predicate.type === "ENTITY.HELD_BY"
+        && predicate.entityId === "object.governor_seal_token"
+        && predicate.actorId === "actor.qingliu_messenger"
+      ), true);
       assert.equal(
-        settlement.event.sceneAfter.objectStates?.find(
+        settlement.event.sceneAfter.objectStates?.some(
           (item) => item.objectRef === "object.governor_seal_token"
-        )?.holderRef,
-        "actor.qingliu_messenger"
+        ),
+        false,
+        "an object held by a departed actor remains durable but is not visible in the current scene"
       );
       assert.deepEqual(
         settlement.event.sceneAfter.presentActorRefs,

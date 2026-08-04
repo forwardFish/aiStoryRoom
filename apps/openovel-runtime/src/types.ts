@@ -22,11 +22,15 @@ export type ProviderResult = {
 };
 
 export type ProviderRequest = {
-  profile: "narrator" | "reviewer" | "repair" | "options" | "storykeeper";
+  profile: "narrator" | "reviewer" | "options" | "storykeeper";
   messages: ModelMessage[];
   temperature: number;
   maxTokens: number;
   json: boolean;
+  jsonSchema?: {
+    name: string;
+    schema: Record<string, unknown>;
+  };
   stream: boolean;
   timeoutMs?: number;
   onDelta?: (text: string) => void;
@@ -36,6 +40,48 @@ export interface OpenNovelProvider {
   generate(request: ProviderRequest): Promise<ProviderResult>;
   describe(): { provider: string; model: string; configured: boolean };
 }
+
+export type NarratorSceneProjection = {
+  sceneRef?: string;
+  timeLabel: string;
+  locationLabel: string;
+  situation?: string;
+  presentActors: Array<{
+    actorRef: string;
+    displayName: string;
+  }>;
+  /** Player-visible facts settled for the current scene. */
+  observableFacts: string[];
+  /**
+   * Closed inventory of durable documents and evidence-bearing objects in the
+   * current scene. Ordinary paper, ink, furniture and other narrative texture
+   * are intentionally outside this inventory.
+   */
+  keyEntityInventoryIsExhaustive: true;
+  documents: Array<{
+    label: string;
+    accessState: "NOT_PRESENT" | "SEALED" | "OPENED" | "READ" | "WRITTEN";
+    holderLabel?: string;
+  }>;
+  objects: Array<{
+    label: string;
+    holderLabel?: string;
+    contentsState?: "EMPTY" | "UNKNOWN" | "CONTAINS_DOCUMENT";
+    closureState?: "CLOSED" | "OPEN" | "UNKNOWN";
+  }>;
+};
+
+export type PlayerVisibleFallbackSurface = {
+  PLAYER_RESULT: string;
+  IMMEDIATE_REACTION?: string;
+  SCENE_TRANSITION?: string;
+  WORLD_PRESSURE: string;
+  DECISION_STOP: string;
+};
+
+export type ModelCallStage = ProviderRequest["profile"]
+  | "coverage-reviewer"
+  | "p0-reviewer";
 
 export type OpenNovelOptionEffect = {
   /**
@@ -55,6 +101,14 @@ export type OpenNovelOptionEffect = {
     constraints?: string[];
     settledNarrative?: string;
     fallbackContinuation?: string;
+    playerVisibleFallback?: PlayerVisibleFallbackSurface;
+    /**
+     * Player-safe scene projection produced from the same settled revision as
+     * this beat. It replaces any lagging Storykeeper Scene/Active Characters
+     * sections before Narrator runs; IDs remain audit-only and are never
+     * rendered into the prompt.
+     */
+    sceneProjection?: NarratorSceneProjection;
     narrativeSeed?: {
       playerOutcome: string;
       /**
@@ -140,6 +194,8 @@ export type CausalDelta = {
     presentBeatMoves: string[];
     stopCondition: string;
     visibleFacts: string[];
+    dramaticMechanisms: string[];
+    approvedAdaptations: string[];
     allowedKnowledge: string[];
     forbiddenKnowledge: string[];
     unresolvedFacts: string[];
@@ -183,6 +239,8 @@ export type StorySnapshot = {
   durableMemory: string;
   storyMemory: string;
   chapters: string;
+  contextChapters: string;
+  contextRecentCanon: string;
   recentCanon: string;
   previousOptions: OpenNovelOption[];
   optionsGuidance: string;
@@ -254,6 +312,8 @@ export type StorykeeperInboxItem = {
   turnId: string;
   action: string;
   narration: string;
+  publishedNarration?: string;
+  shadowClaims?: unknown[];
   recentCanonBefore?: string;
   selectedEffect: OpenNovelOptionEffect | null;
   causalDelta?: CausalDelta;

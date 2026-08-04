@@ -13,10 +13,51 @@
     "partId": "PART-01",
     "sectionId": "SEC-P1-01",
     "turnNumber": 0,
+    "durableState": {
+      "worldId": "sangtian",
+      "revision": 0,
+      "predicates": [
+        {
+          "type": "ENTITY.INTRODUCED",
+          "entityId": "document.qingliu_register_original"
+        },
+        {
+          "type": "ENTITY.LOCATED_AT",
+          "entityId": "document.qingliu_register_original",
+          "locationId": "location.qingliu_archive"
+        },
+        {
+          "type": "ENTITY.STATE",
+          "entityId": "document.qingliu_register_original",
+          "attribute": "custodianRef",
+          "value": "actor.qingliu_magistrate"
+        },
+        {
+          "type": "ENTITY.STATE",
+          "entityId": "document.qingliu_register_original",
+          "attribute": "sealState",
+          "value": "UNKNOWN"
+        },
+        {
+          "type": "ENTITY.STATE",
+          "entityId": "document.qingliu_register_original",
+          "attribute": "verificationState",
+          "value": "UNVERIFIED"
+        },
+        {
+          "type": "ENTITY.STATE",
+          "entityId": "document.qingliu_register_original",
+          "attribute": "pendingAction",
+          "value": null
+        }
+      ],
+      "pendingRuleIds": []
+    },
     "scene": {
       "sceneId": "SCENE-P1-S1-INNER-HALL",
       "timeLabel": "嘉靖三十五年五月初八辰时",
       "locationLabel": "杭州总督府内厅",
+      "locationRef": "location.zhejiang_governor_yamen",
       "presentActorRefs": [
         "actor.zhejiang_governor",
         "actor.xunfu_clerk",

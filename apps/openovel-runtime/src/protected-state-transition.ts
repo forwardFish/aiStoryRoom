@@ -25,7 +25,97 @@ export type ProtectedSceneState = {
 export type ProtectedTransitionNarrative = {
   text: string;
   sourceRefs: string[];
+  entityText?: string;
+  sceneText?: string;
 };
+
+/**
+ * Project the typed scene snapshot into durable predicates that are already
+ * true when Narrator continuation begins. These predicates authorize factual
+ * restatement only; they do not authorize a new transition.
+ */
+export function compileEstablishedScenePredicates(
+  scene: ProtectedSceneState,
+): DurablePredicate[] {
+  const locationId = scene.sceneRef ? `location:${scene.sceneRef}` : "";
+  const predicates: DurablePredicate[] = [];
+  if (locationId) {
+    for (const actorId of scene.presentActorRefs || []) {
+      predicates.push({ type: "ENTITY.LOCATED_AT", entityId: actorId, locationId });
+    }
+  }
+  for (const document of scene.documents) {
+    predicates.push({
+      type: "ENTITY.STATE",
+      entityId: document.entityRef,
+      attribute: "status",
+      value: document.status,
+    });
+    if (document.status === "WRITTEN") {
+      predicates.push({ type: "DOCUMENT.CREATED", documentId: document.entityRef });
+    }
+    if (document.holderRef) {
+      predicates.push({
+        type: "ENTITY.HELD_BY",
+        entityId: document.entityRef,
+        actorId: document.holderRef,
+      });
+    }
+  }
+  for (const object of scene.objects) {
+    if (object.contentsState !== undefined) {
+      predicates.push({
+        type: "ENTITY.STATE",
+        entityId: object.entityRef,
+        attribute: "contentsState",
+        value: object.contentsState ?? null,
+      });
+    }
+    if (object.closureState !== undefined) {
+      predicates.push({
+        type: "ENTITY.STATE",
+        entityId: object.entityRef,
+        attribute: "closureState",
+        value: object.closureState ?? null,
+      });
+    }
+    if (object.holderRef) {
+      predicates.push({
+        type: "ENTITY.HELD_BY",
+        entityId: object.entityRef,
+        actorId: object.holderRef,
+      });
+    }
+  }
+  return [...new Map(predicates.map((predicate) => [JSON.stringify(predicate), predicate])).values()];
+}
+
+/**
+ * Prefer a package-authored, player-facing beat whenever one exists. The
+ * typed compiler still contributes its source refs so the atomic evidence can
+ * prove which state transitions the block protects, but its deliberately
+ * mechanical prose is only a fallback for worlds that did not author a
+ * natural surface. This is structural precedence, not prose matching.
+ */
+export function selectProtectedTransitionSurface(input: {
+  authoredText?: string | null;
+  compiled: ProtectedTransitionNarrative;
+  authoredCoversSceneTransition?: boolean;
+}): ProtectedTransitionNarrative {
+  const authoredText = String(input.authoredText || "").trim();
+  const sceneText = input.authoredCoversSceneTransition
+    ? ""
+    : String(input.compiled.sceneText || "").trim();
+  const text = authoredText
+    ? [authoredText, sceneText].filter(Boolean).join("\n\n")
+    : input.compiled.text;
+  return {
+    text,
+    sourceRefs: [...new Set(input.compiled.sourceRefs)],
+    ...(input.compiled.entityText ? { entityText: input.compiled.entityText } : {}),
+    ...(input.compiled.sceneText ? { sceneText: input.compiled.sceneText } : {}),
+  };
+}
 
 /**
  * Compile consequential scene-state transitions into trusted prose before the
@@ -42,7 +132,8 @@ export function compileProtectedSceneTransition(input: {
   const beforeDocuments = new Map(input.before.documents.map((item) => [item.entityRef, item]));
   const beforeObjects = new Map(input.before.objects.map((item) => [item.entityRef, item]));
   const sourceRefs: string[] = [];
-  const sentences: string[] = [];
+  const entitySentences: string[] = [];
+  const sceneSentences: string[] = [];
   const changedDocuments: ProtectedDocumentState[] = [];
 
   for (const current of input.after.documents) {
@@ -56,19 +147,19 @@ export function compileProtectedSceneTransition(input: {
 
     if (locale.startsWith("zh")) {
       if (current.status === "WRITTEN" && current.holderRef) {
-        sentences.push(`写成的${current.label}随即交由${input.actorLabel(current.holderRef)}持有。`);
+        entitySentences.push(`写成的${current.label}随即交由${input.actorLabel(current.holderRef)}持有。`);
       } else if (current.status === "WRITTEN") {
-        sentences.push(`${current.label}已经写成。`);
+        entitySentences.push(`${current.label}已经写成。`);
       } else if (holderChanged && current.holderRef) {
-        sentences.push(`${current.label}随即交由${input.actorLabel(current.holderRef)}持有。`);
+        entitySentences.push(`${current.label}随即交由${input.actorLabel(current.holderRef)}持有。`);
       }
     } else {
       if (current.status === "WRITTEN" && current.holderRef) {
-        sentences.push(`The completed ${current.label} passed into the custody of ${input.actorLabel(current.holderRef)}.`);
+        entitySentences.push(`The completed ${current.label} passed into the custody of ${input.actorLabel(current.holderRef)}.`);
       } else if (current.status === "WRITTEN") {
-        sentences.push(`The ${current.label} was completed.`);
+        entitySentences.push(`The ${current.label} was completed.`);
       } else if (holderChanged && current.holderRef) {
-        sentences.push(`The ${current.label} passed into the custody of ${input.actorLabel(current.holderRef)}.`);
+        entitySentences.push(`The ${current.label} passed into the custody of ${input.actorLabel(current.holderRef)}.`);
       }
     }
   }
@@ -94,11 +185,11 @@ export function compileProtectedSceneTransition(input: {
         const close = current.closureState === "CLOSED"
           ? `，并将${current.label}重新合拢`
           : "";
-        sentences.push(`${subject}将${documentLabel}收入${current.label}${close}。`);
+        entitySentences.push(`${subject}将${documentLabel}收入${current.label}${close}。`);
       } else if (holderChanged && holder) {
-        sentences.push(`${current.label}随即由${holder}持有。`);
+        entitySentences.push(`${current.label}随即由${holder}持有。`);
       } else if (closureChanged && current.closureState === "CLOSED") {
-        sentences.push(`${current.label}随即合拢。`);
+        entitySentences.push(`${current.label}随即合拢。`);
       }
     } else {
       if (contentsChanged && current.contentsState === "CONTAINS_DOCUMENT") {
@@ -107,11 +198,11 @@ export function compileProtectedSceneTransition(input: {
         const close = current.closureState === "CLOSED"
           ? ` and closed ${current.label} again`
           : "";
-        sentences.push(`${subject} placed ${documentLabel} inside ${current.label}${close}.`);
+        entitySentences.push(`${subject} placed ${documentLabel} inside ${current.label}${close}.`);
       } else if (holderChanged && holder) {
-        sentences.push(`${holder} took custody of ${current.label}.`);
+        entitySentences.push(`${holder} took custody of ${current.label}.`);
       } else if (closureChanged && current.closureState === "CLOSED") {
-        sentences.push(`The ${current.label} was closed.`);
+        entitySentences.push(`The ${current.label} was closed.`);
       }
     }
   }
@@ -128,35 +219,52 @@ export function compileProtectedSceneTransition(input: {
     input.after.locationLabel
     && input.before.locationLabel !== input.after.locationLabel,
   );
-  if (sceneChanged || timeChanged || locationChanged) {
+  const sceneTransitioned = sceneChanged || timeChanged || locationChanged;
+  const previousActors = new Set(input.before.presentActorRefs || []);
+  const arrivingActors = (input.after.presentActorRefs || [])
+    .filter((actorRef) => !previousActors.has(actorRef));
+  const arrivingLabels = arrivingActors.map(input.actorLabel);
+
+  if (sceneTransitioned) {
     sourceRefs.push("scene:identity");
     const time = String(input.after.timeLabel || "").trim();
     const location = String(input.after.locationLabel || "").trim();
     if (locale.startsWith("zh")) {
-      const destination = [time, location].filter(Boolean).join("，");
-      sentences.push(destination ? `议事转至${destination}。` : "议事转入下一处已定场景。");
+      if (time && location && arrivingLabels.length) {
+        sceneSentences.push(`到了${time}，${joinChineseList(arrivingLabels)}已经在${location}候着。`);
+      } else if (time && location) {
+        sceneSentences.push(`到了${time}，事情已在${location}继续。`);
+      } else {
+        const destination = [time, location].filter(Boolean).join("，");
+        sceneSentences.push(destination ? `到了${destination}。` : "事情已在下一处既定场景继续。");
+      }
+    } else if (time && location && arrivingLabels.length) {
+      sceneSentences.push(`By ${time}, ${joinEnglishList(arrivingLabels)} ${arrivingLabels.length === 1 ? "was" : "were"} waiting in ${location}.`);
+    } else if (time && location) {
+      sceneSentences.push(`By ${time}, events had continued in ${location}.`);
     } else {
       const destination = [time, location].filter(Boolean).join(", ");
-      sentences.push(destination ? `The scene moved to ${destination}.` : "The scene moved to the settled destination.");
+      sceneSentences.push(destination ? `By ${destination}, events had moved on.` : "Events had continued in the settled scene.");
+    }
+  } else if (arrivingActors.length > 0) {
+    if (locale.startsWith("zh")) {
+      sceneSentences.push(`${joinChineseList(arrivingLabels)}已经到场。`);
+    } else {
+      sceneSentences.push(`${joinEnglishList(arrivingLabels)} ${arrivingLabels.length === 1 ? "was" : "were"} present.`);
     }
   }
-
-  const previousActors = new Set(input.before.presentActorRefs || []);
-  const arrivingActors = (input.after.presentActorRefs || [])
-    .filter((actorRef) => !previousActors.has(actorRef));
   if (arrivingActors.length > 0) {
     sourceRefs.push(...arrivingActors.map((actorRef) => `scene:actor:${actorRef}:present`));
-    const labels = arrivingActors.map(input.actorLabel);
-    if (locale.startsWith("zh")) {
-      sentences.push(`${joinChineseList(labels)}已经到场。`);
-    } else {
-      sentences.push(`${joinEnglishList(labels)} ${labels.length === 1 ? "was" : "were"} present.`);
-    }
   }
 
+  const separator = locale.startsWith("zh") ? "" : " ";
+  const entityText = entitySentences.join(separator);
+  const sceneText = sceneSentences.join(separator);
   return {
-    text: sentences.join(locale.startsWith("zh") ? "" : " "),
+    text: [entityText, sceneText].filter(Boolean).join(separator),
     sourceRefs: [...new Set(sourceRefs)],
+    ...(entityText ? { entityText } : {}),
+    ...(sceneText ? { sceneText } : {}),
   };
 }
 
@@ -170,3 +278,4 @@ function joinEnglishList(values: string[]) {
   if (values.length === 2) return `${values[0]} and ${values[1]}`;
   return `${values.slice(0, -1).join(", ")}, and ${values.at(-1)}`;
 }
+import type { DurablePredicate } from "@ai-story/templates";

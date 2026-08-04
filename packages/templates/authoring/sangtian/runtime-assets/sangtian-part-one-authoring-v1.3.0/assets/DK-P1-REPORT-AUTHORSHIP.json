@@ -115,6 +115,20 @@
             "$delta": 1
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.authorshipMode"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.xunfuExposure"
+          }
+        ],
         "protectedNarrative": "总督决定与巡抚共同具奏，执行、复核和粮食分歧逐项写明，双方确认后共同具名入京。",
         "createsPendingConsequence": true
       },
@@ -138,6 +152,20 @@
             "$delta": 2
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.authorshipMode"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "report.firstNarrativeController"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "responsibility.governorExposure"
+          }
+        ],
         "protectedNarrative": "总督决定独自具奏，并把巡抚催办和拒签文书一并列作附件。",
         "createsPendingConsequence": true
       },
@@ -161,6 +189,20 @@
             "$delta": -2
           }
         },
+        "protectedEffectRefs": [
+          {
+            "kind": "STATE_PATH",
+            "path": "report.authorshipMode"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "report.firstNarrativeController"
+          },
+          {
+            "kind": "STATE_PATH",
+            "path": "relations.governorXunfu"
+          }
+        ],
         "protectedNarrative": "总督准巡抚另报，自己同时送出复核结果和异议，两份奏报各自具名。",
         "createsPendingConsequence": true
       }
