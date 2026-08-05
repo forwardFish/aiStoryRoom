@@ -8,6 +8,7 @@ export class SangtianEndingModule implements EndingModule {
 
   build(input: EndingModuleInput): EndingPresentation {
     const state = sangtianState(input);
+    assertFinalTurn(input, state);
     const protectedPeople = state.land.safeguardStatus === "ACTIVE"
       && state.grain.immediatePressure !== "UNRELIEVED";
     const preservedEvidence = state.evidence.chainStatus === "TRACEABLE"
@@ -40,6 +41,12 @@ function sangtianState(input: EndingModuleInput) {
     throw new Error("SANGTIAN_ENDING_STATE_NOT_READY");
   }
   return state;
+}
+
+function assertFinalTurn(input: EndingModuleInput, state: PartOneState) {
+  if (input.turnId !== "T20" || input.turnNumber !== 20 || state.turnNumber !== 20) {
+    throw new Error("SANGTIAN_ENDING_FINAL_TURN_MISMATCH");
+  }
 }
 
 function classify(input: {
@@ -89,7 +96,17 @@ function directAftermath(state: PartOneState) {
   const people = state.land.safeguardStatus === "ACTIVE"
     ? "灾期民田边界暂时仍在，商会尚不能把一次救粮直接变成购田凭据。"
     : "粮食压力已经逼近田契，失田风险没有被真正挡住。";
-  return [evidence, people];
+  const grainAndMerchant = state.grain.immediatePressure === "UNRELIEVED"
+    ? "最急迫的粮食压力仍未解除，下一阶段会从救粮争执直接进入卖田与债务危机。"
+    : state.merchant.entryStatus === "CONDITIONAL"
+      ? "救粮渠道已经打开，但商会只取得附条件的粮食与运力入口，尚未取得不受约束的土地权利。"
+      : "眼前救粮已经有了着落，粮路由谁控制、代价由谁承担仍将成为下一阶段的争夺。";
+  const report = reportHasDeparted(state)
+    ? state.report.dispatchStatus === "SPLIT"
+      ? "首报已经分路离开浙江，督抚对事实的不同解释也随之进入京师政治。"
+      : "首报已经离开浙江，地方再想靠口头改写第一版事实已经来不及了。"
+    : "首报尚未离开浙江，地方仍有最后一次争夺附件、署名与责任边界的机会。";
+  return [evidence, people, grainAndMerchant, report];
 }
 
 export const sangtianEndingModule = new SangtianEndingModule();

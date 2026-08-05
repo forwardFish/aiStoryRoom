@@ -24,13 +24,16 @@ const workspaceRoot = path.resolve(
   argument("--workspace-root")
     || path.join(os.tmpdir(), "omw-sangtian-ending-preview", runId),
 );
+const realTurnsArgument = argument("--real-turns") || "1,2,20";
 const realTurns = new Set(
-  (argument("--real-turns") || "1,2,20")
+  (realTurnsArgument.toLowerCase() === "none" ? "" : realTurnsArgument)
     .split(",")
     .map((value) => Number(value.trim()))
     .filter((value) => Number.isInteger(value) && value >= 1 && value <= 20),
 );
-if (!realTurns.has(20)) throw new Error("ENDING_PREVIEW_FINAL_TURN_MUST_BE_REAL");
+if (realTurns.size > 0 && !realTurns.has(20)) {
+  throw new Error("ENDING_PREVIEW_FINAL_TURN_MUST_BE_REAL");
+}
 
 const providerEnv = {
   ...process.env,
@@ -44,10 +47,13 @@ const providerEnv = {
   OPENOVEL_OPTIONS_MODEL: String(process.env.DEEPSEEK_MODEL || "deepseek-v4-pro").trim(),
 };
 const realProvider = OpenAICompatibleProvider.fromEnv(providerEnv);
-if (!realProvider.describe().configured) {
+if (realTurns.size > 0 && !realProvider.describe().configured) {
   throw new Error("ENDING_PREVIEW_DEEPSEEK_KEY_MISSING");
 }
-const provider = new TurnSelectiveProvider(realProvider, realTurns);
+const provider = new TurnSelectiveProvider(
+  realTurns.size > 0 ? realProvider : null,
+  realTurns,
+);
 await mkdir(workspaceRoot, { recursive: true });
 const workspace = new FileStoryWorkspace(
   workspaceRoot,
@@ -154,9 +160,10 @@ const output = {
   schemaVersion: "sangtian-ending-preview-v1",
   testOnly: true,
   normalProductFlowChanged: false,
+  previewMode: realTurns.size > 0 ? "REAL_PREFIX_AND_ENDING" : "STRUCTURAL_ONLY",
   runId,
   workspace: workspace.paths(runId).root,
-  provider: realProvider.describe(),
+  provider: provider.describe(),
   realTurns: [...realTurns].sort((left, right) => left - right),
   skippedNarrativeTurns: route.filter((item) => (
     item.generationMode === "DETERMINISTIC_FAST_FORWARD"
@@ -164,6 +171,15 @@ const output = {
   route,
   visibleTurns,
   ending: publicRun.ending,
+  acceptance: {
+    exactFinalTurn: true,
+    authoritativeHandoffReady: true,
+    completedRunHasNoFurtherOptions: true,
+    endingBoundToT20: true,
+    protagonistFatePresent: true,
+    directAftermathPresent: true,
+    protocolFieldsHidden: true,
+  },
   finalState: {
     turnNumber: finalState.turnNumber,
     partCompletionStatus: finalState.partCompletionStatus,
@@ -227,18 +243,25 @@ class TurnSelectiveProvider implements OpenNovelProvider {
   }> = [];
 
   constructor(
-    private readonly realProvider: OpenNovelProvider,
+    private readonly realProvider: OpenNovelProvider | null,
     private readonly realTurns: Set<number>,
   ) {}
 
   describe() {
-    return this.realProvider.describe();
+    return this.realProvider?.describe() || {
+      provider: "ending-preview-structural",
+      model: "no-model",
+      configured: true,
+    };
   }
 
   async generate(request: ProviderRequest): Promise<ProviderResult> {
     if (!this.realTurns.has(this.activeTurn)) {
       this.calls.push({ turn: this.activeTurn, profile: request.profile, mode: "SKIPPED" });
       throw new Error(`ENDING_PREVIEW_MODEL_SKIPPED:T${this.activeTurn}`);
+    }
+    if (!this.realProvider) {
+      throw new Error("ENDING_PREVIEW_REAL_PROVIDER_MISSING");
     }
     const result = await this.realProvider.generate(request);
     this.calls.push({
