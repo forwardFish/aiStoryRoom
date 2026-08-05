@@ -1,0 +1,230 @@
+name: ChatGPT Pro Engineering Gates
+
+on:
+  pull_request:
+    branches:
+      - codex/chatgpt-pro-ai-story-convergence
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  engineering-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: "true"
+      CANDIDATE_SHA: ff7a925c00c8d2c4cbaccbf7ad277b7f29ddc414
+      FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+      EVIDENCE_ROOT: ${{ runner.temp }}/engineering-evidence
+      OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
+      OPENOVEL_MODEL: deepseek-v4-pro
+      OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
+      OPENOVEL_REVIEWER_MODEL: deepseek-v4-pro
+      OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
+      OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
+      OPENOVEL_DEEPSEEK_THINKING: disabled
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 0
+
+      - name: Prove isolated boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs" "${EVIDENCE_ROOT}/assets"
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "candidate_sha=${CANDIDATE_SHA}"
+            echo "checked_out=$(git rev-parse HEAD)"
+            echo "merge_base=$(git merge-base HEAD ${FROZEN_BASE_SHA})"
+            echo "main_remote=$(git rev-parse origin/main)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee "${EVIDENCE_ROOT}/logs/00-boundary.log"
+          test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          test "$(git merge-base HEAD ${FROZEN_BASE_SHA})" = "${FROZEN_BASE_SHA}"
+          test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
+          test -z "$(git status --short)"
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - id: install
+        name: Install locked dependencies
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
+
+      - id: typecheck
+        name: OpenNovel typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee "${EVIDENCE_ROOT}/logs/02-typecheck.log"
+
+      - id: build
+        name: OpenNovel build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime build 2>&1 | tee "${EVIDENCE_ROOT}/logs/03-build.log"
+
+      - id: story
+        name: Story V4 regression
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:story:v4 2>&1 | tee "${EVIDENCE_ROOT}/logs/04-story-v4.log"
+
+      - id: smoke
+        name: HTTP smoke
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime smoke:http 2>&1 | tee "${EVIDENCE_ROOT}/logs/05-http-smoke.log"
+
+      - id: assets
+        name: Frozen asset byte comparison
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_SKIP_SOURCE_WRITES=1
+          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_RUNTIME_PACKAGE_PATH="${RUNNER_TEMP}/part-one-runtime.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs 2>&1 \
+            | tee "${EVIDENCE_ROOT}/logs/06-assets.log"
+          cmp --silent packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json"
+          sha256sum packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json" \
+            | tee "${EVIDENCE_ROOT}/logs/07-assets-sha256.log"
+          cp "${RUNNER_TEMP}/part-one-runtime.json" "${EVIDENCE_ROOT}/assets/recompiled-part-one-runtime.json"
+
+      - id: supplement
+        name: Narrative supplement compilation
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SANGTIAN_NARRATIVE_SUPPLEMENT_PATH="${RUNNER_TEMP}/part-one-narrative-supplement.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs 2>&1 \
+            | tee "${EVIDENCE_ROOT}/logs/08-supplement.log"
+          test -s "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}"
+          cp "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}" "${EVIDENCE_ROOT}/assets/part-one-narrative-supplement.json"
+          sha256sum "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}" \
+            | tee "${EVIDENCE_ROOT}/logs/09-supplement-sha256.log"
+
+      - name: Build exact summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          export OUT_INSTALL='${{ steps.install.outcome }}'
+          export OUT_TYPECHECK='${{ steps.typecheck.outcome }}'
+          export OUT_BUILD='${{ steps.build.outcome }}'
+          export OUT_STORY='${{ steps.story.outcome }}'
+          export OUT_SMOKE='${{ steps.smoke.outcome }}'
+          export OUT_ASSETS='${{ steps.assets.outcome }}'
+          export OUT_SUPPLEMENT='${{ steps.supplement.outcome }}'
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          root = Path(os.environ['EVIDENCE_ROOT'])
+          story_path = root / 'logs/04-story-v4.log'
+          smoke_path = root / 'logs/05-http-smoke.log'
+          story = story_path.read_text(encoding='utf-8', errors='replace') if story_path.exists() else ''
+          smoke = smoke_path.read_text(encoding='utf-8', errors='replace') if smoke_path.exists() else ''
+          blocks = []
+          pattern = re.compile(r'# tests (\d+)\s+# suites (\d+)\s+# pass (\d+)\s+# fail (\d+)\s+# cancelled (\d+)\s+# skipped (\d+)\s+# todo (\d+)')
+          for match in pattern.finditer(story):
+              blocks.append(dict(zip(['tests','suites','pass','fail','cancelled','skipped','todo'], map(int, match.groups()))))
+          outcomes = {
+              'install': os.environ['OUT_INSTALL'],
+              'openovelTypecheck': os.environ['OUT_TYPECHECK'],
+              'openovelBuild': os.environ['OUT_BUILD'],
+              'storyV4': os.environ['OUT_STORY'],
+              'httpSmoke': os.environ['OUT_SMOKE'],
+              'frozenAssetRecompile': os.environ['OUT_ASSETS'],
+              'narrativeSupplementCompile': os.environ['OUT_SUPPLEMENT'],
+          }
+          summary = {
+              'schemaVersion': 'omw.chatgpt-pro-engineering-gates.v1',
+              'repository': 'forwardFish/aiStoryRoom',
+              'branch': 'codex/chatgpt-pro-ai-story-convergence',
+              'candidateSha': os.environ['CANDIDATE_SHA'],
+              'frozenBaseSha': os.environ['FROZEN_BASE_SHA'],
+              'node': '22',
+              'pnpm': '10.12.1',
+              'modelConfiguration': {
+                  'providerBaseUrl': os.environ['OPENOVEL_PROVIDER_BASE_URL'],
+                  'model': os.environ['OPENOVEL_MODEL'],
+                  'thinking': os.environ['OPENOVEL_DEEPSEEK_THINKING'],
+              },
+              'outcomes': outcomes,
+              'storyV4TapBlocks': blocks,
+              'httpSmoke': {
+                  'mode': 'deterministic fixture provider over real HTTP runtime path',
+                  'mockOnly': True,
+                  'reportDetected': 'openovel_http_g00_t03_smoke_v1' in smoke,
+              },
+              'realModel': False,
+              'verdict': 'PASS' if all(value == 'success' for value in outcomes.values()) else 'FAIL',
+          }
+          (root / 'summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+          {
+            echo "tested_sha=$(git rev-parse HEAD)"
+            echo "main_remote=$(git rev-parse origin/main)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee "${EVIDENCE_ROOT}/logs/99-final-boundary.log"
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
+          test -z "$(git status --short)"
+          sha256sum "${EVIDENCE_ROOT}/summary.json" "${EVIDENCE_ROOT}"/logs/*.log \
+            > "${EVIDENCE_ROOT}/SHA256SUMS"
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engineering-gates-${{ env.CANDIDATE_SHA }}
+          path: ${{ env.EVIDENCE_ROOT }}/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Enforce every gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.install.outcome }}" = "success"
+          test "${{ steps.typecheck.outcome }}" = "success"
+          test "${{ steps.build.outcome }}" = "success"
+          test "${{ steps.story.outcome }}" = "success"
+          test "${{ steps.smoke.outcome }}" = "success"
+          test "${{ steps.assets.outcome }}" = "success"
+          test "${{ steps.supplement.outcome }}" = "success"
