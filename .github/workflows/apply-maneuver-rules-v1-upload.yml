@@ -1,9 +1,12 @@
-name: Apply MANEUVER_RULES_V1 implementation
+name: Apply and verify MANEUVER_RULES_V1 implementation
 
 on:
   push:
     branches:
       - feat/maneuver-rules-v1-full-implementation-20260805
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -13,17 +16,21 @@ concurrency:
   group: apply-maneuver-rules-v1-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+
 jobs:
-  apply:
+  apply-and-verify:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
       - name: Check out implementation branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Reconstruct and verify implementation patch
         env:
@@ -83,8 +90,51 @@ jobs:
 
           git apply --check "$PATCH_PATH"
           git apply --index "$PATCH_PATH"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/maneuver-rules-v1.yml')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              '      - feat/maneuver-rules-v1\n',
+              '      - feat/maneuver-rules-v1-full-implementation-20260805\n',
+              1,
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
+          git add .github/workflows/maneuver-rules-v1.yml
           git diff --cached --check
           echo "Applied implementation patch to $(git rev-parse --short HEAD)."
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Typecheck maneuver dependencies
+        run: |
+          pnpm --filter @ai-story/templates typecheck
+          pnpm --filter @ai-story/shared typecheck
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/web typecheck
+
+      - name: Run maneuver tests
+        run: pnpm test:maneuver:v1
+
+      - name: Run Web regression suite
+        run: pnpm --filter @apps/web test
 
       - name: Commit and push complete implementation
         shell: bash
@@ -95,4 +145,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "feat(game): implement bounded maneuver rules v1"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "HEAD:${TARGET_BRANCH}"
