@@ -1,0 +1,71 @@
+name: Maneuver Rules V1
+
+on:
+  push:
+    branches:
+      - "feat/maneuver-rules-v1*"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/api/**"
+      - "apps/web/**"
+      - "packages/shared/**"
+      - "packages/templates/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/maneuver-rules-v1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maneuver-rules-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Typecheck maneuver dependencies
+        run: |
+          pnpm --filter @ai-story/templates typecheck
+          pnpm --filter @ai-story/shared typecheck
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/web typecheck
+
+      - name: Run maneuver test suite
+        run: pnpm test:maneuver:v1
+
+      - name: Run Web regression suite
+        run: pnpm --filter @apps/web test
+
+      - name: Run real game-page browser smoke
+        shell: bash
+        run: |
+          CHROMIUM_BIN="$(command -v chromium || command -v chromium-browser || command -v google-chrome-stable || command -v google-chrome || true)"
+          test -n "$CHROMIUM_BIN"
+          CHROMIUM_BIN="$CHROMIUM_BIN" pnpm test:maneuver:v1:browser
