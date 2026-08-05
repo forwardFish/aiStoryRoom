@@ -1,6 +1,17 @@
 import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js?v=20260721-story-access-error-v4";
 import { renderTransitionScreen } from "./transition-screen.js";
 import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260805-play-again-v2";
+import {
+  maneuverRulesV1ForView,
+  createManeuverV1UiState,
+  resetManeuverV1UiAfterCommit,
+  createManeuverDraftV1,
+  validateManeuverV1Draft,
+  applySuggestedManeuverDraftV1,
+  renderManeuverV1Panel,
+  renderManeuverV1DecisionCard,
+  renderEvidenceHandV1
+} from "./maneuver-v1.js?v=20260805-maneuver-v1";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
@@ -32,6 +43,7 @@ export function createStoryApp({
     customText: "",
     maneuverDraft: { maneuverType: "custom", targetRoleKey: "county_magistrate", intentKey: "", leverageKey: "", customText: "" },
     maneuverGuard: null,
+    maneuverV1: createManeuverV1UiState(),
     historyOpen: false,
     historyFilter: "all",
     showOpening: showOpeningByDefault,
@@ -203,6 +215,106 @@ export function createStoryApp({
       state.busy = false;
       render();
     }
+  }
+
+  async function previewManeuverV1() {
+    const capability = maneuverRulesV1ForView(state.view);
+    if (!capability || state.maneuverV1.busy || state.busy || typeof storage.previewManeuver !== "function") return;
+    const en = isEnglish(state.view);
+    const validation = validateManeuverV1Draft(state.maneuverV1, capability, en);
+    if (validation) {
+      state.maneuverV1.guard = validation;
+      render();
+      return;
+    }
+    const draft = createManeuverDraftV1(state.maneuverV1);
+    state.maneuverV1.busy = true;
+    state.maneuverV1.guard = null;
+    state.maneuverV1.preview = null;
+    state.maneuverV1.decisionResult = null;
+    state.error = "";
+    state.notice = "";
+    render();
+    try {
+      const result = await storage.previewManeuver(state.view, draft, {
+        idempotencyKey: globalThis.crypto?.randomUUID?.() || `maneuver-preview-${Date.now()}`
+      });
+      state.maneuverV1.decisionResult = result;
+      state.maneuverV1.preview = result?.decision === "READY" ? result : null;
+      state.maneuverV1.sourceVersion = Number(state.view?.run?.version ?? 0);
+      state.maneuverV1.sourceWindowVersion = Number(capability.window?.version ?? 0);
+    } catch (error) {
+      if (isVersionConflict(error)) {
+        state.maneuverV1.decisionResult = null;
+        state.maneuverV1.preview = null;
+        state.maneuverV1.guard = errorMessage(error);
+        await refresh({ conflict: true, silent: true });
+      } else {
+        state.maneuverV1.guard = errorMessage(error);
+      }
+    } finally {
+      state.maneuverV1.busy = false;
+      render();
+    }
+  }
+
+  async function commitManeuverV1() {
+    const preview = state.maneuverV1.preview;
+    const capability = maneuverRulesV1ForView(state.view);
+    if (!preview || !capability || state.maneuverV1.busy || state.busy || typeof storage.commitManeuverPreview !== "function") return;
+    const stale = Number(state.maneuverV1.sourceVersion) !== Number(state.view?.run?.version)
+      || Number(state.maneuverV1.sourceWindowVersion) !== Number(capability.window?.version);
+    if (stale) {
+      state.maneuverV1.guard = isEnglish(state.view)
+        ? "The situation changed after this preview. Preview the move again."
+        : "预演后局势已经变化，请重新预演后再落子。";
+      render();
+      return;
+    }
+    state.maneuverV1.busy = true;
+    state.maneuverV1.guard = null;
+    state.error = "";
+    state.notice = "";
+    render();
+    try {
+      const previousView = state.view;
+      const payload = await storage.commitManeuverPreview(state.view, preview, {
+        idempotencyKey: globalThis.crypto?.randomUUID?.() || `maneuver-commit-${preview.previewId}-${Date.now()}`
+      });
+      acceptView(payload.gameProjection);
+      state.maneuverV1 = resetManeuverV1UiAfterCommit(state.maneuverV1);
+      state.notice = payload.immediateReceipt?.narrative || (isEnglish(state.view) ? "Your maneuver has been committed." : "这项谋划已经落子。 ");
+      if (completedResultKind(previousView, payload.gameProjection) === "maneuver") startManeuverResultStream(payload.gameProjection);
+    } catch (error) {
+      if (isVersionConflict(error) || ["ACTION_PREVIEW_STALE", "ACTION_PREVIEW_EXPIRED", "MANEUVER_WINDOW_CLOSED"].includes(error?.code)) {
+        state.maneuverV1.preview = null;
+        state.maneuverV1.decisionResult = null;
+        state.maneuverV1.guard = errorMessage(error);
+        await refresh({ conflict: true, silent: true });
+      } else {
+        state.maneuverV1.guard = errorMessage(error);
+      }
+    } finally {
+      state.maneuverV1.busy = false;
+      render();
+    }
+  }
+
+  function dismissManeuverV1Preview() {
+    state.maneuverV1.preview = null;
+    state.maneuverV1.decisionResult = null;
+    state.maneuverV1.guard = null;
+    render();
+  }
+
+  function applyManeuverV1Suggestion() {
+    const result = state.maneuverV1.decisionResult;
+    if (result?.suggestedDraft && applySuggestedManeuverDraftV1(state.maneuverV1, result.suggestedDraft)) render();
+  }
+
+  function chooseManeuverV1Split(optionId) {
+    const option = (state.maneuverV1.decisionResult?.splitOptions || []).find((item) => item.optionId === optionId);
+    if (option?.draft && applySuggestedManeuverDraftV1(state.maneuverV1, option.draft)) render();
   }
 
   async function startCriticalResponse(eventId) {
@@ -527,6 +639,12 @@ export function createStoryApp({
     const openingPause = showOpening && !state.historyOpen && Boolean(state.openingStream);
     const resultPause = !showOpening && !state.historyOpen && Boolean(state.resultStream);
     const criticalPending = view.criticalEvent?.status === "pending";
+    const maneuverCapability = maneuverRulesV1ForView(view);
+    if (maneuverCapability) {
+      state.maneuverV1.currentVersion = Number(view.run?.version ?? 0);
+      state.maneuverV1.currentWindowVersion = Number(maneuverCapability.window?.version ?? 0);
+    }
+    const maneuverPreviewCard = renderManeuverV1DecisionCard(state.maneuverV1, { busy: state.maneuverV1.busy, en: isEnglish(view) });
     const mainMode = resolveMainMode({
       view,
       state,
@@ -546,15 +664,17 @@ export function createStoryApp({
           ${renderDayMission(view)}
           ${renderResources(view)}
           ${renderLeverage(view)}
+          ${renderEvidenceHandV1(view, { en: isEnglish(view) })}
           ${renderRisks(view.dashboard, view)}
           ${renderCausalRecalls(view)}
         </aside>
         <main class="causal-center ${mainMode === "history" ? "history-center" : ""} ${mainMode === "critical_pending" ? "critical-pending-center" : ""} ${mainMode === "decision" ? "decision-center" : ""}">
           ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
-          ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" ? renderDecisionZone(view, state) : ""}
+          ${mainMode === "decision" ? maneuverPreviewCard : ""}
+          ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" && !maneuverPreviewCard ? renderDecisionZone(view, state) : ""}
         </main>
         <aside class="causal-right" aria-label="${isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
-          ${renderManeuverPanel(view, state)}
+          ${maneuverCapability ? renderManeuverV1Panel(view, state.maneuverV1, { busy: state.busy, en: isEnglish(view) }) : renderManeuverPanel(view, state)}
           ${roomSessionForView(view) ? renderRoomPartyPanel(view, state) : ""}
           ${state.debugBuild ? renderBuildDiagnostics(view) : ""}
         </aside>
@@ -570,6 +690,92 @@ export function createStoryApp({
     root.querySelector(".result-stream-status")?.remove();
     const stream = root.querySelector("#messageStream");
     if (stream && !state.historyOpen) stream.scrollTop = stream.scrollHeight;
+  }
+
+  function bindManeuverV1Events() {
+    const ui = state.maneuverV1;
+    root.querySelectorAll("[data-mv1-kind]").forEach((button) => button.addEventListener("click", () => {
+      ui.activeKind = button.dataset.mv1Kind || "CUSTOM_PLAN";
+      ui.guard = null;
+      ui.preview = null;
+      ui.decisionResult = null;
+      render();
+    }));
+    root.querySelectorAll("[data-mv1-contact]").forEach((button) => button.addEventListener("click", () => {
+      ui.drafts.CONVERSATION.targetActorId = button.dataset.mv1Contact || "";
+      ui.guard = null;
+      render();
+    }));
+    root.querySelectorAll("[data-mv1-trace]").forEach((button) => button.addEventListener("click", () => {
+      ui.drafts.INVESTIGATION.traceId = button.dataset.mv1Trace || "";
+      ui.drafts.INVESTIGATION.routeId = "";
+      ui.guard = null;
+      render();
+    }));
+    root.querySelectorAll("[data-mv1-route]").forEach((button) => button.addEventListener("click", () => {
+      ui.drafts.INVESTIGATION.routeId = button.dataset.mv1Route || "";
+      ui.guard = null;
+      render();
+    }));
+    root.querySelectorAll("[data-mv1-card]").forEach((button) => button.addEventListener("click", () => {
+      ui.drafts.CARD_LAYOUT.cardAssetKey = button.dataset.mv1Card || "";
+      ui.drafts.CARD_LAYOUT.targetId = "";
+      ui.drafts.CARD_LAYOUT.triggerPatternId = "";
+      ui.guard = null;
+      render();
+    }));
+    root.querySelector("#mv1ConversationMessage")?.addEventListener("input", (event) => { ui.drafts.CONVERSATION.message = event.target.value; });
+    root.querySelector("#mv1ConversationPurpose")?.addEventListener("change", (event) => { ui.drafts.CONVERSATION.purpose = event.target.value; });
+    root.querySelector("#mv1ConversationVisibility")?.addEventListener("change", (event) => { ui.drafts.CONVERSATION.visibility = event.target.value; });
+    root.querySelector("#mv1ConversationAttachment")?.addEventListener("change", (event) => { ui.drafts.CONVERSATION.attachmentAssetKeys = event.target.value ? [event.target.value] : []; });
+    root.querySelector("#mv1FormalAgreement")?.addEventListener("change", (event) => { ui.drafts.CONVERSATION.formalAgreementRequested = event.target.checked === true; });
+    root.querySelector("#mv1InvestigationAttachment")?.addEventListener("change", (event) => { ui.drafts.INVESTIGATION.attachmentAssetKeys = event.target.value ? [event.target.value] : []; });
+    root.querySelector("#mv1CardMode")?.addEventListener("change", (event) => {
+      ui.drafts.CARD_LAYOUT.playMode = event.target.value;
+      ui.drafts.CARD_LAYOUT.triggerPatternId = "";
+      render();
+    });
+    root.querySelector("#mv1CardTarget")?.addEventListener("change", (event) => { ui.drafts.CARD_LAYOUT.targetId = event.target.value; });
+    root.querySelector("#mv1CardTrigger")?.addEventListener("change", (event) => { ui.drafts.CARD_LAYOUT.triggerPatternId = event.target.value; });
+    root.querySelector("#mv1CustomPlan")?.addEventListener("input", (event) => {
+      ui.drafts.CUSTOM_PLAN.rawText = event.target.value;
+      const counter = event.target.parentElement?.querySelector("small");
+      if (counter) counter.textContent = `${event.target.value.length} / 500`;
+    });
+    root.querySelector("#mv1CustomVisibility")?.addEventListener("change", (event) => { ui.drafts.CUSTOM_PLAN.visibilityPreference = event.target.value; });
+    root.querySelector("#mv1CustomAttachment")?.addEventListener("change", (event) => { ui.drafts.CUSTOM_PLAN.attachmentAssetKeys = event.target.value ? [event.target.value] : []; });
+    root.querySelectorAll("[data-mv1-open-reaction]").forEach((button) => button.addEventListener("click", () => {
+      ui.activeKind = "REACTION";
+      ui.drafts.REACTION = { reactionId: button.dataset.mv1OpenReaction || "", optionId: "", rawText: "", cardAssetKey: "", hold: false };
+      ui.guard = null;
+      ui.preview = null;
+      ui.decisionResult = null;
+      render();
+    }));
+    root.querySelectorAll("[data-mv1-reaction-option]").forEach((button) => button.addEventListener("click", () => {
+      ui.drafts.REACTION.optionId = button.dataset.mv1ReactionOption || "";
+      ui.drafts.REACTION.hold = false;
+      ui.guard = null;
+      render();
+    }));
+    root.querySelector("#mv1ReactionText")?.addEventListener("input", (event) => {
+      ui.drafts.REACTION.rawText = event.target.value;
+      if (event.target.value.trim()) ui.drafts.REACTION.hold = false;
+    });
+    root.querySelector("#mv1ReactionCard")?.addEventListener("change", (event) => {
+      ui.drafts.REACTION.cardAssetKey = event.target.value;
+      if (event.target.value) ui.drafts.REACTION.hold = false;
+    });
+    root.querySelector("[data-mv1-reaction-hold]")?.addEventListener("click", () => {
+      ui.drafts.REACTION = { ...ui.drafts.REACTION, optionId: "", rawText: "", cardAssetKey: "", hold: true };
+      previewManeuverV1();
+    });
+    root.querySelector("#mv1PreviewReaction")?.addEventListener("click", previewManeuverV1);
+    root.querySelector("#mv1PreviewAction")?.addEventListener("click", previewManeuverV1);
+    root.querySelector("[data-mv1-preview-edit]")?.addEventListener("click", dismissManeuverV1Preview);
+    root.querySelector("[data-mv1-preview-commit]")?.addEventListener("click", commitManeuverV1);
+    root.querySelector("[data-mv1-apply-suggestion]")?.addEventListener("click", applyManeuverV1Suggestion);
+    root.querySelectorAll("[data-mv1-split-option]").forEach((button) => button.addEventListener("click", () => chooseManeuverV1Split(button.dataset.mv1SplitOption || "")));
   }
 
   function bindEvents() {
@@ -594,6 +800,7 @@ export function createStoryApp({
     });
     root.querySelector("#submitDecision")?.addEventListener("click", submitDecision);
     root.querySelector("#maneuverSubmit")?.addEventListener("click", submitManeuver);
+    bindManeuverV1Events();
     root.querySelector("[data-room-resolve]")?.addEventListener("click", resolveRoomRound);
     root.querySelector("#criticalRespondBtn")?.addEventListener("click", () => startCriticalResponse(root.querySelector("#criticalRespondBtn")?.dataset.eventId));
     root.querySelector("#criticalDeferBtn")?.addEventListener("click", () => deferCriticalEvent(root.querySelector("#criticalDeferBtn")?.dataset.eventId));
@@ -645,6 +852,9 @@ export function createStoryApp({
     finalize,
     resolveRoomRound,
     submitManeuver,
+    previewManeuverV1,
+    commitManeuverV1,
+    dismissManeuverV1Preview,
     startCriticalResponse,
     deferCriticalEvent,
     chooseManeuver,

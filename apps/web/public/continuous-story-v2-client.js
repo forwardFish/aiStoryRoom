@@ -1,4 +1,4 @@
-import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260722-solo-db-fastpath-v1";
+import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260805-maneuver-v1";
 
 export function createContinuousStoryV2App({ root, window: win, runId, initialProjection, fetchImpl }) {
   if (!root || !runId || typeof fetchImpl !== "function") throw new TypeError("continuous story v2 requires root, runId and fetch");
@@ -18,7 +18,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     const previous = win.__AI_STORY_DISABLE_AUTO_BOOT__;
     win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
     try {
-      return await import("./app.js?v=20260723-player-header-v3");
+      return await import("./app.js?v=20260805-maneuver-v1");
     } finally {
       if (previous === undefined) delete win.__AI_STORY_DISABLE_AUTO_BOOT__;
       else win.__AI_STORY_DISABLE_AUTO_BOOT__ = previous;
