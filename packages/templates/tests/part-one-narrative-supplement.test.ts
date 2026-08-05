@@ -124,6 +124,39 @@ test("a tampered source binding fails closed before a model call", () => {
   );
 });
 
+test("a globally valid Claim from another source scene fails closed before a model call", () => {
+  const fixture = createFixture("cross-scene-claim");
+  for (const fileName of approvalFiles) {
+    cpSync(
+      resolve(authoringNarrativeRoot, fileName),
+      resolve(fixture.narrativeRoot, fileName),
+    );
+  }
+  const target = resolve(fixture.narrativeRoot, approvalFiles[0]!);
+  const document = JSON.parse(readFileSync(target, "utf8")) as {
+    patterns: Array<{
+      patternId: string;
+      sourceSceneId: string;
+      sourceClaimIds: string[];
+    }>;
+  };
+  const first = document.patterns[0]!;
+  const otherScenePattern = document.patterns.find((pattern) => (
+    pattern.sourceSceneId !== first.sourceSceneId
+    && pattern.sourceClaimIds.length > 0
+  ));
+  assert.ok(otherScenePattern, "fixture requires two patterns bound to different source scenes");
+  first.sourceClaimIds[0] = otherScenePattern.sourceClaimIds[0]!;
+  writeFileSync(target, `${JSON.stringify(document, null, 2)}\n`, "utf8");
+  clearPartOneRuntimePackageCache();
+  clearPlayablePartOneRuntimePackageCache();
+
+  assert.throws(
+    () => loadPlayablePartOneRuntimePackage("sangtian", fixture.configRoot),
+    /PART_ONE_NARRATIVE_SOURCE_CLAIM_CROSS_SCENE/u,
+  );
+});
+
 function createFixture(label: string) {
   const root = mkdtempSync(resolve(tmpdir(), `sangtian-narrative-${label}-`));
   const fixtureConfigRoot = resolve(root, "config");
