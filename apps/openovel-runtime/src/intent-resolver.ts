@@ -16,7 +16,11 @@ export type IntentAlternative = {
 
 export type ResolvedIntent = {
   schemaVersion: typeof INTENT_RESOLUTION_SCHEMA;
-  status: "BOUND_AFFORDANCE" | "CLARIFICATION_REQUIRED" | "OUT_OF_SCOPE";
+  status:
+    | "BOUND_AFFORDANCE"
+    | "BOUND_CAPABILITY"
+    | "CLARIFICATION_REQUIRED"
+    | "OUT_OF_SCOPE";
   intentType: "AFFORDANCE_EQUIVALENT" | "CAPABILITY_VARIANT" | "UNRESOLVED";
   capabilityRef: string | null;
   targetRefs: string[];
@@ -57,17 +61,19 @@ type ScoredAffordance = {
  * among the current options. A match therefore remains scoped to what the
  * player can actually do at this decision point.
  *
- * Shared phrases are never positive binding evidence. They can only prove that
- * two or more current affordances remain ambiguous. Word and punctuation
- * boundaries are retained during fuzzy matching so unrelated phrases cannot
- * form synthetic cross-word grams after whitespace removal.
+ * Shared phrases are never sufficient to bind one existing option. They may,
+ * however, prove that a free action remains inside the capability surface of a
+ * single published Decision Point. Such an action is returned as
+ * BOUND_CAPABILITY and must be settled by a capability-aware Fact Settlement;
+ * it must never be silently converted into one of the existing options.
  */
 export class DeterministicAffordanceIntentResolver implements IntentResolverModule {
-  readonly moduleId = "openovel.intent-resolver.affordance-ngrams.v1";
+  readonly moduleId = "openovel.intent-resolver.affordance-ngrams.v2";
 
   resolve(input: IntentResolutionInput): ResolvedIntent {
-    const actionExact = normalizeExact(input.action);
-    const actionMatch = normalizeForMatch(input.action);
+    const originalAction = String(input.action || "").trim();
+    const actionExact = normalizeExact(originalAction);
+    const actionMatch = normalizeForMatch(originalAction);
     const affordances = validateAffordances(input.affordances);
     if (!actionExact || !actionMatch || !affordances.length) {
       return unresolved("OUT_OF_SCOPE", [], "NO_CURRENT_AFFORDANCE");
@@ -82,7 +88,14 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
       };
     });
     const exact = surfaces.find(({ exactValues }) => exactValues.includes(actionExact));
-    if (exact) return bound(exact.option, 1, "AFFORDANCE_EQUIVALENT", "EXACT_NORMALIZED_MATCH");
+    if (exact) {
+      return bound(
+        exact.option,
+        1,
+        "AFFORDANCE_EQUIVALENT",
+        "EXACT_NORMALIZED_MATCH",
+      );
+    }
 
     const scored = surfaces
       .map(({ option }) => scoreAffordance(actionMatch, option, surfaces))
@@ -99,6 +112,40 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
       confidence: confidenceFor(item, actionLength),
     }));
     const best = scored[0];
+    const next = scored[1];
+
+    if (best && best.score > 0) {
+      const margin = best.score - (next?.score || 0);
+      const relativeMargin = margin / Math.max(1, best.score);
+      const coverage = best.matchedActionIndexes.size / Math.max(1, actionLength);
+      const confidence = confidenceFor(best, actionLength);
+
+      if (best.longestUniqueGram >= 4 && relativeMargin >= 0.2) {
+        return bound(
+          best.option,
+          confidence,
+          "AFFORDANCE_EQUIVALENT",
+          "DISTINCTIVE_AFFORDANCE_PHRASE",
+        );
+      }
+      if (best.longestUniqueGram >= 3 && coverage >= 0.3 && relativeMargin >= 0.3) {
+        return bound(
+          best.option,
+          Math.min(confidence, 0.89),
+          "CAPABILITY_VARIANT",
+          "BOUNDED_AFFORDANCE_VARIANT",
+        );
+      }
+    }
+
+    const capability = capabilityVariant(
+      originalAction,
+      actionMatch,
+      surfaces,
+      alternatives,
+    );
+    if (capability) return capability;
+
     if (!best || best.score <= 0) {
       const sharedCandidates = scored.filter((item) => (
         item.longestSharedGram >= 5
@@ -108,34 +155,79 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
         ? unresolved("CLARIFICATION_REQUIRED", alternatives, "AMBIGUOUS_AFFORDANCE")
         : unresolved("OUT_OF_SCOPE", alternatives, "NO_AFFORDANCE_SIGNAL");
     }
-    const next = scored[1];
+
     const margin = best.score - (next?.score || 0);
     const relativeMargin = margin / Math.max(1, best.score);
-    const coverage = best.matchedActionIndexes.size / Math.max(1, actionLength);
-    const confidence = confidenceFor(best, actionLength);
-
-    if (best.longestUniqueGram >= 4 && relativeMargin >= 0.2) {
-      return bound(
-        best.option,
-        confidence,
-        "AFFORDANCE_EQUIVALENT",
-        "DISTINCTIVE_AFFORDANCE_PHRASE",
-      );
-    }
-    if (best.longestUniqueGram >= 3 && coverage >= 0.3 && relativeMargin >= 0.3) {
-      return bound(
-        best.option,
-        Math.min(confidence, 0.89),
-        "CAPABILITY_VARIANT",
-        "BOUNDED_CAPABILITY_VARIANT",
-      );
-    }
     return unresolved(
       "CLARIFICATION_REQUIRED",
       alternatives,
-      next && relativeMargin < 0.2 ? "AMBIGUOUS_AFFORDANCE" : "INSUFFICIENT_AFFORDANCE_EVIDENCE",
+      next && relativeMargin < 0.2
+        ? "AMBIGUOUS_AFFORDANCE"
+        : "INSUFFICIENT_AFFORDANCE_EVIDENCE",
     );
   }
+}
+
+function capabilityVariant(
+  originalAction: string,
+  actionMatch: string,
+  surfaces: AffordanceSurfaces[],
+  alternatives: IntentAlternative[],
+): ResolvedIntent | null {
+  const decisionPointIds = unique(
+    surfaces
+      .map(({ option }) => String(option.effect?.decisionPointId || "").trim())
+      .filter(Boolean),
+  );
+  if (decisionPointIds.length !== 1) return null;
+
+  const actionUnits = lexicalUnits(actionMatch);
+  const affordanceUnits = new Set(
+    surfaces.flatMap(({ matchValues }) => matchValues.flatMap(lexicalUnits)),
+  );
+  const overlaps = [...actionUnits].filter((unit) => affordanceUnits.has(unit));
+  const novelUnits = [...actionUnits].filter((unit) => !affordanceUnits.has(unit));
+  const strongOverlap = overlaps.some((unit) => [...unit].length >= 4)
+    || overlaps.filter((unit) => [...unit].length >= 2).length >= 2;
+  const hasARealVariant = novelUnits.some((unit) => [...unit].length >= 2);
+  if (!strongOverlap || !hasARealVariant) return null;
+
+  const constraints = unique(
+    surfaces.flatMap(({ option }) => option.effect?.beatContract?.constraints || []),
+  );
+  const overlapWeight = overlaps.reduce((total, unit) => total + [...unit].length, 0);
+  const confidence = round(Math.min(0.86, 0.61 + overlapWeight * 0.012));
+  return {
+    schemaVersion: INTENT_RESOLUTION_SCHEMA,
+    status: "BOUND_CAPABILITY",
+    intentType: "CAPABILITY_VARIANT",
+    capabilityRef: `decision-point:${decisionPointIds[0]}`,
+    targetRefs: [decisionPointIds[0]!],
+    constraints,
+    matchedAffordanceId: null,
+    canonicalAction: originalAction,
+    confidence,
+    alternatives,
+    reason: "BOUNDED_CAPABILITY_VARIANT",
+  };
+}
+
+function lexicalUnits(value: string) {
+  const units = new Set<string>();
+  for (const segment of value.split(MATCH_BOUNDARY).filter(Boolean)) {
+    const points = [...segment];
+    const containsCjk = /[\p{Script=Han}]/u.test(segment);
+    if (containsCjk) {
+      for (const length of [2, 3]) {
+        for (let index = 0; index + length <= points.length; index += 1) {
+          units.add(points.slice(index, index + length).join(""));
+        }
+      }
+    } else if (points.length >= 4) {
+      units.add(segment);
+    }
+  }
+  return units;
 }
 
 function scoreAffordance(
@@ -285,6 +377,10 @@ function normalizeForMatch(value: unknown) {
     .map((segment) => segment.trim())
     .filter(Boolean)
     .join(MATCH_BOUNDARY);
+}
+
+function unique(values: string[]) {
+  return [...new Set(values)];
 }
 
 function round(value: number) {
