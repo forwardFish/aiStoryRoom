@@ -13,7 +13,8 @@
     "test:continuous-strategy": "node --import tsx --test tests/continuous-strategy.test.ts",
     "test:story-package": "node --import tsx --test tests/story-package.test.ts tests/narrative-scene-pattern-multiworld.test.ts",
     "test:games": "node --import tsx --test tests/game-registry.test.ts tests/continuous-strategy-multiworld.test.ts",
-    "test:runtime-contract": "node --import tsx --test tests/runtime-contract.test.ts tests/settlement.test.ts tests/settlement.adversarial.test.ts tests/settlement.audience-adversarial.test.ts tests/settlement.round3-adversarial.test.ts tests/projection.test.ts"
+    "test:runtime-contract": "node --import tsx --test tests/runtime-contract.test.ts tests/settlement.test.ts tests/settlement.adversarial.test.ts tests/settlement.audience-adversarial.test.ts tests/settlement.round3-adversarial.test.ts tests/projection.test.ts",
+    "test:maneuver-v1": "node --import tsx --test tests/maneuver-v1.test.ts tests/maneuver-v1.multiworld.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
