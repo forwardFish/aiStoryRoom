@@ -1,0 +1,70 @@
+name: ChatGPT Pro Auto Apply Staged Patch
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-ai-story-convergence
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/chatgpt-pro-ai-story-convergence
+          fetch-depth: 0
+
+      - name: Prove candidate boundary and prepare patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "codex/chatgpt-pro-ai-story-convergence"
+          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
+          PATCH=docs/auto-execute/.chatgpt-pro-capability-binding.patch
+          if ! grep -q 'BOUND_CAPABILITY' apps/openovel-runtime/src/intent-resolver.ts; then
+            test -f "$PATCH"
+            git apply --check "$PATCH"
+            git apply "$PATCH"
+          fi
+          rm -f "$PATCH"
+          rm -f .github/workflows/chatgpt-pro-apply-capability-patch.yml
+          rm -f .github/workflows/chatgpt-pro-auto-apply-staged-patch.yml
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify before candidate push
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter @apps/openovel-runtime typecheck
+          pnpm test:story:v4
+          pnpm --filter @apps/openovel-runtime smoke:http
+
+      - name: Commit and push only candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "feat(openovel): settle capability-level free actions"
+          git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
