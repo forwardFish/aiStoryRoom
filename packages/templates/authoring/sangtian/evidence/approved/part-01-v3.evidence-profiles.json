@@ -1,0 +1,166 @@
+{
+  "schemaVersion": "evidence-profile-set-v1",
+  "worldId": "sangtian",
+  "partId": "PART-01",
+  "releaseId": "sangtian-part-one-evidence-v1.0.0",
+  "reviewStatus": "APPROVED",
+  "profiles": [
+    {
+      "schemaVersion": "evidence-profile-v1",
+      "evidenceProfileId": "EVP-P1-QINGLIU-REGISTER-ANOMALY",
+      "assetId": "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
+      "partIds": [
+        "PART-01"
+      ],
+      "sectionIds": [
+        "SEC-P1-01",
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-EXECUTION-BOUNDARY",
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-KNOWLEDGE-CHAIN"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-REVIEW-INITIATION",
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-DISCLOSURE-SCOPE",
+        "DK-P1-WITNESS-ACCESS"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.qingliu_magistrate",
+        "actor.qingliu_messenger"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C13-CL-FOUR-LEDGER-BOXES-BURNED",
+        "DM1566-C13-CL-OTHER-FOUR-LEDGER-BOXES-HELD"
+      ],
+      "adaptationDecisionIds": [
+        "ADAPT-P1-QINGLIU-COUNTY",
+        "ADAPT-P1-REGISTER-ALTERATION"
+      ],
+      "targetRef": "evidence.qingliu_register_anomaly",
+      "carrierRef": "document.qingliu_secret_letter",
+      "openingReport": {
+        "statement": "清流县令声称，他在编报本县第一批待改田亩时，将册内分户田数逐项相加，所得合计与册尾所列总数不符。",
+        "statementClass": "ATTRIBUTED_UNVERIFIED_REPORT",
+        "validationSubjects": [
+          "清流县册",
+          "县册",
+          "原册",
+          "册子",
+          "分户田数",
+          "分户数",
+          "册尾总数"
+        ],
+        "reportedByActorRef": "actor.qingliu_magistrate",
+        "carriedByActorRef": "actor.qingliu_messenger",
+        "knownByActorRefs": [
+          "actor.qingliu_magistrate",
+          "actor.qingliu_messenger",
+          "actor.zhejiang_governor"
+        ],
+        "allowedAssertions": [
+          "密信只是清流县令的报疑，不是已经核实的结论",
+          "原册没有随密信送到总督府",
+          "清流县令声称，他在编报本县第一批待改田亩时，将册内分户田数逐项相加，所得合计与册尾所列总数不符",
+          "县令亲随只受命转述上述报疑，不知道原册的更多细节",
+          "浙江总督尚未独立核实这项不符"
+        ],
+        "forbiddenAssertions": [
+          "具体田亩数、户数、差额或精确数量",
+          "具体册页、行次、墨色、笔迹、纸张、落款、印章或真伪结论",
+          "旧册、新册、底册、副本或其他版本已经存在",
+          "具体经手人、保管人、钥匙、封条或档房出入状态",
+          "不符是误抄、漏算还是故意篡改",
+          "巡抚、商会、县令、书吏或任何具名人物已经有罪"
+        ]
+      },
+      "openingBeatContract": {
+        "objective": "把玩家的暂缓签发与核对报疑写成一个完整的内厅问答 beat，不启动下一项调查或处置。",
+        "moves": [
+          "总督把巡抚催办公文暂压在案上，让巡抚书吏继续留候。",
+          "总督只让县令亲随复述密信中已经写明的报疑，不替玩家追问原册所在地、经手人或保管状态。",
+          "亲随复述：县令声称分户田数逐项相加的合计与册尾所列总数不符；这只是县令报疑，尚未由总督核实。",
+          "亲随对差额和核验次数如实说不知道；总督不再追问原册所在地、保管人或其他细节，巡抚书吏仍在等待回文。"
+        ],
+        "requiredAnchorGroups": [
+          [
+            "没有去拿印",
+            "朱印未动",
+            "公文暂压",
+            "公文往案角",
+            "公文往案侧"
+          ],
+          [
+            "分户田数",
+            "分户逐项"
+          ],
+          [
+            "册尾总数",
+            "册尾所列总数"
+          ],
+          [
+            "不符",
+            "对不上"
+          ],
+          [
+            "不知道",
+            "不知",
+            "答不上来",
+            "不敢妄答",
+            "没交代",
+            "没有交代",
+            "没有写",
+            "没写",
+            "没有教小的记"
+          ]
+        ],
+        "stopCondition": "亲随承认不知道报疑以外的细节，巡抚书吏仍在等待总督答复时结束。"
+      },
+      "revealPolicy": {
+        "currentTier": "REPORTED_ANOMALY",
+        "tiers": [
+          {
+            "tier": "REPORTED_ANOMALY",
+            "availableWhen": [
+              "opening Canon 已建立密信报疑",
+              "玩家向县令亲随核对密信"
+            ],
+            "mayReveal": [
+              "分户田数合计与册尾总数不符",
+              "县令说法尚未由总督独立核实"
+            ],
+            "mayNotReveal": [
+              "任何精确数值",
+              "任何物理改痕",
+              "任何原册保管状态",
+              "任何责任结论"
+            ]
+          },
+          {
+            "tier": "MATERIAL_ACCESSED",
+            "availableWhen": [
+              "原册、见证抄件或合法口供已经通过已提交事件进入 Canon",
+              "对应保管与知情关系已写入持久状态"
+            ],
+            "mayReveal": [
+              "只揭示被该事件明确建立的新增事实"
+            ],
+            "mayNotReveal": [
+              "用本证据卡自动补齐尚未查到的亩数、版本、墨迹、印章、经手人或幕后关系"
+            ]
+          }
+        ]
+      },
+      "invariants": [
+        "人物说法与客观事实必须分开",
+        "异常入口不能自动升级为篡改结论",
+        "原件、副本、听闻内容与推断必须分开",
+        "后续细节只能由玩家选择的查验路径和已提交事件建立"
+      ]
+    }
+  ]
+}
