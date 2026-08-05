@@ -1,6 +1,7 @@
 import type { OpenNovelOption } from "./types.js";
 
 export const INTENT_RESOLUTION_SCHEMA = "omw.intent-resolution.v1" as const;
+const MATCH_BOUNDARY = "\u0001";
 
 export type IntentResolutionInput = {
   action: string;
@@ -32,6 +33,12 @@ export interface IntentResolverModule {
   resolve(input: IntentResolutionInput): Promise<ResolvedIntent> | ResolvedIntent;
 }
 
+type AffordanceSurfaces = {
+  option: OpenNovelOption;
+  exactValues: string[];
+  matchValues: string[];
+};
+
 type ScoredAffordance = {
   option: OpenNovelOption;
   exact: boolean;
@@ -51,35 +58,41 @@ type ScoredAffordance = {
  * player can actually do at this decision point.
  *
  * Shared phrases are never positive binding evidence. They can only prove that
- * two or more current affordances remain ambiguous, which keeps the resolver
- * fail-closed for common words such as "the" or generic verbs such as "ask".
+ * two or more current affordances remain ambiguous. Word and punctuation
+ * boundaries are retained during fuzzy matching so unrelated phrases cannot
+ * form synthetic cross-word grams after whitespace removal.
  */
 export class DeterministicAffordanceIntentResolver implements IntentResolverModule {
   readonly moduleId = "openovel.intent-resolver.affordance-ngrams.v1";
 
   resolve(input: IntentResolutionInput): ResolvedIntent {
-    const action = normalize(input.action);
+    const actionExact = normalizeExact(input.action);
+    const actionMatch = normalizeForMatch(input.action);
     const affordances = validateAffordances(input.affordances);
-    if (!action || !affordances.length) {
+    if (!actionExact || !actionMatch || !affordances.length) {
       return unresolved("OUT_OF_SCOPE", [], "NO_CURRENT_AFFORDANCE");
     }
 
-    const surfaces = affordances.map((option) => ({
-      option,
-      values: optionSurfaces(option).map(normalize).filter(Boolean),
-    }));
-    const exact = surfaces.find(({ values }) => values.includes(action));
+    const surfaces: AffordanceSurfaces[] = affordances.map((option) => {
+      const values = optionSurfaces(option);
+      return {
+        option,
+        exactValues: values.map(normalizeExact).filter(Boolean),
+        matchValues: values.map(normalizeForMatch).filter(Boolean),
+      };
+    });
+    const exact = surfaces.find(({ exactValues }) => exactValues.includes(actionExact));
     if (exact) return bound(exact.option, 1, "AFFORDANCE_EQUIVALENT", "EXACT_NORMALIZED_MATCH");
 
     const scored = surfaces
-      .map(({ option }) => scoreAffordance(action, option, surfaces))
+      .map(({ option }) => scoreAffordance(actionMatch, option, surfaces))
       .sort((left, right) => (
         right.score - left.score
         || right.longestUniqueGram - left.longestUniqueGram
         || right.sharedScore - left.sharedScore
         || left.option.id.localeCompare(right.option.id)
       ));
-    const actionLength = [...action].length;
+    const actionLength = [...actionMatch].filter((point) => point !== MATCH_BOUNDARY).length;
     const alternatives = scored.slice(0, 3).map((item) => ({
       affordanceId: item.option.id,
       label: item.option.label,
@@ -128,7 +141,7 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
 function scoreAffordance(
   action: string,
   option: OpenNovelOption,
-  all: Array<{ option: OpenNovelOption; values: string[] }>,
+  all: AffordanceSurfaces[],
 ): ScoredAffordance {
   const actionPoints = [...action];
   let score = 0;
@@ -140,20 +153,24 @@ function scoreAffordance(
 
   for (let length = Math.min(10, actionPoints.length); length >= 3; length -= 1) {
     for (let index = 0; index + length <= actionPoints.length; index += 1) {
-      const gram = actionPoints.slice(index, index + length).join("");
-      const owners = all.filter(({ values }) => values.some((value) => value.includes(gram)));
+      const points = actionPoints.slice(index, index + length);
+      if (points.includes(MATCH_BOUNDARY)) continue;
+      const gram = points.join("");
+      const owners = all.filter(({ matchValues }) => (
+        matchValues.some((value) => value.includes(gram))
+      ));
       if (!owners.some((owner) => owner.option.id === option.id)) continue;
       if (owners.length === 1) {
         score += length * length;
         longestUniqueGram = Math.max(longestUniqueGram, length);
         for (let cursor = index; cursor < index + length; cursor += 1) {
-          matchedActionIndexes.add(cursor);
+          if (actionPoints[cursor] !== MATCH_BOUNDARY) matchedActionIndexes.add(cursor);
         }
       } else {
         sharedScore += length;
         longestSharedGram = Math.max(longestSharedGram, length);
         for (let cursor = index; cursor < index + length; cursor += 1) {
-          sharedActionIndexes.add(cursor);
+          if (actionPoints[cursor] !== MATCH_BOUNDARY) sharedActionIndexes.add(cursor);
         }
       }
     }
@@ -253,12 +270,21 @@ function validateAffordances(input: readonly OpenNovelOption[]) {
   });
 }
 
-function normalize(value: unknown) {
-  return String(value || "")
-    .normalize("NFKC")
-    .toLocaleLowerCase("und")
-    .replace(/[\p{P}\p{S}\s]+/gu, "")
-    .trim();
+function normalized(value: unknown) {
+  return String(value || "").normalize("NFKC").toLocaleLowerCase("und");
+}
+
+function normalizeExact(value: unknown) {
+  return normalized(value).replace(/[\p{P}\p{S}\s]+/gu, "").trim();
+}
+
+function normalizeForMatch(value: unknown) {
+  return normalized(value)
+    .replace(/[\p{P}\p{S}\s]+/gu, MATCH_BOUNDARY)
+    .split(MATCH_BOUNDARY)
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join(MATCH_BOUNDARY);
 }
 
 function round(value: number) {
