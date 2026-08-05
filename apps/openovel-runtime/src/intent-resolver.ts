@@ -38,7 +38,9 @@ type ScoredAffordance = {
   score: number;
   sharedScore: number;
   longestUniqueGram: number;
+  longestSharedGram: number;
   matchedActionIndexes: Set<number>;
+  sharedActionIndexes: Set<number>;
 };
 
 /**
@@ -47,6 +49,10 @@ type ScoredAffordance = {
  * exact normalized equality and distinctive Unicode n-grams that are unique
  * among the current options. A match therefore remains scoped to what the
  * player can actually do at this decision point.
+ *
+ * Shared phrases are never positive binding evidence. They can only prove that
+ * two or more current affordances remain ambiguous, which keeps the resolver
+ * fail-closed for common words such as "the" or generic verbs such as "ask".
  */
 export class DeterministicAffordanceIntentResolver implements IntentResolverModule {
   readonly moduleId = "openovel.intent-resolver.affordance-ngrams.v1";
@@ -70,6 +76,7 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
       .sort((left, right) => (
         right.score - left.score
         || right.longestUniqueGram - left.longestUniqueGram
+        || right.sharedScore - left.sharedScore
         || left.option.id.localeCompare(right.option.id)
       ));
     const actionLength = [...action].length;
@@ -80,7 +87,13 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
     }));
     const best = scored[0];
     if (!best || best.score <= 0) {
-      return unresolved("OUT_OF_SCOPE", alternatives, "NO_AFFORDANCE_SIGNAL");
+      const sharedCandidates = scored.filter((item) => (
+        item.longestSharedGram >= 5
+        && item.sharedActionIndexes.size / Math.max(1, actionLength) >= 0.4
+      ));
+      return sharedCandidates.length >= 2
+        ? unresolved("CLARIFICATION_REQUIRED", alternatives, "AMBIGUOUS_AFFORDANCE")
+        : unresolved("OUT_OF_SCOPE", alternatives, "NO_AFFORDANCE_SIGNAL");
     }
     const next = scored[1];
     const margin = best.score - (next?.score || 0);
@@ -121,7 +134,9 @@ function scoreAffordance(
   let score = 0;
   let sharedScore = 0;
   let longestUniqueGram = 0;
+  let longestSharedGram = 0;
   const matchedActionIndexes = new Set<number>();
+  const sharedActionIndexes = new Set<number>();
 
   for (let length = Math.min(10, actionPoints.length); length >= 3; length -= 1) {
     for (let index = 0; index + length <= actionPoints.length; index += 1) {
@@ -136,18 +151,23 @@ function scoreAffordance(
         }
       } else {
         sharedScore += length;
+        longestSharedGram = Math.max(longestSharedGram, length);
+        for (let cursor = index; cursor < index + length; cursor += 1) {
+          sharedActionIndexes.add(cursor);
+        }
       }
     }
   }
 
-  score += sharedScore * 0.05;
   return {
     option,
     exact: false,
     score,
     sharedScore,
     longestUniqueGram,
+    longestSharedGram,
     matchedActionIndexes,
+    sharedActionIndexes,
   };
 }
 
@@ -162,6 +182,12 @@ function optionSurfaces(option: OpenNovelOption) {
 
 function confidenceFor(item: ScoredAffordance, actionLength: number) {
   if (item.exact) return 1;
+  if (!item.longestUniqueGram) {
+    const sharedCoverage = item.sharedActionIndexes.size / Math.max(1, actionLength);
+    return item.longestSharedGram >= 5
+      ? round(Math.min(0.69, 0.35 + sharedCoverage * 0.3))
+      : 0;
+  }
   const coverage = item.matchedActionIndexes.size / Math.max(1, actionLength);
   const value = 0.55 + item.longestUniqueGram * 0.055 + Math.min(0.18, coverage * 0.18);
   return round(Math.max(0, Math.min(0.99, value)));
