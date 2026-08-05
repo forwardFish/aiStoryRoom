@@ -1,7 +1,14 @@
-name: ChatGPT Pro Auto Apply Staged Patch
+name: ChatGPT Pro Apply Source Claim Repair
 
 on:
   push:
+    branches:
+      - codex/chatgpt-pro-ai-story-convergence
+    paths:
+      - ".github/workflows/chatgpt-pro-auto-apply-staged-patch.yml"
+      - "docs/auto-execute/.chatgpt-pro-source-claim-repair.patch.gz.b64"
+  pull_request:
+    types: [opened, reopened, synchronize]
     branches:
       - codex/chatgpt-pro-ai-story-convergence
   workflow_dispatch:
@@ -9,33 +16,79 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: chatgpt-pro-source-claim-repair
+  cancel-in-progress: false
+
 jobs:
   apply:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
           ref: codex/chatgpt-pro-ai-story-convergence
           fetch-depth: 0
 
-      - name: Prove candidate boundary and prepare patch
+      - name: Prove candidate boundary and apply verified patch
         shell: bash
         run: |
           set -euo pipefail
-          test "${GITHUB_REF_NAME}" = "codex/chatgpt-pro-ai-story-convergence"
           test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
-          PATCH=docs/auto-execute/.chatgpt-pro-capability-binding.patch
-          if ! grep -q 'BOUND_CAPABILITY' apps/openovel-runtime/src/intent-resolver.ts; then
-            test -f "$PATCH"
+          test -z "$(git status --short)"
+
+          PATCH_B64=docs/auto-execute/.chatgpt-pro-source-claim-repair.patch.gz.b64
+          PATCH=/tmp/chatgpt-pro-source-claim-repair.patch
+          if ! grep -q 'PART_ONE_NARRATIVE_SOURCE_CLAIM_SCENE_MISMATCH' \
+            packages/templates/src/story-package/playable-part-one-runtime.ts; then
+            test -f "$PATCH_B64"
+            base64 --decode "$PATCH_B64" | gzip --decompress > "$PATCH"
             git apply --check "$PATCH"
             git apply "$PATCH"
           fi
-          rm -f "$PATCH"
-          rm -f .github/workflows/chatgpt-pro-apply-capability-patch.yml
+
+          rm -f "$PATCH_B64"
           rm -f .github/workflows/chatgpt-pro-auto-apply-staged-patch.yml
           git diff --check
+
+      - name: Validate narrative source bindings without dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          runtime = json.loads(Path(
+              "packages/templates/config/sangtian/story-package/part-one-runtime.json"
+          ).read_text(encoding="utf-8"))
+          sections = {row["sectionId"]: row for row in runtime["sections"]}
+          scenes = {
+              asset["payload"]["sourceSceneId"]: set(asset["sourceClaimIds"])
+              for asset in runtime["assets"]
+              if asset["assetType"] == "SOURCE_SCENE_EVIDENCE"
+          }
+          required = {
+              kernel_id
+              for section_id in ("SEC-P1-02", "SEC-P1-03", "SEC-P1-04")
+              for kernel_id in sections[section_id]["activeDecisionKernelIds"]
+          }
+          covered = set()
+          pattern_count = 0
+          for number in (2, 3, 4):
+              document = json.loads(Path(
+                  f"packages/templates/authoring/sangtian/narrative/scene-patterns.section-{number:02d}.approved.json"
+              ).read_text(encoding="utf-8"))
+              for pattern in document["patterns"]:
+                  pattern_count += 1
+                  source_scene_id = pattern["sourceSceneId"]
+                  assert source_scene_id in scenes, pattern["patternId"]
+                  assert set(pattern["sourceClaimIds"]) <= scenes[source_scene_id], pattern["patternId"]
+                  covered.update(pattern["decisionKernelIds"])
+          assert pattern_count == 11, pattern_count
+          assert covered == required, sorted(required - covered)
+          PY
 
       - uses: pnpm/action-setup@v4
         with:
@@ -47,24 +100,45 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Verify before candidate push
+      - name: Install exact workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Run deterministic engineering gates
         shell: bash
         run: |
           set -euo pipefail
-          pnpm install --frozen-lockfile
+          pnpm --filter @ai-story/templates typecheck
+          pnpm --filter @ai-story/templates test:story-package
           pnpm --filter @apps/openovel-runtime typecheck
+          pnpm --filter @apps/openovel-runtime build
           pnpm test:story:v4
           pnpm --filter @apps/openovel-runtime smoke:http
 
-      - name: Commit and push only candidate branch
+          mkdir -p "${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_SKIP_SOURCE_WRITES=1
+          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_RUNTIME_PACKAGE_PATH="${RUNNER_TEMP}/part-one-runtime.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+          cmp --silent \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json"
+
+      - name: Commit only the verified candidate repair
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add -- \
+            packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json \
+            packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json \
+            packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json \
+            packages/templates/src/story-package/playable-part-one-runtime.ts \
+            packages/templates/tests/part-one-narrative-supplement.test.ts \
+            docs/auto-execute/.chatgpt-pro-source-claim-repair.patch.gz.b64 \
+            .github/workflows/chatgpt-pro-auto-apply-staged-patch.yml
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "feat(openovel): settle capability-level free actions"
+          git commit -m "fix(story-assets): bind patterns to verified source claims"
           git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
