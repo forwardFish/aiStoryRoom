@@ -24,6 +24,7 @@ export function createManeuverV1Controller({ root, window: win, runId, fetchImpl
   let destroyed = false;
   let renderQueued = false;
   let projectionAbort = null;
+  let legacyPanelSnapshot = null;
 
   async function boot() {
     ensureStyles(win.document);
@@ -50,6 +51,7 @@ export function createManeuverV1Controller({ root, window: win, runId, fetchImpl
       if (error?.name === "AbortError") return null;
       if (isCapabilityUnavailable(error)) {
         state.active = false;
+        restoreLegacyView();
         return null;
       }
       if (!suppressError) state.error = playerError(error);
@@ -113,8 +115,11 @@ export function createManeuverV1Controller({ root, window: win, runId, fetchImpl
     const activeObserver = observer;
     activeObserver?.disconnect();
     try {
-      const legacyPanel = root.querySelector('.causal-right [data-testid="maneuver-panel"]') || root.querySelector('[data-testid="maneuver-panel"]');
+      const legacyPanel = findLegacyPanel();
       if (legacyPanel) {
+        if (!legacyPanelSnapshot || legacyPanelSnapshot.node !== legacyPanel || legacyPanelSnapshot.node.isConnected === false) {
+          legacyPanelSnapshot = { node: legacyPanel, html: legacyPanel.innerHTML, marker: legacyPanel.dataset.maneuverV1 || "" };
+        }
         const nextHtml = renderManeuverPanelV1(state, locale);
         legacyPanel.dataset.maneuverV1 = "true";
         if (legacyPanel.innerHTML !== nextHtml) legacyPanel.innerHTML = nextHtml;
@@ -137,7 +142,7 @@ export function createManeuverV1Controller({ root, window: win, runId, fetchImpl
     const center = root.querySelector(".causal-center");
     if (!center) return;
     center.querySelector("[data-maneuver-v1-preview]")?.remove();
-    const decisions = [...center.querySelectorAll('[data-testid="decision-zone"]')];
+    const decisions = [...center.querySelectorAll('[data-testid="decision-zone"], .decision-zone')];
     if (!state.preview) {
       decisions.forEach((node) => {
         if (node.dataset.maneuverV1Hidden === "true") {
@@ -194,9 +199,28 @@ export function createManeuverV1Controller({ root, window: win, runId, fetchImpl
     root.removeEventListener("click", onClick);
     root.removeEventListener("input", onInput);
     root.removeEventListener("change", onChange);
-    root.querySelector("[data-maneuver-v1-evidence]")?.remove();
-    root.querySelector("[data-maneuver-v1-preview]")?.remove();
-    root.querySelectorAll('[data-maneuver-v1-hidden="true"]').forEach((node) => { node.hidden = false; delete node.dataset.maneuverV1Hidden; });
+    restoreLegacyView();
+  }
+
+  function findLegacyPanel() {
+    return root.querySelector?.('.causal-right [data-testid="maneuver-panel"]')
+      || root.querySelector?.('[data-testid="maneuver-panel"]')
+      || null;
+  }
+
+  function restoreLegacyView() {
+    root.querySelector?.("[data-maneuver-v1-evidence]")?.remove();
+    root.querySelector?.("[data-maneuver-v1-preview]")?.remove();
+    root.querySelectorAll?.('[data-maneuver-v1-hidden="true"]').forEach((node) => {
+      node.hidden = false;
+      delete node.dataset.maneuverV1Hidden;
+    });
+    if (legacyPanelSnapshot?.node?.isConnected !== false) {
+      legacyPanelSnapshot.node.innerHTML = legacyPanelSnapshot.html;
+      if (legacyPanelSnapshot.marker) legacyPanelSnapshot.node.dataset.maneuverV1 = legacyPanelSnapshot.marker;
+      else delete legacyPanelSnapshot.node.dataset.maneuverV1;
+    }
+    legacyPanelSnapshot = null;
   }
 
   const api = {
