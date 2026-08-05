@@ -136,4 +136,5 @@ jobs:
           name: candidate-engineering-evidence-${{ github.event.pull_request.base.sha }}
           path: .candidate-evidence/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 7
