@@ -143,7 +143,7 @@ export function buildManeuverDraftV1(state) {
   }
   if (kind === "INVESTIGATE") {
     requireText(source.traceId, "请先选择一条当前可见的痕迹。");
-    requireText(source.routeId, "请先选择一条兛体调查路线。");
+    requireText(source.routeId, "请先选择一条具体调查路线。");
     return compact({ kind, traceId: source.traceId, routeId: source.routeId, leverageAssetId: source.leverageAssetId, expectedTurnRevision });
   }
   if (kind === "LEVERAGE") {
