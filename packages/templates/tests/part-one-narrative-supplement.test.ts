@@ -1,80 +1,71 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
-  assemblePartOneRuntimePackage,
   clearPartOneRuntimePackageCache,
-  loadPartOneRuntimePackage,
-  validatePartOneNarrativeSupplement,
-  validatePartOneRuntimePackage,
+  loadPartOneRuntimePackage as loadFrozenPartOneRuntimePackage,
 } from "../src/story-package/part-one-runtime-loader";
-import type { PartOneNarrativeSupplement } from "../src/story-package/part-one-runtime-types";
+import {
+  clearPlayablePartOneRuntimePackageCache,
+  loadPlayablePartOneRuntimePackage,
+} from "../src/story-package/playable-part-one-runtime";
 
-const configRoot = resolve(__dirname, "../config");
-const baseRuntimePath = resolve(configRoot, "sangtian/story-package/part-one-runtime.json");
-const supplementPath = resolve(configRoot, "sangtian/story-package/part-one-narrative-supplement.json");
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const configRoot = resolve(packageRoot, "config");
+const authoringNarrativeRoot = resolve(packageRoot, "authoring/sangtian/narrative");
+const approvalFiles = [
+  "scene-patterns.section-02.approved.json",
+  "scene-patterns.section-03.approved.json",
+  "scene-patterns.section-04.approved.json",
+];
 
-function readJson(path: string) {
-  return JSON.parse(readFileSync(path, "utf8"));
-}
-
-function immutableHash(value: unknown) {
-  return createHash("sha256")
-    .update(canonical(withoutImmutableHash(value)))
-    .digest("hex")
-    .toUpperCase();
-}
-
-function withoutImmutableHash(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(withoutImmutableHash);
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .filter(([key]) => key !== "immutableHash")
-      .map(([key, entry]) => [key, withoutImmutableHash(entry)]),
-  );
-}
-
-function canonical(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  return `{${Object.keys(value as Record<string, unknown>)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${canonical((value as Record<string, unknown>)[key])}`)
-    .join(",")}}`;
-}
-
-test("the narrative supplement extends the frozen base without replacing its hash", () => {
+test("the playable package extends but never replaces the frozen authoring release", () => {
   clearPartOneRuntimePackageCache();
-  const loaded = loadPartOneRuntimePackage("sangtian", configRoot);
-  const base = validatePartOneRuntimePackage(readJson(baseRuntimePath));
+  clearPlayablePartOneRuntimePackageCache();
+  const frozen = loadFrozenPartOneRuntimePackage("sangtian", configRoot);
+  const playable = loadPlayablePartOneRuntimePackage("sangtian", configRoot);
 
-  assert.equal(base.assets.length, 65);
-  assert.equal(base.contentCounts.narrativeScenePatterns, 3);
-  assert.equal(loaded.package.assets.length, 76);
-  assert.equal(loaded.package.contentCounts.narrativeScenePatterns, 14);
-  assert.equal(loaded.package.narrativeSupplement?.assetCount, 11);
+  assert.equal(frozen.package.assets.length, 65);
+  assert.equal(frozen.package.contentCounts.narrativeScenePatterns, 3);
+  assert.equal(frozen.package.authoringManifest.assetCount, 65);
+  assert.equal(frozen.package.authoringManifest.narrativeScenePatternCount, 3);
+
+  assert.equal(playable.package.assets.length, 76);
+  assert.equal(playable.package.contentCounts.narrativeScenePatterns, 14);
+  assert.equal(playable.package.authoringManifest.assetCount, 65);
+  assert.equal(playable.package.authoringManifest.narrativeScenePatternCount, 3);
+  assert.equal(playable.package.narrativeSupplement?.assetCount, 11);
   assert.equal(
-    loaded.package.narrativeSupplement?.baseRuntimeImmutableHash,
-    base.immutableHash,
+    playable.package.narrativeSupplement?.baseRuntimeImmutableHash,
+    frozen.package.immutableHash,
   );
-  assert.notEqual(loaded.package.immutableHash, base.immutableHash);
+  assert.notEqual(playable.package.immutableHash, frozen.package.immutableHash);
 });
 
-test("every Section Two through Four Kernel retrieves at least one approved scene pattern", () => {
+test("every Section Two through Four Kernel retrieves an approved scene pattern", () => {
   clearPartOneRuntimePackageCache();
-  const pkg = loadPartOneRuntimePackage("sangtian", configRoot).package;
-  const requiredKernelIds = pkg.sections
+  clearPlayablePartOneRuntimePackageCache();
+  const pkg = loadPlayablePartOneRuntimePackage("sangtian", configRoot).package;
+  const kernelIds = pkg.sections
     .filter((section) => ["SEC-P1-02", "SEC-P1-03", "SEC-P1-04"].includes(section.sectionId))
     .flatMap((section) => section.activeDecisionKernelIds);
 
-  assert.equal(new Set(requiredKernelIds).size, 12);
-  for (const kernelId of requiredKernelIds) {
-    const assetIds = pkg.runtimeIndex.byDecisionKernel[kernelId] || [];
-    const patterns = assetIds
+  assert.equal(new Set(kernelIds).size, 12);
+  assert.deepEqual(
+    pkg.narrativeSupplement?.coveredDecisionKernelIds,
+    [...new Set(kernelIds)].sort(),
+  );
+  for (const kernelId of kernelIds) {
+    const patterns = (pkg.runtimeIndex.byDecisionKernel[kernelId] || [])
       .map((assetId) => pkg.assets.find((asset) => asset.assetId === assetId))
       .filter((asset) => asset?.assetType === "NARRATIVE_SCENE_PATTERN");
     assert.ok(patterns.length >= 1, `${kernelId} has no NarrativeScenePattern`);
@@ -82,46 +73,70 @@ test("every Section Two through Four Kernel retrieves at least one approved scen
   }
 });
 
-test("supplement tampering and duplicate IDs fail closed", () => {
-  const base = validatePartOneRuntimePackage(readJson(baseRuntimePath));
-  const original = readJson(supplementPath) as PartOneNarrativeSupplement;
-
-  const tampered = structuredClone(original);
-  tampered.assets[0]!.payload.dramaticFunction = "tampered";
-  assert.throws(
-    () => validatePartOneNarrativeSupplement(tampered, base),
-    /immutable hash/u,
-  );
-
-  const duplicate = structuredClone(original);
-  duplicate.assets[1]!.assetId = duplicate.assets[0]!.assetId;
-  duplicate.immutableHash = immutableHash(duplicate);
-  assert.throws(
-    () => validatePartOneNarrativeSupplement(duplicate, base),
-    /duplicate assetId/u,
-  );
-});
-
-test("a missing supplement is not silently treated as complete Sangtian assets", () => {
-  const root = mkdtempSync(resolve(tmpdir(), "sangtian-supplement-missing-"));
-  const target = resolve(root, "sangtian/story-package/part-one-runtime.json");
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, readFileSync(baseRuntimePath));
+test("assembling the same frozen package and approvals is deterministic", () => {
   clearPartOneRuntimePackageCache();
+  clearPlayablePartOneRuntimePackageCache();
+  const first = loadPlayablePartOneRuntimePackage("sangtian", configRoot);
+  clearPlayablePartOneRuntimePackageCache();
+  const second = loadPlayablePartOneRuntimePackage("sangtian", configRoot);
+
+  assert.equal(first.contentHash, second.contentHash);
+  assert.equal(first.package.narrativeSupplement?.immutableHash, second.package.narrativeSupplement?.immutableHash);
+  assert.deepEqual(first.package.runtimeIndex, second.package.runtimeIndex);
+  assert.deepEqual(first.package.assets, second.package.assets);
+});
+
+test("a missing approval set fails closed before a model call", () => {
+  const fixture = createFixture("missing");
+  for (const fileName of approvalFiles.slice(0, 2)) {
+    cpSync(
+      resolve(authoringNarrativeRoot, fileName),
+      resolve(fixture.narrativeRoot, fileName),
+    );
+  }
+  clearPartOneRuntimePackageCache();
+  clearPlayablePartOneRuntimePackageCache();
 
   assert.throws(
-    () => loadPartOneRuntimePackage("sangtian", root),
-    /PART_ONE_NARRATIVE_SUPPLEMENT_MISSING/u,
+    () => loadPlayablePartOneRuntimePackage("sangtian", fixture.configRoot),
+    /PART_ONE_NARRATIVE_APPROVAL_INVALID/u,
   );
 });
 
-test("assembling the same verified base and supplement is deterministic", () => {
-  const base = validatePartOneRuntimePackage(readJson(baseRuntimePath));
-  const supplement = validatePartOneNarrativeSupplement(readJson(supplementPath), base);
-  const first = assemblePartOneRuntimePackage(base, supplement);
-  const second = assemblePartOneRuntimePackage(base, supplement);
+test("a tampered source binding fails closed before a model call", () => {
+  const fixture = createFixture("tampered");
+  for (const fileName of approvalFiles) {
+    cpSync(
+      resolve(authoringNarrativeRoot, fileName),
+      resolve(fixture.narrativeRoot, fileName),
+    );
+  }
+  const target = resolve(fixture.narrativeRoot, approvalFiles[0]!);
+  const document = JSON.parse(readFileSync(target, "utf8"));
+  document.patterns[0].sourceRefs[0].sourceSha256 = "A".repeat(64);
+  writeFileSync(target, `${JSON.stringify(document, null, 2)}\n`, "utf8");
+  clearPartOneRuntimePackageCache();
+  clearPlayablePartOneRuntimePackageCache();
 
-  assert.equal(first.immutableHash, second.immutableHash);
-  assert.deepEqual(first.runtimeIndex, second.runtimeIndex);
-  assert.deepEqual(first.assets, second.assets);
+  assert.throws(
+    () => loadPlayablePartOneRuntimePackage("sangtian", fixture.configRoot),
+    /PART_ONE_NARRATIVE_SOURCE_REF_INVALID/u,
+  );
 });
+
+function createFixture(label: string) {
+  const root = mkdtempSync(resolve(tmpdir(), `sangtian-narrative-${label}-`));
+  const fixtureConfigRoot = resolve(root, "config");
+  const runtimeRoot = resolve(fixtureConfigRoot, "sangtian/story-package");
+  const narrativeRoot = resolve(root, "authoring/sangtian/narrative");
+  mkdirSync(runtimeRoot, { recursive: true });
+  mkdirSync(narrativeRoot, { recursive: true });
+  cpSync(
+    resolve(configRoot, "sangtian/story-package/part-one-runtime.json"),
+    resolve(runtimeRoot, "part-one-runtime.json"),
+  );
+  return {
+    configRoot: fixtureConfigRoot,
+    narrativeRoot,
+  };
+}
