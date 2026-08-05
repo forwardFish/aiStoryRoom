@@ -3,7 +3,7 @@ declare const require: { main: unknown };
 declare const module: unknown;
 
 type Buffer = Uint8Array & {
-  toString(encoding: "utf8"): string;
+  toString(encoding: "base64url" | "utf8"): string;
 };
 
 declare const Buffer: {
