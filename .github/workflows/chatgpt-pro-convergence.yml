@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - codex/chatgpt-pro-ai-story-convergence
+  pull_request:
+    branches:
+      - codex/chatgpt-pro-ai-story-convergence
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -14,6 +18,8 @@ jobs:
     timeout-minutes: 60
     env:
       CI: "true"
+      CANDIDATE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+      CANDIDATE_REF: codex/chatgpt-pro-ai-story-convergence
       OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
       OPENOVEL_MODEL: deepseek-v4-pro
       OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
@@ -24,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           fetch-depth: 0
 
       - name: Prove exact candidate boundary
@@ -34,8 +40,9 @@ jobs:
           mkdir -p candidate-evidence/logs
           {
             echo "repository=${GITHUB_REPOSITORY}"
-            echo "ref=${GITHUB_REF_NAME}"
-            echo "sha=${GITHUB_SHA}"
+            echo "event=${GITHUB_EVENT_NAME}"
+            echo "candidate_ref=${CANDIDATE_REF}"
+            echo "candidate_sha=${CANDIDATE_SHA}"
             echo "checked_out=$(git rev-parse HEAD)"
             echo "merge_base=$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
             echo "main_remote=$(git rev-parse origin/main)"
@@ -43,8 +50,7 @@ jobs:
             git status --short
             echo "status_end"
           } | tee candidate-evidence/logs/00-boundary.log
-          test "${GITHUB_REF_NAME}" = "codex/chatgpt-pro-ai-story-convergence"
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
           test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
           test "$(git rev-parse origin/main)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
           test -z "$(git status --short)"
@@ -156,7 +162,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: convergence-${{ github.sha }}
+          name: convergence-${{ env.CANDIDATE_SHA }}
           path: candidate-evidence/
           if-no-files-found: error
           retention-days: 7
