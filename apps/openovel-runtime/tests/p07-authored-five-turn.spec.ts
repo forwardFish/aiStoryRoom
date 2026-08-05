@@ -15,6 +15,7 @@ import type {
   MirrorEvent,
   OpenNovelProvider,
   ProviderRequest,
+  TurnResult,
 } from "../src/types.js";
 
 test("P07 authored G00-T20 commits one server beat and one atomic Head per turn", async () => {
@@ -49,6 +50,7 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     let finalSubmissionId = "";
     let finalAction = "";
     let finalBoundOption: { id: string; label: string } | null = null;
+    let finalTurnResult: TurnResult | null = null;
 
     for (let turn = 1; turn <= 20; turn += 1) {
       const submissionId = `authored_t${String(turn).padStart(2, "0")}_submission`;
@@ -63,6 +65,7 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
         submissionId,
         boundOption: { id: selected.id, label: selected.label },
       });
+      if (turn === 20) finalTurnResult = result;
       assert.equal(result.turnNumber, turn);
       assert.ok(result.narration.trim().length > 0);
       assert.ok(result.causalDelta.beatContract?.narrativeSeed);
@@ -163,7 +166,10 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     assert.equal(state.turnNumber, 20);
     assert.equal(state.partCompletionStatus, "HANDOFF_READY");
     const publicRun = await workspace.readPublicRun(runId);
+    assert.ok(finalTurnResult);
     assert.equal(publicRun.status, "COMPLETED");
+    assert.equal(finalTurnResult.storyComplete, true);
+    assert.deepEqual(finalTurnResult.ending, publicRun.ending);
     assert.equal(publicRun.ending?.sourceTurnId, "T20");
     assert.ok(publicRun.ending?.finalSceneNarrative.trim());
     assert.ok(publicRun.ending?.protagonistFate.trim());

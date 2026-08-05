@@ -207,6 +207,7 @@ GET /internal/openovel/runs/:runId
 - `status = COMPLETED`；
 - `turnNumber = 20`；
 - `ending.sourceTurnId = T20`；
+- T20 最终行动响应中的 `ending` 与随后 GET 读回的 `ending` 完全一致；
 - `ending` 与原子 Head 提交并在重启后保持不变；
 - `options = []`，玩家不能在结尾后继续提交新决策；
 - 不返回 `worldState`、`causalDelta`、`DurableTurnEnvelope`、内部 Predicate、`narrativeSeed`、Truth Reviewer 结果或置信度。
