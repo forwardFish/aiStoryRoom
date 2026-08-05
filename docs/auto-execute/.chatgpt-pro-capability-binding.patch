@@ -1,0 +1,354 @@
+diff --git a/apps/openovel-runtime/src/decision-adapter.ts b/apps/openovel-runtime/src/decision-adapter.ts
+index ea522f8..620105e 100644
+--- a/apps/openovel-runtime/src/decision-adapter.ts
++++ b/apps/openovel-runtime/src/decision-adapter.ts
+@@ -230,13 +230,40 @@ async function resolveAuthoredAction(input: {
+     alternatives: resolution.alternatives,
+   }).catch(() => {});
+ 
+-  if (resolution.status !== "BOUND_AFFORDANCE") {
++  if (
++    resolution.status !== "BOUND_AFFORDANCE"
++    && resolution.status !== "BOUND_CAPABILITY"
++  ) {
+     throw actionRejected(
+       resolution.status === "CLARIFICATION_REQUIRED"
+         ? "INTENT_CLARIFICATION_REQUIRED"
+         : "INTENT_CAPABILITY_UNAVAILABLE",
+     );
+   }
++  if (resolution.status === "BOUND_CAPABILITY") {
++    const decisionPointId = resolution.targetRefs[0];
++    if (!decisionPointId || !resolution.canonicalAction) {
++      throw new Error("INTENT_CAPABILITY_BINDING_INVALID");
++    }
++    return {
++      input: {
++        ...input.input,
++        action: resolution.canonicalAction,
++        selectedOption: {
++          id: `capability_${input.turnId.toLowerCase()}`,
++          label: resolution.canonicalAction,
++          key: true,
++          effect: {
++            decisionPointId,
++            intent: resolution.canonicalAction,
++            reversible: true,
++          },
++        },
++      },
++      resolution,
++      affordanceSource,
++    };
++  }
+   const selectedOption = affordances.find((option) => (
+     option.id === resolution.matchedAffordanceId
+   ));
+diff --git a/apps/openovel-runtime/src/intent-resolver.ts b/apps/openovel-runtime/src/intent-resolver.ts
+index 0254812..b9881f2 100644
+--- a/apps/openovel-runtime/src/intent-resolver.ts
++++ b/apps/openovel-runtime/src/intent-resolver.ts
+@@ -16,7 +16,7 @@ export type IntentAlternative = {
+ 
+ export type ResolvedIntent = {
+   schemaVersion: typeof INTENT_RESOLUTION_SCHEMA;
+-  status: "BOUND_AFFORDANCE" | "CLARIFICATION_REQUIRED" | "OUT_OF_SCOPE";
++  status: "BOUND_AFFORDANCE" | "BOUND_CAPABILITY" | "CLARIFICATION_REQUIRED" | "OUT_OF_SCOPE";
+   intentType: "AFFORDANCE_EQUIVALENT" | "CAPABILITY_VARIANT" | "UNRESOLVED";
+   capabilityRef: string | null;
+   targetRefs: string[];
+@@ -66,8 +66,9 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
+   readonly moduleId = "openovel.intent-resolver.affordance-ngrams.v1";
+ 
+   resolve(input: IntentResolutionInput): ResolvedIntent {
+-    const actionExact = normalizeExact(input.action);
+-    const actionMatch = normalizeForMatch(input.action);
++    const originalAction = String(input.action || "").trim();
++    const actionExact = normalizeExact(originalAction);
++    const actionMatch = normalizeForMatch(originalAction);
+     const affordances = validateAffordances(input.affordances);
+     if (!actionExact || !actionMatch || !affordances.length) {
+       return unresolved("OUT_OF_SCOPE", [], "NO_CURRENT_AFFORDANCE");
+@@ -98,23 +99,14 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
+       label: item.option.label,
+       confidence: confidenceFor(item, actionLength),
+     }));
+-    const best = scored[0];
+-    if (!best || best.score <= 0) {
+-      const sharedCandidates = scored.filter((item) => (
+-        item.longestSharedGram >= 5
+-        && item.sharedActionIndexes.size / Math.max(1, actionLength) >= 0.4
+-      ));
+-      return sharedCandidates.length >= 2
+-        ? unresolved("CLARIFICATION_REQUIRED", alternatives, "AMBIGUOUS_AFFORDANCE")
+-        : unresolved("OUT_OF_SCOPE", alternatives, "NO_AFFORDANCE_SIGNAL");
+-    }
++    const best = scored[0]!;
+     const next = scored[1];
+     const margin = best.score - (next?.score || 0);
+     const relativeMargin = margin / Math.max(1, best.score);
+     const coverage = best.matchedActionIndexes.size / Math.max(1, actionLength);
+     const confidence = confidenceFor(best, actionLength);
+ 
+-    if (best.longestUniqueGram >= 4 && relativeMargin >= 0.2) {
++    if (best && best.score > 0 && best.longestUniqueGram >= 4 && relativeMargin >= 0.2) {
+       return bound(
+         best.option,
+         confidence,
+@@ -122,7 +114,7 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
+         "DISTINCTIVE_AFFORDANCE_PHRASE",
+       );
+     }
+-    if (best.longestUniqueGram >= 3 && coverage >= 0.3 && relativeMargin >= 0.3) {
++    if (best && best.score > 0 && best.longestUniqueGram >= 3 && coverage >= 0.3 && relativeMargin >= 0.3) {
+       return bound(
+         best.option,
+         Math.min(confidence, 0.89),
+@@ -130,6 +122,23 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
+         "BOUNDED_CAPABILITY_VARIANT",
+       );
+     }
++    const capability = capabilityVariant(
++      originalAction,
++      actionMatch,
++      surfaces,
++      alternatives,
++    );
++    if (capability) return capability;
++
++    if (!best || best.score <= 0) {
++      const sharedCandidates = scored.filter((item) => (
++        item.longestSharedGram >= 5
++        && item.sharedActionIndexes.size / Math.max(1, actionLength) >= 0.4
++      ));
++      return sharedCandidates.length >= 2
++        ? unresolved("CLARIFICATION_REQUIRED", alternatives, "AMBIGUOUS_AFFORDANCE")
++        : unresolved("OUT_OF_SCOPE", alternatives, "NO_AFFORDANCE_SIGNAL");
++    }
+     return unresolved(
+       "CLARIFICATION_REQUIRED",
+       alternatives,
+@@ -138,6 +147,68 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
+   }
+ }
+ 
++
++function capabilityVariant(
++  originalAction: string,
++  actionMatch: string,
++  surfaces: AffordanceSurfaces[],
++  alternatives: IntentAlternative[],
++): ResolvedIntent | null {
++  const decisionPointIds = unique(surfaces.map(({ option }) => (
++    String(option.effect?.decisionPointId || "").trim()
++  )).filter(Boolean));
++  if (decisionPointIds.length !== 1) return null;
++
++  const actionUnits = lexicalUnits(actionMatch);
++  const affordanceUnits = new Set(
++    surfaces.flatMap(({ matchValues }) => matchValues.flatMap(lexicalUnits)),
++  );
++  const overlaps = [...actionUnits].filter((unit) => affordanceUnits.has(unit));
++  const strongOverlap = overlaps.some((unit) => [...unit].length >= 3)
++    || overlaps.filter((unit) => [...unit].length >= 2).length >= 2;
++  if (!strongOverlap) return null;
++
++  const constraints = unique(surfaces.flatMap(({ option }) => (
++    option.effect?.beatContract?.constraints || []
++  )));
++  const confidence = round(Math.min(0.86, 0.62 + overlaps.length * 0.04));
++  return {
++    schemaVersion: INTENT_RESOLUTION_SCHEMA,
++    status: "BOUND_CAPABILITY",
++    intentType: "CAPABILITY_VARIANT",
++    capabilityRef: `decision-point:${decisionPointIds[0]}`,
++    targetRefs: [decisionPointIds[0]!],
++    constraints,
++    matchedAffordanceId: null,
++    canonicalAction: originalAction,
++    confidence,
++    alternatives,
++    reason: "BOUNDED_CAPABILITY_VARIANT",
++  };
++}
++
++function lexicalUnits(value: string) {
++  const units = new Set<string>();
++  for (const segment of value.split(MATCH_BOUNDARY).filter(Boolean)) {
++    const points = [...segment];
++    const containsCjk = /[\p{Script=Han}]/u.test(segment);
++    if (containsCjk) {
++      for (const length of [2, 3]) {
++        for (let index = 0; index + length <= points.length; index += 1) {
++          units.add(points.slice(index, index + length).join(""));
++        }
++      }
++    } else if (points.length >= 4) {
++      units.add(segment);
++    }
++  }
++  return units;
++}
++
++function unique(values: string[]) {
++  return [...new Set(values)];
++}
++
+ function scoreAffordance(
+   action: string,
+   option: OpenNovelOption,
+diff --git a/apps/openovel-runtime/src/sangtian-decisions.ts b/apps/openovel-runtime/src/sangtian-decisions.ts
+index 846c243..77d7b89 100644
+--- a/apps/openovel-runtime/src/sangtian-decisions.ts
++++ b/apps/openovel-runtime/src/sangtian-decisions.ts
+@@ -215,6 +215,26 @@ function bindIncomingAction(
+       actionText,
+     };
+   }
++  if (selectedOption?.id.startsWith("capability_")) {
++    const workingSet = buildPartOneRuntimeWorkingSet(
++      pkg,
++      state,
++      Math.max(0, turnNumber - 1),
++    );
++    if (
++      selectedOption.effect?.decisionPointId
++      !== workingSet.decisionPoint.decisionPointId
++    ) {
++      throw actionRejected("STALE_OR_TAMPERED_CAPABILITY");
++    }
++    return {
++      source: "FREE_TEXT_CAPABILITY",
++      decisionKernelId: workingSet.openDecisionKernel.assetId,
++      actionText,
++      targetRef: workingSet.decisionPoint.actorRefs[0] || "public_frame",
++      completionMode: "OBSERVE_ONLY",
++    };
++  }
+   if (selectedOption?.id.startsWith("opt_")) {
+     return {
+       source: "FREE_TEXT",
+diff --git a/apps/openovel-runtime/tests/intent-resolver-adapter.spec.ts b/apps/openovel-runtime/tests/intent-resolver-adapter.spec.ts
+index cf6c68d..8b5098e 100644
+--- a/apps/openovel-runtime/tests/intent-resolver-adapter.spec.ts
++++ b/apps/openovel-runtime/tests/intent-resolver-adapter.spec.ts
+@@ -232,6 +232,42 @@ test("ambiguous free text is recoverable and never reaches Settlement", async ()
+   assert.equal(capture.sceneEvents[0]?.status, "CLARIFICATION_REQUIRED");
+ });
+ 
++test("a capability-level action commits an observe-only synthetic option", async () => {
++  const options: OpenNovelOption[] = [
++    {
++      id: "archive.seal",
++      label: "Ask one archive witness to hold the register before review.",
++      effect: { decisionPointId: "archive.review" },
++    },
++    {
++      id: "archive.copy",
++      label: "Ask two archive witnesses to copy the register before review.",
++      effect: { decisionPointId: "archive.review" },
++    },
++  ];
++  const capture = { settledInputs: [], sceneEvents: [] } as {
++    settledInputs: Array<{ action: string; selectedOption: OpenNovelOption | null }>;
++    sceneEvents: Array<Record<string, unknown>>;
++  };
++  const { adapter, workspace } = modules(options, capture);
++  const action = "Ask the archive witness who may handle the register before review.";
++
++  const result = await adapter.prepare(workspace, {
++    runId: "run.capability",
++    turnNumber: 1,
++    action,
++    selectedOption: null,
++  });
++
++  assert.ok(result);
++  assert.equal(capture.settledInputs.length, 1);
++  assert.equal(capture.settledInputs[0]!.action, action);
++  assert.equal(capture.settledInputs[0]!.selectedOption?.id, "capability_t01");
++  assert.equal(capture.settledInputs[0]!.selectedOption?.effect?.decisionPointId, "archive.review");
++  assert.equal(result.audit.intentResolution.moduleStatus, "BOUND_CAPABILITY");
++  assert.equal(result.audit.intentResolution.intentType, "CAPABILITY_VARIANT");
++});
++
+ test("an explicit bound option bypasses resolver ambiguity", async () => {
+   const option: OpenNovelOption = {
+     id: "ask.first",
+diff --git a/apps/openovel-runtime/tests/intent-resolver.spec.ts b/apps/openovel-runtime/tests/intent-resolver.spec.ts
+index a9f4fad..9865035 100644
+--- a/apps/openovel-runtime/tests/intent-resolver.spec.ts
++++ b/apps/openovel-runtime/tests/intent-resolver.spec.ts
+@@ -70,6 +70,32 @@ test("the same resolver binds a neutral second-world fixture without story vocab
+   assert.deepEqual(result.targetRefs, ["council.release-window"]);
+ });
+ 
++test("a capability-level free action stays inside one published decision point without selecting an option", () => {
++  const options: OpenNovelOption[] = [
++    {
++      id: "archive.seal",
++      label: "Ask one archive witness to hold the register before review.",
++      effect: { decisionPointId: "archive.review" },
++    },
++    {
++      id: "archive.copy",
++      label: "Ask two archive witnesses to copy the register before review.",
++      effect: { decisionPointId: "archive.review" },
++    },
++  ];
++
++  const result = resolver.resolve({
++    action: "Ask the archive witness who may handle the register before review.",
++    affordances: options,
++  });
++
++  assert.equal(result.status, "BOUND_CAPABILITY");
++  assert.equal(result.intentType, "CAPABILITY_VARIANT");
++  assert.equal(result.matchedAffordanceId, null);
++  assert.equal(result.capabilityRef, "decision-point:archive.review");
++  assert.equal(result.canonicalAction, "Ask the archive witness who may handle the register before review.");
++});
++
+ test("ambiguous language requests clarification instead of guessing a Kernel", () => {
+   const options: OpenNovelOption[] = [
+     { id: "ask.first", label: "Ask the first envoy for the records." },
+diff --git a/packages/templates/src/story-package/part-one-runtime-engine.ts b/packages/templates/src/story-package/part-one-runtime-engine.ts
+index e4e8de4..31d41de 100644
+--- a/packages/templates/src/story-package/part-one-runtime-engine.ts
++++ b/packages/templates/src/story-package/part-one-runtime-engine.ts
+@@ -34,6 +34,7 @@ export type PartOneIncomingAction = {
+   label?: string | null;
+   actionText: string;
+   targetRef?: string | null;
++  completionMode?: "ADVANCE_KERNEL" | "OBSERVE_ONLY";
+ };
+ 
+ const TARGETS: Record<string, PartOneRuntimeTarget> = {
+@@ -272,7 +273,11 @@ export function settlePartOneAction(
+     : action;
+   const currentWorkingSet = buildPartOneRuntimeWorkingSet(pkg, currentState, Math.max(0, turnNumber - 1));
+   const appliedAffordance = opening ? null : findAffordance(currentWorkingSet, action);
+-  const decisionKernelId = opening?.kernelId || appliedAffordance?.decisionKernelId || null;
++  const capabilityOnly = action.completionMode === "OBSERVE_ONLY";
++  const decisionKernelId = opening?.kernelId
++    || appliedAffordance?.decisionKernelId
++    || action.decisionKernelId
++    || null;
+   const affordanceTemplateId = appliedAffordance?.affordanceTemplateId || null;
+   const statePatch = clone(opening?.patch || appliedAffordance?.statePatch || {});
+   const durableEffects = clone(opening?.durableEffects || appliedAffordance?.durableEffects || []);
+@@ -282,10 +287,12 @@ export function settlePartOneAction(
+   proposedState.durableState = advancePartOneDurableState(proposedState.durableState, durableEffects);
+   changedStatePaths.push("durableState");
+ 
+-  if (decisionKernelId) {
++  if (decisionKernelId && !capabilityOnly) {
+     proposedState.completedKernelIds = unique([...(proposedState.completedKernelIds || []), decisionKernelId]);
+   }
+-  const pendingRule = decisionKernelId ? findPendingRule(pkg, decisionKernelId, proposedState.sectionId) : null;
++  const pendingRule = decisionKernelId && !capabilityOnly
++    ? findPendingRule(pkg, decisionKernelId, proposedState.sectionId)
++    : null;
+   const createdPendingConsequences: PartOnePendingConsequenceState[] = [];
+   if (pendingRule) {
+     const consequences = asStringArray(pendingRule.payload.consequences);
