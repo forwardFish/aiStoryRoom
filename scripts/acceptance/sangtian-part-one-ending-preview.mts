@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { OpenNovelRuntime } from "../../apps/openovel-runtime/src/runtime.js";
@@ -15,6 +15,7 @@ import type {
   OpenNovelProvider,
   ProviderRequest,
   ProviderResult,
+  EndingPresentation,
 } from "../../apps/openovel-runtime/src/types.js";
 
 async function main() {
@@ -24,6 +25,9 @@ const routeProfile = endingRouteProfile(argument("--route") || "protective");
 const workspaceRoot = path.resolve(
   argument("--workspace-root")
     || path.join(os.tmpdir(), "omw-sangtian-ending-preview", runId),
+);
+const reportPath = path.resolve(
+  argument("--report-path") || path.join(workspaceRoot, "ending-player-report.md"),
 );
 const realTurnsArgument = argument("--real-turns") || "1,2,20";
 const realTurns = new Set(
@@ -157,6 +161,14 @@ assert.doesNotMatch(
   /entityId|allowedPredicates|requiredVisiblePredicates|narrativeSeed|reviewer confidence|内部状态路径/iu,
   "ending must not leak runtime protocol fields",
 );
+const playerReport = renderPlayerEndingReport(publicRun.ending);
+assert.doesNotMatch(
+  playerReport,
+  /entityId|allowedPredicates|requiredVisiblePredicates|narrativeSeed|reviewer confidence|内部状态路径/iu,
+  "player ending report must not leak runtime protocol fields",
+);
+await mkdir(path.dirname(reportPath), { recursive: true });
+await writeFile(reportPath, playerReport, "utf8");
 const output = {
   schemaVersion: "sangtian-ending-preview-v1",
   testOnly: true,
@@ -165,6 +177,7 @@ const output = {
   runId,
   routeProfile,
   workspace: workspace.paths(runId).root,
+  playerReportPath: reportPath,
   provider: provider.describe(),
   realTurns: [...realTurns].sort((left, right) => left - right),
   skippedNarrativeTurns: route.filter((item) => (
@@ -193,9 +206,36 @@ const output = {
     report: finalState.report,
     responsibility: finalState.responsibility,
   },
+  modelCallSummary: {
+    actual: provider.calls.filter((call) => call.mode === "REAL_MODEL").length,
+    skipped: provider.calls.filter((call) => call.mode === "SKIPPED").length,
+  },
   modelCalls: provider.calls,
 };
 process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+}
+
+function renderPlayerEndingReport(ending: EndingPresentation) {
+  return [
+    "# 《桑田诏》第一部分结局",
+    "",
+    `## ${ending.title}`,
+    "",
+    ending.finalSceneNarrative.trim(),
+    "",
+    "## 浙江总督的处境",
+    "",
+    ending.protagonistFate.trim(),
+    "",
+    "## 此后留下的局面",
+    "",
+    ...ending.aftermath.map((item, index) => `${index + 1}. ${item.trim()}`),
+    "",
+    "---",
+    "",
+    `第一部分结束于 ${ending.sourceTurnId}。故事将在上述结果的基础上进入下一部分。`,
+    "",
+  ].join("\n");
 }
 
 type EndingRouteProfile = "protective" | "grain-first";

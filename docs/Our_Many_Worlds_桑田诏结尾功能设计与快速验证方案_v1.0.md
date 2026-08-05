@@ -78,6 +78,8 @@
 pnpm exec tsx scripts/acceptance/sangtian-part-one-ending-preview.mts --real-turns=none
 ```
 
+脚本完成后会在本次 Run 工作区生成 `ending-player-report.md`。该文件只包含玩家需要阅读的结局标题、最终场景、总督处境、四项直接后果和下一部分交接，不包含内部状态或调试字段。也可以使用 `--report-path=绝对路径` 指定输出位置。
+
 该模式具有以下硬边界：
 
 - `testOnly = true`；
