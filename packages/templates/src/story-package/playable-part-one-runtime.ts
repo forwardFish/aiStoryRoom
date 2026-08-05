@@ -98,10 +98,13 @@ function assemblePlayablePackage(
   );
   const baseClaimIds = new Set(base.assets.flatMap((asset) => asset.sourceClaimIds));
   const baseActorRefs = new Set(base.assets.flatMap((asset) => asset.actorRefs));
-  const sourceSceneAssetIds = new Set(
+  const sourceSceneClaimIds = new Map(
     base.assets
       .filter((asset) => asset.assetType === "SOURCE_SCENE_EVIDENCE")
-      .map((asset) => asset.assetId),
+      .map((asset) => [
+        asset.assetId.replace(/^SOURCE-SCENE-/u, ""),
+        new Set(asset.sourceClaimIds),
+      ] as const),
   );
   const sectionById = new Map(base.sections.map((section) => [section.sectionId, section]));
   const requiredKernelIds = new Set(
@@ -160,7 +163,8 @@ function assemblePlayablePackage(
         throw new Error(`PART_ONE_NARRATIVE_PATTERN_SCOPE_MISMATCH:${patternId}`);
       }
       const sourceSceneId = requiredText(pattern.sourceSceneId, `${patternId}.sourceSceneId`);
-      if (!sourceSceneAssetIds.has(`SOURCE-SCENE-${sourceSceneId}`)) {
+      const allowedSourceSceneClaimIds = sourceSceneClaimIds.get(sourceSceneId);
+      if (!allowedSourceSceneClaimIds) {
         throw new Error(`PART_ONE_NARRATIVE_SOURCE_SCENE_UNKNOWN:${patternId}:${sourceSceneId}`);
       }
       const decisionKernelIds = textArray(pattern.decisionKernelIds, `${patternId}.decisionKernelIds`);
@@ -185,6 +189,12 @@ function assemblePlayablePackage(
       const sourceClaimIds = textArray(pattern.sourceClaimIds, `${patternId}.sourceClaimIds`);
       if (!sourceClaimIds.length || sourceClaimIds.some((id) => !baseClaimIds.has(id))) {
         throw new Error(`PART_ONE_NARRATIVE_SOURCE_CLAIM_UNKNOWN:${patternId}`);
+      }
+      const crossSceneClaimIds = sourceClaimIds.filter((id) => !allowedSourceSceneClaimIds.has(id));
+      if (crossSceneClaimIds.length) {
+        throw new Error(
+          `PART_ONE_NARRATIVE_SOURCE_CLAIM_CROSS_SCENE:${patternId}:${sourceSceneId}:${crossSceneClaimIds.join(",")}`,
+        );
       }
       validateSourceRefs(pattern.sourceRefs, patternId);
       validatePatternShape(pattern, patternId);
@@ -242,75 +252,48 @@ function assemblePlayablePackage(
     contentCounts: {
       assets: supplementAssets.length,
       narrativeScenePatterns: supplementAssets.length,
-      coveredDecisionKernels: coveredDecisionKernelIds.length,
+      coveredDecisionKernels: coveredKernelIds.size,
     },
-    coveredDecisionKernelIds,
-    assets: supplementAssets,
-    runtimeIndexDelta,
+    coveredDecisionKernelIds: [...coveredKernelIds].sort(),
+    assets,
+    runtimeIndexDelta: buildRuntimeIndex(assets),
     immutableHash: "",
   };
-  supplementEnvelope.immutableHash = immutableHash(supplementEnvelope);
+  supplement.immutableHash = computeImmutableHash(supplement);
 
-  const assets = [...base.assets, ...supplementAssets];
-  const runtimeIndex = mergeRuntimeIndexes(base.runtimeIndex, runtimeIndexDelta);
-  const combinedHash = sha256(Buffer.from(canonical({
-    baseRuntimeImmutableHash: base.immutableHash,
-    narrativeSupplementImmutableHash: supplementEnvelope.immutableHash,
-  }), "utf8"));
-  return {
-    ...base,
-    contentCounts: {
-      ...base.contentCounts,
-      assets: assets.length,
-      narrativeScenePatterns: assets.filter((asset) => asset.assetType === "NARRATIVE_SCENE_PATTERN").length,
-    },
-    assets,
-    runtimeIndex,
-    narrativeSupplement: {
-      baseRuntimeImmutableHash: base.immutableHash,
-      immutableHash: supplementEnvelope.immutableHash,
-      assetCount: supplementAssets.length,
-      coveredDecisionKernelIds,
-    },
-    immutableHash: combinedHash,
-  };
+if (checkOnly) {
+  const current = await readJson(outputPath).catch(() => null);
+  assert(current, "NARRATIVE_SUPPLEMENT_OUTPUT_MISSING");
+  assert(canonicalize(current) === canonicalize(supplement), "NARRATIVE_SUPPLEMENT_OUTPUT_STALE");
+} else {
+  await writeJson(outputPath, supplement);
+}
+process.stdout.write(`${JSON.stringify({
+  status: "PASS",
+  mode: checkOnly ? "CHECK" : "WRITE",
+  outputPath: relative(repoRoot, outputPath).replaceAll("\\", "/"),
+  immutableHash: supplement.immutableHash,
+  assetCount: assets.length,
+  coveredDecisionKernelCount: coveredKernelIds.size,
+})}\n`);
+
+function validSourceRef(ref) {
+  return Boolean(
+    ref.sourceId
+    && ref.sourceSha256 === "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238"
+    && ref.chapterId
+    && ref.paragraphStartId
+    && ref.paragraphEndId
+    && Number.isInteger(ref.lineStart)
+    && Number.isInteger(ref.lineEnd)
+    && ref.lineStart > 0
+    && ref.lineEnd >= ref.lineStart
+    && /^[A-F0-9]{64}$/u.test(ref.textSpanSha256)
+  );
 }
 
-function validatePatternShape(pattern: Record<string, unknown>, patternId: string) {
-  requiredText(pattern.dramaticFunction, `${patternId}.dramaticFunction`);
-  requiredText(pattern.openingPressure, `${patternId}.openingPressure`);
-  asArray(pattern.orderedBeats, `${patternId}.orderedBeats`);
-  asArray(pattern.dialogueTactics, `${patternId}.dialogueTactics`);
-  asArray(pattern.blockingPrinciples, `${patternId}.blockingPrinciples`);
-  asArray(pattern.objectPowerMoves, `${patternId}.objectPowerMoves`);
-  asArray(pattern.transferableTechniques, `${patternId}.transferableTechniques`);
-  asArray(pattern.forbiddenFlattening, `${patternId}.forbiddenFlattening`);
-}
-
-function validateSourceRefs(value: unknown, patternId: string) {
-  const refs = asArray(value, `${patternId}.sourceRefs`);
-  if (!refs.length) throw new Error(`PART_ONE_NARRATIVE_SOURCE_REF_MISSING:${patternId}`);
-  for (const rawRef of refs) {
-    const ref = asRecord(rawRef, `${patternId}.sourceRef`);
-    if (
-      requiredText(ref.sourceSha256, `${patternId}.sourceSha256`) !== ORIGINAL_SOURCE_SHA
-      || !requiredText(ref.sourceId, `${patternId}.sourceId`)
-      || !requiredText(ref.chapterId, `${patternId}.chapterId`)
-      || !requiredText(ref.paragraphStartId, `${patternId}.paragraphStartId`)
-      || !requiredText(ref.paragraphEndId, `${patternId}.paragraphEndId`)
-      || !Number.isInteger(ref.lineStart)
-      || !Number.isInteger(ref.lineEnd)
-      || Number(ref.lineStart) <= 0
-      || Number(ref.lineEnd) < Number(ref.lineStart)
-      || !/^[A-F0-9]{64}$/u.test(requiredText(ref.textSpanSha256, `${patternId}.textSpanSha256`))
-    ) {
-      throw new Error(`PART_ONE_NARRATIVE_SOURCE_REF_INVALID:${patternId}`);
-    }
-  }
-}
-
-function buildRuntimeIndex(assets: PartOneRuntimeAsset[]): PartOneRuntimeIndex {
-  const index: PartOneRuntimeIndex = {
+function buildRuntimeIndex(runtimeAssets) {
+  const index = {
     schemaVersion: "runtime-story-index-v1",
     byPart: {},
     bySection: {},
@@ -323,7 +306,7 @@ function buildRuntimeIndex(assets: PartOneRuntimeAsset[]): PartOneRuntimeIndex {
     byRetrievalTag: {},
     byVisibilityClass: {},
   };
-  for (const asset of assets) {
+  for (const asset of runtimeAssets) {
     add(index.byPart, asset.partIds, asset.assetId);
     add(index.bySection, asset.sectionIds, asset.assetId);
     add(index.byRequirement, asset.requirementIds, asset.assetId);
@@ -334,103 +317,23 @@ function buildRuntimeIndex(assets: PartOneRuntimeAsset[]): PartOneRuntimeIndex {
     add(index.byRetrievalTag, asset.retrievalTags, asset.assetId);
     add(index.byVisibilityClass, asset.visibilityRules.map((rule) => rule.visibilityClass), asset.assetId);
   }
-  sortRuntimeIndex(index);
+  for (const bucket of Object.values(index).filter((value) => value && typeof value === "object" && !Array.isArray(value))) {
+    for (const values of Object.values(bucket)) values.sort();
+  }
   return index;
 }
 
-function mergeRuntimeIndexes(base: PartOneRuntimeIndex, delta: PartOneRuntimeIndex) {
-  const result = structuredClone(base);
-  for (const field of indexFields) {
-    for (const [key, values] of Object.entries(delta[field])) {
-      result[field][key] = unique([...(result[field][key] || []), ...values]);
-    }
-  }
-  sortRuntimeIndex(result);
-  return result;
-}
-
-const indexFields = [
-  "byPart",
-  "bySection",
-  "byRequirement",
-  "byDecisionKernel",
-  "byCausalArc",
-  "byActor",
-  "byLocation",
-  "byStateDependency",
-  "byRetrievalTag",
-  "byVisibilityClass",
-] as const;
-
-function sortRuntimeIndex(index: PartOneRuntimeIndex) {
-  for (const field of indexFields) {
-    for (const values of Object.values(index[field])) values.sort();
-  }
-}
-
-function add(bucket: Record<string, string[]>, keys: string[], assetId: string) {
-  for (const key of keys) {
+function add(bucket, keys, assetId) {
+  for (const key of keys || []) {
     if (!bucket[key]) bucket[key] = [];
     if (!bucket[key].includes(assetId)) bucket[key].push(assetId);
   }
 }
 
-function immutableHash(value: unknown) {
-  return sha256(Buffer.from(canonical(withoutImmutableHash(value)), "utf8"));
-}
-
-function withoutImmutableHash(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(withoutImmutableHash);
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .filter(([key]) => key !== "immutableHash")
-      .map(([key, entry]) => [key, withoutImmutableHash(entry)]),
-  );
-}
-
-function canonical(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  return `{${Object.keys(value as Record<string, unknown>)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${canonical((value as Record<string, unknown>)[key])}`)
-    .join(",")}}`;
-}
-
-function sha256(value: Uint8Array) {
-  return createHash("sha256").update(value).digest("hex").toUpperCase();
-}
-
-function asRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`PART_ONE_NARRATIVE_INVALID:${label}`);
-  }
-  return value as Record<string, unknown>;
-}
-
-function asArray(value: unknown, label: string): unknown[] {
-  if (!Array.isArray(value)) throw new Error(`PART_ONE_NARRATIVE_INVALID:${label}`);
-  return value;
-}
-
-function textArray(value: unknown, label: string): string[] {
-  return asArray(value, label).map((entry, index) => requiredText(entry, `${label}[${index}]`));
-}
-
-function requiredText(value: unknown, label: string) {
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`PART_ONE_NARRATIVE_INVALID:${label}`);
-  }
-  return value.trim();
-}
-
-function exact(actual: unknown, expected: unknown, label: string) {
-  if (actual !== expected) {
-    throw new Error(`PART_ONE_NARRATIVE_INVALID:${label}:${String(actual)}!=${String(expected)}`);
-  }
-}
-
-function unique<T>(values: T[]) {
+function unique(values) {
   return [...new Set(values)];
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
 }
