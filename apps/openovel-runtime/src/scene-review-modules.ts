@@ -168,6 +168,14 @@ export class CriticalOnlySceneReviewPolicy implements SceneReviewPolicyModule {
   readonly moduleId = "review-policy.critical-only.v1";
 
   decide(observation: SceneTruthObservation): SceneReviewDecision {
+    if (observation.status === "UNAVAILABLE") {
+      return {
+        kind: "FALLBACK",
+        policyModuleId: this.moduleId,
+        reason: `REVIEW_UNAVAILABLE_SAFE_DEGRADE:${observation.reason}`,
+        observation,
+      };
+    }
     if (observation.criticalFindings.length) {
       return {
         kind: "FALLBACK",

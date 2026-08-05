@@ -15,6 +15,7 @@ import {
 import { recoverRuntimeRuns } from "../src/recovery.js";
 import { auditOpenNovelRun } from "../src/audit.js";
 import { OpenAICompatibleProvider } from "../src/provider.js";
+import { ProviderNarrativeRenderer } from "../src/narrative-renderer.js";
 import {
   authorizedNarrativeIntent,
   buildCausalDelta,
@@ -2418,6 +2419,21 @@ test("authored decision state machine keeps curated choices across three committ
       (option) => option.id === "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
     );
     assert.ok(jointSignature);
+    const jointSignaturePrepared = await sangtianDecisionAdapter.prepare(workspace, {
+      runId,
+      turnNumber: 3,
+      action: jointSignature.label,
+      selectedOption: jointSignature,
+    });
+    assert.ok(jointSignaturePrepared);
+    const settledResponseTicket = jointSignaturePrepared.beatManifest.tickets.find(
+      (ticket) => ticket.slot === "WORLD_PRESSURE",
+    );
+    assert.equal(settledResponseTicket?.expressionOwner, "PROTECTED");
+    assert.equal(
+      settledResponseTicket?.protectedText,
+      settledResponseTicket?.requiredMeaning,
+    );
     const jointSignatureContext = renderRuntimeNarratorCausalDelta(buildRuntimeCausalDelta({
       turnId: "T03",
       action: jointSignature.label,
@@ -2498,9 +2514,9 @@ test("authored decision state machine keeps curated choices across three committ
   }
 });
 
-test("keeps a private formal document's knowledge boundary in narrator context across worlds", () => {
+test("keeps a typed private-document knowledge boundary in narrator context across worlds", () => {
   const action = "维持航向，暂不公开航行令。";
-  const context = renderNarratorCausalDelta(buildCausalDelta({
+  const context = renderRuntimeNarratorCausalDelta(buildRuntimeCausalDelta({
     turnId: "T04",
     action,
     selectedOption: {
@@ -2513,20 +2529,106 @@ test("keeps a private formal document's knowledge boundary in narrator context a
           objective: "让舰长回应眼前压力。",
           moves: [action, "轮机员追问谁承担误期责任。"],
           requiredAnchorGroups: [["航向"], ["轮机员"], ["责任"]],
-          constraints: [
-            "航行令正文目前只由舰长知晓；轮机员只知道文书存在。未经玩家明确出示、宣读或移交，不得让其他人物看见、复述或依据正文行动。",
-            "不得新增人物、文书、证据、数量、期限或办理完成结果。",
-          ],
+          narrativeSeed: {
+            playerOutcome: action,
+            continuationMoves: ["轮机员追问谁承担误期责任。"],
+            sourceEventIds: ["second-world-pressure"],
+            deferredEventIds: [],
+            npcOrWorldPressure: "轮机员追问谁承担误期责任。",
+            stopCondition: "轮机员追问谁承担误期责任。",
+          },
           stopCondition: "轮机员追问谁承担误期责任。",
+        },
+        knowledgeBoundary: {
+          sourceRef: "second-world-private-order",
+          allowed: ["航行令正文目前只由舰长知晓；轮机员只知道文书存在。"],
+          forbidden: ["未经玩家明确出示、宣读或移交，不得让其他人物看见、复述或依据正文行动。"],
+          subjects: ["航行令"],
         },
       },
     },
   }));
 
-  assert.match(context, /文书知情边界/);
-  assert.doesNotMatch(context, /不得新增人物、文书、证据、数量、期限/);
   assert.match(context, /航行令正文目前只由舰长知晓/);
   assert.match(context, /未经玩家明确出示、宣读或移交/);
+  assert.doesNotMatch(context, /second-world-private-order/u);
+});
+
+test("provider environment matches the credential and current default model to the selected host", async () => {
+  const requests: Array<{ authorization: string; model: string }> = [];
+  const provider = OpenAICompatibleProvider.fromEnv({
+    OPENOVEL_PROVIDER_BASE_URL: "https://api.deepseek.com",
+    SOLO_STORY_API_KEY: "siliconflow-key",
+    DEEPSEEK_API_KEY: "deepseek-key",
+  }, async (_url, init) => {
+    const headers = new Headers(init?.headers);
+    const body = JSON.parse(String(init?.body || "{}")) as { model: string };
+    requests.push({
+      authorization: String(headers.get("authorization") || ""),
+      model: body.model,
+    });
+    return new Response(JSON.stringify({
+      model: body.model,
+      choices: [{ message: { content: "done" }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 10, completion_tokens: 2 },
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  });
+  await provider.generate({
+    profile: "narrator",
+    messages: [{ role: "user", content: "continue" }],
+    temperature: 0.5,
+    maxTokens: 100,
+    json: false,
+    stream: false,
+  });
+  assert.deepEqual(requests, [{
+    authorization: "Bearer deepseek-key",
+    model: "deepseek-v4-pro",
+  }]);
+});
+
+test("Narrator retries one empty transport failure without regenerating after text starts", async () => {
+  let calls = 0;
+  const records: Array<{ attempt: number; error: unknown }> = [];
+  const provider: OpenNovelProvider = {
+    describe: () => ({ provider: "fixture", model: "fixture", configured: true }),
+    generate: async () => {
+      calls += 1;
+      if (calls === 1) throw new Error("fetch failed");
+      return {
+        text: "{\"schemaVersion\":\"omw.scene-draft.v1\",\"draftId\":\"T01.draft.original\",\"owner\":\"NARRATOR\",\"slots\":{}}",
+        model: "fixture",
+        usage: { inputTokens: 10, outputTokens: 20 },
+        latencyMs: 1,
+      };
+    },
+  };
+  const workspace = {
+    recordModelCall: async (
+      _runId: string,
+      _turnId: string,
+      _stage: string,
+      _request: ProviderRequest,
+      _result?: ProviderResult,
+      error?: unknown,
+      attempt = 1,
+    ) => { records.push({ attempt, error }); },
+  } as unknown as FileStoryWorkspace;
+  const result = await new ProviderNarrativeRenderer(provider, workspace).render({
+    runId: "run",
+    turnId: "T01",
+    messages: [{ role: "user", content: "continue" }],
+    previousOpening: "",
+  });
+  assert.equal(calls, 2);
+  assert.match(result.text, /scene-draft/);
+  assert.deepEqual(records.map((record) => ({
+    attempt: record.attempt,
+    failed: Boolean(record.error),
+  })), [
+    { attempt: 1, failed: true },
+    { attempt: 2, failed: false },
+  ]);
 });
 
 test("continuing an already selected wait does not become a new document command", () => {
@@ -3041,7 +3143,7 @@ test("options failure never rolls back narration and free-text can continue next
     assert.ok(first.warnings.some((warning) => warning.code === "OPTIONS_UNAVAILABLE"));
     assert.ok(events.some((event) => event.type === "turn.committed"));
     assert.ok(events.findIndex((event) => event.type === "narration.complete")
-      < events.findIndex((event) => event.type === "turn.committed"));
+      > events.findIndex((event) => event.type === "turn.committed"));
 
     const afterFirst = await workspace.readPublicRun(runId);
     assert.match(afterFirst.canon, /总督没有去接那只回文匣/);
@@ -3289,6 +3391,7 @@ test("exact opening repeat is rejected by the generic surface gate without a ret
 test("empty foreground failure is recoverable and never enters Canon", async () => {
   const provider = new ScriptedProvider({
     narrator: [
+      new Error("simulated narrator transport timeout"),
       new Error("simulated narrator transport timeout"),
       "总督重新抬眼看向书吏，只问了一句：“中丞要的究竟是今日落印，还是今日有一句可带回去的话？”书吏捧匣答道，自己只奉命取回答复，旁的无权替巡抚作主。话到这里便停了，案上朱印仍未动。",
     ],
@@ -3892,6 +3995,49 @@ test("Storykeeper recovery replays a recorded result without another model call"
         .split(/\r?\n/)
         .filter((line) => line.includes(`"itemId":"${item.id}"`)).length,
       1,
+    );
+  }, provider);
+});
+
+test("Storykeeper applies Settlement-owned composed and fallback worksets without a model call", async () => {
+  const provider = new ScriptedProvider({});
+  await withRuntime(async ({ workspace, storykeeper, runId }) => {
+    await storykeeper.kick(runId);
+    const item = {
+      id: "inbox_protected_t01",
+      turnId: "T01",
+      narrativeOwner: "COMPOSED" as const,
+      action: "暂缓签发，先核对县册疑点。",
+      narration: "巡抚书吏仍在厅中等候总督答复。",
+      publishedNarration: "巡抚书吏仍在厅中等候总督答复。",
+      recentCanonBefore: "两边来人都没有离开。",
+      selectedEffect: {
+        intent: "暂缓签发并核对县册疑点。",
+        consequence: "巡抚会继续追问执行边界与三日责任。",
+      },
+      warnings: [],
+      createdAt: new Date().toISOString(),
+    };
+    const fallbackItem = {
+      ...item,
+      id: "inbox_fallback_t02",
+      turnId: "T02",
+      narrativeOwner: "FALLBACK" as const,
+    };
+    await workspace.enqueueStorykeeper(runId, item);
+    await workspace.enqueueStorykeeper(runId, fallbackItem);
+
+    await storykeeper.kick(runId);
+
+    assert.equal(provider.calls.filter((call) => call.profile === "storykeeper").length, 0);
+    assert.deepEqual((await workspace.inbox(runId)).state.processed, [item.id, fallbackItem.id]);
+    assert.match(
+      await readFile(path.join(workspace.paths(runId).frontendDir, "pending-consequence.md"), "utf8"),
+      /巡抚会继续追问执行边界与三日责任/,
+    );
+    assert.match(
+      await readFile(workspace.paths(runId).sceneLog, "utf8"),
+      /"mode":"SETTLEMENT_ONLY"/,
     );
   }, provider);
 });

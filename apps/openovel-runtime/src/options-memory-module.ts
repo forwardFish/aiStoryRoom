@@ -26,6 +26,7 @@ export type OptionsAndMemoryInput = {
   compiled: CompiledForegroundContext;
   publishedNarration: string;
   factNarration: string;
+  narrativeOwner?: "COMPOSED" | "NARRATOR" | "FALLBACK" | "PROTECTED_RENDERER";
   shadowClaims: unknown[];
   selectedOption: OpenNovelOption | null;
   causalDelta: CausalDelta;
@@ -110,6 +111,7 @@ export class DefaultOptionsAndMemory implements OptionsAndMemoryModule {
       await this.workspace.enqueueStorykeeper(input.runId, {
         id: `inbox_${input.turnId}_${Date.now()}`,
         turnId: input.turnId,
+        narrativeOwner: input.narrativeOwner,
         action: input.action,
         narration: input.factNarration,
         publishedNarration: input.publishedNarration,

@@ -19,6 +19,18 @@ export type OpenNovelPublicRun = {
   status: string;
   canon: string;
   recentCanon: string;
+  prologueNarrative?: string;
+  ending?: {
+    schemaVersion: "openovel_ending_v1";
+    scope: "STORY" | "PART";
+    endingKey: string;
+    title: string;
+    finalSceneNarrative: string;
+    protagonistFate: string;
+    aftermath: string[];
+    sourceTurnId: string;
+    sourceRevision: number;
+  } | null;
   options: OpenNovelVisibleOption[];
   updatedAt: string;
 };

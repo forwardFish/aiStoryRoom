@@ -179,8 +179,27 @@ export class StorykeeperDrain {
     item: StorykeeperInboxItem,
     retry: { attempt: number; compactRetry: boolean },
   ) {
-    const snapshot = await this.workspace.snapshot(runId);
     const paths = this.workspace.paths(runId);
+    if (
+      item.narrativeOwner === "COMPOSED"
+      || item.narrativeOwner === "FALLBACK"
+      || item.narrativeOwner === "PROTECTED_RENDERER"
+    ) {
+      const deterministicFiles = await applySettlementWorksetProjection(paths, item);
+      await composeForeground(paths);
+      await this.workspace.recordSceneEvent(runId, {
+        type: "storykeeper_applied",
+        turnId: item.turnId,
+        itemId: item.id,
+        mode: "SETTLEMENT_ONLY",
+        filesChanged: deterministicFiles,
+        summary: "Durable scene facts were already owned by Settlement; no advisory model pass was required.",
+        ignoredAdvisoryFactSections: [],
+        ignoredAdvisoryContextCards: [],
+      });
+      return;
+    }
+    const snapshot = await this.workspace.snapshot(runId);
     const registry = await readContextCardRegistry(paths);
     const messages = buildStorykeeperMessages(item, snapshot, registry, retry.compactRetry);
     const request: ProviderRequest = {

@@ -37,6 +37,8 @@ export function workspacePaths(root: string, rawRunId: string) {
     cardsManifest: path.join(story, "guidance", "cards.md"),
     cardsAutoManifest: path.join(story, "guidance", "cards.auto.md"),
     frontendDir: path.join(story, "frontend"),
+    openingPresentation: path.join(story, "frontend", "opening.json"),
+    endingPresentation: path.join(story, "frontend", "ending.json"),
     contextCardsDir: path.join(story, "context-cards"),
     directorDir: path.join(story, "director"),
     optionsGuidance: path.join(story, "director", "OPTIONS.md"),

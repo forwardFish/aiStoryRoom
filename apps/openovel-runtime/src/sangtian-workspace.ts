@@ -396,6 +396,7 @@ export async function seedSangtianWorkspace(
     openingOptions,
     openingCanon,
     recentOpening,
+    prologueNarrative: opening.prologueNarrative.trim(),
   };
 }
 

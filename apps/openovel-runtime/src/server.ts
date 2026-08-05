@@ -14,6 +14,7 @@ import { sangtianDecisionAdapter } from "./sangtian-decisions.js";
 import { sangtianWorkspaceSeeder } from "./sangtian-workspace.js";
 import type { TurnEvent, TurnResult } from "./types.js";
 import { isRuntimeActionError } from "./runtime-errors.js";
+import { sangtianEndingModule } from "./sangtian-ending.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(process.env.OPENOVEL_PROJECT_ROOT || path.join(currentDir, "..", "..", ".."));
@@ -40,6 +41,7 @@ const runtime = new OpenNovelRuntime(
     decisionMode: "AUTHORED_WHEN_AVAILABLE",
     authoredDecisionAdapter: sangtianDecisionAdapter,
     scenePipelineModules: scenePipelineModulesFromEnv(provider),
+    endingModule: sangtianEndingModule,
   },
 );
 

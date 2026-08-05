@@ -12,7 +12,10 @@ import type { BeatManifest } from "../src/scene-expression.js";
 import type { CompiledForegroundContext } from "../src/types.js";
 import { FileStoryWorkspace } from "../src/workspace.js";
 import { sangtianWorkspaceSeeder } from "../src/sangtian-workspace.js";
-import { sangtianDecisionAdapter } from "../src/sangtian-decisions.js";
+import {
+  expressionOwnerForStructuredWorldPressure,
+  sangtianDecisionAdapter,
+} from "../src/sangtian-decisions.js";
 
 for (const world of ["sangtian", "caesar"]) {
   test(world + ": Narrator receives one complete-scene contract", () => {
@@ -62,7 +65,7 @@ for (const world of ["sangtian", "caesar"]) {
     assert.match(messages[0]!.content, /omw\.scene-draft\.v1/u);
     assert.match(user, /old room/u);
     assert.match(user, /new room/u);
-    assert.doesNotMatch(user, /player result meaning/u);
+    assert.match(user, /"serverRenderedContext"[\s\S]*"player result meaning"/u);
     assert.match(user, /"protectedSlots"[\s\S]*"PLAYER_RESULT"/u);
     assert.match(user, /decision stop meaning/u);
     assert.doesNotMatch(user, /The clerk waited./u);
@@ -76,7 +79,11 @@ for (const world of ["sangtian", "caesar"]) {
     assert.match(foreground, /the treaty/u);
     assert.match(foreground, /\u4e0d\u5728\u5f53\u524d\u573a\u666f/u);
     assert.match(foreground, /\u672a\u5217\u51fa\u7684\u5173\u952e\u5b9e\u4f53\u4e0d\u5728\u573a/u);
-    assert.equal(user.trim().endsWith(action), true);
+    assert.doesNotMatch(user, new RegExp(action, "u"));
+    assert.equal(
+      user.trim().endsWith("不得重演、转述或扩写该行动；只从上述动作完成后的现场开始。"),
+      true,
+    );
     assert.doesNotMatch(all, new RegExp(world + "\\.(?:ticket|event)\\.", "u"));
     assert.doesNotMatch(all, /sourceRef|stateRevision|validator|synonym/u);
   });
@@ -113,6 +120,11 @@ test("real Sangtian opening keeps action scene separate from after scene", async
     assert.ok(prepared.beatManifest.dramaticGuidance);
     assert.ok(prepared.beatManifest.dramaticGuidance.sourceMechanisms.length > 0);
     assert.ok(prepared.beatManifest.dramaticGuidance.scenePatterns.length > 0);
+    assert.ok(prepared.beatManifest.dramaticBeatPlan);
+    assert.equal(
+      prepared.beatManifest.dramaticBeatPlan?.sceneRef,
+      prepared.beatManifest.transition.afterScene.sceneId,
+    );
     const delta = buildCausalDelta({
       turnId: "T01",
       action: selected.label,
@@ -122,9 +134,13 @@ test("real Sangtian opening keeps action scene separate from after scene", async
     const prompt = buildNarratorMessages(delta, compiled, prepared.beatManifest)
       .map((message) => message.content)
       .join("\n");
-    assert.doesNotMatch(prompt, new RegExp(escapeRegExp(prepared.settledNarrative), "u"));
+    assert.match(prompt, /"serverRenderedContext"/u);
+    assert.match(prompt, new RegExp(escapeRegExp(prepared.settledNarrative), "u"));
     assert.match(prompt, /"protectedSlots"\s*:\s*\[\s*"PLAYER_RESULT"/u);
     assert.match(prompt, /"dramaticGuidance"/u);
+    assert.match(prompt, /"dramaticBeatPlan"/u);
+    assert.match(prompt, /"orderedSteps"/u);
+    assert.match(prompt, /"REACTION_WINDOW"/u);
     assert.match(prompt, new RegExp(escapeRegExp(
       prepared.beatManifest.dramaticGuidance.scenePatterns[0]!.forbiddenFlattening[0]!,
     ), "u"));
@@ -138,10 +154,84 @@ test("real Sangtian opening keeps action scene separate from after scene", async
       prepared.beatManifest.transition.afterScene.locationLabel,
     ), "u"));
     assert.doesNotMatch(prompt, new RegExp(escapeRegExp(prepared.sourceRef), "u"));
-    assert.equal(prompt.trim().endsWith(selected.label), true);
+    assert.doesNotMatch(prompt, new RegExp(escapeRegExp(selected.label), "u"));
+    assert.equal(
+      prompt.trim().endsWith("不得重演、转述或扩写该行动；只从上述动作完成后的现场开始。"),
+      true,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("a settled response is server-owned across worlds and leaves reactions to the Narrator", () => {
+  assert.equal(expressionOwnerForStructuredWorldPressure({
+    sourceEventIds: ["orbit.response"],
+    worldMoves: [{ beatId: "orbit.response", sourceType: "SETTLED_RESPONSE" }],
+  }), "PROTECTED");
+  assert.equal(expressionOwnerForStructuredWorldPressure({
+    sourceEventIds: ["orbit.pressure"],
+    worldMoves: [{ beatId: "orbit.pressure", sourceType: "NEXT_DECISION_PRESSURE" }],
+  }), "NARRATOR");
+
+  const manifest = fixtureManifest("orbit");
+  const pressure = manifest.tickets.find((ticket) => ticket.slot === "WORLD_PRESSURE")!;
+  pressure.expressionOwner = "PROTECTED";
+  pressure.protectedText = pressure.requiredMeaning;
+  manifest.dramaticBeatPlan = {
+    schemaVersion: "dramatic-beat-plan-v1",
+    sceneRef: manifest.transition.afterScene.sceneId,
+    sceneObjective: "Force a custody decision.",
+    activeActors: [
+      { actorRef: "orbit.officer", displayName: "officer", goal: "Preserve custody." },
+    ],
+    steps: [
+      {
+        stepId: "COUNTERMOVE",
+        kind: "COUNTERMOVE",
+        actorRefs: ["orbit.officer"],
+        actorLabels: ["officer"],
+        requiredMeaning: "The settled response is delivered.",
+        actorGoals: ["Preserve custody."],
+        expressionPolicy: "DRAMATIZE_REQUIRED_MEANING",
+        durableMutationAllowed: false,
+      },
+      {
+        stepId: "REACTION_WINDOW",
+        kind: "REACTION_WINDOW",
+        actorRefs: ["orbit.officer"],
+        actorLabels: ["officer"],
+        requiredMeaning: "The officer reacts without changing state.",
+        actorGoals: ["Preserve custody."],
+        expressionPolicy: "TRANSIENT_REACTION_ONLY",
+        durableMutationAllowed: false,
+      },
+      {
+        stepId: "DECISION_PRESSURE",
+        kind: "DECISION_PRESSURE",
+        actorRefs: ["orbit.officer"],
+        actorLabels: ["officer"],
+        requiredMeaning: "Who controls the cargo review?",
+        actorGoals: ["Preserve custody."],
+        expressionPolicy: "END_ON_UNRESOLVED_PRESSURE",
+        durableMutationAllowed: false,
+      },
+    ],
+    texturePolicy: {
+      ordinaryTextureMayVary: true,
+      nonDurableDialogueMayVary: true,
+      newDurableFactsForbidden: true,
+    },
+  };
+  const messages = buildNarratorMessages(
+    buildCausalDelta({ turnId: "T01", action: "wait", selectedOption: null }),
+    fixtureContext(),
+    manifest,
+  );
+  const user = messages[1]!.content;
+  assert.doesNotMatch(user, /"kind": "COUNTERMOVE"/u);
+  assert.match(user, /"kind": "REACTION_WINDOW"/u);
+  assert.match(user, /"kind": "DECISION_PRESSURE"/u);
 });
 
 function fixtureManifest(world: string): BeatManifest {

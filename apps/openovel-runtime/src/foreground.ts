@@ -243,6 +243,7 @@ function buildChineseForegroundCapsule(
   context: CompiledForegroundContext,
   beatManifest?: BeatManifest,
 ) {
+  const readerAction = projectReaderActionForNarrator(delta, beatManifest);
   const recentPlayerCanon = context.recentCanonExcerpt;
   const durableMemory = [
     context.durableMemory,
@@ -263,16 +264,39 @@ function buildChineseForegroundCapsule(
         ? renderBeatManifestForNarrator(beatManifest)
         : renderNarratorCausalDelta(delta),
     ),
-    fixedSection('玩家行动', delta.readerAction),
+    fixedSection('玩家行动', readerAction),
   ].filter(Boolean);
   const separator = String.fromCharCode(10).repeat(2);
   const rendered = blocks.join(separator).trim();
-  const finalSection = fixedSection('玩家行动', delta.readerAction);
+  const finalSection = fixedSection('玩家行动', readerAction);
   const marker = '## 玩家行动';
   if (rendered.lastIndexOf(marker) < rendered.length - finalSection.length - 2) {
     throw new Error('PLAYER_ACTION_MUST_REMAIN_FINAL_FOREGROUND_SECTION');
   }
   return rendered;
+}
+
+/**
+ * A protected PLAYER_RESULT is already rendered by the server before any
+ * Narrator-owned prose. Repeating the raw choice here gives the model a second
+ * expression authority and can make it replay the action with a different key
+ * object state. Keep the required Reader Action section last, but turn it into
+ * a phase hand-off. The current scene projection and dramatic beat plan carry
+ * everything the Narrator needs to write the aftermath.
+ */
+export function projectReaderActionForNarrator(
+  delta: CausalDelta,
+  beatManifest?: BeatManifest,
+) {
+  const playerResultIsProtected = Boolean(beatManifest?.tickets.some((ticket) => (
+    ticket.slot === "PLAYER_RESULT"
+    && ticket.expressionOwner === "PROTECTED"
+  )));
+  if (!playerResultIsProtected) return delta.readerAction;
+  return [
+    "该玩家行动已经完成结算，并由服务器在正文中先行展示。",
+    "不得重演、转述或扩写该行动；只从上述动作完成后的现场开始。",
+  ].join("\n");
 }
 
 function localizeForegroundHeadings(value: string) {
@@ -311,9 +335,12 @@ export function buildNarratorMessages(
         "Write a lived dramatic scene, not a settlement report, policy summary, task list or decision memo.",
         "Put pressure on stage through a character's entrance, gesture, refusal, bargaining move, question or visible consequence. Let other characters react before the next choice appears.",
         "Use the dramaticGuidance as scene grammar and characterization technique only. It is not a list of current-world facts and must never be copied as exposition.",
+        "Follow dramaticBeatPlan in order. It is the server-owned shape of this scene: dramatize its required meanings, use only its listed on-stage actors for causal moves, and stop at its final unresolved pressure.",
+        "REACTION_WINDOW permits only brief, non-durable reactions and dialogue consistent with the listed actor goals. It never authorizes a new order, document, evidence, secret, promise, arrival, departure or completed world event.",
         "Never import a name, number, object, location or event from sourceMechanisms into the current world. Borrow only the conflict shape and dramatic technique.",
         "WORLD_PRESSURE must dramatize an NPC or world countermove in the current scene. DECISION_STOP must arise from that confrontation, not from an abstract sentence saying the protagonist must decide.",
         "Narrator-owned slots happen after any protected player result. Never replay that result, make the protagonist issue another order, or make the protagonist handle the same key object again.",
+        "serverRenderedContext is immutable prose that will appear immediately before your slots. Continue from its aftermath; do not quote, paraphrase or reproduce it.",
         "Write one focused confrontation. Do not exhaust every possible argument; usually six to ten short paragraphs and one to three dialogue exchanges are enough.",
         "The Reader Action is the only new protagonist action. Do not add another protagonist order, signature, commitment or major disposition.",
         "The action happens in ACTION_PHASE. If a transition is authorized, move to AFTER_PHASE only inside SCENE_TRANSITION.",
@@ -464,6 +491,12 @@ function renderBeatManifestForNarrator(manifest: BeatManifest) {
   const protectedSlots = manifest.tickets
     .filter((ticket) => ticket.expressionOwner === "PROTECTED")
     .map((ticket) => ticket.slot);
+  const serverRenderedContext = manifest.tickets
+    .filter((ticket) => ticket.expressionOwner === "PROTECTED")
+    .map((ticket) => ({
+      slot: ticket.slot,
+      text: ticket.protectedText,
+    }));
   return JSON.stringify({
     actionPhase: {
       time: manifest.transition.narrationScene.timeLabel,
@@ -476,8 +509,38 @@ function renderBeatManifestForNarrator(manifest: BeatManifest) {
     transitionRequired: manifest.transition.transitionRequired,
     narratorOwnedSlots,
     protectedSlots,
+    serverRenderedContext,
     dramaticGuidance: projectDramaticGuidanceForNarrator(manifest.dramaticGuidance),
+    dramaticBeatPlan: projectDramaticBeatPlanForNarrator(
+      manifest.dramaticBeatPlan,
+      protectedSlots,
+    ),
   }, null, 2);
+}
+
+function projectDramaticBeatPlanForNarrator(
+  plan: BeatManifest["dramaticBeatPlan"],
+  protectedSlots: BeatManifest["tickets"][number]["slot"][],
+) {
+  if (!plan) return null;
+  const protectedSet = new Set(protectedSlots);
+  return {
+    sceneObjective: plan.sceneObjective,
+    activeActors: plan.activeActors.map((actor) => ({
+      name: actor.displayName,
+      ...(actor.goal ? { motivation: actor.goal } : {}),
+    })),
+    orderedSteps: plan.steps.filter((step) => !(
+      step.kind === "COUNTERMOVE" && protectedSet.has("WORLD_PRESSURE")
+    )).map((step) => ({
+      kind: step.kind,
+      actors: step.actorLabels,
+      requiredMeaning: step.requiredMeaning,
+      motivations: step.actorGoals,
+      expressionPolicy: step.expressionPolicy,
+    })),
+    texturePolicy: plan.texturePolicy,
+  };
 }
 
 function projectDramaticGuidanceForNarrator(

@@ -66,6 +66,7 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-EXECUTION-BOUNDARY",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-EXECUTION-SCOPE",
         "DK-P1-REVIEW-INITIATION",
         "ARC-P1-DEADLINE-RESPONSIBILITY",
@@ -353,6 +354,7 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-REGISTER-CUSTODY",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-EVIDENCE-CUSTODY",
         "DK-P1-WITNESS-ACCESS",
         "ARC-P1-CUSTODY-CONTEST",
@@ -546,6 +548,7 @@
       ],
       "runtimeAssetIds": [
         "RTA-P1-KNOWLEDGE-CHAIN",
+        "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY",
         "DK-P1-DISCLOSURE-SCOPE",
         "DK-P1-WITNESS-ACCESS",
         "ARC-P1-CUSTODY-CONTEST",

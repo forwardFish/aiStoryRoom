@@ -219,7 +219,7 @@ export type RunMetadata = {
   createdAt: string;
   updatedAt: string;
   turnNumber: number;
-  status: "READY" | "FOREGROUND_RUNNING" | "COMMITTING" | "FAILED";
+  status: "READY" | "FOREGROUND_RUNNING" | "COMMITTING" | "COMPLETED" | "FAILED";
   lastError?: string;
 };
 
@@ -277,11 +277,24 @@ export type TurnResult = {
   framing: string;
   tension: string;
   storyComplete: boolean;
+  ending?: EndingPresentation;
   causalDelta: CausalDelta;
   warnings: RuntimeWarning[];
   narrator: ProviderResult;
   optionsProvider?: ProviderResult;
   committedAt: string;
+};
+
+export type EndingPresentation = {
+  schemaVersion: "openovel_ending_v1";
+  scope: "STORY" | "PART";
+  endingKey: string;
+  title: string;
+  finalSceneNarrative: string;
+  protagonistFate: string;
+  aftermath: string[];
+  sourceTurnId: string;
+  sourceRevision: number;
 };
 
 export type TurnEvent =
@@ -310,6 +323,7 @@ export interface EventMirror {
 export type StorykeeperInboxItem = {
   id: string;
   turnId: string;
+  narrativeOwner?: "COMPOSED" | "NARRATOR" | "FALLBACK" | "PROTECTED_RENDERER";
   action: string;
   narration: string;
   publishedNarration?: string;

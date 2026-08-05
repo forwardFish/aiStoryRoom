@@ -7,5 +7,8 @@ export interface WorkspaceRunSeeder {
     paths: WorkspacePaths,
     metadata: RunMetadata,
     projectRoot: string,
-  ): Promise<{ openingOptions: OpenNovelOption[] }>;
+  ): Promise<{
+    openingOptions: OpenNovelOption[];
+    prologueNarrative?: string;
+  }>;
 }

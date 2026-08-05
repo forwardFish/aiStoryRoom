@@ -7,6 +7,7 @@ import { OpenNovelRuntime } from "../src/runtime.js";
 import { FileStoryWorkspace } from "../src/workspace.js";
 import { sangtianDecisionAdapter } from "../src/sangtian-decisions.js";
 import { sangtianWorkspaceSeeder } from "../src/sangtian-workspace.js";
+import { sangtianEndingModule } from "../src/sangtian-ending.js";
 import { FileAtomicTurnRepository } from "../src/atomic-turn.js";
 import { auditOpenNovelRun } from "../src/audit.js";
 import type {
@@ -32,6 +33,7 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     {
       decisionMode: "AUTHORED_WHEN_AVAILABLE",
       authoredDecisionAdapter: sangtianDecisionAdapter,
+      endingModule: sangtianEndingModule,
     },
   );
   try {
@@ -138,6 +140,12 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
       .filter(Boolean);
     assert.equal(state.turnNumber, 20);
     assert.equal(state.partCompletionStatus, "HANDOFF_READY");
+    const publicRun = await workspace.readPublicRun(runId);
+    assert.equal(publicRun.status, "COMPLETED");
+    assert.equal(publicRun.ending?.sourceTurnId, "T20");
+    assert.ok(publicRun.ending?.finalSceneNarrative.trim());
+    assert.ok(publicRun.ending?.protagonistFate.trim());
+    assert.ok(publicRun.ending?.aftermath.length);
     assert.equal(events.length, 20);
     assert.equal((canon.match(/\*\*读者选择\*\*/gu) || []).length, 20);
     assert.equal((await readdir(paths.headsDir)).length, 20);
@@ -147,6 +155,12 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     assert.equal(audit.technical.checks.optionsRecordedForEveryCommittedTurn, true);
     assert.equal(audit.technical.optionRecords, 20);
     assert.equal(audit.model.profiles.options.calls, 0);
+    await assert.rejects(
+      () => runtime.processAction({ runId, action: "继续下令。" }),
+      /RUN_COMPLETED/u,
+    );
+    await assert.rejects(() => runtime.recoverOptions(runId), /RUN_COMPLETED/u);
+    assert.equal((await workspace.readPublicRun(runId)).status, "COMPLETED");
   } finally {
     await rm(root, { recursive: true, force: true });
   }

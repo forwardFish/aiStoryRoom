@@ -31,10 +31,6 @@ export class ProviderNarrativeRenderer implements NarrativeRendererModule {
   ) {}
 
   async render(input: NarrativeRendererInput): Promise<ProviderResult> {
-
-    const stream = new RepeatAwareStream(input.previousOpening, (text) => {
-      input.onEvent?.({ type: "narration.delta", data: { text } });
-    });
     const request = {
       profile: "narrator" as const,
       messages: input.messages,
@@ -42,34 +38,52 @@ export class ProviderNarrativeRenderer implements NarrativeRendererModule {
       maxTokens: narratorMaxTokens(),
       json: false,
       stream: true,
-      onDelta: (text: string) => stream.push(text),
+      onDelta: undefined as ((text: string) => void) | undefined,
     };
-    let generatedResult: ProviderResult | undefined;
-    try {
-      const result = await this.provider.generate(request);
-      generatedResult = result;
-      stream.finish(result.text);
-      if (result.finishReason === "length") throw new Error("MODEL_OUTPUT_TRUNCATED");
-      await this.workspace.recordModelCall(
-        input.runId,
-        input.turnId,
-        "narrator",
-        request,
-        result,
-      ).catch(() => {});
-      return result;
-    } catch (error) {
-      await this.workspace.recordModelCall(
-        input.runId,
-        input.turnId,
-        "narrator",
-        request,
-        generatedResult,
-        error,
-      ).catch(() => {});
-      throw error;
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const stream = new RepeatAwareStream(input.previousOpening, (text) => {
+        input.onEvent?.({ type: "narration.delta", data: { text } });
+      });
+      request.onDelta = (text: string) => stream.push(text);
+      let generatedResult: ProviderResult | undefined;
+      try {
+        const result = await this.provider.generate(request);
+        generatedResult = result;
+        stream.finish(result.text);
+        if (result.finishReason === "length") throw new Error("MODEL_OUTPUT_TRUNCATED");
+        await this.workspace.recordModelCall(
+          input.runId,
+          input.turnId,
+          "narrator",
+          request,
+          result,
+          undefined,
+          attempt,
+        ).catch(() => {});
+        return result;
+      } catch (error) {
+        await this.workspace.recordModelCall(
+          input.runId,
+          input.turnId,
+          "narrator",
+          request,
+          generatedResult,
+          error,
+          attempt,
+        ).catch(() => {});
+        const retryable = attempt === 1
+          && !stream.hasReceivedText()
+          && isNarratorTransportFailure(error);
+        if (!retryable) throw error;
+      }
     }
+    throw new Error("NARRATOR_TRANSPORT_RETRY_EXHAUSTED");
   }
+}
+
+function isNarratorTransportFailure(error: unknown) {
+  const message = String((error as Error)?.message || error || "");
+  return /fetch failed|timed out|timeout|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket|network|empty stream/i.test(message);
 }
 
 function narratorMaxTokens() {
@@ -87,6 +101,7 @@ function narratorTemperature() {
 
 class RepeatAwareStream {
   private buffer = "";
+  private receivedText = false;
   private decided = false;
   private repeated = false;
 
@@ -95,7 +110,12 @@ class RepeatAwareStream {
     private readonly forward: (text: string) => void,
   ) {}
 
+  hasReceivedText() {
+    return this.receivedText;
+  }
+
   push(text: string) {
+    if (text) this.receivedText = true;
     if (this.decided) {
       if (!this.repeated) this.forward(text);
       return;

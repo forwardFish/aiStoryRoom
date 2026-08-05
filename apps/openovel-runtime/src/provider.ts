@@ -23,13 +23,12 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
   static fromEnv(env: NodeJS.ProcessEnv = process.env, fetchImpl?: typeof fetch) {
     const explicitBase = String(env.OPENOVEL_PROVIDER_BASE_URL || env.SOLO_STORY_BASE_URL || "").trim();
     const baseUrl = normalizeBaseUrl(explicitBase || String(env.DEEPSEEK_BASE_URL || "https://api.deepseek.com"));
-    const apiKey = String(
-      env.OPENOVEL_API_KEY
-      || env.SOLO_STORY_API_KEY
-      || env.DEEPSEEK_API_KEY
-      || "",
+    const apiKey = providerApiKey(env, baseUrl);
+    const defaultModel = String(
+      env.OPENOVEL_MODEL
+      || env.SOLO_STORY_MODEL
+      || defaultModelForBaseUrl(baseUrl),
     ).trim();
-    const defaultModel = String(env.OPENOVEL_MODEL || env.SOLO_STORY_MODEL || "zai-org/GLM-5.2").trim();
     return new OpenAICompatibleProvider({
       apiKey,
       baseUrl,
@@ -174,6 +173,21 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
     if (profile === "storykeeper") return this.config.storykeeperModel;
     return this.config.narratorModel;
   }
+}
+
+function providerApiKey(env: NodeJS.ProcessEnv, baseUrl: string) {
+  const explicit = String(env.OPENOVEL_API_KEY || "").trim();
+  if (explicit) return explicit;
+  const host = new URL(baseUrl).hostname.toLowerCase();
+  if (host.endsWith("deepseek.com")) {
+    return String(env.DEEPSEEK_API_KEY || env.SOLO_STORY_API_KEY || "").trim();
+  }
+  return String(env.SOLO_STORY_API_KEY || env.DEEPSEEK_API_KEY || "").trim();
+}
+
+function defaultModelForBaseUrl(baseUrl: string) {
+  const host = new URL(baseUrl).hostname.toLowerCase();
+  return host.endsWith("deepseek.com") ? "deepseek-v4-pro" : "zai-org/GLM-5.2";
 }
 
 async function readStream(response: Response, onDelta?: (text: string) => void) {

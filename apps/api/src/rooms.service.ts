@@ -505,6 +505,14 @@ export class RoomsService {
         where: { id: roomId },
         data: { visibility: `private`, stateJson: state as any, version: { increment: 1 } }
       });
+    }, {
+      // Solo creation performs several dependent membership, role, and room
+      // mutations against the remote Supabase transaction pool. Prisma's
+      // five-second interactive-transaction default is shorter than a normal
+      // high-latency round trip and can strand the UI on "Entering…" after the
+      // room has already been created.
+      maxWait: 10_000,
+      timeout: 30_000
     });
   }
 
@@ -778,6 +786,7 @@ export class RoomsService {
 
   async result(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) return this.openNovel.result(user, roomId);
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.result(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.result(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.result(user, roomId);

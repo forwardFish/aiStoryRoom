@@ -75,12 +75,16 @@ export type StoryTimelineEntryV2 = {
   decisionForm?: DecisionFormV2;
 };
 
-export type ActorTurnActionAvailabilityItemV2 = {
-  state: "AVAILABLE" | "LOCKED";
+export type ActionAvailabilityStateV2 = "AVAILABLE" | "LOCKED";
+
+export type ActionFormAvailabilityV2 = {
+  state: ActionAvailabilityStateV2;
   reason: string;
   targetIds: string[];
   assetKeys: string[];
 };
+
+export type ActorTurnActionAvailabilityItemV2 = ActionFormAvailabilityV2;
 
 export type ActorTurnActionAvailabilityV2 = {
   storyChoice: ActorTurnActionAvailabilityItemV2;
@@ -252,6 +256,7 @@ export function validateGameProjectionV2(value: unknown): ValidationResult<GameP
   if (value.schemaVersion !== GAME_PROJECTION_V2_SCHEMA_VERSION) errors.push("invalid schemaVersion");
   if (!nonEmptyString(value.generatedAt)) errors.push("generatedAt is required");
   if (!integerAtLeast(value.worldSequence, 0)) errors.push("worldSequence must be >= 0");
+  if (value.prologueNarrative !== undefined && typeof value.prologueNarrative !== "string") errors.push("prologueNarrative must be a string when provided");
   for (const key of ["room", "player", "control", "access", "creditControl"] as const) if (!isRecord(value[key])) errors.push(`${key} must be an object`);
   if (value.currentTurn !== null && !isRecord(value.currentTurn)) errors.push("currentTurn must be an object or null");
   if (!Array.isArray(value.timeline)) errors.push("timeline must be an array");

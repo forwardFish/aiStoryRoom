@@ -62,7 +62,8 @@ import type {
   TurnEvent,
   TurnResult,
 } from "./types.js";
-import { isRuntimeActionError } from "./runtime-errors.js";
+import { actionRejected, isRuntimeActionError } from "./runtime-errors.js";
+import { BasicEndingModule, type EndingModule } from "./ending-module.js";
 
 export class OpenNovelRuntime {
   private readonly foregroundLocks = new Set<string>();
@@ -86,6 +87,7 @@ export class OpenNovelRuntime {
       protectedSceneRenderer?: ProtectedSceneRendererModule;
       optionsAndMemory?: OptionsAndMemoryModule;
       surfaceGuard?: SurfaceGuardModule;
+      endingModule?: EndingModule;
     } = {},
   ) {
     this.describeTurnModules();
@@ -93,6 +95,7 @@ export class OpenNovelRuntime {
 
   describeTurnModules(): TurnModuleDescriptor[] {
     const authored = this.authoredDecisionAdapter();
+    const sceneReview = this.runtimeOptions.scenePipelineModules;
     return new TurnModuleRegistry([
       { kind: "ACTION_GATEWAY", moduleId: this.actionGateway().moduleId, mode: "REQUIRED" },
       { kind: "PLAYER_PROJECTION", moduleId: this.playerProjection().moduleId, mode: "REQUIRED" },
@@ -122,14 +125,15 @@ export class OpenNovelRuntime {
       { kind: "SURFACE_GUARD", moduleId: this.surfaceGuard().moduleId, mode: "REQUIRED" },
       {
         kind: "TRUTH_OBSERVER",
-        moduleId: "openovel.truth-observer.background-only.v1",
-        mode: "DISABLED",
+        moduleId: sceneReview?.observer.moduleId || "openovel.truth-observer.disabled.v1",
+        mode: sceneReview ? "OPTIONAL" : "DISABLED",
       },
       {
         kind: "REVIEW_POLICY",
-        moduleId: "openovel.review-policy.background-only.v1",
-        mode: "DISABLED",
+        moduleId: sceneReview?.policy.moduleId || "openovel.review-policy.disabled.v1",
+        mode: sceneReview ? "OPTIONAL" : "DISABLED",
       },
+      { kind: "ENDING", moduleId: this.endingModule().moduleId, mode: "REQUIRED" },
       { kind: "ATOMIC_COMMITTER", moduleId: this.atomicCommitter().moduleId, mode: "REQUIRED" },
       { kind: "OPTIONS_AND_MEMORY", moduleId: this.optionsAndMemory().moduleId, mode: "REQUIRED" },
     ]).list();
@@ -175,6 +179,9 @@ export class OpenNovelRuntime {
     }
     try {
       const current = await this.workspace.metadata(input.runId);
+      if (current.status === "COMPLETED") {
+        throw actionRejected("RUN_COMPLETED");
+      }
       const turnId = `T${String(current.turnNumber + 1).padStart(2, "0")}`;
       const gateway = this.actionGateway();
       const validated = await executeTurnModule({
@@ -203,8 +210,11 @@ export class OpenNovelRuntime {
     } catch (error) {
       const message = String((error as Error).message || error);
       if (isRuntimeActionError(error)) {
+        const currentStatus = await this.workspace.metadata(input.runId)
+          .then((metadata) => metadata.status)
+          .catch(() => "READY" as const);
         await this.workspace.updateMetadata(input.runId, {
-          status: "READY",
+          status: currentStatus === "COMPLETED" ? "COMPLETED" : "READY",
           lastError: undefined,
         }).catch(() => {});
         await this.workspace.recordSceneEvent(input.runId, {
@@ -250,6 +260,9 @@ export class OpenNovelRuntime {
     try {
       releaseLease = await this.workspace.acquireForegroundLease(runId);
       const snapshot = await this.workspace.snapshot(runId);
+      if (snapshot.metadata.status === "COMPLETED") {
+        throw actionRejected("RUN_COMPLETED");
+      }
       if (snapshot.previousOptions.length) throw new Error("OPTIONS_ALREADY_AVAILABLE");
       const committed = await this.workspace.latestCommittedForegroundTurn(runId);
       if (!committed) throw new Error("NO_COMMITTED_TURN_FOR_OPTIONS");
@@ -468,11 +481,6 @@ export class OpenNovelRuntime {
       execute: () => sceneRenderPlanner.plan({ turnId, preparedDecision }),
       onRecord: (record) => this.recordModuleExecution(input.runId, record),
     });
-    const holdNarrationUntilValidated = Boolean(
-      renderPlan.mode === "COMPOSED_SCENE"
-      || causalDelta.forbiddenKnowledge.length > 0
-      || causalDelta.beatContract?.sourceRef,
-    );
     const projectionModule = this.playerProjection();
     const narratorProjection = await executeTurnModule({
       runId: input.runId,
@@ -502,8 +510,6 @@ export class OpenNovelRuntime {
     let structuredShadowClaims: unknown[] = [];
     const reviewWarnings: RuntimeWarning[] = [];
     const surfaceGuard = this.surfaceGuard();
-
-    {
       try {
         const renderer = this.narrativeRenderer();
         const rendererInput = {
@@ -511,7 +517,10 @@ export class OpenNovelRuntime {
           turnId,
           messages: narratorProjection.messages,
           previousOpening,
-          onEvent: holdNarrationUntilValidated ? undefined : emit,
+          // Provider streaming stays inside the runtime until the atomic Head
+          // owns both the prose and the settled state. A player must never see
+          // a draft that recovery would later discard.
+          onEvent: undefined,
         };
         narrator = await executeTurnModule({
           runId: input.runId,
@@ -565,13 +574,12 @@ export class OpenNovelRuntime {
       };
       contextNarration = narrator.text;
       factNarration = narrator.text;
-    }
 
     if (preparedDecision) {
       const originalText = narrator.text;
       const scene = await new SceneExpressionPipeline(
         this.provider,
-        "ADVISORY",
+        this.runtimeOptions.scenePipelineModules || "ADVISORY",
       ).resolve({
         turnId,
         runId: input.runId,
@@ -602,30 +610,63 @@ export class OpenNovelRuntime {
           call.attempt,
         ).catch(() => {});
       }
-      narrator = { ...narrator, text: scene.finalText };
-      const narrativeOwner = scene.disposition.kind === "USE_FALLBACK"
-        ? "FALLBACK" as const
-        : scene.draft.owner === "COMPOSED"
-          ? "COMPOSED" as const
-          : "NARRATOR" as const;
+      const renderProtectedScene = () => executeTurnModule({
+        runId: input.runId,
+        turnId,
+        descriptor: {
+          kind: "PROTECTED_SCENE_RENDERER" as const,
+          moduleId: this.protectedSceneRenderer().moduleId,
+          mode: "FALLBACK_ONLY" as const,
+          fallbackModuleId: this.protectedSceneRenderer().moduleId,
+        },
+        value: {
+          renderPlan,
+          sourceRef: preparedDecision.sourceRef,
+        },
+        execute: () => this.protectedSceneRenderer().render({
+          plan: renderPlan,
+          preparedDecision,
+        }),
+        onRecord: (record) => this.recordModuleExecution(input.runId, record),
+      });
+      let protectedScene = scene.disposition.kind === "USE_FALLBACK"
+        && renderPlan.mode === "COMPOSED_SCENE"
+        ? await renderProtectedScene()
+        : null;
+      const finalText = protectedScene?.text || scene.finalText;
+      const finalContextText = protectedScene?.contextText || scene.contextText;
+      const finalFactText = protectedScene?.factText || scene.factText;
+      const finalDraft = protectedScene?.draft || scene.draft;
+      const finalAudit = protectedScene?.audit || scene.audit;
+      const finalAssemblyManifest = protectedScene?.assemblyManifest || scene.assemblyManifest;
+      narrator = protectedScene
+        ? { ...protectedScene.providerResult, text: finalText }
+        : { ...narrator, text: finalText };
+      const narrativeOwner = protectedScene
+        ? "PROTECTED_RENDERER" as const
+        : scene.disposition.kind === "USE_FALLBACK"
+          ? "FALLBACK" as const
+          : scene.draft.owner === "COMPOSED"
+            ? "COMPOSED" as const
+            : "NARRATOR" as const;
       assertSingleSceneOwner({ plan: renderPlan, actualOwner: narrativeOwner });
-      contextNarration = scene.contextText;
-      factNarration = scene.factText;
-      structuredShadowClaims = scene.shadowClaims;
+      contextNarration = finalContextText;
+      factNarration = finalFactText;
+      structuredShadowClaims = protectedScene ? [] : scene.shadowClaims;
       atomicNarrative = {
         originalText,
         narrativeOwner,
         renderPlan,
-        contextText: scene.contextText,
-        factText: scene.factText,
-        shadowClaims: scene.shadowClaims,
+        contextText: finalContextText,
+        factText: finalFactText,
+        shadowClaims: structuredShadowClaims,
         disposition: scene.disposition,
-        sceneDraft: scene.draft,
-        sceneAudit: scene.audit,
-        assemblyManifest: scene.assemblyManifest,
+        sceneDraft: finalDraft,
+        sceneAudit: finalAudit,
+        assemblyManifest: finalAssemblyManifest,
         fallbackReason: scene.fallbackReason,
       };
-      reviewWarnings.push(...scene.shadowClaims.map((claim) => ({
+      reviewWarnings.push(...structuredShadowClaims.map((claim: any) => ({
         code: "TRUTH_REVIEW_SHADOW",
         message: claim.reason,
         severity: "LOW" as const,
@@ -636,8 +677,10 @@ export class OpenNovelRuntime {
         type: "foreground_narrative_disposition",
         turnId,
         disposition: scene.disposition,
-        sceneAudit: scene.audit,
-        assemblyManifest: scene.assemblyManifest,
+        narrativeOwner,
+        protectedRendererModuleId: protectedScene ? this.protectedSceneRenderer().moduleId : null,
+        sceneAudit: finalAudit,
+        assemblyManifest: finalAssemblyManifest,
         fallbackReason: scene.fallbackReason || null,
         reviewObservation: scene.reviewObservation,
       }).catch(() => {});
@@ -654,7 +697,7 @@ export class OpenNovelRuntime {
         };
       }
     }
-    const guardedSurface = await executeTurnModule({
+    let guardedSurface = await executeTurnModule({
       runId: input.runId,
       turnId,
       descriptor: {
@@ -666,6 +709,68 @@ export class OpenNovelRuntime {
       execute: () => surfaceGuard.inspect({ text: narrator.text, previousOpening }),
       onRecord: (record) => this.recordModuleExecution(input.runId, record),
     });
+    if (!guardedSurface.integrity.ok
+      && preparedDecision
+      && renderPlan.mode === "COMPOSED_SCENE") {
+      const protectedScene = await executeTurnModule({
+        runId: input.runId,
+        turnId,
+        descriptor: {
+          kind: "PROTECTED_SCENE_RENDERER",
+          moduleId: this.protectedSceneRenderer().moduleId,
+          mode: "FALLBACK_ONLY",
+          fallbackModuleId: this.protectedSceneRenderer().moduleId,
+        },
+        value: {
+          renderPlan,
+          sourceRef: preparedDecision.sourceRef,
+          fallbackReason: guardedSurface.integrity.reason || "SURFACE_GUARD_REJECTED",
+        },
+        execute: () => this.protectedSceneRenderer().render({
+          plan: renderPlan,
+          preparedDecision,
+        }),
+        onRecord: (record) => this.recordModuleExecution(input.runId, record),
+      });
+      narrator = { ...protectedScene.providerResult, text: protectedScene.text };
+      contextNarration = protectedScene.contextText;
+      factNarration = protectedScene.factText;
+      structuredShadowClaims = [];
+      atomicNarrative = {
+        ...atomicNarrative,
+        narrativeOwner: "PROTECTED_RENDERER",
+        contextText: protectedScene.contextText,
+        factText: protectedScene.factText,
+        shadowClaims: [],
+        disposition: {
+          kind: "USE_FALLBACK",
+          fallbackId: protectedScene.draft.draftId,
+          reason: guardedSurface.integrity.reason || "SURFACE_GUARD_REJECTED",
+        },
+        sceneDraft: protectedScene.draft,
+        sceneAudit: protectedScene.audit,
+        assemblyManifest: protectedScene.assemblyManifest,
+        fallbackReason: guardedSurface.integrity.reason || "SURFACE_GUARD_REJECTED",
+      };
+      guardedSurface = await executeTurnModule({
+        runId: input.runId,
+        turnId,
+        descriptor: {
+          kind: "SURFACE_GUARD",
+          moduleId: surfaceGuard.moduleId,
+          mode: "REQUIRED",
+        },
+        value: { text: protectedScene.text, previousOpening, fallback: true },
+        execute: () => surfaceGuard.inspect({ text: protectedScene.text, previousOpening }),
+        onRecord: (record) => this.recordModuleExecution(input.runId, record),
+      });
+      await this.workspace.recordSceneEvent(input.runId, {
+        type: "foreground_surface_fallback",
+        turnId,
+        reason: atomicNarrative.fallbackReason,
+        protectedRendererModuleId: this.protectedSceneRenderer().moduleId,
+      }).catch(() => {});
+    }
     narrator = { ...narrator, text: guardedSurface.text };
     contextNarration = surfaceGuard.normalize(contextNarration || narrator.text);
     factNarration = surfaceGuard.normalize(factNarration || contextNarration);
@@ -681,17 +786,6 @@ export class OpenNovelRuntime {
       ...surface.warnings,
       ...reviewWarnings,
     ];
-    if (holdNarrationUntilValidated) {
-      emit({
-        type: "narration.delta",
-        data: { text: narrator.text },
-      });
-    }
-    emit({
-      type: "narration.complete",
-      data: { narration: narrator.text },
-    });
-
     const warnings: RuntimeWarning[] = [...preflightWarnings];
     for (const warning of preflightWarnings) {
       emit({ type: "runtime.warning", data: warning });
@@ -709,6 +803,30 @@ export class OpenNovelRuntime {
     const atomicAuthoredOptions = preparedDecision && authoredAdapter && !preparedDecision.storyComplete
       ? authoredAdapter.nextOptions(preparedDecision)
       : [];
+    const ending = preparedDecision?.storyComplete
+      ? await executeTurnModule({
+          runId: input.runId,
+          turnId,
+          descriptor: {
+            kind: "ENDING",
+            moduleId: this.endingModule().moduleId,
+            mode: "REQUIRED",
+          },
+          value: {
+            turnNumber,
+            finalNarration: narrator.text,
+            sourceRef: preparedDecision.sourceRef,
+          },
+          execute: () => this.endingModule().build({
+            runId: input.runId,
+            turnId,
+            turnNumber,
+            finalNarration: narrator.text,
+            preparedDecision,
+          }),
+          onRecord: (record) => this.recordModuleExecution(input.runId, record),
+        })
+      : undefined;
     const result: TurnResult = {
       runId: input.runId,
       turnId,
@@ -718,6 +836,7 @@ export class OpenNovelRuntime {
       framing: "",
       tension: "reader-directed",
       storyComplete: preparedDecision?.storyComplete || false,
+      ...(ending ? { ending } : {}),
       causalDelta,
       warnings,
       narrator,
@@ -810,6 +929,7 @@ export class OpenNovelRuntime {
           : null,
         publishedNarration: narrator.text,
         factNarration,
+        narrativeOwner: atomicNarrative.narrativeOwner,
         shadowClaims: structuredShadowClaims,
       },
       execute: () => optionsAndMemory.afterCommit({
@@ -821,6 +941,7 @@ export class OpenNovelRuntime {
         compiled,
         publishedNarration: narrator.text,
         factNarration,
+        narrativeOwner: atomicNarrative.narrativeOwner,
         shadowClaims: structuredShadowClaims,
         selectedOption,
         causalDelta,
@@ -860,6 +981,13 @@ export class OpenNovelRuntime {
       emit({ type: "runtime.warning", data: warning });
     });
     emit({ type: "turn.committed", data: result });
+    // Player-visible prose is commit-gated. The provider may stream internally,
+    // but only text referenced by the successful atomic Head is published.
+    emit({ type: "narration.delta", data: { text: narrator.text } });
+    emit({
+      type: "narration.complete",
+      data: { narration: narrator.text },
+    });
     return result;
   }
 
@@ -900,6 +1028,10 @@ export class OpenNovelRuntime {
 
   private surfaceGuard() {
     return this.runtimeOptions.surfaceGuard || new DefaultSurfaceGuard();
+  }
+
+  private endingModule() {
+    return this.runtimeOptions.endingModule || new BasicEndingModule();
   }
 
   private async recordModuleExecution(

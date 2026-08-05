@@ -12,6 +12,7 @@ export const turnModuleKinds = [
   "SURFACE_GUARD",
   "TRUTH_OBSERVER",
   "REVIEW_POLICY",
+  "ENDING",
   "ATOMIC_COMMITTER",
   "OPTIONS_AND_MEMORY",
 ] as const;
@@ -55,6 +56,7 @@ const requiredKinds = new Set<TurnModuleKind>([
   "PROTECTED_SCENE_RENDERER",
   "NARRATIVE_RENDERER",
   "SURFACE_GUARD",
+  "ENDING",
   "ATOMIC_COMMITTER",
   "OPTIONS_AND_MEMORY",
 ]);

@@ -120,134 +120,45 @@ export function renderCausalDelta(delta: CausalDelta) {
  * visible now, a few durable boundaries, and the natural stop point.
  */
 export function renderNarratorCausalDelta(delta: CausalDelta) {
-  const lines = [`- 玩家现在要做：${compactNarratorLine(delta.readerAction, 220)}`];
-  if (String(delta.beatContract?.settledNarrative || "").trim()) {
-    lines.push("- 已结算动作已由 Settled Action Draft 写成；只续写其后的 NPC 回应和世界行动，不得重写文书、条款、认证状态或去向。");
+  const lines = [
+    `- 玩家行动：${compactNarratorLine(delta.readerAction, 220)}`,
+  ];
+  const worldMove = firstForegroundWorldMove(delta);
+  if (worldMove) {
+    lines.push(`- 世界回应：${compactNarratorLine(worldMove, 240)}`);
   }
-  if (
-    delta.source === "bound-option"
-    && delta.immediateIntent
-    && delta.immediateIntent !== delta.readerAction
-  ) {
-    lines.push(`- 行动意图：${compactNarratorLine(
-      authorizedNarrativeIntent(delta.immediateIntent),
-      220,
-    )}`);
-  }
-  const boundedKnowledgeMoves = delta.forbiddenKnowledge.length
-    ? (delta.beatContract?.moves || [])
-      .filter((move) => (
-        /(?:只让|只答|只复述|复述|如实说不知道|如实说不知|不再追问|尚未.{0,8}核实)/u
-          .test(move)
-      ))
-      .slice(0, 3)
-      .map((move) => compactNarratorLine(move, 180))
-    : [];
-  if (boundedKnowledgeMoves.length) {
-    lines.push(`- 已审定问答节拍：${boundedKnowledgeMoves.join("；")}`);
-  }
-  const sceneMove = (delta.beatContract?.moves || [])
-    .find((move) => /(?:议事|场面|镜头).{0,12}(?:转到|移到|进入)|(?:转到|进入).{0,28}(?:府|县|厅|房|衙|仓|码头|市)/u.test(move));
-  const orderedCausalMoves = (delta.beatContract?.moves || [])
-    .map((move) => ({
-      action: narrativeBeatAction(move),
-      full: normalizeReaderAction(move),
-    }))
-    .filter((move) => Boolean(move.action))
-    .filter((move) => move.action !== delta.readerAction)
-    .filter((move) => !(
-      move.action.length >= 8
-      && delta.readerAction.includes(move.action)
-    ))
-    .filter((move) => move.action !== narrativeBeatAction(sceneMove || ""))
-    .filter((move) => !boundedKnowledgeMoves.includes(compactNarratorLine(move.action, 180)))
-    .slice(0, 3);
-  const sceneConstraints = (delta.beatContract?.constraints || [])
-    .filter((constraint) => (
-      /(?:完成旧场|收束旧场).{0,40}(?:转到|进入)|转场后的现场只允许|(?:新场|转场).{0,20}(?:在场|不得随转场)/u
-        .test(constraint)
-    ))
+  const visibleDurableResults = delta.durableHints
+    .filter((hint) => hint.presentThisTurn === true)
+    .map((hint) => normalizeReaderAction(hint.surfaceAnchor || hint.note || ""))
+    .filter(Boolean)
     .slice(0, 2);
-  if (sceneMove) {
-    lines.push(`- 场景承接：${compactNarratorLine(
-      sceneMove.split(/具体兑现[：:]/u)[0].trim(),
-      180,
-    )}`);
-  }
-  if (sceneConstraints.length) {
-    lines.push(`- 转场边界：${sceneConstraints
-      .map((constraint) => compactNarratorLine(constraint, 180))
-      .join("；")}`);
-  }
-  const sceneDocumentConstraint = (delta.beatContract?.constraints || [])
-    .find((constraint) => /新场.{0,48}(?:正式文书|证据容器)/u.test(constraint));
-  if (sceneDocumentConstraint) {
-    lines.push(`- 新场因果物件：${compactNarratorLine(sceneDocumentConstraint, 220)}`);
-  }
-  const formalDocumentBoundaries = (delta.beatContract?.constraints || [])
-    .filter(isClosedFormalDocumentBoundary)
-    .slice(0, 1)
-    .map((constraint) => compactNarratorLine(constraint, 280));
-  if (formalDocumentBoundaries.length) {
-    lines.push(`- 正式文书闭集：${formalDocumentBoundaries.join("；")}`);
-  }
-  const documentKnowledgeBoundaries = (delta.beatContract?.constraints || [])
-    .filter(isDocumentKnowledgeBoundary)
-    .slice(0, 2)
-    .map((constraint) => compactNarratorLine(constraint, 320));
-  if (documentKnowledgeBoundaries.length) {
-    lines.push(`- 文书知情边界：${documentKnowledgeBoundaries.join("；")}`);
-  }
-  const durableBoundaries = (delta.beatContract?.constraints || [])
-    .filter((constraint) => (
-      isNarratorDurableBoundary(constraint)
-      && !isBackstageCatchAllBoundary(constraint)
-      && !isClosedFormalDocumentBoundary(constraint)
-      && !isDocumentKnowledgeBoundary(constraint)
-    ))
-    .slice(0, 2)
-    .map((constraint) => compactNarratorLine(constraint, 180));
-  if (durableBoundaries.length) {
-    lines.push(`- 持久事实边界：${durableBoundaries.join("；")}`);
-  }
-  if (orderedCausalMoves.length) {
-    lines.push(`- 已审批场面节拍（依次写成动作与对话）：${orderedCausalMoves
-      .map((move, index) => `${index + 1}. ${compactNarratorLine(move.full, 440)}`)
-      .join("；")}`);
-  }
-  const authoredStop = normalizeReaderAction(delta.beatContract?.stopCondition || "");
-  if (authoredStop && authoredStop !== delta.readerAction) {
-    if (formalDocumentBoundaries.length) {
-      lines.push("- 先后边界：先完成并移交上述闭集文书；其后人物才口头提出新的要求。口头反制不得倒写进已经完成的文书。");
-    }
-    lines.push(`- 场面自然回应到：${compactNarratorLine(authoredStop, 220)}`);
+  if (visibleDurableResults.length) {
+    lines.push(`- 本轮已成立并应让玩家看见：${visibleDurableResults.join("；")}`);
   }
   if (delta.allowedKnowledge.length) {
-    lines.push(`- 人物目前可确认：${delta.allowedKnowledge.slice(0, 4).join("；")}`);
+    lines.push(`- 人物目前能够确认：${delta.allowedKnowledge.slice(0, 3).join("；")}`);
   }
   if (delta.forbiddenKnowledge.length) {
-    lines.push("- 未核实的证据细节仍属未知；人物可以说不知道，不要替故事补出答案。");
+    lines.push("- 尚未确认的持久事实继续保持未知；人物可以承认不知道。");
   }
-  if (delta.requiredNarrativeFacts.length) {
-    lines.push(`- 已结算并须在镜头中看见：${delta.requiredNarrativeFacts.join("；")}`);
-  }
-  const requiredDurableAnchors = delta.beatContract?.requiredDurableAnchorGroups || [];
-  if (requiredDurableAnchors.length && orderedCausalMoves.length === 0) {
-    lines.push(`- 玩家已结算行动必须写实：${requiredDurableAnchors
-      .map((group) => group[0])
-      .filter(Boolean)
-      .join("；")}。不得用“照办”“写了几行”或类似省略代替。`);
-  }
-  lines.push(`- 写到这里停：${compactNarratorLine(
+  lines.push(`- 停在：${compactNarratorLine(
     delta.beatContract?.stopCondition || delta.stopCondition,
     220,
   )}`);
   return lines.join("\n");
 }
 
-function isNarratorDurableBoundary(value: string) {
-  return /(?:具名人物|关键证据|正式文书|命令|回文|奏报|奏疏|公文|责任说明|签发|签押|落印|用印|持有人|保管|移交|交给|递给|封存|启封|损毁|知情|秘密|只写|不得.{0,24}(?:新增|确认|签|承诺|移交|公开|泄露))/u
-    .test(String(value || ""));
+function firstForegroundWorldMove(delta: CausalDelta) {
+  const action = normalizeReaderAction(delta.readerAction);
+  return (delta.beatContract?.moves || [])
+    .map(normalizeReaderAction)
+    .filter(Boolean)
+    .filter((move) => !isBackstageCatchAllBoundary(move))
+    .find((move) => (
+      move !== action
+      && !(move.length >= 8 && action.includes(move))
+      && !(action.length >= 8 && move.includes(action))
+    )) || "";
 }
 
 export function isBackstageCatchAllBoundary(value: string) {
@@ -268,27 +179,9 @@ export function isBackstageCatchAllBoundary(value: string) {
     && /(?:不得|不要|禁止|严禁).{0,20}(?:新增|补出|编造|出现)/u.test(text);
 }
 
-function isClosedFormalDocumentBoundary(value: string) {
-  return /(?:(?:文中|其中|回文中|奏报中|公文中|责任说明中|航行令中)只(?:写|载)|正文只载)/u
-    .test(String(value || ""));
-}
-
-function isDocumentKnowledgeBoundary(value: string) {
-  const text = String(value || "");
-  return /(?:文书|公文|回文|奏报|奏疏|责任说明|航行令|命令).{0,48}(?:只由.{0,20}知晓|只知道.{0,20}存在|未经.{0,24}(?:出示|宣读|移交)|不得让.{0,24}(?:看见|复述|依据))/u
-    .test(text);
-}
-
 function compactNarratorLine(value: string, maxChars: number) {
   const text = normalizeReaderAction(value);
   return text.length <= maxChars ? text : `${text.slice(0, maxChars - 1)}…`;
-}
-
-function narrativeBeatAction(value: string) {
-  return normalizeReaderAction(value)
-    .split(/。具体兑现[：:]/u)[0]
-    .replace(/[。；]+$/u, "")
-    .trim();
 }
 
 export function authorizedNarrativeIntent(value: string) {

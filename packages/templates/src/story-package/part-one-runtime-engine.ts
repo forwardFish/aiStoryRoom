@@ -24,6 +24,7 @@ import { evaluateStructuredStateSelector } from "../runtime-contract/selection";
 import type { DurablePredicate, DurableState } from "../runtime-contract/types";
 import { mergeDurablePredicates } from "../runtime-contract/validation";
 import { selectNarrativeScenePatterns } from "./narrative-scene-pattern";
+import { compileDramaticBeatPlan } from "./dramatic-beat-plan";
 
 export type PartOneIncomingAction = {
   source: string;
@@ -331,6 +332,15 @@ export function settlePartOneAction(
   proposedState.lastCommittedEventId = eventId;
   if (sectionAfter === "SEC-P1-04" && turnNumber >= 20 && sectionExitPassed(pkg, proposedState, sectionAfter)) {
     proposedState.partCompletionStatus = "HANDOFF_READY";
+    // A completed part must not hand the next part a backlog of already-due
+    // scene pressures. Those pressures remain auditable in the ledger, but
+    // the completed part's durable state has already absorbed them. Preserve
+    // genuinely future consequences so the next part can still pay them off.
+    proposedState.pendingConsequences = proposedState.pendingConsequences.map((item) => (
+      item.status === "DUE" && item.dueTurn <= turnNumber
+        ? { ...item, status: "TRANSFORMED" as const }
+        : item
+    ));
   }
   updateArcStages(pkg, proposedState, sectionBefore, sectionAfter, sectionTransitioned);
 
@@ -1485,6 +1495,28 @@ function buildNextStoryBeat(input: {
     WORLD_PRESSURE: worldPressure,
     DECISION_STOP: decisionStop
   };
+  const actorLabelsByRef = Object.fromEntries(
+    input.sceneAfter.presentActorRefs.map((actorRef) => [actorRef, runtimeTargetFor(actorRef).label])
+  );
+  const actorPolicies = input.pkg.assets
+    .filter((asset) => asset.assetType === "ACTOR_POLICY")
+    .flatMap((asset) => asset.actorRefs.map((actorRef) => ({
+      actorRef,
+      goal: String(asset.payload.goal || asset.payload.dramaticFunction || "").trim()
+    })));
+  const dramaticBeatPlan = compileDramaticBeatPlan({
+    sceneRef: input.sceneAfter.sceneId,
+    // The objective belongs to the scene after Settlement. Reusing the
+    // decision prompt that led into this turn can reintroduce actors or key
+    // object states from the scene that just ended.
+    sceneObjective: input.nextDecisionPoint.prompt,
+    presentActorRefs: input.sceneAfter.presentActorRefs,
+    actorLabelsByRef,
+    pressureActorRefs: input.nextDecisionPoint.actorRefs,
+    actorPolicies,
+    pressureMeaning: playerVisibleFallback.WORLD_PRESSURE,
+    decisionStopMeaning: playerVisibleFallback.DECISION_STOP
+  });
   return {
     beatId: `BEAT-${digest([
       input.decisionKernelId,
@@ -1513,6 +1545,7 @@ function buildNextStoryBeat(input: {
       sourceMechanisms: unique(sourceEvidenceItems.map((item) => item.statement)).slice(0, 3),
       scenePatterns: selectedScenePatterns
     },
+    dramaticBeatPlan,
     fallbackContinuation: String(input.fallbackContinuation || "").trim(),
     playerVisibleFallback
   };

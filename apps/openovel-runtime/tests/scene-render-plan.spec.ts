@@ -12,11 +12,12 @@ import {
 } from "../src/scene-expression.js";
 import type { PreparedAuthoredDecision } from "../src/decision-adapter.js";
 
-test("planner selects slot-composed narration from structured causal ownership, not prose", () => {
+test("planner composes protected slots without replacing the Narrator", () => {
   const prepared = fixturePreparedDecision();
   const plan = new DefaultSceneRenderPlanner().plan({ turnId: "T01", preparedDecision: prepared });
   assert.equal(plan.mode, "COMPOSED_SCENE");
   assert.equal(plan.owner, "NARRATOR");
+  assert.equal(plan.protectedSlotComposition, true);
   assert.deepEqual(plan.criticalReasons, ["PROTECTED_CAUSAL_RESULT"]);
 });
 
@@ -30,17 +31,17 @@ test("planner selects Open Scene when no critical durable result exists", () => 
   const plan = new DefaultSceneRenderPlanner().plan({ turnId: "T01", preparedDecision: prepared });
   assert.equal(plan.mode, "OPEN_SCENE");
   assert.equal(plan.owner, "NARRATOR");
+  assert.equal(plan.protectedSlotComposition, false);
   assert.deepEqual(plan.criticalReasons, []);
 });
 
-test("deterministic protected renderer is a complete emergency fallback", () => {
+test("deterministic protected renderer remains an emergency whole-scene fallback", () => {
   const prepared = fixturePreparedDecision();
   const plan = new DefaultSceneRenderPlanner().plan({ turnId: "T01", preparedDecision: prepared });
   const rendered = new DeterministicProtectedSceneRenderer().render({ plan, preparedDecision: prepared });
-  assert.equal(rendered.owner, "FALLBACK");
+  assert.equal(rendered.owner, "PROTECTED_RENDERER");
   assert.equal(rendered.text, "总督暂缓签发。\n\n巡抚书吏仍在屏风外等候正式答复。");
   assert.equal(rendered.providerResult.usage.inputTokens, 0);
-  assertSingleSceneOwner({ plan, actualOwner: "COMPOSED" });
   assertSingleSceneOwner({ plan, actualOwner: rendered.owner });
 });
 

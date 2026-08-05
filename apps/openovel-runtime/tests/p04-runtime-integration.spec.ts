@@ -20,7 +20,7 @@ const projectRoot = path.basename(process.cwd()) === "openovel-runtime"
   : path.resolve(currentDir, "..", "..", "..");
 const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
 
-test("critical Sangtian turn calls Narrator and falls back only when the provider is unavailable", async () => {
+test("critical Sangtian turn uses the protected Story Package asset when the provider is unavailable", async () => {
   const provider = new UnavailableProvider();
   await withRuntime(provider, async ({ runtime, workspace, runId }) => {
     const opening = await workspace.snapshot(runId);
@@ -44,13 +44,17 @@ test("critical Sangtian turn calls Narrator and falls back only when the provide
     assert.equal(assembly.invariants.noUnownedServerProse, true);
     assert.equal(renderPlan.mode, "COMPOSED_SCENE");
     assert.equal(renderPlan.owner, "NARRATOR");
-    assert.equal(disposition.narrativeOwner, "FALLBACK");
+    assert.equal(renderPlan.protectedSlotComposition, true);
+    assert.equal(disposition.narrativeOwner, "PROTECTED_RENDERER");
     assert.equal(disposition.disposition.kind, "USE_FALLBACK");
+    const sceneLog = await readFile(workspace.paths(runId).sceneLog, "utf8");
+    assert.match(sceneLog, /"kind":"PROTECTED_SCENE_RENDERER"/u);
+    assert.match(sceneLog, /"status":"FALLBACK"/u);
     assert.equal((await runtime.getRun(runId)).status, "READY");
   });
 });
 
-test("critical Sangtian turn composes protected facts with a Narrator-owned dramatic scene", async () => {
+test("critical Sangtian turn protects facts while Narrator owns literary expression", async () => {
   const provider = new LiteraryProvider();
   await withRuntime(provider, async ({ runtime, workspace, runId }) => {
     const opening = await workspace.snapshot(runId);
@@ -73,6 +77,31 @@ test("critical Sangtian turn composes protected facts with a Narrator-owned dram
     assert.equal(assembly.slotOwners.WORLD_PRESSURE, "NARRATOR");
     assert.equal(disposition.narrativeOwner, "COMPOSED");
     assert.equal(disposition.disposition.kind, "USE_ORIGINAL");
+  });
+});
+
+test("a technical surface rejection falls back without failing an already-settled turn", async () => {
+  const provider = new SurfaceLeakProvider();
+  await withRuntime(provider, async ({ runtime, workspace, runId }) => {
+    const opening = await workspace.snapshot(runId);
+    const selected = opening.previousOptions.find((option) => option.id === "opening_d2");
+    assert.ok(selected);
+    const result = await runtime.processAction({
+      runId,
+      action: selected.label,
+      boundOption: { id: selected.id, label: selected.label },
+    });
+    assert.equal(result.turnNumber, 1);
+    assert.doesNotMatch(result.narration, /turnEnvelopeId/u);
+    assert.equal((await runtime.getRun(runId)).status, "READY");
+    const head = JSON.parse(await readFile(workspace.paths(runId).head, "utf8"));
+    const root = path.join(workspace.paths(runId).root, head.artifactDirectory);
+    const disposition = JSON.parse(await readFile(path.join(root, "disposition.json"), "utf8"));
+    assert.equal(disposition.narrativeOwner, "PROTECTED_RENDERER");
+    assert.equal(disposition.disposition.kind, "USE_FALLBACK");
+    assert.equal(disposition.fallbackReason, "NARRATION_INTERNAL_LEAK");
+    const sceneLog = await readFile(workspace.paths(runId).sceneLog, "utf8");
+    assert.match(sceneLog, /"type":"foreground_surface_fallback"/u);
   });
 });
 
@@ -104,7 +133,7 @@ test("Sangtian settlement compiles action and after scene separately", async () 
 });
 
 async function withRuntime(
-  provider: UnavailableProvider,
+  provider: OpenNovelProvider,
   run: (input: {
     runtime: OpenNovelRuntime;
     workspace: FileStoryWorkspace;
@@ -167,6 +196,29 @@ class LiteraryProvider implements OpenNovelProvider {
       }),
       model: "literary-fixture",
       usage: { inputTokens: 10, outputTokens: 80 },
+      latencyMs: 1,
+    };
+  }
+}
+
+class SurfaceLeakProvider implements OpenNovelProvider {
+  describe() {
+    return { provider: "fixture", model: "surface-leak-fixture", configured: true };
+  }
+  async generate() {
+    return {
+      text: JSON.stringify({
+        schemaVersion: "omw.scene-draft.v1",
+        draftId: "T01.draft.original",
+        owner: "NARRATOR",
+        slots: {
+          IMMEDIATE_REACTION: "The waiting clerk lowered his eyes and listened.",
+          WORLD_PRESSURE: "The turnEnvelopeId remained visible beside the deadline.",
+          DECISION_STOP: "The clerk waited for the governor's answer.",
+        },
+      }),
+      model: "surface-leak-fixture",
+      usage: { inputTokens: 10, outputTokens: 40 },
       latencyMs: 1,
     };
   }

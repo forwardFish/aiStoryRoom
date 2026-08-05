@@ -17,7 +17,7 @@
       "sourceClaimCount": 6,
       "mechanismCandidateCount": 1,
       "adaptationDecisionCount": 2,
-      "runtimeAssetCount": 5,
+      "runtimeAssetCount": 8,
       "blockers": [],
       "verdict": "PASS"
     },
@@ -35,7 +35,7 @@
       "sourceClaimCount": 5,
       "mechanismCandidateCount": 1,
       "adaptationDecisionCount": 2,
-      "runtimeAssetCount": 4,
+      "runtimeAssetCount": 7,
       "blockers": [],
       "verdict": "PASS"
     },
@@ -53,7 +53,7 @@
       "sourceClaimCount": 3,
       "mechanismCandidateCount": 1,
       "adaptationDecisionCount": 1,
-      "runtimeAssetCount": 5,
+      "runtimeAssetCount": 8,
       "blockers": [],
       "verdict": "PASS"
     },

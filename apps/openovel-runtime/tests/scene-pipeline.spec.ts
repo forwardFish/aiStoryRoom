@@ -107,6 +107,16 @@ test("P0 review retries one transport failure without regenerating the scene", a
   assert.deepEqual(provider.profiles, ["reviewer", "reviewer"]);
 });
 
+test("invalid Reviewer structure safely selects the Story Package fallback", async () => {
+  const provider = new ReviewProvider("INVALID_P0_SHAPE");
+  const input = fixture();
+  const result = await new SceneExpressionPipeline(provider, "ENFORCING").resolve(input);
+  assert.equal(result.disposition.kind, "USE_FALLBACK");
+  assert.match(result.fallbackReason || "", /^REVIEW_UNAVAILABLE_SAFE_DEGRADE:SCENE_REVIEW_INVALID:/u);
+  assert.equal(result.finalText, Object.values(input.fallbackDraft.slots).join("\n\n"));
+  assert.deepEqual(result.reviewObservation.criticalFindings, []);
+});
+
 test("an extra player order becomes a server-decided P0 and selects fallback", async () => {
   const provider = new ReviewProvider("EXTRA_PLAYER_ORDER");
   const input = fixture(true);
@@ -248,7 +258,7 @@ function truthContext(stopCondition: string): NarrativeTruthContext {
 class ReviewProvider implements OpenNovelProvider {
   readonly profiles: ProviderRequest["profile"][] = [];
   constructor(
-    private readonly mode: "PASS" | "WRONG_SLOT" | "EXTRA_PLAYER_ORDER",
+    private readonly mode: "PASS" | "WRONG_SLOT" | "EXTRA_PLAYER_ORDER" | "INVALID_P0_SHAPE",
     private remainingFailures = 0,
   ) {}
   describe() {
@@ -308,6 +318,9 @@ function p0Response(contract: Record<string, any>, mode: string) {
     secretLeak: none(),
     playerAction: none(),
   };
+  if (mode === "INVALID_P0_SHAPE") {
+    candidates.causalIntroduction = "NONE" as any;
+  }
   if (mode === "EXTRA_PLAYER_ORDER") {
     const quote = "He also ordered an arrest.";
     const slotText = String(contract.slots.PLAYER_RESULT.text);

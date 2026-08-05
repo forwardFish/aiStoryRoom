@@ -210,6 +210,24 @@ test("the server fixes a source-grounded Next Story Beat before any Narrator cal
   assert.doesNotMatch(beat.npcOrWorldPressure, /场景确定|状态|Revision/u);
   assert.equal(beat.presentMoves.filter((move) => /签押房/u.test(move)).length, 1);
   assert.match(beat.stopCondition, /复核由谁主持.*经办、见证/u);
+  assert.equal(beat.dramaticBeatPlan.sceneRef, settled.event.narrativePlan.sceneEnd.sceneId);
+  assert.equal(beat.dramaticBeatPlan.sceneObjective, beat.stopCondition);
+  assert.deepEqual(
+    beat.dramaticBeatPlan.steps.map((step) => step.kind),
+    ["COUNTERMOVE", "REACTION_WINDOW", "DECISION_PRESSURE"],
+  );
+  assert.equal(
+    beat.dramaticBeatPlan.steps[0]?.requiredMeaning,
+    beat.playerVisibleFallback?.WORLD_PRESSURE,
+  );
+  assert.equal(
+    beat.dramaticBeatPlan.steps.at(-1)?.requiredMeaning,
+    beat.playerVisibleFallback?.DECISION_STOP,
+  );
+  assert.equal(
+    beat.dramaticBeatPlan.steps.every((step) => step.durableMutationAllowed === false),
+    true,
+  );
   assert.equal(
     beat.evidencePacket.evidenceItems.some((item) =>
       item.evidenceClass === "ORIGINAL_MECHANISM"
@@ -1137,8 +1155,18 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
   assert.equal(duePayoffMoveCount, 12);
   assert.equal(
     state.pendingConsequences.filter((item) => item.status === "DUE").length,
-    7,
-    "pressures displaced by a higher-priority settled response remain auditable for later payoff"
+    0,
+    "a completed part must not hand the next part stale due scene pressures"
+  );
+  assert.equal(
+    state.pendingConsequences.filter((item) => item.status === "TRANSFORMED").length > 0,
+    true,
+    "displaced pressures remain auditable after being absorbed into the handoff state"
+  );
+  assert.equal(
+    state.pendingConsequences.some((item) => item.status === "PENDING" && item.dueTurn > state.turnNumber),
+    true,
+    "genuinely future consequences remain queued for the next part"
   );
   assert.equal(nextPressureMoveCount, 5);
 });

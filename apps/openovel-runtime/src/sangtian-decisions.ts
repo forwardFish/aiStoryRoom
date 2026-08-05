@@ -542,6 +542,10 @@ async function planSangtianNextBeat(
         || event.narrativePlan.nextStoryBeat.npcOrWorldPressure
         || protectedStopText,
     ).trim();
+    const pressureExpressionOwner = expressionOwnerForStructuredWorldPressure({
+      sourceEventIds: event.narrativePlan.nextStoryBeat.sourceEventIds,
+      worldMoves: event.authoritativeWorldMoves,
+    });
     const fallbackSlots = beatContract?.playerVisibleFallback;
     if (!fallbackSlots) {
       throw new Error(
@@ -576,6 +580,7 @@ async function planSangtianNextBeat(
         dramaticTask: event.narrativePlan.dramaticTask
           || event.narrativePlan.nextStoryBeat.dramaticGuidance.dramaticTask,
       },
+      dramaticBeatPlan: event.narrativePlan.nextStoryBeat.dramaticBeatPlan,
       tickets: [
         narrativeTicket(
           event, "player-result", "PLAYER_RESULT", "ACTION_PHASE",
@@ -612,6 +617,11 @@ async function planSangtianNextBeat(
           "AFTER_PHASE",
           fallbackSlots.WORLD_PRESSURE || protectedPressureText,
           pressureSourceRefs,
+          true,
+          pressureExpressionOwner,
+          pressureExpressionOwner === "PROTECTED"
+            ? fallbackSlots.WORLD_PRESSURE || protectedPressureText
+            : undefined,
         ),
         narrativeTicket(event, "decision-stop", "DECISION_STOP", "AFTER_PHASE", protectedStopText, stopSourceRefs),
       ],
@@ -657,6 +667,23 @@ async function planSangtianNextBeat(
       payload: prepared,
     } satisfies PreparedAuthoredDecision;
 
+}
+
+/**
+ * A settled response is already a durable world event. The server owns its
+ * visible statement; the Narrator may stage reactions around it but cannot
+ * replace the response with a newly invented document or action.
+ */
+export function expressionOwnerForStructuredWorldPressure(input: {
+  sourceEventIds: string[];
+  worldMoves: Array<{ beatId: string; sourceType: string }>;
+}): "NARRATOR" | "PROTECTED" {
+  const surfaced = new Set(input.sourceEventIds);
+  return input.worldMoves.some((move) => (
+    surfaced.has(move.beatId) && move.sourceType === "SETTLED_RESPONSE"
+  ))
+    ? "PROTECTED"
+    : "NARRATOR";
 }
 
 export const sangtianFactSettlementModule: FactSettlementModule = {

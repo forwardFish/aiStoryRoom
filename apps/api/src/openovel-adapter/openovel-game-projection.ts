@@ -78,7 +78,7 @@ export function openNovelGameProjection(input: {
     schemaVersion: "continuous_game_projection_v2",
     generatedAt: new Date().toISOString(),
     worldSequence: turnNumber,
-    prologueNarrative: turnNumber === 0 ? input.runtimeRun.recentCanon : undefined,
+    prologueNarrative: turnNumber === 0 ? input.runtimeRun.prologueNarrative : undefined,
     room: {
       id: input.run.id,
       title: input.run.title,

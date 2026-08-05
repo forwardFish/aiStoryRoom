@@ -443,3 +443,105 @@ function publicRun(turnNumber: number) {
     updatedAt: new Date().toISOString(),
   };
 }
+
+test("completed OpenNovel run exposes the protagonist ending through the product result contract", async () => {
+  const completed = {
+    ...publicRun(20),
+    status: "COMPLETED",
+    options: [],
+    ending: {
+      schemaVersion: "openovel_ending_v1" as const,
+      scope: "PART" as const,
+      endingKey: "guarded_people_bore_responsibility",
+      title: "守土担责",
+      finalSceneNarrative: "驿骑已经离开杭州。",
+      protagonistFate: "总督保住了证据，也把问责留给了自己。",
+      aftermath: ["县册仍可追索。", "民田边界暂时仍在。"],
+      sourceTurnId: "T20",
+      sourceRevision: 20,
+    },
+  };
+  const run = {
+    id: completed.runId,
+    title: "桑田诏",
+    templateKey: "sangtian",
+    ownerUserId: "user-1",
+    engineVersion: OPENOVEL_ENGINE_VERSION,
+    players: [{
+      userId: "user-1",
+      role: {
+        roleName: "浙江总督",
+        personalGoal: "守住浙江",
+      },
+    }],
+  };
+  const service = new OpenNovelAdapterService(
+    {
+      storyRun: { findUnique: async () => run },
+    } as any,
+    {} as any,
+    {} as any,
+    { getRun: async () => completed } as any,
+  );
+
+  const result = await service.result(
+    { id: "user-1", openid: "openid-1" } as any,
+    completed.runId,
+  );
+
+  assert.equal(result.chapter.title, "守土担责");
+  assert.match(result.chapter.content, /主角命运/);
+  assert.match(result.chapter.content, /总督保住了证据/);
+  assert.equal(result.player?.endingTitle, "守土担责");
+  assert.equal(result.completedNodes, 20);
+});
+
+test("product decision replay returns the committed result without advancing the runtime twice", async () => {
+  const committed = {
+    runId: "solo_ovl_replay",
+    turnId: "T01",
+    turnNumber: 1,
+    narration: "书吏仍在案前等候，总督的第一道处置已经传出。",
+    options: [{ id: "T01_A", label: "继续查问。" }],
+    committedAt: new Date().toISOString(),
+  };
+  const run: any = {
+    id: committed.runId,
+    ownerUserId: user.id,
+    templateKey: "sangtian",
+    engineVersion: OPENOVEL_ENGINE_VERSION,
+    selectedRoleKey: "zhejiang_governor",
+    players: [{ userId: user.id, role: { id: "role-governor", roleKey: "zhejiang_governor" } }],
+  };
+  const replay: any = {
+    runId: run.id,
+    userId: user.id,
+    status: "resolved",
+    actionKey: "G00_B",
+    method: "先封档房，再暂缓签发",
+    freeText: null,
+    immediateJson: { boundOption: { id: "G00_B", label: "先封档房，再暂缓签发" } },
+    resolvedJson: committed,
+  };
+  const prisma: any = {
+    playerAction: { findUnique: async () => replay },
+    storyRun: { findUnique: async () => run },
+  };
+  const runtime: any = {
+    getRun: async () => assert.fail("an idempotent product replay must not run another story turn"),
+  };
+  const service = new OpenNovelAdapterService(prisma, {} as any, {} as any, runtime);
+  (service as any).game = async () => ({ schemaVersion: "continuous_game_projection_v2", worldSequence: 1 });
+
+  const result = await service.submitDecision(user, run.id, "T01", {
+    idempotencyKey: "decision-replay-001",
+    turnRevision: 0,
+    controlEpoch: 1,
+    candidateId: "G00_B",
+  } as any);
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.resolution.id, "T01");
+  assert.equal(result.resolution.appliedWorldSequence, 1);
+  assert.equal(result.resolution.resultNarrative, committed.narration);
+});

@@ -1,6 +1,7 @@
 import type { DurablePredicate, DurableState } from "../runtime-contract/types";
 import type { StructuredStateSelector } from "../runtime-contract/selection";
 import type { NarrativeScenePattern } from "./narrative-scene-pattern";
+import type { DramaticBeatPlan } from "./dramatic-beat-plan";
 
 export type PartOneRuleOperator = "EQ" | "NEQ" | "IN" | "NOT_NULL" | "ANY_PENDING";
 
@@ -173,6 +174,8 @@ export type PartOneNextStoryBeat = {
   stopCondition: string;
   evidencePacket: PartOneSceneEvidencePacket;
   dramaticGuidance: PartOneDramaticGuidance;
+  /** Ordered, world-agnostic dramatic plan compiled before Narrator runs. */
+  dramaticBeatPlan: DramaticBeatPlan;
   fallbackContinuation: string;
   playerVisibleFallback?: PartOnePlayerVisibleFallback;
 };

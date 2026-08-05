@@ -161,14 +161,30 @@ test("runtime exposes one replaceable descriptor for every turn responsibility",
     },
   );
   const descriptors = runtime.describeTurnModules();
-  assert.equal(descriptors.length, 13);
-  assert.equal(new Set(descriptors.map((item) => item.kind)).size, 13);
+  assert.equal(descriptors.length, 14);
+  assert.equal(new Set(descriptors.map((item) => item.kind)).size, 14);
   assert.equal(
     descriptors.find((item) => item.kind === "FACT_SETTLEMENT")?.moduleId,
     "test.settlement.v1",
   );
   assert.equal(
     descriptors.find((item) => item.kind === "TRUTH_OBSERVER")?.mode,
-    "DISABLED",
+    "OPTIONAL",
+  );
+  assert.equal(
+    descriptors.find((item) => item.kind === "TRUTH_OBSERVER")?.moduleId,
+    "test.observer.v1",
+  );
+  assert.equal(
+    descriptors.find((item) => item.kind === "REVIEW_POLICY")?.moduleId,
+    "review-policy.observe-only.v1",
+  );
+  assert.equal(
+    descriptors.find((item) => item.kind === "ENDING")?.moduleId,
+    "openovel.basic-ending.v1",
+  );
+  assert.equal(
+    descriptors.find((item) => item.kind === "ENDING")?.mode,
+    "REQUIRED",
   );
 });

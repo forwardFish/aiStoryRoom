@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { DramaticBeatPlan } from "@ai-story/templates";
 
 export const SCENE_DRAFT_SCHEMA = "omw.scene-draft.v1" as const;
 export const ASSEMBLY_MANIFEST_SCHEMA = "omw.assembly-manifest.v1" as const;
@@ -76,6 +77,8 @@ export type BeatManifest = {
   tickets: NarrativeFactTicket[];
   /** Dramatic techniques from source decomposition; never current-world facts. */
   dramaticGuidance?: DramaticSceneGuidance;
+  /** Server-compiled order of the current confrontation. */
+  dramaticBeatPlan?: DramaticBeatPlan;
 };
 export type SceneDraft = {
   schemaVersion: typeof SCENE_DRAFT_SCHEMA;
@@ -134,6 +137,7 @@ export function validateBeatManifest(manifest: BeatManifest): BeatManifest {
     throw new Error("BEAT_MANIFEST_TICKETS_MISSING");
   }
   validateDramaticGuidance(manifest.dramaticGuidance);
+  validateDramaticBeatPlan(manifest.dramaticBeatPlan, manifest.transition.afterScene);
   const ticketIds = new Set<string>();
   for (const ticket of manifest.tickets) {
     if (!nonEmpty(ticket.ticketId) || ticketIds.has(ticket.ticketId)) {
@@ -171,6 +175,33 @@ export function validateBeatManifest(manifest: BeatManifest): BeatManifest {
     throw new Error("BEAT_MANIFEST_TRANSITION_TICKET_MISSING");
   }
   return manifest;
+}
+
+function validateDramaticBeatPlan(
+  plan: DramaticBeatPlan | undefined,
+  afterScene: SceneSnapshot,
+) {
+  if (!plan) return;
+  if (plan.schemaVersion !== "dramatic-beat-plan-v1"
+    || !nonEmpty(plan.sceneRef)
+    || plan.sceneRef !== afterScene.sceneId
+    || !nonEmpty(plan.sceneObjective)
+    || !Array.isArray(plan.steps)
+    || plan.steps.length < 2) {
+    throw new Error("DRAMATIC_BEAT_PLAN_INVALID");
+  }
+  const presentActorIds = new Set(afterScene.presentActorIds);
+  for (const step of plan.steps) {
+    if (!nonEmpty(step.stepId)
+      || !nonEmpty(step.requiredMeaning)
+      || step.durableMutationAllowed !== false
+      || step.actorRefs.some((actorRef) => !presentActorIds.has(actorRef))) {
+      throw new Error(`DRAMATIC_BEAT_STEP_INVALID:${step.stepId || "unknown"}`);
+    }
+  }
+  if (plan.steps.at(-1)?.kind !== "DECISION_PRESSURE") {
+    throw new Error("DRAMATIC_BEAT_STOP_MISSING");
+  }
 }
 
 function validateDramaticGuidance(guidance?: DramaticSceneGuidance) {

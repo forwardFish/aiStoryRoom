@@ -39,7 +39,7 @@ test("critical-only policy ignores non-key texture but can replace the renderer 
   assert.equal(critical.kind === "FALLBACK" ? critical.reason : "", "UNKNOWN_DURABLE_ENTITY");
 });
 
-test("reviewer unavailability is a non-blocking observation, not a fabricated P0", () => {
+test("reviewer unavailability safely falls back without fabricating a P0 or failing the turn", () => {
   const unavailable: SceneTruthObservation = {
     status: "UNAVAILABLE",
     observerModuleId: "observer.fixture.v1",
@@ -48,5 +48,11 @@ test("reviewer unavailability is a non-blocking observation, not a fabricated P0
     criticalFindings: [],
     nonCriticalFindings: ["SCENE_REVIEW_UNAVAILABLE"],
   };
-  assert.equal(new CriticalOnlySceneReviewPolicy().decide(unavailable).kind, "ACCEPT");
+  const decision = new CriticalOnlySceneReviewPolicy().decide(unavailable);
+  assert.equal(decision.kind, "FALLBACK");
+  assert.equal(
+    decision.kind === "FALLBACK" ? decision.reason : "",
+    "REVIEW_UNAVAILABLE_SAFE_DEGRADE:SCENE_REVIEW_UNAVAILABLE",
+  );
+  assert.deepEqual(decision.observation.criticalFindings, []);
 });

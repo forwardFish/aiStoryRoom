@@ -30,6 +30,41 @@ test("Part One authoring compilation keeps evidence chain states inside the appr
     assert.equal(compilation.status, 0, compilation.stderr || compilation.stdout);
 
     const runtime = JSON.parse(await readFile(runtimePath, "utf8"));
+    const evidenceProfile = runtime.assets.find((asset: any) => (
+      asset.assetId === "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY"
+    ));
+    assert.equal(evidenceProfile?.assetType, "EVIDENCE_PROFILE");
+    assert.deepEqual(
+      evidenceProfile.adaptationDecisionIds,
+      ["ADAPT-P1-QINGLIU-COUNTY", "ADAPT-P1-REGISTER-ALTERATION"],
+    );
+    assert.match(
+      evidenceProfile.payload.openingReport.statement,
+      /分户田数逐项相加，所得合计与册尾所列总数不符/,
+    );
+    assert.equal(
+      evidenceProfile.payload.openingReport.statementClass,
+      "ATTRIBUTED_UNVERIFIED_REPORT",
+    );
+    assert.ok(
+      evidenceProfile.payload.openingReport.forbiddenAssertions.some((item: string) => (
+        item.includes("墨色") && item.includes("印章")
+      )),
+    );
+    assert.match(
+      evidenceProfile.payload.openingBeatContract.objective,
+      /内厅问答 beat/,
+    );
+    assert.equal(evidenceProfile.payload.openingBeatContract.moves.length, 4);
+    assert.ok(
+      evidenceProfile.payload.openingBeatContract.requiredAnchorGroups.some(
+        (group: string[]) => group.includes("不知道") && group.includes("不知"),
+      ),
+    );
+    assert.match(
+      evidenceProfile.payload.openingBeatContract.stopCondition,
+      /巡抚书吏仍在等待总督答复/,
+    );
     const continuationDecisions = runtime.assets
       .filter((asset: any) => asset.assetType === "SECTION_FLOOR_OBLIGATION")
       .flatMap((asset: any) => asset.payload.continuationDecisions || []);

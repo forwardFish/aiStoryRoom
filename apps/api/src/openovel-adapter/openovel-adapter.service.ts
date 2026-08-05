@@ -228,12 +228,90 @@ export class OpenNovelAdapterService {
     });
   }
 
+  async result(user: AuthenticatedUser, runId: string) {
+    this.assertEnabled();
+    const run = await this.authorizedRun(user, runId);
+    const runtimeRun = await this.runtime.getRun(runId);
+    if (runtimeRun.status !== "COMPLETED" || !runtimeRun.ending) {
+      throw new ConflictException({
+        code: "RESULT_NOT_READY",
+        message: "The protagonist ending is available after the story is complete.",
+      });
+    }
+    const membership = run.players.find((player: any) => player.userId === user.id);
+    const role = membership?.role;
+    const ending = runtimeRun.ending;
+    return {
+      room: {
+        id: run.id,
+        title: run.title,
+        worldId: run.templateKey,
+        completedAt: runtimeRun.updatedAt,
+      },
+      chapter: {
+        title: ending.title,
+        content: [
+          ending.finalSceneNarrative,
+          `主角命运：${ending.protagonistFate}`,
+          ...ending.aftermath,
+        ].filter(Boolean).join("\n\n"),
+        highlights: [],
+      },
+      player: role ? {
+        roleName: role.roleName,
+        personalGoal: role.personalGoal,
+        endingTitle: ending.title,
+        protagonistFate: ending.protagonistFate,
+      } : null,
+      ending,
+      completedNodes: runtimeRun.turnNumber,
+    };
+  }
+
   async submitDecision(
     user: AuthenticatedUser,
     runId: string,
     turnId: string,
     command: TurnDecisionCommandV2,
   ) {
+    const idempotencyKey = requiredIdempotency(command.idempotencyKey);
+    const replayKey = `openovel-action:${runId}:${user.id}:${idempotencyKey}`;
+    const replay = await this.prisma.playerAction.findUnique({ where: { idempotencyKey: replayKey } });
+    if (replay) {
+      await this.authorizedRun(user, runId);
+      const customAction = String(command.customAction || "").trim();
+      const storedBoundOption = normalizeBoundOption(asRecord(replay.immediateJson).boundOption);
+      const matchesOriginalRequest = replay.runId === runId
+        && replay.userId === user.id
+        && String(asRecord(replay.resolvedJson).turnId || turnId) === turnId
+        && (customAction
+          ? !storedBoundOption && String(replay.freeText || replay.method || "") === customAction
+          : Boolean(storedBoundOption) && storedBoundOption!.id === String(command.candidateId || ""));
+      if (!matchesOriginalRequest) {
+        throw new ConflictException({
+          code: "IDEMPOTENCY_KEY_REUSED",
+          message: "That action key belongs to a different request.",
+        });
+      }
+      if (replay.status === "resolved" && replay.resolvedJson) {
+        const result = replay.resolvedJson as any;
+        return {
+          accepted: true as const,
+          resolution: {
+            id: String(result.turnId || turnId),
+            appliedWorldSequence: Number(result.turnNumber || 0),
+            resultNarrative: String(result.narration || ""),
+            nextHook: "",
+          },
+          gameProjection: await this.game(user, runId),
+        };
+      }
+      throw new ConflictException({
+        code: "OPENOVEL_ACTION_IN_PROGRESS",
+        message: "That action is still being processed.",
+      });
+    }
+
     const runtimeBefore = await this.runtime.getRun(runId);
     const expectedTurnId = `T${String(runtimeBefore.turnNumber + 1).padStart(2, "0")}`;
     if (turnId !== expectedTurnId || command.turnRevision !== runtimeBefore.turnNumber) {
@@ -255,7 +333,7 @@ export class OpenNovelAdapterService {
     const action = customAction || selected!.label;
     const result = await this.submitAction(user, runId, {
       action,
-      idempotencyKey: command.idempotencyKey,
+      idempotencyKey,
       expectedStateRevision: command.turnRevision,
       boundOption: selected ? { id: selected.id, label: selected.label } : null,
     }, () => undefined);
@@ -539,7 +617,7 @@ export class OpenNovelAdapterService {
     return this.prisma.storyRun.update({
       where: { id: run.id },
       data: {
-        status: runtimeRun.status === "FAILED" ? "resolving" : "playing",
+        status: productRunStatus(runtimeRun.status),
         currentDay: runtimeRun.turnNumber,
         completedNodeCount: runtimeRun.turnNumber,
         stateJson: openNovelState(run.stateJson, runtimeRun) as any,
@@ -590,7 +668,7 @@ export class OpenNovelAdapterService {
       await tx.storyRun.update({
         where: { id: input.run.id },
         data: {
-          status: "playing",
+          status: productRunStatus(input.runtimeAfter.status),
           currentDay: input.runtimeAfter.turnNumber,
           completedNodeCount: input.runtimeAfter.turnNumber,
           currentNodeId: input.nodeId,
@@ -633,6 +711,8 @@ export class OpenNovelAdapterService {
       status: runtimeRun.status,
       canon: runtimeRun.canon,
       recentCanon: runtimeRun.recentCanon,
+      prologueNarrative: runtimeRun.prologueNarrative,
+      ending: runtimeRun.ending || null,
       options: runtimeRun.options,
       updatedAt: runtimeRun.updatedAt,
       billing: {
@@ -651,6 +731,12 @@ export class OpenNovelAdapterService {
 
 export function openNovelRunId(userId: string, idempotencyKey: string) {
   return `solo_ovl_${createHash("sha256").update(`${userId}\0${idempotencyKey}`).digest("hex").slice(0, 32)}`;
+}
+
+function productRunStatus(runtimeStatus: string) {
+  if (runtimeStatus === "COMPLETED") return "chapter_generated";
+  if (runtimeStatus === "FAILED") return "resolving";
+  return "playing";
 }
 
 function runtimeCreateInput(runId: string, product: ReturnType<typeof resolveProduct>) {
@@ -723,6 +809,8 @@ function openNovelState(previous: unknown, runtimeRun: OpenNovelPublicRun) {
       status: runtimeRun.status,
       canon: runtimeRun.canon,
       recentCanon: runtimeRun.recentCanon,
+      prologueNarrative: runtimeRun.prologueNarrative || "",
+      ending: runtimeRun.ending || null,
       options: runtimeRun.options,
       updatedAt: runtimeRun.updatedAt,
     },

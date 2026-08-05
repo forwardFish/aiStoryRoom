@@ -79,6 +79,9 @@ export class FileStoryWorkspace {
     };
     await writeJsonAtomic(paths.metadata, metadata);
     const seeded = await this.runSeeder.seed(paths, metadata, this.projectRoot);
+    await writeJsonAtomic(paths.openingPresentation, {
+      prologueNarrative: String(seeded.prologueNarrative || "").trim(),
+    });
     await appendJsonl(paths.sceneLog, this.event("opening_committed", {
       turnId: "G00",
       runtimeMode: OPENOVEL_RUNTIME_MODE,
@@ -315,9 +318,12 @@ export class FileStoryWorkspace {
       turnNumber: input.result.turnNumber,
     }));
     await writeJsonAtomic(paths.currentOptions, input.result.options);
+    if (input.result.ending) {
+      await writeJsonAtomic(paths.endingPresentation, input.result.ending);
+    }
     await this.updateMetadata(runId, {
       turnNumber: input.result.turnNumber,
-      status: "READY",
+      status: input.result.storyComplete ? "COMPLETED" : "READY",
       lastError: undefined,
     });
   }
@@ -372,7 +378,7 @@ export class FileStoryWorkspace {
     const committedMetadata: RunMetadata = {
       ...metadata,
       turnNumber: input.result.turnNumber,
-      status: "READY",
+      status: input.result.storyComplete ? "COMPLETED" : "READY",
       lastError: undefined,
       updatedAt: input.result.committedAt,
     };
@@ -418,6 +424,13 @@ export class FileStoryWorkspace {
         format: "json",
         value: input.result.options,
       },
+      ...(input.result.ending
+        ? [{
+            relativePath: relativeRunPath(paths, paths.endingPresentation),
+            format: "json" as const,
+            value: input.result.ending,
+          }]
+        : []),
     ];
   }
 
@@ -580,6 +593,13 @@ export class FileStoryWorkspace {
     const paths = this.paths(runId);
     const metadata = await this.metadata(runId);
     const options = await readJson<OpenNovelOption[]>(paths.currentOptions, []);
+    const canon = await readText(paths.chapters, "");
+    const recentCanon = await readText(paths.chaptersRecent, "");
+    const openingPresentation = await readJson<{ prologueNarrative?: string }>(
+      paths.openingPresentation,
+      {},
+    );
+    const ending = await readJson(paths.endingPresentation, null);
     return {
       runId,
       worldId: metadata.worldId,
@@ -587,8 +607,12 @@ export class FileStoryWorkspace {
       runtimeMode: metadata.runtimeMode,
       turnNumber: metadata.turnNumber,
       status: metadata.status,
-      canon: await readText(paths.chapters, ""),
-      recentCanon: await readText(paths.chaptersRecent, ""),
+      canon,
+      recentCanon,
+      prologueNarrative: metadata.turnNumber === 0
+        ? String(openingPresentation.prologueNarrative || inferPrologueNarrative(canon, recentCanon)).trim()
+        : "",
+      ending,
       options: options.map(({ effect: _hidden, ...visible }) => visible),
       jobs: await readJson(paths.jobs, {}),
       updatedAt: metadata.updatedAt,
@@ -650,6 +674,15 @@ export class FileStoryWorkspace {
       await handle?.close();
     }
   }
+}
+
+function inferPrologueNarrative(canon: string, recentCanon: string) {
+  const full = canon.trim();
+  const recent = recentCanon.trim();
+  const prefix = recent && full.endsWith(recent)
+    ? full.slice(0, full.length - recent.length).trim()
+    : full;
+  return prefix.replace(/^#\s+[^\r\n]+(?:\r?\n)+/, "").trim();
 }
 
 type WorkspaceLeaseRecord = {

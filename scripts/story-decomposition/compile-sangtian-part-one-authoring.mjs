@@ -23,13 +23,13 @@ const sourceSceneEvidenceSet = await readJson(resolve(
   authoringRoot,
   "source-evidence/section-one-scenes.approved.json",
 ));
+const evidenceProfileSet = await readJson(resolve(
+  authoringRoot,
+  "evidence/approved/part-01-v3.evidence-profiles.json",
+));
 const requirementSet = await readJson(resolve(authoringRoot, "requirements/part-01.requirements.json"));
 const worldStart = await readJson(resolve(authoringRoot, "world-start.json"));
 const coreStateSchema = await readJson(resolve(authoringRoot, "core-state.schema.json"));
-const approvedEvidenceProfile = await readJson(resolve(
-  authoringRoot,
-  "evidence/part-one-qingliu-register-anomaly.approved.json",
-));
 
 if (reviewSet.verdict !== "PASS" || reviewSet.reviewCount !== 19 || reviewSet.providerCallCount !== 19) {
   throw new Error("T3 compilation blocked: Track B/Adaptation review set is not a complete PASS");
@@ -74,6 +74,32 @@ for (const scene of sourceSceneEvidenceSet.scenes) {
     || scene.mechanisms.some((item) => !item.evidenceId || !item.statement || !item.claimIds?.length)
   ) {
     throw new Error(`T3 compilation blocked: invalid source scene evidence ${scene.sceneId || "UNKNOWN"}`);
+  }
+}
+if (
+  evidenceProfileSet.schemaVersion !== "evidence-profile-set-v1"
+  || !Array.isArray(evidenceProfileSet.profiles)
+  || evidenceProfileSet.profiles.length !== 1
+) {
+  throw new Error("T3 compilation blocked: the approved evidence profile set is incomplete");
+}
+for (const profile of evidenceProfileSet.profiles) {
+  if (
+    profile.schemaVersion !== "evidence-profile-v1"
+    || !profile.evidenceProfileId
+    || !profile.assetId
+    || !profile.targetRef
+    || !profile.openingReport?.statement
+    || !profile.openingReport?.allowedAssertions?.length
+    || !profile.openingReport?.forbiddenAssertions?.length
+    || !profile.openingBeatContract?.objective
+    || !profile.openingBeatContract?.moves?.length
+    || !profile.openingBeatContract?.requiredAnchorGroups?.length
+    || profile.openingBeatContract.requiredAnchorGroups.some((group) => !Array.isArray(group) || !group.length)
+    || !profile.openingBeatContract?.stopCondition
+    || !profile.revealPolicy?.tiers?.length
+  ) {
+    throw new Error(`T3 compilation blocked: incomplete evidence profile ${profile.evidenceProfileId || "<unknown>"}`);
   }
 }
 
@@ -359,72 +385,245 @@ const kernelPlayerVisibleFallbacks = {
   "DK-P1-EXECUTION-SCOPE": [
     {
       PLAYER_RESULT: "总督把放行边界当厅写定：只准清流县先办一批，并在给巡抚的回文中明载，不得趁百姓急难压价买田。",
-      WORLD_PRESSURE: "巡抚书吏把写定的回文收入匣中，却仍捧着匣子候在屏风外。",
-      DECISION_STOP: "他隔着屏风问道：清流试办若误了三日之限，这份责任由总督独自写明，还是请巡抚在同一份回文上共同具名？"
+      WORLD_PRESSURE: "纸上的墨迹还没有干透，巡抚书吏便上前接过回文，当着总督的面收入匣中。匣盖合上，他却没有告退，只把匣子横托在胸前。清流一县可以先办，压价买田也有了禁令；可三日复核若赶不上，今日这道边界是谁催成、又由谁担责，回文里仍没有写明。",
+      DECISION_STOP: "书吏隔着屏风躬身道：\"清流试办，卑职可以照此回禀。只是三日之限一到，复核若误，朝廷问的便不只是田亩。敢问大人，这份责任是由总督独自写明，还是请巡抚在同一份回文上共同具名？\"说完，他仍捧着回文匣候在原处。"
     },
     {
       PLAYER_RESULT: "总督准巡抚先行放开改桑，但把三日复核和县令逐日具报同时写进了执行条件。",
-      WORLD_PRESSURE: "巡抚书吏听明先行放开的条件，手仍按着回文匣，没有离开。",
-      DECISION_STOP: "他追问：三日后复核册若仍不齐，催办、放行与补正的责任由总督独自具名，还是请巡抚共同具名？"
+      WORLD_PRESSURE: "巡抚书吏听见“先行放开”，神色终于松了一线；待听到三日复核和逐日具报，他按在回文匣上的手又停住了。急令可以先走，补正却从这一刻起有了期限。若三日后材料仍不齐，先行放开的好处归谁，留下的缺口又算在谁头上，督抚之间还没有一句明话。",
+      DECISION_STOP: "书吏把话问得很慢：\"大人，催办出自巡抚衙门，放行却要从总督府出去。三日后若仍补不齐，这份责任是由总督独自具名，还是请巡抚在同一份回文上共同具名？\""
     },
     {
       PLAYER_RESULT: "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
-      WORLD_PRESSURE: "巡抚书吏听完，没有去碰那只空回文匣，只在屏风外躬身候着。",
-      DECISION_STOP: "片刻后，他问道：\"大人既肯担这三日之责，这番话准备怎样写进正式回文，是由总督独自具名，还是请巡抚共同具名？\""
+      WORLD_PRESSURE: "巡抚书吏听完，没有去碰那只空回文匣。总督肯担延误之责，便等于把巡抚催办的压力暂时挡在了自己名下；可口头一句“责在本督”，出了这间内厅便可能各有说法。书吏仍躬身候着，显然是在等一份可以带回巡抚衙门的文字。",
+      DECISION_STOP: "片刻后，他才道：\"大人既肯担这三日之责，卑职不敢再催落印。只是这番话准备怎样写进正式回文——由总督独自具名，还是请巡抚共同具名？\""
     }
   ],
   "DK-P1-RESPONSIBILITY-RECORD": [
     {
       PLAYER_RESULT: "总督把暂缓签发的缘由和督抚各自应负的责任逐项写入回文，并注明县册复核主持权尚待议定。写毕，他将文书封好，交给巡抚书吏，请巡抚在同一份回文上具名。",
       SCENE_TRANSITION: "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
-      WORLD_PRESSURE: "巡抚幕僚开门见山：巡抚不肯在昨日那份回文上共同具名。县令没有争辩，书吏也停了笔。",
-      DECISION_STOP: "幕僚随即问道：即将开始的县册复核由总督府主持，还是督抚共同主持；县衙又是经办、见证，还是只交材料？"
+      WORLD_PRESSURE: "总督入内时，巡抚幕僚没有说一句寒暄，只把昨日的答复说得明白：巡抚不肯在那份回文上共同具名。清流县令原本站在案前，听见这句话便把身子又低了些；改桑书吏刚提起笔，也停在纸面上方。督抚没能共担昨日的责任，今日这场复核由谁掌手，便再也不是一句程序上的安排。",
+      DECISION_STOP: "巡抚幕僚拱手道：\"联署既未成，下官便替中丞先问清下一件事。县册复核，是由总督府主持，还是督抚共同主持？清流县衙在其中，是经办、是见证，还是只交出材料便退在一旁？\"县令与书吏都没有接话，只等总督定下这第一道规矩。"
     },
     {
       PLAYER_RESULT: "总督将当前改桑边界和自己承担的责任写入回文，独自具名，又把巡抚催办的原文列作附件，一并留档。",
       SCENE_TRANSITION: "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
-      WORLD_PRESSURE: "巡抚幕僚对总督昨日单独具名的责任写法不置可否，只把目光转向清流县令。",
-      DECISION_STOP: "幕僚先问的不是改桑进度，而是县册复核究竟由谁主持；县衙在这场复核中是经办、见证，还是只交材料？"
+      WORLD_PRESSURE: "巡抚幕僚对总督昨日单独具名的回文不置可否，既不说巡抚认可，也不替巡抚反驳。他只把目光转向清流县令。县令被这一眼看得不敢先开口：总督已经独自担下行文之责，若复核仍由县衙自办，日后册页出了差错，责任便会顺着这道目光落到他身上。",
+      DECISION_STOP: "幕僚终于道：\"昨日的回文既由制台独署，今日便只问复核。究竟由总督府主持，还是督抚共同主持？清流县衙是经办、见证，还是只交材料？\"签押房里无人出声，三方都在等总督把权责划开。"
     },
     {
       PLAYER_RESULT: "总督另具回文，把督抚在改桑执行与复核上的分歧逐项写明，并分别列出各自承担的事项。",
       SCENE_TRANSITION: "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
-      WORLD_PRESSURE: "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场；清流县令听完没有接话，改桑书吏也停了笔。",
-      DECISION_STOP: "幕僚要求先说清县册复核由谁主持；县衙在这场复核中是经办、见证，还是只交材料？"
+      WORLD_PRESSURE: "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场，对总督写明的分歧也没有收回。清流县令听完没有接话，改桑书吏也停了笔。昨日尚能留在两封文书里的争执，如今已经摆到了同一间签押房里；谁主持复核，便是谁先有资格解释县册。",
+      DECISION_STOP: "幕僚把手一拱：\"分歧既已写明，下官便请大人再写明一件——复核由谁主持？清流县衙在其中，是经办、见证，还是只交材料？\"县令抬眼看向总督，等着自己的位置被当厅定下。"
     }
   ],
   "DK-P1-REVIEW-AUTHORITY": [
     {
       PLAYER_RESULT: "总督定下由总督府主持复核、开列清单，巡抚和县令只能派见证人参加。",
-      WORLD_PRESSURE: "巡抚幕僚没有再争主持之名，只提醒在场诸人：谁先接触原册、谁留下封样，往后都要能说清。",
-      DECISION_STOP: "清流县令随即请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+      WORLD_PRESSURE: "巡抚幕僚听完，慢慢收回了拱着的手，没有再争主持之名。他只提醒在场诸人：总督府既掌清单，往后谁先接触原册、谁留下封样、谁能证明册页未被调换，都要一笔一笔说得清。清流县令听到这里，神色反而更紧——主持权已经定了，原册仍在县里，第一段保管责任还压在他身上。",
+      DECISION_STOP: "县令上前半步：\"下官领命。只是原册眼下仍在清流县档房，敢问制台：是仍留档房，等三方到场换封；还是当场抄出见证副本；抑或整封移交总督府？\"三条路的风险都摆在案前，巡抚幕僚也转过头来等候。"
     },
     {
       PLAYER_RESULT: "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
-      WORLD_PRESSURE: "共同具名虽锁住了单方动册的机会，也让原件每一次启封都可能被另一方拖住。",
-      DECISION_STOP: "清流县令请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+      WORLD_PRESSURE: "巡抚幕僚当即应下“双方同时具名”，清流县令却没有立刻称是。共同复核锁住了任何一方私自动册的机会，也意味着往后每一次启封、抄录和核对，都要等另一方的人到场。眼下原册尚在清流县，第一步若定得不清，互相制约便会先变成互相等候。",
+      DECISION_STOP: "县令躬身问道：\"既要双方经手人同时具名，原册该放在哪里才算两边都信得过？是仍留档房换封，当场抄出见证副本，还是整封移交总督府？\"幕僚没有替巡抚回答，只看向总督。"
     },
     {
       PLAYER_RESULT: "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
-      WORLD_PRESSURE: "县令接下初核之责，却也当厅说明：原册若仍由县衙独守，日后任何缺页都可能算在他头上。",
-      DECISION_STOP: "他请示：县册原件是仍留档房换封、当场抄出见证副本，还是整封移交总督府？"
+      WORLD_PRESSURE: "清流县令接下初核之责，脸上却没有半分轻松。他当厅说明：县衙先查，固然省去督抚两边逐页相持；可原册若仍由县衙独守，初核期间任何缺页、换页或数字争议，最后都可能算在他头上。巡抚幕僚没有反驳，只等县令把这份风险说完。",
+      DECISION_STOP: "县令道：\"请制台再定原册的处置。是仍留档房，由三方见证换封；是当场抄出见证副本；还是整封移交总督府？原册放在哪里，初核之责才有凭据。\""
     }
   ],
   "DK-P1-EVIDENCE-CUSTODY": [
     {
       PLAYER_RESULT: "总督命清流县将原册留在档房，待三方见证到场后再换封并各留封样。",
-      WORLD_PRESSURE: "原册眼下仍在清流县档房，换封尚未执行；负责经手册页的改桑书吏却已经成为下一步绕不开的人。",
-      DECISION_STOP: "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+      WORLD_PRESSURE: "县令领命，却把“尚未换封”四个字说得格外清楚。原册仍在清流县档房，三方见证赶到以前，保管责任仍在县衙；命令只是定下下一步，并没有把换封提前变成已经完成的事实。站在一旁的改桑书吏听见众人谈到册页经手，脸色渐渐发白。他知道哪些页曾从自己手中过，也因此成了这条证据链上最容易先被人找到的一环。",
+      DECISION_STOP: "县令看了书吏一眼，低声问道：\"原册既先留县中，这个人该如何处置？是由总督府秘密保护后问话，交督抚双方共同询问，还是先只收一份封缄书面供述？\"书吏垂着头，签押房里没有人替他回答。"
     },
     {
       PLAYER_RESULT: "总督命清流县等两名见证人到场后再抄出样册，并逐页记明抄录人和时辰。",
-      WORLD_PRESSURE: "第二条证据链尚待执行；一旦见证抄录开始，负责经手的改桑书吏便会暴露在督抚双方眼前。",
-      DECISION_STOP: "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+      WORLD_PRESSURE: "县令把“见证到场后再抄”复述了一遍，确认眼下还没有任何副本。第二条证据链要从见证人到场、第一笔抄录开始，不能凭一句命令倒推出已经存在的样册。改桑书吏站在案边，听见往后每页都要记下抄录人与时辰，便明白自己过去经手册页的次序很快会被督抚双方同时追问。",
+      DECISION_STOP: "县令问道：\"抄录一开始，这名书吏便再藏不住。是先由总督府秘密保护问话，还是请督抚双方共同询问；若都不妥，便先收一份封缄书面供述？\"巡抚幕僚看着书吏，总督必须先决定谁能接触他。"
     },
     {
       PLAYER_RESULT: "总督命清流县在见证下将可疑册页整封移交总督府，县衙留下交接清单。",
-      WORLD_PRESSURE: "原册眼下仍在清流县档房；交接一旦执行，途中与入府后的保管责任才会转到总督府。",
-      DECISION_STOP: "清流县令问道：这名书吏是先由总督府秘密保护问话，交督抚共同询问，还是只收一份封口证词？"
+      WORLD_PRESSURE: "清流县令领命后先把界限说清：原册眼下仍在县档房，只有见证人在场、交接清单写成、整封真正起运以后，途中和入府后的保管责任才转到总督府。巡抚幕僚听见“交接清单”，没有再争原册去向，只把目光落在改桑书吏身上。册可以等见证移交，人却可能在册到以前先改口或失去踪影。",
+      DECISION_STOP: "县令顺着他的目光看去：\"制台，原册移交已有章程，这名经手书吏却不能无人过问。是先秘密保护问话，交督抚双方共同询问，还是只收一份封缄书面供述？\""
+    }
+  ],
+  "DK-P1-WITNESS-ACCESS": [
+    {
+      PLAYER_RESULT: "总督以核对公文为名，把改桑书吏秘密带到总督府，不公开他的证人身份。",
+      WORLD_PRESSURE: "书吏被带出签押房时，巡抚幕僚没有出声阻拦，只把案上的复核清单慢慢合上。人既由总督府暗中保护，巡抚一方便看不到他的原始说法；可若总督迟迟不给出可核对的材料，这番保护也会被说成私藏证人。清流县令站在门边，知道自己回县以后仍要独自守着原册。",
+      DECISION_STOP: "巡抚幕僚等脚步声远了才道：\"人可以暂不露面，事情却不能只在总督府里说。县册究竟哪里可疑，抚院今日能知道多少？\"他把问题留在案上，等总督划定披露的边界。"
+    },
+    {
+      PLAYER_RESULT: "总督准督抚双方各派一人在场，当面对照书吏说法和样册。",
+      WORLD_PRESSURE: "改桑书吏抬头看了看巡抚幕僚，又看向清流县令，脸上的惧色并没有因为多了见证人而减轻。督抚同时在场，任何一方都难以单独改写他的说法；同样，他说出的每一句话也会立刻成为两边争夺责任的凭据。县令先把手按在案沿，提醒众人原册仍未开封。",
+      DECISION_STOP: "巡抚幕僚道：\"既然双方都能听，人证的去处便不必再争。只请制台明示：抚院可以先看异常范围，还是连样册和见证记录也一并查验？\""
+    },
+    {
+      PLAYER_RESULT: "总督命县令先收一份封缄书面供述，待初始说法留存后再决定是否传人。",
+      WORLD_PRESSURE: "县令领命，将这件事记在自己的责任名下。封缄供述能留下书吏最初的说法，却也把第一段保管链重新压回县衙；在供述真正送到以前，总督府和巡抚衙门谁都看不到内容。巡抚幕僚听罢没有反对，只问这份等待要有多大的边界。",
+      DECISION_STOP: "他朝总督拱手：\"人证暂不传，抚院可以等。但县册异常是否存在、复核何时回报，总该有一句能带回去的话。大人准备公开到哪一步？\""
+    }
+  ],
+  "DK-P1-DISCLOSURE-SCOPE": [
+    {
+      PLAYER_RESULT: "总督只向巡抚说明册页存在差异，没有透露书吏和密供所在。",
+      SCENE_TRANSITION: "申时将近，议事移到杭州总督府仪门内厅。清流县令与江南商会会首已经在堂下候着，案边摆的却不再只是县册，还有城中催粮的呈报。",
+      WORLD_PRESSURE: "巡抚幕僚得到的只有一条尚待复核的异常，既不能据此定罪，也无法接触人证。他将不满压在袖中，转而把粮价和三日限期一并摆到总督面前。清流县令说官仓难以久支；商会会首却立即接话，说粮船和脚力都能筹措，只等官府开口。",
+      DECISION_STOP: "县令与会首隔着半间厅彼此看了一眼。一个问官府先拿什么救急，一个等着说出自己的条件。第一批粮从官仓、商会还是两路并行，必须由总督当场定下。"
+    },
+    {
+      PLAYER_RESULT: "总督准将带见证记录的样册交巡抚查验，原件仍由现保管人封存。",
+      SCENE_TRANSITION: "申时将近，议事移到杭州总督府仪门内厅。巡抚幕僚收下获准查验的范围，清流县令与江南商会会首也已在堂下候着。",
+      WORLD_PRESSURE: "巡抚一方终于取得一条可以自行核对的材料入口，督抚间的戒心略松了一线，原件的保管责任却没有改变。话还未说完，清流县令便把城中缺粮的压力接了上来；商会会首随即表示，只要官府肯作保，商粮与运力都能入局。县册之争尚未停，粮食已经逼着众人换一张桌子谈价。",
+      DECISION_STOP: "总督面前摆出了两条路：先动官仓和邻省借粮，还是让商会立即开仓运粮。县令与会首都在等他先定第一批救粮的来源。"
+    },
+    {
+      PLAYER_RESULT: "总督以保管链未稳为由暂不披露细节，只答应限时提交复核结果。",
+      SCENE_TRANSITION: "申时将近，议事移到杭州总督府仪门内厅。巡抚幕僚仍空着手，清流县令与江南商会会首已经在堂下候着。",
+      WORLD_PRESSURE: "巡抚幕僚没有再追问人证，只说限时回报也要有人担责。清流县令趁这句话未落，便报官仓已难承受继续拖延；商会会首则把能调来的粮路说得十分从容。复核材料仍被封在总督手里，救粮却不能同样封着等候。谁先拿出粮，谁便会先取得说话的分量。",
+      DECISION_STOP: "会首躬身道：\"官粮若来得及，商会不敢争先；若来不及，请制台给一句准话。\"县令也看向总督，第一批粮的来源已经不能再拖。"
+    }
+  ],
+  "DK-P1-GRAIN-SOURCE": [
+    {
+      PLAYER_RESULT: "总督决定先动官仓并向邻省借粮，所有借据由总督府承担。",
+      WORLD_PRESSURE: "清流县令先松了一口气，随即又把头低下去：官仓能救眼前，邻省的粮何时到、借据将来由什么偿还，都要落在总督府名下。商会会首没有因自己被挡在第一步之外而退席，只说官府若缺船、缺脚力，商会仍可出手。那句话说得像帮忙，也像重新开的价。",
+      DECISION_STOP: "会首道：\"粮可以不由商会垫，路总要有人走。若借我等的船和人，官府肯给什么，又明确不肯给什么？\"总督必须决定是否让商会进入救粮链。"
+    },
+    {
+      PLAYER_RESULT: "总督准商会限量开仓，官府为粮路作保，但明令不得借粮价换购灾民田地。",
+      WORLD_PRESSURE: "会首应下开仓，却在听见不得以粮换田时停了片刻。他没有当厅争辩，只问官府的担保是否包括船运、损耗与途中查验。清流县令看着他，明白商会既把粮送进灾县，日后便会拿这份功劳换取别的入口。禁止买田守住了一道门，粮路和丝路仍在门外等价。",
+      DECISION_STOP: "会首把话说得客气：\"田契既不许碰，商会便只问运输和日后的交易资格。制台是只买粮与运力，还是还肯给别的优先？\""
+    },
+    {
+      PLAYER_RESULT: "总督定下官仓先稳城内、商会负责外县运输，两路账目分开核销。",
+      WORLD_PRESSURE: "县令与会首各自领下半条粮路，厅上看似少了一场争执，实际却多了两本必须互相核对的账。城内若先稳，外县会问为何迟到；商粮若走得更快，又会有人说官府把灾县交给了商人。会首只关心一件事：他出了船和人以后，能从官府得到什么明确回报。",
+      DECISION_STOP: "他向前一步：\"两路账可以分开，商会的条件也请分开写明。只给运费，还是允许以后优先收丝；哪些权利，制台今日便该划清。\""
+    }
+  ],
+  "DK-P1-MERCHANT-CONDITIONS": [
+    {
+      PLAYER_RESULT: "总督接受商会的粮食和运力，同时明令灾期不得收购或代持民田。",
+      WORLD_PRESSURE: "会首当厅应命，答得没有半分迟疑。清流县令却盯着“代持”二字又问了一遍，显然担心田契即使不落在商会名下，也会绕到别人的名下。商粮可以启程，土地的边界却还只是一道原则；灾民一旦拿田契换粮，县衙凭什么认定价钱公平、买受人真实，仍没有章程。",
+      DECISION_STOP: "县令道：\"禁令要落到每一张田契上，才不至于只禁了商会的名字。请制台再定，是设公开底价逐契登记，还是灾期索性暂禁购田？\""
+    },
+    {
+      PLAYER_RESULT: "总督只向商会购买船队运输，按程付银，不给收丝或购田优先权。",
+      WORLD_PRESSURE: "会首听明白自己只是承运人，笑意淡了些，却仍然接下差事。他既拿不到收丝与购田入口，便会把每一程运费、每一次耽搁都算得更清。县令担心的则是另一层：商会不能买田，不等于别的大户不会趁灾压价，灾民手里的田契仍可能在粮到以前被拿走。",
+      DECISION_STOP: "县令请总督把禁令从商会扩到所有买受人：是设灾期底价并逐契登记，还是暂禁大户购入民田？"
+    },
+    {
+      PLAYER_RESULT: "总督拒绝商会提出的担保和优先权，改走官府借调粮路。",
+      WORLD_PRESSURE: "会首没有失礼，只收回了方才摆在案前的条件。商会退出，官府也失去了眼前最便利的一段粮路；借调的粮要走多久尚无定数，灾县里的田契却不会等官文。清流县令直言，越是缺粮，越有人愿意用一纸低价契换一家人的口粮。",
+      DECISION_STOP: "县令问道：\"商会可以挡在门外，暗中的买主却挡不住。灾期田契究竟设底价、暂禁交易，还是把改桑压力移出清流？请制台先定一条。\""
+    }
+  ],
+  "DK-P1-LAND-SAFEGUARD": [
+    {
+      PLAYER_RESULT: "总督定下灾期田契的公开底价，并命县衙逐契登记买受人。",
+      WORLD_PRESSURE: "清流县令领命时没有说这道办法能救下所有人的田，只说从此每一份低价成交都要有人在册上留下名字。商会会首也没有反对，公开底价并未封死交易，只让暗中代持和层层转手多了一道可追查的痕迹。粮仍有限，田契暂时有了门槛，最先领粮的人却还没有定。",
+      DECISION_STOP: "县令把赈册推到案前：\"现粮不够同时顾全城里米市、外围灾村和来年的种粮。第一批先给谁，请制台定次序。\""
+    },
+    {
+      PLAYER_RESULT: "总督命赈期内暂禁商会和大户购入灾民田，先以借粮维持。",
+      WORLD_PRESSURE: "会首听见禁购，脸上终于露出一丝冷意，却仍拱手称是。县令知道这道禁令保住了田契，也会让愿意垫粮的人少掉许多；官府必须拿自己的粮和信用填上空缺。厅外催赈的呈报一封接一封送来，谁先得到有限的现粮，已经不能再用一条笼统的“先救百姓”带过。",
+      DECISION_STOP: "县令请示：\"是先救已经断粮的人，先保种粮，还是先稳住城中米市？三处都急，只能先定一处。\""
+    },
+    {
+      PLAYER_RESULT: "总督把改桑指标分到更多非灾县，清流县只承担有限份额。",
+      WORLD_PRESSURE: "清流县令当厅谢命，巡抚幕僚的神色却沉了下来。灾县的压力被减轻，未受灾各县却会问为什么替清流分担，巡抚也会追究总督是否借赈灾改动了既定进度。指标可以挪，眼前的粮不能跟着纸面一起挪走。清流仍要决定有限粮食先保哪一头。",
+      DECISION_STOP: "县令道：\"清流少担桑田，百姓总算能缓一口气。可现粮仍只够先救一处：断粮户、种粮，还是城中米市？\""
+    }
+  ],
+  "DK-P1-RELIEF-PRIORITY": [
+    {
+      PLAYER_RESULT: "总督命第一批现粮先发给无存粮、也无田可抵的百姓。",
+      WORLD_PRESSURE: "县令应下以后，先把最穷的一批人圈进赈册。这个次序保住的是今晚就可能断炊的人，却不能立刻压住城中米价，也顾不上所有春种。巡抚幕僚看着那本赈册，只问日后入京时，谁来解释为何先救人而没有先稳住改桑和市面。粮食的次序，已经变成第一份奏报里的责任次序。",
+      DECISION_STOP: "幕僚道：\"既然每一步都要有人担责，首报便不能再拖。是督抚共同具奏，还是各自成文？\""
+    },
+    {
+      PLAYER_RESULT: "总督命人先留下种粮和插秧所需，再按户发放余粮。",
+      WORLD_PRESSURE: "县令把一部分粮从赈册中划出，堂下立刻有人低声吸了口气。保住春种，是替数月后的生计留路；可今日断粮的人不会因为数月后的收成少饿一顿。巡抚幕僚没有评价这个轻重，只提醒总督：朝廷最先看到的不会是全部后果，而是谁在第一份文书里怎样解释这项取舍。",
+      DECISION_STOP: "他问：\"这份首报由督抚共同写，还是制台独自写？若意见不同，是藏在一份奏报里，还是各自具奏？\""
+    },
+    {
+      PLAYER_RESULT: "总督决定先稳杭州和清流县米市，再向外围灾村分批送粮。",
+      WORLD_PRESSURE: "会首听见先稳米市，立即开始盘算船路；县令却提醒，外围灾村会更晚见到粮。城里价格若能压下，官府可以争得时间；若外围先有人撑不住，这份时间便会变成追责的证据。巡抚幕僚把两边的利害都听完，随后把话题落到即将入京的第一份叙述上。",
+      DECISION_STOP: "他道：\"粮先到哪里已经定了，朝廷先听谁说却还没有定。首报是督抚共同具奏、总督独奏，还是两边各报一份？\""
+    }
+  ],
+  "DK-P1-REPORT-AUTHORSHIP": [
+    {
+      PLAYER_RESULT: "总督决定与巡抚共同具奏，执行、复核和粮食分歧逐项写明，双方确认后共同具名入京。",
+      WORLD_PRESSURE: "巡抚幕僚没有立即答应，只说共同具名也要共同看见支撑奏报的材料。清流县令站在一旁，明白附件越能追到原件与经手人，首报越有分量，县衙和书吏也越难退回幕后。共同具奏先统一了谁来写，接下来必须划定什么可以随奏入京。",
+      DECISION_STOP: "幕僚把奏稿递到案边：\"正文既要同奏，附件也请一并说清。是附见证样册和保管记录，还是只列异常范围；书吏供述，要不要随报入京？\""
+    },
+    {
+      PLAYER_RESULT: "总督决定独自具奏，并把巡抚催办和拒签文书一并列作附件。",
+      WORLD_PRESSURE: "巡抚幕僚听完便退开半步，不再替巡抚参与起草。总督抢得了第一份完整叙述的控制权，也把材料取舍先压在自己名下；巡抚若另报，督抚之争便会从附件多少开始。县令最关心的，是原件保管人与书吏供述会不会随独奏一起进入京师。",
+      DECISION_STOP: "县令躬身问道：\"制台独奏，下官不敢置喙。只请先定附件：附见证样册与保管记录，还是只列异常；书吏的说法，要不要随报？\""
+    },
+    {
+      PLAYER_RESULT: "总督准巡抚另报，自己同时送出复核结果和异议，两份奏报各自具名。",
+      WORLD_PRESSURE: "巡抚幕僚当即应下，督抚两边从这一刻起不再共享一支笔。谁的文书先到、谁的附件更完整，便可能先替浙江定性。清流县令和改桑书吏夹在两份奏报之间，更急着知道总督这一份会把哪些材料和人名送入京师。",
+      DECISION_STOP: "县令低声道：\"既然两边各报，总督这一份附什么更要先定。是附样册与保管记录，还是只列异常；书吏供述是否随报？\""
+    }
+  ],
+  "DK-P1-RESPONSIBILITY-SCOPE": [
+    {
+      PLAYER_RESULT: "总督命奏报写明，执行与复核均由自己裁定，不把责任推给县令。",
+      WORLD_PRESSURE: "清流县令听完，肩背终于松了一分；巡抚幕僚却提醒，总督既把裁定之责都揽在自己名下，递送途中每一处失误也会沿着这份署名追回来。正文、附件与责任都已经定下，只剩谁经手送出、沿途如何留下不能抵赖的记录。",
+      DECISION_STOP: "幕僚问道：\"首报是走正式通政渠道逐站交接，还是加封急递；若两边都不放心，是否让正本与摘要分路互证？\""
+    },
+    {
+      PLAYER_RESULT: "总督把责任分项写定：改桑进度由巡抚具名，复核和赈济由总督具名。",
+      WORLD_PRESSURE: "巡抚幕僚没有替巡抚当场认下，只把这项分责原样记住。若巡抚拒绝具名，分责本身便会成为督抚争执的新证据；若巡抚接受，两边都要对首报的送达负责。正文、附件和责任边界已经备齐，现在谁先把它送入京师，将决定这份分责能否先占住名分。",
+      DECISION_STOP: "幕僚道：\"请制台再定最后一道：走正式通政、加封急递，还是正本与摘要分路互证？\""
+    },
+    {
+      PLAYER_RESULT: "总督命奏报如实列清县令、书吏和各级经手事项，只陈事实，不先定罪。",
+      WORLD_PRESSURE: "县令没有因“不先定罪”而安心。他与书吏的名字一旦进入首报，即使只是经手，也会先成为京师追问的入口。巡抚幕僚则提醒，既然经手链已经写入正文，递送链也必须同样清楚；否则文书途中一旦迟延或被换，所有人的名字都会失去凭据。",
+      DECISION_STOP: "总督面前只剩递送渠道：正式通政逐站交接、加封急递，还是正本与摘要分路互证？"
+    }
+  ],
+  "DK-P1-EVIDENCE-ATTACHMENT": [
+    {
+      PLAYER_RESULT: "总督决定随奏附上见证抄出的样册、封条记录和原件保管人名单。",
+      WORLD_PRESSURE: "县令逐项核对附件名目，确认原件仍按既定保管链留在浙江。附件越完整，首报越容易被京师采信，也越容易让保管人和经手人失去回旋余地。材料边界已经定下，正文里谁对执行、复核与赈济负责，便不能再留作一句含混的“地方自处”。",
+      DECISION_STOP: "巡抚幕僚问道：\"附件已经列清，责任也请列清。执行、复核、赈济和各级经手，分别由谁承担；是制台自承，还是逐项写明？\""
+    },
+    {
+      PLAYER_RESULT: "总督决定附件只列田亩数字和日期差异，并声明原册仍在复核，不附人名推断。",
+      WORLD_PRESSURE: "县令接受了这道边界，书吏也暂时不必以人证身份出现在京师文书里。可附件越克制，正文里的责任越要明确；否则巡抚另报时，只需指责总督既不交材料、也不认责任，便能先占住名分。",
+      DECISION_STOP: "巡抚幕僚道：\"附件既不附人名，正文便请直说谁担执行、谁担复核与赈济。是制台自承，还是把各级经手事项逐项列出？\""
+    },
+    {
+      PLAYER_RESULT: "总督决定暂不附书吏供述，只附保管链，并说明人证需要保护。",
+      WORLD_PRESSURE: "书吏的说法被留在浙江，奏报只证明材料如何被看守、谁能接触。这个选择保住了人证，也给巡抚留下质疑：没有供述，保管链究竟保护的是证据，还是保护总督自己的说法。要回答这份质疑，奏报必须先写明谁对每一段处置负责。",
+      DECISION_STOP: "县令问：\"人证既留在浙江，正文中的责任便不能再留白。执行、复核、赈济和经手事项，制台准备怎样分担？\""
+    }
+  ],
+  "DK-P1-CAPITAL-CHANNEL": [
+    {
+      PLAYER_RESULT: "总督命首报走正式通政渠道，沿途逐站记录交接和到达时辰。",
+      WORLD_PRESSURE: "文书离开总督府时，交接簿上的第一行已经写下。正式渠道最慢，却让每一站都有人承担接手与转出的责任；巡抚若另有奏报，也只能在同一套朝廷程序里争先。厅中众人望着文书出门，知道浙江危局第一次有了一份不可随意收回的官方叙述。",
+      DECISION_STOP: "送文的人刚出府门，巡抚幕僚便取出正式手本：\"首报既已上路，抚院请核对送入京师的是哪一版事实。制台是交一份封号摘要，请巡抚收讫具名；还是不交底稿，只把拒交范围与理由正式留案？\""
+    },
+    {
+      PLAYER_RESULT: "总督用自己的封印加封急递，指定送达上级，并在府中留下副本和交接记录。",
+      WORLD_PRESSURE: "急递出府以后，速度与责任同时落在总督名下。副本留在案上，既能证明送出的内容，也会在京师回音到来以前成为巡抚追问的对象。县令和书吏暂时退下，巡抚幕僚却没有告辞；他已经看出，总督是在用更快的送达抢先固定浙江的第一版事实。",
+      DECISION_STOP: "急递的脚步尚未远去，巡抚幕僚已经持手本索取底稿。他问总督，是交一份不含人证位置的封号摘要，请巡抚收讫具名；还是拒交底稿，把范围、理由与期限正式留案。"
+    },
+    {
+      PLAYER_RESULT: "总督命正本走正式渠道、摘要另走密奏，两份互列封号，以便相互核验。",
+      WORLD_PRESSURE: "两路文书从不同的门离开总督府，一路留下公开交接，一路只让少数人知道去向。互列封号可以防止内容被悄然替换，也把泄露面扩大了一倍。巡抚幕僚看着两名差役先后离府，明白总督没有把浙江的第一版事实押在一条路上。",
+      DECISION_STOP: "两路文书离府以后，巡抚幕僚当即要求核对总督送出的那一版事实。他把选择摆明：交一份列明结论、附件与封号的摘要并请巡抚具名收讫，或正式拒交底稿并留下可复核期限。"
     }
   ]
 };
@@ -598,15 +797,29 @@ const consequencePayoffBeatsByRequirement = {
       resultCeiling: "只能形成催问与责任压力；眼前粮价只能定性写成正在上涨或压力在眼前，不得换算为一日一变、每日、每时等频率；不得写成朝廷已经定罪或巡抚已经取得执行权。",
     },
     {
-      beatId: "PAYOFF-P1-EXECUTION-RECORD",
+      beatId: "PAYOFF-P1-EXECUTION-REVIEW-LIABILITY",
       actorRefs: ["actor.xunfu_aide"],
-      action: "巡抚幕僚盯住已经写进放行文书的两条边界，要求总督说明由谁具名担责；日后谁想切割责任，都必须先解释这份已经写明的边界。",
+      action: "若改桑已经先行放开而复核材料仍待补齐，巡抚幕僚便要求当厅说清谁负责催齐、谁核验、逾期由谁具名；先放行后补正由此落到可以追问的承办责任上。",
       requiredTermGroups: [
         ["巡抚幕僚", "幕僚"],
-        ["改桑范围", "执行范围", "清流县试办", "清流试办", "何县试办", "划定的范围"],
-        ["责任", "具名", "切割首尾", "切割干系", "切割干净", "交代"]
+        ["先行放开", "先放行", "已经放开"],
+        ["补齐", "补正", "复核"],
+        ["承办", "催齐", "核验", "逾期", "具名"]
       ],
-      resultCeiling: "巡抚幕僚只以巡抚代表身份独自加入现场；不得让巡抚本人或其他随员到场。只能把“清流县试办”和“不得趁急难压价买田”这两项已结算边界带入责任争夺；不得新增乡、里、保、亩数、田地分类、第二份文书或已经完成的签署内容。",
+      resultCeiling: "只能追问已经结算的先行放开与补正责任；不得凭空指定新的具名承办人，不得写成复核材料已经补齐或朝廷已经问责。",
+    },
+    {
+      beatId: "PAYOFF-P1-EXECUTION-PAUSE-LIABILITY",
+      actorRefs: ["actor.xunfu_aide"],
+      action: "若总督选择暂缓并先保全档房，巡抚幕僚便把三日限期与仍在上升的粮价压力同时摆到案前，要求总督确认延误责任仍由自己承担。",
+      requiredTermGroups: [
+        ["巡抚幕僚", "幕僚"],
+        ["暂缓", "封档", "保全档房"],
+        ["三日", "限期"],
+        ["粮价", "粮食压力"],
+        ["总督承担", "延误责任", "担责"]
+      ],
+      resultCeiling: "只能形成三日限期、粮价压力和总督担责的当面追问；不得新增精确粮价、民乱、朝廷定罪或已经解除的暂缓状态。",
     },
   ],
   "REQ-P1-RESPONSIBILITY-RECORD": [
@@ -835,6 +1048,12 @@ const floorContinuationDecisions = {
             "responsibility.governorExposure": { $delta: 1 },
             "relations.governorXunfu": { $delta: -1 },
           },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督命县令会同乡老逐船过秤，实收数当场张榜；验完一仓，才准开一仓。",
+            SCENE_TRANSITION: "次日卯后，杭州总督府签押房。首批救粮的回执尚在路上，第一份入京奏报已经铺开在案。",
+            WORLD_PRESSURE: "县令领命时先说清，这样做会慢，却能让每一石粮都留下来路。巡抚幕僚立即接过“慢”字，提醒总督三日之限不会因为一仓一验而停下。粮食刚有了可核对的去向，督抚双方便开始争夺谁有资格把这番取舍写进首报。",
+            DECISION_STOP: "幕僚把奏稿推到案中：\"救粮、复核、改桑，三件事已经缠在一起。首报究竟由督抚共同具名，还是各写各的？\""
+          },
           createsPendingConsequence: true,
         },
         {
@@ -850,6 +1069,12 @@ const floorContinuationDecisions = {
             knowledgeTransfer: { topic: "relief_release_before_receipt", senderRef: "actor.zhejiang_governor", recipientRef: "actor.qingliu_magistrate", status: "DELIVERED" },
             "responsibility.governorExposure": { $delta: 2 },
             "relations.governorXunfu": { $delta: 1 },
+          },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督命米船一到便照既定名册放粮，所有经手人须在日落以前补齐平码、领粮户与余粮去向。",
+            SCENE_TRANSITION: "次日卯后，杭州总督府签押房。先发后验的回执尚在路上，第一份入京奏报已经铺开在案。",
+            WORLD_PRESSURE: "县令领命以后没有辩解，只说日落以前若补不齐，责任先落在县衙。巡抚幕僚却指出，半日的账目空档已经足以让商会、县衙和督抚各说各话。粮先到了百姓手中，谁来解释这段空档，便成了首报不能回避的一笔。",
+            DECISION_STOP: "幕僚问道：\"首报是督抚共同写明这项风险，还是各自具奏，让京师自己判断？\""
           },
           createsPendingConsequence: true,
         },
@@ -878,6 +1103,11 @@ const floorContinuationDecisions = {
             knowledgeTransfer: { topic: "first_report_seal_index_summary", senderRef: "actor.zhejiang_governor", recipientRef: "actor.zhejiang_xunfu", status: "DELIVERED" },
             "relations.governorXunfu": { $delta: 1 },
           },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督只交给巡抚一份列明结论、附件名称与封号的摘要，不交证人位置和未核实细节，并请巡抚在收讫处具名。",
+            WORLD_PRESSURE: "巡抚幕僚接过摘要，先逐项看了封号，随后才在收讫处落笔。他得到了首报的边界，却没有得到足以自行追问人证的路径；这份克制暂时保住了证据，也把督抚间尚未消失的戒心写进了收讫记录。门外传来商会求见的通报，会首显然不愿在首报离府以后仍逐船议价。",
+            DECISION_STOP: "会首进厅便问：\"后续粮船若还要走，请官府给一句长久的准话。是每日公开条件、逐船具结，还是仍照原约，不再另加官保？\""
+          },
           createsPendingConsequence: true,
         },
         {
@@ -893,6 +1123,11 @@ const floorContinuationDecisions = {
             knowledgeTransfer: { topic: "first_report_copy_refusal_record", senderRef: "actor.zhejiang_governor", recipientRef: "actor.zhejiang_xunfu", status: "DELIVERED" },
             "responsibility.governorExposure": { $delta: 1 },
             "relations.governorXunfu": { $delta: -1 },
+          },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督不交首报底稿，只以正式回文写明拒交范围、证据保管理由与可复核期限，并将巡抚幕僚的手本一并入档。",
+            WORLD_PRESSURE: "幕僚收下回文，没有再争，却把“拒交”二字看了很久。总督守住了首报，也独自承担了拒绝协作的名分；巡抚另具奏报已不再只是威胁。正在这时，江南商会会首求见，要求把后续粮船与担保写成长期凭据。官场的笔尚未停，商人的账已经追到门前。",
+            DECISION_STOP: "会首问道：\"是把每日粮船和运价张榜具结，还是仍按原条件逐船核销，不再给商会新的官保？\""
           },
           createsPendingConsequence: true,
         },
@@ -920,6 +1155,11 @@ const floorContinuationDecisions = {
             "responsibility.governorExposure": { $delta: 1 },
             "responsibility.xunfuExposure": { $delta: 1 },
           },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督命商会每日具结可供粮船、运价和所求权利，张榜以后才准新增一船；购田与收丝优先权不得混入粮约。",
+            WORLD_PRESSURE: "会首答应得很快，目光却在“每日具结”四字上停了一瞬。公开短约让商会不能把一次救急变成长久凭据，也让官府每天都要为张榜的条件负责。清流县令随后上前，说奏报附件的消息已经传到经手书吏耳中；那名书吏最担心的，不是粮价，而是谁还能够传他问话。",
+            DECISION_STOP: "县令代书吏问道：\"是另发保护令，限定传唤人与问讯地点；还是让他留在原处，只准持书面传票、由督抚双方见证问讯？\""
+          },
           createsPendingConsequence: true,
         },
         {
@@ -935,6 +1175,11 @@ const floorContinuationDecisions = {
             knowledgeTransfer: { topic: "merchant_no_additional_guarantee", senderRef: "actor.zhejiang_governor", recipientRef: "actor.jiangnan_merchant_head", status: "DELIVERED" },
             "responsibility.governorExposure": { $delta: 2 },
             "relations.governorXunfu": { $delta: -1 },
+          },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督维持原有商粮边界，新增运粮仍按原条件逐船核销，不给商会另具长期担保。",
+            WORLD_PRESSURE: "会首躬身领命，退回原位时已没有先前的从容。他没有得到新的政策凭据，随时可以缩减船期；断粮责任也因此更直接地压回总督府。县令没有追问商粮，反而把改桑书吏的请求递了上来：附件范围既已外传，人证若没有明确规矩，任何一方都可能借复核之名先接触他。",
+            DECISION_STOP: "县令请示：\"另发封缄保护令，还是让书吏留在原处，只准督抚双方持书面传票共同问讯？\""
           },
           createsPendingConsequence: true,
         },
@@ -963,6 +1208,11 @@ const floorContinuationDecisions = {
             "responsibility.governorExposure": { $delta: 1 },
             "relations.governorXunfu": { $delta: -1 },
           },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督另发封缄保护令，限定传唤人、问讯地点和在场见证；任何抄送都须留下收件人与时辰。",
+            WORLD_PRESSURE: "县令接过保护令，先替书吏谢了一声。巡抚幕僚却当面指出，这道命令既能防止私下问供，也让总督府掌握了人证入口。首报已经离开浙江，京师回文尚未到来，各县却不能一直借“候旨”自行扩张或停摆。保护一名书吏之后，总督还必须保护等待期间的政策边界。",
+            DECISION_STOP: "幕僚问道：\"候旨期间，是先冻结急售田契和改桑扩张，还是先保证既有粮路不断、逐日公开条件？\""
+          },
           createsPendingConsequence: true,
         },
         {
@@ -978,6 +1228,11 @@ const floorContinuationDecisions = {
             knowledgeTransfer: { topic: "witness_dual_warrant_threshold", senderRef: "actor.zhejiang_governor", recipientRef: "actor.qingliu_magistrate", status: "DELIVERED" },
             "responsibility.governorExposure": { $delta: 1 },
             "responsibility.xunfuExposure": { $delta: 1 },
+          },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督不把书吏移出原保管地，只规定任何问讯必须持书面传票，并由督抚双方见证人在场。",
+            WORLD_PRESSURE: "巡抚幕僚与县令都认下了这道门槛，谁也不能再单独把书吏带走。程序看似平衡，却也意味着任一方不到场，问讯便会停住。京师回文仍在路上，各县已经开始等候下一道解释；若没有临时规矩，等待本身便会成为扩张改桑或停办差事的借口。",
+            DECISION_STOP: "幕僚请总督定下候旨期间的边界：先守住民田与既定改桑范围，还是先保粮路不断、把每日条件全部公开？"
           },
           createsPendingConsequence: true,
         },
@@ -1005,6 +1260,11 @@ const floorContinuationDecisions = {
             knowledgeTransfer: { topic: "interim_land_boundary_pending_capital", senderRef: "actor.zhejiang_governor", recipientRef: "actor.zhejiang_xunfu", status: "DELIVERED" },
             "relations.governorXunfu": { $delta: -1 },
           },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督定下：京师回文到来以前维持既定改桑范围，新的急售田契一律先登记、后复核，不得借候旨扩大购田。",
+            WORLD_PRESSURE: "巡抚幕僚听完没有再争，只说明日便把这道临时规矩送回抚院。清流县令收起赈册，江南商会会首也合上了自己的粮账；他们都明白，民田的门暂时收紧，粮路与债务却仍会继续累积。首报已经在去京师的路上，浙江留下的每一天都会成为它下一次被追问的注脚。",
+            DECISION_STOP: "厅门打开时，天色已经发白。第一部分在此收束：原册仍有待复核，粮路仍有代价，急售田契暂时进入可追踪的边界；下一部分将从粮荒与卖田真正压到百姓身上时继续。"
+          },
           createsPendingConsequence: true,
         },
         {
@@ -1020,6 +1280,11 @@ const floorContinuationDecisions = {
             knowledgeTransfer: { topic: "interim_grain_route_pending_capital", senderRef: "actor.zhejiang_governor", recipientRef: "actor.zhejiang_xunfu", status: "DELIVERED" },
             "responsibility.governorExposure": { $delta: 1 },
             "relations.governorXunfu": { $delta: 1 },
+          },
+          playerVisibleFallback: {
+            PLAYER_RESULT: "总督准既有救粮与运输约继续履行，但每日公开到粮、运价与担保，不得趁候旨增加购田或收丝权利。",
+            WORLD_PRESSURE: "商会会首当厅应下公开条件，巡抚幕僚也承认粮路不能在等候京师回文时断掉。清流县令却提醒众人：粮可以继续来，百姓欠下的债和手里的田契也会继续变化。首报已经在路上，浙江眼前的秩序只是被暂时托住，并没有真正脱离危局。",
+            DECISION_STOP: "众人退到厅门外时，晨钟刚响。第一部分在此收束：粮路仍通，商会仍在局中，购田与收丝权利暂未扩大；下一部分将从粮荒、债务与卖田的现实代价继续。"
           },
           createsPendingConsequence: true,
         },
@@ -1067,16 +1332,6 @@ if (continuationCount !== 5) throw new Error(`Expected five non-repeating contin
 const sectionByRequirement = new Map(sections.flatMap((section) => section.requiredRequirementIds.map((id) => [id, section])));
 const assets = [];
 
-if (
-  approvedEvidenceProfile.schemaVersion !== "runtime-story-asset-v1"
-  || approvedEvidenceProfile.assetId !== "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY"
-  || approvedEvidenceProfile.assetType !== "EVIDENCE_PROFILE"
-  || approvedEvidenceProfile.payload?.openingReport?.statementClass !== "ATTRIBUTED_UNVERIFIED_REPORT"
-) {
-  throw new Error("The approved Qingliu evidence profile is missing or invalid");
-}
-assets.push(approvedEvidenceProfile);
-
 function assetBase({ assetId, assetType, sectionIds = null, requirementIds, decisionKernelIds = [], causalArcIds = [], actorRefs = [], stateDependencies = [], sourceClaimIds = [], adaptationDecisionIds = [], retrievalTags = [], payload }) {
   return {
     schemaVersion: "runtime-story-asset-v1",
@@ -1095,6 +1350,53 @@ function assetBase({ assetId, assetType, sectionIds = null, requirementIds, deci
     retrievalTags: [...new Set(["PART-01", ...retrievalTags, ...requirementIds, ...decisionKernelIds, ...causalArcIds, ...actorRefs, ...stateDependencies])],
     payload,
   };
+}
+
+for (const profile of evidenceProfileSet.profiles) {
+  const {
+    schemaVersion,
+    evidenceProfileId,
+    assetId,
+    partIds,
+    sectionIds,
+    requirementIds,
+    decisionKernelIds,
+    actorRefs,
+    sourceClaimIds,
+    adaptationDecisionIds,
+    ...payload
+  } = profile;
+  assets.push(assetBase({
+    assetId,
+    assetType: "EVIDENCE_PROFILE",
+    sectionIds,
+    requirementIds,
+    decisionKernelIds,
+    causalArcIds: [...new Set(sectionIds.flatMap((sectionId) => (
+      sections.find((item) => item.sectionId === sectionId)?.activeCausalArcIds || []
+    )))],
+    actorRefs,
+    stateDependencies: [
+      "evidence.chainStatus",
+      "evidence.primaryCustodianRef",
+      "evidence.copyStatus",
+      "evidence.archiveSealStatus",
+      "knowledgeTransfers",
+    ],
+    sourceClaimIds,
+    adaptationDecisionIds,
+    retrievalTags: [
+      ...sectionIds,
+      evidenceProfileId,
+      profile.targetRef,
+      "EVIDENCE_PROFILE",
+      "KNOWLEDGE_BOUNDARY",
+    ],
+    payload: {
+      evidenceProfileId,
+      ...payload,
+    },
+  }));
 }
 
 for (const pattern of narrativeScenePatternSet.patterns) {
@@ -1478,10 +1780,14 @@ for (const requirement of requirementSet.requirements) {
   const narrativePatternIds = narrativeScenePatternSet.patterns
     .filter((pattern) => pattern.requirementIds.includes(requirement.requirementId))
     .map((pattern) => pattern.patternId);
+  const evidenceProfileAssetIds = evidenceProfileSet.profiles
+    .filter((profile) => profile.requirementIds.includes(requirement.requirementId))
+    .map((profile) => profile.assetId);
   requirement.adaptationDecisionIds = requirement.adaptationGapIds;
   requirement.coverageStatus = requirement.adaptationGapIds.length ? "SATISFIED_BY_ADAPTATION" : "SATISFIED_BY_SOURCE";
   requirement.runtimeAssetIds = [
     coreAssetId,
+    ...evidenceProfileAssetIds,
     ...requirement.decisionKernelIds,
     ...section.activeCausalArcIds,
     ...requirement.delayedConsequenceRuleIds,
@@ -1528,6 +1834,7 @@ const manifestBase = {
   styleProfileHash: computeImmutableHash(styleProfile),
   narrativeScenePatternSetHash: computeImmutableHash(narrativeScenePatternSet),
   narrativeScenePatternCount: narrativeScenePatternSet.patterns.length,
+  evidenceProfileCount: evidenceProfileSet.profiles.length,
   assetCount: assets.length,
   decisionKernelCount: uniqueKernelIds.length,
   causalArcCount: sections.flatMap((item) => item.activeCausalArcIds).length,
@@ -1562,6 +1869,7 @@ const runtimePackageBase = {
     floorObligations: sections.flatMap((item) => item.floorObligationIds).length,
     approvedAdaptations: adaptationSet.adaptations.length,
     narrativeScenePatterns: narrativeScenePatternSet.patterns.length,
+    evidenceProfiles: evidenceProfileSet.profiles.length,
   },
   worldStart,
   sections,

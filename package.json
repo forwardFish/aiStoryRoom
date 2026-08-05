@@ -51,7 +51,7 @@
     "test:many-worlds-pages": "node scripts/e2e/many-worlds-v13-page-interactions.mjs",
     "test:many-worlds-room-smoke": "node scripts/e2e/many-worlds-v13-browser-room-smoke.mjs",
     "test:many-worlds-visual": "node scripts/acceptance/capture-many-worlds-v13-visual.mjs && python scripts/acceptance/compare-many-worlds-v13-visual.py",
-    "test:story:v4-db": "tsx scripts/e2e/v4-database-smoke.ts",
+    "test:story:v4-db": "tsx --env-file=.env.test scripts/e2e/v4-database-smoke.ts",
     "test:story:v4:contracts": "pnpm --filter @ai-story/templates typecheck && pnpm --filter @ai-story/templates test:runtime-contract && pnpm --filter @ai-story/templates test:story-package && pnpm --filter @ai-story/templates build",
     "test:story:v4:runtime": "pnpm --filter @apps/openovel-runtime typecheck && pnpm --filter @apps/openovel-runtime test && pnpm --filter @apps/openovel-runtime build",
     "test:story:v4": "pnpm test:story:v4:contracts && pnpm test:story:v4:runtime",

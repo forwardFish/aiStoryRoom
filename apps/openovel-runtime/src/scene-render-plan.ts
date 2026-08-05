@@ -12,7 +12,7 @@ import type { ProviderResult } from "./types.js";
 export const SCENE_RENDER_PLAN_SCHEMA = "omw.scene-render-plan.v1" as const;
 
 export type SceneRenderMode = "COMPOSED_SCENE" | "OPEN_SCENE";
-export type NarrativeOwner = "COMPOSED" | "NARRATOR" | "FALLBACK";
+export type NarrativeOwner = "COMPOSED" | "NARRATOR" | "FALLBACK" | "PROTECTED_RENDERER";
 export type CriticalSceneReason =
   | "PROTECTED_CAUSAL_RESULT"
   | "SCENE_TRANSITION"
@@ -22,7 +22,9 @@ export type SceneRenderPlan = {
   schemaVersion: typeof SCENE_RENDER_PLAN_SCHEMA;
   turnId: string;
   mode: SceneRenderMode;
+  /** Normal prose always belongs to Narrator. Protected facts are composed as immutable slots. */
   owner: "NARRATOR";
+  protectedSlotComposition: boolean;
   criticalReasons: CriticalSceneReason[];
   approvedAssetId: string | null;
 };
@@ -36,10 +38,10 @@ export interface SceneRenderPlannerModule {
 }
 
 /**
- * Chooses whether the Narrator writes an open scene or a slot-composed scene.
- * Durable facts never make the deterministic fallback the normal scene
- * writer: the server owns only protected slots and the Narrator owns the
- * dramatic expression around them.
+ * Chooses the scene assembly mode before prose generation. Critical facts are
+ * immutable server-owned slots, while Narrator still owns reaction, conflict,
+ * texture and pacing. The approved Story Package surface is an emergency
+ * fallback, never the normal replacement for a literary scene.
  */
 export class DefaultSceneRenderPlanner implements SceneRenderPlannerModule {
   readonly moduleId = "openovel.scene-render-planner.v1";
@@ -73,6 +75,7 @@ export class DefaultSceneRenderPlanner implements SceneRenderPlannerModule {
       turnId: input.turnId,
       mode: "COMPOSED_SCENE",
       owner: "NARRATOR",
+      protectedSlotComposition: reasons.has("PROTECTED_CAUSAL_RESULT"),
       criticalReasons: [...reasons],
       approvedAssetId: prepared.fallbackDraft.draftId,
     };
@@ -80,7 +83,7 @@ export class DefaultSceneRenderPlanner implements SceneRenderPlannerModule {
 }
 
 export type ProtectedSceneRenderResult = {
-  owner: "FALLBACK";
+  owner: "PROTECTED_RENDERER";
   text: string;
   contextText: string;
   factText: string;
@@ -109,10 +112,7 @@ export class DeterministicProtectedSceneRenderer implements ProtectedSceneRender
     plan: SceneRenderPlan;
     preparedDecision: PreparedAuthoredDecision;
   }): ProtectedSceneRenderResult {
-    if (
-      input.plan.mode !== "COMPOSED_SCENE"
-      || input.plan.owner !== "NARRATOR"
-    ) {
+    if (input.plan.mode !== "COMPOSED_SCENE") {
       throw new Error("COMPOSED_RENDER_MODE_REQUIRED");
     }
     const manifest = input.preparedDecision.beatManifest;
@@ -141,7 +141,7 @@ export class DeterministicProtectedSceneRenderer implements ProtectedSceneRender
       .map((ticket) => ticket.requiredMeaning)
       .join("\n");
     return {
-      owner: "FALLBACK",
+      owner: "PROTECTED_RENDERER",
       text: assembled.text,
       contextText: factText,
       factText,
@@ -162,12 +162,11 @@ export function assertSingleSceneOwner(input: {
   plan: SceneRenderPlan;
   actualOwner: NarrativeOwner;
 }) {
-  // Fallback remains a complete independently authored player surface. Normal
-  // composed scenes have one owner per slot, with a deterministic assembly.
-  if (input.actualOwner === "FALLBACK") return;
-  const expected = input.plan.mode === "COMPOSED_SCENE"
-    ? "COMPOSED"
-    : "NARRATOR";
+  // Emergency surfaces may replace the whole scene. In the normal lane the
+  // final owner is COMPOSED only when immutable slots were inserted; a scene
+  // transition alone still leaves the complete expression with Narrator.
+  if (input.actualOwner === "FALLBACK" || input.actualOwner === "PROTECTED_RENDERER") return;
+  const expected = input.plan.protectedSlotComposition ? "COMPOSED" : "NARRATOR";
   if (input.actualOwner !== expected) {
     throw new Error(`SCENE_OWNER_MISMATCH:${expected}:${input.actualOwner}`);
   }
@@ -179,6 +178,7 @@ function openPlan(turnId: string): SceneRenderPlan {
     turnId,
     mode: "OPEN_SCENE",
     owner: "NARRATOR",
+    protectedSlotComposition: false,
     criticalReasons: [],
     approvedAssetId: null,
   };

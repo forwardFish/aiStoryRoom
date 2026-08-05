@@ -35,6 +35,7 @@ test("OpenNovel product projection uses the existing main-game schema without le
       status: "READY",
       canon: "开场正文",
       recentCanon: "开场正文",
+      prologueNarrative: "完整开场白",
       options: [{ id: "G00_B", label: "先封档房，再暂缓签发" }],
       updatedAt: new Date().toISOString(),
     },
@@ -56,5 +57,7 @@ test("OpenNovel product projection uses the existing main-game schema without le
   assert.equal(projection.currentTurn?.decisions[0]?.id, "G00_B");
   assert.equal(projection.currentTurn?.decisions[0]?.label, "先封档房，再暂缓签发");
   assert.equal(projection.currentTurn?.decisions[0]?.description, "");
+  assert.equal(projection.prologueNarrative, "完整开场白");
+  assert.equal(projection.currentTurn?.narrative, "开场正文");
   assert.equal(validateGameProjectionV2(projection).ok, true);
 });
