@@ -1,0 +1,42 @@
+name: Export maneuver v1 source
+
+on:
+  push:
+    branches:
+      - feat/maneuver-rules-v1-gpt56-20260805
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Build source archive
+        shell: bash
+        run: |
+          tar -czf "$RUNNER_TEMP/aiStoryRoom-maneuver-v1-source.tar.gz" \
+            --exclude='.git' \
+            --exclude='docs' \
+            --exclude='third_party' \
+            --exclude='**/node_modules' \
+            --exclude='**/dist' \
+            --exclude='apps/web/public/assets' \
+            --exclude='apps/web/public/images' \
+            --exclude='apps/web/public/videos' \
+            apps packages prisma scripts api .github \
+            AGENTS.md README.md package.json pnpm-lock.yaml pnpm-workspace.yaml \
+            tsconfig.base.json docker-compose.yml railway.toml vercel.json \
+            .env.example .gitattributes .gitignore .vercelignore
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: aiStoryRoom-maneuver-v1-source
+          path: ${{ runner.temp }}/aiStoryRoom-maneuver-v1-source.tar.gz
+          if-no-files-found: error
+          retention-days: 1
