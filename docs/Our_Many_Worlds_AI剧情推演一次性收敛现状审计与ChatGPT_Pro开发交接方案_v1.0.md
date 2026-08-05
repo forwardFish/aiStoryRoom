@@ -1,10 +1,14 @@
 # Our Many Worlds：AI 剧情推演一次性收敛现状审计与 ChatGPT Pro 开发交接方案 v1.0
 
 > 审计日期：2026-08-05
+> 协作流程修订：2026-08-05，增加 ChatGPT Pro 隔离分支开发、本地 Codex 独立复验与唯一合并责任。
 > 审计范围：仅限《桑田诏》单人 AI 剧情推演，不包含主游戏页面、登录、积分、多人剧情和部署。
 > 唯一真实模型：DeepSeek V4-Pro；不再使用 GLM。
-> 目标仓库：`D:\lyh\agent\agent-frame\aiStoryRoom`
-> 开发基线：本地与远程 `main`，差异必须在开发前处理。
+> GitHub 仓库：`https://github.com/forwardFish/aiStoryRoom`
+> 本地复验仓库：`D:\lyh\agent\agent-frame\aiStoryRoom`
+> 冻结开发基线：`main@1b750e56858dabefb0ddb8b922c6bdcbe0574e4c`。
+> ChatGPT Pro 权限边界：只能新建并推送开发分支，禁止直接修改、合并或推送 `main`。
+> 最终集成责任：ChatGPT Pro 完成后，由本地 Codex 获取分支并独立测试；只有验证通过后，Codex 才能按仓库所有者授权合并 `main`。
 > 最终目标：不是让模型“自由猜一个故事”，而是让系统依据剧本资产、权威世界状态、NPC 目标和玩家选择，连续生成像小说的真实剧情与真实决策。
 
 ---
@@ -43,56 +47,82 @@
 
 ---
 
-## 二、开发前必须处理的 Git 基线
+## 二、Git 基线、分支权限与三方责任
 
-### 2.1 当前本地与远程不是同一个版本
+### 2.1 当前冻结基线
 
-审计时：
-
-```text
-本地 main HEAD : 7c87762e35db536eea74bfcb00c7d61301d3cdd4
-远程 origin/main: 4afd7d8952380876910a1a16d4b0d37bd25098e0
-本地 main       : ahead 2
-```
-
-本地多出的两个提交：
+2026-08-05 重新核对后，三处 `main` 完全一致：
 
 ```text
-82cd7c4 fix(story-v4): keep prose when reviewer is unavailable
-7c87762 test(story-v4): enforce final ending acceptance
+本地 main HEAD     : 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+本地 origin/main   : 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+GitHub 远程 main   : 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+ahead / behind     : 0 / 0
 ```
 
-两者合计涉及：
+旧审计中的 `7c87762 / 4afd7d8` 只属于历史记录，不再作为开发基线。ChatGPT Pro 必须从上述完整 SHA 创建新分支，不能从旧对话、旧缓存或旧分支继续。
 
-- `apps/openovel-runtime/src/runtime.ts`；
-- `apps/openovel-runtime/src/scene-review-modules.ts`；
-- 两个 Reviewer/Pipeline 测试；
-- 第一部分结尾预览验收脚本。
+### 2.2 强制开发分支
 
-其中 `82cd7c4` 很关键：Reviewer 不可用不是因果冲突证据，不能因此丢掉已经合格的小说正文。远程 `main` 尚未包含这项修复。
+ChatGPT Pro 只能在新分支开发。建议固定分支名：
 
-### 2.2 ChatGPT Pro 的前置门
+```text
+codex/chatgpt-pro-ai-story-convergence
+```
 
-ChatGPT Pro 从远程 `main` 开始开发前，必须满足二选一：
+硬规则：
 
-1. 先把本地 `7c87762` 推送到远程 `main`；或
-2. 在明确保留上述两个本地提交语义的前提下，把它们补入远程开发基线。
+1. 分支必须直接继承 `main@1b750e56858dabefb0ddb8b922c6bdcbe0574e4c`；
+2. ChatGPT Pro 不得直接修改、提交、合并或推送 `main`；
+3. ChatGPT Pro 不得创建第二个临时开发分支来绕过目标分支；
+4. ChatGPT Pro 只能把经过自身测试的提交推送到上述远程分支；
+5. ChatGPT Pro 无权宣称已经合并、上线或完成最终验收；
+6. 分支是否合并 `main`，只能由本地 Codex 在独立复验通过后执行，并且仍需仓库所有者授权。
 
-在远程仍停留于 `4afd7d8` 时直接开发，会有两个风险：
+如果 ChatGPT Pro 的运行环境不能读取 GitHub 仓库、不能检出目标分支或不能推送提交，必须停止并报告 `REPO_WRITE_ACCESS_MISSING`，不得只给出补丁文本后宣称开发完成。
 
-- 重新引入“Reviewer 不可用就使用 Fallback”的旧行为；
-- 基于旧结尾验收脚本作出错误的完成判断。
+### 2.3 ChatGPT Pro 开工门
 
-### 2.3 当前工作区保护
+ChatGPT Pro 在改动任何文件前必须读取根目录 `AGENTS.md` 和本文档，并输出：
 
-本地 `main` 还有其他任务的未提交文件。实现本方案时禁止：
+```text
+git remote -v
+git branch --show-current
+git rev-parse HEAD
+git merge-base HEAD origin/main
+git status --short
+```
 
-- `git add .`；
-- 清理、重置或覆盖其他任务的改动；
-- 把页面、登录、积分或其他文档混入剧情推演提交；
-- 为方便开发私自创建分支。
+必须证明：
 
-仓库规则要求正常开发直接在 `main`，若无法安全进行，必须先报告冲突并获得仓库所有者批准。
+```text
+repository = forwardFish/aiStoryRoom
+branch = codex/chatgpt-pro-ai-story-convergence
+base ancestor = 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+main was not checked out for development
+```
+
+任一条件不满足，禁止开始编码。
+
+### 2.4 本地工作区保护
+
+本地 `main` 当前仍有其他任务的未提交文件，其中部分与 `scene-pipeline` 范围重叠。远程分支隔离可以保护开发过程，但不能自动解决最终合并冲突。
+
+所有参与者必须遵守：
+
+- 禁止 `git add .`；
+- 禁止 `git reset --hard`、`git clean`、广泛 stash 和 force push；
+- 禁止清理、重置、覆盖或顺带提交其他任务改动；
+- 禁止把主游戏页面、登录、积分、多人剧情、部署或无关文档混入该分支；
+- 禁止直接在当前脏 `main` 上执行 `git pull` 获取 Pro 的开发结果。
+
+### 2.5 三方责任
+
+| 角色 | 负责 | 不负责 |
+|---|---|---|
+| 仓库所有者 | 批准目标分支、决定是否允许最终合并 | 不需要手工搬运补丁 |
+| ChatGPT Pro | 在目标分支实现 P0—P7、运行分支内测试、提交并推送、提供完整交接证据 | 不合并 `main`，不作最终 PASS 判断 |
+| 本地 Codex | 获取远程分支、审查 diff、在隔离环境重新测试、验证真实模型与玩家证据、通过后执行获批合并 | 不盲信 Pro 报告，不覆盖本地其他任务文件 |
 
 ---
 
@@ -222,6 +252,8 @@ AI 可以自由决定：
 ---
 
 ## 六、2026-08-05 实际验证结果
+
+本节全部数字属于开发前的历史审计证据，用于复现根因，不是 ChatGPT Pro 候选分支的当前 PASS。Pro 和本地 Codex 都必须在各自阶段重新运行实际命令。
 
 ### 6.1 工程测试
 
@@ -818,13 +850,13 @@ T0 原著文本
 
 实施：
 
-1. 让远程 `main` 包含本地 `82cd7c4` 和 `7c87762`；
+1. 确认目标分支直接继承 `main@1b750e56858dabefb0ddb8b922c6bdcbe0574e4c`，并且开发期间始终不修改 `main`；
 2. 显式配置所有已启用模型阶段为 `deepseek-v4-pro`；
 3. `OPENOVEL_DEEPSEEK_THINKING=disabled`；
 4. Reviewer 默认 Observe-only 或 Disabled；
 5. 记录每次真实调用的 model、Token、latency、fallbackReason。
 
-完成标准：日志中不得出现 GLM 或未声明模型；Reviewer 不可用不得替换有效正文。
+完成标准：分支基线正确；日志中不得出现 GLM 或未声明模型；Reviewer 不可用不得替换有效正文。
 
 ### P1：实现 Intent Resolver / Capability Binder
 
@@ -1052,24 +1084,161 @@ Settlement 关键变化
 
 ---
 
-## 十三、交给 ChatGPT Pro 的完整执行提示词
+## 十三、ChatGPT Pro 分支开发与本地 Codex 验收流程
 
-下面内容可以直接发送给 ChatGPT Pro：
+以下流程是强制流程，不能省略或调换责任：
 
 ```text
-你现在要在 Our Many Worlds 仓库中一次性收敛“AI 剧情推演”功能。
+远程 main@1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+        ↓
+创建并推送新分支
+codex/chatgpt-pro-ai-story-convergence
+        ↓
+ChatGPT Pro 在该分支开发、测试、提交并推送
+        ↓
+本地 Codex 执行 git fetch，不直接 pull 到脏 main
+        ↓
+在隔离环境检出该远程分支
+        ↓
+审查代码＋运行工程测试＋真实模型验收
+        ↓
+通过后才允许合并 main
+        ↓
+推送 main 并核对本地、origin/main、GitHub SHA 一致
+```
 
-仓库：D:\lyh\agent\agent-frame\aiStoryRoom
-必须先完整阅读：
+### 13.1 阶段 A：准备远程开发分支
+
+由本地 Codex 在仓库所有者批准后完成：
+
+1. 再次读取 `AGENTS.md`；
+2. 重新核对 GitHub `main` 仍为冻结基线；
+3. 从冻结 SHA 创建 `codex/chatgpt-pro-ai-story-convergence`；
+4. 推送空开发分支到 GitHub；
+5. 记录远程分支初始 SHA；
+6. 不切换或清理当前脏 `main`，不携带任何未提交文件。
+
+如果同名远程分支已经存在，必须先核对其 merge-base、提交历史和文件范围；禁止 force push 覆盖未知工作。
+
+### 13.2 阶段 B：ChatGPT Pro 开发
+
+ChatGPT Pro 必须：
+
+1. 只检出目标分支；
+2. 按 P0—P7 分模块实施，先完成通用骨架，再补资产和真实模型验收；
+3. 每个提交只包含同一模块的代码、测试和必要文档；
+4. 先运行确定性工程门，再调用真实 DeepSeek；
+5. 同一模块同类问题最多验证三次；第三次失败必须停止该模块并报告根因；
+6. 将所有有效提交推送到同一目标分支；
+7. 用 `git ls-remote origin refs/heads/codex/chatgpt-pro-ai-story-convergence` 证明最终 SHA 已到达 GitHub；
+8. 最终状态只能标记为 `CANDIDATE_BRANCH_READY`，不能标记为已经合并或最终发布。
+
+### 13.3 阶段 C：ChatGPT Pro 交付物
+
+ChatGPT Pro 完成候选分支后必须提供：
+
+- GitHub 仓库与目标分支；
+- 基线 SHA、最终 SHA 和完整提交列表；
+- `git diff --stat` 与修改文件清单；
+- P0—P7 每一阶段的完成状态；
+- 所有实际测试命令、Workspace、总数、PASS、FAIL、SKIP/TODO、退出码和日志路径；
+- 真实 DeepSeek 的模型名、调用次数、Token、延迟、成本和 Fallback；
+- G00—T05 与 G00—T20 验收 Run、逐回合记录和玩家评价；
+- 三次失败停止机制是否触发，若触发则提供根因与未完成范围；
+- 已知限制和未完成项；
+- 明确声明未修改或推送 `main`，未修改主游戏页面、登录、积分、多人剧情和部署。
+
+缺少最终 SHA、远程分支或测试证据时，不视为可获取的开发结果。
+
+### 13.4 阶段 D：本地 Codex 独立复验
+
+ChatGPT Pro 推送完成后，由本地 Codex：
+
+1. 执行 `git fetch origin`；
+2. 验证远程分支确实继承冻结基线，且没有混入无关提交；
+3. 不在当前脏 `main` 上 `git pull` 或直接合并；
+4. 在隔离验证环境检出远程分支的精确 SHA；
+5. 审查全部 diff，重点检查故事专用正则、中文同义词、Prompt 补丁、页面改动、密钥和测试规避；
+6. 独立重跑类型检查、构建、v4 测试、HTTP smoke 和资产 hash；
+7. 独立验证自由输入、Reviewer 降级、关键状态、分支持续差异、Options 与末态；
+8. 使用真实 DeepSeek 复跑 G00—T05，再决定是否运行 G00—T20；
+9. 像玩家一样逐回合阅读正文与选择，不能只接受 Pro 的自动化结论；
+10. 输出 `PASS`、`REPAIR_REQUIRED` 或 `HARD_FAIL`，并附证据。
+
+如果本地复验失败：
+
+```text
+禁止合并 main
+→ 将失败命令、日志、最小复现和模块根因交还 ChatGPT Pro
+→ ChatGPT Pro 继续在同一分支修复并推送
+→ 本地 Codex 获取新 SHA 后重新验证
+```
+
+同类失败最多往返三轮。第三轮仍失败，必须停止合并并向仓库所有者报告方案不成立的具体模块，不能继续小修小补。
+
+### 13.5 阶段 E：合并与 SHA 闭环
+
+只有本地 Codex 的独立复验通过，并获得仓库所有者最终合并授权后，才允许：
+
+1. 将已经验证的目标分支精确 SHA 合并到 `main`；
+2. 合并前再次检查当前本地脏文件是否与分支重叠；有重叠就停止，不擅自解决或覆盖；
+3. 运行合并后回归；
+4. 推送 `main`；
+5. 核对以下三者完全一致：
+
+```text
+git rev-parse HEAD
+git rev-parse origin/main
+git ls-remote origin refs/heads/main
+```
+
+ChatGPT Pro 永远不能执行本阶段，也不能自行创建 PR 后合并。
+
+---
+
+## 十四、交给 ChatGPT Pro 的完整执行提示词
+
+下面内容可以直接发送给具有 GitHub 仓库写权限和编码执行环境的 ChatGPT Pro。普通聊天如果不能检出、修改、提交和推送仓库，必须停止，不得把建议文本冒充开发结果。
+
+```text
+你现在是 Our Many Worlds“AI 剧情推演”候选分支的实现者。你必须直接读取仓库、修改代码、运行测试、提交并推送目标开发分支；不能只输出计划或补丁建议。
+
+GitHub repository:
+https://github.com/forwardFish/aiStoryRoom
+
+Frozen base:
+main@1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+
+Only allowed development branch:
+codex/chatgpt-pro-ai-story-convergence
+
+Source-of-truth document:
 docs/Our_Many_Worlds_AI剧情推演一次性收敛现状审计与ChatGPT_Pro开发交接方案_v1.0.md
 
+必须先完整读取仓库根目录 AGENTS.md 和上述文档。
+
+Git 硬规则：
+1. 只能在 codex/chatgpt-pro-ai-story-convergence 开发和推送。
+2. 禁止直接修改、提交、合并或推送 main。
+3. 禁止创建或合并指向 main 的 PR。
+4. 禁止创建第二个开发分支、force push、broad stash、git add .、git reset --hard 或 git clean。
+5. 如果仓库不可访问、目标分支不存在、HEAD 不继承冻结基线或没有推送权限，立即停止并报告 REPO_WRITE_ACCESS_MISSING 或 BASELINE_MISMATCH。
+6. 你的最终状态只能是 CANDIDATE_BRANCH_READY；最终验收和 main 合并由本地 Codex 负责。
+
+编码前必须执行并报告：
+git remote -v
+git branch --show-current
+git rev-parse HEAD
+git merge-base HEAD origin/main
+git status --short
+
 你的范围仅限：
-- 《桑田诏》单人剧情推演；
+- 《桑田诏》单人 AI 剧情推演；
 - 剧本资产检索；
 - 玩家行动与意图绑定；
 - 事实结算与关键状态；
 - 下一拍剧情规划；
-- 玩家上下文投影；
+- 玩家安全上下文投影；
 - 小说正文生成；
 - 最小关键错误检查；
 - 决策生成与记忆；
@@ -1080,34 +1249,29 @@ docs/Our_Many_Worlds_AI剧情推演一次性收敛现状审计与ChatGPT_Pro开�
 - 登录、积分、Billing；
 - 多人剧情；
 - 部署；
-- 凯撒等第二个正式故事内容。
-
-开始前先执行 Git 基线核对：
-- 远程 origin/main 审计时是 4afd7d8952380876910a1a16d4b0d37bd25098e0；
-- 本地 main 审计时是 7c87762e35db536eea74bfcb00c7d61301d3cdd4；
-- 本地多出 82cd7c4 和 7c87762；
-- 必须确认远程 main 已包含“Reviewer 不可用时保留有效正文”和最终 Ending 验收语义后再开发。
+- 凯撒等第二个正式故事内容；
+- 已经完成的第一部分 Ending 功能，除非你的改动造成其回归。
 
 所有真实模型调用统一使用：
 - provider: https://api.deepseek.com
 - model: deepseek-v4-pro
 - thinking: disabled
 - 禁止使用 GLM
-- API Key 只读环境变量，禁止写入仓库或日志
+- API Key 只读环境变量，禁止写入仓库、提交、正文或测试日志
 
 核心产品原则：
 1. AI 不猜下一步剧情；下一拍必须来自剧本资产＋权威状态＋NPC 目标＋玩家选择。
 2. 玩家看到的是小说剧情，不是 Settlement 摘要、指令清单或下一项待办。
 3. 关键人物、位置、命令、证据、文书、秘密、承诺和关键资源必须持续一致。
-4. 灯火、衣袖、脚步和普通物件等非关键细节只记录，不阻断 MVP。
+4. 普通文学纹理和非关键细节只记录，不阻断 MVP。
 5. 玩家选择必须改变下一回合状态、NPC 行为或延迟后果。
 6. Narrator 和 Options 分开；Settlement 是唯一事实来源。
-7. 模块必须可插拔，Optional 模块失败不能拖垮完整流程。
+7. 模块必须可插拔；Optional 模块失败不能拖垮完整流程。
 8. 禁止增加《桑田诏》中文同义词、故事专用正则和单场 Prompt 例外。
-9. 同一模块同类失败最多验证三次；第三次仍失败就停止、说明架构原因并改变方案。
+9. 同一模块同类失败最多验证三次；第三次仍失败就停止、报告架构根因并改变方案。
 
-请严格按文档 P0—P7 顺序实施：
-P0 冻结远程基线和 DeepSeek V4-Pro；
+严格按文档 P0—P7 分模块实施：
+P0 冻结分支基线和 DeepSeek V4-Pro；
 P1 实现世界无关 Intent Resolver / Capability Binder；
 P2 修复或关闭 Reviewer 的 NONE/对象合同冲突；
 P3 补齐第一部分四节的 Narrative Scene Pattern 和关键 Evidence Profile；
@@ -1116,14 +1280,13 @@ P5 让关键状态和延迟后果维持分支差异；
 P6 Options 在 Canon 后基于权威 Affordance 生成玩家语言；
 P7 全新 G00—T05，再全新 G00—T20 逐回合玩家验收。
 
-必须先复现并修复这个通用 P0：
-自由输入“暂不签发，先让两边把各自知道的事说清。”当前会报
-PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING。
-修复必须使用结构化意图/能力绑定，不能用中文关键词或同义词。
+必须首先复现自由输入错误：
+“暂不签发，先让两边把各自知道的事说清。”
+当前历史错误为 PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING。
+修复必须使用结构化意图/能力绑定，禁止使用中文关键词或同义词映射。
 
-必须修复或关闭这个 Reviewer 合同：
-Prompt 要求无候选返回 NONE，Parser 却要求对象，导致
-SCENE_REVIEW_INVALID:P0_causalIntroduction_NOT_OBJECT。
+必须修复或关闭 Reviewer 合同冲突：
+Prompt 历史上要求无候选返回 NONE，Parser 却要求对象，导致 SCENE_REVIEW_INVALID:P0_causalIntroduction_NOT_OBJECT。
 Reviewer 不可用不是事实冲突，不得替换有效正文。
 
 工程门至少包括：
@@ -1133,38 +1296,42 @@ Reviewer 不可用不是事实冲突，不得替换有效正文。
 - pnpm --filter @apps/openovel-runtime smoke:http
 - 第一部分资产无回写重新编译并比较 hash
 
+不要直接相信文档中的历史测试数。你必须记录每条当前实际执行命令的 Workspace、总数、PASS、FAIL、SKIP/TODO、退出码、日志路径以及是否使用 Mock 或真实模型。
+
 真实验收必须保存：
 - G00—T20 每回合正文、决策和玩家选择；
 - Settlement 关键变化；
 - 下一拍计划；
 - 关键状态快照；
-- 模型名称、Token、延迟和 Fallback；
+- 模型名称、Token、延迟、成本和 Fallback；
 - 每回合玩家评价；
 - 硬错误和仅记录的软问题。
 
-最终只在以下条件全部满足时宣称完成：
-- 同一全新 Run 连续完成 G00—T20；
-- 正文像小说，有人物、现场、交锋和自然停止点；
-- 玩家选择真实改变后续；
-- 关键事实一致；
-- 决策清楚、不同且承接正文；
-- 自由输入可用；
-- Reviewer/Storykeeper 等可选模块失败不阻断；
-- T20 只进入第一部分收束，不伪造整部故事结局；
-- 自动化、真实 DeepSeek V4-Pro 和玩家逐回合验收都有证据。
-
-请先输出：
-1. 你核验到的远程 main SHA；
+开始实现前先输出：
+1. 仓库、目标分支、当前 HEAD 和 merge-base；
 2. 当前模块与文档的差异；
 3. P0—P7 的文件级修改计划；
-4. 你将如何证明实现不是《桑田诏》专用补丁。
+4. 如何证明实现不是《桑田诏》专用补丁；
+5. 哪些当前文件已有改动，以及你如何避免覆盖无关工作。
 
-然后直接实现、测试并提交到仓库规则允许的 main。不要修改主游戏页面，不要 broad stage，不要覆盖其他任务文件。
+然后直接按阶段实现、测试、显式暂存相关文件、提交并推送同一目标分支。不要等待用户逐步催促；但同类失败达到三次时必须停止该模块并报告。
+
+最终交付必须包含：
+- 状态 CANDIDATE_BRANCH_READY；
+- 目标分支、冻结基线 SHA、最终 SHA、提交列表；
+- git ls-remote 对目标远程分支的最终 SHA 回读；
+- 修改文件和 diff stat；
+- P0—P7 完成矩阵；
+- 工程测试与真实模型验收证据；
+- G00—T05、G00—T20 玩家验收材料；
+- 三次失败停止记录；
+- 已知限制和未完成项；
+- 明确声明没有修改、合并或推送 main。
 ```
 
 ---
 
-## 十四、最终产品判断
+## 十五、最终产品判断
 
 DeepSeek V4-Pro 不是当前最大的阻塞。真实 T01—T03 已经证明：当下一拍、关键事实和人物边界清楚时，它能够写出合格的历史政治小说场景。
 
