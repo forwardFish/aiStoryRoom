@@ -1,46 +1,139 @@
 name: ChatGPT Pro AI Story Candidate
 
 on:
-  push:
+  pull_request:
     branches:
       - codex/chatgpt-pro-ai-story-convergence
+    types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  heartbeat:
-    name: Candidate execution heartbeat
+  deterministic-engineering-gates:
+    name: Deterministic engineering gates
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 60
+    env:
+      CI: "true"
+      OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
+      OPENOVEL_MODEL: deepseek-v4-pro
+      OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
+      OPENOVEL_REVIEWER_MODEL: deepseek-v4-pro
+      OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
+      OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
+      OPENOVEL_DEEPSEEK_THINKING: disabled
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out exact candidate base SHA
+        uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.base.sha }}
           fetch-depth: 0
-      - name: Record isolated git gate
+
+      - name: Prove repository, branch boundary, base and clean tree
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git branch --show-current)" = "codex/chatgpt-pro-ai-story-convergence"
-          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
-          mkdir -p docs/auto-execute/evidence/chatgpt-pro
+          mkdir -p .candidate-evidence/logs
           {
-            echo "# ChatGPT Pro candidate execution heartbeat"
-            echo
-            echo "- repository: forwardFish/aiStoryRoom"
-            echo "- branch: $(git branch --show-current)"
-            echo "- tested_commit: $(git rev-parse HEAD)"
-            echo "- merge_base: $(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
-            echo "- workflow_run_id: ${GITHUB_RUN_ID}"
-            echo "- workflow_run_attempt: ${GITHUB_RUN_ATTEMPT}"
-            echo "- status: PASS"
-          } > docs/auto-execute/evidence/chatgpt-pro/workflow-heartbeat.md
-      - name: Commit heartbeat evidence
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "event=${GITHUB_EVENT_NAME}"
+            echo "base_ref=${{ github.event.pull_request.base.ref }}"
+            echo "base_sha=${{ github.event.pull_request.base.sha }}"
+            echo "checked_out_sha=$(git rev-parse HEAD)"
+            echo "remote=$(git remote get-url origin)"
+            echo "merge_base=$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee .candidate-evidence/logs/00-git-gate.log
+          test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
+          test "${{ github.event.pull_request.base.ref }}" = "codex/chatgpt-pro-ai-story-convergence"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
+          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
+          test -z "$(git status --short)"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install locked dependencies
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee .candidate-evidence/logs/01-pnpm-install.log
+
+      - name: OpenNovel runtime typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee .candidate-evidence/logs/02-openovel-typecheck.log
+
+      - name: OpenNovel runtime build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime build 2>&1 | tee .candidate-evidence/logs/03-openovel-build.log
+
+      - name: Story V4 contracts and runtime tests
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:story:v4 2>&1 | tee .candidate-evidence/logs/04-story-v4.log
+
+      - name: OpenNovel real HTTP smoke with deterministic provider fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime smoke:http 2>&1 | tee .candidate-evidence/logs/05-openovel-http-smoke.log
+
+      - name: Recompile Part One without source writes and compare immutable bytes
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/auto-execute/evidence/chatgpt-pro/workflow-heartbeat.md
-          git commit -m "test(ai-story): record candidate workflow heartbeat [skip ci]"
-          git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
+          mkdir -p "${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_SKIP_SOURCE_WRITES=1
+          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_RUNTIME_PACKAGE_PATH="${RUNNER_TEMP}/part-one-runtime.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
+            2>&1 | tee .candidate-evidence/logs/06-asset-recompile.log
+          sha256sum \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json" \
+            | tee .candidate-evidence/logs/07-asset-sha256.log
+          cmp --silent \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json"
+
+      - name: Record final clean-tree gate and exact source archive
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          {
+            echo "tested_commit=$(git rev-parse HEAD)"
+            echo "merge_base=$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee .candidate-evidence/logs/99-final-git-gate.log
+          git archive --format=zip --output=.candidate-evidence/candidate-source.zip HEAD
+          cp packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            .candidate-evidence/committed-part-one-runtime.json
+
+      - name: Upload deterministic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-engineering-evidence-${{ github.event.pull_request.base.sha }}
+          path: .candidate-evidence/
+          if-no-files-found: error
+          retention-days: 7
