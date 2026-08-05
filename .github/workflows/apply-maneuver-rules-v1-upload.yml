@@ -38,12 +38,14 @@ jobs:
           BASE_EXPECTED_SHA256: 5277938bdaca1b2465a66c9b490f8cdeba640a8d2517d3681fb4376c92a7e8e1
           FIX1_EXPECTED_SHA256: abc5d5498c10ad76396c3a64245726169fa2d59736237973663c82cd5fa5af84
           FIX2_EXPECTED_SHA256: 50330c2e0d55bf37cc63f347f7122f876805de0e8c57635ea8725913923a2687
+          FIX3_EXPECTED_SHA256: 87b955c1461251fdb6bb6bb09972125b07829328ede8513b481489a1c08198ad
         shell: bash
         run: |
           set -euo pipefail
           export BASE_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-base.patch"
           export FIX1_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-fix-round1.patch"
           export FIX2_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-fix-round2.patch"
+          export FIX3_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-fix-round3.patch"
           python3 - <<'PY'
           import base64
           import hashlib
@@ -105,6 +107,11 @@ jobs:
               os.environ["FIX2_PATCH_PATH"],
               os.environ["FIX2_EXPECTED_SHA256"],
           )
+          reconstruct(
+              ["5ff258c331229da2c9cbc1c9257095bf0ada6e62"],
+              os.environ["FIX3_PATCH_PATH"],
+              os.environ["FIX3_EXPECTED_SHA256"],
+          )
           PY
 
           git apply --check "$BASE_PATCH_PATH"
@@ -113,6 +120,8 @@ jobs:
           git apply --index "$FIX1_PATCH_PATH"
           git apply --check "$FIX2_PATCH_PATH"
           git apply --index "$FIX2_PATCH_PATH"
+          git apply --check "$FIX3_PATCH_PATH"
+          git apply --index "$FIX3_PATCH_PATH"
           git diff --cached --check
           echo "Applied implementation and verified fixes to $(git rev-parse --short HEAD)."
 
@@ -124,7 +133,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
