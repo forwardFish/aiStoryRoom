@@ -1,4 +1,4 @@
-import type { GameProjectionV2, PlayerIntentV2 } from "@ai-story/shared";
+import type { GameProjectionV2, ManeuverRulesProjectionV1, PlayerIntentV2, StoryTimelineEntryV2 } from "@ai-story/shared";
 import type { GameDefinition } from "@ai-story/templates";
 import { gamePageProjection } from "../game-page-projection";
 import type { OpenNovelPublicRun, OpenNovelVisibleOption } from "./openovel-runtime.client";
@@ -38,6 +38,8 @@ export function openNovelGameProjection(input: {
   runtimeRun: OpenNovelPublicRun;
   game: GameDefinition;
   nodes: OpenNovelProjectionNode[];
+  maneuverRulesV1?: ManeuverRulesProjectionV1;
+  maneuverTimeline?: StoryTimelineEntryV2[];
   credits: {
     policyVersion: "world_unlock_v1" | "active_action_v1";
     meteringMode: "OFF" | "SHADOW" | "ENFORCED";
@@ -61,7 +63,7 @@ export function openNovelGameProjection(input: {
     label: "当前局势",
   };
   const decisions = input.runtimeRun.options.map((option) => decisionCandidate(option, sceneTarget));
-  const timeline = input.nodes
+  const mainTimeline: StoryTimelineEntryV2[] = input.nodes
     .filter((node) => Boolean(node.publicNarration))
     .sort((left, right) => left.nodeIndex - right.nodeIndex)
     .map((node, index) => ({
@@ -73,6 +75,8 @@ export function openNovelGameProjection(input: {
       createdAt: (node.resolvedAt || node.createdAt).toISOString(),
       decisionForm: "STORY_CHOICE" as const,
     }));
+  const timeline = [...mainTimeline, ...(input.maneuverTimeline || [])]
+    .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
 
   return {
     schemaVersion: "continuous_game_projection_v2",
@@ -127,6 +131,7 @@ export function openNovelGameProjection(input: {
     armedConditions: [],
     pendingInteractions: [],
     observableTraces: [],
+    ...(input.maneuverRulesV1 ? { capabilities: { maneuverRulesV1: input.maneuverRulesV1 } } : {}),
     access: {
       state: "UNLOCKED",
       requiresUnlock: false,

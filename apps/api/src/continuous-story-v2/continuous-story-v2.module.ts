@@ -4,11 +4,12 @@ import { CreditsModule } from "../credits/credits.module";
 import { ContinuousStoryV2Service } from "./continuous-story-v2.service";
 import { StoryContextComposerV2 } from "./story-context.composer";
 import { StoryNarrativeProvider } from "./story-narrative.provider";
+import { ContinuousStoryV2ManeuverService } from "../maneuver-v1/continuous-story-v2-maneuver.service";
 
 @Global()
 @Module({
   imports: [StoryAccessModule, CreditsModule],
-  providers: [StoryContextComposerV2, StoryNarrativeProvider, ContinuousStoryV2Service],
-  exports: [StoryContextComposerV2, StoryNarrativeProvider, ContinuousStoryV2Service]
+  providers: [StoryContextComposerV2, StoryNarrativeProvider, ContinuousStoryV2ManeuverService, ContinuousStoryV2Service],
+  exports: [StoryContextComposerV2, StoryNarrativeProvider, ContinuousStoryV2ManeuverService, ContinuousStoryV2Service]
 })
 export class ContinuousStoryV2Module {}
