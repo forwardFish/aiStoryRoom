@@ -20,16 +20,27 @@
           "textSpanSha256": "C2DE1D80210AC35EF7ECD0392ED3B2CCEDD3298F672EC98FAC812EFC91428115"
         }
       ],
-      "sectionIds": ["SEC-P1-03"],
-      "requirementIds": ["REQ-P1-GRAIN-RELIEF", "REQ-P1-LAND-RISK"],
-      "decisionKernelIds": ["DK-P1-GRAIN-SOURCE", "DK-P1-RELIEF-PRIORITY"],
-      "actorRefs": ["actor.zhejiang_governor", "actor.zhejiang_xunfu", "actor.qingliu_magistrate", "actor.xunfu_aide"],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-LAND-RISK"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.qingliu_magistrate",
+        "actor.xunfu_aide"
+      ],
       "sourceClaimIds": [
         "DM1566-C02-CL-GOVERNOR-PETITIONERS",
         "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
-        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY",
-        "DM1566-C02-CL-GOVERNOR-ORDERS-RELIEF",
-        "DM1566-C02-CL-WEAVING-RESOURCE-PRESSURE"
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY"
       ],
       "dramaticFunction": "让粮源选择同时面对衙门外可见民生压力、地方库存不足和不同机构的责任追索。",
       "openingPressure": "门外已有等待粮食与灌溉的人群，案内各渠道却只带来不足、延迟或附带责任的答复。",
@@ -112,15 +123,30 @@
           "textSpanSha256": "57B19E869B868C3E6A8548F2241AB0F3314F31E09C0E2A7885BDCB6BC45EF27D"
         }
       ],
-      "sectionIds": ["SEC-P1-03"],
-      "requirementIds": ["REQ-P1-GRAIN-RELIEF", "REQ-P1-MERCHANT-CONDITIONS", "REQ-P1-LAND-RISK"],
-      "decisionKernelIds": ["DK-P1-MERCHANT-CONDITIONS", "DK-P1-LAND-SAFEGUARD", "DK-P1-RELIEF-PRIORITY"],
-      "actorRefs": ["actor.zhejiang_governor", "actor.zhejiang_xunfu", "actor.jiangnan_merchant_head", "actor.qingliu_magistrate"],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-MERCHANT-CONDITIONS",
+        "REQ-P1-LAND-RISK"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.jiangnan_merchant_head",
+        "actor.qingliu_magistrate"
+      ],
       "sourceClaimIds": [
         "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
-        "DM1566-C05-CL-GRAIN-LAND-CONDITION",
-        "DM1566-C05-CL-GRAIN-LAND-DELAY-RISK",
-        "DM1566-C05-CL-BUYERS-ALREADY-MOVING"
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
       ],
       "dramaticFunction": "把粮食救急条件和卖田风险绑在同一张交易桌上，使短期救命与长期失田不能被拆开计算。",
       "openingPressure": "商会或中间人愿意提供一项现实粮源，但同时要求土地、价格、优先权或办理节奏上的回报。",
@@ -203,15 +229,28 @@
           "textSpanSha256": "3B024661F040A870A74A73AA7B59BA64DD226EF1BBC8BB670A1DA0BC2A9DF99F"
         }
       ],
-      "sectionIds": ["SEC-P1-03"],
-      "requirementIds": ["REQ-P1-LAND-RISK", "REQ-P1-GRAIN-RELIEF", "REQ-P1-MERCHANT-CONDITIONS"],
-      "decisionKernelIds": ["DK-P1-LAND-SAFEGUARD", "DK-P1-RELIEF-PRIORITY"],
-      "actorRefs": ["actor.zhejiang_governor", "actor.zhejiang_xunfu", "actor.qingliu_magistrate", "actor.jiangnan_merchant_head"],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-LAND-RISK",
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-MERCHANT-CONDITIONS"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.qingliu_magistrate",
+        "actor.jiangnan_merchant_head"
+      ],
       "sourceClaimIds": [
         "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
         "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
-        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE",
-        "DM1566-C06-CL-DEBATE-LEADS-TO-SCHEDULED-RECONSIDERATION"
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
       ],
       "dramaticFunction": "让土地保护底线与粮食只够维持数日的时限正面冲突，并保留延期复议这一有成本的程序选择。",
       "openingPressure": "现有方案能推动救急，却没有处理田价和下一季生计；反对者刚提出保护底线，另一方立即以粮食倒计时反击。",
@@ -294,16 +333,28 @@
           "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
         }
       ],
-      "sectionIds": ["SEC-P1-03"],
-      "requirementIds": ["REQ-P1-MERCHANT-CONDITIONS", "REQ-P1-LAND-RISK", "REQ-P1-KNOWLEDGE-CHAIN"],
-      "decisionKernelIds": ["DK-P1-MERCHANT-CONDITIONS", "DK-P1-LAND-SAFEGUARD"],
-      "actorRefs": ["actor.zhejiang_governor", "actor.jiangnan_merchant_head", "actor.xunfu_aide", "actor.qingliu_magistrate"],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-MERCHANT-CONDITIONS",
+        "REQ-P1-LAND-RISK"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-LAND-SAFEGUARD"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.jiangnan_merchant_head",
+        "actor.xunfu_aide",
+        "actor.qingliu_magistrate"
+      ],
       "sourceClaimIds": [
         "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
         "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
         "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
-        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET",
-        "DM1566-C07-CL-OFFICIAL-REFUSES-PRIVATE-BARGAIN"
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
       ],
       "dramaticFunction": "让商会以受限账册知识、个人保护和未来雇佣承诺组合出一场私下交易，同时保持实物保管权与口述知识的区别。",
       "openingPressure": "商会代表掌握一份不愿交出的账册，只愿口述局部内容，并把更多信息与土地方案或个人去留绑定。",

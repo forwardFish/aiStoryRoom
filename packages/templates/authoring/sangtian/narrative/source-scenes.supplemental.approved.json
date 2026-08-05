@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "narrative-source-scene-supplement-v1",
+  "worldId": "sangtian",
+  "partId": "PART-01",
+  "version": "1.0.0",
+  "reviewStatus": "APPROVED",
+  "reviewerId": "chatgpt-pro-ai-story-convergence",
+  "approvedAt": "2026-08-05T09:00:00.000Z",
+  "scenes": [
+    {
+      "sourceSceneId": "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+      "title": "严府安排奏疏在公开权力现场呈递",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C02",
+          "paragraphStartId": "DM1566-C02-P0261",
+          "paragraphEndId": "DM1566-C02-P0271",
+          "lineStart": 1347,
+          "lineEnd": 1367,
+          "textSpanSha256": "D4E559DBB74D4DB551A3B3459070D6E4FAF37B197B373D7A5AB35AA87A64F900"
+        }
+      ],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ],
+      "requirementIds": [
+        "REQ-P1-CAPITAL-FRAMING",
+        "REQ-P1-REPORT-AUTHORSHIP"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-CAPITAL-CHANNEL",
+        "DK-P1-REPORT-AUTHORSHIP"
+      ],
+      "mechanismSummary": "呈递现场、在场见证与递送安排会影响奏疏的第一层政治解释，但不能替代正式裁决。",
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE"
+    }
+  ]
+}

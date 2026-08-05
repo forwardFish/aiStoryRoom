@@ -27,6 +27,8 @@ const approvalFiles = [
   "scene-patterns.section-03.approved.json",
   "scene-patterns.section-04.approved.json",
 ];
+const supplementalSourceFile = "source-scenes.supplemental.approved.json";
+const allApprovalFiles = [...approvalFiles, supplementalSourceFile];
 
 test("the playable package extends but never replaces the frozen authoring release", () => {
   clearPartOneRuntimePackageCache();
@@ -88,7 +90,7 @@ test("assembling the same frozen package and approvals is deterministic", () => 
 
 test("a missing approval set fails closed before a model call", () => {
   const fixture = createFixture("missing");
-  for (const fileName of approvalFiles.slice(0, 2)) {
+  for (const fileName of [...approvalFiles.slice(0, 2), supplementalSourceFile]) {
     cpSync(
       resolve(authoringNarrativeRoot, fileName),
       resolve(fixture.narrativeRoot, fileName),
@@ -105,7 +107,7 @@ test("a missing approval set fails closed before a model call", () => {
 
 test("a tampered source binding fails closed before a model call", () => {
   const fixture = createFixture("tampered");
-  for (const fileName of approvalFiles) {
+  for (const fileName of allApprovalFiles) {
     cpSync(
       resolve(authoringNarrativeRoot, fileName),
       resolve(fixture.narrativeRoot, fileName),
@@ -124,9 +126,51 @@ test("a tampered source binding fails closed before a model call", () => {
   );
 });
 
+test("an approved supplemental source scene is hash-bound without changing frozen assets", () => {
+  clearPartOneRuntimePackageCache();
+  clearPlayablePartOneRuntimePackageCache();
+  const playable = loadPlayablePartOneRuntimePackage("sangtian", configRoot).package;
+  const pattern = playable.assets.find((asset) => (
+    asset.assetId === "NSP-P1-CAPITAL-AUDIENCE-FRAMING-STOP"
+  ));
+
+  assert.ok(pattern);
+  assert.equal(pattern.assetType, "NARRATIVE_SCENE_PATTERN");
+  assert.equal(
+    pattern.payload.sourceSceneId,
+    "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+  );
+  assert.deepEqual(pattern.sourceClaimIds, [
+    "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+    "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE",
+  ]);
+  assert.equal(playable.authoringManifest.assetCount, 65);
+});
+
+test("tampering a supplemental source reference fails closed before a model call", () => {
+  const fixture = createFixture("supplemental-source-tamper");
+  for (const fileName of allApprovalFiles) {
+    cpSync(
+      resolve(authoringNarrativeRoot, fileName),
+      resolve(fixture.narrativeRoot, fileName),
+    );
+  }
+  const target = resolve(fixture.narrativeRoot, supplementalSourceFile);
+  const document = JSON.parse(readFileSync(target, "utf8"));
+  document.scenes[0].sourceRefs[0].textSpanSha256 = "B".repeat(64);
+  writeFileSync(target, `${JSON.stringify(document, null, 2)}\n`, "utf8");
+  clearPartOneRuntimePackageCache();
+  clearPlayablePartOneRuntimePackageCache();
+
+  assert.throws(
+    () => loadPlayablePartOneRuntimePackage("sangtian", fixture.configRoot),
+    /PART_ONE_NARRATIVE_SOURCE_REF_MISMATCH/u,
+  );
+});
+
 test("a globally valid Claim from another source scene fails closed before a model call", () => {
   const fixture = createFixture("cross-scene-claim");
-  for (const fileName of approvalFiles) {
+  for (const fileName of allApprovalFiles) {
     cpSync(
       resolve(authoringNarrativeRoot, fileName),
       resolve(fixture.narrativeRoot, fileName),

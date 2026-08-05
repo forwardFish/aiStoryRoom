@@ -16,6 +16,7 @@ const approvalFileNames = [
   "scene-patterns.section-03.approved.json",
   "scene-patterns.section-04.approved.json",
 ] as const;
+const supplementalSourceFileName = "source-scenes.supplemental.approved.json";
 const requiredSectionIds = ["SEC-P1-02", "SEC-P1-03", "SEC-P1-04"] as const;
 const ORIGINAL_SOURCE_SHA = "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238";
 const cache = new Map<string, LoadedPartOneRuntimePackage>();
@@ -42,7 +43,7 @@ export function loadPlayablePartOneRuntimePackage(
 
   const templatesRoot = resolve(dirname(base.path), "..", "..", "..");
   const narrativeRoot = resolve(templatesRoot, "authoring", "sangtian", "narrative");
-  const sourceRows = approvalFileNames.map((fileName) => {
+  const readApproval = (fileName: string) => {
     const path = resolve(narrativeRoot, fileName);
     let bytes: Buffer;
     let value: unknown;
@@ -60,15 +61,23 @@ export function loadPlayablePartOneRuntimePackage(
       value,
       sha256: sha256(bytes),
     };
-  });
+  };
+  const sourceRows = approvalFileNames.map(readApproval);
+  const supplementalSourceRow = readApproval(supplementalSourceFileName);
   const cacheKey = [
     base.contentHash,
+    supplementalSourceRow.sha256,
     ...sourceRows.map((row) => row.sha256),
   ].join(":");
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
-  const pkg = assemblePlayablePackage(base.package, templatesRoot, sourceRows);
+  const pkg = assemblePlayablePackage(
+    base.package,
+    templatesRoot,
+    sourceRows,
+    supplementalSourceRow,
+  );
   const loaded = {
     package: pkg,
     contentHash: pkg.immutableHash,
@@ -82,6 +91,7 @@ function assemblePlayablePackage(
   base: PartOneRuntimePackage,
   templatesRoot: string,
   sourceRows: Array<{ path: string; bytes: Buffer; value: unknown; sha256: string }>,
+  supplementalSourceRow: { path: string; bytes: Buffer; value: unknown; sha256: string },
 ): PartOneRuntimePackage {
   if (
     base.assets.length !== 65
@@ -106,6 +116,58 @@ function assemblePlayablePackage(
         new Set(asset.sourceClaimIds),
       ] as const),
   );
+  const supplementalSourceRefs = new Map<string, unknown>();
+  const supplementalSourceSet = asRecord(
+    supplementalSourceRow.value,
+    "supplementalSourceSet",
+  );
+  exact(
+    supplementalSourceSet.schemaVersion,
+    "narrative-source-scene-supplement-v1",
+    "supplementalSourceSet.schemaVersion",
+  );
+  exact(supplementalSourceSet.worldId, "sangtian", "supplementalSourceSet.worldId");
+  exact(supplementalSourceSet.partId, "PART-01", "supplementalSourceSet.partId");
+  exact(supplementalSourceSet.reviewStatus, "APPROVED", "supplementalSourceSet.reviewStatus");
+  requiredText(supplementalSourceSet.version, "supplementalSourceSet.version");
+  requiredText(supplementalSourceSet.reviewerId, "supplementalSourceSet.reviewerId");
+  requiredText(supplementalSourceSet.approvedAt, "supplementalSourceSet.approvedAt");
+  const supplementalScenes = asArray(
+    supplementalSourceSet.scenes,
+    "supplementalSourceSet.scenes",
+  );
+  if (!supplementalScenes.length) {
+    throw new Error("PART_ONE_NARRATIVE_SUPPLEMENTAL_SOURCE_EMPTY");
+  }
+  for (const rawScene of supplementalScenes) {
+    const scene = asRecord(rawScene, "supplementalSourceScene");
+    const sourceSceneId = requiredText(
+      scene.sourceSceneId,
+      "supplementalSourceScene.sourceSceneId",
+    );
+    if (sourceSceneClaimIds.has(sourceSceneId)) {
+      throw new Error(`PART_ONE_NARRATIVE_SUPPLEMENTAL_SOURCE_COLLISION:${sourceSceneId}`);
+    }
+    requiredText(scene.title, `${sourceSceneId}.title`);
+    requiredText(scene.mechanismSummary, `${sourceSceneId}.mechanismSummary`);
+    exact(
+      scene.verbatimPolicy,
+      "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      `${sourceSceneId}.verbatimPolicy`,
+    );
+    const sourceClaimIds = textArray(
+      scene.sourceClaimIds,
+      `${sourceSceneId}.sourceClaimIds`,
+    );
+    if (!sourceClaimIds.length) {
+      throw new Error(`PART_ONE_NARRATIVE_SUPPLEMENTAL_SOURCE_CLAIMS_EMPTY:${sourceSceneId}`);
+    }
+    const sourceRefs = scene.sourceRefs;
+    validateSourceRefs(sourceRefs, sourceSceneId);
+    sourceSceneClaimIds.set(sourceSceneId, new Set(sourceClaimIds));
+    supplementalSourceRefs.set(sourceSceneId, sourceRefs);
+    for (const claimId of sourceClaimIds) baseClaimIds.add(claimId);
+  }
   const sectionById = new Map(base.sections.map((section) => [section.sectionId, section]));
   const requiredKernelIds = new Set(
     requiredSectionIds.flatMap((sectionId) => {
@@ -197,6 +259,15 @@ function assemblePlayablePackage(
         );
       }
       validateSourceRefs(pattern.sourceRefs, patternId);
+      const approvedSupplementalRefs = supplementalSourceRefs.get(sourceSceneId);
+      if (
+        approvedSupplementalRefs
+        && canonical(pattern.sourceRefs) !== canonical(approvedSupplementalRefs)
+      ) {
+        throw new Error(
+          `PART_ONE_NARRATIVE_SOURCE_REF_MISMATCH:${patternId}:${sourceSceneId}`,
+        );
+      }
       validatePatternShape(pattern, patternId);
 
       supplementAssets.push({
@@ -249,6 +320,11 @@ function assemblePlayablePackage(
     partId: "PART-01",
     baseRuntimeImmutableHash: base.immutableHash,
     sourcePatternSets,
+    supplementalSourceSet: {
+      path: relative(templatesRoot, supplementalSourceRow.path).replaceAll("\\", "/"),
+      sha256: supplementalSourceRow.sha256,
+      sceneCount: supplementalScenes.length,
+    },
     contentCounts: {
       assets: supplementAssets.length,
       narrativeScenePatterns: supplementAssets.length,

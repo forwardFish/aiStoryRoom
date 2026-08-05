@@ -19,6 +19,10 @@ const outputPath = resolve(
 const patternSetPaths = [2, 3, 4].map((section) => (
   resolve(authoringRoot, `narrative/scene-patterns.section-0${section}.approved.json`)
 ));
+const supplementalSourcePath = resolve(
+  authoringRoot,
+  "narrative/source-scenes.supplemental.approved.json",
+);
 const checkOnly = process.argv.includes("--check");
 
 const baseRuntime = await readJson(baseRuntimePath);
@@ -39,11 +43,47 @@ const baseDecisionKernelIds = new Set(
 );
 const baseSourceClaimIds = new Set(baseRuntime.assets.flatMap((asset) => asset.sourceClaimIds || []));
 const baseActorRefs = new Set(baseRuntime.assets.flatMap((asset) => asset.actorRefs || []));
-const sourceSceneAssetIds = new Set(
+const sourceSceneClaims = new Map(
   baseRuntime.assets
     .filter((asset) => asset.assetType === "SOURCE_SCENE_EVIDENCE")
-    .map((asset) => asset.assetId),
+    .map((asset) => [
+      asset.payload.sourceSceneId,
+      new Set(asset.sourceClaimIds || []),
+    ]),
 );
+const supplementalSourceBytes = await readFile(supplementalSourcePath);
+const supplementalSourceSet = JSON.parse(supplementalSourceBytes.toString("utf8"));
+assert(
+  supplementalSourceSet.schemaVersion === "narrative-source-scene-supplement-v1"
+  && supplementalSourceSet.worldId === "sangtian"
+  && supplementalSourceSet.partId === "PART-01"
+  && supplementalSourceSet.reviewStatus === "APPROVED",
+  "NARRATIVE_SUPPLEMENT_SOURCE_SET_INVALID",
+);
+assert(
+  Array.isArray(supplementalSourceSet.scenes) && supplementalSourceSet.scenes.length > 0,
+  "NARRATIVE_SUPPLEMENT_SOURCE_SET_EMPTY",
+);
+const supplementalSourceRefs = new Map();
+for (const scene of supplementalSourceSet.scenes) {
+  assert(
+    scene.sourceSceneId && !sourceSceneClaims.has(scene.sourceSceneId),
+    `NARRATIVE_SUPPLEMENT_SOURCE_SCENE_COLLISION:${scene.sourceSceneId}`,
+  );
+  assert(
+    Array.isArray(scene.sourceClaimIds) && scene.sourceClaimIds.length > 0,
+    `NARRATIVE_SUPPLEMENT_SOURCE_CLAIMS_EMPTY:${scene.sourceSceneId}`,
+  );
+  assert(
+    Array.isArray(scene.sourceRefs)
+    && scene.sourceRefs.length > 0
+    && scene.sourceRefs.every(validSourceRef),
+    `NARRATIVE_SUPPLEMENT_SOURCE_REF_INVALID:${scene.sourceSceneId}`,
+  );
+  sourceSceneClaims.set(scene.sourceSceneId, new Set(scene.sourceClaimIds));
+  supplementalSourceRefs.set(scene.sourceSceneId, scene.sourceRefs);
+  for (const claimId of scene.sourceClaimIds) baseSourceClaimIds.add(claimId);
+}
 const sectionById = new Map(baseRuntime.sections.map((section) => [section.sectionId, section]));
 const requiredSectionIds = ["SEC-P1-02", "SEC-P1-03", "SEC-P1-04"];
 const requiredKernelIds = new Set(
@@ -91,8 +131,9 @@ for (const path of patternSetPaths) {
       pattern.sectionIds.length === 1 && pattern.sectionIds[0] === set.scopeId,
       `NARRATIVE_SUPPLEMENT_PATTERN_SCOPE_MISMATCH:${pattern.patternId}`,
     );
+    const allowedSourceClaims = sourceSceneClaims.get(pattern.sourceSceneId);
     assert(
-      sourceSceneAssetIds.has(`SOURCE-SCENE-${pattern.sourceSceneId}`),
+      allowedSourceClaims,
       `NARRATIVE_SUPPLEMENT_SOURCE_SCENE_UNKNOWN:${pattern.patternId}:${pattern.sourceSceneId}`,
     );
     assert(
@@ -117,9 +158,19 @@ for (const path of patternSetPaths) {
       `NARRATIVE_SUPPLEMENT_SOURCE_CLAIM_UNKNOWN:${pattern.patternId}`,
     );
     assert(
+      pattern.sourceClaimIds.every((id) => allowedSourceClaims.has(id)),
+      `NARRATIVE_SUPPLEMENT_SOURCE_CLAIM_CROSS_SCENE:${pattern.patternId}:${pattern.sourceSceneId}`,
+    );
+    assert(
       pattern.sourceRefs.length > 0
       && pattern.sourceRefs.every(validSourceRef),
       `NARRATIVE_SUPPLEMENT_SOURCE_REF_INVALID:${pattern.patternId}`,
+    );
+    const approvedSupplementalRefs = supplementalSourceRefs.get(pattern.sourceSceneId);
+    assert(
+      !approvedSupplementalRefs
+      || canonicalize(pattern.sourceRefs) === canonicalize(approvedSupplementalRefs),
+      `NARRATIVE_SUPPLEMENT_SOURCE_REF_MISMATCH:${pattern.patternId}:${pattern.sourceSceneId}`,
     );
 
     assets.push({
@@ -165,6 +216,11 @@ const supplement = {
   partId: "PART-01",
   baseRuntimeImmutableHash: baseRuntime.immutableHash,
   sourcePatternSets,
+  supplementalSourceSet: {
+    path: relative(repoRoot, supplementalSourcePath).replaceAll("\\", "/"),
+    sha256: sha256Bytes(supplementalSourceBytes),
+    sceneCount: supplementalSourceSet.scenes.length,
+  },
   contentCounts: {
     assets: assets.length,
     narrativeScenePatterns: assets.length,
