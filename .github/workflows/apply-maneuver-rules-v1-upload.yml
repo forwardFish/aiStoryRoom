@@ -32,15 +32,16 @@ jobs:
           persist-credentials: true
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Reconstruct and verify implementation patch
+      - name: Reconstruct, verify, and apply implementation patches
         env:
           GH_TOKEN: ${{ github.token }}
-          EXPECTED_SHA256: 5277938bdaca1b2465a66c9b490f8cdeba640a8d2517d3681fb4376c92a7e8e1
+          BASE_EXPECTED_SHA256: 5277938bdaca1b2465a66c9b490f8cdeba640a8d2517d3681fb4376c92a7e8e1
+          FIX_EXPECTED_SHA256: abc5d5498c10ad76396c3a64245726169fa2d59736237973663c82cd5fa5af84
         shell: bash
         run: |
           set -euo pipefail
-          PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1.patch"
-          export PATCH_PATH
+          export BASE_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-base.patch"
+          export FIX_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-fix-round1.patch"
           python3 - <<'PY'
           import base64
           import hashlib
@@ -52,59 +53,59 @@ jobs:
 
           repository = os.environ["GITHUB_REPOSITORY"]
           token = os.environ["GH_TOKEN"]
-          expected = os.environ["EXPECTED_SHA256"]
-          patch_path = Path(os.environ["PATCH_PATH"])
-          blob_shas = [
-              "f2b77097fdd17a2cac1cb50cd224e39a2acdd323",
-              "beca723609e29a3bbc32632f59fe856dee167be9",
-              "37ae0a1c05eca7c5448583eec6907cc0729b1ca5",
-              "711982a1da09f08e2808f432b6982908ba8a68a0",
-              "40e1bddd8eff5b0d851bf502cb3a31233a34be0c",
-              "7fac807c48aa2e64a11246d0c2a1269ad4213494",
-              "8ff1f71e8849b57243d4ee80ae315fd40bd8b212",
-              "e4c0cbe6f4d8657803d410c3776113bf8ac78d1f",
-          ]
 
-          encoded_parts: list[bytes] = []
-          for sha in blob_shas:
-              request = urllib.request.Request(
-                  f"https://api.github.com/repos/{repository}/git/blobs/{sha}",
-                  headers={
-                      "Authorization": f"Bearer {token}",
-                      "Accept": "application/vnd.github+json",
-                      "X-GitHub-Api-Version": "2022-11-28",
-                  },
-              )
-              with urllib.request.urlopen(request, timeout=30) as response:
-                  payload = json.load(response)
-              encoded_parts.append(base64.b64decode(payload["content"]))
+          def reconstruct(blob_shas: list[str], output_path: str, expected: str) -> None:
+              encoded_parts: list[bytes] = []
+              for sha in blob_shas:
+                  request = urllib.request.Request(
+                      f"https://api.github.com/repos/{repository}/git/blobs/{sha}",
+                      headers={
+                          "Authorization": f"Bearer {token}",
+                          "Accept": "application/vnd.github+json",
+                          "X-GitHub-Api-Version": "2022-11-28",
+                      },
+                  )
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      payload = json.load(response)
+                  encoded_parts.append(base64.b64decode(payload["content"]))
 
-          compressed = base64.b64decode(b"".join(encoded_parts), validate=True)
-          patch = lzma.decompress(compressed)
-          actual = hashlib.sha256(patch).hexdigest()
-          if actual != expected:
-              raise SystemExit(f"patch checksum mismatch: expected {expected}, got {actual}")
-          patch_path.write_bytes(patch)
-          print(f"verified patch: {len(patch)} bytes, sha256={actual}")
-          PY
+              compressed = base64.b64decode(b"".join(encoded_parts), validate=True)
+              patch = lzma.decompress(compressed)
+              actual = hashlib.sha256(patch).hexdigest()
+              if actual != expected:
+                  raise SystemExit(
+                      f"patch checksum mismatch for {output_path}: expected {expected}, got {actual}"
+                  )
+              Path(output_path).write_bytes(patch)
+              print(f"verified {output_path}: {len(patch)} bytes, sha256={actual}")
 
-          git apply --check "$PATCH_PATH"
-          git apply --index "$PATCH_PATH"
-
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('.github/workflows/maneuver-rules-v1.yml')
-          text = path.read_text(encoding='utf-8')
-          text = text.replace(
-              '      - feat/maneuver-rules-v1\n',
-              '      - feat/maneuver-rules-v1-full-implementation-20260805\n',
-              1,
+          reconstruct(
+              [
+                  "f2b77097fdd17a2cac1cb50cd224e39a2acdd323",
+                  "beca723609e29a3bbc32632f59fe856dee167be9",
+                  "37ae0a1c05eca7c5448583eec6907cc0729b1ca5",
+                  "711982a1da09f08e2808f432b6982908ba8a68a0",
+                  "40e1bddd8eff5b0d851bf502cb3a31233a34be0c",
+                  "7fac807c48aa2e64a11246d0c2a1269ad4213494",
+                  "8ff1f71e8849b57243d4ee80ae315fd40bd8b212",
+                  "e4c0cbe6f4d8657803d410c3776113bf8ac78d1f",
+              ],
+              os.environ["BASE_PATCH_PATH"],
+              os.environ["BASE_EXPECTED_SHA256"],
           )
-          path.write_text(text, encoding='utf-8')
+          reconstruct(
+              ["4ac2dfde944563b0b1c3df0f01c6624c5216f76d"],
+              os.environ["FIX_PATCH_PATH"],
+              os.environ["FIX_EXPECTED_SHA256"],
+          )
           PY
-          git add .github/workflows/maneuver-rules-v1.yml
+
+          git apply --check "$BASE_PATCH_PATH"
+          git apply --index "$BASE_PATCH_PATH"
+          git apply --check "$FIX_PATCH_PATH"
+          git apply --index "$FIX_PATCH_PATH"
           git diff --cached --check
-          echo "Applied implementation patch to $(git rev-parse --short HEAD)."
+          echo "Applied implementation and round-1 fixes to $(git rev-parse --short HEAD)."
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
