@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 90
     env:
       CI: "true"
-      CANDIDATE_SHA: ff7a925c00c8d2c4cbaccbf7ad277b7f29ddc414
+      CANDIDATE_SHA: 8b4e4eb34b2fbc243a96f9f727d2fb6ca2a9d7c9
       FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
       EVIDENCE_ROOT: ${{ runner.temp }}/engineering-evidence
       OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
