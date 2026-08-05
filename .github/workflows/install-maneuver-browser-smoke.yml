@@ -1,17 +1,13 @@
 name: Install maneuver browser smoke
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/maneuver-rules-v1-full-implementation-20260805
+      - feat/maneuver-rules-v1-20260805
   workflow_dispatch:
 
 permissions:
   contents: write
-
-concurrency:
-  group: install-maneuver-browser-smoke-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   install:
@@ -21,10 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: feat/maneuver-rules-v1-full-implementation-20260805
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Reconstruct verified browser test
+      - name: Reconstruct exact verified browser smoke
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA256: 2f4da3dd1074dfb7cb695fdbd07f1f7b0e3405b48ece9c41e5d7c7f5c8cb34c3
@@ -32,136 +29,57 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64
-          import hashlib
-          import json
-          import os
-          import urllib.request
+          import base64, hashlib, json, os, urllib.request
           from pathlib import Path
 
-          repository = os.environ["GITHUB_REPOSITORY"]
-          token = os.environ["GH_TOKEN"]
-          expected_script = os.environ["EXPECTED_SHA256"]
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
           headers = {
-              "Authorization": f"Bearer {token}",
-              "Accept": "application/vnd.github+json",
-              "X-GitHub-Api-Version": "2022-11-28",
+              'Authorization': f'Bearer {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
           }
 
-          def fetch_blob(sha: str) -> bytes:
-              request = urllib.request.Request(
-                  f"https://api.github.com/repos/{repository}/git/blobs/{sha}",
+          def blob(sha):
+              req = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
                   headers=headers,
               )
-              with urllib.request.urlopen(request, timeout=30) as response:
-                  return base64.b64decode(json.load(response)["content"])
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  return base64.b64decode(json.load(response)['content'])
 
-          major_specs = [
-              {
-                  "name": "part00",
-                  "expected": "e476b42a74e92b82e12c2afd0e1856aa114279f04f8edb6e83a9d14fdb50bd95",
-                  "parts": [("84ab5a37c675cce61ae02539ab742d0ffb0f488e", "e476b42a74e92b82e12c2afd0e1856aa114279f04f8edb6e83a9d14fdb50bd95")],
-              },
-              {
-                  "name": "part01",
-                  "expected": "86a345464ff947456de983d940b90148bd6620a5bd16d0a617227f0659155082",
-                  "parts": [
-                      ("9d255cf92478ec2f474a243bca2ee8b3c04814b8", "c96ee8493422b040cb630ea7329ae626f8123c83b082ab232139cb9adde0d829"),
-                      ("28303d17ca88db18d350d543ea7da83e58f777f9", "def9d6e44a4594056c5fd46b10429dc862877d5e45df923aed74eefa8c209a2f"),
-                      ("18654d3c209bdc90ad3d79ce96381a4f568021d9", "e0d6abf6f2451704d223c488ab062471fe7eda0dbb76c770249d902b3ad978fe"),
-                      ("2d1e60e4eba01fef4707cfd959602c101fa75998", "4e6ca45b91cc5bd0c7e78327a870d098dc6d535124742485c2610f454c4c67ec"),
-                      ("aa04b01e95efd579c1a35727bbbd34e06335c326", "00c01dc45fecf929dabe1043e7281ca4cd319b3ecacbcb8ca35f9a6b2e8ee5ef"),
-                  ],
-              },
-              {
-                  "name": "part02",
-                  "expected": "a5a7e1391ff776906d47fb687fd1c1050580b869eba5dba755652e48bf3a0bc1",
-                  "parts": [
-                      ("54bb15124fbbd5a5f53d2891ff1f4c36f9d10a2d", "a525a3e1f211cd90be26f473b791c5e94ab2924ab08a9da39fa51ac275b580ed"),
-                      ("923303268534f297dce1ff197e3530719fca3be5", "d2bacac5565e2446ac65e0a4a11dd34177d32a03345ed14f1b15b12fbb64f752"),
-                      ("705be59fc30d8dc13dbbebfc2709dd77f3a91224", "7bc4d5faad1553bade83b06cc2de942f9d61590724165cda4966174a8ca6f30c"),
-                      ("9240548d150d2672fc134271bbdb41f8bafe9549", "001a497bf136c72e89d1fb3af0c28379752d235f76f8df035c522150758a907f"),
-                      ("872f49d414adf13a831005629ad7eead3221b523", "5bdb6a44bcfff11f4494663995cec765ea3600c989c21bce919fae1af95e10ef"),
-                  ],
-              },
-              {
-                  "name": "part03",
-                  "expected": "44ef6a5215831a64297d8c3597ea51d23691bdc67c81ff44000e268e66c58487",
-                  "parts": [
-                      ("8d800feaba279dd87a5334b6a29aa51e3c9184fc", "14933acf330ddd73ce4990f40f726b3854690d073a40a0efce38401c5627bdbf"),
-                      ("45afea8cd1ad5533cbd5d763d89a4e8030fe0a13", "83f71f13caf3c157428105a3fa901e134b34d945fb9ef0d5964fef47af6233dc"),
-                      ("5a169d8c7e1a256adc84411fce08ec633e6980e2", "bafab173b2d1b8f3df638c78d8a212c3ad5be56f65ba1b98985c5332c7d80e4c"),
-                      ("041fd3166376edf582e260b18f7ca564ca18e62c", "3327c2df26058412dfc7d8f3a5bc2d6a36691c9d621c009f93a628d7f4624b10"),
-                      ("e73452990fd117289acc4f523f4d01ab45cdb7e4", "9845cf23966b12f62d4bfda180495b9da3498124d0dfe92e0353dd53c290f529"),
-                  ],
-              },
-              {
-                  "name": "part04",
-                  "expected": "4c932309ee7db31b6094b58a26bf618f101aab679227a6b05aa9500dd7c8114f",
-                  "parts": [("78505eaff7d7a4407dbaf53b1bf4be22c84b10c5", "4c932309ee7db31b6094b58a26bf618f101aab679227a6b05aa9500dd7c8114f")],
-              },
-              {
-                  "name": "part05",
-                  "expected": "7e1273fb54b1bf2748b1cb369f27f0f7ce042f620533babfba5662436d752946",
-                  "parts": [
-                      ("3b1746b0af800cea4eb0bc0ae34fb5eadab0a0ba", "ea04ff7c4845ea8128d9cca4ce3f5827e649a222017bbd7e2b85a86fdcb12b8f"),
-                      ("1318ded99c2bafff75149defea52eb64ac7dd1f8", "92465ef1f522b8fa58164e0a536f65b9dadfb34fe64014ae37f4a1f44343d6cc"),
-                      ("1469ce067b4694f515782ae3c252dc9fae579168", "d67f541aaec892e607e2b8f3d93a9e741b8097f5e8fd3920a44cf11fdc7f8249"),
-                      ("aab6d939dccf7730f6eb528e5c71c96e9d8c2e77", "544ace52f30d71f0a9dfdf2a2dc0e1d66b37882b5037521d5d408b18a29f2fb5"),
-                      ("8963ed3d1982368f5941614dd5e61df344dad8e5", "8424935c8201c0449296b0eb1f17f89ad0d289f0515a50d9e9cfefc54686bccd"),
-                  ],
-              },
-              {
-                  "name": "part06",
-                  "expected": "fe06f946020b97986bb90144e7a72be6662c431ff8be7f3edcac741ee5b13c56",
-                  "parts": [("fe81a6644b08f42b645495655633a5c218638b44", "fe06f946020b97986bb90144e7a72be6662c431ff8be7f3edcac741ee5b13c56")],
-              },
-              {
-                  "name": "part07",
-                  "expected": "81f057d426a91a4b7f4e7c7c61fa4dfc782335da265aa50ec3b1749537438b4e",
-                  "parts": [("b5d3778ddc6f32c7bbf2fc83abf2fc9ea2cd4141", "81f057d426a91a4b7f4e7c7c61fa4dfc782335da265aa50ec3b1749537438b4e")],
-              },
+          groups = [
+              ['84ab5a37c675cce61ae02539ab742d0ffb0f488e'],
+              ['9d255cf92478ec2f474a243bca2ee8b3c04814b8','28303d17ca88db18d350d543ea7da83e58f777f9','18654d3c209bdc90ad3d79ce96381a4f568021d9','2d1e60e4eba01fef4707cfd959602c101fa75998','aa04b01e95efd579c1a35727bbbd34e06335c326'],
+              ['54bb15124fbbd5a5f53d2891ff1f4c36f9d10a2d','923303268534f297dce1ff197e3530719fca3be5','705be59fc30d8dc13dbbebfc2709dd77f3a91224','9240548d150d2672fc134271bbdb41f8bafe9549','872f49d414adf13a831005629ad7eead3221b523'],
+              ['8d800feaba279dd87a5334b6a29aa51e3c9184fc','45afea8cd1ad5533cbd5d763d89a4e8030fe0a13','5a169d8c7e1a256adc84411fce08ec633e6980e2','041fd3166376edf582e260b18f7ca564ca18e62c','e73452990fd117289acc4f523f4d01ab45cdb7e4'],
+              ['78505eaff7d7a4407dbaf53b1bf4be22c84b10c5'],
+              ['3b1746b0af800cea4eb0bc0ae34fb5eadab0a0ba','1318ded99c2bafff75149defea52eb64ac7dd1f8','1469ce067b4694f515782ae3c252dc9fae579168','aab6d939dccf7730f6eb528e5c71c96e9d8c2e77','8963ed3d1982368f5941614dd5e61df344dad8e5'],
+              ['fe81a6644b08f42b645495655633a5c218638b44'],
+              ['b5d3778ddc6f32c7bbf2fc83abf2fc9ea2cd4141'],
           ]
-
-          encoded_major = []
-          for major in major_specs:
-              pieces = []
-              for sha, expected_part in major["parts"]:
-                  piece = fetch_blob(sha)
-                  actual_part = hashlib.sha256(piece).hexdigest()
-                  if actual_part != expected_part:
-                      raise SystemExit(
-                          f"{major['name']} subchunk {sha} mismatch: expected {expected_part}, got {actual_part}"
-                      )
-                  pieces.append(piece)
-              value = b"".join(pieces)
-              actual_major = hashlib.sha256(value).hexdigest()
-              if actual_major != major["expected"]:
-                  raise SystemExit(
-                      f"{major['name']} mismatch: expected {major['expected']}, got {actual_major}"
-                  )
-              encoded_major.append(value)
-              print(f"verified {major['name']}: {len(value)} bytes sha256={actual_major}")
-
-          script = base64.b64decode(b"".join(encoded_major), validate=True)
-          actual_script = hashlib.sha256(script).hexdigest()
-          if actual_script != expected_script:
-              raise SystemExit(
-                  f"script mismatch: expected {expected_script}, got {actual_script}"
-              )
-          path = Path("scripts/acceptance/maneuver-v1-browser-smoke.mjs")
+          encoded = b''.join(b''.join(blob(sha) for sha in group) for group in groups)
+          script = base64.b64decode(encoded, validate=True)
+          actual = hashlib.sha256(script).hexdigest()
+          if actual != os.environ['EXPECTED_SHA256']:
+              raise SystemExit(f'script sha256 mismatch: {actual}')
+          path = Path('scripts/acceptance/maneuver-v1-browser-smoke.mjs')
           path.parent.mkdir(parents=True, exist_ok=True)
           path.write_bytes(script)
-          print(f"verified {path}: {len(script)} bytes sha256={actual_script}")
+          print(f'verified {path}: {len(script)} bytes sha256={actual}')
           PY
 
-      - name: Commit browser verification script
+      - name: Commit exact browser smoke to helper branch
         shell: bash
         run: |
           set -euo pipefail
           git add scripts/acceptance/maneuver-v1-browser-smoke.mjs
           git diff --cached --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "test(maneuver-v1): add real game-page browser smoke"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          if git diff --cached --quiet; then
+            echo 'browser smoke already present'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test(maneuver-v1): add real game-page browser smoke'
+          git push origin HEAD:feat/maneuver-rules-v1-full-implementation-20260805
