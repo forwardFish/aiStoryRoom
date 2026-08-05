@@ -63,7 +63,7 @@ export class DefaultOptionsAndMemory implements OptionsAndMemoryModule {
     const warnings: RuntimeWarning[] = [];
     await this.enqueueMemory(input, warnings);
     const output = input.preparedDecision && input.authoredAdapter
-      ? await this.authoredOptions(input)
+      ? await this.authoredOptions(input, warnings)
       : await this.modelOptions(input, warnings);
     try {
       await this.workspace.publishTurnOptions(input.runId, {
@@ -132,16 +132,49 @@ export class DefaultOptionsAndMemory implements OptionsAndMemoryModule {
 
   private async authoredOptions(
     input: OptionsAndMemoryInput,
+    warnings: RuntimeWarning[],
   ): Promise<Omit<OptionsAndMemoryOutput, "warnings">> {
-    const options = input.preparedDecision!.storyComplete
-      ? []
-      : input.result.options.length
-      ? input.result.options
-      : input.authoredAdapter!.nextOptions(input.preparedDecision!);
+    let options: OpenNovelOption[] = [];
+    let optionSource = "STORY_COMPLETE";
+    if (!input.preparedDecision!.storyComplete) {
+      try {
+        const committedOptions = await input.authoredAdapter!.currentOptions(
+          this.workspace,
+          input.runId,
+        );
+        if (committedOptions?.length) {
+          options = committedOptions;
+          optionSource = "COMMITTED_WORLD_STATE";
+        } else {
+          options = input.result.options.length
+            ? input.result.options
+            : input.authoredAdapter!.nextOptions(input.preparedDecision!);
+          optionSource = "PRECOMMIT_AFFORDANCE_FALLBACK";
+          const warning = runtimeWarning(
+            "AUTHORED_OPTIONS_COMMITTED_STATE_EMPTY",
+            "Committed world state exposed no next Affordance",
+          );
+          warnings.push(warning);
+          input.emit({ type: "runtime.warning", data: warning });
+        }
+      } catch (error) {
+        options = input.result.options.length
+          ? input.result.options
+          : input.authoredAdapter!.nextOptions(input.preparedDecision!);
+        optionSource = "PRECOMMIT_AFFORDANCE_FALLBACK";
+        const warning = runtimeWarning(
+          "AUTHORED_OPTIONS_COMMITTED_STATE_UNAVAILABLE",
+          error,
+        );
+        warnings.push(warning);
+        input.emit({ type: "runtime.warning", data: warning });
+      }
+    }
     input.emit({ type: "options.complete", data: { options, framing: "" } });
     await this.workspace.recordSceneEvent(input.runId, {
       type: "foreground_authored_options",
       turnId: input.turnId,
+      optionSource,
       optionIds: options.map((option) => option.id),
     });
     return {
