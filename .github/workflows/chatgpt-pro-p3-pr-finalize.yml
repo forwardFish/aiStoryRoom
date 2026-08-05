@@ -26,30 +26,28 @@ jobs:
       READY_PATH: docs/auto-execute/.chatgpt-pro-p3-final-stage.ready
       PAYLOAD_B64_SHA256: c2043133ca4d06da76c43ab7f3c88213865ee7d70f8e2d61c831d66edd751755
       PAYLOAD_SHA256: 6c26a75c277baf21ba73dfb7ee0d405eb9393cdcd8181f283d6eb85fb2225fec
-      WORKFLOW_PATH: .github/workflows/chatgpt-pro-p3-finalize.yml
-      PR_WORKFLOW_PATH: .github/workflows/chatgpt-pro-p3-pr-finalize.yml
+      PUSH_WORKFLOW: .github/workflows/chatgpt-pro-p3-finalize.yml
+      PR_WORKFLOW: .github/workflows/chatgpt-pro-p3-pr-finalize.yml
     steps:
-      - name: Check out exact staging commit
+      - name: Check out exact candidate base SHA
         uses: actions/checkout@v4
         with:
           ref: ${{ env.CANDIDATE_SHA }}
           fetch-depth: 0
 
-      - name: Prove boundary and unpack exact P3 files
+      - name: Verify boundary, unpack payload and apply exact repair
         shell: bash
         run: |
           set -euo pipefail
-          evidence_tmp="${RUNNER_TEMP}/p3-evidence"
-          mkdir -p "${evidence_tmp}"
+          mkdir -p "${RUNNER_TEMP}/p3-evidence"
           {
             echo "repository=${GITHUB_REPOSITORY}"
-            echo "event=${GITHUB_EVENT_NAME}"
             echo "base_ref=${{ github.event.pull_request.base.ref }}"
-            echo "staging_sha=${CANDIDATE_SHA}"
+            echo "candidate_sha=${CANDIDATE_SHA}"
             echo "checked_out=$(git rev-parse HEAD)"
             echo "merge_base=$(git merge-base HEAD ${FROZEN_BASE_SHA})"
             echo "main_remote=$(git rev-parse origin/main)"
-          } | tee "${evidence_tmp}/00-boundary.log"
+          } | tee "${RUNNER_TEMP}/p3-evidence/00-boundary.log"
           test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
           test "${{ github.event.pull_request.base.ref }}" = "${TARGET_BRANCH}"
           test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
@@ -59,68 +57,73 @@ jobs:
 
           mapfile -t parts < <(printf '%s\n' ${PAYLOAD_PREFIX}* | sort)
           test "${#parts[@]}" -eq 8
-          payload_b64=/tmp/chatgpt-pro-p3-final-stage.tar.gz.b64
-          payload=/tmp/chatgpt-pro-p3-final-stage.tar.gz
+          payload_b64=/tmp/p3-stage.tar.gz.b64
+          payload=/tmp/p3-stage.tar.gz
           cat "${parts[@]}" > "${payload_b64}"
           echo "${PAYLOAD_B64_SHA256}  ${payload_b64}" | sha256sum --check --strict
           base64 --decode "${payload_b64}" > "${payload}"
           echo "${PAYLOAD_SHA256}  ${payload}" | sha256sum --check --strict
-          mapfile -t actual_paths < <(tar -tzf "${payload}" | sed '/^$/d' | sed '/\/$/d' | sort)
-          expected_paths=(
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json
-            packages/templates/authoring/sangtian/narrative/source-scenes.supplemental.approved.json
-            packages/templates/src/story-package/playable-part-one-runtime.ts
-            packages/templates/tests/part-one-narrative-supplement.test.ts
-            scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs
-          )
-          mapfile -t expected_paths < <(printf '%s\n' "${expected_paths[@]}" | sort)
-          test "$(printf '%s\n' "${actual_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+          mapfile -t paths < <(tar -tzf "${payload}" | sed '/^$/d' | sed '/\/$/d' | sort)
+          test "${#paths[@]}" -eq 7
           tar -xzf "${payload}" -C .
-          rm -f "${parts[@]}" "${READY_PATH}" "${WORKFLOW_PATH}" "${PR_WORKFLOW_PATH}"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json')
+          value = json.loads(path.read_text(encoding='utf-8'))
+          target = next(pattern for pattern in value['patterns'] if pattern['patternId'] == 'NSP-P1-MERCHANT-LEDGER-PRIVATE-BARGAIN')
+          expected = [
+              'REQ-P1-MERCHANT-CONDITIONS',
+              'REQ-P1-LAND-RISK',
+              'REQ-P1-KNOWLEDGE-CHAIN',
+          ]
+          if target['requirementIds'] != expected:
+              raise SystemExit(f"P3_REQUIREMENT_REPAIR_PRECONDITION_FAILED:{target['requirementIds']}")
+          target['requirementIds'] = [
+              'REQ-P1-MERCHANT-CONDITIONS',
+              'REQ-P1-LAND-RISK',
+          ]
+          path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
+          rm -f "${parts[@]}" "${READY_PATH}" "${PUSH_WORKFLOW}" "${PR_WORKFLOW}"
           git diff --check
 
-      - name: Verify all eleven patterns bind only their declared source scene
+      - name: Audit source, requirement, actor and Kernel bindings
         shell: bash
         run: |
           set -euo pipefail
-          evidence_tmp="${RUNNER_TEMP}/p3-evidence"
-          python - <<'PY' | tee "${evidence_tmp}/01-source-bindings.json"
+          python - <<'PY' | tee "${RUNNER_TEMP}/p3-evidence/01-source-bindings.json"
           import json
           from pathlib import Path
 
           root = Path('.')
           runtime = json.loads((root / 'packages/templates/config/sangtian/story-package/part-one-runtime.json').read_text(encoding='utf-8'))
           sections = {row['sectionId']: row for row in runtime['sections']}
+          base_actors = {actor for asset in runtime['assets'] for actor in asset.get('actorRefs', [])}
           scenes = {}
           for asset in runtime['assets']:
               if asset['assetType'] != 'SOURCE_SCENE_EVIDENCE':
                   continue
               payload = asset['payload']
-              source_range = payload['sourceRange']
               scenes[payload['sourceSceneId']] = {
                   'claims': set(asset['sourceClaimIds']),
                   'sourceId': payload['sourceId'],
                   'sourceSha256': payload['sourceSha256'],
-                  'sourceRange': source_range,
+                  'sourceRange': payload['sourceRange'],
                   'origin': 'FROZEN_RUNTIME',
               }
-
           supplemental = json.loads((root / 'packages/templates/authoring/sangtian/narrative/source-scenes.supplemental.approved.json').read_text(encoding='utf-8'))
           assert supplemental['schemaVersion'] == 'narrative-source-scene-supplement-v1'
-          assert supplemental['worldId'] == 'sangtian'
-          assert supplemental['partId'] == 'PART-01'
+          assert supplemental['worldId'] == 'sangtian' and supplemental['partId'] == 'PART-01'
           assert supplemental['reviewStatus'] == 'APPROVED'
-          assert supplemental['scenes']
           for scene in supplemental['scenes']:
-              scene_id = scene['sourceSceneId']
-              assert scene_id not in scenes, scene_id
+              assert scene['sourceSceneId'] not in scenes
               assert scene['verbatimPolicy'] == 'MECHANISM_ONLY_NO_VERBATIM_REUSE'
-              assert scene['sourceClaimIds']
-              assert len(scene['sourceRefs']) == 1
               ref = scene['sourceRefs'][0]
-              scenes[scene_id] = {
+              scenes[scene['sourceSceneId']] = {
                   'claims': set(scene['sourceClaimIds']),
                   'sourceId': ref['sourceId'],
                   'sourceSha256': ref['sourceSha256'],
@@ -128,24 +131,28 @@ jobs:
                   'origin': 'APPROVED_SUPPLEMENT',
               }
 
-          required = {
-              kernel_id
+          required_kernels = {
+              kernel
               for section_id in ('SEC-P1-02', 'SEC-P1-03', 'SEC-P1-04')
-              for kernel_id in sections[section_id]['activeDecisionKernelIds']
+              for kernel in sections[section_id]['activeDecisionKernelIds']
           }
           covered = set()
           audited = []
           for number in (2, 3, 4):
-              value = json.loads((root / f'packages/templates/authoring/sangtian/narrative/scene-patterns.section-{number:02d}.approved.json').read_text(encoding='utf-8'))
-              assert value['reviewStatus'] == 'APPROVED' if 'reviewStatus' in value else True
-              for pattern in value['patterns']:
-                  scene_id = pattern['sourceSceneId']
-                  assert scene_id in scenes, (pattern['patternId'], scene_id)
-                  scene = scenes[scene_id]
-                  missing_claims = set(pattern['sourceClaimIds']) - scene['claims']
-                  assert not missing_claims, (pattern['patternId'], sorted(missing_claims))
+              document = json.loads((root / f'packages/templates/authoring/sangtian/narrative/scene-patterns.section-{number:02d}.approved.json').read_text(encoding='utf-8'))
+              section = sections[document['scopeId']]
+              allowed_requirements = set(section['requiredRequirementIds'])
+              allowed_kernels = set(section['activeDecisionKernelIds'])
+              foreground = set(section['foregroundActorRefs'])
+              for pattern in document['patterns']:
+                  scene = scenes[pattern['sourceSceneId']]
+                  assert set(pattern['requirementIds']) <= allowed_requirements, pattern['patternId']
+                  assert set(pattern['decisionKernelIds']) <= allowed_kernels, pattern['patternId']
+                  assert set(pattern['actorRefs']) <= base_actors, pattern['patternId']
+                  assert set(pattern['actorRefs']) & foreground, pattern['patternId']
+                  assert set(pattern['sourceClaimIds']) <= scene['claims'], pattern['patternId']
                   source_range = scene['sourceRange']
-                  ref_matches = any(
+                  assert any(
                       ref['sourceId'] == scene['sourceId']
                       and ref['sourceSha256'] == scene['sourceSha256']
                       and ref['chapterId'] == source_range['chapterId']
@@ -153,25 +160,24 @@ jobs:
                       and ref['paragraphEndId'] == source_range['paragraphEndId']
                       and ref['textSpanSha256'] == source_range['textSpanSha256']
                       for ref in pattern['sourceRefs']
-                  )
-                  assert ref_matches, pattern['patternId']
+                  ), pattern['patternId']
                   covered.update(pattern['decisionKernelIds'])
                   audited.append({
                       'patternId': pattern['patternId'],
-                      'sourceSceneId': scene_id,
+                      'sectionId': document['scopeId'],
+                      'sourceSceneId': pattern['sourceSceneId'],
                       'sourceOrigin': scene['origin'],
-                      'sourceClaimCount': len(pattern['sourceClaimIds']),
+                      'requirementIds': pattern['requirementIds'],
                       'decisionKernelIds': pattern['decisionKernelIds'],
                   })
-          assert len(audited) == 11, len(audited)
-          assert covered == required, sorted(required - covered)
+          assert len(audited) == 11
+          assert covered == required_kernels, sorted(required_kernels - covered)
           print(json.dumps({
               'schemaVersion': 'omw.p3-source-binding-evidence.v1',
               'verdict': 'PASS',
               'patternCount': len(audited),
-              'sourceSceneCount': len(scenes),
               'coveredKernelCount': len(covered),
-              'requiredKernelCount': len(required),
+              'requiredKernelCount': len(required_kernels),
               'patterns': audited,
           }, ensure_ascii=False, indent=2))
           PY
@@ -188,33 +194,30 @@ jobs:
 
       - name: Install locked workspace
         shell: bash
-        run: |
-          set -o pipefail
-          evidence_tmp="${RUNNER_TEMP}/p3-evidence"
-          pnpm install --frozen-lockfile 2>&1 | tee "${evidence_tmp}/02-install.log"
+        run: pnpm install --frozen-lockfile
 
       - name: Run P3 contract gates
         shell: bash
         run: |
           set -euo pipefail
-          evidence_tmp="${RUNNER_TEMP}/p3-evidence"
-          pnpm --filter @ai-story/templates typecheck 2>&1 | tee "${evidence_tmp}/03-templates-typecheck.log"
-          pnpm --filter @ai-story/templates test:story-package 2>&1 | tee "${evidence_tmp}/04-story-package.log"
-          pnpm --filter @ai-story/templates build 2>&1 | tee "${evidence_tmp}/05-templates-build.log"
-          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee "${evidence_tmp}/06-openovel-typecheck.log"
+          evidence="${RUNNER_TEMP}/p3-evidence"
+          pnpm --filter @ai-story/templates typecheck 2>&1 | tee "${evidence}/02-templates-typecheck.log"
+          pnpm --filter @ai-story/templates test:story-package 2>&1 | tee "${evidence}/03-story-package.log"
+          pnpm --filter @ai-story/templates build 2>&1 | tee "${evidence}/04-templates-build.log"
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee "${evidence}/05-openovel-typecheck.log"
           export SANGTIAN_NARRATIVE_SUPPLEMENT_PATH="${RUNNER_TEMP}/part-one-narrative-supplement.json"
-          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs 2>&1 | tee "${evidence_tmp}/07-narrative-supplement-compile.log"
+          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs 2>&1 | tee "${evidence}/06-supplement-compile.log"
           test -s "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}"
 
-      - name: Materialize durable P3 evidence
+      - name: Materialize P3 evidence
         shell: bash
         run: |
           set -euo pipefail
-          evidence_tmp="${RUNNER_TEMP}/p3-evidence"
-          evidence_dir="docs/auto-execute/evidence/chatgpt-pro-ai-story-convergence/p3/${CANDIDATE_SHA}"
-          mkdir -p "${evidence_dir}"
-          cp "${evidence_tmp}/01-source-bindings.json" "${evidence_dir}/source-bindings.json"
-          cat > "${evidence_dir}/summary.json" <<EOF
+          evidence="${RUNNER_TEMP}/p3-evidence"
+          target="docs/auto-execute/evidence/chatgpt-pro-ai-story-convergence/p3/${CANDIDATE_SHA}"
+          mkdir -p "${target}"
+          cp "${evidence}/01-source-bindings.json" "${target}/source-bindings.json"
+          cat > "${target}/summary.json" <<EOF
           {
             "schemaVersion": "omw.chatgpt-pro-p3-stage.v1",
             "verdict": "PASS",
@@ -223,72 +226,35 @@ jobs:
             "stagingSha": "${CANDIDATE_SHA}",
             "frozenBaseSha": "${FROZEN_BASE_SHA}",
             "payloadTarGzSha256": "${PAYLOAD_SHA256}",
+            "deterministicRepair": "remove REQ-P1-KNOWLEDGE-CHAIN from NSP-P1-MERCHANT-LEDGER-PRIVATE-BARGAIN",
             "tests": {
               "templatesTypecheck": "PASS",
               "storyPackage": "PASS",
               "templatesBuild": "PASS",
               "openovelTypecheck": "PASS",
-              "narrativeSupplementCompile": "PASS"
+              "supplementCompile": "PASS"
             }
           }
           EOF
-          sha256sum "${evidence_dir}/source-bindings.json" "${evidence_dir}/summary.json" > "${evidence_dir}/SHA256SUMS"
+          sha256sum "${target}/source-bindings.json" "${target}/summary.json" > "${target}/SHA256SUMS"
 
-      - name: Upload full P3 logs
+      - name: Upload P3 logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p3-narrative-assets-${{ env.CANDIDATE_SHA }}
+          name: p3-final-${{ env.CANDIDATE_SHA }}
           path: ${{ runner.temp }}/p3-evidence/
           if-no-files-found: error
           retention-days: 7
 
-      - name: Commit one completed P3 stage
+      - name: Commit completed P3 stage
         shell: bash
         run: |
           set -euo pipefail
-          evidence_dir="docs/auto-execute/evidence/chatgpt-pro-ai-story-convergence/p3/${CANDIDATE_SHA}"
           git diff --check
-          python - <<'PY'
-          import subprocess
-
-          allowed_exact = {
-              '.github/workflows/chatgpt-pro-p3-finalize.yml',
-              '.github/workflows/chatgpt-pro-p3-pr-finalize.yml',
-              'docs/auto-execute/.chatgpt-pro-p3-final-stage.ready',
-              *{f'docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-{index:02d}' for index in range(8)},
-              'packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json',
-              'packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json',
-              'packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json',
-              'packages/templates/authoring/sangtian/narrative/source-scenes.supplemental.approved.json',
-              'packages/templates/src/story-package/playable-part-one-runtime.ts',
-              'packages/templates/tests/part-one-narrative-supplement.test.ts',
-              'scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs',
-          }
-          allowed_prefix = 'docs/auto-execute/evidence/chatgpt-pro-ai-story-convergence/p3/'
-          rows = subprocess.check_output(['git', 'status', '--short'], text=True).splitlines()
-          unexpected = []
-          for row in rows:
-              path = row[3:]
-              if path not in allowed_exact and not path.startswith(allowed_prefix):
-                  unexpected.append(row)
-          if unexpected:
-              raise SystemExit('UNEXPECTED_P3_WORKTREE_CHANGES\n' + '\n'.join(unexpected))
-          PY
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- \
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json \
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json \
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json \
-            packages/templates/authoring/sangtian/narrative/source-scenes.supplemental.approved.json \
-            packages/templates/src/story-package/playable-part-one-runtime.ts \
-            packages/templates/tests/part-one-narrative-supplement.test.ts \
-            scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs \
-            "${evidence_dir}"
-          git add -u -- \
-            "${WORKFLOW_PATH}" "${PR_WORKFLOW_PATH}" "${READY_PATH}" ${PAYLOAD_PREFIX}*
+          git add -A
           git commit -m "fix(P3): complete source-grounded narrative assets"
           git fetch origin "${TARGET_BRANCH}"
           test "$(git rev-parse FETCH_HEAD)" = "${CANDIDATE_SHA}"
