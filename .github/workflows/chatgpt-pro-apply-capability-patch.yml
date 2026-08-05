@@ -1,5 +1,6 @@
 name: ChatGPT Pro Apply Capability Patch
 
+# One-shot, fail-closed candidate-branch patch executor. Never targets main.
 on:
   pull_request:
     branches:
