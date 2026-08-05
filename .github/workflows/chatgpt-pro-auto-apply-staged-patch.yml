@@ -1,4 +1,4 @@
-name: ChatGPT Pro Apply Source Claim Repair
+name: ChatGPT Pro Source Binding Repair
 
 on:
   push:
@@ -7,35 +7,57 @@ on:
     paths:
       - ".github/workflows/chatgpt-pro-auto-apply-staged-patch.yml"
       - "docs/auto-execute/.chatgpt-pro-source-claim-repair.patch.gz.b64"
-  pull_request:
-    types: [opened, reopened, synchronize]
-    branches:
-      - codex/chatgpt-pro-ai-story-convergence
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: chatgpt-pro-source-claim-repair
+  group: chatgpt-pro-source-binding-repair
   cancel-in-progress: false
 
 jobs:
-  apply:
-    if: github.actor != 'github-actions[bot]'
+  repair:
+    if: github.ref == 'refs/heads/codex/chatgpt-pro-ai-story-convergence' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      CI: "true"
+      CANDIDATE_BRANCH: codex/chatgpt-pro-ai-story-convergence
+      FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+      OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
+      OPENOVEL_MODEL: deepseek-v4-pro
+      OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
+      OPENOVEL_REVIEWER_MODEL: deepseek-v4-pro
+      OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
+      OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
+      OPENOVEL_DEEPSEEK_THINKING: disabled
     steps:
       - uses: actions/checkout@v4
         with:
           ref: codex/chatgpt-pro-ai-story-convergence
           fetch-depth: 0
 
-      - name: Prove candidate boundary and apply verified patch
+      - id: patch
+        name: Prove boundary and apply verified source patch
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
+          mkdir -p candidate-evidence/logs
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "branch=${GITHUB_REF_NAME}"
+            echo "trigger_sha=${GITHUB_SHA}"
+            echo "checked_out=$(git rev-parse HEAD)"
+            echo "merge_base=$(git merge-base HEAD ${FROZEN_BASE_SHA})"
+            echo "main_remote=$(git rev-parse origin/main)"
+          } | tee candidate-evidence/logs/00-boundary.log
+          test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
+          test "${GITHUB_REF_NAME}" = "${CANDIDATE_BRANCH}"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git merge-base HEAD ${FROZEN_BASE_SHA})" = "${FROZEN_BASE_SHA}"
+          test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
           test -z "$(git status --short)"
 
           PATCH_B64=docs/auto-execute/.chatgpt-pro-source-claim-repair.patch.gz.b64
@@ -47,16 +69,15 @@ jobs:
             git apply --check "$PATCH"
             git apply "$PATCH"
           fi
-
-          rm -f "$PATCH_B64"
-          rm -f .github/workflows/chatgpt-pro-auto-apply-staged-patch.yml
           git diff --check
 
-      - name: Validate narrative source bindings without dependencies
+      - id: bindings
+        name: Validate exact source-scene and Kernel bindings
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python - <<'PY' 2>&1 | tee candidate-evidence/logs/01-source-bindings.log
           import json
           from pathlib import Path
 
@@ -88,6 +109,12 @@ jobs:
                   covered.update(pattern["decisionKernelIds"])
           assert pattern_count == 11, pattern_count
           assert covered == required, sorted(required - covered)
+          print(json.dumps({
+              "patternCount": pattern_count,
+              "coveredKernelCount": len(covered),
+              "requiredKernelCount": len(required),
+              "verdict": "PASS",
+          }, ensure_ascii=False, indent=2))
           PY
 
       - uses: pnpm/action-setup@v4
@@ -100,47 +127,163 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install exact workspace
-        run: pnpm install --frozen-lockfile
+      - id: install
+        name: Install locked dependencies
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee candidate-evidence/logs/02-install.log
 
-      - name: Run deterministic engineering gates
+      - id: templates
+        name: Templates typecheck and story-package tests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @ai-story/templates typecheck 2>&1 | tee candidate-evidence/logs/03-templates-typecheck.log
+          pnpm --filter @ai-story/templates test:story-package 2>&1 | tee candidate-evidence/logs/04-story-package.log
+
+      - id: typecheck
+        name: OpenNovel typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee candidate-evidence/logs/05-openovel-typecheck.log
+
+      - id: build
+        name: OpenNovel build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime build 2>&1 | tee candidate-evidence/logs/06-openovel-build.log
+
+      - id: story_v4
+        name: Story V4 regression
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:story:v4 2>&1 | tee candidate-evidence/logs/07-story-v4.log
+
+      - id: smoke
+        name: OpenNovel HTTP smoke
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime smoke:http 2>&1 | tee candidate-evidence/logs/08-http-smoke.log
+
+      - id: assets
+        name: Recompile immutable Part One assets
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --filter @ai-story/templates typecheck
-          pnpm --filter @ai-story/templates test:story-package
-          pnpm --filter @apps/openovel-runtime typecheck
-          pnpm --filter @apps/openovel-runtime build
-          pnpm test:story:v4
-          pnpm --filter @apps/openovel-runtime smoke:http
-
           mkdir -p "${RUNNER_TEMP}/sangtian-authoring"
           export SANGTIAN_SKIP_SOURCE_WRITES=1
           export SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring"
           export SANGTIAN_RUNTIME_PACKAGE_PATH="${RUNNER_TEMP}/part-one-runtime.json"
-          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
+            2>&1 | tee candidate-evidence/logs/09-assets.log
+          sha256sum \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json" \
+            | tee candidate-evidence/logs/10-assets-sha256.log
           cmp --silent \
             packages/templates/config/sangtian/story-package/part-one-runtime.json \
             "${RUNNER_TEMP}/part-one-runtime.json"
 
-      - name: Commit only the verified candidate repair
+      - name: Commit verified repair or failure evidence
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
+          evidence_dir="docs/auto-execute/evidence/source-repair/${GITHUB_SHA}"
+          mkdir -p "${evidence_dir}"
+          cp candidate-evidence/logs/*.log "${evidence_dir}/" 2>/dev/null || true
+          cat > "${evidence_dir}/summary.json" <<EOF
+          {
+            "schemaVersion": "omw.ai-story-source-repair.v1",
+            "repository": "${GITHUB_REPOSITORY}",
+            "branch": "${CANDIDATE_BRANCH}",
+            "triggerSha": "${GITHUB_SHA}",
+            "frozenBaseSha": "${FROZEN_BASE_SHA}",
+            "model": "deepseek-v4-pro",
+            "thinking": "disabled",
+            "mockOnly": true,
+            "outcomes": {
+              "patch": "${{ steps.patch.outcome }}",
+              "sourceBindings": "${{ steps.bindings.outcome }}",
+              "install": "${{ steps.install.outcome }}",
+              "templates": "${{ steps.templates.outcome }}",
+              "typecheck": "${{ steps.typecheck.outcome }}",
+              "build": "${{ steps.build.outcome }}",
+              "storyV4": "${{ steps.story_v4.outcome }}",
+              "httpSmoke": "${{ steps.smoke.outcome }}",
+              "assetRecompile": "${{ steps.assets.outcome }}"
+            }
+          }
+          EOF
+
+          all_pass=true
+          for outcome in \
+            "${{ steps.patch.outcome }}" \
+            "${{ steps.bindings.outcome }}" \
+            "${{ steps.install.outcome }}" \
+            "${{ steps.templates.outcome }}" \
+            "${{ steps.typecheck.outcome }}" \
+            "${{ steps.build.outcome }}" \
+            "${{ steps.story_v4.outcome }}" \
+            "${{ steps.smoke.outcome }}" \
+            "${{ steps.assets.outcome }}"; do
+            if [ "$outcome" != "success" ]; then all_pass=false; fi
+          done
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- \
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json \
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json \
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json \
-            packages/templates/src/story-package/playable-part-one-runtime.ts \
-            packages/templates/tests/part-one-narrative-supplement.test.ts \
-            docs/auto-execute/.chatgpt-pro-source-claim-repair.patch.gz.b64 \
-            .github/workflows/chatgpt-pro-auto-apply-staged-patch.yml
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "fix(story-assets): bind patterns to verified source claims"
-          git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
+          git add -- "${evidence_dir}"
 
-# manual trigger: verified source-claim repair
+          if [ "$all_pass" = true ]; then
+            rm -f docs/auto-execute/.chatgpt-pro-source-claim-repair.patch.gz.b64
+            rm -f .github/workflows/chatgpt-pro-auto-apply-staged-patch.yml
+            rm -f .github/workflows/chatgpt-pro-finalize-convergence.yml
+            rm -f docs/auto-execute/.connector-all-functions-loaded
+            rm -f docs/auto-execute/.connector-push-probe
+            rm -f docs/auto-execute/.multi-file-probe-a
+            rm -f docs/auto-execute/.pre-push-files-test
+            rm -f docs/auto-execute/.push-files-schema-probe-2.txt
+            rm -f docs/auto-execute/.push-files-schema-probe.txt
+            rm -f docs/auto-execute/PARTIAL_SUBMISSION_AI_STORY_CONVERGENCE_2026-08-05.md
+            git add -- \
+              packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json \
+              packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json \
+              packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json \
+              packages/templates/src/story-package/playable-part-one-runtime.ts \
+              packages/templates/tests/part-one-narrative-supplement.test.ts
+            git add -u -- \
+              docs/auto-execute/.chatgpt-pro-source-claim-repair.patch.gz.b64 \
+              .github/workflows/chatgpt-pro-auto-apply-staged-patch.yml \
+              .github/workflows/chatgpt-pro-finalize-convergence.yml \
+              docs/auto-execute/.connector-all-functions-loaded \
+              docs/auto-execute/.connector-push-probe \
+              docs/auto-execute/.multi-file-probe-a \
+              docs/auto-execute/.pre-push-files-test \
+              docs/auto-execute/.push-files-schema-probe-2.txt \
+              docs/auto-execute/.push-files-schema-probe.txt \
+              docs/auto-execute/PARTIAL_SUBMISSION_AI_STORY_CONVERGENCE_2026-08-05.md
+            message="fix(story-assets): bind patterns to verified source claims"
+          else
+            message="test(ai-story): record failed source repair gates for ${GITHUB_SHA:0:12}"
+          fi
+
+          git commit -m "$message"
+          git fetch origin "${CANDIDATE_BRANCH}"
+          test "$(git rev-parse FETCH_HEAD)" = "${GITHUB_SHA}"
+          git push origin HEAD:"${CANDIDATE_BRANCH}"
+
+          if [ "$all_pass" != true ]; then
+            exit 1
+          fi
