@@ -111,7 +111,7 @@ function modules(options: OpenNovelOption[], capture: {
   const settlement: FactSettlementModule = {
     moduleId: "neutral.fact-settlement.v1",
     async currentOptions() {
-      return options;
+      throw new Error("displayed Affordances must win over recomputation");
     },
     async settle(_workspace, input) {
       capture.settledInputs.push({
@@ -140,6 +140,9 @@ function modules(options: OpenNovelOption[], capture: {
     },
   };
   const workspace = {
+    async snapshot() {
+      return { previousOptions: options };
+    },
     async recordSceneEvent(_runId: string, event: Record<string, unknown>) {
       capture.sceneEvents.push(event);
     },
@@ -194,9 +197,11 @@ test("free text is canonicalized before the same Settlement and Kernel path", as
     matchedAffordanceId: "release.hold",
     confidence: assertNumber(result.audit.intentResolution, "confidence"),
     reason: "DISTINCTIVE_AFFORDANCE_PHRASE",
+    affordanceSource: "DISPLAYED_OPTIONS",
     originalAction: "Delay the launch until both delegates explain what they know.",
   });
   assert.equal(capture.sceneEvents[0]?.type, "intent_resolution");
+  assert.equal(capture.sceneEvents[0]?.affordanceSource, "DISPLAYED_OPTIONS");
 });
 
 test("ambiguous free text is recoverable and never reaches Settlement", async () => {
