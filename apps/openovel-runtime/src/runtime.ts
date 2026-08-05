@@ -664,6 +664,12 @@ export class OpenNovelRuntime {
       contextNarration = finalContextText;
       factNarration = finalFactText;
       structuredShadowClaims = protectedScene ? [] : scene.shadowClaims;
+      reviewWarnings.push(...scene.reviewObservation.nonCriticalFindings.map((finding) => ({
+        code: "TRUTH_REVIEW_ADVISORY",
+        message: finding,
+        severity: "LOW" as const,
+        blocksPlayer: false,
+      })));
       atomicNarrative = {
         originalText,
         narrativeOwner,

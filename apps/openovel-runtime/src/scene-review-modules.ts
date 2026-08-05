@@ -169,12 +169,11 @@ export class CriticalOnlySceneReviewPolicy implements SceneReviewPolicyModule {
 
   decide(observation: SceneTruthObservation): SceneReviewDecision {
     if (observation.status === "UNAVAILABLE") {
-      return {
-        kind: "FALLBACK",
-        policyModuleId: this.moduleId,
-        reason: `REVIEW_UNAVAILABLE_SAFE_DEGRADE:${observation.reason}`,
-        observation,
-      };
+      // Reviewer transport or schema failure is not evidence of a causal
+      // conflict. Preserve the already valid Narrator scene and surface the
+      // observation as an auditable warning; only a successfully observed,
+      // server-compared P0 may replace player-visible prose.
+      return { kind: "ACCEPT", policyModuleId: this.moduleId, observation };
     }
     if (observation.criticalFindings.length) {
       return {
