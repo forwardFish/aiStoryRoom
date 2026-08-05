@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import {
   cpSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -20,6 +22,7 @@ import {
 } from "../src/story-package/playable-part-one-runtime";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = resolve(packageRoot, "../..");
 const configRoot = resolve(packageRoot, "config");
 const authoringNarrativeRoot = resolve(packageRoot, "authoring/sangtian/narrative");
 const approvalFiles = [
@@ -201,6 +204,51 @@ test("a globally valid Claim from another source scene fails closed before a mod
   );
 });
 
+test("the supplement compiler rejects a cross-scene Claim before producing runtime assets", () => {
+  const fixture = createCompilerFixture("cross-scene-claim");
+  try {
+    const target = resolve(
+      fixture.root,
+      "packages/templates/authoring/sangtian/narrative",
+      approvalFiles[0]!,
+    );
+    const document = JSON.parse(readFileSync(target, "utf8")) as {
+      patterns: Array<{
+        sourceSceneId: string;
+        sourceClaimIds: string[];
+      }>;
+    };
+    const first = document.patterns[0]!;
+    const otherScenePattern = document.patterns.find((pattern) => (
+      pattern.sourceSceneId !== first.sourceSceneId
+      && pattern.sourceClaimIds.length > 0
+    ));
+    assert.ok(otherScenePattern, "fixture requires two patterns bound to different source scenes");
+    first.sourceClaimIds[0] = otherScenePattern.sourceClaimIds[0]!;
+    writeFileSync(target, `${JSON.stringify(document, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(
+      process.execPath,
+      [fixture.compilerPath],
+      {
+        cwd: fixture.root,
+        encoding: "utf8",
+        timeout: 30_000,
+        env: {
+          ...process.env,
+          SANGTIAN_NARRATIVE_SUPPLEMENT_PATH: fixture.outputPath,
+        },
+      },
+    );
+    const output = `${result.stdout || ""}\n${result.stderr || ""}`;
+    assert.equal(result.error, undefined, output);
+    assert.notEqual(result.status, 0, output);
+    assert.match(output, /NARRATIVE_SUPPLEMENT_SOURCE_CLAIM_CROSS_SCENE/u);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 function createFixture(label: string) {
   const root = mkdtempSync(resolve(tmpdir(), `sangtian-narrative-${label}-`));
   const fixtureConfigRoot = resolve(root, "config");
@@ -215,5 +263,36 @@ function createFixture(label: string) {
   return {
     configRoot: fixtureConfigRoot,
     narrativeRoot,
+  };
+}
+
+function createCompilerFixture(label: string) {
+  const root = mkdtempSync(resolve(repoRoot, `.tmp-p3-compiler-${label}-`));
+  const copy = (path: string, options?: { recursive?: boolean }) => {
+    const source = resolve(repoRoot, path);
+    const destination = resolve(root, path);
+    mkdirSync(dirname(destination), { recursive: true });
+    cpSync(source, destination, options);
+  };
+
+  copy("scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs");
+  copy("scripts/story-decomposition/lib", { recursive: true });
+  copy("scripts/story-decomposition/schemas/narrative-scene-pattern-set-v1.schema.json");
+  copy("packages/openovel-runtime/package.json");
+  copy("packages/templates/config/sangtian/story-package/part-one-runtime.json");
+  for (const fileName of allApprovalFiles) {
+    copy(`packages/templates/authoring/sangtian/narrative/${fileName}`);
+  }
+
+  return {
+    root,
+    compilerPath: resolve(
+      root,
+      "scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs",
+    ),
+    outputPath: resolve(
+      root,
+      "packages/templates/config/sangtian/story-package/part-one-narrative-supplement.json",
+    ),
   };
 }
