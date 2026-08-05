@@ -16,6 +16,9 @@ import {
 } from "./intent-resolver.js";
 import { actionRejected } from "./runtime-errors.js";
 
+const CAPABILITY_ACTION_PREFIX = "\u2063OMW_CAPABILITY_V1:";
+const CAPABILITY_ACTION_SUFFIX = "\u2063";
+
 export type PreparedAuthoredDecision = {
   selectedOption: OpenNovelOption | null;
   settledNarrative: string;
@@ -258,7 +261,7 @@ async function resolveAuthoredAction(input: {
     return {
       input: {
         ...input.input,
-        action: resolution.canonicalAction,
+        action: encodeCapabilityAction(decisionPointId, resolution.canonicalAction),
         selectedOption,
       },
       resolution,
@@ -288,6 +291,15 @@ async function resolveAuthoredAction(input: {
     resolution,
     affordanceSource,
   };
+}
+
+function encodeCapabilityAction(decisionPointId: string, action: string) {
+  const envelope = Buffer.from(JSON.stringify({
+    schemaVersion: "omw-capability-action-v1",
+    decisionPointId,
+    action,
+  }), "utf8").toString("base64url");
+  return `${CAPABILITY_ACTION_PREFIX}${envelope}${CAPABILITY_ACTION_SUFFIX}`;
 }
 
 function auditIntentResolution(
