@@ -215,3 +215,16 @@ GET /internal/openovel/runs/:runId
 - 不返回 `worldState`、`causalDelta`、`DurableTurnEnvelope`、内部 Predicate、`narrativeSeed`、Truth Reviewer 结果或置信度。
 
 HTTP 路由直接调用 `runtime.getRun()`，后者读取同一个公开 Run 视图，因此公开读取专项测试以 Runtime 读回为合同依据，不另建一套容易漂移的响应结构。
+
+2026-08-05 已使用独立完成态 Run 启动真实 Runtime HTTP 服务并执行 GET 验收，结果为：
+
+```text
+status: COMPLETED
+turnNumber: 20
+ending.title: 守土担责
+ending.sourceTurnId: T20
+options: 0
+privateFieldsLeaked: []
+```
+
+该验收只读取已经完成的 Ending，不调用模型、不经过中间 AI 剧情，也不修改主游戏页面。
