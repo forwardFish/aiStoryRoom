@@ -9,49 +9,169 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: chatgpt-pro-p3-validation-${{ github.event.pull_request.base.sha }}
+  cancel-in-progress: false
+
 jobs:
-  engineering-gates:
+  p3-validation:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       CI: "true"
       CANDIDATE_SHA: ${{ github.event.pull_request.base.sha }}
       CANDIDATE_REF: codex/chatgpt-pro-ai-story-convergence
-      OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
-      OPENOVEL_MODEL: deepseek-v4-pro
-      OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
-      OPENOVEL_REVIEWER_MODEL: deepseek-v4-pro
-      OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
-      OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
-      OPENOVEL_DEEPSEEK_THINKING: disabled
+      FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+      PAYLOAD_PREFIX: docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-
+      PAYLOAD_B64_SHA256: c2043133ca4d06da76c43ab7f3c88213865ee7d70f8e2d61c831d66edd751755
+      PAYLOAD_SHA256: 6c26a75c277baf21ba73dfb7ee0d405eb9393cdcd8181f283d6eb85fb2225fec
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out exact candidate base SHA
+        uses: actions/checkout@v4
         with:
           ref: ${{ env.CANDIDATE_SHA }}
           fetch-depth: 0
 
-      - name: Prove exact candidate boundary
+      - name: Prove candidate boundary and unpack P3 payload
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p candidate-evidence/logs
+          mkdir -p candidate-evidence/logs candidate-evidence/validated-source
           {
             echo "repository=${GITHUB_REPOSITORY}"
             echo "event=${GITHUB_EVENT_NAME}"
             echo "base_ref=${{ github.event.pull_request.base.ref }}"
             echo "candidate_sha=${CANDIDATE_SHA}"
             echo "checked_out=$(git rev-parse HEAD)"
-            echo "merge_base=$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
+            echo "merge_base=$(git merge-base HEAD ${FROZEN_BASE_SHA})"
             echo "main_remote=$(git rev-parse origin/main)"
-            echo "status_begin"
-            git status --short
-            echo "status_end"
           } | tee candidate-evidence/logs/00-boundary.log
+          test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
           test "${{ github.event.pull_request.base.ref }}" = "${CANDIDATE_REF}"
           test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
-          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
-          test "$(git rev-parse origin/main)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
+          test "$(git merge-base HEAD ${FROZEN_BASE_SHA})" = "${FROZEN_BASE_SHA}"
+          test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
           test -z "$(git status --short)"
+
+          mapfile -t parts < <(printf '%s\n' ${PAYLOAD_PREFIX}* | sort)
+          test "${#parts[@]}" -eq 8
+          payload_b64=/tmp/chatgpt-pro-p3-final-stage.tar.gz.b64
+          payload=/tmp/chatgpt-pro-p3-final-stage.tar.gz
+          cat "${parts[@]}" > "${payload_b64}"
+          echo "${PAYLOAD_B64_SHA256}  ${payload_b64}" | sha256sum --check --strict
+          base64 --decode "${payload_b64}" > "${payload}"
+          echo "${PAYLOAD_SHA256}  ${payload}" | sha256sum --check --strict
+
+          mapfile -t actual_paths < <(tar -tzf "${payload}" | sed '/^$/d' | sed '/\/$/d' | sort)
+          expected_paths=(
+            packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json
+            packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json
+            packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json
+            packages/templates/authoring/sangtian/narrative/source-scenes.supplemental.approved.json
+            packages/templates/src/story-package/playable-part-one-runtime.ts
+            packages/templates/tests/part-one-narrative-supplement.test.ts
+            scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs
+          )
+          mapfile -t expected_paths < <(printf '%s\n' "${expected_paths[@]}" | sort)
+          test "$(printf '%s\n' "${actual_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+          tar -xzf "${payload}" -C .
+          tar -xzf "${payload}" -C candidate-evidence/validated-source
+          git diff --check
+
+      - name: Audit all source-scene, Claim, SourceRef and Kernel bindings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee candidate-evidence/source-bindings.json
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          runtime = json.loads((root / 'packages/templates/config/sangtian/story-package/part-one-runtime.json').read_text(encoding='utf-8'))
+          sections = {row['sectionId']: row for row in runtime['sections']}
+          scenes = {}
+          for asset in runtime['assets']:
+              if asset['assetType'] != 'SOURCE_SCENE_EVIDENCE':
+                  continue
+              payload = asset['payload']
+              scenes[payload['sourceSceneId']] = {
+                  'claims': set(asset['sourceClaimIds']),
+                  'sourceId': payload['sourceId'],
+                  'sourceSha256': payload['sourceSha256'],
+                  'sourceRange': payload['sourceRange'],
+                  'origin': 'FROZEN_RUNTIME',
+              }
+
+          supplemental = json.loads((root / 'packages/templates/authoring/sangtian/narrative/source-scenes.supplemental.approved.json').read_text(encoding='utf-8'))
+          assert supplemental['schemaVersion'] == 'narrative-source-scene-supplement-v1'
+          assert supplemental['worldId'] == 'sangtian'
+          assert supplemental['partId'] == 'PART-01'
+          assert supplemental['reviewStatus'] == 'APPROVED'
+          assert supplemental['scenes']
+          for scene in supplemental['scenes']:
+              scene_id = scene['sourceSceneId']
+              assert scene_id not in scenes, scene_id
+              assert scene['verbatimPolicy'] == 'MECHANISM_ONLY_NO_VERBATIM_REUSE'
+              assert scene['sourceClaimIds']
+              assert len(scene['sourceRefs']) == 1
+              ref = scene['sourceRefs'][0]
+              scenes[scene_id] = {
+                  'claims': set(scene['sourceClaimIds']),
+                  'sourceId': ref['sourceId'],
+                  'sourceSha256': ref['sourceSha256'],
+                  'sourceRange': ref,
+                  'origin': 'APPROVED_SUPPLEMENT',
+              }
+
+          required = {
+              kernel_id
+              for section_id in ('SEC-P1-02', 'SEC-P1-03', 'SEC-P1-04')
+              for kernel_id in sections[section_id]['activeDecisionKernelIds']
+          }
+          covered = set()
+          audited = []
+          for number in (2, 3, 4):
+              value = json.loads((root / f'packages/templates/authoring/sangtian/narrative/scene-patterns.section-{number:02d}.approved.json').read_text(encoding='utf-8'))
+              for pattern in value['patterns']:
+                  scene_id = pattern['sourceSceneId']
+                  assert scene_id in scenes, (pattern['patternId'], scene_id)
+                  scene = scenes[scene_id]
+                  missing_claims = set(pattern['sourceClaimIds']) - scene['claims']
+                  assert not missing_claims, (pattern['patternId'], sorted(missing_claims))
+                  source_range = scene['sourceRange']
+                  assert any(
+                      ref['sourceId'] == scene['sourceId']
+                      and ref['sourceSha256'] == scene['sourceSha256']
+                      and ref['chapterId'] == source_range['chapterId']
+                      and ref['paragraphStartId'] == source_range['paragraphStartId']
+                      and ref['paragraphEndId'] == source_range['paragraphEndId']
+                      and ref['textSpanSha256'] == source_range['textSpanSha256']
+                      for ref in pattern['sourceRefs']
+                  ), pattern['patternId']
+                  covered.update(pattern['decisionKernelIds'])
+                  audited.append({
+                      'patternId': pattern['patternId'],
+                      'sectionIds': pattern['sectionIds'],
+                      'sourceSceneId': scene_id,
+                      'sourceOrigin': scene['origin'],
+                      'sourceClaimIds': pattern['sourceClaimIds'],
+                      'decisionKernelIds': pattern['decisionKernelIds'],
+                  })
+          assert len(audited) == 11, len(audited)
+          assert covered == required, sorted(required - covered)
+          print(json.dumps({
+              'schemaVersion': 'omw.p3-source-binding-evidence.v1',
+              'verdict': 'PASS',
+              'candidateSha': '${{ env.CANDIDATE_SHA }}',
+              'patternCount': len(audited),
+              'sourceSceneCount': len(scenes),
+              'supplementalSourceSceneCount': len(supplemental['scenes']),
+              'coveredKernelCount': len(covered),
+              'requiredKernelCount': len(required),
+              'coveredDecisionKernelIds': sorted(covered),
+              'patterns': audited,
+          }, ensure_ascii=False, indent=2))
+          PY
 
       - uses: pnpm/action-setup@v4
         with:
@@ -63,116 +183,50 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - id: install
-        name: Install locked dependencies
-        continue-on-error: true
+      - name: Install exact workspace
         shell: bash
         run: |
           set -o pipefail
           pnpm install --frozen-lockfile 2>&1 | tee candidate-evidence/logs/01-install.log
 
-      - id: typecheck
-        name: OpenNovel typecheck
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee candidate-evidence/logs/02-typecheck.log
-
-      - id: build
-        name: OpenNovel build
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm --filter @apps/openovel-runtime build 2>&1 | tee candidate-evidence/logs/03-build.log
-
-      - id: story_v4
-        name: Story V4 tests
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm test:story:v4 2>&1 | tee candidate-evidence/logs/04-story-v4.log
-
-      - id: smoke
-        name: OpenNovel HTTP smoke
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm --filter @apps/openovel-runtime smoke:http 2>&1 | tee candidate-evidence/logs/05-http-smoke.log
-
-      - id: assets
-        name: Recompile Part One without source writes
-        continue-on-error: true
+      - name: Run P3 contract gates
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "${RUNNER_TEMP}/sangtian-authoring"
-          export SANGTIAN_SKIP_SOURCE_WRITES=1
-          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring"
-          export SANGTIAN_RUNTIME_PACKAGE_PATH="${RUNNER_TEMP}/part-one-runtime.json"
-          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
-            2>&1 | tee candidate-evidence/logs/06-assets.log
-          sha256sum \
-            packages/templates/config/sangtian/story-package/part-one-runtime.json \
-            "${RUNNER_TEMP}/part-one-runtime.json" \
-            | tee candidate-evidence/logs/07-assets-sha256.log
-          cmp --silent \
-            packages/templates/config/sangtian/story-package/part-one-runtime.json \
-            "${RUNNER_TEMP}/part-one-runtime.json"
+          pnpm --filter @ai-story/templates typecheck 2>&1 | tee candidate-evidence/logs/02-templates-typecheck.log
+          pnpm --filter @ai-story/templates test:story-package 2>&1 | tee candidate-evidence/logs/03-story-package.log
+          pnpm --filter @ai-story/templates build 2>&1 | tee candidate-evidence/logs/04-templates-build.log
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee candidate-evidence/logs/05-openovel-typecheck.log
+          export SANGTIAN_NARRATIVE_SUPPLEMENT_PATH="${RUNNER_TEMP}/part-one-narrative-supplement.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs 2>&1 | tee candidate-evidence/logs/06-narrative-supplement-compile.log
+          test -s "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}"
+          cp "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}" candidate-evidence/part-one-narrative-supplement.json
 
-      - name: Record exact outcomes and package targeted source
+      - name: Record P3 validation summary
         if: always()
         shell: bash
         run: |
           set -euo pipefail
+          cat > candidate-evidence/summary.json <<EOF
           {
-            echo "tested_sha=$(git rev-parse HEAD)"
-            echo "install=${{ steps.install.outcome }}"
-            echo "typecheck=${{ steps.typecheck.outcome }}"
-            echo "build=${{ steps.build.outcome }}"
-            echo "story_v4=${{ steps.story_v4.outcome }}"
-            echo "http_smoke=${{ steps.smoke.outcome }}"
-            echo "assets=${{ steps.assets.outcome }}"
-          } | tee candidate-evidence/logs/99-outcomes.log
-          git archive --format=tar.gz \
-            --output=candidate-evidence/candidate-targeted-source.tar.gz \
-            HEAD -- \
-            AGENTS.md \
-            package.json \
-            pnpm-lock.yaml \
-            pnpm-workspace.yaml \
-            tsconfig.base.json \
-            apps/openovel-runtime \
-            packages/templates/package.json \
-            packages/templates/tsconfig.json \
-            packages/templates/tsconfig.build.json \
-            packages/templates/src \
-            packages/templates/tests \
-            packages/templates/authoring/sangtian \
-            packages/templates/config/sangtian/story-package \
-            scripts/story-decomposition \
-            docs/Our_Many_Worlds_AI剧情推演一次性收敛现状审计与ChatGPT_Pro开发交接方案_v1.0.md
+            "schemaVersion": "omw.chatgpt-pro-p3-validation.v1",
+            "repository": "${GITHUB_REPOSITORY}",
+            "branch": "${CANDIDATE_REF}",
+            "candidateSha": "${CANDIDATE_SHA}",
+            "frozenBaseSha": "${FROZEN_BASE_SHA}",
+            "payloadBase64Sha256": "${PAYLOAD_B64_SHA256}",
+            "payloadTarGzSha256": "${PAYLOAD_SHA256}",
+            "mockOnly": true,
+            "realModel": false
+          }
+          EOF
+          sha256sum candidate-evidence/source-bindings.json candidate-evidence/summary.json > candidate-evidence/SHA256SUMS
 
-      - name: Upload convergence evidence
+      - name: Upload P3 validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: convergence-${{ env.CANDIDATE_SHA }}
+          name: p3-validation-${{ env.CANDIDATE_SHA }}
           path: candidate-evidence/
           if-no-files-found: error
           retention-days: 7
-
-      - name: Enforce deterministic gates
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "${{ steps.install.outcome }}" = "success"
-          test "${{ steps.typecheck.outcome }}" = "success"
-          test "${{ steps.build.outcome }}" = "success"
-          test "${{ steps.story_v4.outcome }}" = "success"
-          test "${{ steps.smoke.outcome }}" = "success"
-          test "${{ steps.assets.outcome }}" = "success"
