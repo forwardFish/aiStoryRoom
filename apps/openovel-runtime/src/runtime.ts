@@ -188,6 +188,28 @@ export class OpenNovelRuntime {
     try {
       const current = await this.workspace.metadata(input.runId);
       if (current.status === "COMPLETED") {
+        const completedSubmissionId = normalizeSubmissionId(input.submissionId);
+        const completedAuthoredAdapter = this.authoredDecisionAdapter(current.worldId);
+        if (completedSubmissionId && completedAuthoredAdapter) {
+          const completedRepository = this.atomicCommitter().open(
+            this.workspace.paths(input.runId),
+          );
+          await completedRepository.restoreMaterializedViews();
+          const replayed = await completedRepository.resultBySubmission(
+            completedSubmissionId,
+            action,
+          );
+          if (replayed) {
+            const currentOptions = await completedAuthoredAdapter.currentOptions(
+              this.workspace,
+              input.runId,
+            );
+            return {
+              ...replayed,
+              options: currentOptions || replayed.options,
+            };
+          }
+        }
         throw actionRejected("RUN_COMPLETED");
       }
       const turnId = `T${String(current.turnNumber + 1).padStart(2, "0")}`;

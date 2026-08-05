@@ -46,12 +46,21 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     const preferredOpening = options.find((option) => option.id === "opening_d1");
     assert.ok(preferredOpening);
     let selected = preferredOpening;
+    let finalSubmissionId = "";
+    let finalAction = "";
+    let finalBoundOption: { id: string; label: string } | null = null;
 
     for (let turn = 1; turn <= 20; turn += 1) {
+      const submissionId = `authored_t${String(turn).padStart(2, "0")}_submission`;
+      if (turn === 20) {
+        finalSubmissionId = submissionId;
+        finalAction = selected.label;
+        finalBoundOption = { id: selected.id, label: selected.label };
+      }
       const result = await runtime.processAction({
         runId,
         action: selected.label,
-        submissionId: `authored_t${String(turn).padStart(2, "0")}_submission`,
+        submissionId,
         boundOption: { id: selected.id, label: selected.label },
       });
       assert.equal(result.turnNumber, turn);
@@ -174,6 +183,50 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     );
     await assert.rejects(() => runtime.recoverOptions(runId), /RUN_COMPLETED/u);
     assert.equal((await workspace.readPublicRun(runId)).status, "COMPLETED");
+
+    const restartedProvider = new UnavailableNarrator();
+    const restartedWorkspace = new FileStoryWorkspace(
+      root,
+      projectRoot,
+      "test-upstream",
+      sangtianWorkspaceSeeder,
+    );
+    const restartedRuntime = new OpenNovelRuntime(
+      restartedWorkspace,
+      restartedProvider,
+      { kick: async () => {} },
+      new NoopMirror(),
+      {
+        decisionMode: "AUTHORED_WHEN_AVAILABLE",
+        authoredDecisionAdapter: sangtianDecisionAdapter,
+        endingModule: sangtianEndingModule,
+      },
+    );
+    const afterRestart = await restartedRuntime.getRun(runId);
+    assert.deepEqual(afterRestart.ending, publicRun.ending);
+    const replayedFinalTurn = await restartedRuntime.processAction({
+      runId,
+      action: finalAction,
+      submissionId: finalSubmissionId,
+      boundOption: finalBoundOption,
+    });
+    assert.deepEqual(replayedFinalTurn.ending, publicRun.ending);
+    assert.equal(restartedProvider.narratorAttempts, 0);
+    assert.equal((await readdir(paths.headsDir)).length, 20);
+    assert.equal((await restartedWorkspace.readPublicRun(runId)).status, "COMPLETED");
+    await assert.rejects(() => restartedRuntime.processAction({
+      runId,
+      action: "相同幂等键不得改写成另一项行动。",
+      submissionId: finalSubmissionId,
+    }), /IDEMPOTENCY_KEY_REUSED/u);
+    await assert.rejects(() => restartedRuntime.processAction({
+      runId,
+      action: finalAction,
+      submissionId: "a-new-submission-after-ending",
+      boundOption: finalBoundOption,
+    }), /RUN_COMPLETED/u);
+    assert.equal(restartedProvider.narratorAttempts, 0);
+    assert.equal((await readdir(paths.headsDir)).length, 20);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
