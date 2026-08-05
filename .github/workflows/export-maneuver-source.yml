@@ -1,0 +1,28 @@
+name: Export maneuver branch source
+
+on:
+  push:
+    branches:
+      - feat/maneuver-rules-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Build source archive
+        run: tar --exclude=.git -czf "$RUNNER_TEMP/aiStoryRoom-maneuver-source.tar.gz" .
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: aiStoryRoom-maneuver-source
+          path: ${{ runner.temp }}/aiStoryRoom-maneuver-source.tar.gz
+          if-no-files-found: error
+          retention-days: 1
