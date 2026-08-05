@@ -1,14 +1,8 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { defaultStoryPackageConfigRoot } from "./loader";
-import type {
-  LoadedPartOneRuntimePackage,
-  PartOneNarrativeSupplement,
-  PartOneRuntimeAsset,
-  PartOneRuntimeIndex,
-  PartOneRuntimePackage,
-} from "./part-one-runtime-types";
+import type { LoadedPartOneRuntimePackage, PartOneRuntimePackage } from "./part-one-runtime-types";
 
 const cache = new Map<string, LoadedPartOneRuntimePackage>();
 
@@ -22,13 +16,6 @@ export function getPartOneRuntimePackagePath(worldId: string, configRoot?: strin
   return resolve(effectiveConfigRoot, worldId, "story-package", "part-one-runtime.json");
 }
 
-export function getPartOneNarrativeSupplementPath(runtimePackagePath: string) {
-  const runtimeEnv = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env;
-  const shadowPath = String(runtimeEnv?.SANGTIAN_NARRATIVE_SUPPLEMENT_PATH || "").trim();
-  if (shadowPath) return resolve(shadowPath);
-  return resolve(dirname(runtimePackagePath), "part-one-narrative-supplement.json");
-}
-
 export function clearPartOneRuntimePackageCache() {
   cache.clear();
 }
@@ -38,180 +25,24 @@ export function loadPartOneRuntimePackage(
   configRoot?: string
 ): LoadedPartOneRuntimePackage {
   const path = getPartOneRuntimePackagePath(worldId, configRoot);
-  const supplementPath = getPartOneNarrativeSupplementPath(path);
-  const cacheKey = `${path}::${supplementPath}`;
-  const cached = cache.get(cacheKey);
+  const cached = cache.get(path);
   if (cached) return cached;
-
-  const parsed = parseJson(path, "PART_ONE_RUNTIME_JSON_INVALID");
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    throw new Error(`PART_ONE_RUNTIME_JSON_INVALID:${path}:${error instanceof Error ? error.message : String(error)}`);
+  }
+  const parsed = record(raw, "package");
   const expectedHash = hash(parsed.immutableHash, "immutableHash");
-  const baseContentHash = immutableHash(parsed);
-  if (baseContentHash !== expectedHash) {
+  const contentHash = immutableHash(parsed);
+  if (contentHash !== expectedHash) {
     throw new Error(`PART_ONE_RUNTIME_HASH_MISMATCH:${worldId}`);
   }
-  const basePackage = validatePartOneRuntimePackage(parsed, worldId);
-
-  if (worldId !== "sangtian") {
-    const loaded = { package: basePackage, contentHash: baseContentHash, path };
-    cache.set(cacheKey, loaded);
-    return loaded;
-  }
-  if (!existsSync(supplementPath)) {
-    throw new Error(`PART_ONE_NARRATIVE_SUPPLEMENT_MISSING:${supplementPath}`);
-  }
-  const supplement = validatePartOneNarrativeSupplement(
-    parseJson(supplementPath, "PART_ONE_NARRATIVE_SUPPLEMENT_JSON_INVALID"),
-    basePackage,
-  );
-  const assembled = assemblePartOneRuntimePackage(basePackage, supplement);
-  const loaded = { package: assembled, contentHash: assembled.immutableHash, path };
-  cache.set(cacheKey, loaded);
+  const value = validatePartOneRuntimePackage(parsed, worldId);
+  const loaded = { package: value, contentHash, path };
+  cache.set(path, loaded);
   return loaded;
-}
-
-export function validatePartOneNarrativeSupplement(
-  raw: unknown,
-  basePackage: PartOneRuntimePackage,
-): PartOneNarrativeSupplement {
-  const value = record(raw, "narrativeSupplement");
-  equal(value.schemaVersion, "sangtian-part-one-narrative-supplement-v1", "narrativeSupplement.schemaVersion");
-  equal(value.worldId, basePackage.worldId, "narrativeSupplement.worldId");
-  equal(value.partId, basePackage.partId, "narrativeSupplement.partId");
-  equal(
-    value.baseRuntimeImmutableHash,
-    basePackage.immutableHash,
-    "narrativeSupplement.baseRuntimeImmutableHash",
-  );
-  const expectedHash = hash(value.immutableHash, "narrativeSupplement.immutableHash");
-  if (immutableHash(value) !== expectedHash) fail("narrativeSupplement immutable hash");
-
-  const sourcePatternSets = array(value.sourcePatternSets, "narrativeSupplement.sourcePatternSets");
-  if (sourcePatternSets.length !== 3) fail("narrativeSupplement sourcePatternSets cardinality");
-  const sourceScopes = uniqueIds(sourcePatternSets, "scopeId", "narrativeSupplement.sourcePatternSets");
-  for (const scopeId of ["SEC-P1-02", "SEC-P1-03", "SEC-P1-04"]) {
-    member(scopeId, sourceScopes, "narrativeSupplement source scope");
-  }
-  for (const sourceSet of sourcePatternSets) {
-    const row = record(sourceSet, "narrativeSupplement.sourcePatternSet");
-    text(row.path, "narrativeSupplement.sourcePatternSet.path");
-    hash(row.sha256, "narrativeSupplement.sourcePatternSet.sha256");
-    text(row.version, "narrativeSupplement.sourcePatternSet.version");
-    if (!Number.isInteger(row.patternCount) || Number(row.patternCount) < 2) {
-      fail("narrativeSupplement.sourcePatternSet.patternCount");
-    }
-  }
-
-  const assets = array(value.assets, "narrativeSupplement.assets");
-  const counts = record(value.contentCounts, "narrativeSupplement.contentCounts");
-  const assetIds = uniqueIds(assets, "assetId", "narrativeSupplement.assets");
-  const baseAssetIds = new Set(basePackage.assets.map((asset) => asset.assetId));
-  if (assetIds.some((id) => baseAssetIds.has(id))) fail("narrativeSupplement duplicate base assetId");
-  count(counts.assets, assets.length, "narrativeSupplement.assets");
-  count(counts.narrativeScenePatterns, assets.length, "narrativeSupplement.narrativeScenePatterns");
-  if (assets.length !== 11) fail("narrativeSupplement frozen cardinality 11");
-
-  const baseSectionIds = new Set(basePackage.sections.map((section) => section.sectionId));
-  const baseRequirementIds = new Set(basePackage.requirements.map((requirement) => requirement.requirementId));
-  const baseKernelIds = new Set(
-    basePackage.assets
-      .filter((asset) => asset.assetType === "DECISION_KERNEL")
-      .map((asset) => asset.assetId),
-  );
-  const baseClaimIds = new Set(basePackage.assets.flatMap((asset) => asset.sourceClaimIds));
-  const baseActorIds = new Set(basePackage.assets.flatMap((asset) => asset.actorRefs));
-  const requiredKernelIds = new Set(
-    basePackage.sections
-      .filter((section) => ["SEC-P1-02", "SEC-P1-03", "SEC-P1-04"].includes(section.sectionId))
-      .flatMap((section) => section.activeDecisionKernelIds),
-  );
-  const coveredKernelIds = new Set<string>();
-  for (const assetValue of assets) {
-    const asset = record(assetValue, "narrativeSupplement.asset");
-    equal(asset.schemaVersion, "runtime-story-asset-v1", "narrativeSupplement.asset.schemaVersion");
-    equal(asset.assetType, "NARRATIVE_SCENE_PATTERN", "narrativeSupplement.asset.assetType");
-    array(asset.partIds, "narrativeSupplement.asset.partIds").forEach((id) => equal(id, "PART-01", "narrativeSupplement.asset.partId"));
-    array(asset.sectionIds, "narrativeSupplement.asset.sectionIds").forEach((id) => {
-      if (!baseSectionIds.has(String(id))) fail(`narrativeSupplement section:${String(id)}`);
-    });
-    array(asset.requirementIds, "narrativeSupplement.asset.requirementIds").forEach((id) => {
-      if (!baseRequirementIds.has(String(id))) fail(`narrativeSupplement requirement:${String(id)}`);
-    });
-    array(asset.decisionKernelIds, "narrativeSupplement.asset.decisionKernelIds").forEach((id) => {
-      const kernelId = String(id);
-      if (!baseKernelIds.has(kernelId) || !requiredKernelIds.has(kernelId)) {
-        fail(`narrativeSupplement kernel:${kernelId}`);
-      }
-      coveredKernelIds.add(kernelId);
-    });
-    array(asset.actorRefs, "narrativeSupplement.asset.actorRefs").forEach((id) => {
-      if (!baseActorIds.has(String(id))) fail(`narrativeSupplement actor:${String(id)}`);
-    });
-    array(asset.sourceClaimIds, "narrativeSupplement.asset.sourceClaimIds").forEach((id) => {
-      if (!baseClaimIds.has(String(id))) fail(`narrativeSupplement claim:${String(id)}`);
-    });
-    const payload = record(asset.payload, "narrativeSupplement.asset.payload");
-    equal(payload.patternId, asset.assetId, "narrativeSupplement patternId binding");
-    equal(payload.reviewStatus, "APPROVED", "narrativeSupplement reviewStatus");
-    array(payload.orderedBeats, "narrativeSupplement.payload.orderedBeats");
-    array(payload.dialogueTactics, "narrativeSupplement.payload.dialogueTactics");
-    array(payload.blockingPrinciples, "narrativeSupplement.payload.blockingPrinciples");
-    array(payload.objectPowerMoves, "narrativeSupplement.payload.objectPowerMoves");
-    array(payload.forbiddenFlattening, "narrativeSupplement.payload.forbiddenFlattening");
-  }
-
-  const declaredCoveredKernelIds = array(
-    value.coveredDecisionKernelIds,
-    "narrativeSupplement.coveredDecisionKernelIds",
-  ).map(String);
-  const expectedCoveredKernelIds = [...coveredKernelIds].sort();
-  if (canonical(declaredCoveredKernelIds) !== canonical(expectedCoveredKernelIds)) {
-    fail("narrativeSupplement coveredDecisionKernelIds");
-  }
-  count(counts.coveredDecisionKernels, expectedCoveredKernelIds.length, "narrativeSupplement.coveredDecisionKernels");
-  if (
-    expectedCoveredKernelIds.length !== requiredKernelIds.size
-    || [...requiredKernelIds].some((id) => !coveredKernelIds.has(id))
-  ) {
-    fail("narrativeSupplement complete kernel coverage");
-  }
-
-  const index = validateRuntimeIndex(value.runtimeIndexDelta, assetIds, "narrativeSupplement.runtimeIndexDelta");
-  const rebuiltIndex = buildRuntimeIndex(assets as unknown as PartOneRuntimeAsset[]);
-  if (canonical(index) !== canonical(rebuiltIndex)) fail("narrativeSupplement runtimeIndexDelta mismatch");
-  return value as unknown as PartOneNarrativeSupplement;
-}
-
-export function assemblePartOneRuntimePackage(
-  basePackage: PartOneRuntimePackage,
-  supplement: PartOneNarrativeSupplement,
-): PartOneRuntimePackage {
-  const assets = [...basePackage.assets, ...supplement.assets];
-  const runtimeIndex = mergeRuntimeIndexes(basePackage.runtimeIndex, supplement.runtimeIndexDelta);
-  const narrativeScenePatterns = assets.filter((asset) => asset.assetType === "NARRATIVE_SCENE_PATTERN").length;
-  const packageHash = createHash("sha256")
-    .update(canonical({
-      baseRuntimeImmutableHash: basePackage.immutableHash,
-      narrativeSupplementImmutableHash: supplement.immutableHash,
-    }))
-    .digest("hex")
-    .toUpperCase();
-  return {
-    ...basePackage,
-    contentCounts: {
-      ...basePackage.contentCounts,
-      assets: assets.length,
-      narrativeScenePatterns,
-    },
-    assets,
-    runtimeIndex,
-    narrativeSupplement: {
-      baseRuntimeImmutableHash: supplement.baseRuntimeImmutableHash,
-      immutableHash: supplement.immutableHash,
-      assetCount: supplement.assets.length,
-      coveredDecisionKernelIds: [...supplement.coveredDecisionKernelIds],
-    },
-    immutableHash: packageHash,
-  };
 }
 
 export function validatePartOneRuntimePackage(raw: unknown, worldId = "sangtian"): PartOneRuntimePackage {
@@ -306,115 +137,12 @@ export function validatePartOneRuntimePackage(raw: unknown, worldId = "sangtian"
     }
   }
 
-  validateRuntimeIndex(index, assetIds, "runtimeIndex");
+  equal(index.schemaVersion, "runtime-story-index-v1", "runtimeIndex.schemaVersion");
+  const bySection = record(index.bySection, "runtimeIndex.bySection");
+  for (const sectionId of sectionIds) {
+    array(bySection[sectionId], `runtimeIndex.bySection.${sectionId}`).forEach((id) => member(String(id), assetIds, "indexed asset"));
+  }
   return value as unknown as PartOneRuntimePackage;
-}
-
-function parseJson(path: string, code: string): Record<string, unknown> {
-  try {
-    return record(JSON.parse(readFileSync(path, "utf8")), path);
-  } catch (error) {
-    throw new Error(`${code}:${path}:${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-function validateRuntimeIndex(raw: unknown, assetIds: string[], label: string): PartOneRuntimeIndex {
-  const index = record(raw, label);
-  equal(index.schemaVersion, "runtime-story-index-v1", `${label}.schemaVersion`);
-  for (const field of [
-    "byPart",
-    "bySection",
-    "byRequirement",
-    "byDecisionKernel",
-    "byCausalArc",
-    "byActor",
-    "byLocation",
-    "byStateDependency",
-    "byRetrievalTag",
-    "byVisibilityClass",
-  ]) {
-    const bucket = record(index[field], `${label}.${field}`);
-    for (const [key, values] of Object.entries(bucket)) {
-      array(values, `${label}.${field}.${key}`).forEach((id) => member(String(id), assetIds, `${label} indexed asset`));
-    }
-  }
-  return index as unknown as PartOneRuntimeIndex;
-}
-
-function buildRuntimeIndex(assets: PartOneRuntimeAsset[]): PartOneRuntimeIndex {
-  const index: PartOneRuntimeIndex = {
-    schemaVersion: "runtime-story-index-v1",
-    byPart: {},
-    bySection: {},
-    byRequirement: {},
-    byDecisionKernel: {},
-    byCausalArc: {},
-    byActor: {},
-    byLocation: {},
-    byStateDependency: {},
-    byRetrievalTag: {},
-    byVisibilityClass: {},
-  };
-  for (const asset of assets) {
-    add(index.byPart, asset.partIds, asset.assetId);
-    add(index.bySection, asset.sectionIds, asset.assetId);
-    add(index.byRequirement, asset.requirementIds, asset.assetId);
-    add(index.byDecisionKernel, asset.decisionKernelIds, asset.assetId);
-    add(index.byCausalArc, asset.causalArcIds, asset.assetId);
-    add(index.byActor, asset.actorRefs, asset.assetId);
-    add(index.byStateDependency, asset.stateDependencies, asset.assetId);
-    add(index.byRetrievalTag, asset.retrievalTags, asset.assetId);
-    add(index.byVisibilityClass, asset.visibilityRules.map((rule) => rule.visibilityClass), asset.assetId);
-  }
-  sortIndex(index);
-  return index;
-}
-
-function mergeRuntimeIndexes(base: PartOneRuntimeIndex, delta: PartOneRuntimeIndex): PartOneRuntimeIndex {
-  const result = structuredClone(base);
-  for (const field of [
-    "byPart",
-    "bySection",
-    "byRequirement",
-    "byDecisionKernel",
-    "byCausalArc",
-    "byActor",
-    "byLocation",
-    "byStateDependency",
-    "byRetrievalTag",
-    "byVisibilityClass",
-  ] as const) {
-    const destination = result[field];
-    for (const [key, values] of Object.entries(delta[field])) {
-      destination[key] = [...new Set([...(destination[key] || []), ...values])];
-    }
-  }
-  sortIndex(result);
-  return result;
-}
-
-function sortIndex(index: PartOneRuntimeIndex) {
-  for (const field of [
-    "byPart",
-    "bySection",
-    "byRequirement",
-    "byDecisionKernel",
-    "byCausalArc",
-    "byActor",
-    "byLocation",
-    "byStateDependency",
-    "byRetrievalTag",
-    "byVisibilityClass",
-  ] as const) {
-    for (const values of Object.values(index[field])) values.sort();
-  }
-}
-
-function add(bucket: Record<string, string[]>, keys: string[], assetId: string) {
-  for (const key of keys) {
-    if (!bucket[key]) bucket[key] = [];
-    if (!bucket[key].includes(assetId)) bucket[key].push(assetId);
-  }
 }
 
 function immutableHash(value: unknown) {
