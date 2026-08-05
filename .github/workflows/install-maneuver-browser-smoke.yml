@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Reconstruct verified browser test
+      - name: Reconstruct and diagnose browser test
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA256: 2f4da3dd1074dfb7cb695fdbd07f1f7b0e3405b48ece9c41e5d7c7f5c8cb34c3
@@ -32,11 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64
-          import hashlib
-          import json
-          import os
-          import urllib.request
+          import base64, hashlib, json, os, urllib.request
           from pathlib import Path
 
           repository = os.environ["GITHUB_REPOSITORY"]
@@ -57,40 +53,63 @@ jobs:
               "Accept": "application/vnd.github+json",
               "X-GitHub-Api-Version": "2022-11-28",
           }
+          report = {"chunks": [], "expectedScriptSha256": expected_script}
           encoded = []
+          all_chunks_ok = True
           for index, (sha, expected_chunk) in enumerate(chunks):
               request = urllib.request.Request(
-                  f"https://api.github.com/repos/{repository}/git/blobs/{sha}",
-                  headers=headers,
+                  f"https://api.github.com/repos/{repository}/git/blobs/{sha}", headers=headers
               )
               with urllib.request.urlopen(request, timeout=30) as response:
                   chunk = base64.b64decode(json.load(response)["content"])
               actual_chunk = hashlib.sha256(chunk).hexdigest()
-              if actual_chunk != expected_chunk:
-                  raise SystemExit(
-                      f"chunk {index} mismatch: expected {expected_chunk}, got {actual_chunk}"
-                  )
+              ok = actual_chunk == expected_chunk
+              all_chunks_ok = all_chunks_ok and ok
+              report["chunks"].append({
+                  "index": index,
+                  "blobSha": sha,
+                  "bytes": len(chunk),
+                  "expected": expected_chunk,
+                  "actual": actual_chunk,
+                  "ok": ok,
+              })
               encoded.append(chunk)
 
-          script = base64.b64decode(b"".join(encoded), validate=True)
-          actual_script = hashlib.sha256(script).hexdigest()
-          if actual_script != expected_script:
-              raise SystemExit(
-                  f"script mismatch: expected {expected_script}, got {actual_script}"
-              )
-          path = Path("scripts/acceptance/maneuver-v1-browser-smoke.mjs")
-          path.parent.mkdir(parents=True, exist_ok=True)
-          path.write_bytes(script)
-          print(f"verified {path}: {len(script)} bytes sha256={actual_script}")
+          script_ok = False
+          if all_chunks_ok:
+              try:
+                  script = base64.b64decode(b"".join(encoded), validate=True)
+                  actual_script = hashlib.sha256(script).hexdigest()
+                  report["actualScriptSha256"] = actual_script
+                  report["scriptBytes"] = len(script)
+                  script_ok = actual_script == expected_script
+                  report["scriptOk"] = script_ok
+                  if script_ok:
+                      path = Path("scripts/acceptance/maneuver-v1-browser-smoke.mjs")
+                      path.parent.mkdir(parents=True, exist_ok=True)
+                      path.write_bytes(script)
+              except Exception as error:
+                  report["decodeError"] = repr(error)
+          else:
+              report["scriptOk"] = False
+
+          diagnostic = Path("tmp-maneuver-browser-chunk-diagnostics.json")
+          diagnostic.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+          Path(".browser-install-status").write_text("PASS\n" if script_ok else "FAIL\n")
+          print(json.dumps(report, indent=2))
           PY
 
-      - name: Commit browser verification script
+      - name: Commit script or diagnostics
         shell: bash
         run: |
           set -euo pipefail
-          git add scripts/acceptance/maneuver-v1-browser-smoke.mjs
+          git add tmp-maneuver-browser-chunk-diagnostics.json
+          if [[ -f scripts/acceptance/maneuver-v1-browser-smoke.mjs ]]; then
+            git add scripts/acceptance/maneuver-v1-browser-smoke.mjs
+          fi
           git diff --cached --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "test(maneuver-v1): add real game-page browser smoke"
+          git commit -m "test(maneuver-v1): reconstruct browser smoke verification"
           git push origin "HEAD:${GITHUB_REF_NAME}"
+          [[ "$(cat .browser-install-status)" == "PASS" ]]
