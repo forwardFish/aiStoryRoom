@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/maneuver-rules-v1-gpt56-20260805
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
