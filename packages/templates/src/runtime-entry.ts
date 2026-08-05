@@ -3,14 +3,20 @@ import {
   applyNarrativeScenePatternToDramaticBeatPlan,
   type DramaticPatternPlanInput,
 } from "./story-package/dramatic-beat-plan.js";
+import { loadPlayablePartOneRuntimePackage } from "./story-package/playable-part-one-runtime.js";
 
 export * from "./index.js";
 
 /**
- * Explicit export wins over the star-exported base implementation. This keeps
- * native ESM named imports, CommonJS namespace imports, and the default runtime
- * namespace on the same capability-aware settlement function.
- *
+ * Explicit exports win over the star-exported frozen implementations. Native
+ * ESM named imports, CommonJS namespace imports and the default runtime
+ * namespace therefore use one playable loader and one capability-aware
+ * settlement path, while source-level authoring tests can still import the
+ * frozen loader from index.ts directly.
+ */
+export const loadPartOneRuntimePackage = loadPlayablePartOneRuntimePackage;
+
+/**
  * Settlement is complete before scene grammar is attached. The selected
  * NarrativeScenePattern therefore remains expression-only: it can order
  * transient moves for the Narrator, but it cannot change state, Canon, the
@@ -70,6 +76,7 @@ function mechanismFragments(value: string) {
 
 const runtimeEntry = {
   ...runtimeFacade,
+  loadPartOneRuntimePackage,
   settlePartOneAction,
 };
 
