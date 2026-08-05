@@ -1,0 +1,264 @@
+.causal-shell .top-actions:has(#playAgainBtn) {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+}
+
+.causal-shell.shared-main-game-shell[data-world-id="sangtian"]:has(.v2-current-situation-summary) #playAgainBtn::before {
+  content: "↻";
+  display: inline-block;
+  margin-right: 7px;
+  color: var(--sangtian-premium-copy);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.causal-shell.shared-main-game-shell[data-world-id="sangtian"]:has(.v2-current-situation-summary) #playAgainBtn::after {
+  content: "再来一局";
+}
+
+@media (max-width: 860px) {
+  .causal-shell .top-actions:has(#playAgainBtn) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .causal-shell .top-actions:has(#playAgainBtn) button {
+    min-width: 0;
+  }
+}
+
+.play-again-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(31, 44, 61, 0.34);
+  backdrop-filter: blur(10px);
+}
+
+.play-again-dialog {
+  --play-again-paper: rgba(255, 255, 255, 0.94);
+  --play-again-paper-soft: rgba(246, 249, 252, 0.92);
+  --play-again-line: rgba(31, 44, 61, 0.1);
+  --play-again-line-strong: rgba(31, 44, 61, 0.16);
+  --play-again-ink: #24314d;
+  --play-again-copy: #5d687e;
+  --play-again-muted: #7c8797;
+  --play-again-purple: #5a3dde;
+  --play-again-purple-soft: rgba(90, 61, 222, 0.08);
+  box-sizing: border-box;
+  position: relative;
+  width: min(484px, 100%);
+  padding: 28px 28px 24px;
+  border: 1px solid var(--play-again-line);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 42%),
+    linear-gradient(180deg, var(--play-again-paper), var(--play-again-paper-soft));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 26px 70px rgba(28, 42, 60, 0.18);
+  color: var(--play-again-ink);
+  text-align: left;
+}
+
+.play-again-dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 100% 0, rgba(90, 61, 222, 0.04), transparent 34%);
+}
+
+.play-again-mark {
+  width: 44px;
+  height: 44px;
+  margin: 0 0 14px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(90, 61, 222, 0.18);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 237, 255, 0.95));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  color: var(--play-again-purple);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.play-again-eyebrow {
+  margin: 0 0 6px;
+  color: #786aa9;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.play-again-dialog h2 {
+  margin: 0;
+  color: var(--play-again-ink);
+  font-family: "Noto Serif SC", "Songti SC", STSong, SimSun, serif;
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.play-again-dialog > p:not(.play-again-eyebrow):not(.play-again-sr-only) {
+  margin: 12px 0 0;
+  color: var(--play-again-copy);
+  font-size: 15px;
+  line-height: 1.72;
+}
+
+.play-again-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.play-again-summary-item {
+  padding: 14px 14px 13px;
+  border: 1px solid var(--play-again-line);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(242, 246, 250, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.play-again-summary-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--play-again-muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.play-again-summary-item strong {
+  display: block;
+  color: var(--play-again-ink);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.play-again-dialog .play-again-note {
+  margin-top: 14px;
+  color: var(--play-again-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.play-again-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.play-again-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.play-again-actions button {
+  min-height: 48px;
+  border-radius: 16px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, color 160ms ease;
+}
+
+.play-again-secondary {
+  border: 1px solid var(--play-again-line-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 251, 0.94));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #4d5870;
+}
+
+.play-again-primary {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(110deg, #4f35d7 0%, #7d52ef 62%, #6844e9 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 10px 24px rgba(82, 54, 210, 0.22);
+  color: #fff;
+}
+
+.play-again-actions button:hover {
+  transform: translateY(-1px);
+}
+
+.play-again-secondary:hover {
+  border-color: rgba(31, 44, 61, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(239, 244, 248, 0.95));
+}
+
+.play-again-primary:hover {
+  background:
+    linear-gradient(110deg, #5539df 0%, #845af4 62%, #704bec 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 12px 28px rgba(82, 54, 210, 0.26);
+}
+
+.play-again-actions button:active {
+  transform: translateY(0);
+}
+
+.play-again-primary:active {
+  box-shadow:
+    inset 0 2px 6px rgba(39, 21, 122, 0.24),
+    0 7px 16px rgba(82, 54, 210, 0.18);
+}
+
+.play-again-actions button:focus-visible,
+.play-again-dialog:focus-visible {
+  outline: 3px solid rgba(103, 72, 239, 0.22);
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .play-again-backdrop {
+    padding: 16px;
+  }
+
+  .play-again-dialog {
+    width: min(100%, 420px);
+    padding: 24px 18px 18px;
+    border-radius: 20px;
+  }
+
+  .play-again-dialog h2 {
+    font-size: 28px;
+  }
+
+  .play-again-summary {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .play-again-actions { grid-template-columns: 1fr; }
+  .play-again-primary { grid-row: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-again-actions button {
+    transition: none;
+  }
+}

@@ -1,5 +1,6 @@
 import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js?v=20260721-story-access-error-v4";
 import { renderTransitionScreen } from "./transition-screen.js";
+import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260805-play-again-v2";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
@@ -36,6 +37,7 @@ export function createStoryApp({
     showOpening: showOpeningByDefault,
     messageFilter: "all",
     debugBuild: debugBuild === true,
+    playAgainOpen: false,
     resultStream: null,
     resultScroll: { top: 0, follow: true },
     panelScroll: { left: 0, right: 0 },
@@ -283,6 +285,23 @@ export function createStoryApp({
       state.busy = false;
       render();
     }
+  }
+
+  function openPlayAgain() {
+    if (state.busy || !state.view) return false;
+    state.playAgainOpen = true;
+    render();
+    return true;
+  }
+
+  function closePlayAgain() {
+    state.playAgainOpen = false;
+    render();
+  }
+
+  function confirmPlayAgain() {
+    if (state.busy || !state.view) return false;
+    return navigateToFreshSoloRun({ browserWindow, view: state.view });
   }
 
   async function mutate(operation, successNotice) {
@@ -542,8 +561,10 @@ export function createStoryApp({
         ${renderCriticalEvent(view, state)}
         ${state.error ? renderBanner("error", state.error) : ""}
         ${state.notice ? renderBanner("notice", state.notice) : ""}
+        ${state.playAgainOpen ? renderPlayAgainDialog() : ""}
       </div>`;
     bindEvents();
+    if (state.playAgainOpen) root.querySelector("#playAgainCancelBtn")?.focus?.();
     restoreResultScroll();
     restorePanelScroll();
     root.querySelector(".result-stream-status")?.remove();
@@ -565,6 +586,12 @@ export function createStoryApp({
     });
     root.querySelector("#refreshBtn")?.addEventListener("click", () => refresh());
     root.querySelector("#v2RoomBtn")?.addEventListener("click", () => browserWindow?.location?.assign?.("/"));
+    root.querySelector("#playAgainBtn")?.addEventListener("click", openPlayAgain);
+    root.querySelector("#playAgainCancelBtn")?.addEventListener("click", closePlayAgain);
+    root.querySelector("#playAgainConfirmBtn")?.addEventListener("click", confirmPlayAgain);
+    root.querySelector("[data-play-again-backdrop]")?.addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closePlayAgain();
+    });
     root.querySelector("#submitDecision")?.addEventListener("click", submitDecision);
     root.querySelector("#maneuverSubmit")?.addEventListener("click", submitManeuver);
     root.querySelector("[data-room-resolve]")?.addEventListener("click", resolveRoomRound);
@@ -622,6 +649,9 @@ export function createStoryApp({
     deferCriticalEvent,
     chooseManeuver,
     resetRun,
+    openPlayAgain,
+    closePlayAgain,
+    confirmPlayAgain,
     render,
     getState: () => state
   };
@@ -681,18 +711,16 @@ function renderTopbar(view, state) {
   const run = view.run;
   if (view.continuousV2 === true) {
     const turn = view.v2CurrentTurn || {};
-    return `<header class="causal-topbar">
+    return `<header class="causal-topbar causal-topbar--v2">
       <div class="top-context-cluster">
         <div class="mw-brand"><span class="mw-brand-mark">Our Many Worlds</span></div>
-        <div class="location-title v2-current-situation-summary" hidden><span class="seal-mark">◇</span><b>${esc(turn.title || run.title || "当前局势")}</b><span class="chevron">◇</span></div>
+        <span class="v2-current-situation-summary" hidden aria-hidden="true"></span>
       </div>
       <div class="top-phase-cluster">
         <div class="top-day">第 ${number(turn.stageIndex || run.currentDay)} 章</div>
-        <div class="top-countdown">本角色第 <b>${number(turn.turnIndex || 1)}</b> 次抉择</div>
-        <span class="status-chip">我的角色&nbsp; <b>${esc(view.player?.roleName || "")}</b></span>
-        <span class="status-chip maneuver-chip">决策后立即单独推演<i></i><i></i></span>
+        <div class="top-countdown"><span>本角色第</span><b>${number(turn.turnIndex || 1)}</b><span>次抉择</span></div>
       </div>
-      <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; 历史回顾</button><button id="v2RoomBtn" type="button" ${state.busy ? "disabled" : ""}>↩&nbsp; 返回主页</button></div></div>
+      <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button" aria-label="历史回顾"><span class="top-action-icon" aria-hidden="true">▣</span><span class="top-action-label">历史回顾</span></button><button id="playAgainBtn" type="button" aria-label="再来一局" ${state.busy ? "disabled" : ""}><span class="top-action-icon" aria-hidden="true">↻</span><span class="top-action-label">再来一局</span></button><button id="v2RoomBtn" type="button" aria-label="返回主页" ${state.busy ? "disabled" : ""}><span class="top-action-icon" aria-hidden="true">↩</span><span class="top-action-label">返回主页</span></button></div></div>
     </header>`;
   }
   const remaining = Math.max(0, Number(run.totalDays || FINAL_DAY) - Number(run.currentDay));
