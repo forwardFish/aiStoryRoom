@@ -103,7 +103,7 @@ test("JSON fences are removed only when a valid sentinel envelope is normalized"
       categories.map((category) => [category, "NONE"]),
     ))),
     "```",
-  ].join("\n"));
+  ].join("\n");
 
   const parsed = JSON.parse(normalizeP0NoneSentinels(fenced));
   assert.deepEqual(parsed.candidates.playerAction, emptyCandidate());
