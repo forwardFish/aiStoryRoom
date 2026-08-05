@@ -51,6 +51,8 @@ export function workspacePaths(root: string, rawRunId: string) {
     inboxState: path.join(story, "inbox", "state.json"),
     stateDir: path.join(story, "state"),
     currentOptions: path.join(story, "state", "current-options.json"),
+    worldState: path.join(story, "state", "world-state.json"),
+    worldEvents: path.join(story, "state", "world-events.jsonl"),
     partOneState: path.join(story, "state", "part-one-state.json"),
     partOneEvents: path.join(story, "state", "part-one-events.jsonl"),
     jobs: path.join(story, "state", "jobs.json"),

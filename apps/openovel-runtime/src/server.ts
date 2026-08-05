@@ -18,6 +18,7 @@ import { sangtianEndingModule } from "./sangtian-ending.js";
 import { WorldModuleRegistry } from "./world-module-registry.js";
 import { MultiplayerWorldRuntime } from "./multiplayer-runtime.js";
 import templates from "@ai-story/templates";
+import { caesarSoloWorldModule } from "./caesar-solo-world.js";
 
 const {
   caesarRuntimeFixture,
@@ -53,11 +54,7 @@ const worldModules = new WorldModuleRegistry([
     }],
   },
   {
-    worldId: "caesar",
-    seeder: {
-      supports: () => false,
-      seed: async () => { throw new Error("CAESAR_SOLO_STORY_PACKAGE_NOT_REGISTERED"); },
-    },
+    ...caesarSoloWorldModule,
     runtimeContract: caesarRuntimeFixture,
     settlementPackage: caesarSettlementFixture,
     actorByRoleKey: {
