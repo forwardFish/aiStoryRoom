@@ -20,6 +20,7 @@ import type {
 async function main() {
 const projectRoot = path.resolve(import.meta.dirname, "..", "..");
 const runId = argument("--run-id") || `sangtian_ending_preview_${Date.now()}`;
+const routeProfile = endingRouteProfile(argument("--route") || "protective");
 const workspaceRoot = path.resolve(
   argument("--workspace-root")
     || path.join(os.tmpdir(), "omw-sangtian-ending-preview", runId),
@@ -98,7 +99,7 @@ const visibleTurns: Array<{
 
 for (let turn = 1; turn <= 20; turn += 1) {
   const current = await runtime.getRun(runId);
-  const selected = choosePolicyOption(current.options, turn);
+  const selected = choosePolicyOption(current.options, turn, routeProfile);
   provider.activeTurn = turn;
   const result = await runtime.processAction({
     runId,
@@ -162,6 +163,7 @@ const output = {
   normalProductFlowChanged: false,
   previewMode: realTurns.size > 0 ? "REAL_PREFIX_AND_ENDING" : "STRUCTURAL_ONLY",
   runId,
+  routeProfile,
   workspace: workspace.paths(runId).root,
   provider: provider.describe(),
   realTurns: [...realTurns].sort((left, right) => left - right),
@@ -196,9 +198,20 @@ const output = {
 process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
 }
 
-function choosePolicyOption(options: OpenNovelOption[], turn: number) {
+type EndingRouteProfile = "protective" | "grain-first";
+
+function endingRouteProfile(value: string): EndingRouteProfile {
+  if (value === "protective" || value === "grain-first") return value;
+  throw new Error(`ENDING_PREVIEW_ROUTE_UNKNOWN:${value}`);
+}
+
+function choosePolicyOption(
+  options: OpenNovelOption[],
+  turn: number,
+  routeProfile: EndingRouteProfile,
+) {
   if (!options.length) throw new Error(`ENDING_PREVIEW_OPTIONS_MISSING:T${turn}`);
-  const preferredIds = [
+  const sharedOpening = [
     "opening_d2",
     "DK-P1-EXECUTION-SCOPE-OPT-01",
     "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
@@ -208,6 +221,8 @@ function choosePolicyOption(options: OpenNovelOption[], turn: number) {
     "DK-P1-DISCLOSURE-SCOPE-OPT-01",
     "DK-P1-GRAIN-SOURCE-OPT-03",
     "DK-P1-MERCHANT-CONDITIONS-OPT-01",
+  ];
+  const protectiveEnding = [
     "DK-P1-LAND-SAFEGUARD-OPT-02",
     "DK-P1-RELIEF-PRIORITY-OPT-01",
     "CD-P1-S3-RELIEF-RECEIPTS-OPT-01",
@@ -215,6 +230,27 @@ function choosePolicyOption(options: OpenNovelOption[], turn: number) {
     "DK-P1-EVIDENCE-ATTACHMENT-OPT-01",
     "DK-P1-RESPONSIBILITY-SCOPE-OPT-01",
     "DK-P1-CAPITAL-CHANNEL-OPT-03",
+    "CD-P1-S4-XUNFU-COPY-REQUEST-OPT-01",
+    "CD-P1-S4-MERCHANT-DAILY-TERMS-OPT-01",
+    "CD-P1-S4-WITNESS-PROTECTION-ORDER-OPT-01",
+    "CD-P1-S4-WAITING-FOR-CAPITAL-OPT-01",
+  ];
+  const grainFirstEnding = [
+    "DK-P1-LAND-SAFEGUARD-OPT-03",
+    "DK-P1-RELIEF-PRIORITY-OPT-03",
+    "CD-P1-S3-RELIEF-RECEIPTS-OPT-01",
+    "DK-P1-REPORT-AUTHORSHIP-OPT-03",
+    "DK-P1-EVIDENCE-ATTACHMENT-OPT-02",
+    "DK-P1-RESPONSIBILITY-SCOPE-OPT-02",
+    "DK-P1-CAPITAL-CHANNEL-OPT-01",
+    "CD-P1-S4-XUNFU-COPY-REQUEST-OPT-02",
+    "CD-P1-S4-MERCHANT-DAILY-TERMS-OPT-01",
+    "CD-P1-S4-WITNESS-PROTECTION-ORDER-OPT-02",
+    "CD-P1-S4-WAITING-FOR-CAPITAL-OPT-02",
+  ];
+  const preferredIds = [
+    ...sharedOpening,
+    ...(routeProfile === "protective" ? protectiveEnding : grainFirstEnding),
   ];
   return preferredIds
     .map((id) => options.find((option) => option.id === id))

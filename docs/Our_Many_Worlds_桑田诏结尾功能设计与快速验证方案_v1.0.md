@@ -87,6 +87,18 @@ pnpm exec tsx scripts/acceptance/sangtian-part-one-ending-preview.mts --real-tur
 - 中间回合只进行确定性选择和权威结算；
 - 最后读取正式 Ending Module 产生的 T20 结局。
 
+结构快进提供两条已有 Story Package 路线，用于证明结局会随关键选择改变：
+
+```powershell
+# 优先保护民田、证据和最急迫灾民
+pnpm exec tsx scripts/acceptance/sangtian-part-one-ending-preview.mts --real-turns=none --route=protective
+
+# 优先保持粮路、分散指标并让督抚分担责任
+pnpm exec tsx scripts/acceptance/sangtian-part-one-ending-preview.mts --real-turns=none --route=grain-first
+```
+
+两条路线只选择现有合法 Option，并使用同一 Settlement 与 Ending Module；测试脚本不得直接改写最终状态或指定 `endingKey`。
+
 如果以后需要同时抽查一两轮真实模型正文和最终场景，可运行默认模式：
 
 ```powershell
@@ -121,6 +133,15 @@ pnpm exec tsx --env-file=.env.test scripts/acceptance/sangtian-part-one-ending-p
 2. 灾期民田边界仍在，商会不能把救粮直接变成购田凭据；
 3. 救粮渠道已经打开，但商会只取得附条件的粮食与运力入口；
 4. 首报已经分路离开浙江，督抚不同叙述随之进入京师政治。
+
+第二条路线的独立结构快进结果：
+
+| 路线 | 结局 | 民田状态 | 粮食状态 | 首报状态 | 模型调用 |
+|---|---|---|---|---|---:|
+| `protective` | 守土担责 | `ACTIVE` | `RELIEVED_FOR_HUNGRIEST` | `SPLIT` | 0 |
+| `grain-first` | 孤证入京 | `DISTRESS_PURCHASE_BANNED` | `SHIFTED_TO_OUTLYING_VILLAGES` | `DISPATCHED` | 0 |
+
+两条路线都达到 T20、`HANDOFF_READY` 和 7/7 结尾验收通过，但 `endingKey`、标题和关键世界状态不同，证明结尾由玩家选择后的 Settlement 状态决定，不是固定文案。
 
 ## 7. 失败与降级原则
 
