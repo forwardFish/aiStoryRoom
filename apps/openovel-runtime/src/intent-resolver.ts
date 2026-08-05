@@ -66,16 +66,17 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
     if (exact) return bound(exact.option, 1, "AFFORDANCE_EQUIVALENT", "EXACT_NORMALIZED_MATCH");
 
     const scored = surfaces
-      .map(({ option, values }) => scoreAffordance(action, option, values, surfaces))
+      .map(({ option }) => scoreAffordance(action, option, surfaces))
       .sort((left, right) => (
         right.score - left.score
         || right.longestUniqueGram - left.longestUniqueGram
         || left.option.id.localeCompare(right.option.id)
       ));
+    const actionLength = [...action].length;
     const alternatives = scored.slice(0, 3).map((item) => ({
       affordanceId: item.option.id,
       label: item.option.label,
-      confidence: confidenceFor(item, action.length),
+      confidence: confidenceFor(item, actionLength),
     }));
     const best = scored[0];
     if (!best || best.score <= 0) {
@@ -84,8 +85,8 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
     const next = scored[1];
     const margin = best.score - (next?.score || 0);
     const relativeMargin = margin / Math.max(1, best.score);
-    const coverage = best.matchedActionIndexes.size / Math.max(1, [...action].length);
-    const confidence = confidenceFor(best, action.length);
+    const coverage = best.matchedActionIndexes.size / Math.max(1, actionLength);
+    const confidence = confidenceFor(best, actionLength);
 
     if (best.longestUniqueGram >= 4 && relativeMargin >= 0.2) {
       return bound(
@@ -114,7 +115,6 @@ export class DeterministicAffordanceIntentResolver implements IntentResolverModu
 function scoreAffordance(
   action: string,
   option: OpenNovelOption,
-  values: string[],
   all: Array<{ option: OpenNovelOption; values: string[] }>,
 ): ScoredAffordance {
   const actionPoints = [...action];
@@ -126,9 +126,7 @@ function scoreAffordance(
   for (let length = Math.min(10, actionPoints.length); length >= 3; length -= 1) {
     for (let index = 0; index + length <= actionPoints.length; index += 1) {
       const gram = actionPoints.slice(index, index + length).join("");
-      const owners = all.filter(({ values: candidateValues }) => (
-        candidateValues.some((value) => value.includes(gram))
-      ));
+      const owners = all.filter(({ values }) => values.some((value) => value.includes(gram)));
       if (!owners.some((owner) => owner.option.id === option.id)) continue;
       if (owners.length === 1) {
         score += length * length;
@@ -164,7 +162,7 @@ function optionSurfaces(option: OpenNovelOption) {
 
 function confidenceFor(item: ScoredAffordance, actionLength: number) {
   if (item.exact) return 1;
-  const coverage = item.matchedActionIndexes.size / Math.max(1, [...String(actionLength)].length);
+  const coverage = item.matchedActionIndexes.size / Math.max(1, actionLength);
   const value = 0.55 + item.longestUniqueGram * 0.055 + Math.min(0.18, coverage * 0.18);
   return round(Math.max(0, Math.min(0.99, value)));
 }
