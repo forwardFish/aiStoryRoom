@@ -10,11 +10,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: chatgpt-pro-p3-validation-${{ github.event.pull_request.base.sha }}
+  group: chatgpt-pro-engineering-${{ github.event.pull_request.base.sha }}
   cancel-in-progress: false
 
 jobs:
-  p3-validation:
+  engineering-gates:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -22,9 +22,13 @@ jobs:
       CANDIDATE_SHA: ${{ github.event.pull_request.base.sha }}
       CANDIDATE_REF: codex/chatgpt-pro-ai-story-convergence
       FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
-      PAYLOAD_PREFIX: docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-
-      PAYLOAD_B64_SHA256: c2043133ca4d06da76c43ab7f3c88213865ee7d70f8e2d61c831d66edd751755
-      PAYLOAD_SHA256: 6c26a75c277baf21ba73dfb7ee0d405eb9393cdcd8181f283d6eb85fb2225fec
+      OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
+      OPENOVEL_MODEL: deepseek-v4-pro
+      OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
+      OPENOVEL_REVIEWER_MODEL: deepseek-v4-pro
+      OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
+      OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
+      OPENOVEL_DEEPSEEK_THINKING: disabled
     steps:
       - name: Check out exact candidate base SHA
         uses: actions/checkout@v4
@@ -32,11 +36,11 @@ jobs:
           ref: ${{ env.CANDIDATE_SHA }}
           fetch-depth: 0
 
-      - name: Prove candidate boundary and unpack P3 payload
+      - name: Prove repository, branch, frozen base and clean tree
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p candidate-evidence/logs candidate-evidence/validated-source
+          mkdir -p engineering-evidence/logs engineering-evidence/assets
           {
             echo "repository=${GITHUB_REPOSITORY}"
             echo "event=${GITHUB_EVENT_NAME}"
@@ -45,133 +49,17 @@ jobs:
             echo "checked_out=$(git rev-parse HEAD)"
             echo "merge_base=$(git merge-base HEAD ${FROZEN_BASE_SHA})"
             echo "main_remote=$(git rev-parse origin/main)"
-          } | tee candidate-evidence/logs/00-boundary.log
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee engineering-evidence/logs/00-boundary.log
           test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
           test "${{ github.event.pull_request.base.ref }}" = "${CANDIDATE_REF}"
           test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
           test "$(git merge-base HEAD ${FROZEN_BASE_SHA})" = "${FROZEN_BASE_SHA}"
           test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
           test -z "$(git status --short)"
-
-          mapfile -t parts < <(printf '%s\n' ${PAYLOAD_PREFIX}* | sort)
-          test "${#parts[@]}" -eq 8
-          payload_b64=/tmp/chatgpt-pro-p3-final-stage.tar.gz.b64
-          payload=/tmp/chatgpt-pro-p3-final-stage.tar.gz
-          cat "${parts[@]}" > "${payload_b64}"
-          echo "${PAYLOAD_B64_SHA256}  ${payload_b64}" | sha256sum --check --strict
-          base64 --decode "${payload_b64}" > "${payload}"
-          echo "${PAYLOAD_SHA256}  ${payload}" | sha256sum --check --strict
-
-          mapfile -t actual_paths < <(tar -tzf "${payload}" | sed '/^$/d' | sed '/\/$/d' | sort)
-          expected_paths=(
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json
-            packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json
-            packages/templates/authoring/sangtian/narrative/source-scenes.supplemental.approved.json
-            packages/templates/src/story-package/playable-part-one-runtime.ts
-            packages/templates/tests/part-one-narrative-supplement.test.ts
-            scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs
-          )
-          mapfile -t expected_paths < <(printf '%s\n' "${expected_paths[@]}" | sort)
-          test "$(printf '%s\n' "${actual_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
-          tar -xzf "${payload}" -C .
-          tar -xzf "${payload}" -C candidate-evidence/validated-source
           git diff --check
-
-      - name: Audit all source-scene, Claim, SourceRef and Kernel bindings
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY' | tee candidate-evidence/source-bindings.json
-          import json
-          from pathlib import Path
-
-          root = Path('.')
-          runtime = json.loads((root / 'packages/templates/config/sangtian/story-package/part-one-runtime.json').read_text(encoding='utf-8'))
-          sections = {row['sectionId']: row for row in runtime['sections']}
-          scenes = {}
-          for asset in runtime['assets']:
-              if asset['assetType'] != 'SOURCE_SCENE_EVIDENCE':
-                  continue
-              payload = asset['payload']
-              scenes[payload['sourceSceneId']] = {
-                  'claims': set(asset['sourceClaimIds']),
-                  'sourceId': payload['sourceId'],
-                  'sourceSha256': payload['sourceSha256'],
-                  'sourceRange': payload['sourceRange'],
-                  'origin': 'FROZEN_RUNTIME',
-              }
-
-          supplemental = json.loads((root / 'packages/templates/authoring/sangtian/narrative/source-scenes.supplemental.approved.json').read_text(encoding='utf-8'))
-          assert supplemental['schemaVersion'] == 'narrative-source-scene-supplement-v1'
-          assert supplemental['worldId'] == 'sangtian'
-          assert supplemental['partId'] == 'PART-01'
-          assert supplemental['reviewStatus'] == 'APPROVED'
-          assert supplemental['scenes']
-          for scene in supplemental['scenes']:
-              scene_id = scene['sourceSceneId']
-              assert scene_id not in scenes, scene_id
-              assert scene['verbatimPolicy'] == 'MECHANISM_ONLY_NO_VERBATIM_REUSE'
-              assert scene['sourceClaimIds']
-              assert len(scene['sourceRefs']) == 1
-              ref = scene['sourceRefs'][0]
-              scenes[scene_id] = {
-                  'claims': set(scene['sourceClaimIds']),
-                  'sourceId': ref['sourceId'],
-                  'sourceSha256': ref['sourceSha256'],
-                  'sourceRange': ref,
-                  'origin': 'APPROVED_SUPPLEMENT',
-              }
-
-          required = {
-              kernel_id
-              for section_id in ('SEC-P1-02', 'SEC-P1-03', 'SEC-P1-04')
-              for kernel_id in sections[section_id]['activeDecisionKernelIds']
-          }
-          covered = set()
-          audited = []
-          for number in (2, 3, 4):
-              value = json.loads((root / f'packages/templates/authoring/sangtian/narrative/scene-patterns.section-{number:02d}.approved.json').read_text(encoding='utf-8'))
-              for pattern in value['patterns']:
-                  scene_id = pattern['sourceSceneId']
-                  assert scene_id in scenes, (pattern['patternId'], scene_id)
-                  scene = scenes[scene_id]
-                  missing_claims = set(pattern['sourceClaimIds']) - scene['claims']
-                  assert not missing_claims, (pattern['patternId'], sorted(missing_claims))
-                  source_range = scene['sourceRange']
-                  assert any(
-                      ref['sourceId'] == scene['sourceId']
-                      and ref['sourceSha256'] == scene['sourceSha256']
-                      and ref['chapterId'] == source_range['chapterId']
-                      and ref['paragraphStartId'] == source_range['paragraphStartId']
-                      and ref['paragraphEndId'] == source_range['paragraphEndId']
-                      and ref['textSpanSha256'] == source_range['textSpanSha256']
-                      for ref in pattern['sourceRefs']
-                  ), pattern['patternId']
-                  covered.update(pattern['decisionKernelIds'])
-                  audited.append({
-                      'patternId': pattern['patternId'],
-                      'sectionIds': pattern['sectionIds'],
-                      'sourceSceneId': scene_id,
-                      'sourceOrigin': scene['origin'],
-                      'sourceClaimIds': pattern['sourceClaimIds'],
-                      'decisionKernelIds': pattern['decisionKernelIds'],
-                  })
-          assert len(audited) == 11, len(audited)
-          assert covered == required, sorted(required - covered)
-          print(json.dumps({
-              'schemaVersion': 'omw.p3-source-binding-evidence.v1',
-              'verdict': 'PASS',
-              'candidateSha': '${{ env.CANDIDATE_SHA }}',
-              'patternCount': len(audited),
-              'sourceSceneCount': len(scenes),
-              'supplementalSourceSceneCount': len(supplemental['scenes']),
-              'coveredKernelCount': len(covered),
-              'requiredKernelCount': len(required),
-              'coveredDecisionKernelIds': sorted(covered),
-              'patterns': audited,
-          }, ensure_ascii=False, indent=2))
-          PY
 
       - uses: pnpm/action-setup@v4
         with:
@@ -183,50 +71,184 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install exact workspace
+      - id: install
+        name: Install locked dependencies
+        continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
-          pnpm install --frozen-lockfile 2>&1 | tee candidate-evidence/logs/01-install.log
+          pnpm install --frozen-lockfile 2>&1 | tee engineering-evidence/logs/01-install.log
 
-      - name: Run P3 contract gates
+      - id: typecheck
+        name: OpenNovel runtime typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee engineering-evidence/logs/02-openovel-typecheck.log
+
+      - id: build
+        name: OpenNovel runtime build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime build 2>&1 | tee engineering-evidence/logs/03-openovel-build.log
+
+      - id: story_v4
+        name: Complete Story V4 regression
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:story:v4 2>&1 | tee engineering-evidence/logs/04-story-v4.log
+
+      - id: http_smoke
+        name: OpenNovel HTTP smoke
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime smoke:http 2>&1 | tee engineering-evidence/logs/05-http-smoke.log
+
+      - id: frozen_assets
+        name: Recompile frozen Part One assets and compare bytes
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --filter @ai-story/templates typecheck 2>&1 | tee candidate-evidence/logs/02-templates-typecheck.log
-          pnpm --filter @ai-story/templates test:story-package 2>&1 | tee candidate-evidence/logs/03-story-package.log
-          pnpm --filter @ai-story/templates build 2>&1 | tee candidate-evidence/logs/04-templates-build.log
-          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee candidate-evidence/logs/05-openovel-typecheck.log
-          export SANGTIAN_NARRATIVE_SUPPLEMENT_PATH="${RUNNER_TEMP}/part-one-narrative-supplement.json"
-          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs 2>&1 | tee candidate-evidence/logs/06-narrative-supplement-compile.log
-          test -s "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}"
-          cp "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}" candidate-evidence/part-one-narrative-supplement.json
+          mkdir -p "${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_SKIP_SOURCE_WRITES=1
+          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_RUNTIME_PACKAGE_PATH="${RUNNER_TEMP}/part-one-runtime.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
+            2>&1 | tee engineering-evidence/logs/06-frozen-assets.log
+          sha256sum \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json" \
+            | tee engineering-evidence/logs/07-frozen-assets-sha256.log
+          cmp --silent \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json"
+          cp "${RUNNER_TEMP}/part-one-runtime.json" engineering-evidence/assets/recompiled-part-one-runtime.json
 
-      - name: Record P3 validation summary
+      - id: supplement
+        name: Compile P3 narrative supplement
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SANGTIAN_NARRATIVE_SUPPLEMENT_PATH="${RUNNER_TEMP}/part-one-narrative-supplement.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs \
+            2>&1 | tee engineering-evidence/logs/08-narrative-supplement.log
+          test -s "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}"
+          cp "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}" engineering-evidence/assets/part-one-narrative-supplement.json
+          sha256sum "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}" \
+            | tee engineering-evidence/logs/09-narrative-supplement-sha256.log
+
+      - name: Record exact outcomes, commands and test counts
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          cat > candidate-evidence/summary.json <<EOF
-          {
-            "schemaVersion": "omw.chatgpt-pro-p3-validation.v1",
-            "repository": "${GITHUB_REPOSITORY}",
-            "branch": "${CANDIDATE_REF}",
-            "candidateSha": "${CANDIDATE_SHA}",
-            "frozenBaseSha": "${FROZEN_BASE_SHA}",
-            "payloadBase64Sha256": "${PAYLOAD_B64_SHA256}",
-            "payloadTarGzSha256": "${PAYLOAD_SHA256}",
-            "mockOnly": true,
-            "realModel": false
-          }
-          EOF
-          sha256sum candidate-evidence/source-bindings.json candidate-evidence/summary.json > candidate-evidence/SHA256SUMS
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
 
-      - name: Upload P3 validation evidence
+          root = Path('engineering-evidence')
+          story = (root / 'logs/04-story-v4.log').read_text(encoding='utf-8', errors='replace') if (root / 'logs/04-story-v4.log').exists() else ''
+          smoke = (root / 'logs/05-http-smoke.log').read_text(encoding='utf-8', errors='replace') if (root / 'logs/05-http-smoke.log').exists() else ''
+          test_blocks = []
+          for match in re.finditer(r'# tests (\d+)\s+# suites (\d+)\s+# pass (\d+)\s+# fail (\d+)\s+# cancelled (\d+)\s+# skipped (\d+)\s+# todo (\d+)', story):
+              test_blocks.append({
+                  'tests': int(match.group(1)),
+                  'suites': int(match.group(2)),
+                  'pass': int(match.group(3)),
+                  'fail': int(match.group(4)),
+                  'cancelled': int(match.group(5)),
+                  'skipped': int(match.group(6)),
+                  'todo': int(match.group(7)),
+              })
+          summary = {
+              'schemaVersion': 'omw.chatgpt-pro-engineering-gates.v1',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'branch': os.environ['CANDIDATE_REF'],
+              'candidateSha': os.environ['CANDIDATE_SHA'],
+              'frozenBaseSha': os.environ['FROZEN_BASE_SHA'],
+              'node': '22',
+              'pnpm': '10.12.1',
+              'modelConfiguration': {
+                  'providerBaseUrl': os.environ['OPENOVEL_PROVIDER_BASE_URL'],
+                  'model': os.environ['OPENOVEL_MODEL'],
+                  'narratorModel': os.environ['OPENOVEL_NARRATOR_MODEL'],
+                  'reviewerModel': os.environ['OPENOVEL_REVIEWER_MODEL'],
+                  'optionsModel': os.environ['OPENOVEL_OPTIONS_MODEL'],
+                  'storykeeperModel': os.environ['OPENOVEL_STORYKEEPER_MODEL'],
+                  'thinking': os.environ['OPENOVEL_DEEPSEEK_THINKING'],
+              },
+              'commands': [
+                  'pnpm install --frozen-lockfile',
+                  'pnpm --filter @apps/openovel-runtime typecheck',
+                  'pnpm --filter @apps/openovel-runtime build',
+                  'pnpm test:story:v4',
+                  'pnpm --filter @apps/openovel-runtime smoke:http',
+                  'node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs',
+                  'node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs',
+              ],
+              'outcomes': {
+                  'install': '${{ steps.install.outcome }}',
+                  'openovelTypecheck': '${{ steps.typecheck.outcome }}',
+                  'openovelBuild': '${{ steps.build.outcome }}',
+                  'storyV4': '${{ steps.story_v4.outcome }}',
+                  'httpSmoke': '${{ steps.http_smoke.outcome }}',
+                  'frozenAssetRecompile': '${{ steps.frozen_assets.outcome }}',
+                  'narrativeSupplementCompile': '${{ steps.supplement.outcome }}',
+              },
+              'storyV4TapBlocks': test_blocks,
+              'httpSmoke': {
+                  'mode': 'deterministic fixture provider over real HTTP runtime path',
+                  'mockOnly': True,
+                  'reportDetected': 'openovel_http_g00_t03_smoke_v1' in smoke,
+              },
+              'realModel': False,
+          }
+          outcomes = summary['outcomes']
+          summary['verdict'] = 'PASS' if all(value == 'success' for value in outcomes.values()) else 'FAIL'
+          (root / 'summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+          {
+            echo "tested_sha=$(git rev-parse HEAD)"
+            echo "main_remote=$(git rev-parse origin/main)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee engineering-evidence/logs/99-final-boundary.log
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
+          test -z "$(git status --short)"
+          sha256sum engineering-evidence/summary.json engineering-evidence/logs/*.log \
+            > engineering-evidence/SHA256SUMS
+
+      - name: Upload complete engineering evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p3-validation-${{ env.CANDIDATE_SHA }}
-          path: candidate-evidence/
+          name: engineering-gates-${{ env.CANDIDATE_SHA }}
+          path: engineering-evidence/
           if-no-files-found: error
           retention-days: 7
+
+      - name: Enforce every engineering gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.install.outcome }}" = "success"
+          test "${{ steps.typecheck.outcome }}" = "success"
+          test "${{ steps.build.outcome }}" = "success"
+          test "${{ steps.story_v4.outcome }}" = "success"
+          test "${{ steps.http_smoke.outcome }}" = "success"
+          test "${{ steps.frozen_assets.outcome }}" = "success"
+          test "${{ steps.supplement.outcome }}" = "success"
