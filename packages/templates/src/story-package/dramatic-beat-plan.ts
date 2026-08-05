@@ -8,7 +8,13 @@ export type DramaticBeatActor = {
 
 export type DramaticBeatStep = {
   stepId: string;
-  kind: "COUNTERMOVE" | "REACTION_WINDOW" | "DECISION_PRESSURE";
+  kind:
+    | "PATTERN_OPENING"
+    | "PATTERN_MOVE"
+    | "OBJECT_POWER_MOVE"
+    | "COUNTERMOVE"
+    | "REACTION_WINDOW"
+    | "DECISION_PRESSURE";
   actorRefs: string[];
   actorLabels: string[];
   /**
@@ -19,9 +25,11 @@ export type DramaticBeatStep = {
   /** Actor goals are motivation, never facts that must be recited. */
   actorGoals: string[];
   expressionPolicy:
+    | "ADAPT_PATTERN_TO_CURRENT_SCENE"
     | "DRAMATIZE_REQUIRED_MEANING"
     | "TRANSIENT_REACTION_ONLY"
     | "END_ON_UNRESOLVED_PRESSURE";
+  /** All plan steps are expression-only. Settlement remains the fact owner. */
   durableMutationAllowed: false;
 };
 
@@ -58,13 +66,28 @@ export type DramaticBeatPlannerInput = {
   decisionStopMeaning: string;
 };
 
+export type DramaticPatternPlanInput = {
+  openingPressure: string;
+  orderedBeats: Array<{
+    actorRole: string;
+    observableMove: string;
+    sceneFunction: string;
+    reactionCue: string;
+  }>;
+  objectPowerMoves: Array<{
+    objectLabel: string;
+    observableUse: string;
+    powerMeaning: string;
+  }>;
+};
+
 export type DramaticBeatPlannerModule = {
   moduleId: string;
   plan(input: DramaticBeatPlannerInput): DramaticBeatPlan;
 };
 
 export const deterministicDramaticBeatPlanner: DramaticBeatPlannerModule = {
-  moduleId: "deterministic-dramatic-beat-planner-v1",
+  moduleId: "deterministic-dramatic-beat-planner-v2",
   plan: compileDramaticBeatPlan,
 };
 
@@ -148,6 +171,120 @@ export function compileDramaticBeatPlan(input: DramaticBeatPlannerInput): Dramat
       nonDurableDialogueMayVary: true,
       newDurableFactsForbidden: true,
     },
+  };
+}
+
+/**
+ * Compile one approved NarrativeScenePattern into the already-authoritative
+ * plan. The pattern supplies staging grammar only: it cannot introduce a new
+ * fact, complete an action, move a document, reveal a secret or mutate state.
+ * Actor roles are deterministically mapped onto actors already active in the
+ * plan, so source-scene names and source-world props never become authority.
+ */
+export function applyNarrativeScenePatternToDramaticBeatPlan(
+  plan: DramaticBeatPlan,
+  pattern: DramaticPatternPlanInput | null | undefined,
+): DramaticBeatPlan {
+  if (!pattern) return plan;
+  if (plan.steps.some((step) => step.kind === "PATTERN_OPENING" || step.kind === "PATTERN_MOVE")) {
+    return plan;
+  }
+
+  const primaryActorRefs = unique(
+    plan.steps
+      .filter((step) => step.kind === "COUNTERMOVE")
+      .flatMap((step) => step.actorRefs),
+  );
+  const activeActorRefs = plan.activeActors.map((actor) => actor.actorRef);
+  const stagingActorRefs = unique([
+    ...primaryActorRefs,
+    ...activeActorRefs.filter((actorRef) => !primaryActorRefs.includes(actorRef)),
+  ]);
+  if (!stagingActorRefs.length) return plan;
+
+  const actorByRef = new Map(plan.activeActors.map((actor) => [actor.actorRef, actor]));
+  const labelsFor = (actorRefs: string[]) => actorRefs.map((actorRef) => (
+    actorByRef.get(actorRef)?.displayName || actorRef
+  ));
+  const goalsFor = (actorRefs: string[]) => unique(
+    actorRefs.map((actorRef) => actorByRef.get(actorRef)?.goal || "").filter(Boolean),
+  );
+  const assignedActor = (ordinal: number) => [
+    stagingActorRefs[Math.max(0, ordinal - 1) % stagingActorRefs.length]!,
+  ];
+  const adapt = (meaning: string, boundary: string) => [
+    "只把以下经批准的戏剧机制适配为当前场景中的短暂舞台动作；不得照搬来源场景的专名、物件、事实或结果：",
+    required(meaning, "DRAMATIC_PATTERN_MEANING_MISSING"),
+    `边界：${required(boundary, "DRAMATIC_PATTERN_BOUNDARY_MISSING")}`,
+  ].join(" ");
+
+  const patternSteps: DramaticBeatStep[] = [];
+  const openingPressure = clean(pattern.openingPressure);
+  if (openingPressure) {
+    const actorRefs = assignedActor(1);
+    patternSteps.push({
+      stepId: "PATTERN_OPENING",
+      kind: "PATTERN_OPENING",
+      actorRefs,
+      actorLabels: labelsFor(actorRefs),
+      requiredMeaning: adapt(
+        openingPressure,
+        "它只能建立现场压力和人物姿态，不能新增命令、证据、文书、秘密、承诺、数量、位置变化或持久状态。",
+      ),
+      actorGoals: goalsFor(actorRefs),
+      expressionPolicy: "ADAPT_PATTERN_TO_CURRENT_SCENE",
+      durableMutationAllowed: false,
+    });
+  }
+
+  pattern.orderedBeats.slice(0, 3).forEach((beat, index) => {
+    const actorRefs = assignedActor(index + 1);
+    patternSteps.push({
+      stepId: `PATTERN_MOVE_${index + 1}`,
+      kind: "PATTERN_MOVE",
+      actorRefs,
+      actorLabels: labelsFor(actorRefs),
+      requiredMeaning: adapt(
+        beat.observableMove,
+        [
+          `场景作用：${beat.sceneFunction}`,
+          `反应边界：${beat.reactionCue}`,
+          "actorRole 只是抽象戏剧职责，不能变成新人物或隐藏身份。",
+        ].join("；"),
+      ),
+      actorGoals: goalsFor(actorRefs),
+      expressionPolicy: "ADAPT_PATTERN_TO_CURRENT_SCENE",
+      durableMutationAllowed: false,
+    });
+  });
+
+  pattern.objectPowerMoves.slice(0, 1).forEach((move, index) => {
+    const actorRefs = assignedActor(pattern.orderedBeats.length + index + 1);
+    patternSteps.push({
+      stepId: `OBJECT_POWER_MOVE_${index + 1}`,
+      kind: "OBJECT_POWER_MOVE",
+      actorRefs,
+      actorLabels: labelsFor(actorRefs),
+      requiredMeaning: adapt(
+        `${move.objectLabel}：${move.observableUse}`,
+        `这一动作只能表达“${move.powerMeaning}”的权力关系；若该物件不在当前 Scene Projection 中，必须改写成不新增关键物件的等价动作。`,
+      ),
+      actorGoals: goalsFor(actorRefs),
+      expressionPolicy: "ADAPT_PATTERN_TO_CURRENT_SCENE",
+      durableMutationAllowed: false,
+    });
+  });
+
+  if (!patternSteps.length) return plan;
+  const firstAuthoritativeIndex = plan.steps.findIndex((step) => step.kind === "COUNTERMOVE");
+  const insertAt = firstAuthoritativeIndex < 0 ? 0 : firstAuthoritativeIndex;
+  return {
+    ...plan,
+    steps: [
+      ...plan.steps.slice(0, insertAt),
+      ...patternSteps,
+      ...plan.steps.slice(insertAt),
+    ],
   };
 }
 
