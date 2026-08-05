@@ -39,6 +39,18 @@ const worldModules = new WorldModuleRegistry([
     endingModule: sangtianEndingModule,
     runtimeContract: sangtianRuntimeFixture,
     settlementPackage: sangtianSettlementFixture,
+    actorByRoleKey: {
+      zhejiang_governor: "sangtian.actor.governor",
+      xunfu: "sangtian.actor.inspector",
+    },
+    sharedActions: [{
+      id: "issue-order",
+      label: "形成一份正式命令，明确下一步执行边界。",
+      roleKeys: ["zhejiang_governor"],
+      intentType: "USE_CAPABILITY",
+      referencedEntityIds: ["sangtian.institution.council"],
+      proposedCapabilityId: "sangtian.capability.issue",
+    }],
   },
   {
     worldId: "caesar",
@@ -48,6 +60,18 @@ const worldModules = new WorldModuleRegistry([
     },
     runtimeContract: caesarRuntimeFixture,
     settlementPackage: caesarSettlementFixture,
+    actorByRoleKey: {
+      senator: "caesar.actor.senator",
+      envoy: "caesar.actor.envoy",
+    },
+    sharedActions: [{
+      id: "deliberate-warning",
+      label: "Bring the warning before the Senate for deliberation.",
+      roleKeys: ["senator"],
+      intentType: "USE_CAPABILITY",
+      referencedEntityIds: ["caesar.institution.senate"],
+      proposedCapabilityId: "caesar.capability.deliberate",
+    }],
   },
 ]);
 const workspace = new FileStoryWorkspace(
@@ -95,7 +119,14 @@ const server = createServer(async (request, response) => {
       const run = await multiplayer.createRun({
         runId: String(body.runId || ""),
         worldId: String(body.worldId || ""),
-        actorIds: Array.isArray(body.actorIds) ? body.actorIds.map(String) : [],
+        actorIds: Array.isArray(body.roleKeys)
+          ? body.roleKeys.map((roleKey) => worldModules.actorForRole(
+            String(body.worldId || ""),
+            String(roleKey),
+          ))
+          : Array.isArray(body.actorIds)
+            ? body.actorIds.map(String)
+            : [],
       });
       return json(response, 201, run);
     }
@@ -106,22 +137,54 @@ const server = createServer(async (request, response) => {
     const sharedActionMatch = url.pathname.match(/^\/internal\/openovel\/shared-runs\/([^/]+)\/actions$/);
     if (request.method === "POST" && sharedActionMatch) {
       const body = await bodyJson(request);
+      const sharedRun = await multiplayer.getRun(decodeURIComponent(sharedActionMatch[1]));
+      const roleKey = String(body.roleKey || "");
+      const action = worldModules.sharedAction(
+        sharedRun.worldId,
+        roleKey,
+        body.candidateId ? String(body.candidateId) : undefined,
+      );
       const result = await multiplayer.submitAction({
         runId: decodeURIComponent(sharedActionMatch[1]),
-        actorId: String(body.actorId || ""),
+        actorId: worldModules.actorForRole(sharedRun.worldId, roleKey),
         rawText: String(body.rawText || ""),
         expectedStateRevision: Number(body.expectedStateRevision),
         idempotencyKey: String(body.idempotencyKey || ""),
-        intentType: String(body.intentType || "OTHER") as never,
-        referencedEntityIds: Array.isArray(body.referencedEntityIds)
-          ? body.referencedEntityIds.map(String)
-          : [],
-        proposedCapabilityId: body.proposedCapabilityId
-          ? String(body.proposedCapabilityId)
-          : undefined,
-        explicitCommitment: body.explicitCommitment === true,
-        explicitOrder: body.explicitOrder === true,
+        intentType: action.intentType,
+        referencedEntityIds: [...action.referencedEntityIds],
+        proposedCapabilityId: action.proposedCapabilityId,
+        explicitCommitment: action.explicitCommitment === true,
+        explicitOrder: action.explicitOrder === true,
       });
+      return json(response, 200, result);
+    }
+    const sharedActionsMatch = url.pathname.match(
+      /^\/internal\/openovel\/shared-runs\/([^/]+)\/roles\/([^/]+)\/actions$/,
+    );
+    if (request.method === "GET" && sharedActionsMatch) {
+      const runId = decodeURIComponent(sharedActionsMatch[1]);
+      const roleKey = decodeURIComponent(sharedActionsMatch[2]);
+      const sharedRun = await multiplayer.getRun(runId);
+      return json(response, 200, worldModules.sharedActionsForRole(sharedRun.worldId, roleKey));
+    }
+    const sharedRoleProjectionMatch = url.pathname.match(
+      /^\/internal\/openovel\/shared-runs\/([^/]+)\/roles\/([^/]+)\/(feed|projection|impact|clues|destiny-net)$/,
+    );
+    if (request.method === "GET" && sharedRoleProjectionMatch) {
+      const runId = decodeURIComponent(sharedRoleProjectionMatch[1]);
+      const roleKey = decodeURIComponent(sharedRoleProjectionMatch[2]);
+      const sharedRun = await multiplayer.getRun(runId);
+      const actorId = worldModules.actorForRole(sharedRun.worldId, roleKey);
+      const capability = sharedRoleProjectionMatch[3];
+      const result = capability === "feed"
+        ? await multiplayer.feed(runId, actorId)
+        : capability === "projection"
+          ? await multiplayer.projection(runId, actorId)
+          : capability === "impact"
+            ? await multiplayer.impact(runId, actorId)
+            : capability === "clues"
+              ? await multiplayer.clues(runId, actorId)
+              : await multiplayer.destinyNet(runId, actorId);
       return json(response, 200, result);
     }
     const sharedProjectionMatch = url.pathname.match(

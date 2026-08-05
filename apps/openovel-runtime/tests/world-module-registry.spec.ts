@@ -7,6 +7,7 @@ import type { OpenNovelProvider, RunMetadata } from "../src/types.js";
 import { WorldModuleRegistry, type RuntimeWorldModule } from "../src/world-module-registry.js";
 
 function moduleFixture(worldId: string, roleId: string): RuntimeWorldModule {
+  const actorId = `${worldId.trim()}.actor.${roleId}`;
   return {
     worldId,
     seeder: {
@@ -36,6 +37,20 @@ function moduleFixture(worldId: string, roleId: string): RuntimeWorldModule {
         sourceRevision: input.turnNumber,
       }),
     } satisfies EndingModule,
+    runtimeContract: {
+      worldId: worldId.trim(),
+      roles: [{ actorId }],
+    } as never,
+    settlementPackage: {} as never,
+    actorByRoleKey: { [roleId]: actorId },
+    sharedActions: [{
+      id: `${worldId.trim()}.action.primary`,
+      label: "Take the primary action.",
+      roleKeys: [roleId],
+      intentType: "USE_CAPABILITY",
+      referencedEntityIds: [],
+      proposedCapabilityId: `${worldId.trim()}.capability.primary`,
+    }],
   };
 }
 
@@ -74,6 +89,12 @@ test("world registry dispatches two worlds without core world-specific branches"
   assert.equal(registry.supports({ worldId: "world-a", roleId: "role-b" }), false);
   assert.equal(registry.supports({ worldId: "world-b", roleId: "role-b" }), true);
   assert.equal(registry.supports({ worldId: "world-c", roleId: "role-c" }), false);
+  assert.equal(registry.actorForRole("world-b", "role-b"), "world-b.actor.role-b");
+  assert.throws(() => registry.actorForRole("world-b", "role-a"), /WORLD_ROLE_NOT_REGISTERED/u);
+  assert.deepEqual(registry.sharedActionsForRole("world-b", "role-b"), [{
+    id: "world-b.action.primary",
+    label: "Take the primary action.",
+  }]);
 
   const metadata = {
     worldId: "world-b",

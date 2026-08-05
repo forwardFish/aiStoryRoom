@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import templates, {
   type DestinyNetProjection,
@@ -313,10 +313,44 @@ export class MultiplayerWorldRuntime {
     const gate = new Promise<void>((resolve) => { release = resolve; });
     const tail = prior.catch(() => undefined).then(() => gate);
     this.tails.set(runId, tail);
-    return prior.catch(() => undefined).then(operation).finally(() => {
+    return prior.catch(() => undefined).then(() => this.withFileLease(runId, operation)).finally(() => {
       release();
       if (this.tails.get(runId) === tail) this.tails.delete(runId);
     });
+  }
+
+  private async withFileLease<T>(runId: string, operation: () => Promise<T>) {
+    const dir = path.join(this.root, "shared-runs", runId);
+    await mkdir(dir, { recursive: true });
+    const lockPath = path.join(dir, "commit.lock");
+    const token = randomUUID();
+    const deadline = Date.now() + 5_000;
+    while (true) {
+      try {
+        const handle = await open(lockPath, "wx");
+        try {
+          await handle.writeFile(JSON.stringify({ token, createdAt: new Date().toISOString() }), "utf8");
+        } finally {
+          await handle.close();
+        }
+        break;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+        const details = await stat(lockPath).catch(() => null);
+        if (details && Date.now() - details.mtimeMs > 30_000) {
+          await unlink(lockPath).catch(() => undefined);
+          continue;
+        }
+        if (Date.now() >= deadline) throw new Error("SHARED_RUN_BUSY");
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    }
+    try {
+      return await operation();
+    } finally {
+      const current = await readFile(lockPath, "utf8").catch(() => "");
+      if (current.includes(token)) await unlink(lockPath).catch(() => undefined);
+    }
   }
 }
 

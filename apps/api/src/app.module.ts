@@ -23,17 +23,20 @@ import { OpenNovelAdapterController } from "./openovel-adapter/openovel-adapter.
 import { OpenNovelAdapterService } from "./openovel-adapter/openovel-adapter.service";
 import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.controller";
 import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
+import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
+import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
-  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController],
+  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController],
   providers: [
     StoryService,
     StoryTaskOutboxService,
     RoomsService,
     PresenceHeartbeatRateLimitGuard,
     OpenNovelAdapterService,
-    OpenNovelRuntimeClient
+    OpenNovelRuntimeClient,
+    OpenNovelSharedService
   ]
 })
 export class AppModule {}

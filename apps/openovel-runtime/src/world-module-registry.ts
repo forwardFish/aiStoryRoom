@@ -3,7 +3,18 @@ import type { EndingModule } from "./ending-module.js";
 import type { WorkspacePaths } from "./paths.js";
 import type { OpenNovelOption, RunMetadata } from "./types.js";
 import type { WorkspaceRunSeeder } from "./workspace-seeder.js";
-import type { SettlementPackage, WorldRuntimeContract } from "@ai-story/templates";
+import type { PlayerActionIntent, SettlementPackage, WorldRuntimeContract } from "@ai-story/templates";
+
+export type SharedActionDefinition = {
+  readonly id: string;
+  readonly label: string;
+  readonly roleKeys: readonly string[];
+  readonly intentType: PlayerActionIntent["intentType"];
+  readonly referencedEntityIds: readonly string[];
+  readonly proposedCapabilityId: string;
+  readonly explicitCommitment?: boolean;
+  readonly explicitOrder?: boolean;
+};
 
 export interface RuntimeWorldModule {
   readonly worldId: string;
@@ -12,6 +23,8 @@ export interface RuntimeWorldModule {
   readonly endingModule?: EndingModule;
   readonly runtimeContract?: WorldRuntimeContract;
   readonly settlementPackage?: SettlementPackage;
+  readonly actorByRoleKey?: Readonly<Record<string, string>>;
+  readonly sharedActions?: readonly SharedActionDefinition[];
 }
 
 /**
@@ -77,6 +90,45 @@ export class WorldModuleRegistry implements WorkspaceRunSeeder {
       contract: module.runtimeContract,
       settlementPackage: module.settlementPackage,
     };
+  }
+
+  actorForRole(worldId: string, roleKey: string) {
+    const { module, contract } = this.requireSharedWorld(worldId);
+    const actorId = module.actorByRoleKey?.[String(roleKey || "").trim()];
+    if (!actorId || !contract.roles.some((role) => role.actorId === actorId)) {
+      throw new Error(`WORLD_ROLE_NOT_REGISTERED:${worldId}:${roleKey}`);
+    }
+    return actorId;
+  }
+
+  sharedActionsForRole(worldId: string, roleKey: string) {
+    const { module } = this.requireSharedWorld(worldId);
+    this.actorForRole(worldId, roleKey);
+    return (module.sharedActions || [])
+      .filter((action) => action.roleKeys.includes(roleKey))
+      .map((action) => ({ id: action.id, label: action.label }));
+  }
+
+  sharedAction(worldId: string, roleKey: string, actionId?: string) {
+    const { module, contract } = this.requireSharedWorld(worldId);
+    const actorId = this.actorForRole(worldId, roleKey);
+    const candidates = (module.sharedActions || []).filter((action) => action.roleKeys.includes(roleKey));
+    const action = actionId
+      ? candidates.find((candidate) => candidate.id === actionId)
+      : candidates.length === 1
+        ? candidates[0]
+        : undefined;
+    if (!action) throw new Error(`WORLD_ACTION_NOT_REGISTERED:${worldId}:${roleKey}:${actionId || "default"}`);
+    const policy = contract.actorPolicies.find((candidate) => candidate.actorId === actorId);
+    if (!policy?.capabilityIds.includes(action.proposedCapabilityId)) {
+      throw new Error(`WORLD_ACTION_CAPABILITY_DENIED:${action.id}`);
+    }
+    for (const entityId of action.referencedEntityIds) {
+      if (!contract.entities.some((entity) => entity.id === entityId)) {
+        throw new Error(`WORLD_ACTION_ENTITY_MISSING:${action.id}:${entityId}`);
+      }
+    }
+    return action;
   }
 }
 

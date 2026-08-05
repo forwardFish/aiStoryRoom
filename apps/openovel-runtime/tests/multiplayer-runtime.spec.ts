@@ -144,3 +144,28 @@ test("shared runtime provides clue and destiny projections through the same API 
   assert.ok(net?.nodes.some((node) => node.type === "SELF"));
   assert.doesNotMatch(JSON.stringify({ clues, net }), /caesar\.secret\.route/u);
 });
+
+test("two runtime instances share one file lease and cannot overwrite the same revision", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "openovel-shared-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const firstRuntime = new MultiplayerWorldRuntime(root, registry());
+  const secondRuntime = new MultiplayerWorldRuntime(root, registry());
+  const actors = sangtianRuntimeFixture.roles.map((role) => role.actorId);
+  await firstRuntime.createRun({ runId: "shared.run.processes", worldId: "sangtian", actorIds: actors });
+  const base = {
+    runId: "shared.run.processes",
+    actorId: actors[0],
+    expectedStateRevision: 0,
+    intentType: "USE_CAPABILITY" as const,
+    referencedEntityIds: [sangtianRuntimeFixture.entities[2].id],
+    proposedCapabilityId: sangtianRuntimeFixture.capabilities[0].id,
+  };
+  const results = await Promise.allSettled([
+    firstRuntime.submitAction({ ...base, rawText: "First process action.", idempotencyKey: "process-action-key-0001" }),
+    secondRuntime.submitAction({ ...base, rawText: "Second process action.", idempotencyKey: "process-action-key-0002" }),
+  ]);
+  assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+  assert.equal(results.filter((result) => result.status === "rejected").length, 1);
+  assert.match(String((results.find((result) => result.status === "rejected") as PromiseRejectedResult).reason), /STATE_REVISION_CONFLICT/u);
+  assert.equal((await firstRuntime.getRun(base.runId)).stateRevision, 1);
+});

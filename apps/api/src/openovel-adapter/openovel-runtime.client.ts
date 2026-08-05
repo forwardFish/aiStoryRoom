@@ -40,6 +40,17 @@ export type OpenNovelTurnEvent = {
   data: any;
 };
 
+export type OpenNovelSharedRun = {
+  schemaVersion: "openovel_shared_run_v1";
+  runId: string;
+  worldId: string;
+  actorIds: string[];
+  stateRevision: number;
+  latestWorldTurnId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 @Injectable()
 export class OpenNovelRuntimeClient {
   private readonly baseUrl: string;
@@ -69,6 +80,56 @@ export class OpenNovelRuntimeClient {
 
   async getRun(runId: string): Promise<OpenNovelPublicRun> {
     return this.requestJson(`/internal/openovel/runs/${encodeURIComponent(runId)}`, { method: "GET" });
+  }
+
+  async createSharedRun(input: {
+    runId: string;
+    worldId: string;
+    roleKeys: string[];
+  }): Promise<OpenNovelSharedRun> {
+    return this.requestJson("/internal/openovel/shared-runs", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async getSharedRun(runId: string): Promise<OpenNovelSharedRun> {
+    return this.requestJson(`/internal/openovel/shared-runs/${encodeURIComponent(runId)}`, {
+      method: "GET",
+    });
+  }
+
+  async submitSharedAction(input: {
+    runId: string;
+    roleKey: string;
+    rawText: string;
+    expectedStateRevision: number;
+    idempotencyKey: string;
+    candidateId?: string;
+  }): Promise<any> {
+    const { runId, ...body } = input;
+    return this.requestJson(
+      `/internal/openovel/shared-runs/${encodeURIComponent(runId)}/actions`,
+      { method: "POST", body: JSON.stringify(body) },
+    );
+  }
+
+  async getSharedRoleView(
+    runId: string,
+    roleKey: string,
+    capability: "feed" | "projection" | "impact" | "clues" | "destiny-net",
+  ): Promise<any> {
+    return this.requestJson(
+      `/internal/openovel/shared-runs/${encodeURIComponent(runId)}/roles/${encodeURIComponent(roleKey)}/${capability}`,
+      { method: "GET" },
+    );
+  }
+
+  async getSharedRoleActions(runId: string, roleKey: string): Promise<Array<{ id: string; label: string }>> {
+    return this.requestJson(
+      `/internal/openovel/shared-runs/${encodeURIComponent(runId)}/roles/${encodeURIComponent(roleKey)}/actions`,
+      { method: "GET" },
+    );
   }
 
   async streamAction(
