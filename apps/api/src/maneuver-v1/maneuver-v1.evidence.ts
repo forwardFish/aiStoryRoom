@@ -19,6 +19,12 @@ export type EvidenceAssetRowV1 = {
   stateJson: unknown;
 };
 
+export function investigationOutcomesFromContextV1(contextJson: unknown): InvestigationOutcomeDefinitionV1[] {
+  const root = optionalRecord(contextJson);
+  const maneuver = root && optionalRecord(root.maneuverV1);
+  return validateInvestigationOutcomeDefinitionsV1(maneuver?.investigationOutcomes);
+}
+
 export function validateInvestigationOutcomeDefinitionsV1(value: unknown): InvestigationOutcomeDefinitionV1[] {
   if (value === undefined) return [];
   if (!Array.isArray(value)) throw new Error("MANEUVER_OUTCOMES_INVALID:outcomes");
@@ -92,9 +98,14 @@ export function preserveSameProvenanceEvidenceV1(
   return existing;
 }
 
+function optionalRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
 function record(value: unknown, path: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`MANEUVER_OUTCOMES_INVALID:${path}`);
-  return value as Record<string, unknown>;
+  const parsed = optionalRecord(value);
+  if (!parsed) throw new Error(`MANEUVER_OUTCOMES_INVALID:${path}`);
+  return parsed;
 }
 
 function text(value: unknown, path: string): string {

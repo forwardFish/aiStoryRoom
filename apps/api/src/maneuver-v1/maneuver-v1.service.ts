@@ -26,6 +26,14 @@ export class ManeuverV1Service {
     return this.engineInstance;
   }
 
+  async projection(user: AuthenticatedUser, runId: string) {
+    try {
+      return await this.store.readProjection(user.id, runId);
+    } catch (error) {
+      throw httpError(error);
+    }
+  }
+
   async preview(user: AuthenticatedUser, runId: string, body: unknown) {
     try {
       const input = object(body);
@@ -82,7 +90,7 @@ function httpError(error: unknown): Error {
     }, error.httpStatus);
   }
   const message = String(error instanceof Error ? error.message : error || "");
-  if (/^MANEUVER_[A-Z0-9_]+:/.test(message)) {
+  if (/^(MANEUVER|PRIVATE_EVIDENCE)_[A-Z0-9_]+:/.test(message)) {
     return new BadRequestException({
       code: message.split(":", 1)[0],
       message: "The maneuver request is incomplete or invalid.",
@@ -106,6 +114,7 @@ function playerMessage(code: string, fallback: string): string {
     ACTION_NEEDS_CLARIFICATION: "Choose one target and one main action before previewing.",
     ACTION_NOT_ALLOWED: "This role cannot submit that maneuver.",
     IDEMPOTENCY_KEY_REUSED: "This confirmation key was already used for another request.",
+    PRIVATE_EVIDENCE_CONFLICT: "This evidence is already bound to another role scope.",
   };
   return messages[code] || fallback;
 }
