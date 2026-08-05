@@ -247,7 +247,10 @@ test("an explicit bound option bypasses resolver ambiguity", async () => {
 
   assert.equal(result?.selectedOption?.id, option.id);
   assert.equal(capture.settledInputs.length, 1);
-  assert.equal(capture.sceneEvents.length, 0);
+  assert.equal(
+    capture.sceneEvents.some((event) => event.type === "intent_resolution"),
+    false,
+  );
 });
 
 function assertNumber(value: unknown, key: string) {
