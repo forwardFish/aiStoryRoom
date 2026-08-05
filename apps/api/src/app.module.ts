@@ -25,6 +25,7 @@ import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.co
 import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
 import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
+import { OpenNovelSoloManeuverService } from "./maneuver-v1/openovel-solo-maneuver.service";
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
@@ -36,7 +37,8 @@ import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.servi
     PresenceHeartbeatRateLimitGuard,
     OpenNovelAdapterService,
     OpenNovelRuntimeClient,
-    OpenNovelSharedService
+    OpenNovelSharedService,
+    OpenNovelSoloManeuverService
   ]
 })
 export class AppModule {}

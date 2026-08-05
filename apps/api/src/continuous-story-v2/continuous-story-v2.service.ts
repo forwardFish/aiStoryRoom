@@ -51,6 +51,7 @@ import { StoryContextComposerV2 } from "./story-context.composer";
 import { StoryGenerationErrorV2 } from "./story-generation.pipeline";
 import { StoryNarrativeProvider } from "./story-narrative.provider";
 import { operationalMetrics } from "../observability/operational-metrics";
+import { ContinuousStoryV2ManeuverService } from "../maneuver-v1/continuous-story-v2-maneuver.service";
 
 type Tx = Prisma.TransactionClient;
 
@@ -102,7 +103,8 @@ export class ContinuousStoryV2Service {
     @Inject(StoryAccessService) private readonly access: StoryAccessService,
     @Inject(StoryContextComposerV2) private readonly storyContexts: StoryContextComposerV2,
     @Inject(StoryNarrativeProvider) private readonly narrator: StoryNarrativeProvider,
-    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never
+    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never,
+    @Inject(ContinuousStoryV2ManeuverService) private readonly maneuvers: ContinuousStoryV2ManeuverService = null as never
   ) {}
 
   async start(user: AuthenticatedUser, roomId: string) {
@@ -393,7 +395,11 @@ export class ContinuousStoryV2Service {
       this.prisma.roleAsset.findMany({
         where: {
           runId: roomId,
-          OR: [{ ownerRoleId: membership.role.id }, { visibility: { in: ["PUBLIC", "OBSERVABLE"] } }]
+          OR: [
+            { ownerRoleId: membership.role.id },
+            { visibility: { in: ["PUBLIC", "OBSERVABLE"] } },
+            { stateJson: { path: ["sharedWithRoleIds"], array_contains: membership.role.id } }
+          ]
         },
         orderBy: { assetKey: "asc" }
       }),
@@ -425,6 +431,13 @@ export class ContinuousStoryV2Service {
       })
     ]);
     if (!control) throw new ConflictException({ code: "ROLE_CONTROL_NOT_READY", message: "Role control is not ready" });
+    if (turn?.status === "OPEN" && this.maneuvers?.enabledForRun(run.templateKey)) {
+      const settled = await this.maneuvers.settleOnTurnProjection(user, roomId, turn.id);
+      // A delayed investigation can add a private evidence card and advance the
+      // authoritative sequence immediately before this projection. Re-read the
+      // entire view once so no stale run/turn revision is mixed into the page.
+      if (settled.resolvedCount > 0) return this.game(user, roomId);
+    }
     const visibleFacts = visibleFactsForRole(facts, membership.role.id);
     const decisionFormBySequence = new Map(actionResolutions.map((resolution) => [
       resolution.appliedWorldSequence,
@@ -439,6 +452,22 @@ export class ContinuousStoryV2Service {
       (this.prisma as any).sponsorshipRequest.findFirst({ where: { runId: run.id, beneficiaryUserId: user.id }, orderBy: { createdAt: "desc" } })
     ]);
     const activeActionBilling = billing.policyVersion === "active_action_v1";
+    const availableTargets = turn
+      ? buildAvailableTargets(run.actorThreads.map((thread) => thread.role), visibleFacts, assets, turn.stageIndex, run.templateKey)
+      : [];
+    const maneuverRulesV1 = turn?.status === "OPEN" && this.maneuvers?.enabledForRun(run.templateKey)
+      ? await this.maneuvers.buildProjectionAsync({
+          run,
+          role: membership.role,
+          roles: run.actorThreads.map((thread) => thread.role),
+          control,
+          turn,
+          visibleFacts,
+          entries,
+          assets,
+          availableTargets,
+        })
+      : undefined;
     const projection: GameProjectionV2 = {
       schemaVersion: GAME_PROJECTION_V2_SCHEMA_VERSION,
       generatedAt: new Date().toISOString(),
@@ -466,7 +495,7 @@ export class ContinuousStoryV2Service {
         visibleFacts: visibleFacts.map((fact) => ({ factKey: fact.factKey, content: fact.content })),
         framing: turn.decisionSet?.framing || "",
         decisions: decisionCandidates,
-        availableTargets: buildAvailableTargets(run.actorThreads.map((thread) => thread.role), visibleFacts, assets, turn.stageIndex, run.templateKey),
+        availableTargets,
         customActionAllowed: true
       } : null,
       timeline: entries.map((entry) => ({
@@ -476,6 +505,7 @@ export class ContinuousStoryV2Service {
         content: entry.content,
         worldSequence: entry.worldSequence || 0,
         createdAt: entry.createdAt.toISOString(),
+        sourceActionId: stringList(entry.sourceEventIdsJson)[0] || undefined,
         decisionForm: entry.entryType === "V2_RESULT" ? decisionFormBySequence.get(entry.worldSequence || 0) : undefined
       })),
       otherActors: run.actorThreads.map((thread) => {
@@ -547,6 +577,7 @@ export class ContinuousStoryV2Service {
         worldSequence: entry.worldSequence || 0,
         createdAt: entry.createdAt.toISOString()
       })),
+      ...(maneuverRulesV1 ? { capabilities: { maneuverRulesV1 } } : {}),
       access: {
         state: activeActionBilling ? "UNLOCKED" : access.unlocked ? "UNLOCKED" : access.requiresUnlock ? "REQUIRES_UNLOCK" : "FREE",
         requiresUnlock: activeActionBilling ? false : access.requiresUnlock,
@@ -841,11 +872,40 @@ export class ContinuousStoryV2Service {
     return { accepted: true, gameProjection: await this.game(user, roomId) };
   }
 
+  previewManeuver(user: AuthenticatedUser, roomId: string, turnId: string, command: unknown) {
+    if (!this.maneuvers) throw new ConflictException({ code: "MANEUVER_PREVIEW_UNAVAILABLE", message: "当前运行时未启用有限谋划规则。" });
+    return this.maneuvers.preview(user, roomId, turnId, command);
+  }
+
+  settleManeuversBeforeMainDecision(user: AuthenticatedUser, roomId: string, turnId: string) {
+    if (!this.maneuvers) return { resolvedCount: 0, worldSequence: 0 };
+    return this.maneuvers.settleBeforeMainDecision(user, roomId, turnId);
+  }
+
+  async commitManeuverPreview(user: AuthenticatedUser, roomId: string, previewId: string, command: unknown) {
+    if (!this.maneuvers) throw new ConflictException({ code: "MANEUVER_PREVIEW_UNAVAILABLE", message: "当前运行时未启用有限谋划规则。" });
+    const committed = await this.maneuvers.commit(user, roomId, previewId, command);
+    return { ...committed, gameProjection: await this.game(user, roomId) };
+  }
+
   async submit(user: AuthenticatedUser, roomId: string, turnId: string, command: TurnDecisionCommandV2): Promise<TurnDecisionResponseV2> {
     validateCommand(command);
     const requestHash = sha256Canonical({ roomId, turnId, command });
+    // Idempotent replay must be checked before touching the maneuver window.
+    // A successful main decision closes its ActorTurn, so trying to settle
+    // BEFORE_MAIN_LOCK work first would incorrectly reject a legitimate retry.
     const replay = await this.replay(user, roomId, command.idempotencyKey, requestHash);
     if (replay) return replay;
+    if (this.maneuvers?.enabledForRun((await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { templateKey: true } }))?.templateKey || "")) {
+      const settled = await this.maneuvers.settleBeforeMainDecision(user, roomId, turnId);
+      if (settled.resolvedCount > 0) {
+        throw new ConflictException({
+          code: "TURN_CONTEXT_UPDATED",
+          message: "你等待的调查结果已经返回。主线选择没有提交，请先阅读新证据后重新确认。",
+          gameProjection: await this.game(user, roomId),
+        });
+      }
+    }
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
       let context: Awaited<ReturnType<ContinuousStoryV2Service["loadSubmissionContext"]>>;
@@ -3907,12 +3967,16 @@ function privateFactAnchors(content: string) {
   return content.split(/[，。；、：:\s]/).map((item) => item.trim()).filter((item) => item.length >= 6).slice(0, 8);
 }
 
-function narrativeKind(entryType: string): "OPENING" | "RESULT" | "CROSS_IMPACT" | "OBSERVABLE_TRACE" | "NEXT_SITUATION" | "ENDING" {
+function narrativeKind(entryType: string): "OPENING" | "RESULT" | "CROSS_IMPACT" | "OBSERVABLE_TRACE" | "NEXT_SITUATION" | "ENDING" | "MANEUVER_ACTION" | "MANEUVER_RESULT" | "EVIDENCE" | "REACTION" {
   if (entryType === "V2_RESULT") return "RESULT";
   if (entryType === "V2_CROSS_IMPACT") return "CROSS_IMPACT";
-  if (entryType === "V2_OBSERVABLE_TRACE") return "OBSERVABLE_TRACE";
+  if (["V2_OBSERVABLE_TRACE", "V2_MANEUVER_TRACE"].includes(entryType)) return "OBSERVABLE_TRACE";
   if (entryType === "V2_NEXT_SITUATION") return "NEXT_SITUATION";
   if (entryType === "V2_ENDING") return "ENDING";
+  if (entryType === "V2_MANEUVER_ACTION") return "MANEUVER_ACTION";
+  if (entryType === "V2_INVESTIGATION_RESULT") return "MANEUVER_RESULT";
+  if (["V2_EVIDENCE_SHARED", "V2_EVIDENCE_REVEALED"].includes(entryType)) return "EVIDENCE";
+  if (["V2_MANEUVER_NOTICE", "V2_CARD_TRIGGERED", "V2_CARD_EFFECT"].includes(entryType)) return "REACTION";
   return "OPENING";
 }
 
@@ -3920,8 +3984,16 @@ function narrativeTitle(entryType: string) {
   if (entryType === "V2_RESULT") return "你的行动带来的结果";
   if (entryType === "V2_CROSS_IMPACT") return "另一位角色改变了你的局势";
   if (entryType === "V2_OBSERVABLE_TRACE") return "你观察到的行动痕迹";
+  if (entryType === "V2_MANEUVER_TRACE") return "你观察到的行动痕迹";
   if (entryType === "V2_NEXT_SITUATION") return "接下来的局势";
   if (entryType === "V2_ENDING") return "你的角色结局";
+  if (entryType === "V2_MANEUVER_ACTION") return "你已经落下这一步";
+  if (entryType === "V2_INVESTIGATION_RESULT") return "调查带回的结果";
+  if (entryType === "V2_EVIDENCE_SHARED") return "你收到了一份证据";
+  if (entryType === "V2_EVIDENCE_REVEALED") return "证据已经公开";
+  if (entryType === "V2_CARD_TRIGGERED") return "伏置筹码被触发";
+  if (entryType === "V2_CARD_EFFECT") return "筹码改变了局势";
+  if (entryType === "V2_MANEUVER_NOTICE") return "需要你判断的新变化";
   return "你所看到的局势";
 }
 
