@@ -6,38 +6,41 @@ on:
       - codex/chatgpt-pro-ai-story-convergence
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  snapshot:
-    name: Candidate source snapshot
+  heartbeat:
+    name: Candidate execution heartbeat
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Record git gate
+      - name: Record isolated git gate
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git branch --show-current)" = "codex/chatgpt-pro-ai-story-convergence"
+          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
+          mkdir -p docs/auto-execute/evidence/chatgpt-pro
           {
-            echo "remote=$(git remote get-url origin)"
-            echo "branch=$(git branch --show-current)"
-            echo "head=$(git rev-parse HEAD)"
-            echo "merge_base=$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
-            git status --short
-          } | tee candidate-git-gate.txt
-      - name: Package source
+            echo "# ChatGPT Pro candidate execution heartbeat"
+            echo
+            echo "- repository: forwardFish/aiStoryRoom"
+            echo "- branch: $(git branch --show-current)"
+            echo "- tested_commit: $(git rev-parse HEAD)"
+            echo "- merge_base: $(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
+            echo "- workflow_run_id: ${GITHUB_RUN_ID}"
+            echo "- workflow_run_attempt: ${GITHUB_RUN_ATTEMPT}"
+            echo "- status: PASS"
+          } > docs/auto-execute/evidence/chatgpt-pro/workflow-heartbeat.md
+      - name: Commit heartbeat evidence
         shell: bash
         run: |
           set -euo pipefail
-          git archive --format=zip --output=candidate-source.zip HEAD
-      - uses: actions/upload-artifact@v4
-        with:
-          name: candidate-source
-          path: |
-            candidate-source.zip
-            candidate-git-gate.txt
-          if-no-files-found: error
-          retention-days: 1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/auto-execute/evidence/chatgpt-pro/workflow-heartbeat.md
+          git commit -m "test(ai-story): record candidate workflow heartbeat [skip ci]"
+          git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
