@@ -8,6 +8,7 @@ export async function bootGamePage({
   window: win = globalThis.window,
   fetchImpl = win?.fetch?.bind(win),
   loadContinuousStoryV2 = () => import("./continuous-story-v2-client.js?v=20260721-solo-actions-v2"),
+  loadManeuverV1 = () => import("./maneuver-v1/maneuver-v1-controller.js?v=20260805-mvp-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
   loadSolo = () => import("./app.js?v=20260721-solo-actions-v2"),
@@ -44,9 +45,13 @@ export async function bootGamePage({
   }
 
   if (response.ok && payload?.schemaVersion === CONTINUOUS_STORY_V2_SCHEMA) {
-    const { createContinuousStoryV2App } = await loadContinuousStoryV2();
+    const [{ createContinuousStoryV2App }, { attachManeuverV1Controller }] = await Promise.all([
+      loadContinuousStoryV2(),
+      loadManeuverV1(),
+    ]);
     const app = createContinuousStoryV2App({ root, window: win, runId, initialProjection: payload, fetchImpl, navigate });
     await app.boot();
+    await attachManeuverV1Controller({ app, root, window: win, runId, fetchImpl });
     return app;
   }
 
@@ -57,8 +62,6 @@ export async function bootGamePage({
     return app;
   }
 
-  // Historical room runs retain their existing member-scoped renderer. This
-  // branch is only reachable after an authenticated 2xx room projection.
   if (response.ok && payload?.room?.id) {
     win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
     const [{ RoomStoryStorage }, { createStoryApp }] = await Promise.all([loadRoomStorage(), loadSolo()]);
