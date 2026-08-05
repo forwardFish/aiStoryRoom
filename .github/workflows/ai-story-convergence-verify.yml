@@ -1,0 +1,128 @@
+name: AI Story Convergence Candidate Verify
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-ai-story-convergence
+    paths:
+      - ".github/workflows/ai-story-convergence-verify.yml"
+      - "apps/openovel-runtime/**"
+      - "packages/templates/**"
+      - "scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs"
+      - "scripts/story-decomposition/lib/**"
+      - "scripts/story-decomposition/schemas/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ai-story-convergence-candidate
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact candidate branch
+        uses: actions/checkout@v4
+        with:
+          ref: codex/chatgpt-pro-ai-story-convergence
+          fetch-depth: 0
+
+      - name: Prove Git boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "codex/chatgpt-pro-ai-story-convergence"
+          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
+          test -z "$(git status --short)"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install exact workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Run deterministic gates and preserve raw logs
+        id: gates
+        shell: bash
+        run: |
+          set -uo pipefail
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          EVIDENCE_ROOT="docs/auto-execute/evidence/ai-story-convergence/${SOURCE_SHA}"
+          mkdir -p "$EVIDENCE_ROOT"
+          printf '%s\n' "$SOURCE_SHA" > "$EVIDENCE_ROOT/source-sha.txt"
+          node --version > "$EVIDENCE_ROOT/node-version.txt"
+          pnpm --version > "$EVIDENCE_ROOT/pnpm-version.txt"
+          git remote -v > "$EVIDENCE_ROOT/git-remote.txt"
+          git branch --show-current > "$EVIDENCE_ROOT/git-branch.txt"
+          git merge-base HEAD origin/main > "$EVIDENCE_ROOT/git-merge-base.txt"
+          git status --short > "$EVIDENCE_ROOT/git-status-before.txt"
+
+          overall=0
+          summary="$EVIDENCE_ROOT/engineering-gates.tsv"
+          printf 'gate\texitCode\tcommand\n' > "$summary"
+
+          run_gate() {
+            name="$1"
+            shift
+            log="$EVIDENCE_ROOT/${name}.log"
+            set +e
+            "$@" >"$log" 2>&1
+            code=$?
+            set -e
+            printf '%s\t%s\t%s\n' "$name" "$code" "$*" >> "$summary"
+            if [ "$code" -ne 0 ]; then overall=1; fi
+          }
+
+          run_gate asset-generate node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs
+          run_gate asset-check node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs --check
+          run_gate templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate templates-build pnpm --filter @ai-story/templates build
+          run_gate openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate story-v4 pnpm test:story:v4
+          run_gate openovel-http-smoke pnpm --filter @apps/openovel-runtime smoke:http
+
+          printf '%s\n' "$overall" > "$EVIDENCE_ROOT/overall-exit-code.txt"
+          git status --short > "$EVIDENCE_ROOT/git-status-after.txt"
+          echo "evidence_root=$EVIDENCE_ROOT" >> "$GITHUB_OUTPUT"
+          echo "overall=$overall" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit generated supplement and immutable evidence
+        if: always()
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.gates.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            packages/templates/config/sangtian/story-package/part-one-narrative-supplement.json \
+            "$EVIDENCE_ROOT"
+          if ! git diff --cached --quiet; then
+            git commit -m "test(ai-story): record deterministic candidate evidence"
+            git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
+          fi
+
+      - name: Enforce gate result
+        if: always()
+        shell: bash
+        env:
+          OVERALL: ${{ steps.gates.outputs.overall }}
+        run: |
+          test "${OVERALL:-1}" = "0"
