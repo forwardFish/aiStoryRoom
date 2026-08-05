@@ -60,6 +60,7 @@ function context(overrides: Partial<AuthoritativeManeuverContextV1> = {}): Autho
     mainlineLocked: false,
     usedSlots: [],
     compilerContext: compilerContext(),
+    investigationOutcomes: [],
     ...overrides,
   };
 }
@@ -249,4 +250,58 @@ test("reusing an idempotency key with a different request is rejected", async ()
     (error: unknown) => error instanceof ManeuverDomainErrorV1 && error.code === "IDEMPOTENCY_KEY_REUSED",
   );
   assert.equal(store.writeCount, 1);
+});
+
+
+test("investigation preview requires and cryptographically binds an authoritative outcome", async () => {
+  const outcome = {
+    routeId: "route.compare_records",
+    factKey: "fact.access_log_changed",
+    title: "Signed record comparison",
+    summary: "The signed timestamps differ.",
+    supports: "A record changed after the first signature.",
+    cannotProve: "Who intended the change.",
+    sourceKind: "RECORD" as const,
+    provenanceKey: "source.access_log.primary",
+  };
+  const store = new MemoryStore(context({ investigationOutcomes: [outcome] }));
+  const subject = engine(store);
+  const preview = await subject.preview("user.alpha", "run.alpha", {
+    draft: {
+      kind: "INVESTIGATE",
+      traceId: "trace.access_log",
+      routeId: "route.compare_records",
+      expectedTurnRevision: 3,
+    },
+    expectedStateRevision: 7,
+  });
+  assert.equal(preview.decision, "READY");
+  assert.ok(preview.previewToken);
+  store.context.investigationOutcomes = [{ ...outcome, supports: "A broader claim." }];
+  await assert.rejects(
+    subject.commit("user.alpha", "run.alpha", {
+      previewToken: preview.previewToken,
+      idempotencyKey: "commit:investigation:binding",
+      expectedStateRevision: 7,
+    }),
+    (error: unknown) => error instanceof ManeuverDomainErrorV1 && error.code === "PREVIEW_STALE",
+  );
+  assert.equal(store.writeCount, 0);
+});
+
+test("investigation route without an authoritative outcome is blocked before a token is issued", async () => {
+  const store = new MemoryStore(context());
+  const preview = await engine(store).preview("user.alpha", "run.alpha", {
+    draft: {
+      kind: "INVESTIGATE",
+      traceId: "trace.access_log",
+      routeId: "route.compare_records",
+      expectedTurnRevision: 3,
+    },
+    expectedStateRevision: 7,
+  });
+  assert.equal(preview.decision, "BLOCKED");
+  assert.equal(preview.errorCode, "TRACE_UNAVAILABLE");
+  assert.equal(preview.previewToken, undefined);
+  assert.equal(store.writeCount, 0);
 });

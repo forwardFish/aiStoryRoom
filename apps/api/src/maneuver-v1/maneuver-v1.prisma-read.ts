@@ -107,6 +107,7 @@ export async function readManeuverContextV1(
     mainlineLocked: Boolean(mainlineSubmission) || turn.status !== "OPEN",
     usedSlots: uniqueSlots(actions.map((action: any) => action.actionSlot)),
     compilerContext: parsed.compilerContext,
+    investigationOutcomes: parsed.investigationOutcomes,
   };
 }
 

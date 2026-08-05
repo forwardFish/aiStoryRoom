@@ -11,6 +11,7 @@ import {
   type ManeuverDraftKindV1,
   type ManeuverPreviewPresentationV1,
 } from "@ai-story/templates";
+import type { InvestigationOutcomeDefinitionV1 } from "./maneuver-v1.evidence";
 
 export const MANEUVER_MAX_PER_TURN_V1 = 2 as const;
 export type ManeuverSlotV1 = "MANEUVER_1" | "MANEUVER_2";
@@ -45,6 +46,7 @@ export type AuthoritativeManeuverContextV1 = {
   mainlineLocked: boolean;
   usedSlots: ManeuverSlotV1[];
   compilerContext: ManeuverCompilerContextV1;
+  investigationOutcomes: InvestigationOutcomeDefinitionV1[];
 };
 
 export type CreateCommittedManeuverV1 = {
@@ -82,6 +84,7 @@ export type ManeuverPreviewTokenPayloadV1 = {
   draft: ManeuverDraftV1;
   compiled: CompiledManeuverV1;
   customAnalysis?: CustomManeuverAnalysisV1;
+  investigationOutcomeHash?: string;
   issuedAt: string;
   expiresAt: string;
 };
@@ -204,6 +207,19 @@ export class ManeuverEngineV1 {
       return { decision: "BLOCKED", clarificationPrompt: result.reason, errorCode: result.errorCode, remaining, maxPerTurn: 2 };
     }
 
+    const investigationOutcome = result.compiled.kind === "INVESTIGATION"
+      ? outcomeFor(context, draft.routeId)
+      : undefined;
+    if (result.compiled.kind === "INVESTIGATION" && !investigationOutcome) {
+      return {
+        decision: "BLOCKED",
+        clarificationPrompt: "The selected investigation route has no authoritative evidence binding.",
+        errorCode: "TRACE_UNAVAILABLE",
+        remaining,
+        maxPerTurn: 2,
+      };
+    }
+
     const issuedAt = this.now();
     const expiresAt = new Date(issuedAt.getTime() + this.previewTtlMs);
     const payload: ManeuverPreviewTokenPayloadV1 = {
@@ -221,6 +237,7 @@ export class ManeuverEngineV1 {
       ...(context.compilerContext.customAnalysis
         ? { customAnalysis: validateCustomManeuverAnalysisV1(context.compilerContext.customAnalysis) }
         : {}),
+      ...(investigationOutcome ? { investigationOutcomeHash: sha256Canonical(investigationOutcome) } : {}),
       issuedAt: issuedAt.toISOString(),
       expiresAt: expiresAt.toISOString(),
     };
@@ -277,6 +294,15 @@ export class ManeuverEngineV1 {
       }
       if (context.usedSlots.length >= MANEUVER_MAX_PER_TURN_V1) {
         throw new ManeuverDomainErrorV1("MANEUVER_LIMIT_REACHED", "No maneuver opportunities remain in this turn.", 409);
+      }
+
+      if (payload.compiled.kind === "INVESTIGATION") {
+        const currentOutcome = outcomeFor(context, payload.draft.routeId);
+        if (!currentOutcome
+          || !payload.investigationOutcomeHash
+          || sha256Canonical(currentOutcome) !== payload.investigationOutcomeHash) {
+          throw new ManeuverDomainErrorV1("PREVIEW_STALE", "The investigation evidence binding changed.", 409);
+        }
       }
 
       const compilerContext = {
@@ -374,6 +400,14 @@ function commitEnvelope(action: ManeuverCommittedActionV1): ManeuverCommitEnvelo
   };
 }
 
+function outcomeFor(
+  context: AuthoritativeManeuverContextV1,
+  routeId: string | undefined,
+): InvestigationOutcomeDefinitionV1 | undefined {
+  if (!routeId) return undefined;
+  return context.investigationOutcomes.find((outcome) => outcome.routeId === routeId);
+}
+
 function revision(value: unknown, path: string): number {
   if (!Number.isInteger(value) || Number(value) < 0) {
     throw new ManeuverDomainErrorV1("REVISION_CONFLICT", `${path} must be a non-negative integer.`, 400, false);
@@ -388,7 +422,7 @@ function validateTokenPayload(value: unknown): ManeuverPreviewTokenPayloadV1 {
   const raw = value as Record<string, unknown>;
   const allowed = [
     "schemaVersion", "runId", "userId", "actorRoleId", "actorTurnId", "stateRevision", "turnRevision",
-    "controlEpoch", "slotVersion", "draft", "compiled", "customAnalysis", "issuedAt", "expiresAt",
+    "controlEpoch", "slotVersion", "draft", "compiled", "customAnalysis", "investigationOutcomeHash", "issuedAt", "expiresAt",
   ];
   if (Object.keys(raw).some((key) => !allowed.includes(key))) {
     throw new ManeuverDomainErrorV1("PREVIEW_TAMPERED", "The preview payload contains unknown fields.", 409);
@@ -417,6 +451,11 @@ function validateTokenPayload(value: unknown): ManeuverPreviewTokenPayloadV1 {
     expiresAt: requiredString("expiresAt"),
   };
   if (raw.customAnalysis !== undefined) payload.customAnalysis = validateCustomManeuverAnalysisV1(raw.customAnalysis);
+  if (raw.investigationOutcomeHash !== undefined) {
+    const hash = requiredString("investigationOutcomeHash");
+    if (!/^[a-f0-9]{64}$/.test(hash)) throw new ManeuverDomainErrorV1("PREVIEW_TAMPERED", "The investigation binding is invalid.", 409);
+    payload.investigationOutcomeHash = hash;
+  }
   const issuedAtMs = new Date(payload.issuedAt).getTime();
   const expiresAtMs = new Date(payload.expiresAt).getTime();
   if (!Number.isFinite(issuedAtMs) || !Number.isFinite(expiresAtMs) || expiresAtMs <= issuedAtMs) {
