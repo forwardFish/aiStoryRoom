@@ -1,0 +1,369 @@
+{
+  "schemaVersion": "narrative-scene-pattern-set-v1",
+  "worldId": "sangtian",
+  "scopeId": "SEC-P1-04",
+  "version": "1.0.0",
+  "patterns": [
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-REPORT-AUTHORSHIP-SIGNATURE-CONTEST",
+      "sourceSceneId": "DM1566-C04-JOINT-REPORT-CONTEST",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C04",
+          "paragraphStartId": "DM1566-C04-P0074",
+          "paragraphEndId": "DM1566-C04-P0110",
+          "lineStart": 2513,
+          "lineEnd": 2585,
+          "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+        }
+      ],
+      "sectionIds": ["SEC-P1-04"],
+      "requirementIds": ["REQ-P1-REPORT-AUTHORSHIP", "REQ-P1-CAPITAL-FRAMING"],
+      "decisionKernelIds": ["DK-P1-REPORT-AUTHORSHIP", "DK-P1-RESPONSIBILITY-SCOPE"],
+      "actorRefs": ["actor.zhejiang_governor", "actor.zhejiang_xunfu", "actor.qingliu_magistrate", "actor.xunfu_aide"],
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ],
+      "dramaticFunction": "把首报由谁起草、谁署名、谁承担延缓与执行责任压到同一张待签文稿上，让叙述控制权通过人物行动争夺。",
+      "openingPressure": "首报已经形成可读草稿，但关键责任、延缓边界或粮食代价仍有一处空白；一方要求补写，另一方以拒签或另报相威胁。",
+      "runtimeActivationCues": [
+        "report.authorshipMode 仍为 UNKNOWN",
+        "report.firstNarrativeController 仍为 UNDECIDED",
+        "首报内容必须受当前证据和责任状态约束"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "draft_controller",
+          "observableMove": "把首报草稿放在案中，只点出一处会改变责任归属的措辞或遗漏。",
+          "sceneFunction": "把政治叙述权落到具体文字和纸面位置。",
+          "reactionCue": "其他人先看那一处文字，再决定是否继续署名。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "signature_resister",
+          "observableMove": "明确拒绝为当前写法落名，并提出删改、分署或另报方案。",
+          "sceneFunction": "让署名方式成为责任边界和权力筹码。",
+          "reactionCue": "拒签必须改变可用递送路径，而不能只形成情绪冲突。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "responsibility_claimant",
+          "observableMove": "要求把已经发生的执行、粮食、证据和督抚责任按可证明范围写入首报。",
+          "sceneFunction": "把多条已结算事实压缩成受证据上限约束的政治叙述。",
+          "reactionCue": "场景停在玩家决定署名与责任范围之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "signature_resister",
+          "surfaceMove": "不否认全部事实，只追问‘这句话由谁具名、谁承担后果’。",
+          "hiddenRisk": "落名会让后续朝廷把争议表述解释为共同承诺或共同责任。",
+          "cadenceRule": "每轮只争一处文字、一种署名或一项责任，不作长篇政策陈述。"
+        }
+      ],
+      "blockingPrinciples": [
+        "草稿、署名处和待补文字必须在同一可见纸面上。",
+        "谁控制笔、纸和递送封套，谁就在争夺首报叙述权。",
+        "任何新增文字都必须来自已提交 Canon 或可引用证据，不能由 Narrator 补造。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "待签首报草稿",
+          "observableUse": "一方把笔放在署名处，另一方用指节压住需要删改的责任句。",
+          "powerMeaning": "署名决定谁共同拥有叙述，也决定谁共同承担其中的政治后果。"
+        }
+      ],
+      "transferableTechniques": [
+        "用一处具体措辞承载宏观责任冲突",
+        "让拒签改变递送与叙述路径",
+        "把已结算事实压缩成受证据边界约束的首报"
+      ],
+      "forbiddenFlattening": [
+        "不得把首报写成系统自动生成的事实摘要。",
+        "不得让所有人无争议地共同署名。",
+        "不得把未证实幕后责任写入客观叙述。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-REPORT-EVIDENCE-ATTACHMENT-SEAL",
+      "sourceSceneId": "DM1566-C23-TESTIMONY-SEALED",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C23",
+          "paragraphStartId": "DM1566-C23-P0125",
+          "paragraphEndId": "DM1566-C23-P0147",
+          "lineStart": 17690,
+          "lineEnd": 17734,
+          "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+        }
+      ],
+      "sectionIds": ["SEC-P1-04"],
+      "requirementIds": ["REQ-P1-EVIDENCE-ATTACHMENT", "REQ-P1-REPORT-AUTHORSHIP"],
+      "decisionKernelIds": ["DK-P1-EVIDENCE-ATTACHMENT", "DK-P1-RESPONSIBILITY-SCOPE"],
+      "actorRefs": ["actor.zhejiang_governor", "actor.qingliu_magistrate", "actor.reform_clerk", "actor.xunfu_aide"],
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+      ],
+      "dramaticFunction": "让首报附件强度由现有原件、副本、证言、见证和封缄状态逐项计算，而不是由模型一句‘证据确凿’决定。",
+      "openingPressure": "首报正文已经接近可送，但案上材料强弱不一；有人要求全部附入，有人指出其中一项仍缺见证、保管或印记。",
+      "runtimeActivationCues": [
+        "report.attachmentStrength 仍为 NONE 或需要重算",
+        "evidence.chainStatus 可能为 TRACEABLE、FRAGILE 或 COMPROMISED",
+        "附件只能使用当前 Critical State 中实际存在的材料"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "attachment_compiler",
+          "observableMove": "逐件报出可附材料及其当前状态，把原件、副本、口述、证言和缺失项分开。",
+          "sceneFunction": "让附件强度建立在实际材料而非叙述判断上。",
+          "reactionCue": "任何未存在或未送达材料都必须留空。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "evidence_boundary_challenger",
+          "observableMove": "指出某项材料只能证明接触、保管或局部事实，不能支持更强结论。",
+          "sceneFunction": "阻止附件被政治叙述过度解释。",
+          "reactionCue": "质疑应改变附件强度或措辞，不得自动销毁整条证据链。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "seal_and_dispatch_controller",
+          "observableMove": "提出合卷、编号、见证、封缄和递送顺序，并保留尚未完成的印记位置。",
+          "sceneFunction": "把附件选择连接到可追溯递送。",
+          "reactionCue": "场景停在玩家决定附什么、排除什么以及由谁封缄之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "evidence_boundary_challenger",
+          "surfaceMove": "用‘这件东西能证明什么，不能证明什么’逐项限缩附件叙述。",
+          "hiddenRisk": "附件过强会把未决事实写成定论；附件过弱又会使首报失去可验证支撑。",
+          "cadenceRule": "一件材料对应一句证明上限，禁止把多件材料混成一个结论。"
+        }
+      ],
+      "blockingPrinciples": [
+        "每件附件都要有独立位置、状态和保管人。",
+        "未完成的见证或印记必须保留为可见缺口。",
+        "封缄只证明组合与递送状态，不证明附件内容全部真实。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "首报附件束",
+          "observableUse": "材料按顺序合卷，缺见证或缺印的位置故意留在外侧可见。",
+          "powerMeaning": "附件的顺序、缺口和封缄共同决定它在京师能支撑多强的叙述。"
+        }
+      ],
+      "transferableTechniques": [
+        "逐件计算附件证明上限",
+        "让缺失见证保持可见而非被叙述抹平",
+        "用封缄顺序连接证据链和递送链"
+      ],
+      "forbiddenFlattening": [
+        "不得附入当前状态中不存在的证据。",
+        "不得用‘证据确凿’概括不同材料的证明边界。",
+        "不得把准备盖印写成已经完成盖印。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-CAPITAL-CHANNEL-CUSTODY-INTERPRETATION",
+      "sourceSceneId": "DM1566-C02-REPORT-ARRIVES-YAN-HOUSE",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C02",
+          "paragraphStartId": "DM1566-C02-P0243",
+          "paragraphEndId": "DM1566-C02-P0251",
+          "lineStart": 1311,
+          "lineEnd": 1327,
+          "textSpanSha256": "FC3D2D0A1D3B6764867EB5C44A8D6434CD55B3B797E181759E33F3D9BC6C523A"
+        }
+      ],
+      "sectionIds": ["SEC-P1-04"],
+      "requirementIds": ["REQ-P1-CAPITAL-FRAMING", "REQ-P1-REPORT-AUTHORSHIP"],
+      "decisionKernelIds": ["DK-P1-CAPITAL-CHANNEL", "DK-P1-RESPONSIBILITY-SCOPE"],
+      "actorRefs": ["actor.zhejiang_governor", "actor.zhejiang_xunfu", "actor.xunfu_aide"],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-BYPASSES-TONGZHENG",
+        "DM1566-C02-CL-REPORT-REACHES-YAN-HOUSE",
+        "DM1566-C02-CL-REPORT-CHANNEL-INTERPRETED-POLITICALLY"
+      ],
+      "dramaticFunction": "把首报走哪条入京渠道写成保管、见证和政治解释权的争夺，使递送路线本身成为玩家选择。",
+      "openingPressure": "首报已可封发，但不同渠道分别提供速度、见证、控制权或被截留的风险；在场人物对同一路线作出不同政治解释。",
+      "runtimeActivationCues": [
+        "report.dispatchStatus 尚未进入 READY、DISPATCHED 或 SPLIT",
+        "report.firstNarrativeController 已影响谁希望控制渠道",
+        "渠道风险必须来自现有 Institution Capability 与 Pending Consequence"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "channel_proposer",
+          "observableMove": "提出一条具体递送路径，并说明经过哪些机构、由谁接手、能留下什么见证。",
+          "sceneFunction": "让渠道能力和保管节点可见。",
+          "reactionCue": "速度与见证不能被合并成一个无代价优势。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "political_interpreter",
+          "observableMove": "把该渠道解释为向某一权力中心示好、绕开程序或保留制衡。",
+          "sceneFunction": "显示渠道会改变京师如何理解同一份首报。",
+          "reactionCue": "这只能是人物判断，不得写成客观定罪。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "custody_risk_voice",
+          "observableMove": "指出在哪个节点可能被拆看、压下、延误或改写，并提出见证、双送或封缄条件。",
+          "sceneFunction": "把政治风险转化为可执行的递送设计。",
+          "reactionCue": "场景停在玩家选择单一路径、分送或附加见证之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "political_interpreter",
+          "surfaceMove": "不用断言谁会作恶，而是说明‘这条路会被谁理解成什么’。",
+          "hiddenRisk": "渠道选择可能改变首报到达前的政治标签与控制者。",
+          "cadenceRule": "先讲一个具体接手节点，再给出一种政治解释，避免泛泛谈京师。"
+        }
+      ],
+      "blockingPrinciples": [
+        "封套、递送凭据和接手顺序要作为独立对象出现。",
+        "人物只能知道自己有权知道的渠道风险。",
+        "首报尚未送达前，不能写出京师已经接受或定性。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "封发首报与递送凭据",
+          "observableUse": "递送者在封套外标出第一接手机构，另一人要求增加见证或第二路线。",
+          "powerMeaning": "首个接手节点决定谁最先拥有解释和控制这份叙述的机会。"
+        }
+      ],
+      "transferableTechniques": [
+        "把递送路线拆成连续保管节点",
+        "区分渠道事实与人物政治判断",
+        "用双送、见证和封缄形成不同风险方案"
+      ],
+      "forbiddenFlattening": [
+        "不得把路线选择写成无风险的快慢比较。",
+        "不得把人物对渠道的解释写成客观事实。",
+        "不得在首报送出前写出京师已完成定性。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-CAPITAL-AUDIENCE-FRAMING-STOP",
+      "sourceSceneId": "DM1566-C02-REPORT-AUDIENCE-FRAMING",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C02",
+          "paragraphStartId": "DM1566-C02-P0261",
+          "paragraphEndId": "DM1566-C02-P0271",
+          "lineStart": 1347,
+          "lineEnd": 1367,
+          "textSpanSha256": "D4E559DBB74D4DB551A3B3459070D6E4FAF37B197B373D7A5AB35AA87A64F900"
+        }
+      ],
+      "sectionIds": ["SEC-P1-04"],
+      "requirementIds": ["REQ-P1-CAPITAL-FRAMING", "REQ-P1-REPORT-AUTHORSHIP"],
+      "decisionKernelIds": ["DK-P1-CAPITAL-CHANNEL", "DK-P1-REPORT-AUTHORSHIP"],
+      "actorRefs": ["actor.zhejiang_governor", "actor.zhejiang_xunfu", "actor.xunfu_aide"],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-REPORT-FRAMING-AT-AUDIENCE",
+        "DM1566-C02-CL-AUDIENCE-FRAMING-RATIONALE"
+      ],
+      "dramaticFunction": "让首报不仅选择送往何处，还选择在什么政治现场被开启和解释，并在第一部分结尾停于‘叙述已经出发、裁决尚未发生’。",
+      "openingPressure": "同一份首报可以在不同现场被呈递；有人主张借公开在场者限制事后反悔，有人担心这会提前锁定政治标签。",
+      "runtimeActivationCues": [
+        "首报递送方案已接近确定",
+        "玩家需要决定呈递现场或是否分拆叙述",
+        "T20 只能进入 PART_END，不能生成皇帝最终裁决"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "audience_framer",
+          "observableMove": "提出在一组特定见证者或权力人物在场时呈递首报，并说明该现场如何限制后续改口。",
+          "sceneFunction": "把呈递现场变成叙述框架的一部分。",
+          "reactionCue": "现场能力只能影响解释与见证，不能替代正式裁决。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "framing_risk_voice",
+          "observableMove": "指出公开现场会让沉默、异议或缺席都被政治化解释。",
+          "sceneFunction": "让公开见证同时带来约束和标签风险。",
+          "reactionCue": "风险保持为预期，不得写成已经发生的京师结论。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "dispatch_decider",
+          "observableMove": "要求玩家确定首报是否按此现场呈递、另附说明或分拆递送。",
+          "sceneFunction": "形成第一部分最后一个真实可执行决策。",
+          "reactionCue": "场景收束于首报可出发或已经出发，不得跨越到整部故事最终裁决。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "audience_framer",
+          "surfaceMove": "把呈递现场说成‘让所有人当场听见同一份话’。",
+          "hiddenRisk": "现场会让每个人的沉默或表态被固定为政治立场。",
+          "cadenceRule": "先说明谁在场，再说明该在场关系会限制什么，不预测最终旨意。"
+        }
+      ],
+      "blockingPrinciples": [
+        "本场使用递送方案、见证名单或呈递安排表现未来现场，不直接切换到京师裁决现场。",
+        "首报能被封发，但皇帝、内阁或司礼监的最终反应仍属于后续部分。",
+        "PART_END 必须保留未决政治问题和已出发的因果。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "呈递安排与见证名单",
+          "observableUse": "一方把拟定在场者逐一念出，另一方在可能造成政治锁定的位置停笔。",
+          "powerMeaning": "谁在首报首次被开启时在场，谁就参与定义它的第一层政治含义。"
+        }
+      ],
+      "transferableTechniques": [
+        "把未来呈递现场写成当前可决定的制度动作",
+        "让公开见证同时产生保护和政治标签风险",
+        "在阶段结尾保留已出发但尚未裁决的因果"
+      ],
+      "forbiddenFlattening": [
+        "不得在第一部分结尾生成皇帝、内阁或京师最终裁决。",
+        "不得把呈递现场写成必然获得某种旨意。",
+        "不得把 PART_END 冒充浙江总督整部故事的最终命运。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    }
+  ]
+}
