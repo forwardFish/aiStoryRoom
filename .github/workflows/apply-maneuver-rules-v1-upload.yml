@@ -125,7 +125,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f .github/workflows/apply-maneuver-rules-v1-upload.yml
+          # GITHUB_TOKEN cannot create or update workflow files. Keep the
+          # branch's current workflow tree unchanged for this commit; the
+          # repository connector will install the verified workflows after
+          # the implementation commit lands.
+          git restore --source=HEAD --staged --worktree .github/workflows
           git add -A
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
