@@ -34,7 +34,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .candidate-evidence/logs
+          mkdir -p candidate-evidence/logs
           {
             echo "repository=${GITHUB_REPOSITORY}"
             echo "event=${GITHUB_EVENT_NAME}"
@@ -46,7 +46,7 @@ jobs:
             echo "status_begin"
             git status --short
             echo "status_end"
-          } | tee .candidate-evidence/logs/00-git-gate.log
+          } | tee candidate-evidence/logs/00-git-gate.log
           test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
           test "${{ github.event.pull_request.base.ref }}" = "codex/chatgpt-pro-ai-story-convergence"
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
@@ -65,38 +65,50 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install locked dependencies
+      - id: install
+        name: Install locked dependencies
         shell: bash
+        continue-on-error: true
         run: |
           set -o pipefail
-          pnpm install --frozen-lockfile 2>&1 | tee .candidate-evidence/logs/01-pnpm-install.log
+          pnpm install --frozen-lockfile 2>&1 | tee candidate-evidence/logs/01-pnpm-install.log
 
-      - name: OpenNovel runtime typecheck
+      - id: typecheck
+        name: OpenNovel runtime typecheck
         shell: bash
+        continue-on-error: true
         run: |
           set -o pipefail
-          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee .candidate-evidence/logs/02-openovel-typecheck.log
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee candidate-evidence/logs/02-openovel-typecheck.log
 
-      - name: OpenNovel runtime build
+      - id: build
+        name: OpenNovel runtime build
         shell: bash
+        continue-on-error: true
         run: |
           set -o pipefail
-          pnpm --filter @apps/openovel-runtime build 2>&1 | tee .candidate-evidence/logs/03-openovel-build.log
+          pnpm --filter @apps/openovel-runtime build 2>&1 | tee candidate-evidence/logs/03-openovel-build.log
 
-      - name: Story V4 contracts and runtime tests
+      - id: story_v4
+        name: Story V4 contracts and runtime tests
         shell: bash
+        continue-on-error: true
         run: |
           set -o pipefail
-          pnpm test:story:v4 2>&1 | tee .candidate-evidence/logs/04-story-v4.log
+          pnpm test:story:v4 2>&1 | tee candidate-evidence/logs/04-story-v4.log
 
-      - name: OpenNovel real HTTP smoke with deterministic provider fixture
+      - id: http_smoke
+        name: OpenNovel real HTTP smoke with deterministic provider fixture
         shell: bash
+        continue-on-error: true
         run: |
           set -o pipefail
-          pnpm --filter @apps/openovel-runtime smoke:http 2>&1 | tee .candidate-evidence/logs/05-openovel-http-smoke.log
+          pnpm --filter @apps/openovel-runtime smoke:http 2>&1 | tee candidate-evidence/logs/05-openovel-http-smoke.log
 
-      - name: Recompile Part One without source writes and compare immutable bytes
+      - id: assets
+        name: Recompile Part One without source writes and compare immutable bytes
         shell: bash
+        continue-on-error: true
         run: |
           set -euo pipefail
           mkdir -p "${RUNNER_TEMP}/sangtian-authoring"
@@ -104,37 +116,74 @@ jobs:
           export SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring"
           export SANGTIAN_RUNTIME_PACKAGE_PATH="${RUNNER_TEMP}/part-one-runtime.json"
           node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
-            2>&1 | tee .candidate-evidence/logs/06-asset-recompile.log
+            2>&1 | tee candidate-evidence/logs/06-asset-recompile.log
           sha256sum \
             packages/templates/config/sangtian/story-package/part-one-runtime.json \
             "${RUNNER_TEMP}/part-one-runtime.json" \
-            | tee .candidate-evidence/logs/07-asset-sha256.log
+            | tee candidate-evidence/logs/07-asset-sha256.log
           cmp --silent \
             packages/templates/config/sangtian/story-package/part-one-runtime.json \
             "${RUNNER_TEMP}/part-one-runtime.json"
 
-      - name: Record final clean-tree gate and exact source archive
+      - name: Record exact gate outcomes and targeted source archive
         if: always()
         shell: bash
         run: |
-          set +e
+          set -euo pipefail
           {
             echo "tested_commit=$(git rev-parse HEAD)"
             echo "merge_base=$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
+            echo "install=${{ steps.install.outcome }}"
+            echo "typecheck=${{ steps.typecheck.outcome }}"
+            echo "build=${{ steps.build.outcome }}"
+            echo "story_v4=${{ steps.story_v4.outcome }}"
+            echo "http_smoke=${{ steps.http_smoke.outcome }}"
+            echo "assets=${{ steps.assets.outcome }}"
             echo "status_begin"
             git status --short
             echo "status_end"
-          } | tee .candidate-evidence/logs/99-final-git-gate.log
-          git archive --format=zip --output=.candidate-evidence/candidate-source.zip HEAD
+          } | tee candidate-evidence/logs/99-final-git-gate.log
+          git archive --format=tar.gz \
+            --output=candidate-evidence/candidate-targeted-source.tar.gz \
+            HEAD -- \
+            AGENTS.md \
+            package.json \
+            pnpm-lock.yaml \
+            pnpm-workspace.yaml \
+            tsconfig.base.json \
+            apps/openovel-runtime \
+            packages/templates/package.json \
+            packages/templates/tsconfig.json \
+            packages/templates/src \
+            packages/templates/tests \
+            packages/templates/authoring/sangtian/manifest.json \
+            packages/templates/authoring/sangtian/narrative \
+            packages/templates/authoring/sangtian/sections \
+            packages/templates/authoring/sangtian/source-evidence \
+            packages/templates/authoring/sangtian/continuity \
+            packages/templates/config/sangtian/story-package \
+            scripts/story-decomposition \
+            docs/Our_Many_Worlds_AI剧情推演一次性收敛现状审计与ChatGPT_Pro开发交接方案_v1.0.md
           cp packages/templates/config/sangtian/story-package/part-one-runtime.json \
-            .candidate-evidence/committed-part-one-runtime.json
+            candidate-evidence/committed-part-one-runtime.json
 
       - name: Upload deterministic evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: candidate-engineering-evidence-${{ github.event.pull_request.base.sha }}
-          path: .candidate-evidence/
+          path: candidate-evidence/
           if-no-files-found: error
-          include-hidden-files: true
           retention-days: 7
+
+      - name: Enforce all deterministic gates
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.install.outcome }}" = "success"
+          test "${{ steps.typecheck.outcome }}" = "success"
+          test "${{ steps.build.outcome }}" = "success"
+          test "${{ steps.story_v4.outcome }}" = "success"
+          test "${{ steps.http_smoke.outcome }}" = "success"
+          test "${{ steps.assets.outcome }}" = "success"
