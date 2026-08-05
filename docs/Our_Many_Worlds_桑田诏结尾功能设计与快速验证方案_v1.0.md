@@ -168,7 +168,7 @@ pnpm exec tsx --env-file=.env.test scripts/acceptance/sangtian-part-one-ending-p
 当前专项验证：
 
 ```text
-结尾单元测试：5/5 PASS
+结尾单元测试：6/6 PASS（覆盖全部 5 种已定义结局）
 OpenNovel Runtime 类型检查：PASS
 无模型 T01—T20 结构快进：PASS
 最终结尾验收项：7/7 PASS
