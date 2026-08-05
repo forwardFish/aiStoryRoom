@@ -82,6 +82,14 @@ export class StoryService {
     return this.mvpStory.deferCriticalEvent(runId, messageId, input as any);
   }
 
+  previewMvpManeuver(runId: string, input: Record<string, unknown>) {
+    return this.mvpStory.previewManeuver(runId, input as any);
+  }
+
+  commitMvpManeuverPreview(runId: string, input: Record<string, unknown>) {
+    return this.mvpStory.commitManeuverPreview(runId, input as any);
+  }
+
   submitMvpManeuver(runId: string, input: Record<string, unknown>) {
     return this.mvpStory.submitManeuver(runId, input as any);
   }
