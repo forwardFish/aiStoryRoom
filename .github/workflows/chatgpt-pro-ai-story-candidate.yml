@@ -188,3 +188,67 @@ jobs:
           test "${{ steps.story_v4.outcome }}" = "success"
           test "${{ steps.http_smoke.outcome }}" = "success"
           test "${{ steps.assets.outcome }}" = "success"
+
+  apply-capability-patch:
+    name: Validate and apply generic capability binding
+    if: github.event.pull_request.title == 'patch: apply generic capability binding'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact candidate base SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - name: Prove branch boundary and apply staged patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.event.pull_request.base.ref }}" = "codex/chatgpt-pro-ai-story-convergence"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
+          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
+          git apply --check docs/auto-execute/.chatgpt-pro-capability-binding.patch
+          git apply docs/auto-execute/.chatgpt-pro-capability-binding.patch
+          git rm docs/auto-execute/.chatgpt-pro-capability-binding.patch
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify patched runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @apps/openovel-runtime typecheck
+          pnpm test:story:v4
+          pnpm --filter @apps/openovel-runtime smoke:http
+
+      - name: Commit tested patch to candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/openovel-runtime/src/decision-adapter.ts
+          git add apps/openovel-runtime/src/intent-resolver.ts
+          git add apps/openovel-runtime/src/sangtian-decisions.ts
+          git add apps/openovel-runtime/tests/intent-resolver-adapter.spec.ts
+          git add apps/openovel-runtime/tests/intent-resolver.spec.ts
+          git add packages/templates/src/story-package/part-one-runtime-engine.ts
+          git add -u docs/auto-execute/.chatgpt-pro-capability-binding.patch
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = "7"
+          git commit -m "feat(openovel): settle capability-level free actions"
+          git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
