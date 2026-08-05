@@ -34,3 +34,67 @@ jobs:
       - run: pnpm --filter @apps/api typecheck
       - run: pnpm --filter @apps/web typecheck
       - run: pnpm test:causal
+
+  apply-ai-story-capability-patch:
+    name: Apply AI story capability patch after target gates
+    if: github.event.pull_request.title == 'patch: apply generic capability binding'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact candidate base SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - name: Prove branch boundary and apply staged patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.event.pull_request.base.ref }}" = "codex/chatgpt-pro-ai-story-convergence"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
+          test "$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)" = "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c"
+          PATCH=docs/auto-execute/.chatgpt-pro-capability-binding.patch
+          git apply --check "$PATCH"
+          git apply "$PATCH"
+          git rm "$PATCH"
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install and verify target runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter @apps/openovel-runtime typecheck
+          pnpm test:story:v4
+          pnpm --filter @apps/openovel-runtime smoke:http
+
+      - name: Commit and push only the candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/openovel-runtime/src/decision-adapter.ts \
+            apps/openovel-runtime/src/intent-resolver.ts \
+            apps/openovel-runtime/src/sangtian-decisions.ts \
+            apps/openovel-runtime/tests/intent-resolver-adapter.spec.ts \
+            apps/openovel-runtime/tests/intent-resolver.spec.ts \
+            packages/templates/src/story-package/part-one-runtime-engine.ts
+          git add -u docs/auto-execute/.chatgpt-pro-capability-binding.patch
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = "7"
+          git commit -m "feat(openovel): settle capability-level free actions"
+          git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
