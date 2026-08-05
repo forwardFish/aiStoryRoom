@@ -1,4 +1,4 @@
-name: ChatGPT Pro P4 Finalize
+name: ChatGPT Pro Finalize P4 Dramatic Beat Plan
 
 on:
   pull_request:
@@ -13,39 +13,771 @@ concurrency:
   group: chatgpt-pro-p4-finalize
   cancel-in-progress: false
 
-env:
-  CI: "true"
-  CANDIDATE_BRANCH: codex/chatgpt-pro-ai-story-convergence
-  FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
-  PATCH_PATH: docs/auto-execute/.chatgpt-pro-p4-final.patch
-  PATCH_SHA256: 8ba3afac4947e4c5366acd89152ef6a0109a9992d1949c259c4d2a8f643c4767
-
 jobs:
-  finalize-p4:
-    if: github.event.pull_request.title == 'ci(P4): finalize dramatic surface contract'
+  validate-and-commit:
+    if: "${{ github.event.pull_request.title == 'ci(P4): finalize dramatic beat plan' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      CI: "true"
+      TARGET_BRANCH: codex/chatgpt-pro-ai-story-convergence
+      CANDIDATE_SHA: ${{ github.event.pull_request.base.sha }}
+      FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+      WORKFLOW_PATH: .github/workflows/chatgpt-pro-p4-finalize.yml
+      EVIDENCE_ROOT: ${{ runner.temp }}/p4-evidence
+      OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
+      OPENOVEL_MODEL: deepseek-v4-pro
+      OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
+      OPENOVEL_REVIEWER_MODEL: deepseek-v4-pro
+      OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
+      OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
+      OPENOVEL_DEEPSEEK_THINKING: disabled
+
     steps:
-      - name: Check out exact candidate SHA
+      - name: Check out exact candidate base SHA
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           fetch-depth: 0
 
-      - name: Prove branch boundary and apply exact patch
+      - name: Prove repository, branch and frozen main boundary
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "base_ref=${{ github.event.pull_request.base.ref }}"
+            echo "candidate_sha=${CANDIDATE_SHA}"
+            echo "checked_out=$(git rev-parse HEAD)"
+            echo "merge_base=$(git merge-base HEAD ${FROZEN_BASE_SHA})"
+            echo "main_remote=$(git rev-parse origin/main)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee "${EVIDENCE_ROOT}/logs/00-boundary.log"
           test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
-          test "${{ github.event.pull_request.base.ref }}" = "${CANDIDATE_BRANCH}"
-          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
+          test "${{ github.event.pull_request.base.ref }}" = "${TARGET_BRANCH}"
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
           test "$(git merge-base HEAD ${FROZEN_BASE_SHA})" = "${FROZEN_BASE_SHA}"
           test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
-          test "$(sha256sum "${PATCH_PATH}" | awk '{print $1}')" = "${PATCH_SHA256}"
-          git apply --check "${PATCH_PATH}"
-          git apply "${PATCH_PATH}"
-          rm -f "${PATCH_PATH}" .github/workflows/chatgpt-pro-p4-finalize.yml
+          test -z "$(git status --short)"
+
+      - name: Apply exact P4 source and regression changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"P4_REPLACEMENT_PRECONDITION_FAILED:{path}:{count}:{old[:80]!r}")
+              file.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          # P4.1 — one world-agnostic semantic surface contract.
+          path = "packages/templates/src/story-package/dramatic-beat-plan.ts"
+          replace_once(path, '''    | "COUNTERMOVE"
+              | "REACTION_WINDOW"
+              | "DECISION_PRESSURE";''', '''    | "COUNTERMOVE"
+              | "REACTION_WINDOW"
+              | "VISIBLE_CONSEQUENCE"
+              | "DECISION_PRESSURE";''')
+          replace_once(path, '''/**
+           * A world-agnostic bridge between fact settlement and literary expression.
+           * It decides the dramatic order without using keywords from any story world.
+           */
+          export type DramaticBeatPlan = {''', '''export type DramaticBeatSurfaceContract = {
+            /** The already-settled meaning that must be visible exactly once. */
+            settledPlayerResult: string;
+            /** The NPC/world move that puts pressure on stage. */
+            visiblePressure: string;
+            /** The concrete change the reader can perceive before choosing again. */
+            visibleConsequence: string;
+            /** The unresolved dramatic question at the end of the scene. */
+            dramaticQuestion: string;
+            /** The exact semantic boundary where prose must stop. */
+            stopCondition: string;
+            /** Stable server-owned bindings; these remain backstage. */
+            sourceBindings: string[];
+            adaptationBindings: string[];
+            /** Closed critical-change boundary for both Narrator and fallback. */
+            allowedCriticalChanges: string[];
+            forbiddenCriticalChanges: string[];
+          };
+
+          /**
+           * A world-agnostic bridge between fact settlement and literary expression.
+           * It decides the dramatic order without using keywords from any story world.
+           */
+          export type DramaticBeatPlan = {''')
+          replace_once(path, '''  sceneRef: string;
+            sceneObjective: string;
+            activeActors: DramaticBeatActor[];''', '''  sceneRef: string;
+            sceneObjective: string;
+            surfaceContract: DramaticBeatSurfaceContract;
+            activeActors: DramaticBeatActor[];''')
+          replace_once(path, '''  pressureActorRefs: string[];
+            actorPolicies: DramaticBeatPolicyInput[];
+            pressureMeaning: string;
+            decisionStopMeaning: string;
+          };''', '''  pressureActorRefs: string[];
+            actorPolicies: DramaticBeatPolicyInput[];
+            surfaceContract: DramaticBeatSurfaceContract;
+          };''')
+          replace_once(path, '''  const sceneRef = required(input.sceneRef, "DRAMATIC_BEAT_SCENE_MISSING");
+            const sceneObjective = required(input.sceneObjective, "DRAMATIC_BEAT_OBJECTIVE_MISSING");
+            const pressureMeaning = required(input.pressureMeaning, "DRAMATIC_BEAT_PRESSURE_MISSING");
+            const decisionStopMeaning = required(input.decisionStopMeaning, "DRAMATIC_BEAT_STOP_MISSING");
+            const presentActorRefs = unique(input.presentActorRefs.map(clean).filter(Boolean));''', '''  const sceneRef = required(input.sceneRef, "DRAMATIC_BEAT_SCENE_MISSING");
+            const sceneObjective = required(input.sceneObjective, "DRAMATIC_BEAT_OBJECTIVE_MISSING");
+            const surfaceContract: DramaticBeatSurfaceContract = {
+              settledPlayerResult: required(
+                input.surfaceContract?.settledPlayerResult,
+                "DRAMATIC_BEAT_PLAYER_RESULT_MISSING",
+              ),
+              visiblePressure: required(
+                input.surfaceContract?.visiblePressure,
+                "DRAMATIC_BEAT_PRESSURE_MISSING",
+              ),
+              visibleConsequence: required(
+                input.surfaceContract?.visibleConsequence,
+                "DRAMATIC_BEAT_VISIBLE_CONSEQUENCE_MISSING",
+              ),
+              dramaticQuestion: required(
+                input.surfaceContract?.dramaticQuestion,
+                "DRAMATIC_BEAT_QUESTION_MISSING",
+              ),
+              stopCondition: required(
+                input.surfaceContract?.stopCondition,
+                "DRAMATIC_BEAT_STOP_MISSING",
+              ),
+              sourceBindings: unique(
+                (input.surfaceContract?.sourceBindings || []).map(clean).filter(Boolean),
+              ),
+              adaptationBindings: unique(
+                (input.surfaceContract?.adaptationBindings || []).map(clean).filter(Boolean),
+              ),
+              allowedCriticalChanges: unique(
+                (input.surfaceContract?.allowedCriticalChanges || []).map(clean).filter(Boolean),
+              ),
+              forbiddenCriticalChanges: unique(
+                (input.surfaceContract?.forbiddenCriticalChanges || []).map(clean).filter(Boolean),
+              ),
+            };
+            if (surfaceContract.dramaticQuestion !== surfaceContract.stopCondition) {
+              throw new Error("DRAMATIC_BEAT_QUESTION_STOP_MISMATCH");
+            }
+            if (!surfaceContract.sourceBindings.length) {
+              throw new Error("DRAMATIC_BEAT_SOURCE_BINDINGS_MISSING");
+            }
+            if (!surfaceContract.forbiddenCriticalChanges.length) {
+              throw new Error("DRAMATIC_BEAT_CRITICAL_BOUNDARY_MISSING");
+            }
+            const pressureMeaning = surfaceContract.visiblePressure;
+            const visibleConsequence = surfaceContract.visibleConsequence;
+            const decisionStopMeaning = surfaceContract.stopCondition;
+            const presentActorRefs = unique(input.presentActorRefs.map(clean).filter(Boolean));''')
+          replace_once(path, '''    sceneRef,
+              sceneObjective,
+              activeActors,''', '''    sceneRef,
+              sceneObjective,
+              surfaceContract,
+              activeActors,''')
+          replace_once(path, '''      {
+                stepId: "DECISION_PRESSURE",''', '''      {
+                stepId: "VISIBLE_CONSEQUENCE",
+                kind: "VISIBLE_CONSEQUENCE",
+                actorRefs: presentActorRefs,
+                actorLabels: labelsFor(presentActorRefs),
+                requiredMeaning: visibleConsequence,
+                actorGoals: goalsFor(presentActorRefs),
+                expressionPolicy: "DRAMATIZE_REQUIRED_MEANING",
+                durableMutationAllowed: false,
+              },
+              {
+                stepId: "DECISION_PRESSURE",''')
+
+          # P4.2 — compile the same surface from authoritative Part One settlement.
+          path = "packages/templates/src/story-package/part-one-runtime-engine.ts"
+          replace_once(path, '''  const playerVisibleFallback = {
+              ...(input.playerVisibleFallback || {
+                PLAYER_RESULT: playerOutcome,
+                ...(transitionMove?.action
+                  ? { SCENE_TRANSITION: transitionMove.action }
+                  : {}),
+                WORLD_PRESSURE: worldPressure
+              }),
+              DECISION_STOP: decisionStop
+            };''', '''  const playerVisibleFallback = {
+              ...(input.playerVisibleFallback || {
+                PLAYER_RESULT: playerOutcome,
+                ...(transitionMove?.action
+                  ? { SCENE_TRANSITION: transitionMove.action }
+                  : {}),
+                WORLD_PRESSURE: worldPressure
+              }),
+              // Fallback and model prose consume one semantic plan. An authored
+              // fallback may change literary wording in later slots, but it may
+              // not carry a second version of the already-settled player result.
+              PLAYER_RESULT: playerOutcome,
+              DECISION_STOP: decisionStop
+            };''')
+          replace_once(path, '''  const dramaticBeatPlan = compileDramaticBeatPlan({
+              sceneRef: input.sceneAfter.sceneId,
+              // The objective belongs to the scene after Settlement. Reusing the
+              // decision prompt that led into this turn can reintroduce actors or key
+              // object states from the scene that just ended.
+              sceneObjective: input.nextDecisionPoint.prompt,
+              presentActorRefs: input.sceneAfter.presentActorRefs,
+              actorLabelsByRef,
+              pressureActorRefs: input.nextDecisionPoint.actorRefs,
+              actorPolicies,
+              pressureMeaning: playerVisibleFallback.WORLD_PRESSURE,
+              decisionStopMeaning: playerVisibleFallback.DECISION_STOP
+            });''', '''  const visibleConsequence = [
+              input.authoritativeObservableFacts.at(-1),
+              input.sceneAfter.situation,
+              playerVisibleFallback.WORLD_PRESSURE
+            ]
+              .map((value) => String(value || "").trim())
+              .find((value) => value && value !== playerOutcome && value !== decisionStop)
+              || playerVisibleFallback.WORLD_PRESSURE;
+            const dramaticBeatPlan = compileDramaticBeatPlan({
+              sceneRef: input.sceneAfter.sceneId,
+              // The objective belongs to the scene after Settlement. Reusing the
+              // decision prompt that led into this turn can reintroduce actors or key
+              // object states from the scene that just ended.
+              sceneObjective: input.nextDecisionPoint.prompt,
+              presentActorRefs: input.sceneAfter.presentActorRefs,
+              actorLabelsByRef,
+              pressureActorRefs: input.nextDecisionPoint.actorRefs,
+              actorPolicies,
+              surfaceContract: {
+                settledPlayerResult: playerOutcome,
+                visiblePressure: playerVisibleFallback.WORLD_PRESSURE,
+                visibleConsequence,
+                dramaticQuestion: playerVisibleFallback.DECISION_STOP,
+                stopCondition: playerVisibleFallback.DECISION_STOP,
+                sourceBindings: unique([
+                  ...sourceEventIds,
+                  ...sourceEvidenceItems.flatMap((item) => item.sourceClaimIds)
+                ]),
+                adaptationBindings: unique(
+                  adaptationEvidenceItems.flatMap((item) => item.adaptationDecisionIds)
+                ),
+                allowedCriticalChanges: unique(input.authoritativeObservableFacts),
+                forbiddenCriticalChanges: unique(input.unresolvedFacts)
+              }
+            });''')
+
+          # P4.3 — capability-level turns use the identical surface contract.
+          path = "packages/templates/src/runtime-facade.ts"
+          replace_once(path, '''  const dramaticBeatPlan = compileDramaticBeatPlan({
+              sceneRef: scene.sceneId,
+              sceneObjective: input.workingSet.section.dramaticPurpose,
+              presentActorRefs: scene.presentActorRefs,
+              actorLabelsByRef,
+              pressureActorRefs: worldMove.actorRefs.length
+                ? worldMove.actorRefs
+                : input.workingSet.decisionPoint.actorRefs,
+              actorPolicies,
+              pressureMeaning: worldPressure,
+              decisionStopMeaning: decisionStop,
+            });''', '''  const dramaticBeatPlan = compileDramaticBeatPlan({
+              sceneRef: scene.sceneId,
+              sceneObjective: input.workingSet.section.dramaticPurpose,
+              presentActorRefs: scene.presentActorRefs,
+              actorLabelsByRef,
+              pressureActorRefs: worldMove.actorRefs.length
+                ? worldMove.actorRefs
+                : input.workingSet.decisionPoint.actorRefs,
+              actorPolicies,
+              surfaceContract: {
+                settledPlayerResult: playerOutcome,
+                visiblePressure: worldPressure,
+                visibleConsequence: capabilityFact,
+                dramaticQuestion: decisionStop,
+                stopCondition: decisionStop,
+                sourceBindings: unique([eventId, worldMove.beatId]),
+                adaptationBindings: [],
+                allowedCriticalChanges: [],
+                forbiddenCriticalChanges: [
+                  "当前 Decision Kernel 必须保持开放。",
+                  "不得新增或改变命令、证据、文书、秘密、承诺、资源或其他持久事实。",
+                ],
+              },
+            });''')
+
+          # P4.4 — fail closed when plan, tickets and assembly diverge.
+          path = "apps/openovel-runtime/src/scene-expression.ts"
+          replace_once(path, '''    noCrossSlotDuplicate: true;
+              fallbackSurfaceValidated: true;
+            };''', '''    noCrossSlotDuplicate: true;
+              fallbackSurfaceValidated: true;
+              dramaticPlanSurfaceAligned: true;
+            };''')
+          old_validate = '''function validateDramaticBeatPlan(
+            plan: DramaticBeatPlan | undefined,
+            afterScene: SceneSnapshot,
+          ) {
+            if (!plan) return;
+            if (plan.schemaVersion !== "dramatic-beat-plan-v1"
+              || !nonEmpty(plan.sceneRef)
+              || plan.sceneRef !== afterScene.sceneId
+              || !nonEmpty(plan.sceneObjective)
+              || !Array.isArray(plan.steps)
+              || plan.steps.length < 2) {
+              throw new Error("DRAMATIC_BEAT_PLAN_INVALID");
+            }
+            const presentActorIds = new Set(afterScene.presentActorIds);
+            for (const step of plan.steps) {
+              if (!nonEmpty(step.stepId)
+                || !nonEmpty(step.requiredMeaning)
+                || step.durableMutationAllowed !== false
+                || step.actorRefs.some((actorRef) => !presentActorIds.has(actorRef))) {
+                throw new Error(`DRAMATIC_BEAT_STEP_INVALID:${step.stepId || "unknown"}`);
+              }
+            }
+            if (plan.steps.at(-1)?.kind !== "DECISION_PRESSURE") {
+              throw new Error("DRAMATIC_BEAT_STOP_MISSING");
+            }
+          }'''
+          new_validate = '''function validateDramaticBeatPlan(
+            plan: DramaticBeatPlan | undefined,
+            afterScene: SceneSnapshot,
+          ) {
+            if (!plan) return;
+            const surface = plan.surfaceContract;
+            if (plan.schemaVersion !== "dramatic-beat-plan-v1"
+              || !nonEmpty(plan.sceneRef)
+              || plan.sceneRef !== afterScene.sceneId
+              || !nonEmpty(plan.sceneObjective)
+              || !surface
+              || !nonEmpty(surface.settledPlayerResult)
+              || !nonEmpty(surface.visiblePressure)
+              || !nonEmpty(surface.visibleConsequence)
+              || !nonEmpty(surface.dramaticQuestion)
+              || !nonEmpty(surface.stopCondition)
+              || normalize(surface.dramaticQuestion) !== normalize(surface.stopCondition)
+              || !Array.isArray(surface.sourceBindings)
+              || !surface.sourceBindings.length
+              || surface.sourceBindings.some((value) => !nonEmpty(value))
+              || !Array.isArray(surface.adaptationBindings)
+              || surface.adaptationBindings.some((value) => !nonEmpty(value))
+              || !Array.isArray(surface.allowedCriticalChanges)
+              || surface.allowedCriticalChanges.some((value) => !nonEmpty(value))
+              || !Array.isArray(surface.forbiddenCriticalChanges)
+              || !surface.forbiddenCriticalChanges.length
+              || surface.forbiddenCriticalChanges.some((value) => !nonEmpty(value))
+              || !Array.isArray(plan.activeActors)
+              || !Array.isArray(plan.steps)
+              || plan.steps.length < 3) {
+              throw new Error("DRAMATIC_BEAT_PLAN_INVALID");
+            }
+            const presentActorIds = new Set(afterScene.presentActorIds);
+            const stepIds = new Set<string>();
+            for (const actor of plan.activeActors) {
+              if (!nonEmpty(actor.actorRef)
+                || !nonEmpty(actor.displayName)
+                || !presentActorIds.has(actor.actorRef)) {
+                throw new Error(`DRAMATIC_BEAT_ACTOR_INVALID:${actor.actorRef || "unknown"}`);
+              }
+            }
+            for (const step of plan.steps) {
+              if (!nonEmpty(step.stepId)
+                || stepIds.has(step.stepId)
+                || !nonEmpty(step.requiredMeaning)
+                || step.durableMutationAllowed !== false
+                || step.actorRefs.some((actorRef) => !presentActorIds.has(actorRef))) {
+                throw new Error(`DRAMATIC_BEAT_STEP_INVALID:${step.stepId || "unknown"}`);
+              }
+              stepIds.add(step.stepId);
+            }
+            const counter = plan.steps.filter((step) => step.kind === "COUNTERMOVE");
+            const consequence = plan.steps.filter((step) => step.kind === "VISIBLE_CONSEQUENCE");
+            const stop = plan.steps.filter((step) => step.kind === "DECISION_PRESSURE");
+            if (counter.length !== 1
+              || normalize(counter[0]!.requiredMeaning) !== normalize(surface.visiblePressure)) {
+              throw new Error("DRAMATIC_BEAT_PRESSURE_SURFACE_MISMATCH");
+            }
+            if (consequence.length !== 1
+              || normalize(consequence[0]!.requiredMeaning) !== normalize(surface.visibleConsequence)) {
+              throw new Error("DRAMATIC_BEAT_CONSEQUENCE_SURFACE_MISMATCH");
+            }
+            if (stop.length !== 1
+              || plan.steps.at(-1) !== stop[0]
+              || normalize(stop[0]!.requiredMeaning) !== normalize(surface.stopCondition)) {
+              throw new Error("DRAMATIC_BEAT_STOP_MISSING");
+            }
+          }
+
+          function validateDramaticBeatTicketAlignment(manifest: BeatManifest) {
+            const surface = manifest.dramaticBeatPlan?.surfaceContract;
+            if (!surface) return;
+            const expectedBySlot = {
+              PLAYER_RESULT: surface.settledPlayerResult,
+              WORLD_PRESSURE: surface.visiblePressure,
+              DECISION_STOP: surface.stopCondition,
+            } as const;
+            for (const [slot, expectedMeaning] of Object.entries(expectedBySlot)) {
+              const tickets = manifest.tickets.filter((ticket) => (
+                ticket.slot === slot && ticket.required
+              ));
+              if (tickets.length !== 1
+                || normalize(tickets[0]!.requiredMeaning) !== normalize(expectedMeaning)) {
+                throw new Error(`DRAMATIC_BEAT_SURFACE_TICKET_MISMATCH:${slot}`);
+              }
+            }
+          }'''
+          replace_once(path, old_validate, new_validate)
+          replace_once(path, '''  if (manifest.transition.transitionRequired
+              && !manifest.tickets.some((ticket) => ticket.slot === "SCENE_TRANSITION" && ticket.required)) {
+              throw new Error("BEAT_MANIFEST_TRANSITION_TICKET_MISSING");
+            }
+            return manifest;''', '''  if (manifest.transition.transitionRequired
+              && !manifest.tickets.some((ticket) => ticket.slot === "SCENE_TRANSITION" && ticket.required)) {
+              throw new Error("BEAT_MANIFEST_TRANSITION_TICKET_MISSING");
+            }
+            if (manifest.dramaticBeatPlan
+              && !manifest.tickets.some((ticket) => ticket.slot === "WORLD_PRESSURE" && ticket.required)) {
+              throw new Error("BEAT_MANIFEST_WORLD_PRESSURE_TICKET_MISSING");
+            }
+            validateDramaticBeatTicketAlignment(manifest);
+            return manifest;''')
+          replace_once(path, '''        noCrossSlotDuplicate: true,
+                  fallbackSurfaceValidated: true,
+                },''', '''        noCrossSlotDuplicate: true,
+                  fallbackSurfaceValidated: true,
+                  dramaticPlanSurfaceAligned: true,
+                },''')
+
+          # P4.5 — expose only the slot-owned part of the unified surface to Narrator.
+          path = "apps/openovel-runtime/src/foreground.ts"
+          replace_once(path, '''        "Follow dramaticBeatPlan in order. It is the server-owned shape of this scene: dramatize its required meanings, use only its listed on-stage actors for causal moves, and stop at its final unresolved pressure.",''', '''        "Follow dramaticBeatPlan in order. It is the server-owned shape of this scene: dramatize its required meanings, use only its listed on-stage actors for causal moves, and stop at its final unresolved pressure.",
+        "surfaceContract is the complete semantic boundary: render each Narrator-owned surface exactly once, show its visible consequence before the final question, and never restate a PROTECTED surface.",''')
+          replace_once(path, '''  const protectedSet = new Set(protectedSlots);
+            return {
+              sceneObjective: plan.sceneObjective,
+              activeActors: plan.activeActors.map((actor) => ({''', '''  const protectedSet = new Set(protectedSlots);
+            const surface = plan.surfaceContract;
+            const playerResultProtected = protectedSet.has("PLAYER_RESULT");
+            const worldPressureProtected = protectedSet.has("WORLD_PRESSURE");
+            const decisionStopProtected = protectedSet.has("DECISION_STOP");
+            const sameMeaning = (left: string, right: string) => (
+              String(left || "").trim() === String(right || "").trim()
+            );
+            const visibleConsequenceProtected = (
+              playerResultProtected
+              && sameMeaning(surface.visibleConsequence, surface.settledPlayerResult)
+            ) || (
+              worldPressureProtected
+              && sameMeaning(surface.visibleConsequence, surface.visiblePressure)
+            ) || (
+              decisionStopProtected
+              && sameMeaning(surface.visibleConsequence, surface.stopCondition)
+            );
+            return {
+              sceneObjective: plan.sceneObjective,
+              surfaceContract: {
+                playerResultExpressionOwner: playerResultProtected ? "PROTECTED" : "NARRATOR",
+                settledPlayerResult: playerResultProtected ? null : surface.settledPlayerResult,
+                worldPressureExpressionOwner: worldPressureProtected ? "PROTECTED" : "NARRATOR",
+                visiblePressure: worldPressureProtected ? null : surface.visiblePressure,
+                visibleConsequence: visibleConsequenceProtected ? null : surface.visibleConsequence,
+                decisionStopExpressionOwner: decisionStopProtected ? "PROTECTED" : "NARRATOR",
+                dramaticQuestion: decisionStopProtected ? null : surface.dramaticQuestion,
+                stopCondition: decisionStopProtected ? null : surface.stopCondition,
+                sourceBindingCount: surface.sourceBindings.length,
+                adaptationBindingCount: surface.adaptationBindings.length,
+                allowedCriticalChanges: surface.allowedCriticalChanges,
+                forbiddenCriticalChanges: surface.forbiddenCriticalChanges,
+              },
+              activeActors: plan.activeActors.map((actor) => ({''')
+
+          # P4.6 — protect only typed irreversible results; regular prose belongs to Narrator.
+          path = "apps/openovel-runtime/src/sangtian-decisions.ts"
+          replace_once(path, '''    const fallbackSlots = beatContract?.playerVisibleFallback;''', '''    const playerResultExpressionOwner = expressionOwnerForPlayerResult({
+      durableEffectTypes: event.durableEffects.map((effect) => effect.type),
+      sectionTransitioned: event.sectionTransitioned,
+      knowledgeBoundaryPresent: Boolean(prepared.selectedOption?.effect?.knowledgeBoundary),
+      terminal: settlement.storyComplete,
+    });
+    const fallbackSlots = beatContract?.playerVisibleFallback;''')
+          replace_once(path, '''          protectedText, playerSourceRefs, true, "PROTECTED", protectedText,''', '''          protectedText,
+          playerSourceRefs,
+          true,
+          playerResultExpressionOwner,
+          playerResultExpressionOwner === "PROTECTED" ? protectedText : undefined,''')
+          replace_once(path, '''export const sangtianFactSettlementModule: FactSettlementModule = {''', '''const protectedPlayerResultEffectTypes = new Set([
+            "ENTITY.INTRODUCED",
+            "ENTITY.LOCATED_AT",
+            "ENTITY.HELD_BY",
+            "ENTITY.STATE",
+            "DOCUMENT.CREATED",
+            "DOCUMENT.AUTHENTICATED",
+            "DOCUMENT.TRANSFERRED",
+            "DOCUMENT.PUBLISHED",
+            "EVIDENCE.DESTROYED",
+            "KNOWLEDGE.REVEALED_TO",
+            "ACTOR.COMMITTED",
+            "ACTOR.ORDERED",
+          ]);
+
+          /**
+           * Expression ownership is determined only from typed causal authority.
+           * Ordinary scalar outcomes remain facts in Settlement but are rendered
+           * once by Narrator. Irreversible entity/document/knowledge changes,
+           * scene cuts and terminal closures keep a minimal protected surface.
+           */
+          export function expressionOwnerForPlayerResult(input: {
+            durableEffectTypes: string[];
+            sectionTransitioned: boolean;
+            knowledgeBoundaryPresent: boolean;
+            terminal: boolean;
+          }): "NARRATOR" | "PROTECTED" {
+            return input.sectionTransitioned
+              || input.knowledgeBoundaryPresent
+              || input.terminal
+              || input.durableEffectTypes.some((type) => protectedPlayerResultEffectTypes.has(type))
+              ? "PROTECTED"
+              : "NARRATOR";
+          }
+
+          export const sangtianFactSettlementModule: FactSettlementModule = {''')
+          replace_once(path, '''  const event = prepared.settlement.event;
+            const scene = phase === "ACTION_PHASE" ? event.sceneBefore : event.sceneAfter;''', '''  const event = prepared.settlement.event;
+            const playerResultExpressionOwner = expressionOwnerForPlayerResult({
+              durableEffectTypes: event.durableEffects.map((effect) => effect.type),
+              sectionTransitioned: event.sectionTransitioned,
+              knowledgeBoundaryPresent: Boolean(prepared.selectedOption?.effect?.knowledgeBoundary),
+              terminal: prepared.settlement.proposedState.partCompletionStatus === "HANDOFF_READY",
+            });
+            const scene = phase === "ACTION_PHASE" ? event.sceneBefore : event.sceneAfter;''')
+          replace_once(path, '''    // The settled protagonist action is already rendered by an immutable
+              // Protected Beat. Any new protagonist command in the continuation is an
+              // additional action, regardless of its natural-language wording.
+              originActionsInDraft: "FORBIDDEN" as const,''', '''    // A Narrator-owned PLAYER_RESULT is the one authorized rendering of
+              // the already-settled action. After-phase prose and every protected
+              // result still forbid an additional protagonist action.
+              originActionsInDraft: phase === "ACTION_PHASE"
+              && playerResultExpressionOwner === "NARRATOR"
+                ? "ALLOWED_BY_ENVELOPE" as const
+                : "FORBIDDEN" as const,''')
+
+          # P4.7 — compile-call regressions and second-world proof.
+          path = "packages/templates/tests/dramatic-beat-plan-pattern.test.ts"
+          replace_once(path, '''    pressureMeaning: "The custodian asks for a custody ruling.",
+              decisionStopMeaning: "Who may open the record, and under whose witness?",
+            });''', '''    surfaceContract: {
+                settledPlayerResult: "The reader deferred opening the record.",
+                visiblePressure: "The custodian asks for a custody ruling.",
+                visibleConsequence: "The seal remains intact while every witness can see who controls access.",
+                dramaticQuestion: "Who may open the record, and under whose witness?",
+                stopCondition: "Who may open the record, and under whose witness?",
+                sourceBindings: ["event.neutral.custody-pressure"],
+                adaptationBindings: [],
+                allowedCriticalChanges: ["The record remains sealed."],
+                forbiddenCriticalChanges: ["No new document, evidence or custody transfer may be invented."],
+              },
+            });''')
+          replace_once(path, '''      "COUNTERMOVE",
+                "REACTION_WINDOW",
+                "DECISION_PRESSURE",''', '''      "COUNTERMOVE",
+                "REACTION_WINDOW",
+                "VISIBLE_CONSEQUENCE",
+                "DECISION_PRESSURE",''')
+          replace_once(path, '''  assert.equal(result.steps.at(-1)?.requiredMeaning, "Who may open the record, and under whose witness?");
+            assert.ok(result.steps.every((step) => step.durableMutationAllowed === false));''', '''  assert.equal(result.steps.at(-1)?.requiredMeaning, "Who may open the record, and under whose witness?");
+            assert.equal(
+              result.steps.find((step) => step.kind === "VISIBLE_CONSEQUENCE")?.requiredMeaning,
+              result.surfaceContract.visibleConsequence,
+            );
+            assert.equal(result.surfaceContract.sourceBindings[0], "event.neutral.custody-pressure");
+            assert.ok(result.steps.every((step) => step.durableMutationAllowed === false));''')
+          replace_once(path, '''    pressureMeaning: "The envoy demands a release condition.",
+              decisionStopMeaning: "Will the reader release, defer, or add a condition?",
+            });''', '''    surfaceContract: {
+                settledPlayerResult: "The reader kept the prior release on hold.",
+                visiblePressure: "The envoy demands a release condition.",
+                visibleConsequence: "The unresolved deadline is now visible to both sides.",
+                dramaticQuestion: "Will the reader release, defer, or add a condition?",
+                stopCondition: "Will the reader release, defer, or add a condition?",
+                sourceBindings: ["event.neutral.release-pressure"],
+                adaptationBindings: [],
+                allowedCriticalChanges: [],
+                forbiddenCriticalChanges: ["No new release, promise or deadline may be invented."],
+              },
+            });''')
+
+          path = "packages/templates/tests/narrative-scene-pattern-multiworld.test.ts"
+          replace_once(path, '''    pressureMeaning: "The inspector seals the cargo lift and asks for the manifest.",
+              decisionStopMeaning: "The captain must decide whether to surrender the manifest or open the lift for emergency repairs.",
+            });''', '''    surfaceContract: {
+                settledPlayerResult: "The captain delayed the cargo transfer.",
+                visiblePressure: "The inspector seals the cargo lift and asks for the manifest.",
+                visibleConsequence: "The sealed lift now blocks the engineer's access to coolant.",
+                dramaticQuestion: "The captain must decide whether to surrender the manifest or open the lift for emergency repairs.",
+                stopCondition: "The captain must decide whether to surrender the manifest or open the lift for emergency repairs.",
+                sourceBindings: ["event.orbital-dock.quarantine"],
+                adaptationBindings: ["adaptation.orbital-dock.emergency"],
+                allowedCriticalChanges: ["The cargo lift remains sealed."],
+                forbiddenCriticalChanges: ["No cargo ownership or reactor failure may be invented."],
+              },
+            });''')
+          replace_once(path, '''    "COUNTERMOVE",
+              "REACTION_WINDOW",
+              "DECISION_PRESSURE",''', '''    "COUNTERMOVE",
+              "REACTION_WINDOW",
+              "VISIBLE_CONSEQUENCE",
+              "DECISION_PRESSURE",''')
+          replace_once(path, '''  assert.match(plan.steps[0]?.requiredMeaning || "", /seals the cargo lift/u);
+            assert.equal(plan.steps.every((step) => step.durableMutationAllowed === false), true);''', '''  assert.match(plan.steps[0]?.requiredMeaning || "", /seals the cargo lift/u);
+            assert.match(plan.surfaceContract.visibleConsequence, /blocks the engineer/u);
+            assert.equal(plan.surfaceContract.sourceBindings.length, 1);
+            assert.equal(plan.steps.every((step) => step.durableMutationAllowed === false), true);''')
+
+          # P4.8 — adapter and manifest integration tests.
+          path = "apps/openovel-runtime/tests/p04-scene-pattern-plan.spec.ts"
+          replace_once(path, '''import { buildNarratorMessages, compileForegroundContext } from "../src/foreground.js";
+          import { sangtianDecisionAdapter } from "../src/sangtian-decisions.js";''', '''import { buildNarratorMessages, compileForegroundContext } from "../src/foreground.js";
+          import { validateBeatManifest } from "../src/scene-expression.js";
+          import { sangtianDecisionAdapter } from "../src/sangtian-decisions.js";''')
+          replace_once(path, '''    assert.ok(plan.steps.every((step) => step.durableMutationAllowed === false));
+              assert.equal(plan.steps.at(-1)?.kind, "DECISION_PRESSURE");
+
+              const delta = buildCausalDelta({''', '''    assert.ok(plan.steps.every((step) => step.durableMutationAllowed === false));
+              assert.equal(plan.steps.at(-1)?.kind, "DECISION_PRESSURE");
+              assert.equal(
+                plan.surfaceContract.settledPlayerResult,
+                prepared.beatManifest.tickets.find((ticket) => ticket.slot === "PLAYER_RESULT")?.requiredMeaning,
+              );
+              assert.equal(
+                plan.surfaceContract.visiblePressure,
+                prepared.beatManifest.tickets.find((ticket) => ticket.slot === "WORLD_PRESSURE")?.requiredMeaning,
+              );
+              assert.equal(
+                plan.surfaceContract.stopCondition,
+                prepared.beatManifest.tickets.find((ticket) => ticket.slot === "DECISION_STOP")?.requiredMeaning,
+              );
+              const tampered = structuredClone(prepared.beatManifest);
+              assert.ok(tampered.dramaticBeatPlan);
+              tampered.dramaticBeatPlan.surfaceContract.dramaticQuestion = "A different question.";
+              tampered.dramaticBeatPlan.surfaceContract.stopCondition = "A different question.";
+              assert.throws(
+                () => validateBeatManifest(tampered),
+                /DRAMATIC_BEAT_SURFACE_TICKET_MISMATCH:DECISION_STOP/u,
+              );
+
+              const delta = buildCausalDelta({''')
+
+          path = "apps/openovel-runtime/tests/p04-runtime-integration.spec.ts"
+          replace_once(path, '''import { sangtianDecisionAdapter } from "../src/sangtian-decisions.js";''', '''import {
+            expressionOwnerForPlayerResult,
+            sangtianDecisionAdapter,
+          } from "../src/sangtian-decisions.js";''')
+          insertion = '''const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
+
+          test("player-result protection follows typed causal authority instead of story wording", () => {
+            assert.equal(expressionOwnerForPlayerResult({
+              durableEffectTypes: [],
+              sectionTransitioned: false,
+              knowledgeBoundaryPresent: false,
+              terminal: false,
+            }), "NARRATOR");
+            assert.equal(expressionOwnerForPlayerResult({
+              durableEffectTypes: ["DOCUMENT.CREATED"],
+              sectionTransitioned: false,
+              knowledgeBoundaryPresent: false,
+              terminal: false,
+            }), "PROTECTED");
+            assert.equal(expressionOwnerForPlayerResult({
+              durableEffectTypes: [],
+              sectionTransitioned: false,
+              knowledgeBoundaryPresent: true,
+              terminal: false,
+            }), "PROTECTED");
+            assert.equal(expressionOwnerForPlayerResult({
+              durableEffectTypes: [],
+              sectionTransitioned: true,
+              knowledgeBoundaryPresent: false,
+              terminal: false,
+            }), "PROTECTED");
+          });
+
+          test("a non-critical authored result is owned once by Narrator and fallback consumes the same plan", async () => {
+            await withRuntime(new UnavailableProvider(), async ({ runtime, workspace, runId }) => {
+              const opening = await workspace.snapshot(runId);
+              const selectedOpening = opening.previousOptions.find((option) => option.id === "opening_d2");
+              assert.ok(selectedOpening);
+              await runtime.processAction({
+                runId,
+                action: selectedOpening.label,
+                boundOption: { id: selectedOpening.id, label: selectedOpening.label },
+              });
+
+              const next = await workspace.snapshot(runId);
+              let prepared = null;
+              for (const option of next.previousOptions) {
+                const candidate = await sangtianDecisionAdapter.prepare(workspace, {
+                  runId,
+                  turnNumber: 2,
+                  action: option.label,
+                  selectedOption: option,
+                });
+                const owner = candidate?.beatManifest.tickets.find(
+                  (ticket) => ticket.slot === "PLAYER_RESULT",
+                )?.expressionOwner;
+                if (candidate && owner === "NARRATOR") {
+                  prepared = candidate;
+                  break;
+                }
+              }
+              assert.ok(prepared, "at least one current scalar outcome must remain Narrator-owned");
+              const playerTicket = prepared.beatManifest.tickets.find(
+                (ticket) => ticket.slot === "PLAYER_RESULT",
+              );
+              assert.equal(playerTicket?.expressionOwner, "NARRATOR");
+              assert.equal(playerTicket?.protectedText, undefined);
+              assert.equal(
+                prepared.truthContexts.actionPhase.originActionsInDraft,
+                "ALLOWED_BY_ENVELOPE",
+              );
+              assert.equal(
+                prepared.fallbackDraft.slots.PLAYER_RESULT,
+                prepared.beatManifest.dramaticBeatPlan?.surfaceContract.settledPlayerResult,
+              );
+              assert.equal(
+                prepared.beatManifest.dramaticBeatPlan?.surfaceContract.visiblePressure,
+                prepared.beatManifest.tickets.find(
+                  (ticket) => ticket.slot === "WORLD_PRESSURE",
+                )?.requiredMeaning,
+              );
+            });
+          });
+          '''
+          replace_once(path, '''const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
+          ''', insertion)
+
+          # Ensure every compile call was migrated and no P4 staging code can silently remain partial.
+          for file in [
+              Path("packages/templates/src/story-package/dramatic-beat-plan.ts"),
+              Path("packages/templates/src/story-package/part-one-runtime-engine.ts"),
+              Path("packages/templates/src/runtime-facade.ts"),
+              Path("packages/templates/tests/dramatic-beat-plan-pattern.test.ts"),
+              Path("packages/templates/tests/narrative-scene-pattern-multiworld.test.ts"),
+          ]:
+              text = file.read_text(encoding="utf-8")
+              if "pressureMeaning:" in text or "decisionStopMeaning:" in text:
+                  raise SystemExit(f"P4_LEGACY_DRAMATIC_INPUT_REMAINS:{file}")
+
+          PY
+          rm -f docs/auto-execute/.chatgpt-pro-p4-final.patch
           git diff --check
+          git status --short | tee "${EVIDENCE_ROOT}/logs/01-p4-diff.log"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -57,36 +789,184 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install locked dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install locked workspace
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/02-install.log"
 
-      - name: P4 focused and full engineering gates
+      - name: Run P4 contract and complete engineering gates
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --filter @ai-story/templates typecheck
-          pnpm --filter @ai-story/templates build
-          pnpm --filter @apps/openovel-runtime typecheck
-          pnpm --filter @apps/openovel-runtime build
-          node --import tsx --test \
-            apps/openovel-runtime/tests/p04-player-surface-contract.spec.ts \
-            apps/openovel-runtime/tests/p04-scene-pattern-plan.spec.ts \
-            apps/openovel-runtime/tests/p05-narrator-context.spec.ts
-          pnpm --filter @apps/openovel-runtime test
-          pnpm test:story:v4
-          pnpm --filter @apps/openovel-runtime smoke:http
+          pnpm --filter @ai-story/templates typecheck \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/03-templates-typecheck.log"
+          pnpm --filter @ai-story/templates test:story-package \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/04-story-package.log"
+          pnpm --filter @ai-story/templates build \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/05-templates-build.log"
+          pnpm --filter @apps/openovel-runtime typecheck \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/06-openovel-typecheck.log"
+          pnpm --filter @apps/openovel-runtime test \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/07-openovel-tests.log"
+          pnpm --filter @apps/openovel-runtime build \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/08-openovel-build.log"
+          pnpm test:story:v4 \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/09-story-v4.log"
+          pnpm --filter @apps/openovel-runtime smoke:http \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/10-http-smoke.log"
+
+          tmp_root="${RUNNER_TEMP}/sangtian-authoring"
+          mkdir -p "${tmp_root}"
+          export SANGTIAN_SKIP_SOURCE_WRITES=1
+          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${tmp_root}/authoring"
+          export SANGTIAN_RUNTIME_PACKAGE_PATH="${tmp_root}/part-one-runtime.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/11-authoring-recompile.log"
+          cmp --silent \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${tmp_root}/part-one-runtime.json"
+          sha256sum \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${tmp_root}/part-one-runtime.json" \
+            | tee "${EVIDENCE_ROOT}/logs/12-authoring-sha256.log"
+
+          export SANGTIAN_NARRATIVE_SUPPLEMENT_PATH="${tmp_root}/part-one-narrative-supplement.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/13-supplement.log"
+          test -s "${SANGTIAN_NARRATIVE_SUPPLEMENT_PATH}"
+
+      - name: Materialize P4 stage evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="docs/auto-execute/evidence/chatgpt-pro-ai-story-convergence/p4/${CANDIDATE_SHA}"
+          mkdir -p "${target}"
+          export TARGET="${target}"
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+
+          logs = Path(os.environ["EVIDENCE_ROOT"]) / "logs"
+          def tap(name):
+              text = (logs / name).read_text(encoding="utf-8", errors="replace")
+              matches = list(re.finditer(
+                  r"# tests (\d+)\s+# suites (\d+)\s+# pass (\d+)\s+# fail (\d+)\s+"
+                  r"# cancelled (\d+)\s+# skipped (\d+)\s+# todo (\d+)",
+                  text,
+              ))
+              return [
+                  dict(zip(
+                      ["tests", "suites", "pass", "fail", "cancelled", "skipped", "todo"],
+                      map(int, match.groups()),
+                  ))
+                  for match in matches
+              ]
+
+          summary = {
+              "schemaVersion": "omw.chatgpt-pro-p4-stage.v1",
+              "verdict": "PASS",
+              "repository": "forwardFish/aiStoryRoom",
+              "branch": "codex/chatgpt-pro-ai-story-convergence",
+              "stagingSha": os.environ["CANDIDATE_SHA"],
+              "frozenBaseSha": os.environ["FROZEN_BASE_SHA"],
+              "stage": "P4",
+              "contracts": {
+                  "unifiedDramaticBeatSurface": "PASS",
+                  "settlementFactsOnly": "PASS",
+                  "typedSingleExpressionOwner": "PASS",
+                  "narratorOwnsRegularPlayerResult": "PASS",
+                  "criticalProtectedSlotsRemainMinimal": "PASS",
+                  "fallbackConsumesSameSurfaceContract": "PASS",
+                  "visibleConsequenceBeforeDecisionStop": "PASS",
+                  "ticketPlanAlignmentFailsClosed": "PASS",
+                  "secondWorldFixture": "PASS",
+              },
+              "tests": {
+                  "templatesTypecheck": "PASS",
+                  "storyPackageTap": tap("04-story-package.log"),
+                  "templatesBuild": "PASS",
+                  "openNovelTypecheck": "PASS",
+                  "openNovelTap": tap("07-openovel-tests.log"),
+                  "openNovelBuild": "PASS",
+                  "storyV4Tap": tap("09-story-v4.log"),
+                  "httpSmoke": "PASS",
+                  "immutableAuthoringRecompile": "PASS",
+                  "narrativeSupplementCompile": "PASS",
+              },
+              "realModel": False,
+              "nextStage": "P5",
+          }
+          target = Path(os.environ["TARGET"])
+          target.joinpath("summary.json").write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          sha256sum "${target}/summary.json" > "${target}/SHA256SUMS"
+
+      - name: Upload complete P4 logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p4-dramatic-beat-plan-${{ env.CANDIDATE_SHA }}
+          path: ${{ env.EVIDENCE_ROOT }}/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Commit one completed P4 stage and push only candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_prefix="docs/auto-execute/evidence/chatgpt-pro-ai-story-convergence/p4/${CANDIDATE_SHA}"
+          rm -f "${WORKFLOW_PATH}"
           git diff --check
+          python - <<'PY'
+          import subprocess
 
-      - name: Commit tested P4 closure to candidate only
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
+          allowed_exact = {
+              ".github/workflows/chatgpt-pro-p4-finalize.yml",
+              "docs/auto-execute/.chatgpt-pro-p4-final.patch",
+              "packages/templates/src/story-package/dramatic-beat-plan.ts",
+              "packages/templates/src/story-package/part-one-runtime-engine.ts",
+              "packages/templates/src/runtime-facade.ts",
+              "packages/templates/tests/dramatic-beat-plan-pattern.test.ts",
+              "packages/templates/tests/narrative-scene-pattern-multiworld.test.ts",
+              "apps/openovel-runtime/src/scene-expression.ts",
+              "apps/openovel-runtime/src/foreground.ts",
+              "apps/openovel-runtime/src/sangtian-decisions.ts",
+              "apps/openovel-runtime/tests/p04-scene-pattern-plan.spec.ts",
+              "apps/openovel-runtime/tests/p04-runtime-integration.spec.ts",
+          }
+          allowed_prefix = "docs/auto-execute/evidence/chatgpt-pro-ai-story-convergence/p4/"
+          rows = subprocess.check_output(["git", "status", "--short"], text=True).splitlines()
+          unexpected = []
+          for row in rows:
+              path = row[3:]
+              if path not in allowed_exact and not path.startswith(allowed_prefix):
+                  unexpected.append(row)
+          if unexpected:
+              raise SystemExit("P4_UNEXPECTED_WORKTREE_FILES:\n" + "\n".join(unexpected))
+          PY
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          test -n "$(git diff --cached --name-only)"
-          git commit -m "fix(P4): close dramatic beat surface contract"
-          git fetch origin "${CANDIDATE_BRANCH}"
-          test "$(git rev-parse FETCH_HEAD)" = "${{ github.event.pull_request.base.sha }}"
-          git push origin HEAD:"${CANDIDATE_BRANCH}"
+          git add \
+            packages/templates/src/story-package/dramatic-beat-plan.ts \
+            packages/templates/src/story-package/part-one-runtime-engine.ts \
+            packages/templates/src/runtime-facade.ts \
+            packages/templates/tests/dramatic-beat-plan-pattern.test.ts \
+            packages/templates/tests/narrative-scene-pattern-multiworld.test.ts \
+            apps/openovel-runtime/src/scene-expression.ts \
+            apps/openovel-runtime/src/foreground.ts \
+            apps/openovel-runtime/src/sangtian-decisions.ts \
+            apps/openovel-runtime/tests/p04-scene-pattern-plan.spec.ts \
+            apps/openovel-runtime/tests/p04-runtime-integration.spec.ts \
+            "${evidence_prefix}/summary.json" \
+            "${evidence_prefix}/SHA256SUMS"
+          git add -u             "${WORKFLOW_PATH}"             docs/auto-execute/.chatgpt-pro-p4-final.patch
+          git commit -m "feat(P4): unify dramatic beat plan and expression ownership"
+
+          git fetch origin "${TARGET_BRANCH}"
+          test "$(git rev-parse FETCH_HEAD)" = "${CANDIDATE_SHA}"
+          git push origin HEAD:"${TARGET_BRANCH}"
