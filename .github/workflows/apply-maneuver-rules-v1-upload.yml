@@ -36,12 +36,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           BASE_EXPECTED_SHA256: 5277938bdaca1b2465a66c9b490f8cdeba640a8d2517d3681fb4376c92a7e8e1
-          FIX_EXPECTED_SHA256: abc5d5498c10ad76396c3a64245726169fa2d59736237973663c82cd5fa5af84
+          FIX1_EXPECTED_SHA256: abc5d5498c10ad76396c3a64245726169fa2d59736237973663c82cd5fa5af84
+          FIX2_EXPECTED_SHA256: 50330c2e0d55bf37cc63f347f7122f876805de0e8c57635ea8725913923a2687
         shell: bash
         run: |
           set -euo pipefail
           export BASE_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-base.patch"
-          export FIX_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-fix-round1.patch"
+          export FIX1_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-fix-round1.patch"
+          export FIX2_PATCH_PATH="$RUNNER_TEMP/maneuver-rules-v1-fix-round2.patch"
           python3 - <<'PY'
           import base64
           import hashlib
@@ -95,17 +97,24 @@ jobs:
           )
           reconstruct(
               ["4ac2dfde944563b0b1c3df0f01c6624c5216f76d"],
-              os.environ["FIX_PATCH_PATH"],
-              os.environ["FIX_EXPECTED_SHA256"],
+              os.environ["FIX1_PATCH_PATH"],
+              os.environ["FIX1_EXPECTED_SHA256"],
+          )
+          reconstruct(
+              ["7e9da7819cccca2fe3cbcade800c9588542447b6"],
+              os.environ["FIX2_PATCH_PATH"],
+              os.environ["FIX2_EXPECTED_SHA256"],
           )
           PY
 
           git apply --check "$BASE_PATCH_PATH"
           git apply --index "$BASE_PATCH_PATH"
-          git apply --check "$FIX_PATCH_PATH"
-          git apply --index "$FIX_PATCH_PATH"
+          git apply --check "$FIX1_PATCH_PATH"
+          git apply --index "$FIX1_PATCH_PATH"
+          git apply --check "$FIX2_PATCH_PATH"
+          git apply --index "$FIX2_PATCH_PATH"
           git diff --cached --check
-          echo "Applied implementation and round-1 fixes to $(git rev-parse --short HEAD)."
+          echo "Applied implementation and verified fixes to $(git rev-parse --short HEAD)."
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
