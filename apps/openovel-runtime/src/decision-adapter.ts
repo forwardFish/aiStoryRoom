@@ -230,6 +230,42 @@ async function resolveAuthoredAction(input: {
     alternatives: resolution.alternatives,
   }).catch(() => {});
 
+  if (resolution.status === "BOUND_CAPABILITY") {
+    const decisionPointId = resolution.targetRefs[0];
+    if (!decisionPointId || !resolution.canonicalAction) {
+      throw new Error("INTENT_CAPABILITY_BINDING_INVALID");
+    }
+    const selectedOption: OpenNovelOption = {
+      id: `opt_capability_${input.turnId.toLowerCase()}`,
+      label: resolution.canonicalAction,
+      key: true,
+      effect: {
+        decisionPointId,
+        intent: resolution.canonicalAction,
+        reversible: true,
+        beatContract: {
+          sourceRef: `intent-resolution:${input.turnId}`,
+          objective: "在当前公开决策点内执行一次能力级观察或准备行动，不替代尚未完成的正式决策。",
+          moves: [resolution.canonicalAction],
+          requiredAnchorGroups: [],
+          requiredDurableAnchorGroups: [],
+          constraints: resolution.constraints,
+          settledNarrative: resolution.canonicalAction,
+          stopCondition: "回到同一公开决策点，由玩家决定是否执行一项会改变权威状态的正式行动。",
+        },
+      },
+    };
+    return {
+      input: {
+        ...input.input,
+        action: resolution.canonicalAction,
+        selectedOption,
+      },
+      resolution,
+      affordanceSource,
+    };
+  }
+
   if (resolution.status !== "BOUND_AFFORDANCE") {
     throw actionRejected(
       resolution.status === "CLARIFICATION_REQUIRED"
