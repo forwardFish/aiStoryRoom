@@ -50,7 +50,7 @@ test("server projection drives four distinct entries and authoritative 2/2", () 
   const state = createManeuverV1State();
   applyManeuverProjectionV1(state, projection());
   const html = renderManeuverPanelV1(state, "zh");
-  for (const label of ["人物交谈", "派釣调查", "使用筹码", "自拟谋划"]) assert.match(html, new RegExp(label));
+  for (const label of ["人物交谈", "派遣调查", "使用筹码", "自拟谋划"]) assert.match(html, new RegExp(label));
   assert.match(html, /2 \/ 2/);
   assert.match(html, /正在推进/);
   assert.doesNotMatch(html, /must-not-render|fact\.secret|normalizedJson|legalTargetIds/);
@@ -121,7 +121,7 @@ test("private evidence shows support and limitation without internal provenance"
 
 test("another role projection with no private evidence has no evidence body in HTML", () => {
   const state = createManeuverV1State();
-  applyManeuverProjectionV1(state, projection(; privateEvidence: [] }));
+  applyManeuverProjectionV1(state, projection({ privateEvidence: [] }));
   const html = renderEvidenceHandV1(state, "en");
   assert.doesNotMatch(html, /Signed record comparison|timestamps differ|Who intended/);
 });
