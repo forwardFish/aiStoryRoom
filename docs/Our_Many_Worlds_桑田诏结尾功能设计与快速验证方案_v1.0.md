@@ -193,3 +193,22 @@ v4 Runtime 测试：222/222 PASS
 - 新建 Runtime 实例后读回的 Ending 与提交时完全一致；
 - 用相同提交 ID 重放 T20，直接返回原结果；
 - Head 数量仍为 20，Narrator 新调用数仍为 0。
+
+## 10. 结尾公开读取合同
+
+完成后的结尾沿用现有 Run 读取接口，不新增页面或结尾专用 API：
+
+```text
+GET /internal/openovel/runs/:runId
+```
+
+该接口直接返回 Runtime 的公开 Run 视图。第一部分结束后必须满足：
+
+- `status = COMPLETED`；
+- `turnNumber = 20`；
+- `ending.sourceTurnId = T20`；
+- `ending` 与原子 Head 提交并在重启后保持不变；
+- `options = []`，玩家不能在结尾后继续提交新决策；
+- 不返回 `worldState`、`causalDelta`、`DurableTurnEnvelope`、内部 Predicate、`narrativeSeed`、Truth Reviewer 结果或置信度。
+
+HTTP 路由直接调用 `runtime.getRun()`，后者读取同一个公开 Run 视图，因此公开读取专项测试以 Runtime 读回为合同依据，不另建一套容易漂移的响应结构。

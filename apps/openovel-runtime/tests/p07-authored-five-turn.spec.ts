@@ -168,6 +168,18 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     assert.ok(publicRun.ending?.finalSceneNarrative.trim());
     assert.ok(publicRun.ending?.protagonistFate.trim());
     assert.ok(publicRun.ending?.aftermath.length);
+    assert.deepEqual(publicRun.options, []);
+    for (const privateField of [
+      "causalDelta",
+      "worldState",
+      "durableTurnEnvelope",
+      "allowedPredicates",
+      "narrativeSeed",
+      "truthReview",
+      "reviewerConfidence",
+    ]) {
+      assert.equal(Object.hasOwn(publicRun, privateField), false);
+    }
     assert.equal(events.length, 20);
     assert.equal((canon.match(/\*\*读者选择\*\*/gu) || []).length, 20);
     assert.equal((await readdir(paths.headsDir)).length, 20);
@@ -204,6 +216,7 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     );
     const afterRestart = await restartedRuntime.getRun(runId);
     assert.deepEqual(afterRestart.ending, publicRun.ending);
+    assert.deepEqual(afterRestart.options, []);
     const replayedFinalTurn = await restartedRuntime.processAction({
       runId,
       action: finalAction,
