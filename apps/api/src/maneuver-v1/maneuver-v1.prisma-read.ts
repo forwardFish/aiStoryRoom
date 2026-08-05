@@ -1,7 +1,16 @@
+import { createHash } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import type { ManeuverProjectionV1 } from "@ai-story/shared";
+import type {
+  ManeuverCompilerContextV1,
+  ManeuverContactOptionV1,
+  ObservableTraceV1,
+} from "@ai-story/templates";
 import type { AuthoritativeManeuverContextV1 } from "./maneuver-v1.core";
-import { projectPrivateEvidenceV1 } from "./maneuver-v1.evidence";
+import {
+  projectPrivateEvidenceV1,
+  type InvestigationOutcomeDefinitionV1,
+} from "./maneuver-v1.evidence";
 import { parseManeuverContextV1 } from "./maneuver-v1.context-parser";
 import {
   COMMITTED_ACTION_STATUSES,
@@ -9,10 +18,20 @@ import {
   domain,
   optionalRecord,
   uniqueSlots,
+  uniqueStrings,
 } from "./maneuver-v1.prisma-utils";
 import type { PrismaService } from "../prisma.service";
 
 type DatabaseClient = PrismaService | Prisma.TransactionClient;
+type FallbackRoleRowV1 = { id: string; roleName: string; identity?: string | null; publicInfo?: string | null };
+type FallbackFactRowV1 = {
+  factKey: string;
+  content: string;
+  visibility?: string | null;
+  knownByRoleIdsJson?: unknown;
+  sourceEventIdsJson?: unknown;
+  sourceActionIdsJson?: unknown;
+};
 
 export async function readManeuverContextV1(
   db: DatabaseClient,
@@ -55,11 +74,12 @@ export async function readManeuverContextV1(
       status: true,
       revision: true,
       contextJson: true,
+      visibleFactKeysJson: true,
     },
   });
   if (!turn) throw domain("MANEUVER_WINDOW_CLOSED", "No active role turn is available.", 409);
 
-  const [mainlineSubmission, actions, roleAssets] = await Promise.all([
+  const [mainlineSubmission, actions, roleAssets, contactRoles, confirmedFacts] = await Promise.all([
     (db as any).decisionSubmission.findUnique({ where: { turnId: turn.id }, select: { id: true } }),
     (db as any).playerAction.findMany({
       where: {
@@ -83,6 +103,23 @@ export async function readManeuverContextV1(
       select: { id: true, assetKey: true, stateJson: true },
       orderBy: { createdAt: "asc" },
     }),
+    (db as any).storyRole.findMany({
+      where: { runId, id: { not: player.roleId } },
+      select: { id: true, roleName: true, identity: true, publicInfo: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    (db as any).canonFact.findMany({
+      where: { runId, status: "confirmed" },
+      select: {
+        factKey: true,
+        content: true,
+        visibility: true,
+        knownByRoleIdsJson: true,
+        sourceEventIdsJson: true,
+        sourceActionIdsJson: true,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
 
   const stateRevision = Number(run.worldSequence || 0);
@@ -92,6 +129,33 @@ export async function readManeuverContextV1(
     stateRevision,
     turnRevision,
   });
+  const fallback = deriveFallbackManeuverContextV1({
+    roleId: player.roleId,
+    visibleFactKeys: stringList(turn.visibleFactKeysJson),
+    roles: contactRoles,
+    facts: confirmedFacts,
+  });
+  const contacts = parsed.compilerContext.contacts.length
+    ? parsed.compilerContext.contacts
+    : fallback.contacts;
+  const useConfiguredInvestigations = parsed.compilerContext.traces.length > 0
+    && parsed.investigationOutcomes.length > 0;
+  const traces = useConfiguredInvestigations
+    ? parsed.compilerContext.traces
+    : fallback.traces;
+  const investigationOutcomes = useConfiguredInvestigations
+    ? parsed.investigationOutcomes
+    : fallback.investigationOutcomes;
+  const compilerContext: ManeuverCompilerContextV1 = {
+    ...parsed.compilerContext,
+    contacts,
+    traces,
+    legalTargetIds: uniqueStrings([
+      ...parsed.compilerContext.legalTargetIds,
+      ...contacts.map((contact) => contact.id),
+      ...traces.map((trace) => trace.traceId),
+    ]),
+  };
 
   return {
     runId,
@@ -106,8 +170,8 @@ export async function readManeuverContextV1(
     windowState: run.status === "playing" && turn.status === "OPEN" ? "OPEN" : "CLOSED",
     mainlineLocked: Boolean(mainlineSubmission) || turn.status !== "OPEN",
     usedSlots: uniqueSlots(actions.map((action: any) => action.actionSlot)),
-    compilerContext: parsed.compilerContext,
-    investigationOutcomes: parsed.investigationOutcomes,
+    compilerContext,
+    investigationOutcomes,
   };
 }
 
@@ -170,6 +234,87 @@ export async function readManeuverProjectionV1(
     })),
     privateEvidence: projectPrivateEvidenceV1(context.roleId, evidenceRows),
   };
+}
+
+export function deriveFallbackManeuverContextV1(input: {
+  roleId: string;
+  visibleFactKeys: string[];
+  roles: FallbackRoleRowV1[];
+  facts: FallbackFactRowV1[];
+}): {
+  contacts: ManeuverContactOptionV1[];
+  traces: ObservableTraceV1[];
+  investigationOutcomes: InvestigationOutcomeDefinitionV1[];
+} {
+  const contacts = input.roles
+    .filter((role) => role.id && role.id !== input.roleId && role.roleName)
+    .map((role) => ({
+      id: role.id,
+      label: role.roleName,
+      method: "Send one bounded message about the current situation.",
+      guaranteedStart: `${role.roleName} receives the message.`,
+      contestedOutcome: `${role.roleName} may answer, refuse, delay, or give only a partial response.`,
+      notGuaranteed: "The recipient is not forced to agree, disclose private information, or tell the truth.",
+      visibility: "TARGETED" as const,
+    }));
+  const visibleKeys = new Set(input.visibleFactKeys);
+  const visibleFacts = input.facts.filter((fact) => {
+    if (!fact.factKey || !fact.content) return false;
+    if (visibleKeys.has(fact.factKey)) return true;
+    if (String(fact.visibility || "").toLowerCase() === "public") return true;
+    return stringList(fact.knownByRoleIdsJson).includes(input.roleId);
+  });
+  const traces: ObservableTraceV1[] = [];
+  const investigationOutcomes: InvestigationOutcomeDefinitionV1[] = [];
+  for (const fact of visibleFacts) {
+    const digest = createHash("sha256").update(fact.factKey).digest("hex").slice(0, 24);
+    const traceId = `trace.canon.${digest}`;
+    const routeId = `route.verify.${digest}`;
+    const statement = clipped(fact.content, 480);
+    const label = clipped(statement, 72);
+    traces.push({
+      traceId,
+      label,
+      description: statement,
+      sourceKind: sourceKindForFact(fact),
+      routeOptions: [{
+        routeId,
+        label: "Verify the recorded source",
+        method: "Review the observable source record and compare it with the current scene.",
+        guaranteedStart: "A bounded verification of the recorded source begins.",
+        contestedOutcome: "The check may confirm the recorded statement or reveal a concrete inconsistency.",
+        notGuaranteed: "The check cannot establish intent or any broader claim that the source does not contain.",
+      }],
+    });
+    investigationOutcomes.push({
+      routeId,
+      factKey: fact.factKey,
+      title: label,
+      summary: statement,
+      supports: statement,
+      cannotProve: "Intent, authorship, and any broader claim not stated in this record.",
+      sourceKind: "RECORD",
+      provenanceKey: `canon:${fact.factKey}`,
+    });
+  }
+  return { contacts, traces, investigationOutcomes };
+}
+
+function sourceKindForFact(fact: FallbackFactRowV1): ObservableTraceV1["sourceKind"] {
+  if (stringList(fact.sourceActionIdsJson).length) return "PERSON";
+  if (stringList(fact.sourceEventIdsJson).length) return "EVENT";
+  return "DOCUMENT";
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string" && Boolean(entry.trim())).map((entry) => entry.trim())
+    : [];
+}
+
+function clipped(value: string, maximum: number): string {
+  const normalized = String(value || "").trim().replace(/\s+/g, " ");
+  return normalized.length <= maximum ? normalized : `${normalized.slice(0, Math.max(1, maximum - 1)).trimEnd()}…`;
 }
 
 function actionLabel(value: unknown): string {
