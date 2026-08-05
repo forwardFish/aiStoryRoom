@@ -88,9 +88,10 @@ export type AuthoredTurnModules = {
  * Compatibility adapter assembled from independently replaceable modules.
  * Settlement is the sole world-fact writer; NextBeat only plans what the
  * Narrator is allowed to render and cannot mutate settlement payloads.
- * Unbound player language is resolved against the server-published
- * Affordances before either module runs, so free text and option clicks enter
- * the same authoritative Settlement / Kernel path.
+ * Unbound player language is resolved against the exact Affordances already
+ * published to the player before either module runs, so free text and option
+ * clicks enter the same authoritative Settlement / Kernel path without a
+ * recomputation race at G00 or after recovery.
  */
 export function composeAuthoredDecisionModules(
   modules: AuthoredTurnModules,
@@ -150,7 +151,11 @@ export function composeAuthoredDecisionModules(
         ...prepared,
         audit: {
           ...prepared.audit,
-          intentResolution: auditIntentResolution(resolved.resolution, input.action),
+          intentResolution: auditIntentResolution(
+            resolved.resolution,
+            input.action,
+            resolved.affordanceSource,
+          ),
         },
       };
     },
@@ -181,14 +186,29 @@ async function resolveAuthoredAction(input: {
   intentResolver: IntentResolverModule;
 }) {
   if (input.input.selectedOption) {
-    return { input: input.input, resolution: null as ResolvedIntent | null };
+    return {
+      input: input.input,
+      resolution: null as ResolvedIntent | null,
+      affordanceSource: null as "DISPLAYED_OPTIONS" | "COMMITTED_WORLD_STATE" | null,
+    };
   }
-  const affordances = await input.settlement.currentOptions(
-    input.workspace,
-    input.input.runId,
-  );
+  const snapshot = await input.workspace.snapshot(input.input.runId);
+  const displayedAffordances = snapshot.previousOptions;
+  const committedAffordances = displayedAffordances.length
+    ? null
+    : await input.settlement.currentOptions(input.workspace, input.input.runId);
+  const affordances = displayedAffordances.length
+    ? displayedAffordances
+    : committedAffordances;
+  const affordanceSource = displayedAffordances.length
+    ? "DISPLAYED_OPTIONS" as const
+    : "COMMITTED_WORLD_STATE" as const;
   if (!affordances?.length) {
-    return { input: input.input, resolution: null as ResolvedIntent | null };
+    return {
+      input: input.input,
+      resolution: null as ResolvedIntent | null,
+      affordanceSource,
+    };
   }
   const resolution = await input.intentResolver.resolve({
     action: input.input.action,
@@ -199,6 +219,7 @@ async function resolveAuthoredAction(input: {
     turnId: input.turnId,
     moduleId: input.intentResolver.moduleId,
     originalAction: input.input.action,
+    affordanceSource,
     status: resolution.status,
     intentType: resolution.intentType,
     matchedAffordanceId: resolution.matchedAffordanceId,
@@ -229,10 +250,15 @@ async function resolveAuthoredAction(input: {
       selectedOption,
     },
     resolution,
+    affordanceSource,
   };
 }
 
-function auditIntentResolution(resolution: ResolvedIntent, originalAction: string) {
+function auditIntentResolution(
+  resolution: ResolvedIntent,
+  originalAction: string,
+  affordanceSource: "DISPLAYED_OPTIONS" | "COMMITTED_WORLD_STATE" | null,
+) {
   return {
     schemaVersion: resolution.schemaVersion,
     moduleStatus: resolution.status,
@@ -243,6 +269,7 @@ function auditIntentResolution(resolution: ResolvedIntent, originalAction: strin
     matchedAffordanceId: resolution.matchedAffordanceId,
     confidence: resolution.confidence,
     reason: resolution.reason,
+    affordanceSource,
     originalAction,
   };
 }
