@@ -9,7 +9,7 @@
     "baseUrl": ".",
     "paths": {
       "@ai-story/templates": [
-        "../../packages/templates/dist/index.d.ts"
+        "../../packages/templates/dist/runtime-facade.d.ts"
       ]
     }
   },
