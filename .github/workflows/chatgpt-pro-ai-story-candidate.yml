@@ -1,0 +1,43 @@
+name: ChatGPT Pro AI Story Candidate
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-ai-story-convergence
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    name: Candidate source snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record git gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "remote=$(git remote get-url origin)"
+            echo "branch=$(git branch --show-current)"
+            echo "head=$(git rev-parse HEAD)"
+            echo "merge_base=$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
+            git status --short
+          } | tee candidate-git-gate.txt
+      - name: Package source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=zip --output=candidate-source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-source
+          path: |
+            candidate-source.zip
+            candidate-git-gate.txt
+          if-no-files-found: error
+          retention-days: 1
