@@ -183,7 +183,9 @@ function capabilityVariant(
 
   const actionUnits = lexicalUnits(actionMatch);
   const affordanceUnits = new Set(
-    surfaces.flatMap(({ matchValues }) => matchValues.flatMap(lexicalUnits)),
+    surfaces.flatMap(({ matchValues }) => (
+      matchValues.flatMap((value) => [...lexicalUnits(value)])
+    )),
   );
   const overlaps = [...actionUnits].filter((unit) => affordanceUnits.has(unit));
   const novelUnits = [...actionUnits].filter((unit) => !affordanceUnits.has(unit));
