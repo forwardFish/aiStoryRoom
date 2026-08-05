@@ -4,13 +4,11 @@ on:
   push:
     branches:
       - codex/chatgpt-pro-ai-story-convergence
-  pull_request:
-    branches:
-      - codex/chatgpt-pro-ai-story-convergence
-    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - docs/auto-execute/evidence/convergence/**
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   engineering-gates:
@@ -18,7 +16,7 @@ jobs:
     timeout-minutes: 60
     env:
       CI: "true"
-      CANDIDATE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+      CANDIDATE_SHA: ${{ github.sha }}
       CANDIDATE_REF: codex/chatgpt-pro-ai-story-convergence
       OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
       OPENOVEL_MODEL: deepseek-v4-pro
@@ -65,7 +63,9 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install locked dependencies
+      - id: install
+        name: Install locked dependencies
+        continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
@@ -123,55 +123,61 @@ jobs:
             packages/templates/config/sangtian/story-package/part-one-runtime.json \
             "${RUNNER_TEMP}/part-one-runtime.json"
 
-      - name: Record outcomes and package targeted source
+      - name: Commit auditable gate evidence to the candidate branch
         if: always()
         shell: bash
         run: |
           set -euo pipefail
+          evidence_dir="docs/auto-execute/evidence/convergence/${CANDIDATE_SHA}"
+          mkdir -p "${evidence_dir}"
+          cat > "${evidence_dir}/summary.json" <<EOF
           {
-            echo "tested_sha=$(git rev-parse HEAD)"
-            echo "typecheck=${{ steps.typecheck.outcome }}"
-            echo "build=${{ steps.build.outcome }}"
-            echo "story_v4=${{ steps.story_v4.outcome }}"
-            echo "http_smoke=${{ steps.smoke.outcome }}"
-            echo "assets=${{ steps.assets.outcome }}"
-            echo "status_begin"
-            git status --short
-            echo "status_end"
-          } | tee candidate-evidence/logs/99-outcomes.log
-          git archive --format=tar.gz \
-            --output=candidate-evidence/candidate-targeted-source.tar.gz \
-            HEAD -- \
-            AGENTS.md \
-            package.json \
-            pnpm-lock.yaml \
-            pnpm-workspace.yaml \
-            tsconfig.base.json \
-            apps/openovel-runtime \
-            packages/templates/package.json \
-            packages/templates/tsconfig.json \
-            packages/templates/tsconfig.build.json \
-            packages/templates/src \
-            packages/templates/tests \
-            packages/templates/authoring/sangtian \
-            packages/templates/config/sangtian/story-package \
-            scripts/story-decomposition \
-            docs/Our_Many_Worlds_AI剧情推演一次性收敛现状审计与ChatGPT_Pro开发交接方案_v1.0.md
-
-      - name: Upload convergence evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: convergence-${{ env.CANDIDATE_SHA }}
-          path: candidate-evidence/
-          if-no-files-found: error
-          retention-days: 7
+            "schemaVersion": "omw.ai-story-convergence-evidence.v1",
+            "repository": "${GITHUB_REPOSITORY}",
+            "branch": "${CANDIDATE_REF}",
+            "testedSha": "${CANDIDATE_SHA}",
+            "frozenBaseSha": "1b750e56858dabefb0ddb8b922c6bdcbe0574e4c",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowAttempt": "${GITHUB_RUN_ATTEMPT}",
+            "provider": "https://api.deepseek.com",
+            "model": "deepseek-v4-pro",
+            "thinking": "disabled",
+            "mockOnly": true,
+            "outcomes": {
+              "install": "${{ steps.install.outcome }}",
+              "typecheck": "${{ steps.typecheck.outcome }}",
+              "build": "${{ steps.build.outcome }}",
+              "storyV4": "${{ steps.story_v4.outcome }}",
+              "httpSmoke": "${{ steps.smoke.outcome }}",
+              "assetRecompile": "${{ steps.assets.outcome }}"
+            }
+          }
+          EOF
+          for log in candidate-evidence/logs/*.log; do
+            base=$(basename "$log")
+            tail -n 300 "$log" > "${evidence_dir}/${base%.log}.tail.log"
+          done
+          {
+            echo "tested_sha=${CANDIDATE_SHA}"
+            echo "merge_base=$(git merge-base HEAD 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c)"
+            grep -E '^# (tests|pass|fail|skipped|todo) ' candidate-evidence/logs/04-story-v4.log | tail -n 10 || true
+            echo "asset_hashes"
+            cat candidate-evidence/logs/07-assets-sha256.log || true
+          } > "${evidence_dir}/gate-summary.txt"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${evidence_dir}"
+          git commit -m "test(ai-story): record convergence gates for ${CANDIDATE_SHA:0:12}"
+          git fetch origin "${CANDIDATE_REF}"
+          test "$(git rev-parse FETCH_HEAD)" = "${CANDIDATE_SHA}"
+          git push origin HEAD:"${CANDIDATE_REF}"
 
       - name: Enforce deterministic gates
         if: always()
         shell: bash
         run: |
           set -euo pipefail
+          test "${{ steps.install.outcome }}" = "success"
           test "${{ steps.typecheck.outcome }}" = "success"
           test "${{ steps.build.outcome }}" = "success"
           test "${{ steps.story_v4.outcome }}" = "success"
