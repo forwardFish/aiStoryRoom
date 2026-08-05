@@ -21,7 +21,21 @@ jobs:
         with:
           fetch-depth: 1
       - name: Build source archive
-        run: tar --exclude=.git -czf "$RUNNER_TEMP/aiStoryRoom-maneuver-source.tar.gz" .
+        shell: bash
+        run: |
+          tar -czf "$RUNNER_TEMP/aiStoryRoom-maneuver-source.tar.gz" \
+            --exclude='.git' \
+            --exclude='docs' \
+            --exclude='third_party' \
+            --exclude='**/node_modules' \
+            --exclude='**/dist' \
+            --exclude='apps/web/public/assets' \
+            --exclude='apps/web/public/images' \
+            --exclude='apps/web/public/videos' \
+            apps packages prisma scripts api .github \
+            AGENTS.md README.md package.json pnpm-lock.yaml pnpm-workspace.yaml \
+            tsconfig.base.json docker-compose.yml railway.toml vercel.json \
+            .env.example .gitattributes .gitignore .vercelignore
       - name: Upload source archive
         uses: actions/upload-artifact@v4
         with:
