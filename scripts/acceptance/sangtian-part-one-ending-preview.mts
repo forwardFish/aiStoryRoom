@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -121,6 +122,34 @@ for (let turn = 1; turn <= 20; turn += 1) {
 
 const publicRun = await workspace.readPublicRun(runId);
 const finalState = await readJson<Record<string, unknown>>(workspace.paths(runId).partOneState);
+assert.equal(finalState.turnNumber, 20, "ending preview must settle exactly twenty turns");
+assert.equal(
+  finalState.partCompletionStatus,
+  "HANDOFF_READY",
+  "ending preview must reach the authored Part One handoff",
+);
+assert.equal(publicRun.status, "COMPLETED", "the final public run must be complete");
+assert.deepEqual(publicRun.options, [], "a completed part must not expose another decision");
+assert.ok(publicRun.ending, "a completed part must expose an ending");
+assert.equal(publicRun.ending?.sourceTurnId, "T20", "ending must be bound to the final turn");
+assert.ok(String(publicRun.ending?.title || "").trim(), "ending title is required");
+assert.ok(
+  String(publicRun.ending?.protagonistFate || "").trim().length >= 40,
+  "ending must state the protagonist's fate",
+);
+assert.ok(
+  Array.isArray(publicRun.ending?.aftermath) && publicRun.ending.aftermath.length >= 2,
+  "ending must expose at least two world aftermaths",
+);
+assert.doesNotMatch(
+  [
+    publicRun.ending?.finalSceneNarrative,
+    publicRun.ending?.protagonistFate,
+    ...(publicRun.ending?.aftermath || []),
+  ].join("\n"),
+  /entityId|allowedPredicates|requiredVisiblePredicates|narrativeSeed|reviewer confidence|内部状态路径/iu,
+  "ending must not leak runtime protocol fields",
+);
 const output = {
   schemaVersion: "sangtian-ending-preview-v1",
   testOnly: true,
