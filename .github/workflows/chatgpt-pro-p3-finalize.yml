@@ -5,7 +5,7 @@ on:
     branches:
       - codex/chatgpt-pro-ai-story-convergence
     paths:
-      - "docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64"
+      - "docs/auto-execute/.chatgpt-pro-p3-final-stage.ready"
 
 permissions:
   contents: write
@@ -23,7 +23,9 @@ jobs:
       CI: "true"
       TARGET_BRANCH: codex/chatgpt-pro-ai-story-convergence
       FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
-      PAYLOAD_B64: docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64
+      PAYLOAD_PREFIX: docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-
+      READY_PATH: docs/auto-execute/.chatgpt-pro-p3-final-stage.ready
+      PAYLOAD_B64_SHA256: d6120d5a3eba8faa2cddd8e75df687e47a15beee8d5773aead0215d0d5a4f0a9
       PAYLOAD_SHA256: 71c5311a2cc5349e1eaf59e06f0e9902fa5370ce53ff65d65ca030078fa6cfb0
       WORKFLOW_PATH: .github/workflows/chatgpt-pro-p3-finalize.yml
       OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
@@ -60,8 +62,13 @@ jobs:
           test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
           test -z "$(git status --short)"
 
+          mapfile -t parts < <(printf '%s\n' ${PAYLOAD_PREFIX}* | sort)
+          test "${#parts[@]}" -eq 8
+          payload_b64=/tmp/chatgpt-pro-p3-final-stage.tar.gz.b64
           payload=/tmp/chatgpt-pro-p3-final-stage.tar.gz
-          base64 --decode "${PAYLOAD_B64}" > "${payload}"
+          cat "${parts[@]}" > "${payload_b64}"
+          echo "${PAYLOAD_B64_SHA256}  ${payload_b64}" | sha256sum --check --strict
+          base64 --decode "${payload_b64}" > "${payload}"
           echo "${PAYLOAD_SHA256}  ${payload}" | sha256sum --check --strict
           mapfile -t actual_paths < <(tar -tzf "${payload}" | sed '/^$/d' | sed '/\/$/d' | sort)
           expected_paths=(
@@ -75,7 +82,7 @@ jobs:
           mapfile -t expected_paths < <(printf '%s\n' "${expected_paths[@]}" | sort)
           test "$(printf '%s\n' "${actual_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
           tar -xzf "${payload}" -C .
-          rm -f "${PAYLOAD_B64}" "${WORKFLOW_PATH}"
+          rm -f "${parts[@]}" "${READY_PATH}" "${WORKFLOW_PATH}"
           git diff --check
 
       - name: Verify all eleven patterns bind only their declared source scene
@@ -187,7 +194,15 @@ jobs:
           set -euo pipefail
           expected=$(cat <<'EOF'
           .github/workflows/chatgpt-pro-p3-finalize.yml
-          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.ready
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-00
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-01
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-02
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-03
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-04
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-05
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-06
+          docs/auto-execute/.chatgpt-pro-p3-final-stage.tar.gz.b64.part-07
           packages/templates/authoring/sangtian/narrative/scene-patterns.section-02.approved.json
           packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json
           packages/templates/authoring/sangtian/narrative/scene-patterns.section-04.approved.json
@@ -208,7 +223,8 @@ jobs:
             packages/templates/src/story-package/playable-part-one-runtime.ts \
             packages/templates/tests/part-one-narrative-supplement.test.ts \
             scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs
-          git add -u -- "${PAYLOAD_B64}" "${WORKFLOW_PATH}"
+          git add -u -- \
+            "${WORKFLOW_PATH}" "${READY_PATH}" ${PAYLOAD_PREFIX}*
           git commit -m "fix(P3): complete source-grounded narrative assets"
           git fetch origin "${TARGET_BRANCH}"
           test "$(git rev-parse FETCH_HEAD)" = "${GITHUB_SHA}"
