@@ -1,6 +1,11 @@
 name: ChatGPT Pro Engineering Gates
 
 on:
+  push:
+    branches:
+      - codex/chatgpt-pro-ai-story-convergence
+    paths:
+      - ".github/workflows/chatgpt-pro-engineering.yml"
   pull_request:
     branches:
       - codex/chatgpt-pro-ai-story-convergence
