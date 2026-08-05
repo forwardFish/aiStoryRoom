@@ -1,7 +1,7 @@
 const LABELS = Object.freeze({
   zh: {
     board: "谋划中枢", usage: "本场景谋划", expires: "主线决策锁定后失效",
-    CONTACT: "人物交谈", INVESTIGATE: "派釣调查", LEVERAGE: "使用筹码", CUSTOM: "自拟谋划",
+    CONTACT: "人物交谈", INVESTIGATE: "派遣调查", LEVERAGE: "使用筹码", CUSTOM: "自拟谋划",
     preview: "预演这一步", inProgress: "正在推进", evidence: "情报与证据",
     supports: "能够支持", cannotProve: "不能证明", private: "仅你可见", edit: "返回修改", cancel: "取消",
     chooseContact: "选择交谈人物", message: "你准备对他说什么？", chooseTrace: "选择当前可见的痕迹",
