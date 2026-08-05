@@ -623,7 +623,17 @@ async function planSangtianNextBeat(
             ? fallbackSlots.WORLD_PRESSURE || protectedPressureText
             : undefined,
         ),
-        narrativeTicket(event, "decision-stop", "DECISION_STOP", "AFTER_PHASE", protectedStopText, stopSourceRefs),
+        narrativeTicket(
+          event,
+          "decision-stop",
+          "DECISION_STOP",
+          "AFTER_PHASE",
+          protectedStopText,
+          stopSourceRefs,
+          true,
+          settlement.storyComplete ? "PROTECTED" : "NARRATOR",
+          settlement.storyComplete ? protectedStopText : undefined,
+        ),
       ],
     };
     const surfaceSourceRef = beatContract.sourceRef || `part-one-event:${event.eventId}`;

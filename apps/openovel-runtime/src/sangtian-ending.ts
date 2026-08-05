@@ -12,7 +12,7 @@ export class SangtianEndingModule implements EndingModule {
       && state.grain.immediatePressure !== "UNRELIEVED";
     const preservedEvidence = state.evidence.chainStatus === "TRACEABLE"
       && state.report.attachmentStrength !== "NONE";
-    const reportDeparted = state.report.dispatchStatus === "DISPATCHED";
+    const reportDeparted = reportHasDeparted(state);
     const highExposure = Number(state.responsibility.governorExposure || 0) >= 8;
 
     const outcome = classify({ protectedPeople, preservedEvidence, reportDeparted, highExposure });
@@ -65,7 +65,7 @@ function classify(input: {
 
 function protagonistFate(state: PartOneState, endingKey: string) {
   const exposure = Number(state.responsibility.governorExposure || 0);
-  const report = state.report.dispatchStatus === "DISPATCHED"
+  const report = reportHasDeparted(state)
     ? "首份奏报已经离开浙江"
     : "首份奏报仍未离开浙江";
   const responsibility = exposure >= 8
@@ -75,6 +75,11 @@ function protagonistFate(state: PartOneState, endingKey: string) {
     ? "他保住了执行国策的名分，却没能保住百姓面对粮价与田契时的退路"
     : "他暂时保住了可追索的证据、民田边界和最急迫的救粮秩序";
   return `${report}。${responsibility}。${kept}。官位此刻尚未裁定，但他已经失去了继续含混退让的余地。`;
+}
+
+function reportHasDeparted(state: PartOneState) {
+  return state.report.dispatchStatus === "DISPATCHED"
+    || state.report.dispatchStatus === "SPLIT";
 }
 
 function directAftermath(state: PartOneState) {

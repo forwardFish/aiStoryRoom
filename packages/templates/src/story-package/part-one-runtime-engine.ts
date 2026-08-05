@@ -1487,12 +1487,19 @@ function buildNextStoryBeat(input: {
   if (!worldPressure) {
     throw new Error(`PART_ONE_VISIBLE_PRESSURE_MISSING:${input.decisionKernelId}`);
   }
-  const playerVisibleFallback = input.playerVisibleFallback || {
-    PLAYER_RESULT: playerOutcome,
-    ...(transitionMove?.action
-      ? { SCENE_TRANSITION: transitionMove.action }
-      : {}),
-    WORLD_PRESSURE: worldPressure,
+  // The deterministic planner owns the actual next decision. Author-written
+  // fallback prose may supply the literary result and pressure, but it must
+  // never carry an older stop point across a newly inserted continuation
+  // decision. Bind the final slot to the selected decision point instead of
+  // inferring compatibility from natural-language wording.
+  const playerVisibleFallback = {
+    ...(input.playerVisibleFallback || {
+      PLAYER_RESULT: playerOutcome,
+      ...(transitionMove?.action
+        ? { SCENE_TRANSITION: transitionMove.action }
+        : {}),
+      WORLD_PRESSURE: worldPressure
+    }),
     DECISION_STOP: decisionStop
   };
   const actorLabelsByRef = Object.fromEntries(

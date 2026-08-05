@@ -4,7 +4,7 @@
   "partId": "PART-01",
   "perspectiveRoleKey": "zhejiang_governor",
   "authoringReleaseVersion": "sangtian-part-one-authoring-v1.3.0",
-  "authoringManifestHash": "6BFBECBBD1900B4097E4148B311A78FE4A62DD17ECE2C9E91CD1946343A909CB",
+  "authoringManifestHash": "8C53DDA4E34A38531B46E1122F6EDFABC02B650BCC1B9AD6CAA603546DA0213A",
   "authoringManifest": {
     "schemaVersion": "sangtian-part-one-authoring-release-v1",
     "releaseVersion": "sangtian-part-one-authoring-v1.3.0",
@@ -103,7 +103,7 @@
       "DK-P1-GRAIN-SOURCE": "5EB7D0952A6914F47A41528A1F2B2AFF24F350E2D6FF06CB1009C23BAF672F6B",
       "DK-P1-LAND-SAFEGUARD": "F280D35A1696BB871DC6E05F9F01E3EC95261CAAF892326513F87FFA5EC2B51D",
       "DK-P1-MERCHANT-CONDITIONS": "1E37A29EBE50755ADD28CB549BD7F69ABE05F6FD9EAF0E357208370FEE91A055",
-      "DK-P1-RELIEF-PRIORITY": "7EECD0022DBCA406808E08A766144FD5275EB79830E36601CBABC0B6A8A96CEF",
+      "DK-P1-RELIEF-PRIORITY": "5065FFCDF20FAC86242039282BF21FA3E28998A15CF31CBDFEEF5E8ABFB83811",
       "DK-P1-REPORT-AUTHORSHIP": "3AE0B7798204DB39D09F71A485CEE4C4261943C43AFAB73B9C03213174CCC79E",
       "DK-P1-RESPONSIBILITY-RECORD": "AECAE5D53FCD7E091F188A21C48A0F7F2B558BB02C8C56D98D5A0ECB97BE7B58",
       "DK-P1-RESPONSIBILITY-SCOPE": "CCC83A33A71DBD745406D0DDE10BA8AD48EC761444244ADEE9B15DDA68F4B348",
@@ -156,7 +156,7 @@
     },
     "runtimeIndexHash": "C82F754D3B7F66D353D558E2AC24543551B11B8C25AD05C4ED49A4365A8EB0EC",
     "requirementSetHash": "05E88C24A405AF4A0B4E15040259862059D2973AEA55E917F5A98E61E16F105E",
-    "immutableHash": "6BFBECBBD1900B4097E4148B311A78FE4A62DD17ECE2C9E91CD1946343A909CB"
+    "immutableHash": "8C53DDA4E34A38531B46E1122F6EDFABC02B650BCC1B9AD6CAA603546DA0213A"
   },
   "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
   "contentCounts": {
@@ -9009,7 +9009,7 @@
             "playerVisibleFallback": {
               "PLAYER_RESULT": "总督命第一批现粮先发给无存粮、也无田可抵的百姓。",
               "WORLD_PRESSURE": "县令应下以后，先把最穷的一批人圈进赈册。这个次序保住的是今晚就可能断炊的人，却不能立刻压住城中米价，也顾不上所有春种。巡抚幕僚看着那本赈册，只问日后入京时，谁来解释为何先救人而没有先稳住改桑和市面。粮食的次序，已经变成第一份奏报里的责任次序。",
-              "DECISION_STOP": "幕僚道：\"既然每一步都要有人担责，首报便不能再拖。是督抚共同具奏，还是各自成文？\""
+              "DECISION_STOP": "首批救粮已经抵县；平码、验收和发放若同时办理，今日只能开一半仓门，若先发后验，经手账目就会留下不能即时互证的空档。"
             },
             "createsPendingConsequence": true
           },
@@ -9043,7 +9043,7 @@
             "playerVisibleFallback": {
               "PLAYER_RESULT": "总督命人先留下种粮和插秧所需，再按户发放余粮。",
               "WORLD_PRESSURE": "县令把一部分粮从赈册中划出，堂下立刻有人低声吸了口气。保住春种，是替数月后的生计留路；可今日断粮的人不会因为数月后的收成少饿一顿。巡抚幕僚没有评价这个轻重，只提醒总督：朝廷最先看到的不会是全部后果，而是谁在第一份文书里怎样解释这项取舍。",
-              "DECISION_STOP": "他问：\"这份首报由督抚共同写，还是制台独自写？若意见不同，是藏在一份奏报里，还是各自具奏？\""
+              "DECISION_STOP": "首批救粮已经抵县；平码、验收和发放若同时办理，今日只能开一半仓门，若先发后验，经手账目就会留下不能即时互证的空档。"
             },
             "createsPendingConsequence": true
           },
@@ -9079,7 +9079,7 @@
             "playerVisibleFallback": {
               "PLAYER_RESULT": "总督决定先稳杭州和清流县米市，再向外围灾村分批送粮。",
               "WORLD_PRESSURE": "会首听见先稳米市，立即开始盘算船路；县令却提醒，外围灾村会更晚见到粮。城里价格若能压下，官府可以争得时间；若外围先有人撑不住，这份时间便会变成追责的证据。巡抚幕僚把两边的利害都听完，随后把话题落到即将入京的第一份叙述上。",
-              "DECISION_STOP": "他道：\"粮先到哪里已经定了，朝廷先听谁说却还没有定。首报是督抚共同具奏、总督独奏，还是两边各报一份？\""
+              "DECISION_STOP": "首批救粮已经抵县；平码、验收和发放若同时办理，今日只能开一半仓门，若先发后验，经手账目就会留下不能即时互证的空档。"
             },
             "createsPendingConsequence": true
           }
@@ -15156,5 +15156,5 @@
       ]
     }
   },
-  "immutableHash": "8149340607D48E1E41640215BC10BCD9DF61FED4A104AD648D68C50DAC39C16C"
+  "immutableHash": "2B535FF421C84AFE048ECE30DF573CB621F5B51A92FB5375C917E5C30123D90B"
 }

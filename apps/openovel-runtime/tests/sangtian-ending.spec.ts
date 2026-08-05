@@ -55,3 +55,34 @@ test("Sangtian ending refuses to invent a fate before authoritative completion",
     preparedDecision,
   }), /SANGTIAN_ENDING_STATE_NOT_READY/);
 });
+
+test("Sangtian ending treats split dispatch as already departed", () => {
+  const preparedDecision = {
+    payload: {
+      settlement: {
+        proposedState: {
+          partCompletionStatus: "HANDOFF_READY",
+          land: { safeguardStatus: "ACTIVE" },
+          grain: { immediatePressure: "RELIEVED_FOR_HUNGRIEST" },
+          evidence: { chainStatus: "TRACEABLE" },
+          report: {
+            attachmentStrength: "WITNESSED_COPY_AND_CUSTODY_RECORD",
+            dispatchStatus: "SPLIT",
+          },
+          responsibility: { governorExposure: 8 },
+        },
+      },
+    },
+  } as PreparedAuthoredDecision;
+
+  const ending = sangtianEndingModule.build({
+    runId: "run-split-dispatch",
+    turnId: "T20",
+    turnNumber: 20,
+    finalNarration: "正本与摘要已经分路离开浙江。",
+    preparedDecision,
+  });
+
+  assert.match(ending.protagonistFate, /首份奏报已经离开浙江/u);
+  assert.doesNotMatch(ending.protagonistFate, /仍未离开浙江/u);
+});

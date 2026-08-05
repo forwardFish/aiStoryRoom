@@ -865,6 +865,11 @@ test("drives a deterministic twenty-turn Part One state path without advancing b
     assert.ok(visibleFallback.WORLD_PRESSURE.trim(), `T${turn} world pressure must be visible`);
     assert.ok(visibleFallback.DECISION_STOP.trim(), `T${turn} decision stop must be visible`);
     assert.equal(
+      visibleFallback.DECISION_STOP,
+      settlement.event.nextDecisionPoint.prompt,
+      `T${turn} fallback must stop at the decision actually selected by the planner`
+    );
+    assert.equal(
       new Set([
         visibleFallback.PLAYER_RESULT.trim(),
         visibleFallback.WORLD_PRESSURE.trim(),

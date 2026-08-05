@@ -85,11 +85,24 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
       assert.ok(head);
       const beatManifest = await repository.readArtifactJson<{
         dramaticGuidance?: { sourceMechanisms?: string[] };
+        tickets?: Array<{
+          slot: string;
+          expressionOwner?: string;
+          protectedText?: string;
+          requiredMeaning: string;
+        }>;
       }>(head, "beat-manifest.json");
       assert.ok(
         beatManifest.dramaticGuidance?.sourceMechanisms?.length,
         `T${String(turn).padStart(2, "0")} must carry source-grounded dramatic material`,
       );
+      if (turn === 20) {
+        const terminalStop = beatManifest.tickets?.find((ticket) => (
+          ticket.slot === "DECISION_STOP"
+        ));
+        assert.equal(terminalStop?.expressionOwner, "PROTECTED");
+        assert.equal(terminalStop?.protectedText, terminalStop?.requiredMeaning);
+      }
       const atomicOptions = await repository.readArtifactJson<Array<{ id: string }>>(
         head,
         "options.json",
