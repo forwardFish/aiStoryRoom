@@ -64,6 +64,7 @@ import type {
 } from "./types.js";
 import { actionRejected, isRuntimeActionError } from "./runtime-errors.js";
 import { BasicEndingModule, type EndingModule } from "./ending-module.js";
+import type { WorldModuleRegistry } from "./world-module-registry.js";
 
 export class OpenNovelRuntime {
   private readonly foregroundLocks = new Set<string>();
@@ -88,13 +89,14 @@ export class OpenNovelRuntime {
       optionsAndMemory?: OptionsAndMemoryModule;
       surfaceGuard?: SurfaceGuardModule;
       endingModule?: EndingModule;
+      worldModules?: WorldModuleRegistry;
     } = {},
   ) {
     this.describeTurnModules();
   }
 
-  describeTurnModules(): TurnModuleDescriptor[] {
-    const authored = this.authoredDecisionAdapter();
+  describeTurnModules(worldId?: string): TurnModuleDescriptor[] {
+    const authored = this.authoredDecisionAdapter(worldId);
     const sceneReview = this.runtimeOptions.scenePipelineModules;
     return new TurnModuleRegistry([
       { kind: "ACTION_GATEWAY", moduleId: this.actionGateway().moduleId, mode: "REQUIRED" },
@@ -102,12 +104,18 @@ export class OpenNovelRuntime {
       { kind: "CONTEXT_COMPILER", moduleId: this.contextCompiler().moduleId, mode: "REQUIRED" },
       {
         kind: "FACT_SETTLEMENT",
-        moduleId: authored?.moduleIds?.factSettlement || "legacy.causal-delta-settlement.v1",
+        moduleId: authored?.moduleIds?.factSettlement
+          || (this.runtimeOptions.worldModules
+            ? "openovel.world-module-registry.fact-settlement.v1"
+            : "legacy.causal-delta-settlement.v1"),
         mode: "REQUIRED",
       },
       {
         kind: "NEXT_BEAT_PLANNER",
-        moduleId: authored?.moduleIds?.nextBeatPlanner || "legacy.narrator-led-beat.v1",
+        moduleId: authored?.moduleIds?.nextBeatPlanner
+          || (this.runtimeOptions.worldModules
+            ? "openovel.world-module-registry.next-beat.v1"
+            : "legacy.narrator-led-beat.v1"),
         mode: "REQUIRED",
       },
       {
@@ -133,7 +141,7 @@ export class OpenNovelRuntime {
         moduleId: sceneReview?.policy.moduleId || "openovel.review-policy.disabled.v1",
         mode: sceneReview ? "OPTIONAL" : "DISABLED",
       },
-      { kind: "ENDING", moduleId: this.endingModule().moduleId, mode: "REQUIRED" },
+      { kind: "ENDING", moduleId: this.endingModule(worldId).moduleId, mode: "REQUIRED" },
       { kind: "ATOMIC_COMMITTER", moduleId: this.atomicCommitter().moduleId, mode: "REQUIRED" },
       { kind: "OPTIONS_AND_MEMORY", moduleId: this.optionsAndMemory().moduleId, mode: "REQUIRED" },
     ]).list();
@@ -246,9 +254,12 @@ export class OpenNovelRuntime {
     return this.foregroundLocks.has(runId);
   }
 
-  private authoredDecisionAdapter() {
+  private authoredDecisionAdapter(worldId?: string) {
     if (this.runtimeOptions.decisionMode !== "AUTHORED_WHEN_AVAILABLE") {
       return undefined;
+    }
+    if (worldId && this.runtimeOptions.worldModules) {
+      return this.runtimeOptions.worldModules.require(worldId).decisionAdapter;
     }
     return this.runtimeOptions.authoredDecisionAdapter;
   }
@@ -268,7 +279,7 @@ export class OpenNovelRuntime {
       if (!committed) throw new Error("NO_COMMITTED_TURN_FOR_OPTIONS");
       const expectedTurnId = `T${String(snapshot.metadata.turnNumber).padStart(2, "0")}`;
       if (committed.turnId !== expectedTurnId) throw new Error("LATEST_TURN_MISMATCH");
-      const authoredAdapter = this.authoredDecisionAdapter();
+      const authoredAdapter = this.authoredDecisionAdapter(snapshot.metadata.worldId);
       if (authoredAdapter) {
         const authoredOptions = await authoredAdapter.currentOptions(this.workspace, runId);
         if (authoredOptions?.length) {
@@ -378,13 +389,13 @@ export class OpenNovelRuntime {
     boundOption?: BoundOption | null;
     onEvent?: (event: TurnEvent) => void;
   }) {
-    const authoredAdapter = this.authoredDecisionAdapter();
+    const snapshot = await this.workspace.snapshot(input.runId);
+    const authoredAdapter = this.authoredDecisionAdapter(snapshot.metadata.worldId);
     const atomicCommitter = this.atomicCommitter();
     const atomicRepository = authoredAdapter
       ? atomicCommitter.open(this.workspace.paths(input.runId))
       : null;
     if (atomicRepository) await atomicRepository.restoreMaterializedViews();
-    const snapshot = await this.workspace.snapshot(input.runId);
     const turnNumber = snapshot.metadata.turnNumber + 1;
     const turnId = `T${String(turnNumber).padStart(2, "0")}`;
     const submissionId = normalizeSubmissionId(input.submissionId)
@@ -809,7 +820,7 @@ export class OpenNovelRuntime {
           turnId,
           descriptor: {
             kind: "ENDING",
-            moduleId: this.endingModule().moduleId,
+            moduleId: this.endingModule(currentSnapshot.metadata.worldId).moduleId,
             mode: "REQUIRED",
           },
           value: {
@@ -817,7 +828,7 @@ export class OpenNovelRuntime {
             finalNarration: narrator.text,
             sourceRef: preparedDecision.sourceRef,
           },
-          execute: () => this.endingModule().build({
+          execute: () => this.endingModule(currentSnapshot.metadata.worldId).build({
             runId: input.runId,
             turnId,
             turnNumber,
@@ -1030,7 +1041,12 @@ export class OpenNovelRuntime {
     return this.runtimeOptions.surfaceGuard || new DefaultSurfaceGuard();
   }
 
-  private endingModule() {
+  private endingModule(worldId?: string) {
+    if (worldId && this.runtimeOptions.worldModules) {
+      return this.runtimeOptions.worldModules.require(worldId).endingModule
+        || this.runtimeOptions.endingModule
+        || new BasicEndingModule();
+    }
     return this.runtimeOptions.endingModule || new BasicEndingModule();
   }
 

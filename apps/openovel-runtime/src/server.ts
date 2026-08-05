@@ -15,23 +15,53 @@ import { sangtianWorkspaceSeeder } from "./sangtian-workspace.js";
 import type { TurnEvent, TurnResult } from "./types.js";
 import { isRuntimeActionError } from "./runtime-errors.js";
 import { sangtianEndingModule } from "./sangtian-ending.js";
+import { WorldModuleRegistry } from "./world-module-registry.js";
+import { MultiplayerWorldRuntime } from "./multiplayer-runtime.js";
+import templates from "@ai-story/templates";
+
+const {
+  caesarRuntimeFixture,
+  caesarSettlementFixture,
+  sangtianRuntimeFixture,
+  sangtianSettlementFixture,
+} = templates;
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(process.env.OPENOVEL_PROJECT_ROOT || path.join(currentDir, "..", "..", ".."));
 const playtestDir = path.resolve(projectRoot, "apps", "openovel-runtime", "public");
 const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
 const provider = OpenAICompatibleProvider.fromEnv();
+const worldModules = new WorldModuleRegistry([
+  {
+    worldId: "sangtian",
+    seeder: sangtianWorkspaceSeeder,
+    decisionAdapter: sangtianDecisionAdapter,
+    endingModule: sangtianEndingModule,
+    runtimeContract: sangtianRuntimeFixture,
+    settlementPackage: sangtianSettlementFixture,
+  },
+  {
+    worldId: "caesar",
+    seeder: {
+      supports: () => false,
+      seed: async () => { throw new Error("CAESAR_SOLO_STORY_PACKAGE_NOT_REGISTERED"); },
+    },
+    runtimeContract: caesarRuntimeFixture,
+    settlementPackage: caesarSettlementFixture,
+  },
+]);
 const workspace = new FileStoryWorkspace(
   runtimeRoot(),
   projectRoot,
   upstreamCommit,
-  sangtianWorkspaceSeeder,
+  worldModules,
 );
 const mirrorTransport = HttpEventMirror.fromEnv();
 const mirror = mirrorTransport.configured
   ? new DurableEventMirror(workspace, mirrorTransport)
   : mirrorTransport;
 const storykeeper = new StorykeeperDrain(workspace, provider);
+const multiplayer = new MultiplayerWorldRuntime(runtimeRoot(), worldModules);
 const runtime = new OpenNovelRuntime(
   workspace,
   provider,
@@ -39,9 +69,8 @@ const runtime = new OpenNovelRuntime(
   mirror,
   {
     decisionMode: "AUTHORED_WHEN_AVAILABLE",
-    authoredDecisionAdapter: sangtianDecisionAdapter,
+    worldModules,
     scenePipelineModules: scenePipelineModulesFromEnv(provider),
-    endingModule: sangtianEndingModule,
   },
 );
 
@@ -60,6 +89,58 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === "GET" && url.pathname === "/internal/openovel/providers") {
       return json(response, 200, provider.describe());
+    }
+    if (request.method === "POST" && url.pathname === "/internal/openovel/shared-runs") {
+      const body = await bodyJson(request);
+      const run = await multiplayer.createRun({
+        runId: String(body.runId || ""),
+        worldId: String(body.worldId || ""),
+        actorIds: Array.isArray(body.actorIds) ? body.actorIds.map(String) : [],
+      });
+      return json(response, 201, run);
+    }
+    const sharedRunMatch = url.pathname.match(/^\/internal\/openovel\/shared-runs\/([^/]+)$/);
+    if (request.method === "GET" && sharedRunMatch) {
+      return json(response, 200, await multiplayer.getRun(decodeURIComponent(sharedRunMatch[1])));
+    }
+    const sharedActionMatch = url.pathname.match(/^\/internal\/openovel\/shared-runs\/([^/]+)\/actions$/);
+    if (request.method === "POST" && sharedActionMatch) {
+      const body = await bodyJson(request);
+      const result = await multiplayer.submitAction({
+        runId: decodeURIComponent(sharedActionMatch[1]),
+        actorId: String(body.actorId || ""),
+        rawText: String(body.rawText || ""),
+        expectedStateRevision: Number(body.expectedStateRevision),
+        idempotencyKey: String(body.idempotencyKey || ""),
+        intentType: String(body.intentType || "OTHER") as never,
+        referencedEntityIds: Array.isArray(body.referencedEntityIds)
+          ? body.referencedEntityIds.map(String)
+          : [],
+        proposedCapabilityId: body.proposedCapabilityId
+          ? String(body.proposedCapabilityId)
+          : undefined,
+        explicitCommitment: body.explicitCommitment === true,
+        explicitOrder: body.explicitOrder === true,
+      });
+      return json(response, 200, result);
+    }
+    const sharedProjectionMatch = url.pathname.match(
+      /^\/internal\/openovel\/shared-runs\/([^/]+)\/players\/([^/]+)\/(feed|projection|impact|clues|destiny-net)$/,
+    );
+    if (request.method === "GET" && sharedProjectionMatch) {
+      const runId = decodeURIComponent(sharedProjectionMatch[1]);
+      const actorId = decodeURIComponent(sharedProjectionMatch[2]);
+      const capability = sharedProjectionMatch[3];
+      const result = capability === "feed"
+        ? await multiplayer.feed(runId, actorId)
+        : capability === "projection"
+          ? await multiplayer.projection(runId, actorId)
+          : capability === "impact"
+            ? await multiplayer.impact(runId, actorId)
+            : capability === "clues"
+              ? await multiplayer.clues(runId, actorId)
+              : await multiplayer.destinyNet(runId, actorId);
+      return json(response, 200, result);
     }
     if (request.method === "POST" && url.pathname === "/internal/openovel/runs") {
       const body = await bodyJson(request);
@@ -140,9 +221,13 @@ const server = createServer(async (request, response) => {
     const message = String((error as Error).message || error);
     const status = isRuntimeActionError(error)
       ? error.status
+      : message.startsWith("STATE_REVISION_CONFLICT")
+        || message === "IDEMPOTENCY_KEY_REUSED"
+        || message === "SHARED_RUN_CREATE_CONFLICT"
+        ? 409
       : message === "RUN_FOREGROUND_BUSY"
         ? 409
-        : /not found/i.test(message)
+        : /not found/i.test(message) || message === "SHARED_RUN_NOT_FOUND"
           ? 404
           : 400;
     return json(response, status, { error: message });
