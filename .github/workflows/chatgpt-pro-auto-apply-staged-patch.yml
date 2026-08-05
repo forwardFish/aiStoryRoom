@@ -142,3 +142,5 @@ jobs:
           fi
           git commit -m "fix(story-assets): bind patterns to verified source claims"
           git push origin HEAD:codex/chatgpt-pro-ai-story-convergence
+
+# manual trigger: verified source-claim repair
