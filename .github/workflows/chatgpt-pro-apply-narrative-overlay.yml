@@ -1,0 +1,195 @@
+name: ChatGPT Pro Apply Narrative Overlay
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-ai-story-convergence
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.event.head_commit.message == 'chore(ai-story): stage source-grounded narrative overlay'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TARGET_BRANCH: codex/chatgpt-pro-ai-story-convergence
+      FROZEN_BASE_SHA: 1b750e56858dabefb0ddb8b922c6bdcbe0574e4c
+      PAYLOAD_PATH: docs/auto-execute/.chatgpt-pro-narrative-overlay.tar.gz
+      WORKFLOW_PATH: .github/workflows/chatgpt-pro-apply-narrative-overlay.yml
+      PAYLOAD_SHA256: e8735fdd8923e695f0a22000addbc197a624da2006c9d3992760ec4c06218319
+      OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
+      OPENOVEL_MODEL: deepseek-v4-pro
+      OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
+      OPENOVEL_REVIEWER_MODEL: deepseek-v4-pro
+      OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
+      OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
+      OPENOVEL_DEEPSEEK_THINKING: disabled
+    steps:
+      - name: Check out exact staged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Prove branch, base and payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "${TARGET_BRANCH}"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git merge-base HEAD "${FROZEN_BASE_SHA}")" = "${FROZEN_BASE_SHA}"
+          test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
+          test -z "$(git status --short)"
+          echo "${PAYLOAD_SHA256}  ${PAYLOAD_PATH}" | sha256sum --check --strict
+          mapfile -t payload_paths < <(tar -tzf "${PAYLOAD_PATH}" | sed -E 's#^\./##' | sed '/^$/d' | sed '/\/$/d' | sort)
+          expected_paths=(
+            package.json
+            packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json
+            packages/templates/config/sangtian/story-package/part-one-narrative-supplement.json
+            packages/templates/src/story-package/part-one-runtime-types.ts
+            packages/templates/src/story-package/playable-part-one-runtime.ts
+            packages/templates/tests/part-one-narrative-supplement.test.ts
+            scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs
+          )
+          mapfile -t expected_paths < <(printf '%s\n' "${expected_paths[@]}" | sort)
+          test "$(printf '%s\n' "${payload_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+
+      - name: Apply the staged source payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf "${PAYLOAD_PATH}" -C .
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install locked dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Execute all deterministic gates
+        id: gates
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          mkdir -p .overlay-evidence/logs
+          run_gate() {
+            local name="$1"
+            shift
+            set -o pipefail
+            "$@" > >(tee ".overlay-evidence/logs/${name}.log") 2>&1
+            local code=$?
+            echo "${code}" > ".overlay-evidence/${name}.exit"
+            return 0
+          }
+          run_gate 01-supplement-check pnpm check:sangtian-part-one-narrative-supplement
+          run_gate 02-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate 03-openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate 04-story-v4 pnpm test:story:v4
+          run_gate 05-http-smoke pnpm --filter @apps/openovel-runtime smoke:http
+          mkdir -p "${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_SKIP_SOURCE_WRITES=1
+          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring"
+          export SANGTIAN_RUNTIME_PACKAGE_PATH="${RUNNER_TEMP}/part-one-runtime.json"
+          run_gate 06-base-asset-recompile node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+          set -o pipefail
+          sha256sum \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json" \
+            | tee .overlay-evidence/logs/07-base-asset-sha256.log
+          cmp --silent \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${RUNNER_TEMP}/part-one-runtime.json"
+          echo "$?" > .overlay-evidence/07-base-asset-compare.exit
+          exit 0
+
+      - name: Publish verified source or failure evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_dir="docs/auto-execute/evidence/narrative-overlay/${GITHUB_SHA}"
+          export EVIDENCE_DIR="${evidence_dir}"
+          mkdir -p "${evidence_dir}"
+          overall=0
+          for result in .overlay-evidence/*.exit; do
+            code=$(cat "$result")
+            test "$code" = "0" || overall=1
+          done
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          evidence = Path(os.environ['EVIDENCE_DIR'])
+          outcomes = {}
+          for path in sorted(Path('.overlay-evidence').glob('*.exit')):
+              outcomes[path.stem] = int(path.read_text().strip())
+          payload = {
+              'schemaVersion': 'omw.narrative-overlay-apply-evidence.v1',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'branch': os.environ['TARGET_BRANCH'],
+              'stagedSha': os.environ['GITHUB_SHA'],
+              'frozenBaseSha': os.environ['FROZEN_BASE_SHA'],
+              'payloadSha256': os.environ['PAYLOAD_SHA256'],
+              'modelConfiguration': {
+                  'provider': os.environ['OPENOVEL_PROVIDER_BASE_URL'],
+                  'model': os.environ['OPENOVEL_MODEL'],
+                  'thinking': os.environ['OPENOVEL_DEEPSEEK_THINKING'],
+                  'realModelCalls': False,
+              },
+              'outcomes': outcomes,
+              'overall': 'PASS' if all(value == 0 for value in outcomes.values()) else 'FAIL',
+          }
+          (evidence / 'summary.json').write_text(json.dumps(payload, indent=2) + '\n')
+          for source in sorted(Path('.overlay-evidence/logs').glob('*.log')):
+              lines = source.read_text(errors='replace').splitlines()
+              (evidence / f'{source.stem}.tail.log').write_text('\n'.join(lines[-300:]) + '\n')
+          PY
+          if [ "${overall}" = "0" ]; then
+            rm -f "${PAYLOAD_PATH}" "${WORKFLOW_PATH}"
+          else
+            git restore \
+              package.json \
+              packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json \
+              packages/templates/src/story-package/part-one-runtime-types.ts \
+              packages/templates/src/story-package/playable-part-one-runtime.ts \
+              packages/templates/tests/part-one-narrative-supplement.test.ts \
+              scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs
+            rm -f packages/templates/config/sangtian/story-package/part-one-narrative-supplement.json
+          fi
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "${overall}" = "0" ]; then
+            git add \
+              package.json \
+              packages/templates/authoring/sangtian/narrative/scene-patterns.section-03.approved.json \
+              packages/templates/config/sangtian/story-package/part-one-narrative-supplement.json \
+              packages/templates/src/story-package/part-one-runtime-types.ts \
+              packages/templates/src/story-package/playable-part-one-runtime.ts \
+              packages/templates/tests/part-one-narrative-supplement.test.ts \
+              scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs \
+              "${evidence_dir}"
+            git add -u "${PAYLOAD_PATH}" "${WORKFLOW_PATH}"
+            message="fix(story-assets): compile source-grounded narrative overlay"
+          else
+            git add "${evidence_dir}"
+            message="test(story-assets): record narrative overlay gate failure"
+          fi
+          git commit -m "${message}"
+          git fetch origin "${TARGET_BRANCH}"
+          test "$(git rev-parse FETCH_HEAD)" = "${GITHUB_SHA}"
+          git push origin HEAD:"${TARGET_BRANCH}"
+          test "${overall}" = "0"
