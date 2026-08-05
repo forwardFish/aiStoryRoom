@@ -2,8 +2,8 @@
   "name": "@ai-story/templates",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/runtime-facade.js",
-  "types": "dist/runtime-facade.d.ts",
+  "main": "dist/runtime-entry.js",
+  "types": "dist/runtime-entry.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
