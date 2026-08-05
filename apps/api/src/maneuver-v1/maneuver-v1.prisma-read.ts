@@ -181,7 +181,7 @@ export async function readManeuverProjectionV1(
   runId: string,
 ): Promise<ManeuverProjectionV1> {
   const context = await readManeuverContextV1(db, userId, runId);
-  const [actions, evidenceRows] = await Promise.all([
+  const [actions, incomingRows, evidenceRows] = await Promise.all([
     (db as any).playerAction.findMany({
       where: {
         runId,
@@ -191,6 +191,26 @@ export async function readManeuverProjectionV1(
         status: { in: ["PENDING", "COMMITTED", "IN_PROGRESS"] },
       },
       select: { id: true, status: true, normalizedJson: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    (db as any).playerAction.findMany({
+      where: {
+        runId,
+        nodeId: context.nodeId,
+        targetRoleId: context.roleId,
+        actionType: "CONVERSATION",
+        actionKey: { startsWith: "maneuver:" },
+        visibility: { in: ["TARGETED", "PUBLIC"] },
+        status: { in: COMMITTED_ACTION_STATUSES },
+      },
+      select: {
+        id: true,
+        status: true,
+        freeText: true,
+        intent: true,
+        visibility: true,
+        role: { select: { roleName: true } },
+      },
       orderBy: { createdAt: "asc" },
     }),
     (db as any).roleAsset.findMany({
@@ -227,11 +247,14 @@ export async function readManeuverProjectionV1(
       label,
       effectSummary,
     })),
-    inProgress: actions.map((action: any) => ({
-      actionId: String(action.id),
-      label: actionLabel(action.normalizedJson),
-      status: String(action.status || "PENDING"),
-    })),
+    inProgress: [
+      ...actions.map((action: any) => ({
+        actionId: String(action.id),
+        label: actionLabel(action.normalizedJson),
+        status: String(action.status || "PENDING"),
+      })),
+      ...projectIncomingContactProgressV1(incomingRows),
+    ],
     privateEvidence: projectPrivateEvidenceV1(context.roleId, evidenceRows),
   };
 }
@@ -323,4 +346,22 @@ function actionLabel(value: unknown): string {
   return typeof compiled?.objective === "string" && compiled.objective.trim()
     ? compiled.objective.trim()
     : "Maneuver in progress";
+}
+
+
+export function projectIncomingContactProgressV1(rows: unknown[]): ManeuverProjectionV1["inProgress"] {
+  return rows.flatMap((rowInput) => {
+    const row = optionalRecord(rowInput);
+    const visibility = typeof row?.visibility === "string" ? row.visibility : "";
+    const role = optionalRecord(row?.role);
+    const actionId = typeof row?.id === "string" ? row.id.trim() : "";
+    const fromLabel = typeof role?.roleName === "string" ? role.roleName.trim() : "";
+    const message = typeof row?.freeText === "string" && row.freeText.trim()
+      ? row.freeText.trim()
+      : typeof row?.intent === "string" ? row.intent.trim() : "";
+    const status = typeof row?.status === "string" ? row.status.trim() : "";
+    if (!actionId || !fromLabel || !message || !status) return [];
+    if (visibility !== "TARGETED" && visibility !== "PUBLIC") return [];
+    return [{ actionId, label: `${fromLabel}: ${message}`, status }];
+  });
 }
