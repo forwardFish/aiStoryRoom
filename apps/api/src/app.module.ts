@@ -25,10 +25,13 @@ import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.co
 import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
 import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
+import { ManeuverV1Controller } from "./maneuver-v1/maneuver-v1.controller";
+import { ManeuverV1PrismaStore } from "./maneuver-v1/maneuver-v1.prisma-store";
+import { ManeuverV1Service } from "./maneuver-v1/maneuver-v1.service";
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
-  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController],
+  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController, ManeuverV1Controller],
   providers: [
     StoryService,
     StoryTaskOutboxService,
@@ -36,7 +39,9 @@ import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.servi
     PresenceHeartbeatRateLimitGuard,
     OpenNovelAdapterService,
     OpenNovelRuntimeClient,
-    OpenNovelSharedService
+    OpenNovelSharedService,
+    ManeuverV1PrismaStore,
+    ManeuverV1Service
   ]
 })
 export class AppModule {}
