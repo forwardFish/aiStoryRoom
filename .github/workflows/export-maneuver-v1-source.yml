@@ -28,22 +28,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect implementation payload
+      - name: Detect complete implementation payload
         id: payload
         shell: bash
         run: |
-          if compgen -G 'tmp/maneuver-v1.patch.gz.b64.part-*' > /dev/null; then
+          if [[ -f tmp/maneuver-v1.ready ]]; then
             echo 'present=true' >> "$GITHUB_OUTPUT"
           else
             echo 'present=false' >> "$GITHUB_OUTPUT"
-            echo 'No implementation payload is present; nothing to bootstrap.'
+            echo 'The implementation payload is not marked complete; nothing to bootstrap.'
           fi
 
       - name: Reconstruct and apply implementation
         if: steps.payload.outputs.present == 'true'
         shell: bash
         run: |
+          test "$(find tmp -maxdepth 1 -type f -name 'maneuver-v1.patch.gz.b64.part-*' | wc -l)" -eq 10
           cat tmp/maneuver-v1.patch.gz.b64.part-* > "$RUNNER_TEMP/maneuver-v1.patch.gz.b64"
+          echo '6420026bdda7ee7a54a0a752129983f24125a0e69462e3b4d99031baf7daab3a  '"$RUNNER_TEMP/maneuver-v1.patch.gz.b64" | sha256sum --check --strict
           base64 --decode "$RUNNER_TEMP/maneuver-v1.patch.gz.b64" > "$RUNNER_TEMP/maneuver-v1.patch.gz"
           gzip --decompress --stdout "$RUNNER_TEMP/maneuver-v1.patch.gz" > "$RUNNER_TEMP/maneuver-v1.patch"
           echo '5c1fb576888947e1be1848b43a4c286c88f55f251fe467f08fe413de0c90b127  '"$RUNNER_TEMP/maneuver-v1.patch.gz" | sha256sum --check --strict
@@ -98,7 +100,7 @@ jobs:
         if: steps.payload.outputs.present == 'true'
         shell: bash
         run: |
-          rm -f tmp/maneuver-v1.patch.gz.b64.part-*
+          rm -f tmp/maneuver-v1.patch.gz.b64.part-* tmp/maneuver-v1.ready
           rmdir tmp 2>/dev/null || true
           rm -f .github/workflows/export-maneuver-v1-source.yml
           git add -A
