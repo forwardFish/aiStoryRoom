@@ -13,6 +13,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
   let openingRetryStatus = "";
   let creditMountObserver = null;
   let maneuverCaptureHandler = null;
+  let resumeOpeningAfterManeuverResult = false;
   const sessionInstanceId = sessionId(win, runId);
   const onCreditsRequired = (event) => { void showCreditsRequired(event.detail || {}); };
 
@@ -63,8 +64,19 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
 
   function installManeuverPreviewFlow() {
     maneuverCaptureHandler = (event) => {
-      const button = event.target?.closest?.("#maneuverSubmit, #maneuverConfirm, #maneuverPreviewCancel");
+      const button = event.target?.closest?.("#maneuverSubmit, #maneuverConfirm, #maneuverPreviewCancel, #continueStoryBtn");
       if (!button || !root.contains(button)) return;
+      if (button.id === "continueStoryBtn") {
+        const state = storyApp?.getState();
+        if (
+          resumeOpeningAfterManeuverResult
+          && state?.resultStream?.kind === "maneuver"
+        ) {
+          state.showOpening = true;
+          resumeOpeningAfterManeuverResult = false;
+        }
+        return;
+      }
       event.preventDefault();
       event.stopImmediatePropagation();
       if (button.id === "maneuverSubmit") void previewCurrentManeuver();
@@ -110,8 +122,21 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       state.maneuverPreview = null;
       if (state.view) delete state.view.maneuverPreview;
       clearManeuverDraft(state, preview.maneuverType);
+
+      // The main renderer treats an unfinished prologue as a lifecycle state,
+      // not as an action result. Suspend that state only while the newly
+      // confirmed maneuver result is presented, then restore it when the
+      // player presses Continue. This does not advance the OpenNovel turn.
+      const shouldResumeOpening = state.showOpening === true;
+      if (shouldResumeOpening) state.showOpening = false;
       state.busy = false;
       await storyApp.refresh({ silent: true });
+      const refreshedState = storyApp.getState();
+      if (shouldResumeOpening && refreshedState.resultStream?.kind === "maneuver") {
+        resumeOpeningAfterManeuverResult = true;
+      } else if (shouldResumeOpening) {
+        refreshedState.showOpening = true;
+      }
     } catch (error) {
       state.error = error?.message || "主动谋划确认失败。";
       if (["MANEUVER_PREVIEW_STALE", "MANEUVER_PREVIEW_EXPIRED", "VERSION_CONFLICT"].includes(String(error?.code || ""))) {
@@ -264,6 +289,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       if (pollTimer) win.clearInterval(pollTimer);
       if (heartbeatTimer) win.clearInterval(heartbeatTimer);
       if (maneuverCaptureHandler) root.removeEventListener("click", maneuverCaptureHandler, true);
+      resumeOpeningAfterManeuverResult = false;
       creditMountObserver?.disconnect();
       creditMountObserver = null;
       win.removeEventListener("worldcreditsrequired", onCreditsRequired);
