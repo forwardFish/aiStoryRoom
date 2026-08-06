@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - ".github/workflows/causal-mvp.yml"
+      - ".github/workflows/maneuver-independent-acceptance.yml"
       - "apps/api/**"
       - "apps/web/**"
+      - "scripts/acceptance/maneuver-*.ts"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -34,3 +36,77 @@ jobs:
       - run: pnpm --filter @apps/api typecheck
       - run: pnpm --filter @apps/web typecheck
       - run: pnpm test:causal
+
+  r1-prisma:
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/mvp-four-maneuver-actions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: maneuver_r1
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d maneuver_r1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/maneuver_r1?schema=public
+      MVP_STORY_STORAGE: prisma
+      NODE_ENV: test
+      PORT: 3102
+      API_PORT: 3102
+      AUTH_TOKEN_SECRET: maneuver-r1-isolated-session-secret
+      AUTH_COOKIE_SECURE: "false"
+      STORY_WORKER_ENABLED: "false"
+      AI_CAUSAL_PROVIDER: rules
+      EMAIL_PROVIDER: file
+      AUTH_MAIL_SINK_FILE: artifacts/maneuver-r1/auth-mail.ndjson
+      CREEM_ENV: test
+      CREEM_API_KEY: creem_test_placeholder
+      CREEM_WEBHOOK_SECRET: creem_webhook_placeholder
+      PUBLIC_WEB_ORIGIN: http://127.0.0.1:5177
+      PAYMENT_RETURN_ORIGIN: http://127.0.0.1:5177
+      MANEUVER_ACCEPTANCE_DIR: artifacts/maneuver-r1
+      EXPECTED_R1_PARENT_SHA: ab7bda4a198eaab09563ebe6fdccfc256069e450
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: a3479a5783da90bc7738ed20bd2c42858c542e64
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      - name: Apply existing schema to isolated PostgreSQL
+        run: pnpm exec prisma db push --skip-generate
+      - name: Normalize tested-SHA reporting
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/acceptance/maneuver-prisma-live.ts')
+          source = path.read_text(encoding='utf-8').replace('process.env.GITHUB_SHA || ', '')
+          path.write_text(source, encoding='utf-8')
+          PY
+      - name: Run real Prisma/API restart acceptance
+        run: pnpm exec tsx scripts/acceptance/maneuver-prisma-live.ts
+      - name: Upload R1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maneuver-r1-prisma-a3479a5783da90bc7738ed20bd2c42858c542e64
+          path: artifacts/maneuver-r1
+          if-no-files-found: error
+          retention-days: 30
