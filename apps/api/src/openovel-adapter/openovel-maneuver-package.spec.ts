@@ -205,7 +205,7 @@ test("neutral package owns calendar, leverage catalogue and custom metric effect
   }
   const applied = applyOpenNovelManeuverPlan({
     state: first.state,
-    planz custom,
+    plan: custom,
     result: {
       id: "neutral-custom-1",
       turnNumber: 0,

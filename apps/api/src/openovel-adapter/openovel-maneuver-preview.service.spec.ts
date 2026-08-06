@@ -39,7 +39,6 @@ function requireAcceptedSubmission(
   }
 }
 
-
 function createTestDouble<T extends object>(
   prototype: T,
   properties: PropertyDescriptorMap,
@@ -64,7 +63,7 @@ function fixture() {
         roleKey: "zhejiang_governor",
         roleName: "浙江总督",
         identity: "浙江总督",
-        personalGoal: "稳�s浙江",
+        personalGoal: "稳住浙江",
       },
     }],
   };
