@@ -328,6 +328,7 @@ const runtimeEntry = {
   buildPartOneRuntimeWorkingSet,
   buildCommittedLegacyFallbackWorkingSet,
   finalizePartOneSettlement,
+  projectFinalizedPartOneSelectionState,
   settlePartOneAction,
   withPartOneDecisionPin,
 };
