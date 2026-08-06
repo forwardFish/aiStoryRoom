@@ -6,6 +6,7 @@ import {
   createOutcomeSignature,
   kernelTieBreaker,
   selectKernelLite,
+  stableSha256,
   type KernelSelectorLiteCandidate,
 } from "../src/runtime-contract/kernel-selector-lite.js";
 
@@ -112,6 +113,54 @@ test("equal structural candidates use a state-bound tie breaker rather than arra
     kernelTieBreaker("STATE-TIE-A", alpha.kernelId),
     kernelTieBreaker("STATE-TIE-B", alpha.kernelId),
   );
+});
+
+test("state fingerprints ignore runtime identities and presentation prose but retain structured state", () => {
+  const state = (suffix: string, authority = "JOINT") => ({
+    sectionId: "section.port",
+    turnNumber: 7,
+    lastCommittedEventId: `EVENT-${suffix}`,
+    review: { authority },
+    scene: {
+      sceneId: "scene.port",
+      locationRef: "location.port",
+      locationLabel: `Harbor Hall ${suffix}`,
+      timeLabel: `Day ${suffix}`,
+      presentActorRefs: ["actor.governor"],
+      situation: `Narrative pressure ${suffix}`,
+      observableFacts: [`Visible prose ${suffix}`],
+      documentStates: [{
+        documentRef: "document.manifest",
+        accessState: "SEALED",
+        holderRef: "actor.governor",
+        label: `Manifest ${suffix}`,
+        continuityNote: `Prose ${suffix}`,
+      }],
+    },
+    pendingConsequences: [{
+      consequenceId: `PC-${suffix}`,
+      causedByEventId: `EVENT-${suffix}`,
+      ruleAssetId: "rule.deadline",
+      dueTurn: 8,
+      priority: "P0",
+      status: "PENDING",
+      summary: `Summary ${suffix}`,
+      payoffBeat: {
+        beatId: `BEAT-${suffix}`,
+        actorRefs: ["actor.governor"],
+        action: `Action prose ${suffix}`,
+        requiredTermGroups: [[`term-${suffix}`]],
+        resultCeiling: `Ceiling ${suffix}`,
+      },
+    }],
+  });
+
+  const first = stableSha256(state("A"));
+  const proseOnly = stableSha256(state("B"));
+  const structuredChange = stableSha256(state("C", "COUNTY_FIRST"));
+
+  assert.equal(first, proseOnly);
+  assert.notEqual(first, structuredChange);
 });
 
 test("runtime-generated transfer and event identities cannot manufacture Outcome diversity", () => {
