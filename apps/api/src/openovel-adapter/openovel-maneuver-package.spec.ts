@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   applyOpenNovelManeuverPlan,
@@ -199,15 +200,17 @@ test("neutral package owns calendar, leverage catalogue and custom metric effect
     turnNumber: 0,
     maneuverPackage: neutralPackage,
   });
-  assert.equal("accepted" in custom, false);
+  if ("accepted" in custom) {
+    throw new Error(`neutral custom plan was blocked: ${custom.reason}`);
+  }
   const applied = applyOpenNovelManeuverPlan({
     state: first.state,
-    plan: custom as any,
+    planz custom,
     result: {
       id: "neutral-custom-1",
       turnNumber: 0,
-      title: (custom as any).title,
-      narrative: (custom as any).fallbackNarrative,
+      title: custom.title,
+      narrative: custom.fallbackNarrative,
       idempotencyKey: "neutral-idempotency-1",
       requestFingerprint: "neutral-fingerprint-1",
       createdAt: new Date(0).toISOString(),
@@ -218,7 +221,7 @@ test("neutral package owns calendar, leverage catalogue and custom metric effect
 });
 
 test("generic adapter contains no Sangtian package constants or story metrics", async () => {
-  const source = await readFile(new URL("./openovel-maneuver.ts", import.meta.url), "utf8");
+  const source = await readFile(resolve(__dirname, "openovel-maneuver.ts"), "utf8");
   for (const forbidden of [
     "mvp-maneuver-config",
     "INITIAL_MVP_LEVERAGE_KEYS",

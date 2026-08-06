@@ -1,6 +1,51 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { AuthenticatedUser } from "../auth/current-user.decorator";
+import { PrismaService } from "../prisma.service";
 import { OpenNovelManeuverPreviewService } from "./openovel-maneuver-preview.service";
+import { OpenNovelManeuverService } from "./openovel-maneuver.service";
+import {
+  OpenNovelRuntimeClient,
+  type OpenNovelPublicRun,
+} from "./openovel-runtime.client";
+
+type PreviewResult = Awaited<ReturnType<OpenNovelManeuverPreviewService["preview"]>>;
+type AcceptedPreviewResult = Extract<PreviewResult, { accepted: true }>;
+
+function requireAcceptedPreview(result: PreviewResult): AcceptedPreviewResult {
+  if (result.accepted !== true) {
+    throw new Error(`preview was rejected: ${result.reason}`);
+  }
+  return result;
+}
+
+type AcceptedSubmissionResult = {
+  accepted: true;
+  replayed: boolean;
+};
+
+function requireAcceptedSubmission(
+  value: unknown,
+): asserts value is AcceptedSubmissionResult {
+  if (
+    value === null
+    || typeof value !== "object"
+    || !("accepted" in value)
+    || value.accepted !== true
+    || !("replayed" in value)
+    || typeof value.replayed !== "boolean"
+  ) {
+    throw new Error("committed confirm did not return an accepted submission");
+  }
+}
+
+
+function createTestDouble<T extends object>(
+  prototype: T,
+  properties: PropertyDescriptorMap,
+): T {
+  return Object.defineProperties(Object.create(prototype), properties);
+}
 
 function fixture() {
   const run = {
@@ -19,11 +64,11 @@ function fixture() {
         roleKey: "zhejiang_governor",
         roleName: "浙江总督",
         identity: "浙江总督",
-        personalGoal: "稳住浙江",
+        personalGoal: "稳�s浙江",
       },
     }],
   };
-  const runtimeRun = {
+  const runtimeRun: OpenNovelPublicRun = {
     runId: run.id,
     worldId: "sangtian",
     roleId: "zhejiang_governor",
@@ -39,30 +84,45 @@ function fixture() {
   let committed = false;
   let releaseSubmit: ((value: unknown) => void) | null = null;
   const submitted = new Promise((resolve) => { releaseSubmit = resolve; });
-  const prisma = {
+
+  const prisma = createTestDouble(PrismaService.prototype, {
     storyRun: {
-      findUnique: async () => run,
+      value: {
+        findUnique: async () => run,
+      },
     },
     storyEvent: {
-      findUnique: async () => committed
-        ? { id: "event-1", payloadJson: { requestFingerprint: "durable" } }
-        : null,
+      value: {
+        findUnique: async () => committed
+          ? { id: "event-1", payloadJson: { requestFingerprint: "durable" } }
+          : null,
+      },
     },
-  };
-  const runtime = {
-    getRun: async () => runtimeRun,
-  };
-  const maneuvers = {
-    submit: async () => {
-      submitCalls += 1;
-      if (committed) return { accepted: true, replayed: true, resolution: { id: "event-1" } };
-      return submitted;
+  });
+  const runtime = createTestDouble(OpenNovelRuntimeClient.prototype, {
+    getRun: {
+      value: async () => runtimeRun,
     },
-  };
+  });
+  const maneuvers = createTestDouble(OpenNovelManeuverService.prototype, {
+    submit: {
+      value: async () => {
+        submitCalls += 1;
+        if (committed) {
+          return {
+            accepted: true,
+            replayed: true,
+            resolution: { id: "event-1" },
+          };
+        }
+        return submitted;
+      },
+    },
+  });
   const service = new OpenNovelManeuverPreviewService(
-    prisma as any,
-    runtime as any,
-    maneuvers as any,
+    prisma,
+    runtime,
+    maneuvers,
   );
   return {
     service,
@@ -74,7 +134,15 @@ function fixture() {
   };
 }
 
-const user = { id: "user-1", openid: "openid-1" } as any;
+const user: AuthenticatedUser = {
+  id: "user-1",
+  openid: "openid-1",
+  email: null,
+  emailVerifiedAt: null,
+  nickname: null,
+  authMethod: "PASSWORD",
+  authIdentityId: null,
+};
 const command = {
   version: 7,
   idempotencyKey: "preview-service-key-001",
@@ -86,8 +154,9 @@ const command = {
 test("preview validates the authoritative projection without model or persistence side effects", async () => {
   const f = fixture();
   const before = JSON.stringify(f.run);
-  const result = await f.service.preview(user, f.run.id, command);
-  assert.equal(result.accepted, true);
+  const result = requireAcceptedPreview(
+    await f.service.preview(user, f.run.id, command),
+  );
   assert.equal(result.previewed, true);
   assert.match(result.previewToken, /^[^.]+\.[^.]+$/);
   assert.match(result.preview.previewId, /^ovl_preview_/);
@@ -99,7 +168,9 @@ test("preview validates the authoritative projection without model or persistenc
 
 test("concurrent confirms for one signed preview execute the logical submit once", async () => {
   const f = fixture();
-  const preview = await f.service.preview(user, f.run.id, command);
+  const preview = requireAcceptedPreview(
+    await f.service.preview(user, f.run.id, command),
+  );
   const first = f.service.confirm(user, f.run.id, preview.previewToken);
   const second = f.service.confirm(user, f.run.id, preview.previewToken);
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -111,7 +182,9 @@ test("concurrent confirms for one signed preview execute the logical submit once
 
 test("a committed confirm replays before checking the now-advanced revision", async () => {
   const f = fixture();
-  const preview = await f.service.preview(user, f.run.id, command);
+  const preview = requireAcceptedPreview(
+    await f.service.preview(user, f.run.id, command),
+  );
   const first = f.service.confirm(user, f.run.id, preview.previewToken);
   f.release({ accepted: true, replayed: false, resolution: { id: "event-1" } });
   await first;
@@ -120,7 +193,8 @@ test("a committed confirm replays before checking the now-advanced revision", as
 
   const replay = await f.service.confirm(user, f.run.id, preview.previewToken);
 
-  assert.equal((replay as any).accepted, true);
-  assert.equal((replay as any).replayed, true);
+  requireAcceptedSubmission(replay);
+  assert.equal(replay.accepted, true);
+  assert.equal(replay.replayed, true);
   assert.equal(f.submitCalls, 2, "the second call delegates to the durable replay path, not a new commit");
 });
