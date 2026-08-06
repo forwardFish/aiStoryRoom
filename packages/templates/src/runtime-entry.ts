@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import runtimeFacade from "./runtime-facade.js";
+import { stableSha256 } from "./runtime-contract/kernel-selector-lite.js";
 import {
   applyNarrativeScenePatternToDramaticBeatPlan,
   type DramaticPatternPlanInput,
@@ -14,6 +15,7 @@ import {
 import {
   buildCommittedLegacyFallbackWorkingSet,
   packageForDynamicCapabilityAction,
+  projectFinalizedPartOneSelectionState,
   settleDynamicPartOneAction,
   type DynamicPartOneSettlementExecutionOptions,
 } from "./story-package/dynamic-kernel-lite-settlement.js";
@@ -36,6 +38,7 @@ export type {
 export {
   buildCommittedLegacyFallbackWorkingSet,
   packageForDynamicCapabilityAction,
+  projectFinalizedPartOneSelectionState,
   settleDynamicPartOneAction,
 } from "./story-package/dynamic-kernel-lite-settlement.js";
 export type {
@@ -102,6 +105,32 @@ export const buildPartOneRuntimeWorkingSet = (
     turnNumber,
     effectiveOptions,
   );
+};
+
+/**
+ * Dynamic next-decision traces are compiled from the state after all
+ * authoritative due consequences for the turn are paid. The frozen finalizer
+ * remains the sole state writer; this wrapper only verifies that its committed
+ * result is exactly the state for which the trace was produced.
+ */
+export const finalizePartOneSettlement = (
+  ...args: Parameters<typeof runtimeFacade.finalizePartOneSettlement>
+): ReturnType<typeof runtimeFacade.finalizePartOneSettlement> => {
+  const finalized = runtimeFacade.finalizePartOneSettlement(...args);
+  const event = finalized.event as DynamicCommittedEvent;
+  const trace = event.nextKernelSelection;
+  if (!trace) return finalized;
+
+  const stateRevision = Number(
+    finalized.proposedState.turnNumber ?? event.turnNumber,
+  );
+  if (Number(trace.stateRevision) !== stateRevision) {
+    throw new Error("PART_ONE_DYNAMIC_FINALIZED_TRACE_REVISION_MISMATCH");
+  }
+  if (trace.stateFingerprint !== stableSha256(finalized.proposedState)) {
+    throw new Error("PART_ONE_DYNAMIC_FINALIZED_TRACE_FINGERPRINT_MISMATCH");
+  }
+  return finalized;
 };
 
 /**
@@ -180,6 +209,7 @@ function attachCapabilityKernelSelection(
 ) {
   const event = settlement.event as DynamicCommittedEvent;
   const nextPoint = event.nextDecisionPoint;
+  const selectionState = projectFinalizedPartOneSelectionState(settlement);
   const pin: PartOneDecisionPin = currentPin
     && currentPin.decisionKernelId === nextPoint.decisionKernelId
     && currentPin.decisionPointId === nextPoint.decisionPointId
@@ -198,14 +228,14 @@ function attachCapabilityKernelSelection(
   try {
     next = buildDynamicPartOneRuntimeWorkingSet(
       pkg,
-      settlement.proposedState,
+      selectionState,
       turnNumber,
       { mode: "DYNAMIC_LITE", pin },
     );
   } catch (pinError) {
     const fallback = buildDynamicPartOneRuntimeWorkingSet(
       pkg,
-      settlement.proposedState,
+      selectionState,
       turnNumber,
     );
     if (
@@ -297,6 +327,7 @@ const runtimeEntry = {
   loadPartOneRuntimePackage,
   buildPartOneRuntimeWorkingSet,
   buildCommittedLegacyFallbackWorkingSet,
+  finalizePartOneSettlement,
   settlePartOneAction,
   withPartOneDecisionPin,
 };
