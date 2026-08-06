@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/mvp-four-maneuver-actions
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -17,7 +20,7 @@ concurrency:
 
 jobs:
   implement-p3:
-    if: github.actor != 'github-actions[bot]' && contains(github.event.head_commit.message, 'bootstrap P3 continuation')
+    if: github.event_name == 'pull_request' || (github.actor != 'github-actions[bot]' && contains(github.event.head_commit.message, 'bootstrap P3 continuation'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
