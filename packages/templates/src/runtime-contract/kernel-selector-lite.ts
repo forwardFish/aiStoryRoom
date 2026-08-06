@@ -52,6 +52,7 @@ export type KernelSelectorLiteOutcomePair<TPayload = unknown> = {
 export type KernelSelectorLiteEvaluation<TPayload = unknown> = {
   kernelId: string;
   score: number;
+  tieBreaker: string;
   eligible: boolean;
   reasonCodes: string[];
   validAffordanceIds: string[];
@@ -77,6 +78,13 @@ export function stableSha256(value: unknown): string {
     .update(typeof value === "string" ? value : stableCanonicalJson(value))
     .digest("hex")
     .toUpperCase();
+}
+
+export function kernelTieBreaker(
+  stateFingerprint: string,
+  kernelId: string,
+): string {
+  return stableSha256({ stateFingerprint, kernelId });
 }
 
 export function createOutcomeSignature(input: Omit<AffordanceOutcomeSignature, "hash">): AffordanceOutcomeSignature {
@@ -171,6 +179,7 @@ export function selectKernelLite<TPayload>(
     return {
       kernelId: candidate.kernelId,
       score: scoreKernelCandidate(candidate),
+      tieBreaker: kernelTieBreaker(stateFingerprint, candidate.kernelId),
       eligible,
       reasonCodes: uniqueSorted(reasons),
       validAffordanceIds: candidate.validAffordances
@@ -188,6 +197,7 @@ export function selectKernelLite<TPayload>(
     .sort((left, right) => (
       right.score - left.score
       || right.maximumOutcomeDistance - left.maximumOutcomeDistance
+      || left.tieBreaker.localeCompare(right.tieBreaker)
       || left.kernelId.localeCompare(right.kernelId)
     ))[0] || null;
 
