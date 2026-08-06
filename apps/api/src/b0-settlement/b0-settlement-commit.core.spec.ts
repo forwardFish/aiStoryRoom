@@ -190,7 +190,25 @@ test("C4 generic mutation replay remains idempotent after the commit manifest ex
     mutationId: "mutation.relation", entityType: "RELATION", entityId: "relation.c2", attribute: "trust",
     operation: "INCREMENT", value: 1, originIntentIds: ["action.c2"],
   };
-  const resolution = rehash({ ...f.resolution, worldDelta: { mutations: [mutation] } });
+  const resolution = rehash({
+    ...f.resolution,
+    worldDelta: { mutations: [mutation] },
+    structuredResults: f.resolution.structuredResults.map((entry) => ({
+      ...entry,
+      durableMutationIds: [mutation.mutationId],
+    })),
+    causalEdges: [
+      ...f.resolution.causalEdges.filter((edge) => edge.to.type !== "MUTATION"),
+      {
+        schemaVersion: "b0-causal-edge-v1" as const,
+        id: "edge.relation",
+        batchId: f.resolution.batchId,
+        from: { type: "INTENT" as const, id: "action.c2" },
+        to: { type: "MUTATION" as const, id: mutation.mutationId },
+        relation: "CAUSED" as const,
+      },
+    ],
+  });
   const input = { ...commitInput(f), resolution };
   await commitB0SettlementV1(tx, input);
   for (let index = 0; index < 5; index += 1) {
@@ -208,7 +226,25 @@ test("C4 rejects a state mutation without a causal origin before advancing seque
     mutationId: "mutation.invalid", entityType: "WORLD", entityId: "world.c2", attribute: "state",
     operation: "SET", value: "changed", originIntentIds: [],
   };
-  const resolution = rehash({ ...f.resolution, worldDelta: { mutations: [mutation] } });
+  const resolution = rehash({
+    ...f.resolution,
+    worldDelta: { mutations: [mutation] },
+    structuredResults: f.resolution.structuredResults.map((entry) => ({
+      ...entry,
+      durableMutationIds: [mutation.mutationId],
+    })),
+    causalEdges: [
+      ...f.resolution.causalEdges.filter((edge) => edge.to.type !== "MUTATION"),
+      {
+        schemaVersion: "b0-causal-edge-v1" as const,
+        id: "edge.relation",
+        batchId: f.resolution.batchId,
+        from: { type: "INTENT" as const, id: "action.c2" },
+        to: { type: "MUTATION" as const, id: mutation.mutationId },
+        relation: "CAUSED" as const,
+      },
+    ],
+  });
   await assert.rejects(() => commitB0SettlementV1(tx, { ...commitInput(f), resolution }), (error: any) =>
     error?.code === "STATE_MUTATION_INVALID" || error?.code === "RESOLUTION_VALIDATION_FAILED");
   assert.equal(tx.worldSequence, 7);
