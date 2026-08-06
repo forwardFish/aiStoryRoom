@@ -1,5 +1,6 @@
 name: Maneuver R2-1 OpenNovel projection
 
+# Infrastructure retry marker: GitHub Actions returned Service Unavailable before checkout.
 on:
   push:
     branches:
