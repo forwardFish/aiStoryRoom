@@ -3,9 +3,12 @@ import {
   buildDynamicPartOneRuntimeWorkingSet,
   type DynamicPartOneActionSettlement,
   type DynamicPartOneCommittedEvent,
+  type DynamicPartOneRuntimeWorkingSet,
+  type KernelSelectionTrace,
   type PartOneDecisionPin,
 } from "./dynamic-kernel-lite-runtime.js";
 import {
+  buildPartOneRuntimeWorkingSet as buildLegacyWorkingSet,
   settlePartOneAction as settleLegacyAction,
   type PartOneIncomingAction,
 } from "./part-one-runtime-engine.js";
@@ -143,6 +146,72 @@ export function packageForDynamicCapabilityAction(
 }
 
 /**
+ * A committed Legacy fallback is already the canonical decision surface. It
+ * may exist precisely because its authored options could not produce two
+ * valid Dynamic previews, so ordinary pinned recovery must not demand that
+ * those options pass the Dynamic preview gate a second time. Rebuild only the
+ * exact committed Kernel and Affordance pair; all non-fallback pins keep the
+ * stricter Dynamic recovery path.
+ */
+export function buildCommittedLegacyFallbackWorkingSet(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  turnNumber: number,
+  trace: KernelSelectionTrace,
+): DynamicPartOneRuntimeWorkingSet {
+  if (trace.mode !== "LEGACY_FALLBACK") {
+    throw new Error("PART_ONE_COMMITTED_FALLBACK_TRACE_MODE_INVALID");
+  }
+  if (
+    trace.sectionId !== state.sectionId
+    || trace.selectedAffordanceIds.length !== 2
+    || !trace.selectedKernelId
+    || !trace.selectedDecisionPointId
+  ) {
+    throw new Error("PART_ONE_COMMITTED_FALLBACK_TRACE_INVALID");
+  }
+  const section = pkg.sections.find(
+    (item) => item.sectionId === state.sectionId,
+  );
+  if (
+    !section
+    || !section.activeDecisionKernelIds.includes(trace.selectedKernelId)
+  ) {
+    throw new Error("PART_ONE_COMMITTED_FALLBACK_KERNEL_NOT_IN_SECTION");
+  }
+
+  const workingSet = buildLegacyWorkingSet(
+    forcePackage(pkg, [{
+      sectionId: state.sectionId,
+      kernelId: trace.selectedKernelId,
+      affordanceIds: [...trace.selectedAffordanceIds],
+    }]),
+    state,
+    turnNumber,
+  );
+  const actualIds = workingSet.decisionAffordances.map(
+    (item) => item.affordanceTemplateId,
+  );
+  if (
+    workingSet.decisionPoint.decisionKernelId !== trace.selectedKernelId
+    || workingSet.decisionPoint.decisionPointId
+      !== trace.selectedDecisionPointId
+    || !sameStringArray(actualIds, trace.selectedAffordanceIds)
+  ) {
+    throw new Error("PART_ONE_COMMITTED_FALLBACK_RECOVERY_MISMATCH");
+  }
+
+  return {
+    ...workingSet,
+    kernelSelection: {
+      ...clone(trace),
+      mode: "PINNED_RECOVERY",
+      stateRevision: Number(state.turnNumber ?? turnNumber),
+    },
+  };
+}
+
+/**
  * The provisional pass exists only to expose the resulting authoritative state
  * to the selector. Reordering the next Kernel or its option surface must never
  * change the player action's causal result. The final pass may legitimately
@@ -260,6 +329,11 @@ function forcePackage(
 function isContinuation(workingSet: PartOneRuntimeWorkingSet) {
   return workingSet.decisionPoint.decisionPointId
     !== workingSet.decisionPoint.decisionKernelId;
+}
+
+function sameStringArray(left: string[], right: string[]) {
+  return left.length === right.length
+    && left.every((value, index) => value === right[index]);
 }
 
 function clone<T>(value: T): T {
