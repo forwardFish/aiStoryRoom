@@ -63,6 +63,7 @@
     "test:api-contract": "tsx --tsconfig apps/api/tsconfig.json scripts/e2e/v4-api-contract-audit.ts",
     "test:story:three-four": "tsx scripts/e2e/three-player-four-round.ts",
     "test:maneuver": "tsx scripts/e2e/mvp-acceptance-matrix.ts maneuver",
+    "test:maneuver:p5": "node --import tsx --test apps/api/src/mvp-four-maneuver-runtime.spec.ts apps/api/src/mvp-four-maneuver-ai.spec.ts apps/api/src/mvp-four-maneuver-p5.spec.ts && pnpm --filter @apps/web test && pnpm test:maneuver && pnpm test:concurrency && pnpm test:paths && pnpm test:ai-failure && pnpm test:continuous",
     "test:paths": "tsx scripts/e2e/mvp-acceptance-matrix.ts paths",
     "test:security-projection": "tsx scripts/e2e/mvp-acceptance-matrix.ts security",
     "test:concurrency": "tsx scripts/e2e/mvp-acceptance-matrix.ts concurrency",

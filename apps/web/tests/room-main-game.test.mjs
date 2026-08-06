@@ -62,7 +62,8 @@ test("Caesar reuses the same main-game renderer with its own script-backed Engli
   assert.match(harness.root.querySelector(".player").textContent, /Marcus Junius Brutus/);
   assert.match(harness.root.querySelector(".status-strip").textContent, /Caesar's Authority\s*78/);
   assert.match(harness.root.querySelector(".status-strip").textContent, /Senate Legitimacy\s*48/);
-  assert.match(harness.root.textContent, /Maneuver Board/);
+  assert.ok(harness.root.querySelector(".maneuver-panel"));
+  assert.equal(harness.root.querySelectorAll("[data-maneuver-type]").length, 4);
   assert.match(harness.root.textContent, /Shared Decision/);
   assert.match(harness.root.textContent, /Current Risks/);
   assert.match(harness.root.textContent, /Civil War Escalation/);
