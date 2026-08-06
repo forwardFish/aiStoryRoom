@@ -58,13 +58,19 @@ export function installOpenNovelManeuverStoragePatch() {
       || uniqueKey(`openovel-maneuver-${command.maneuverType}`, this.runId);
     this.__openNovelManeuverKeys.set(fingerprint, idempotencyKey);
 
-    const response = await this.request(
-      `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/maneuvers/preview`,
-      {
-        method: "POST",
-        body: JSON.stringify({ ...command, idempotencyKey }),
-      },
-    );
+    let response;
+    try {
+      response = await this.request(
+        `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/maneuvers/preview`,
+        {
+          method: "POST",
+          body: JSON.stringify({ ...command, idempotencyKey }),
+        },
+      );
+    } catch (error) {
+      this.__openNovelManeuverKeys.delete(fingerprint);
+      throw error;
+    }
     this.projection = requireManeuverProjection(response.gameProjection);
     const nextView = augmentManeuverView(
       adaptProjection(this.projection),
@@ -88,6 +94,7 @@ export function installOpenNovelManeuverStoragePatch() {
         previewToken: String(response.previewToken || ""),
         maneuverType: command.maneuverType,
         command: clone(command),
+        fingerprint,
       },
     };
   };
@@ -98,24 +105,43 @@ export function installOpenNovelManeuverStoragePatch() {
     }
     const previewToken = String(preview.previewToken || preview || "").trim();
     if (!previewToken) {
-      throw requestError("MANEUVER_PREVIEW_REQUIRED", "请先生成服务端预演。" );
+      throw requestError("MANEUVER_PREVIEW_REQUIRED", "请先生成服务端预演。");
     }
-    const response = await this.request(
-      `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/maneuvers/confirm`,
-      {
-        method: "POST",
-        body: JSON.stringify({ previewToken }),
-      },
-    );
-    this.projection = requireManeuverProjection(response.gameProjection);
-    const type = String(response.result?.maneuverType || preview.maneuverType || "custom");
-    return augmentManeuverView(
-      adaptProjection(this.projection, {
-        resolution: response.resolution || null,
-        decisionForm: decisionForm(type),
-      }),
-      this.projection,
-    );
+    const fingerprint = String(preview.fingerprint || "");
+    try {
+      const response = await this.request(
+        `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/maneuvers/confirm`,
+        {
+          method: "POST",
+          body: JSON.stringify({ previewToken }),
+        },
+      );
+      this.projection = requireManeuverProjection(response.gameProjection);
+      const type = String(response.result?.maneuverType || preview.maneuverType || "custom");
+      const nextView = augmentManeuverView(
+        adaptProjection(this.projection, {
+          resolution: response.resolution || null,
+          decisionForm: decisionForm(type),
+        }),
+        this.projection,
+      );
+      if (response.accepted === false) {
+        return {
+          ...nextView,
+          accepted: false,
+          reason: response.reason || "这项谋划暂时无法确认。",
+          suggestedRewrite: response.suggestedRewrite || "",
+        };
+      }
+      return nextView;
+    } finally {
+      if (fingerprint) this.__openNovelManeuverKeys?.delete(fingerprint);
+    }
+  };
+
+  proto.discardManeuverPreview = function(preview = {}) {
+    const fingerprint = String(preview.fingerprint || "");
+    if (fingerprint) this.__openNovelManeuverKeys?.delete(fingerprint);
   };
 }
 
