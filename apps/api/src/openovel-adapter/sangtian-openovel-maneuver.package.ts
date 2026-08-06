@@ -3,7 +3,7 @@ import {
   getManeuverActor,
   getManeuverSceneConfig,
   INITIAL_MVP_LEVERAGE_KEYS,
-} from "../mvp-maneuver-config";
+} from "../world-maneuver-packages/sangtian-maneuver.data";
 import {
   defineOpenNovelManeuverPackage,
   type OpenNovelContactDefinition,
