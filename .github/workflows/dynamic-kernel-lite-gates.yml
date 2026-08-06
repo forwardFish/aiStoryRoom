@@ -1,0 +1,339 @@
+name: Dynamic Kernel Lite Gates
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CI: "true"
+      BASE_SHA: dc4a7cd10978fc3662edcb6f2cf3445c1393ddb0
+      EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-lite-evidence
+      OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
+      OPENOVEL_MODEL: deepseek-v4-pro
+      OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
+      OPENOVEL_REVIEWER_MODEL: deepseek-v4-pro
+      OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
+      OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
+      OPENOVEL_DEEPSEEK_THINKING: disabled
+      AI_STORY_REAL_MODEL_EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-lite-evidence/real-model
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: boundary
+        name: Verify exact branch boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "ref=${GITHUB_REF_NAME}"
+            echo "head=$(git rev-parse HEAD)"
+            echo "base=${BASE_SHA}"
+            echo "merge_base=$(git merge-base HEAD ${BASE_SHA})"
+            echo "origin_main=$(git rev-parse origin/main)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee "${EVIDENCE_ROOT}/logs/00-boundary.log"
+          test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
+          test "${GITHUB_REF_NAME}" = "codex/chatgpt-pro-dynamic-kernel-lite"
+          test "$(git merge-base HEAD ${BASE_SHA})" = "${BASE_SHA}"
+          test "$(git rev-parse origin/main)" = "${BASE_SHA}"
+          test -z "$(git status --short)"
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - id: install
+        name: Install locked dependencies
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
+
+      - id: templates_typecheck
+        name: Templates typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @ai-story/templates typecheck 2>&1 | tee "${EVIDENCE_ROOT}/logs/02-templates-typecheck.log"
+
+      - id: templates_runtime
+        name: Templates runtime-contract tests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @ai-story/templates test:runtime-contract 2>&1 | tee "${EVIDENCE_ROOT}/logs/03-templates-runtime-contract.log"
+
+      - id: templates_story
+        name: Templates story-package tests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @ai-story/templates test:story-package 2>&1 | tee "${EVIDENCE_ROOT}/logs/04-templates-story-package.log"
+
+      - id: templates_build
+        name: Templates build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @ai-story/templates build 2>&1 | tee "${EVIDENCE_ROOT}/logs/05-templates-build.log"
+
+      - id: openovel_typecheck
+        name: OpenNovel typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee "${EVIDENCE_ROOT}/logs/06-openovel-typecheck.log"
+
+      - id: openovel_test
+        name: OpenNovel tests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime test 2>&1 | tee "${EVIDENCE_ROOT}/logs/07-openovel-tests.log"
+
+      - id: openovel_build
+        name: OpenNovel build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime build 2>&1 | tee "${EVIDENCE_ROOT}/logs/08-openovel-build.log"
+
+      - id: api_solo
+        name: API current solo-story tests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/api test:solo-story-engine 2>&1 | tee "${EVIDENCE_ROOT}/logs/09-api-solo.log"
+
+      - id: api_legacy
+        name: API legacy Sangtian integration
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian 2>&1 | tee "${EVIDENCE_ROOT}/logs/10-api-legacy-sangtian.log"
+
+      - id: branch_persistence
+        name: Branch persistence acceptance
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:story:branch-persistence 2>&1 | tee "${EVIDENCE_ROOT}/logs/11-branch-persistence.log"
+
+      - id: story_options
+        name: Deterministic G00-T20 options acceptance
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:story:options 2>&1 | tee "${EVIDENCE_ROOT}/logs/12-story-options.log"
+
+      - id: convergence
+        name: AI story convergence acceptance
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:story:convergence 2>&1 | tee "${EVIDENCE_ROOT}/logs/13-story-convergence.log"
+
+      - id: story_v4
+        name: Story v4 regression
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:story:v4 2>&1 | tee "${EVIDENCE_ROOT}/logs/14-story-v4.log"
+
+      - id: real_model
+        name: Real DeepSeek G00-T20 acceptance
+        continue-on-error: true
+        shell: bash
+        env:
+          OPENOVEL_PROVIDER_API_KEY: ${{ secrets.OPENOVEL_PROVIDER_API_KEY }}
+          OPENOVEL_API_KEY: ${{ secrets.OPENOVEL_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          set -o pipefail
+          if [ -z "${OPENOVEL_PROVIDER_API_KEY}${OPENOVEL_API_KEY}${DEEPSEEK_API_KEY}" ]; then
+            echo "REAL_MODEL_NOT_RUN_ENV_BLOCKED" | tee "${EVIDENCE_ROOT}/logs/15-real-model.log"
+            exit 78
+          fi
+          pnpm test:story:real-model:g00-t20 2>&1 | tee "${EVIDENCE_ROOT}/logs/15-real-model.log"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["AI_STORY_REAL_MODEL_EVIDENCE_ROOT"])
+          for name in ["real-model-acceptance-summary.json", "real-model-g00-t20-summary.json", "run-configuration.json"]:
+              path = root / name
+              if not path.exists():
+                  continue
+              value = json.loads(path.read_text(encoding="utf-8"))
+              value["branch"] = "codex/chatgpt-pro-dynamic-kernel-lite"
+              value["candidateSha"] = os.environ.get("GITHUB_SHA")
+              path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - id: summary
+        name: Build exact acceptance summary
+        if: always()
+        shell: bash
+        env:
+          OUT_BOUNDARY: ${{ steps.boundary.outcome }}
+          OUT_INSTALL: ${{ steps.install.outcome }}
+          OUT_TEMPLATES_TYPECHECK: ${{ steps.templates_typecheck.outcome }}
+          OUT_TEMPLATES_RUNTIME: ${{ steps.templates_runtime.outcome }}
+          OUT_TEMPLATES_STORY: ${{ steps.templates_story.outcome }}
+          OUT_TEMPLATES_BUILD: ${{ steps.templates_build.outcome }}
+          OUT_OPENOVEL_TYPECHECK: ${{ steps.openovel_typecheck.outcome }}
+          OUT_OPENOVEL_TEST: ${{ steps.openovel_test.outcome }}
+          OUT_OPENOVEL_BUILD: ${{ steps.openovel_build.outcome }}
+          OUT_API_SOLO: ${{ steps.api_solo.outcome }}
+          OUT_API_LEGACY: ${{ steps.api_legacy.outcome }}
+          OUT_BRANCH_PERSISTENCE: ${{ steps.branch_persistence.outcome }}
+          OUT_STORY_OPTIONS: ${{ steps.story_options.outcome }}
+          OUT_CONVERGENCE: ${{ steps.convergence.outcome }}
+          OUT_STORY_V4: ${{ steps.story_v4.outcome }}
+          OUT_REAL_MODEL: ${{ steps.real_model.outcome }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+
+          root = Path(os.environ["EVIDENCE_ROOT"])
+          logs = root / "logs"
+          outcomes = {
+              "boundary": os.environ["OUT_BOUNDARY"],
+              "install": os.environ["OUT_INSTALL"],
+              "templatesTypecheck": os.environ["OUT_TEMPLATES_TYPECHECK"],
+              "templatesRuntimeContract": os.environ["OUT_TEMPLATES_RUNTIME"],
+              "templatesStoryPackage": os.environ["OUT_TEMPLATES_STORY"],
+              "templatesBuild": os.environ["OUT_TEMPLATES_BUILD"],
+              "openovelTypecheck": os.environ["OUT_OPENOVEL_TYPECHECK"],
+              "openovelTest": os.environ["OUT_OPENOVEL_TEST"],
+              "openovelBuild": os.environ["OUT_OPENOVEL_BUILD"],
+              "apiSolo": os.environ["OUT_API_SOLO"],
+              "apiLegacySangtian": os.environ["OUT_API_LEGACY"],
+              "branchPersistence": os.environ["OUT_BRANCH_PERSISTENCE"],
+              "storyOptions": os.environ["OUT_STORY_OPTIONS"],
+              "storyConvergence": os.environ["OUT_CONVERGENCE"],
+              "storyV4": os.environ["OUT_STORY_V4"],
+              "realModel": os.environ["OUT_REAL_MODEL"],
+          }
+          tap = {}
+          pattern = re.compile(
+              r"# tests (\d+)\s+# suites (\d+)\s+# pass (\d+)\s+# fail (\d+)\s+# cancelled (\d+)\s+# skipped (\d+)\s+# todo (\d+)",
+              re.MULTILINE,
+          )
+          for path in sorted(logs.glob("*.log")):
+              text = path.read_text(encoding="utf-8", errors="replace")
+              tap[path.name] = [
+                  dict(zip(
+                      ["tests", "suites", "pass", "fail", "cancelled", "skipped", "todo"],
+                      map(int, match.groups()),
+                  ))
+                  for match in pattern.finditer(text)
+              ]
+          real_model_log = (logs / "15-real-model.log")
+          real_model_text = real_model_log.read_text(encoding="utf-8", errors="replace") if real_model_log.exists() else ""
+          real_model_status = (
+              "BLOCKED_ENV"
+              if "REAL_MODEL_NOT_RUN_ENV_BLOCKED" in real_model_text
+              else outcomes["realModel"].upper()
+          )
+          deterministic_keys = [key for key in outcomes if key != "realModel"]
+          deterministic_pass = all(outcomes[key] == "success" for key in deterministic_keys)
+          summary = {
+              "schemaVersion": "omw.dynamic-kernel-lite-gates.v1",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "branch": os.environ["GITHUB_REF_NAME"],
+              "candidateSha": os.environ["GITHUB_SHA"],
+              "baselineSha": os.environ["BASE_SHA"],
+              "node": "22",
+              "pnpm": "10.12.1",
+              "outcomes": outcomes,
+              "tapBlocks": tap,
+              "deterministicVerdict": "PASS" if deterministic_pass else "FAIL",
+              "realModelStatus": real_model_status,
+              "finalVerdict": "PASS" if deterministic_pass and outcomes["realModel"] == "success" else "BLOCKED_OR_FAIL",
+          }
+          (root / "summary.json").write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          {
+            echo "head=$(git rev-parse HEAD)"
+            echo "origin_main=$(git rev-parse origin/main)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee "${EVIDENCE_ROOT}/logs/99-final-boundary.log"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse origin/main)" = "${BASE_SHA}"
+          test -z "$(git status --short)"
+          sha256sum "${EVIDENCE_ROOT}/summary.json" "${EVIDENCE_ROOT}"/logs/*.log > "${EVIDENCE_ROOT}/SHA256SUMS"
+
+      - name: Upload acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-kernel-lite-${{ github.sha }}
+          path: ${{ env.EVIDENCE_ROOT }}/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Enforce every required gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.boundary.outcome }}" = "success"
+          test "${{ steps.install.outcome }}" = "success"
+          test "${{ steps.templates_typecheck.outcome }}" = "success"
+          test "${{ steps.templates_runtime.outcome }}" = "success"
+          test "${{ steps.templates_story.outcome }}" = "success"
+          test "${{ steps.templates_build.outcome }}" = "success"
+          test "${{ steps.openovel_typecheck.outcome }}" = "success"
+          test "${{ steps.openovel_test.outcome }}" = "success"
+          test "${{ steps.openovel_build.outcome }}" = "success"
+          test "${{ steps.api_solo.outcome }}" = "success"
+          test "${{ steps.api_legacy.outcome }}" = "success"
+          test "${{ steps.branch_persistence.outcome }}" = "success"
+          test "${{ steps.story_options.outcome }}" = "success"
+          test "${{ steps.convergence.outcome }}" = "success"
+          test "${{ steps.story_v4.outcome }}" = "success"
+          test "${{ steps.real_model.outcome }}" = "success"
