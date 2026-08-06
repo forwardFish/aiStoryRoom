@@ -26,8 +26,10 @@ import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.clie
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
 import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
 import { installFourManeuverRuntime } from "./mvp-four-maneuver-runtime";
+import { installFourManeuverResolution } from "./mvp-four-maneuver-resolution";
 
 installFourManeuverRuntime();
+installFourManeuverResolution();
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],

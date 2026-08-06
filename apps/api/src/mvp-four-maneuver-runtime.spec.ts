@@ -79,15 +79,134 @@ test("day end closes every maneuver without leaking stale quota", () => {
   assert.equal(panel.custom.enabled, false);
 });
 
+import { MvpStoryEngine } from "./mvp-causal-runtime";
+import { installFourManeuverRuntime } from "./mvp-four-maneuver-runtime";
+import { installFourManeuverResolution } from "./mvp-four-maneuver-resolution";
 
-test("a new day clears per-type usage while preserving durable facts", () => {
-  const current: any = view("d4_1");
-  current.maneuverState.usageDay = 3;
+installFourManeuverRuntime();
+installFourManeuverResolution();
+
+class CasStorage {
+  current: MvpView;
+  constructor(initial: MvpView) { this.current = structuredClone(initial); }
+  async load(runId: string) {
+    assert.equal(runId, this.current.run.id);
+    return structuredClone(this.current);
+  }
+  async save(next: MvpView, expectedVersion: number) {
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    if (this.current.run.version !== expectedVersion) {
+      const error: any = new Error("version conflict");
+      error.response = { code: "VERSION_CONFLICT" };
+      throw error;
+    }
+    this.current = structuredClone(next);
+  }
+}
+
+function errorCode(error: any) {
+  return error?.response?.code || error?.code || "";
+}
+
+test("fixed investigation writes its configured fact without critical-event side effects", async () => {
+  const storage = new CasStorage(view("d4_1"));
+  const engine: any = new MvpStoryEngine(storage as any);
+  const result: any = await engine.submitManeuver("run-1", {
+    version: 3,
+    idempotencyKey: "investigate-once",
+    maneuverType: "investigate",
+    intentKey: "inspect_land_register_binding"
+  });
+  assert.equal(result.maneuverState.maneuverOpportunitiesRemaining, 1);
+  assert.ok(result.maneuverState.usedTypesToday.includes("investigate"));
+  assert.ok((storage.current.maneuverState as any).discoveredFactKeys.includes("land_register_was_rebound"));
+  assert.match(result.messages.at(-1).body, /重新装订/);
+  assert.equal(storage.current.events.some((item) => item.type === "critical_event_created"), false);
+  await assert.rejects(
+    engine.submitManeuver("run-1", {
+      version: result.run.version,
+      idempotencyKey: "investigate-again",
+      maneuverType: "investigate",
+      intentKey: "inspect_land_register_binding"
+    }),
+    (error: any) => errorCode(error) === "MANEUVER_TYPE_ALREADY_USED"
+  );
+});
+
+test("one-use leverage is consumed atomically and idempotent replay is stable", async () => {
+  const storage = new CasStorage(view("d4_1"));
+  const engine: any = new MvpStoryEngine(storage as any);
+  const command = {
+    version: 3,
+    idempotencyKey: "chip-once",
+    maneuverType: "leverage",
+    leverageKey: "land_contract_fragment",
+    targetRoleKey: "merchant"
+  };
+  const result: any = await engine.submitManeuver("run-1", command);
+  assert.ok(result.maneuverState.usedLeverageKeys.includes("land_contract_fragment"));
+  assert.equal(result.leverageHand.items.some((item: any) => item.leverageKey === "land_contract_fragment"), false);
+  const replay: any = await engine.submitManeuver("run-1", command);
+  assert.equal(replay.run.version, result.run.version);
+  assert.equal(replay.maneuverState.maneuversUsedToday, 1);
+  await assert.rejects(
+    engine.submitManeuver("run-1", { ...command, targetRoleKey: "xunfu" }),
+    (error: any) => errorCode(error) === "IDEMPOTENCY_KEY_REUSED"
+  );
+});
+
+test("ActionGuard rejection preserves version, quota and draft authority", async () => {
+  const storage = new CasStorage(view("d4_1"));
+  const engine: any = new MvpStoryEngine(storage as any);
+  const result: any = await engine.submitManeuver("run-1", {
+    version: 3,
+    idempotencyKey: "blocked-custom",
+    maneuverType: "custom",
+    customText: "命令巡抚立即认罪"
+  });
+  assert.equal(result.accepted, false);
+  assert.equal(storage.current.run.version, 3);
+  assert.equal(storage.current.maneuverState.maneuverOpportunitiesRemaining, 2);
+});
+
+test("two requests racing on the same version cannot both consume the last state", async () => {
+  const initial = view("d4_1");
+  initial.maneuverState.maneuverOpportunitiesRemaining = 1;
+  const storage = new CasStorage(initial);
+  const engine: any = new MvpStoryEngine(storage as any);
+  const attempts = await Promise.allSettled([
+    engine.submitManeuver("run-1", {
+      version: 3,
+      idempotencyKey: "race-contact",
+      maneuverType: "contact",
+      targetRoleKey: "county_magistrate",
+      messageText: "原始底册是否完整？"
+    }),
+    engine.submitManeuver("run-1", {
+      version: 3,
+      idempotencyKey: "race-investigate",
+      maneuverType: "investigate",
+      intentKey: "inspect_land_register_binding"
+    })
+  ]);
+  assert.equal(attempts.filter((item) => item.status === "fulfilled").length, 1);
+  assert.equal(attempts.filter((item) => item.status === "rejected").length, 1);
+  assert.equal(storage.current.maneuverState.maneuverOpportunitiesRemaining, 0);
+  assert.equal(storage.current.maneuverState.maneuversUsedToday, 1);
+});
+
+test("a new day clears the per-type limit but keeps used leverage and discovered facts", () => {
+  const current: any = view("d2_1");
+  current.run.currentDay = 2;
+  current.maneuverState.usageDay = 1;
   current.maneuverState.usedTypesToday = ["contact"];
-  current.maneuverState.discoveredFactKeys = ["prior_fact"];
-  current.run.currentDay = 4;
+  current.maneuverState.usedLeverageKeys = ["land_contract_fragment"];
+  current.maneuverState.discoveredFactKeys = ["first_registers_prepared_early"];
+  current.maneuverState.maneuversUsedToday = 0;
+  current.maneuverState.maneuverOpportunitiesRemaining = 2;
   ensureFourManeuverState(current);
   assert.deepEqual(current.maneuverState.usedTypesToday, []);
-  assert.equal(current.maneuverState.maneuverOpportunitiesRemaining, 2);
-  assert.deepEqual(current.maneuverState.discoveredFactKeys, ["prior_fact"]);
+  assert.deepEqual(current.maneuverState.usedLeverageKeys, ["land_contract_fragment"]);
+  assert.deepEqual(current.maneuverState.discoveredFactKeys, ["first_registers_prepared_early"]);
+  assert.equal(projectManeuverPanel(current).contact.enabled, true);
 });
