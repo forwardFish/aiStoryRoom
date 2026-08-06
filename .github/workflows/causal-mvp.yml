@@ -36,6 +36,8 @@ jobs:
       - run: pnpm --filter @ai-story/shared typecheck
       - run: pnpm --filter @ai-story/templates typecheck
       - run: pnpm --filter @ai-story/templates test:b0-contract
+      - run: pnpm --filter @ai-story/templates test:b0-batch
+      - run: node --import tsx --test apps/api/src/b0-settlement/b0-settlement-commit.core.spec.ts
       - run: pnpm --filter @apps/api typecheck
       - run: pnpm --filter @apps/web typecheck
       - run: pnpm test:causal

@@ -28,6 +28,7 @@ import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.servi
 import { ManeuverV1Controller } from "./maneuver-v1/maneuver-v1.controller";
 import { ManeuverV1PrismaStore } from "./maneuver-v1/maneuver-v1.prisma-store";
 import { ManeuverV1Service } from "./maneuver-v1/maneuver-v1.service";
+import { B0SettlementCommitService } from "./b0-settlement/b0-settlement-commit.prisma";
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
@@ -41,7 +42,8 @@ import { ManeuverV1Service } from "./maneuver-v1/maneuver-v1.service";
     OpenNovelRuntimeClient,
     OpenNovelSharedService,
     ManeuverV1PrismaStore,
-    ManeuverV1Service
+    ManeuverV1Service,
+    B0SettlementCommitService
   ]
 })
 export class AppModule {}
