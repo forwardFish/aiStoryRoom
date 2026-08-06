@@ -6,9 +6,16 @@ type DeepSeekPayload = {
   error?: { code?: string; message?: string };
 };
 
+type RequestSpec = {
+  system: string[];
+  user: Record<string, unknown>;
+  maxTokens: number;
+  temperature: number;
+};
+
 /**
- * Optional narration adapter. It can only propose wording; MvpStoryEngine discards
- * any model-proposed state, trigger, responsibility or ending changes.
+ * Optional narration adapter. It can only propose player-visible wording;
+ * rule-owned state, evidence, responsibility, cards and endings are ignored.
  */
 export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
   readonly name: string;
@@ -29,55 +36,71 @@ export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
     this.name = `deepseek:${this.model}`;
   }
 
-  async generateDecisionCandidate(context: Record<string, unknown>) {
+  generateDecisionCandidate(context: Record<string, unknown>) {
+    return this.requestJson({
+      system: [
+        "你是《桑田诏》叙事润色器，只输出 JSON。",
+        "不得提出或修改数值、关系、证据、责任、FateSeed、触发条件和结局。",
+        "只能润色 immediateResult.resultMessage、visibleCausalCard 的可见文字，以及 roleReactions.messageToPlayer。",
+        "保持历史语境克制、清楚，不能替角色宣布未知事实。"
+      ],
+      user: {
+        task: "根据规则已决定的选择，生成简洁的玩家可见叙事候选。",
+        outputSchema: {
+          immediateResult: { resultMessage: { title: "string", narrative: "string" } },
+          visibleCausalCard: { decisionSummary: "string", personalEcho: "string", worldEcho: "string", playerFacingHint: "string" },
+          roleReactions: [{ roleKey: "string", messageToPlayer: { title: "string", narrative: "string" } }]
+        },
+        context
+      },
+      maxTokens: Math.max(1, Math.min(8_000, Number(process.env.AI_DECISION_MAX_OUTPUT_TOKENS || 1_800))),
+      temperature: 0.3
+    });
+  }
+
+  generateManeuverCandidate(context: Record<string, unknown>) {
+    return this.requestJson({
+      system: [
+        "你是《桑田诏》主动谋划中的人物回应叙事器，只输出 JSON。",
+        "只允许输出 title、narrative、replyText 三个字符串字段。",
+        "规则引擎已经决定数值变化、事实、证据、筹码消耗和合法性；不得修改或补充这些权威结果。",
+        "人物可以回避、试探、撒谎、提出条件或拒绝，但不能替玩家自动完成新的行动。",
+        "保持回应简洁、具体、有角色立场，不要解释游戏规则。"
+      ],
+      user: {
+        task: "为一次已通过规则校验的人物交谈或筹码出牌生成未知回应。",
+        outputSchema: { title: "string", narrative: "string", replyText: "string" },
+        context
+      },
+      maxTokens: Math.max(1, Math.min(2_000, Number(process.env.AI_MANEUVER_MAX_OUTPUT_TOKENS || 700))),
+      temperature: 0.45
+    });
+  }
+
+  private async requestJson(spec: RequestSpec) {
     const startedAt = Date.now();
     let lastError: unknown = new Error("causal narrative provider failed");
     for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) {
       try {
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${this.apiKey}`
-          },
+          headers: { "content-type": "application/json", authorization: `Bearer ${this.apiKey}` },
           signal: AbortSignal.timeout(this.timeoutMs),
           body: JSON.stringify({
             model: this.model,
             messages: [
-              {
-                role: "system",
-                content: [
-                  "你是《桑田诏》叙事润色器，只输出 JSON。",
-                  "不得提出或修改数值、关系、证据、责任、FateSeed、触发条件和结局。",
-                  "只能润色 immediateResult.resultMessage、visibleCausalCard 的可见文字，以及 roleReactions.messageToPlayer。",
-                  "保持历史语境克制、清楚，不能替角色宣布未知事实。"
-                ].join("\n")
-              },
-              {
-                role: "user",
-                content: JSON.stringify({
-                  task: "根据规则已决定的选择，生成简洁的玩家可见叙事候选。",
-                  outputSchema: {
-                    immediateResult: { resultMessage: { title: "string", narrative: "string" } },
-                    visibleCausalCard: { decisionSummary: "string", personalEcho: "string", worldEcho: "string", playerFacingHint: "string" },
-                    roleReactions: [{ roleKey: "string", messageToPlayer: { title: "string", narrative: "string" } }]
-                  },
-                  context
-                })
-              }
+              { role: "system", content: spec.system.join("\n") },
+              { role: "user", content: JSON.stringify(spec.user) }
             ],
             response_format: { type: "json_object" },
             thinking: { type: "disabled" },
             stream: false,
-            max_tokens: Math.max(1, Math.min(8_000, Number(process.env.AI_DECISION_MAX_OUTPUT_TOKENS || 1_800))),
-            temperature: 0.3
+            max_tokens: spec.maxTokens,
+            temperature: spec.temperature
           })
         });
         const payload = await response.json().catch(() => ({})) as DeepSeekPayload;
-        if (!response.ok) {
-          const code = payload.error?.code || `http_${response.status}`;
-          throw new Error(`causal narrative provider failed: ${code}`);
-        }
+        if (!response.ok) throw new Error(`causal narrative provider failed: ${payload.error?.code || `http_${response.status}`}`);
         const content = payload.choices?.[0]?.message?.content;
         if (!content) throw new Error("causal narrative provider returned no content");
         const candidate = JSON.parse(content);
@@ -113,4 +136,3 @@ export function createConfiguredMvpNarrativeProvider(): MvpNarrativeProvider | u
     maxAttempts: Number(process.env.AI_CAUSAL_MAX_ATTEMPTS || 2)
   });
 }
-

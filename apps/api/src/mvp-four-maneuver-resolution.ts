@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { MvpStoryEngine } from "./mvp-causal-runtime";
 import type { MvpView } from "./mvp-types";
+import { resolveFourManeuverNarrative } from "./mvp-four-maneuver-ai";
 import {
   getInvestigationDefinition,
   getLeverageDefinition,
@@ -171,7 +172,7 @@ function applyPatch(view: MvpView, patch: Record<string, number>) {
 function evt(type: string, payload: Record<string, unknown>) { return { id: eventId("event"), type, payload, createdAt: new Date().toISOString() }; }
 function message(view: MvpView, plan: Plan) {
   return {
-    id: eventId("msg"), day: view.run.currentDay, time: "主劢谋划", type: "maneuver_result", label: "主劢谋划",
+    id: eventId("msg"), day: view.run.currentDay, time: "主动谋划", type: "maneuver_result", label: "主动谋划",
     title: plan.title, body: plan.narrative, maneuverType: plan.maneuverType, originEventId: plan.originEventId,
     ...(plan.consumedLeverageKey ? { consumedLeverageKey: plan.consumedLeverageKey } : {}),
     ...(plan.factKeys.length ? { discoveredFactKeys: plan.factKeys } : {})
@@ -185,7 +186,7 @@ async function submit(engine: any, runId: string, input: Command) {
   const requestFingerprint = fingerprint(input);
   const previous = stored.events.find((item) => item.type === "maneuver_submitted" && text(item.payload?.idempotencyKey) === idempotencyKey);
   if (previous) {
-    if (text(previous.payload?.requestFingerprint) !== requestFingerprint) throw new ConflictException({ code: "IDEMPOTENCY_KEY_REUSED", message: "同一幂等键不能用于不同主劢谋划" });
+    if (text(previous.payload?.requestFingerprint) !== requestFingerprint) throw new ConflictException({ code: "IDEMPOTENCY_KEY_REUSED", message: "同一幂等键不能用于不同主动谋划" });
     return projectFourManeuverView(stored);
   }
   assertVersion(stored, Number(input.version));
@@ -198,6 +199,15 @@ async function submit(engine: any, runId: string, input: Command) {
   const plan = planOrGuard as Plan;
   const expectedVersion = stored.run.version;
   const view = ensureFourManeuverState(structuredClone(stored));
+  const narrated = await resolveFourManeuverNarrative({
+    view,
+    plan,
+    input,
+    provider: engine.narrativeProvider,
+    recordAiTask: engine.storage.recordAiTask?.bind(engine.storage)
+  });
+  plan.title = narrated.title || plan.title;
+  plan.narrative = narrated.narrative || plan.narrative;
   applyPatch(view, plan.statePatch);
   view.dashboard.traces = uniq([...(Array.isArray(view.dashboard.traces) ? view.dashboard.traces.map(String) : []), ...plan.traces]);
   const state = view.maneuverState as unknown as FourManeuverState;
