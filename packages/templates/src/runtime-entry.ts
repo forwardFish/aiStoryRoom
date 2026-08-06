@@ -9,6 +9,7 @@ import {
   buildDynamicPartOneRuntimeWorkingSet,
   isDynamicCapabilityAction,
   type DynamicPartOneCommittedEvent as DynamicCommittedEvent,
+  type DynamicPartOneRuntimeWorkingSet,
   type PartOneDecisionPin,
   type PartOneWorkingSetSelectionOptions,
 } from "./story-package/dynamic-kernel-lite-runtime.js";
@@ -45,28 +46,60 @@ export type {
   DynamicPartOneSettlementExecutionOptions,
 } from "./story-package/dynamic-kernel-lite-settlement.js";
 
+type PartOneDecisionExecutionContext = {
+  pin: PartOneDecisionPin | null;
+  workingSet: DynamicPartOneRuntimeWorkingSet | null;
+};
+
 /**
  * Recovery validation happens in the OpenNovel adapter before the frozen
  * authored-decision module binds and settles an action. The base module keeps
- * its stable public signature, so the exact committed Pin is carried through
- * an AsyncLocalStorage scope. This is concurrency-safe and ensures both the
- * WorkingSet used for action binding and the formal Settlement use the same
- * already-committed decision surface.
+ * its stable public signature, so the exact committed decision surface is
+ * carried through an AsyncLocalStorage scope. This is concurrency-safe and
+ * prevents recovered Dynamic, Continuation or Legacy Fallback pairs from being
+ * recomputed differently between display, binding and formal Settlement.
  */
-const decisionPinContext = new AsyncLocalStorage<PartOneDecisionPin | null>();
+const decisionContext = new AsyncLocalStorage<PartOneDecisionExecutionContext>();
 
 export function withPartOneDecisionPin<T>(
   pin: PartOneDecisionPin | null,
   execute: () => T,
 ): T {
-  return decisionPinContext.run(
-    pin ? structuredClone(pin) : null,
-    execute,
-  );
+  return decisionContext.run({
+    pin: pin ? structuredClone(pin) : null,
+    workingSet: null,
+  }, execute);
 }
 
-function contextualDecisionPin() {
-  return decisionPinContext.getStore() ?? null;
+export function withPartOneDecisionWorkingSet<T>(
+  workingSet: DynamicPartOneRuntimeWorkingSet,
+  execute: () => T,
+): T {
+  const cloned = structuredClone(workingSet);
+  return decisionContext.run({
+    pin: {
+      decisionKernelId: cloned.decisionPoint.decisionKernelId,
+      decisionPointId: cloned.decisionPoint.decisionPointId,
+      affordanceIds: cloned.decisionAffordances.map(
+        (affordance) => affordance.affordanceTemplateId,
+      ),
+      ...(cloned.kernelSelection.selectedOutcomeHashes.length
+        ? {
+          outcomeHashes: [
+            ...cloned.kernelSelection.selectedOutcomeHashes,
+          ],
+        }
+        : {}),
+    },
+    workingSet: cloned,
+  }, execute);
+}
+
+function contextualDecisionContext() {
+  return decisionContext.getStore() || {
+    pin: null,
+    workingSet: null,
+  };
 }
 
 /**
@@ -75,11 +108,6 @@ function contextualDecisionPin() {
  * namespace therefore use one playable loader and the Dynamic Kernel Selector
  * Lite path, while source-level authoring tests can still import the frozen
  * engine directly from story-package modules.
- *
- * Dynamic settlement is exported only from dynamic-kernel-lite-settlement.
- * The selector module deliberately exposes selection and trace contracts but
- * not its historical settlement harness, preventing tests or consumers from
- * accidentally validating a path that production does not execute.
  */
 export const loadPartOneRuntimePackage = loadPlayablePartOneRuntimePackage;
 
@@ -89,15 +117,34 @@ export const buildPartOneRuntimeWorkingSet = (
   turnNumber: Parameters<typeof buildDynamicPartOneRuntimeWorkingSet>[2],
   options: PartOneWorkingSetSelectionOptions = {},
 ): ReturnType<typeof buildDynamicPartOneRuntimeWorkingSet> => {
-  const ambientPin = contextualDecisionPin();
+  const context = contextualDecisionContext();
+  if (
+    options.pin === undefined
+    && options.mode !== "LEGACY_FIXED"
+    && context.workingSet
+  ) {
+    const committed = context.workingSet;
+    if (
+      committed.packageHash !== pkg.immutableHash
+      || committed.section.sectionId !== state.sectionId
+      || committed.turnNumber !== turnNumber
+      || committed.kernelSelection.sectionId !== state.sectionId
+      || committed.kernelSelection.stateRevision !== Number(state.turnNumber)
+      || committed.kernelSelection.stateFingerprint !== stableSha256(state)
+    ) {
+      throw new Error("PART_ONE_COMMITTED_WORKING_SET_MISMATCH");
+    }
+    return structuredClone(committed);
+  }
+
   const effectiveOptions = options.pin !== undefined
     || options.mode === "LEGACY_FIXED"
-    || !ambientPin
+    || !context.pin
     ? options
     : {
       ...options,
       mode: "DYNAMIC_LITE" as const,
-      pin: ambientPin,
+      pin: context.pin,
     };
   return buildDynamicPartOneRuntimeWorkingSet(
     pkg,
@@ -135,9 +182,9 @@ export const finalizePartOneSettlement = (
 
 /**
  * Settlement is complete before scene grammar is attached. The selected
- * NarrativeScenePattern therefore remains expression-only: it can order
- * transient moves for the Narrator, but it cannot change state, Canon, the
- * open Kernel, evidence, documents, secrets or pending consequences.
+ * NarrativeScenePattern remains expression-only: it can order transient moves
+ * for the Narrator, but it cannot change state, Canon, the open Kernel,
+ * evidence, documents, secrets or pending consequences.
  */
 export const settlePartOneAction = (
   pkg: Parameters<typeof runtimeFacade.settlePartOneAction>[0],
@@ -146,10 +193,14 @@ export const settlePartOneAction = (
   turnNumber: Parameters<typeof runtimeFacade.settlePartOneAction>[3],
   options: DynamicPartOneSettlementExecutionOptions = {},
 ): ReturnType<typeof runtimeFacade.settlePartOneAction> => {
-  const ambientPin = contextualDecisionPin();
+  const context = contextualDecisionContext();
   const currentPin = options.currentPin === undefined
-    ? ambientPin
+    ? context.pin
     : options.currentPin;
+  const currentWorkingSetOverride =
+    options.currentWorkingSetOverride === undefined
+      ? context.workingSet
+      : options.currentWorkingSetOverride;
   const capabilityAction = isDynamicCapabilityAction(action);
   const settlement = capabilityAction
     ? runtimeFacade.settlePartOneAction(
@@ -158,6 +209,7 @@ export const settlePartOneAction = (
         state,
         turnNumber,
         currentPin,
+        currentWorkingSetOverride,
       ),
       state,
       action,
@@ -168,7 +220,10 @@ export const settlePartOneAction = (
       state,
       action,
       turnNumber,
-      { currentPin },
+      {
+        currentPin,
+        currentWorkingSetOverride,
+      },
     );
 
   if (capabilityAction) {
@@ -194,12 +249,6 @@ export const settlePartOneAction = (
  * Decision Point open. They still produce an atomic turn, so the exact Kernel
  * and Affordance pair shown after that turn must be frozen in the same event as
  * ordinary authored actions rather than re-derived during recovery.
- *
- * A committed Legacy fallback is the one valid exception to normal Dynamic
- * pinning: it can exist precisely because the Kernel has fewer than two unique
- * Preview Outcomes. If strict pinning rejects it, the only permitted recovery
- * is the same Legacy fallback Kernel and Decision Point selected from the same
- * proposed state. Every other pin failure remains fail-closed.
  */
 function attachCapabilityKernelSelection(
   pkg: Parameters<typeof runtimeFacade.settlePartOneAction>[0],
@@ -331,6 +380,7 @@ const runtimeEntry = {
   projectFinalizedPartOneSelectionState,
   settlePartOneAction,
   withPartOneDecisionPin,
+  withPartOneDecisionWorkingSet,
 };
 
 export default runtimeEntry;
