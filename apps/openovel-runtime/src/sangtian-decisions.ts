@@ -1,10 +1,10 @@
 import path from "node:path";
 import templatesPackage, {
+  type DynamicPartOneRuntimeWorkingSet,
   type KernelSelectionTrace,
   type PartOneActionSettlement,
   type PartOneDecisionPin,
   type PartOneRuntimePackage,
-  type PartOneRuntimeWorkingSet,
   type PartOneState,
 } from "@ai-story/templates";
 import {
@@ -39,9 +39,7 @@ type SangtianDecisionContext = {
   pkg: PartOneRuntimePackage;
   state: PartOneState;
   turnNumber: number;
-  workingSet: PartOneRuntimeWorkingSet & {
-    kernelSelection?: KernelSelectionTrace;
-  };
+  workingSet: DynamicPartOneRuntimeWorkingSet;
   pin: PartOneDecisionPin;
 };
 
@@ -335,7 +333,7 @@ function decisionPinForCommittedEvent(
  * selector merely to produce the player-facing action surface.
  */
 function optionsForWorkingSet(
-  workingSet: PartOneRuntimeWorkingSet,
+  workingSet: DynamicPartOneRuntimeWorkingSet,
 ): OpenNovelOption[] {
   return workingSet.decisionAffordances.map((affordance) => ({
     id: affordance.affordanceTemplateId,
