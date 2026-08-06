@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import {
   buildDynamicPartOneRuntimeWorkingSet,
+  type KernelSelectionTrace,
 } from "../src/story-package/dynamic-kernel-lite-runtime.js";
 import {
   buildCommittedLegacyFallbackWorkingSet,
@@ -11,6 +12,9 @@ import {
   createInitialPartOneState,
   partOneSceneForSection,
 } from "../src/story-package/part-one-runtime-engine.js";
+import {
+  settlePartOneAction as settleProductionPartOneAction,
+} from "../src/runtime-entry.js";
 import { loadPlayablePartOneRuntimePackage } from "../src/story-package/playable-part-one-runtime.js";
 import type {
   PartOneRuntimePackage,
@@ -18,6 +22,8 @@ import type {
 } from "../src/story-package/part-one-runtime-types.js";
 
 const configRoot = resolve(__dirname, "../config");
+const CAPABILITY_ACTION_PREFIX = "\u2063OMW_CAPABILITY_V1:";
+const CAPABILITY_ACTION_SUFFIX = "\u2063";
 
 function packageUnderTest() {
   return loadPlayablePartOneRuntimePackage(
@@ -70,6 +76,18 @@ function duplicateOutcomePackage() {
   return pkg;
 }
 
+function encodedCapabilityAction(
+  decisionPointId: string,
+  action: string,
+) {
+  const envelope = Buffer.from(JSON.stringify({
+    schemaVersion: "omw-capability-action-v1",
+    decisionPointId,
+    action,
+  }), "utf8").toString("base64url");
+  return `${CAPABILITY_ACTION_PREFIX}${envelope}${CAPABILITY_ACTION_SUFFIX}`;
+}
+
 test("a committed Legacy fallback pair recovers without reapplying the Dynamic diversity gate", () => {
   const pkg = duplicateOutcomePackage();
   const state = authorityState(pkg);
@@ -99,6 +117,64 @@ test("a committed Legacy fallback pair recovers without reapplying the Dynamic d
       (item) => item.affordanceTemplateId,
     ),
     fallback.kernelSelection.selectedAffordanceIds,
+  );
+});
+
+test("observe-only capability turns preserve and freeze an existing Legacy fallback surface", () => {
+  const pkg = duplicateOutcomePackage();
+  const state = authorityState(pkg);
+  const fallback = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4);
+  assert.equal(fallback.kernelSelection.mode, "LEGACY_FALLBACK");
+
+  const settlement = settleProductionPartOneAction(
+    pkg,
+    structuredClone(state),
+    {
+      source: "FREE_TEXT",
+      actionText: encodedCapabilityAction(
+        fallback.decisionPoint.decisionPointId,
+        "Inspect only the public record without making a formal disposition.",
+      ),
+      targetRef: "public_frame",
+    },
+    5,
+  );
+  const event = settlement.event as typeof settlement.event & {
+    nextKernelSelection?: KernelSelectionTrace;
+  };
+
+  assert.equal(event.actionSource, "FREE_TEXT_CAPABILITY");
+  assert.equal(event.affordanceTemplateId, null);
+  assert.deepEqual(event.statePatch, {});
+  assert.deepEqual(event.durableEffects, []);
+  assert.deepEqual(
+    settlement.proposedState.completedKernelIds,
+    state.completedKernelIds,
+  );
+  assert.equal(
+    event.nextDecisionPoint.decisionKernelId,
+    fallback.decisionPoint.decisionKernelId,
+  );
+  assert.equal(
+    event.nextDecisionPoint.decisionPointId,
+    fallback.decisionPoint.decisionPointId,
+  );
+  assert.ok(event.nextKernelSelection);
+  assert.equal(event.nextKernelSelection.mode, "LEGACY_FALLBACK");
+  assert.equal(event.nextKernelSelection.selectedAffordanceIds.length, 2);
+  assert.equal(event.nextKernelSelection.selectedOutcomeHashes.length, 0);
+
+  const recovered = buildCommittedLegacyFallbackWorkingSet(
+    pkg,
+    settlement.proposedState,
+    5,
+    event.nextKernelSelection,
+  );
+  assert.deepEqual(
+    recovered.decisionAffordances.map(
+      (item) => item.affordanceTemplateId,
+    ),
+    event.nextKernelSelection.selectedAffordanceIds,
   );
 });
 
