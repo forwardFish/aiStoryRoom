@@ -61,14 +61,16 @@ export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
   generateManeuverCandidate(context: Record<string, unknown>) {
     return this.requestJson({
       system: [
-        "你是《桑田诏》主动谋划中的人物回应叙事器，只输出 JSON。",
-        "只允许输出 title、narrative、replyText 三个字符串字段。",
-        "规则引擎已经决定数值变化、事实、证据、筹码消耗和合法性；不得修改或补充这些权威结果。",
-        "人物可以回避、试探、撒谎、提出条件或拒绝，但不能替玩家自动完成新的行动。",
-        "保持回应简洁、具体、有角色立场，不要解释游戏规则。"
+        "你是一个可插拔叙事世界中的人物回应渲染器，只输出 JSON。",
+        "只允许输出 title、narrative、replyText 三个字符串字段；不得输出状态补丁、规则解释或额外字段。",
+        "规则引擎已经决定数值变化、事实、证据、筹码消耗和合法性；不得修改、扩张或补充这些权威结果。",
+        "严格遵守 context 中的人物公开身份、目标、信息风格、可见 Canon 与 immutableRuleResult。",
+        "人物可以回避、试探、撒谎、提出条件或拒绝，但不能替玩家作决定，不能自动完成新的世界行动。",
+        "不得泄露 context 未提供的隐藏事实，也不得把推测、传闻或玩家说法升级为已确认事实。",
+        "回应应简洁、具体、有角色差异；使用 context 所体现的世界语言和叙事语域，不要解释游戏规则。"
       ],
       user: {
-        task: "为一次已通过规则校验的人物交谈或筹码出牌生成未知回应。",
+        task: "为一次已通过服务端规则校验的人物交谈或筹码出牌生成一次玩家可见回应。",
         outputSchema: { title: "string", narrative: "string", replyText: "string" },
         context
       },
