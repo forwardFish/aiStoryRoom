@@ -93,7 +93,7 @@ export function hashB0RoomRulesetV1(value: unknown): string {
 
 export function hashCanonicalB0Value(value: unknown): string {
   const canonical = canonicalizeB0Value(value);
-  return createHash("sha256").update(JSON.stringify(canonical), "utf8").digest("hex");
+  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }
 
 export function canonicalizeB0Value(value: unknown): unknown {
