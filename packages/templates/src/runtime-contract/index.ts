@@ -13,3 +13,4 @@ export * from "./selection";
 export * from "./maneuver-v1";
 export * from "./b0-settlement";
 export * from "./b0-batch-settlement";
+export * from "./b0-audience";
