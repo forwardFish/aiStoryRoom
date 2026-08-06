@@ -6,13 +6,22 @@ import {
 import {
   buildDynamicPartOneRuntimeWorkingSet,
   isDynamicCapabilityAction,
+} from "./story-package/dynamic-kernel-lite-runtime.js";
+import {
   packageForDynamicCapabilityAction,
   settleDynamicPartOneAction,
-} from "./story-package/dynamic-kernel-lite-runtime.js";
+} from "./story-package/dynamic-kernel-lite-settlement.js";
 import { loadPlayablePartOneRuntimePackage } from "./story-package/playable-part-one-runtime.js";
 
 export * from "./index.js";
 export * from "./story-package/dynamic-kernel-lite-runtime.js";
+export {
+  packageForDynamicCapabilityAction,
+  settleDynamicPartOneAction,
+} from "./story-package/dynamic-kernel-lite-settlement.js";
+export type {
+  DynamicPartOneSettlementExecutionOptions,
+} from "./story-package/dynamic-kernel-lite-settlement.js";
 
 /**
  * Explicit exports win over the star-exported frozen implementations. Native
