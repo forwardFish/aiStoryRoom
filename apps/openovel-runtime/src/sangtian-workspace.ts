@@ -239,6 +239,11 @@ export async function seedSangtianWorkspace(
     "",
     opening.story.nextSituationNarrative.trim(),
   ].join("\n");
+  // The long prologue remains part of Canon as world context, but the player
+  // enters the run at the authored scene boundary. Returning the same scene
+  // material used by Recent Canon keeps G00 concrete and actionable without
+  // asking a model to reconstruct the opening from background exposition.
+  const openingPresentationNarrative = recentOpening;
 
   await Promise.all([
     writeAtomic(paths.brief, sangtianBrief()),
@@ -396,7 +401,7 @@ export async function seedSangtianWorkspace(
     openingOptions,
     openingCanon,
     recentOpening,
-    prologueNarrative: opening.prologueNarrative.trim(),
+    prologueNarrative: openingPresentationNarrative,
   };
 }
 

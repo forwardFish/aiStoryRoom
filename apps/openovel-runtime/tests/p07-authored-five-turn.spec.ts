@@ -38,11 +38,15 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     },
   );
   try {
-    await runtime.createRun({
+    const opening = await runtime.createRun({
       runId,
       worldId: "sangtian",
       roleId: "zhejiang_governor",
     });
+    assert.match(opening.prologueNarrative, /杭州总督府内厅/u);
+    assert.match(opening.prologueNarrative, /巡抚书吏/u);
+    assert.match(opening.prologueNarrative, /县令亲随/u);
+    assert.doesNotMatch(opening.prologueNarrative, /天下仍披着太平的外衣/u);
     let options = (await workspace.snapshot(runId)).previousOptions;
     const preferredOpening = options.find((option) => option.id === "opening_d1");
     assert.ok(preferredOpening);

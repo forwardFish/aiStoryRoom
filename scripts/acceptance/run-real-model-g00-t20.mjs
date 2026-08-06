@@ -343,6 +343,15 @@ async function runPlaythrough(input) {
   if (background.deadLetters.length) {
     throw new Error(`${input.label}:STORYKEEPER_DEAD_LETTER:${background.deadLetters.join(",")}`);
   }
+  // Persist the completed playthrough before asking the independent player
+  // reviewer. A malformed review response must never erase evidence that the
+  // runtime already reached its target turn with a committed Canon.
+  writeJson(resolve(runRoot, "checkpoint-index.json"), checkpoints);
+  writeFileSync(
+    resolve(runRoot, "canon.md"),
+    String(lastPublicRun.canon || ""),
+    "utf8",
+  );
   const playerReview = await reviewPlaythrough({
     label: input.label,
     checkpoints,
@@ -369,12 +378,6 @@ async function runPlaythrough(input) {
     },
   );
   writeJson(resolve(runRoot, "acceptance-audit.json"), audit);
-  writeJson(resolve(runRoot, "checkpoint-index.json"), checkpoints);
-  writeFileSync(
-    resolve(runRoot, "canon.md"),
-    String(lastPublicRun.canon || ""),
-    "utf8",
-  );
   if (audit.currentTurn !== input.targetTurns) {
     throw new Error(`${input.label}:AUDIT_TURN_COUNT:${audit.currentTurn}`);
   }
@@ -385,9 +388,16 @@ async function runPlaythrough(input) {
   if (allModelCalls.some((call) => call.error)) {
     throw new Error(`${input.label}:RECORDED_MODEL_ERROR:${JSON.stringify(allModelCalls.filter((call) => call.error))}`);
   }
-  if (turns.some((turn) => turn.fallbackReason || ["FALLBACK", "PROTECTED_RENDERER"].includes(String(turn.narrativeOwner)))) {
-    throw new Error(`${input.label}:UNEXPECTED_FOREGROUND_FALLBACK`);
-  }
+  const fallbackTurns = turns
+    .filter((turn) => (
+      turn.fallbackReason
+      || ["FALLBACK", "PROTECTED_RENDERER"].includes(String(turn.narrativeOwner))
+    ))
+    .map((turn) => ({
+      turnId: turn.turnId,
+      narrativeOwner: turn.narrativeOwner,
+      fallbackReason: turn.fallbackReason,
+    }));
   writeJson(resolve(runRoot, "model-calls.json"), allModelCalls);
   writeJson(resolve(runRoot, "storykeeper.json"), background);
   return {
@@ -401,6 +411,7 @@ async function runPlaythrough(input) {
     modelCalls: allModelCalls,
     playerReviewCalls: playerReview.calls,
     background,
+    fallbackTurns,
     evidenceRoot: runRoot,
   };
 }
@@ -614,7 +625,7 @@ async function reviewPlaythrough(input) {
         fallbackReason: checkpoint.fallbackReason,
       })),
     };
-    const messages = [
+    const baseMessages = [
       {
         role: "system",
         content: [
@@ -629,43 +640,84 @@ async function reviewPlaythrough(input) {
       },
       { role: "user", content: JSON.stringify(requestPayload) },
     ];
-    const call = await directDeepSeekCall({
-      profile: "player-review",
-      messages,
-      model: input.model,
-      providerBaseUrl: input.providerBaseUrl,
-      apiKey: input.apiKey,
-      maxTokens: Math.min(8_000, 1_200 + batch.length * 1_000),
-      timeoutMs: turnTimeoutMs,
-    });
-    const callPath = resolve(reviewRoot, `batch-${String(batchIndex + 1).padStart(2, "0")}.json`);
-    writeJson(callPath, { request: requestPayload, result: call });
-    calls.push({
-      stage: "player-review",
-      model: call.model,
-      provider: providerHost(input.providerBaseUrl),
-      requestId: call.requestId || null,
-      inputTokens: call.usage.inputTokens,
-      outputTokens: call.usage.outputTokens,
-      latencyMs: call.latencyMs,
-      finishReason: call.finishReason || null,
-      error: null,
-      sourceFile: relative(evidenceRoot, callPath).replaceAll("\\", "/"),
-    });
-    const parsed = parseJsonObject(call.text, `PLAYER_REVIEW_JSON_INVALID:${input.label}:${batchIndex + 1}`);
-    const rows = Array.isArray(parsed.reviews) ? parsed.reviews : [];
-    const expectedIds = batch.map((checkpoint) => checkpoint.checkpoint);
-    if (rows.length !== expectedIds.length) {
-      throw new Error(`PLAYER_REVIEW_CARDINALITY:${input.label}:${rows.length}:${expectedIds.length}`);
+    let normalizedBatch = null;
+    let previousStructureError = "";
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const messages = attempt === 1
+        ? baseMessages
+        : [
+          ...baseMessages,
+          {
+            role: "system",
+            content: [
+              "上一响应未满足结构合同，请重新返回本批次全部 reviews。",
+              `结构错误：${previousStructureError}`,
+              "只有 checkpoint=G00 可以把 actionResponded 和 choiceImpactVisible 设为 null；任何 Txx 都必须为 boolean。",
+              "不得省略、改名或增加 checkpoint。",
+            ].join("\n"),
+          },
+        ];
+      const call = await directDeepSeekCall({
+        profile: "player-review",
+        messages,
+        model: input.model,
+        providerBaseUrl: input.providerBaseUrl,
+        apiKey: input.apiKey,
+        maxTokens: Math.min(8_000, 1_200 + batch.length * 1_000),
+        timeoutMs: turnTimeoutMs,
+      });
+      const batchSlug = `batch-${String(batchIndex + 1).padStart(2, "0")}`;
+      const callPath = resolve(
+        reviewRoot,
+        attempt === 1 ? `${batchSlug}.json` : `${batchSlug}-attempt-${String(attempt).padStart(2, "0")}.json`,
+      );
+      const callRecord = {
+        stage: "player-review",
+        model: call.model,
+        provider: providerHost(input.providerBaseUrl),
+        requestId: call.requestId || null,
+        inputTokens: call.usage.inputTokens,
+        outputTokens: call.usage.outputTokens,
+        latencyMs: call.latencyMs,
+        finishReason: call.finishReason || null,
+        error: null,
+        sourceFile: relative(evidenceRoot, callPath).replaceAll("\\", "/"),
+      };
+      try {
+        normalizedBatch = normalizePlayerReviewBatch(call.text, batch, input.label, batchIndex);
+        writeJson(callPath, { request: requestPayload, result: call, normalizationError: null });
+        calls.push(callRecord);
+        break;
+      } catch (error) {
+        previousStructureError = error instanceof Error ? error.message : String(error);
+        callRecord.error = `PLAYER_REVIEW_STRUCTURE_INVALID:${previousStructureError}`;
+        writeJson(callPath, {
+          request: requestPayload,
+          result: call,
+          normalizationError: previousStructureError,
+        });
+        calls.push(callRecord);
+        if (attempt === 2) throw error;
+      }
     }
-    const byCheckpoint = new Map(rows.map((row) => [String(row.checkpoint || ""), row]));
-    for (const checkpoint of batch) {
-      const rawReview = byCheckpoint.get(checkpoint.checkpoint);
-      if (!rawReview) throw new Error(`PLAYER_REVIEW_MISSING:${checkpoint.checkpoint}`);
-      reviews.push(normalizePlayerReview(rawReview, checkpoint));
-    }
+    reviews.push(...normalizedBatch);
   }
   return { reviews, calls };
+}
+
+function normalizePlayerReviewBatch(text, batch, label, batchIndex) {
+  const parsed = parseJsonObject(text, `PLAYER_REVIEW_JSON_INVALID:${label}:${batchIndex + 1}`);
+  const rows = Array.isArray(parsed.reviews) ? parsed.reviews : [];
+  const expectedIds = batch.map((checkpoint) => checkpoint.checkpoint);
+  if (rows.length !== expectedIds.length) {
+    throw new Error(`PLAYER_REVIEW_CARDINALITY:${label}:${rows.length}:${expectedIds.length}`);
+  }
+  const byCheckpoint = new Map(rows.map((row) => [String(row.checkpoint || ""), row]));
+  return batch.map((checkpoint) => {
+    const rawReview = byCheckpoint.get(checkpoint.checkpoint);
+    if (!rawReview) throw new Error(`PLAYER_REVIEW_MISSING:${checkpoint.checkpoint}`);
+    return normalizePlayerReview(rawReview, checkpoint);
+  });
 }
 
 function normalizePlayerReview(raw, checkpoint) {
@@ -971,6 +1023,7 @@ function summarizePlaythrough(run) {
     storyComplete: run.finalPublicRun.status === "COMPLETED",
     audit: run.audit,
     storykeeper: run.background,
+    fallbackTurns: run.fallbackTurns,
     evidenceRoot: relative(evidenceRoot, run.evidenceRoot).replaceAll("\\", "/"),
   };
 }
