@@ -1,16 +1,23 @@
 {
-  "status": "CANDIDATE_BRANCH_INCOMPLETE",
-  "stage": "R2-1",
+  "status": "HISTORICAL_EXTERNAL_ENVIRONMENT_RECORD",
+  "stage": "R2-1_RUNNER_ATTEMPTS_ONLY",
   "classification": "EXTERNAL_ENVIRONMENT_GITHUB_ACTIONS_RUNNER_ALLOCATION",
   "userRequestedStartSha": "104fc18c93d28556eed467b7612ec3c3b91a5bb2",
-  "implementationBaseSha": "55952a74b32d0ef59fdcc1f4a70af2f856f5e7f6",
-  "productCommitCreated": false,
-  "tests": {
+  "runnerAttemptBaseSha": "55952a74b32d0ef59fdcc1f4a70af2f856f5e7f6",
+  "runnerAttemptsCreatedAdditionalProductCommit": false,
+  "preExistingProductCommits": [
+    "75cb505ca44c253a42c6c262ef8efb31b7c2f985",
+    "0294389d82a18ca06acb66e3906f12c25bc2f539",
+    "a5c50bb36051c272d1c10ea8d2561a4593b7e73a",
+    "f3b956767dbc8a67e1f971ad4cce3dc570b4e509",
+    "067f1679d77195ad00720c05b72ae1838f71e114"
+  ],
+  "runnerAttemptTests": {
     "total": 0,
     "pass": 0,
     "fail": 0,
     "skip": 0,
-    "reason": "All three executions stopped before repository checkout or commands"
+    "reason": "All three runner attempts stopped before repository checkout or commands; this does not classify pre-existing product commits."
   },
   "attempts": [
     {
@@ -38,6 +45,7 @@
       "evidence": "No steps after removing workflow concurrency dependency"
     }
   ],
+  "futureValidationOwner": "isolated_local_codex_against_exact_remote_sha",
   "temporaryScaffoldingRemoved": true,
   "mainModified": false,
   "releaseModified": false
