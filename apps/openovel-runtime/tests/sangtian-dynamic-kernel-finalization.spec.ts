@@ -9,6 +9,10 @@ import templatesPackage, {
   type PartOneRuntimePackage,
   type PartOneState,
 } from "@ai-story/templates";
+import {
+  nextSangtianOptions,
+  type PreparedSangtianDecision,
+} from "../src/sangtian-decisions.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const configRoot = path.resolve(
@@ -92,6 +96,13 @@ function dueConsequence(): PartOnePendingConsequenceState {
 }
 
 test("next Kernel trace is compiled from the final PAID consequence state", () => {
+  assert.equal(
+    typeof templatesPackage.projectFinalizedPartOneSelectionState,
+    "function",
+  );
+  assert.equal(typeof templatesPackage.withPartOneDecisionPin, "function");
+  assert.equal(typeof templatesPackage.finalizePartOneSettlement, "function");
+
   const pkg = packageUnderTest();
   const state = authorityState(pkg);
   const current = templatesPackage.buildPartOneRuntimeWorkingSet(
@@ -123,6 +134,24 @@ test("next Kernel trace is compiled from the final PAID consequence state", () =
   assert.notEqual(
     event.nextKernelSelection.stateFingerprint,
     templatesPackage.stableSha256(settlement.proposedState),
+  );
+
+  const prepared: PreparedSangtianDecision = {
+    package: pkg,
+    settlement,
+    selectedOption: null,
+  };
+  const precommitOptions = nextSangtianOptions(prepared);
+  assert.deepEqual(
+    precommitOptions.map((option) => option.id),
+    event.nextKernelSelection.selectedAffordanceIds,
+  );
+  assert.equal(
+    precommitOptions.every((option) => (
+      option.effect?.decisionPointId
+      === event.nextDecisionPoint.decisionPointId
+    )),
+    true,
   );
 
   const finalized = templatesPackage.finalizePartOneSettlement(
