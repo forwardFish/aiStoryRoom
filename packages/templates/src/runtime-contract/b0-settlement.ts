@@ -1,12 +1,16 @@
 import { createHash } from "node:crypto";
-import {
-  validateB0RoomRulesetV1,
-  type B0BatchStatusV1,
-  type B0FeatureFlagsV1,
-  type B0RoomRulesetV1,
-  type B0SettlementModeV1,
-  type B0WindowStatusV1,
+import type {
+  B0BatchStatusV1,
+  B0FeatureFlagsV1,
+  B0RoomRulesetV1,
+  B0SettlementModeV1,
+  B0WindowStatusV1,
 } from "@ai-story/shared";
+
+const { validateB0RoomRulesetV1 } = require("../../../shared/dist/index.js") as Pick<
+  typeof import("@ai-story/shared"),
+  "validateB0RoomRulesetV1"
+>;
 
 const WINDOW_TRANSITIONS: Readonly<Record<B0WindowStatusV1, readonly B0WindowStatusV1[]>> = Object.freeze({
   OPEN: ["LOCKED", "ABORTED"],
