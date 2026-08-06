@@ -1,0 +1,55 @@
+name: Maneuver R2-1 OpenNovel projection
+
+on:
+  push:
+    branches:
+      - feat/mvp-four-maneuver-actions
+    paths:
+      - ".github/workflows/maneuver-r2-1.yml"
+      - "scripts/automation/r2-1-chunks/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: maneuver-r2-1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  implement-r2-1:
+    if: startsWith(github.event.head_commit.message, 'ci(maneuver): stage R2-1 OpenNovel projection')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: ${{ github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - name: Implement, test, commit and push R2-1
+        run: |
+          python3 - <<'PY'
+          import base64
+          import gzip
+          from pathlib import Path
+
+          chunk_root = Path('scripts/automation/r2-1-chunks')
+          payload = ''.join(path.read_text(encoding='utf-8').strip() for path in sorted(chunk_root.glob('*.txt')))
+          source = gzip.decompress(base64.b64decode(payload)).decode('utf-8')
+          source = source.replace("subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()", "subprocess.check_output(['git', 'rev-parse', 'HEAD^'], cwd=ROOT, text=True).strip()", 1)
+          source = source.replace(
+              "    # Remove temporary execution scaffolding from the final stage commit.\n",
+              "    # Remove temporary execution scaffolding from the final stage commit.\n    import shutil\n    shutil.rmtree(ROOT / 'scripts/automation/r2-1-chunks', ignore_errors=True)\n",
+              1,
+          )
+          Path('/tmp/apply-maneuver-r2-1.py').write_text(source, encoding='utf-8')
+          PY
+          python3 /tmp/apply-maneuver-r2-1.py
