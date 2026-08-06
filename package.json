@@ -55,6 +55,7 @@
     "test:story:v4:contracts": "pnpm --filter @ai-story/templates typecheck && pnpm --filter @ai-story/templates test:runtime-contract && pnpm --filter @ai-story/templates test:story-package && pnpm --filter @ai-story/templates build",
     "test:story:v4:runtime": "pnpm --filter @apps/openovel-runtime typecheck && pnpm --filter @apps/openovel-runtime test && pnpm --filter @apps/openovel-runtime build",
     "test:story:v4": "pnpm test:story:v4:contracts && pnpm test:story:v4:runtime",
+    "test:story:branch-persistence": "pnpm --filter @ai-story/templates build && node scripts/acceptance/verify-part-one-branch-persistence.mjs",
     "test:world-credits": "tsx scripts/e2e/world-credits-local.ts",
     "test:world-credits:consumption-db": "tsx --env-file=.env.test --tsconfig apps/api/tsconfig.json scripts/e2e/world-credits-consumption-db.ts",
     "test:api-contract": "tsx --tsconfig apps/api/tsconfig.json scripts/e2e/v4-api-contract-audit.ts",

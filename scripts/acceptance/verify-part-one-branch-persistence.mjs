@@ -1,13 +1,16 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const root = resolve(import.meta.dirname, "../..");
 const runtimePath = resolve(root, "packages/templates/config/sangtian/story-package/part-one-runtime.json");
 const pkg = JSON.parse(readFileSync(runtimePath, "utf8"));
-const engine = await import(resolve(root, "packages/templates/dist/story-package/part-one-runtime-engine.js"));
-const buildWorkingSet = engine.buildPartOneRuntimeWorkingSet;
-const settleAction = engine.settlePartOneAction;
+const runtime = await import(pathToFileURL(
+  resolve(root, "packages/templates/dist/runtime-entry.js"),
+).href);
+const buildWorkingSet = runtime.buildPartOneRuntimeWorkingSet;
+const settleAction = runtime.settlePartOneAction;
 if (typeof buildWorkingSet !== "function" || typeof settleAction !== "function") {
   throw new Error("PART_ONE_RUNTIME_ENGINE_EXPORTS_MISSING");
 }
@@ -17,12 +20,11 @@ const g00 = buildWorkingSet(pkg, initialState, 0);
 assert(Array.isArray(g00.decisionAffordances) && g00.decisionAffordances.length === 2, "G00_TWO_AFFORDANCES_REQUIRED");
 assert(g00.openDecisionKernel?.assetId, "G00_OPEN_KERNEL_REQUIRED");
 
+const capabilityAction = "只询问当前急令由谁具名、县令亲随亲眼见过什么，不替任何一项处置下令。";
 const observeSettlement = settleAction(pkg, initialState, {
-  source: "FREE_TEXT_CAPABILITY",
-  decisionKernelId: g00.openDecisionKernel.assetId,
-  actionText: "只询问当前急令由谁具名、县令亲随亲眼见过什么，不替任何一项处置下令。",
+  source: "FREE_TEXT",
+  actionText: encodeCapabilityAction(g00.decisionPoint.decisionPointId, capabilityAction),
   targetRef: g00.decisionPoint?.actorRefs?.[0] || "public_frame",
-  completionMode: "OBSERVE_ONLY",
 }, 1);
 const observedState = stateFrom(observeSettlement);
 assert(!array(observedState.completedKernelIds).includes(g00.openDecisionKernel.assetId), "OBSERVE_ONLY_COMPLETED_KERNEL");
@@ -108,7 +110,6 @@ function runBranch(branchId, seedState, seedTurn, count, choose) {
       label: option.title || option.actionText,
       actionText: option.actionText,
       targetRef: option.targetRef,
-      completionMode: "ADVANCE_KERNEL",
     };
     const settlement = settleAction(pkg, state, action, turnNumber);
     const nextState = stateFrom(settlement);
@@ -135,6 +136,15 @@ function runBranch(branchId, seedState, seedTurn, count, choose) {
     state = nextState;
   }
   return { branchId, turns, finalState: state, finalStateHash: hash(state) };
+}
+
+function encodeCapabilityAction(decisionPointId, action) {
+  const envelope = Buffer.from(JSON.stringify({
+    schemaVersion: "omw-capability-action-v1",
+    decisionPointId,
+    action,
+  }), "utf8").toString("base64url");
+  return `\u2063OMW_CAPABILITY_V1:${envelope}\u2063`;
 }
 
 function stateFrom(settlement) {
