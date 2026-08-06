@@ -122,6 +122,19 @@ export class OpenNovelManeuverPreviewService {
       });
     }
 
+    const confirmationKey = `${runId}:${user.id}:${payload.idempotencyKey}`;
+    const inFlight = this.inFlightConfirms.get(confirmationKey);
+    if (inFlight) return inFlight;
+
+    // A committed event is authoritative even if its original HTTP response
+    // was lost. Replay it before checking the now-advanced run version.
+    const committed = await this.prisma.storyEvent.findUnique({
+      where: { dedupeKey: maneuverDedupeKey(runId, user.id, payload.idempotencyKey) },
+    });
+    if (committed) {
+      return this.maneuvers.submit(user, runId, payload.command);
+    }
+
     const context = await this.loadContext(user, runId);
     assertManeuverVersion(context.run.version, payload.expectedVersion);
     if (
@@ -141,9 +154,6 @@ export class OpenNovelManeuverPreviewService {
     const planned = this.compile(context, payload.command);
     if (isGuardResult(planned)) return planned;
 
-    const confirmationKey = `${runId}:${user.id}:${payload.idempotencyKey}`;
-    const existing = this.inFlightConfirms.get(confirmationKey);
-    if (existing) return existing;
     const confirmation = this.maneuvers.submit(user, runId, payload.command)
       .finally(() => this.inFlightConfirms.delete(confirmationKey));
     this.inFlightConfirms.set(confirmationKey, confirmation);
@@ -282,6 +292,10 @@ function previewCard(
     confirmLabel,
     expiresAt,
   };
+}
+
+function maneuverDedupeKey(runId: string, userId: string, idempotencyKey: string) {
+  return `openovel-maneuver:${runId}:${userId}:${idempotencyKey}`;
 }
 
 function requiredIdempotency(value: unknown) {
