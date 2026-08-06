@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   augmentManeuverView,
+  ContinuousStoryV2LegacyStorage,
   installOpenNovelManeuverStoragePatch,
   maneuverRequest,
 } from "../public/continuous-story-v2-maneuver-client.js";
-import { ContinuousStoryV2LegacyStorage } from "../public/continuous-story-v2-legacy-storage.js";
 
 installOpenNovelManeuverStoragePatch();
 
