@@ -73,7 +73,13 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
       // audit-only source/adaptation arrays retained on the in-memory object.
       tokenEstimate: estimateJsonTokens(partOnePromptProjection(item))
     })),
-    ...allSections.partOneSettlement.items.map((item) => createItem(`part-one-event:${item.eventId}`, "P0", "PART_ONE_SETTLEMENT", item, true)),
+    ...allSections.partOneSettlement.items.map((item) => ({
+      ...createItem(`part-one-event:${item.eventId}`, "P0", "PART_ONE_SETTLEMENT", item, true),
+      // The full committed event remains available to server-side validators,
+      // but the Narrator only receives its narrative plan. Budget the actual
+      // model-facing projection instead of state patches and audit metadata.
+      tokenEstimate: estimateJsonTokens(partOneSettlementPromptProjection(item))
+    })),
     createItem(
       input.playerIntent ? `player:${input.playerIntent.immutableIntentHash.slice(0, 16)}` : `opening:${input.openingTrigger!.triggerId}`,
       "P0",
@@ -270,6 +276,10 @@ function partOnePromptProjection(item: import("@ai-story/templates").PartOneRunt
   };
 }
 
+function partOneSettlementPromptProjection(item: import("@ai-story/templates").PartOneCommittedEvent) {
+  return item.narrativePlan;
+}
+
 function renderWorkingSet(input: {
   role: StoryRole;
   scene: StoryScene;
@@ -295,7 +305,9 @@ function renderWorkingSet(input: {
     `【当前压力】\n${input.activePressures.map((item) => `- ${item.summary}`).join("\n")}`,
     `【待兑现后果】\n${input.pendingConsequences.map((item) => `- ${item.summary}`).join("\n")}`,
     input.directedBeat.length ? `【本轮外部推进】\n${input.directedBeat.map((item) => `- ${item.summary}`).join("\n")}` : "【本轮外部推进】无",
-    input.partOneSettlement ? `【本轮确定性事件】${JSON.stringify(input.partOneSettlement)}` : "【本轮确定性事件】无",
+    input.partOneSettlement
+      ? `【本轮确定性事件】${JSON.stringify(partOneSettlementPromptProjection(input.partOneSettlement))}`
+      : "【本轮确定性事件】无",
     input.partOneRuntime ? `【第一部分运行工作集】${JSON.stringify({ section: input.partOneRuntime.section, stateProjection: input.partOneRuntime.stateProjection, nextDecisionPressure: input.partOneRuntime.nextDecisionPressure, decisionKernel: input.partOneRuntime.openDecisionKernel.assetId, retrievalTrace: input.partOneRuntime.retrievalTrace })}` : "【第一部分运行工作集】无",
     `【本地裁决】${JSON.stringify(input.actionResolution)}`,
     input.playerAction

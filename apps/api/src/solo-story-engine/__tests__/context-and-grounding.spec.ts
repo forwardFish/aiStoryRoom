@@ -99,6 +99,42 @@ assert.equal(budgetFail.ok, false);
 if (budgetFail.ok) throw new Error("budget failure expected");
 assert.equal(budgetFail.code, "P0_CONTEXT_BUDGET_EXCEEDED");
 
+const narrativePlanMarker = "NARRATIVE_PLAN_VISIBLE_TO_WRITER";
+const serverOnlyAuditMarker = `SERVER_ONLY_AUDIT_${"x".repeat(30_000)}`;
+const projectedSettlement = {
+  event: {
+    eventId: "event_projection_budget",
+    narrativePlan: { dramaticTask: narrativePlanMarker },
+    statePatch: { auditPayload: serverOnlyAuditMarker }
+  }
+} as unknown as import("@ai-story/templates").PartOneActionSettlement;
+const projectedSettlementContext = compileSoloStoryContext({
+  role: baseRole(),
+  scene: baseScene(),
+  facts: baseFacts(),
+  recentCanon: baseCanon(),
+  pendingConsequences: basePending(),
+  activePressures: basePressures(),
+  relevantScriptCards: baseCards(),
+  actionResolution: resolution,
+  playerIntent: normalized.intent,
+  availableTargets: baseTargets(),
+  partOneSettlement: projectedSettlement,
+  maxTokenEstimate: 6_000
+});
+assert.equal(
+  projectedSettlementContext.ok,
+  true,
+  "server-only settlement metadata must not consume the Narrator projection budget"
+);
+if (!projectedSettlementContext.ok) throw new Error("projected settlement compile failed");
+assert.match(projectedSettlementContext.context.renderedWorkingSet, new RegExp(narrativePlanMarker));
+assert.doesNotMatch(projectedSettlementContext.context.renderedWorkingSet, /SERVER_ONLY_AUDIT_/);
+assert.ok(
+  projectedSettlementContext.context.included.find((item) => item.itemId === "part-one-event:event_projection_budget")!.tokenEstimate < 100,
+  "the context report must budget the same compact projection used by the Writer"
+);
+
 console.log("solo two-stage context isolation and grounding: PASS");
 
 function escapeRegExp(value: string) {
