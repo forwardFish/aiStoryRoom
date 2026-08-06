@@ -114,7 +114,7 @@ test("equal structural candidates use a state-bound tie breaker rather than arra
   );
 });
 
-test("duplicate outcomes cannot form a valid option pair", () => {
+test("duplicate outcomes are traced and cannot form a valid option pair", () => {
   const duplicate = outcome("action.first", "state:access=OPEN");
   const result = selectKernelLite([{
     kernelId: "kernel.duplicate",
@@ -133,8 +133,21 @@ test("duplicate outcomes cannot form a valid option pair", () => {
     ],
     rejectionCodes: [],
   }], "STATE-C");
+  const evaluation = result.evaluations[0];
   assert.equal(result.selected, null);
-  assert.equal(result.evaluations[0]?.reasonCodes.includes("INSUFFICIENT_DISTINCT_OUTCOMES"), true);
+  assert.ok(evaluation);
+  assert.equal(
+    evaluation.reasonCodes.includes("INSUFFICIENT_DISTINCT_OUTCOMES"),
+    true,
+  );
+  assert.equal(
+    evaluation.reasonCodes.includes(
+      "DUPLICATE_OUTCOME:action.second:action.first",
+    ),
+    true,
+  );
+  assert.deepEqual(evaluation.validAffordanceIds, ["action.first"]);
+  assert.equal(evaluation.outcomeHashes.length, 1);
 });
 
 test("completed and structurally resolved kernels are never eligible", () => {
