@@ -51,11 +51,10 @@ export interface OpenNovelManeuverSceneDefinition {
   customEnabled: boolean;
 }
 
+/** One authoritative entry per OpenNovel turn. Repeated scene keys are valid. */
 export interface OpenNovelManeuverCalendarEntry {
   sceneKey: string;
   usageDay: number;
-  startTurnInclusive: number;
-  endTurnExclusive: number;
 }
 
 export interface OpenNovelManeuverPackage {
@@ -63,7 +62,7 @@ export interface OpenNovelManeuverPackage {
   worldId: string;
   calendar: {
     expectedTurns: number;
-    scenes: readonly OpenNovelManeuverCalendarEntry[];
+    turns: readonly OpenNovelManeuverCalendarEntry[];
   };
   quota: {
     opportunitiesPerDay: number;
@@ -139,8 +138,8 @@ function validatePackage(pkg: OpenNovelManeuverPackage) {
   if (!Number.isInteger(pkg.calendar.expectedTurns) || pkg.calendar.expectedTurns < 1) {
     throw new Error(`OPENOVEL_MANEUVER_PACKAGE_TURN_COUNT_INVALID:${pkg.worldId}`);
   }
-  if (!pkg.calendar.scenes.length) {
-    throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CALENDAR_EMPTY:${pkg.worldId}`);
+  if (pkg.calendar.turns.length !== pkg.calendar.expectedTurns) {
+    throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CALENDAR_LENGTH_INVALID:${pkg.worldId}`);
   }
   if (!Number.isInteger(pkg.quota.opportunitiesPerDay) || pkg.quota.opportunitiesPerDay < 1) {
     throw new Error(`OPENOVEL_MANEUVER_PACKAGE_QUOTA_INVALID:${pkg.worldId}`);
@@ -149,26 +148,16 @@ function validatePackage(pkg: OpenNovelManeuverPackage) {
     throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CUSTOM_LIMIT_INVALID:${pkg.worldId}`);
   }
 
-  const sceneKeys = new Set<string>();
-  let nextExpectedTurn = 0;
-  for (const entry of pkg.calendar.scenes) {
-    if (!entry.sceneKey.trim() || sceneKeys.has(entry.sceneKey)) {
-      throw new Error(`OPENOVEL_MANEUVER_PACKAGE_SCENE_INVALID:${pkg.worldId}:${entry.sceneKey}`);
+  const validatedSceneKeys = new Set<string>();
+  for (const entry of pkg.calendar.turns) {
+    if (!entry.sceneKey.trim()) {
+      throw new Error(`OPENOVEL_MANEUVER_PACKAGE_SCENE_INVALID:${pkg.worldId}`);
     }
     if (!Number.isInteger(entry.usageDay) || entry.usageDay < 1) {
       throw new Error(`OPENOVEL_MANEUVER_PACKAGE_DAY_INVALID:${pkg.worldId}:${entry.sceneKey}`);
     }
-    if (
-      !Number.isInteger(entry.startTurnInclusive)
-      || !Number.isInteger(entry.endTurnExclusive)
-      || entry.startTurnInclusive !== nextExpectedTurn
-      || entry.endTurnExclusive <= entry.startTurnInclusive
-      || entry.endTurnExclusive > pkg.calendar.expectedTurns
-    ) {
-      throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CALENDAR_GAP:${pkg.worldId}:${entry.sceneKey}`);
-    }
-    nextExpectedTurn = entry.endTurnExclusive;
-    sceneKeys.add(entry.sceneKey);
+    if (validatedSceneKeys.has(entry.sceneKey)) continue;
+    validatedSceneKeys.add(entry.sceneKey);
     const scene = pkg.scene(entry.sceneKey);
     if (!scene || scene.sceneKey !== entry.sceneKey) {
       throw new Error(`OPENOVEL_MANEUVER_PACKAGE_SCENE_MISSING:${pkg.worldId}:${entry.sceneKey}`);
@@ -189,9 +178,6 @@ function validatePackage(pkg: OpenNovelManeuverPackage) {
         }
       }
     }
-  }
-  if (nextExpectedTurn !== pkg.calendar.expectedTurns) {
-    throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CALENDAR_INCOMPLETE:${pkg.worldId}`);
   }
 
   for (const leverageKey of pkg.initialLeverageKeys) {
