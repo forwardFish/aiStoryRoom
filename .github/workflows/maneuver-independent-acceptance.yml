@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/mvp-four-maneuver-actions
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -14,7 +17,7 @@ concurrency:
 
 jobs:
   r1-prisma:
-    if: startsWith(github.event.head_commit.message, 'test(maneuver): verify prisma persistence and atomic conflicts')
+    if: github.event_name == 'pull_request' || startsWith(github.event.head_commit.message, 'test(maneuver): verify prisma persistence and atomic conflicts')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -54,6 +57,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          ref: a3479a5783da90bc7738ed20bd2c42858c542e64
       - uses: pnpm/action-setup@v4
         with:
           version: 10.15.0
@@ -73,7 +77,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: maneuver-r1-prisma-${{ github.sha }}
+          name: maneuver-r1-prisma-a3479a5783da90bc7738ed20bd2c42858c542e64
           path: artifacts/maneuver-r1
           if-no-files-found: error
           retention-days: 30
