@@ -26,6 +26,7 @@ const {
   buildCommittedLegacyFallbackWorkingSet,
   buildPartOneRuntimeWorkingSet,
   loadPartOneRuntimePackage,
+  stableSha256,
 } = templatesPackage;
 
 type EventWithKernelSelection = PartOneActionSettlement["event"] & {
@@ -222,7 +223,7 @@ function decisionContextForCommittedEvent(
     throw new Error("SANGTIAN_COMMITTED_EVENT_STATE_MISMATCH");
   }
 
-  const pin = decisionPinForCommittedEvent(event, includeOutcomeHashes);
+  const pin = decisionPinForCommittedEvent(event, state, includeOutcomeHashes);
   const trace = (event as EventWithKernelSelection).nextKernelSelection;
   const workingSet = trace?.mode === "LEGACY_FALLBACK"
     ? buildCommittedLegacyFallbackWorkingSet(
@@ -262,6 +263,7 @@ function decisionContextForCommittedEvent(
 
 function decisionPinForCommittedEvent(
   event: PartOneActionSettlement["event"],
+  state: PartOneState,
   includeOutcomeHashes: boolean,
 ): PartOneDecisionPin {
   const traced = event as EventWithKernelSelection;
@@ -300,6 +302,11 @@ function decisionPinForCommittedEvent(
     if (!String(trace.stateFingerprint || "").trim()) {
       throw new Error(
         "SANGTIAN_COMMITTED_KERNEL_TRACE_FINGERPRINT_MISSING",
+      );
+    }
+    if (trace.stateFingerprint !== stableSha256(state)) {
+      throw new Error(
+        "SANGTIAN_COMMITTED_KERNEL_TRACE_FINGERPRINT_MISMATCH",
       );
     }
   }
