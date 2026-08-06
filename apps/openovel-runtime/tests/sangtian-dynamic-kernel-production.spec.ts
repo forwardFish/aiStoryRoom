@@ -22,6 +22,8 @@ import type { OpenNovelOption } from "../src/types.js";
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDir, "..", "..", "..");
 const configRoot = path.resolve(projectRoot, "packages", "templates", "config");
+const CAPABILITY_ACTION_PREFIX = "\u2063OMW_CAPABILITY_V1:";
+const CAPABILITY_ACTION_SUFFIX = "\u2063";
 
 type EventWithKernelTrace = PartOneActionSettlement["event"] & {
   nextKernelSelection?: KernelSelectionTrace;
@@ -69,6 +71,18 @@ function incomingFor(
     actionText: affordance.actionText,
     targetRef: affordance.target.id,
   };
+}
+
+function encodedCapabilityAction(
+  decisionPointId: string,
+  action: string,
+) {
+  const envelope = Buffer.from(JSON.stringify({
+    schemaVersion: "omw-capability-action-v1",
+    decisionPointId,
+    action,
+  }), "utf8").toString("base64url");
+  return `${CAPABILITY_ACTION_PREFIX}${envelope}${CAPABILITY_ACTION_SUFFIX}`;
 }
 
 async function workspaceFixture(
@@ -255,6 +269,74 @@ test("committed option recovery, equivalent free text and click settlement use o
         .nextKernelSelection,
       (clickPayload.settlement.event as EventWithKernelTrace)
         .nextKernelSelection,
+    );
+    assert.equal(fixture.modelCalls(), 0);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("observe-only capability turns preserve the open Kernel and freeze their next dynamic pair", async () => {
+  const pkg = packageUnderTest();
+  const state = stateForAuthority(pkg);
+  const current = templatesPackage.buildPartOneRuntimeWorkingSet(
+    pkg,
+    state,
+    4,
+  );
+  const actionText = "先核对当前在场人和已经公开的材料，不作正式处置。";
+  const settlement = templatesPackage.settlePartOneAction(
+    pkg,
+    structuredClone(state),
+    {
+      source: "FREE_TEXT",
+      actionText: encodedCapabilityAction(
+        current.decisionPoint.decisionPointId,
+        actionText,
+      ),
+      targetRef: "public_frame",
+    },
+    5,
+  );
+  const event = settlement.event as EventWithKernelTrace;
+
+  assert.equal(event.actionSource, "FREE_TEXT_CAPABILITY");
+  assert.equal(event.affordanceTemplateId, null);
+  assert.deepEqual(event.statePatch, {});
+  assert.deepEqual(event.durableEffects, []);
+  assert.deepEqual(
+    settlement.proposedState.completedKernelIds,
+    state.completedKernelIds,
+  );
+  assert.equal(
+    event.nextDecisionPoint.decisionKernelId,
+    current.decisionPoint.decisionKernelId,
+  );
+  assert.equal(
+    event.nextDecisionPoint.decisionPointId,
+    current.decisionPoint.decisionPointId,
+  );
+  assert.ok(event.nextKernelSelection);
+  assert.equal(
+    event.nextKernelSelection.selectedKernelId,
+    event.nextDecisionPoint.decisionKernelId,
+  );
+  assert.equal(event.nextKernelSelection.selectedAffordanceIds.length, 2);
+  assert.equal(event.nextKernelSelection.selectedOutcomeHashes.length, 2);
+
+  const fixture = await workspaceFixture(
+    settlement.proposedState,
+    event,
+  );
+  try {
+    const recovered = await currentSangtianOptions(
+      fixture.workspace,
+      "run.capability-recovery",
+    );
+    assert.ok(recovered);
+    assert.deepEqual(
+      recovered.map((option) => option.id),
+      event.nextKernelSelection.selectedAffordanceIds,
     );
     assert.equal(fixture.modelCalls(), 0);
   } finally {
