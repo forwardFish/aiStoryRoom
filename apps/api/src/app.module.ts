@@ -26,6 +26,7 @@ import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.clie
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
 import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
 import { OpenNovelManeuverController } from "./openovel-adapter/openovel-maneuver.controller";
+import { OpenNovelManeuverPreviewService } from "./openovel-adapter/openovel-maneuver-preview.service";
 import { OpenNovelManeuverService } from "./openovel-adapter/openovel-maneuver.service";
 import { installFourManeuverRuntime } from "./mvp-four-maneuver-runtime";
 import { installFourManeuverResolution } from "./mvp-four-maneuver-resolution";
@@ -44,7 +45,8 @@ installFourManeuverResolution();
     OpenNovelAdapterService,
     OpenNovelRuntimeClient,
     OpenNovelSharedService,
-    OpenNovelManeuverService
+    OpenNovelManeuverService,
+    OpenNovelManeuverPreviewService
   ]
 })
 export class AppModule {}
