@@ -178,7 +178,11 @@ function titleForEntry(kind: StoryTimelineEntryV2["kind"]) {
     CROSS_IMPACT: "他人的行动影响了你",
     OBSERVABLE_TRACE: "你看见的痕迹",
     NEXT_SITUATION: "新的局势",
-    ENDING: "你的结局"
+    ENDING: "你的结局",
+    MANEUVER_ACTION: "你已经落下这一步",
+    MANEUVER_RESULT: "主动谋划的结果",
+    EVIDENCE: "情报与证据",
+    REACTION: "局势应变"
   })[kind];
 }
 

@@ -1,3 +1,5 @@
+import type { EvidenceCardStateV1, RuleCardHoldingV1, WorldTraceV1 } from "@ai-story/templates";
+
 export type MvpScalar = string | number | boolean | null;
 
 export interface MvpStoryEvent {
@@ -94,6 +96,7 @@ export interface MvpView {
       lastFallbackReason: string | null;
     };
   };
+  maneuverRulesV1: MvpManeuverRulesStateV1;
   maneuverState: {
     maneuverOpportunitiesPerDay: number;
     maneuversUsedToday: number;
@@ -101,6 +104,49 @@ export interface MvpView {
     totalManeuversUsed: number;
     usedLeverageKeys: string[];
   };
+}
+
+
+export interface MvpPendingManeuverV1 {
+  actionId: string;
+  kind: "CONVERSATION" | "INVESTIGATION" | "CARD_LAYOUT" | "CUSTOM_PLAN" | "REACTION";
+  slot: "MANEUVER_1" | "MANEUVER_2" | "REACTION";
+  day: number;
+  title: string;
+  status: "PENDING" | "ARMED" | "RESOLVED" | "EXPIRED";
+  revealAtDay?: number;
+  traceId?: string;
+  routeId?: string;
+  evidenceId?: string;
+  evidenceTitle?: string;
+  sourceActionId?: string;
+  resultNarrative?: string;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface MvpArmedRuleCardV1 {
+  actionId: string;
+  day: number;
+  cardAssetKey: string;
+  targetId: string;
+  triggerPatternId: string;
+  status: "ARMED" | "TRIGGERED" | "EXPIRED";
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface MvpManeuverRulesStateV1 {
+  schemaVersion: "mvp_maneuver_rules_state_v1";
+  enabled: true;
+  windowVersion: number;
+  conversationUsedToday: number;
+  investigationUsedToday: number;
+  traces: WorldTraceV1[];
+  evidenceCards: EvidenceCardStateV1[];
+  ruleCardHoldings: RuleCardHoldingV1[];
+  pendingActions: MvpPendingManeuverV1[];
+  armedCards: MvpArmedRuleCardV1[];
 }
 
 export interface MvpMutationInput {

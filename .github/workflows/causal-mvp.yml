@@ -6,6 +6,8 @@ on:
       - ".github/workflows/causal-mvp.yml"
       - "apps/api/**"
       - "apps/web/**"
+      - "packages/shared/**"
+      - "packages/templates/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"

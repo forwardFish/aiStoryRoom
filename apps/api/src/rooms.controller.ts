@@ -24,6 +24,22 @@ export class RoomsController {
   @Post(":roomId/game/action") action(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) { return this.rooms.submitGameAction(user, roomId, body); }
   @Post(":roomId/game/actions/main") main(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: SlotCommandV1) { return this.rooms.submitMain(user, roomId, body); }
   @Post(":roomId/game/turns/:turnId/decision") turnDecision(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("turnId") turnId: string, @Body() body: TurnDecisionCommandV2) { return this.rooms.submitTurnDecision(user, roomId, turnId, body); }
+  @Post(":roomId/game/turns/:turnId/action-previews")
+  actionPreview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("roomId") roomId: string,
+    @Param("turnId") turnId: string,
+    @Body() body: Record<string, unknown>
+  ) { return this.rooms.previewTurnManeuver(user, roomId, turnId, body); }
+
+  @Post(":roomId/game/action-previews/:previewId/commit")
+  commitActionPreview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("roomId") roomId: string,
+    @Param("previewId") previewId: string,
+    @Body() body: Record<string, unknown>
+  ) { return this.rooms.commitTurnManeuverPreview(user, roomId, previewId, body); }
+
   @Post(":roomId/game/turns/:turnId/decision/stream")
   async turnDecisionStream(
     @CurrentUser() user: AuthenticatedUser,

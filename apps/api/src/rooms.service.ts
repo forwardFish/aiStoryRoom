@@ -923,7 +923,18 @@ export class RoomsService {
   submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) { return this.commands.submitMain(user, roomId, command); }
   async submitTurnDecision(user: AuthenticatedUser, roomId: string, turnId: string, command: TurnDecisionCommandV2) {
     if (await this.usesOpenNovel(roomId)) return this.openNovel.submitDecision(user, roomId, turnId, command);
-    return await this.usesSoloStory(roomId) ? this.soloStory.submit(user, roomId, turnId, command) : this.storyV2.submit(user, roomId, turnId, command);
+    if (await this.usesSoloStory(roomId)) return this.soloStory.submit(user, roomId, turnId, command);
+    return this.storyV2.submit(user, roomId, turnId, command);
+  }
+  async previewTurnManeuver(user: AuthenticatedUser, roomId: string, turnId: string, command: Record<string, unknown>) {
+    if (await this.usesOpenNovel(roomId)) return this.openNovel.previewManeuver(user, roomId, turnId, command);
+    if (await this.usesStoryV2(roomId)) return this.storyV2.previewManeuver(user, roomId, turnId, command);
+    throw new ConflictException({ code: "MANEUVER_PREVIEW_UNAVAILABLE", message: "This Story Run does not expose the shared maneuver rules yet" });
+  }
+  async commitTurnManeuverPreview(user: AuthenticatedUser, roomId: string, previewId: string, command: Record<string, unknown>) {
+    if (await this.usesOpenNovel(roomId)) return this.openNovel.commitManeuverPreview(user, roomId, previewId, command);
+    if (await this.usesStoryV2(roomId)) return this.storyV2.commitManeuverPreview(user, roomId, previewId, command);
+    throw new ConflictException({ code: "MANEUVER_PREVIEW_UNAVAILABLE", message: "This Story Run does not expose the shared maneuver rules yet" });
   }
   async submitTurnDecisionStream(
     user: AuthenticatedUser,
@@ -935,9 +946,10 @@ export class RoomsService {
     if (await this.usesOpenNovel(roomId)) {
       return this.openNovel.submitDecision(user, roomId, turnId, command);
     }
-    return await this.usesSoloStory(roomId)
-      ? this.soloStory.submit(user, roomId, turnId, command, onPreview)
-      : this.storyV2.submit(user, roomId, turnId, command);
+    if (await this.usesSoloStory(roomId)) {
+      return this.soloStory.submit(user, roomId, turnId, command, onPreview);
+    }
+    return this.submitTurnDecision(user, roomId, turnId, command);
   }
   async retryTurnGeneration(user: AuthenticatedUser, roomId: string) {
     return await this.usesSoloStory(roomId) ? this.soloStory.retryLatest(user, roomId) : this.storyV2.retryResultGeneration(user, roomId);
