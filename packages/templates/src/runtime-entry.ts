@@ -3,18 +3,26 @@ import {
   applyNarrativeScenePatternToDramaticBeatPlan,
   type DramaticPatternPlanInput,
 } from "./story-package/dramatic-beat-plan.js";
+import {
+  buildDynamicPartOneRuntimeWorkingSet,
+  isDynamicCapabilityAction,
+  packageForDynamicCapabilityAction,
+  settleDynamicPartOneAction,
+} from "./story-package/dynamic-kernel-lite-runtime.js";
 import { loadPlayablePartOneRuntimePackage } from "./story-package/playable-part-one-runtime.js";
 
 export * from "./index.js";
+export * from "./story-package/dynamic-kernel-lite-runtime.js";
 
 /**
  * Explicit exports win over the star-exported frozen implementations. Native
  * ESM named imports, CommonJS namespace imports and the default runtime
- * namespace therefore use one playable loader and one capability-aware
- * settlement path, while source-level authoring tests can still import the
- * frozen loader from index.ts directly.
+ * namespace therefore use one playable loader and the Dynamic Kernel Selector
+ * Lite path, while source-level authoring tests can still import the frozen
+ * engine directly from story-package modules.
  */
 export const loadPartOneRuntimePackage = loadPlayablePartOneRuntimePackage;
+export const buildPartOneRuntimeWorkingSet = buildDynamicPartOneRuntimeWorkingSet;
 
 /**
  * Settlement is complete before scene grammar is attached. The selected
@@ -25,7 +33,15 @@ export const loadPartOneRuntimePackage = loadPlayablePartOneRuntimePackage;
 export const settlePartOneAction = (
   ...args: Parameters<typeof runtimeFacade.settlePartOneAction>
 ): ReturnType<typeof runtimeFacade.settlePartOneAction> => {
-  const settlement = runtimeFacade.settlePartOneAction(...args);
+  const [pkg, state, action, turnNumber] = args;
+  const settlement = isDynamicCapabilityAction(action)
+    ? runtimeFacade.settlePartOneAction(
+      packageForDynamicCapabilityAction(pkg, state, turnNumber),
+      state,
+      action,
+      turnNumber,
+    )
+    : settleDynamicPartOneAction(pkg, state, action, turnNumber);
   const nextStoryBeat = settlement.event.narrativePlan.nextStoryBeat;
   const primaryPattern = nextStoryBeat.dramaticGuidance.scenePatterns[0];
   nextStoryBeat.dramaticBeatPlan = applyNarrativeScenePatternToDramaticBeatPlan(
@@ -77,6 +93,7 @@ function mechanismFragments(value: string) {
 const runtimeEntry = {
   ...runtimeFacade,
   loadPartOneRuntimePackage,
+  buildPartOneRuntimeWorkingSet,
   settlePartOneAction,
 };
 
