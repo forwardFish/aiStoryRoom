@@ -20,7 +20,10 @@ export type B0BatchCommitManifestV1 = {
   rulesetHash: string;
   inputHash: string;
   resolutionHash: string;
+  /** Legacy C2 subset retained for replay compatibility. */
   resourceMutationKeys: string[];
+  /** Every non-resource authoritative mutation applied by the same transaction. */
+  stateMutationKeys?: string[];
   publicationOutboxKeys: string[];
   committedAt: string;
   authoritative: true;
@@ -30,7 +33,7 @@ export type B0BatchCommitManifestV1 = {
 const FIELDS = [
   "schemaVersion", "batchId", "snapshotId", "windowId", "roomId", "runId",
   "baseWorldSequence", "committedWorldSequence", "rulesetHash", "inputHash",
-  "resolutionHash", "resourceMutationKeys", "publicationOutboxKeys", "committedAt",
+  "resolutionHash", "resourceMutationKeys", "stateMutationKeys", "publicationOutboxKeys", "committedAt",
   "authoritative", "commitHash",
 ] as const;
 
@@ -59,6 +62,9 @@ export function validateB0BatchCommitManifestV1(value: unknown): ValidationResul
     }
   }
   if (!stringArray(value.resourceMutationKeys)) errors.push("commit manifest.resourceMutationKeys must be an array");
+  if (value.stateMutationKeys !== undefined && !stringArray(value.stateMutationKeys)) {
+    errors.push("commit manifest.stateMutationKeys must be an array when present");
+  }
   if (!stringArray(value.publicationOutboxKeys) || value.publicationOutboxKeys.length === 0) {
     errors.push("commit manifest.publicationOutboxKeys must be non-empty");
   }

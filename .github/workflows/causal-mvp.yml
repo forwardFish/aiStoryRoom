@@ -37,6 +37,7 @@ jobs:
       - run: pnpm --filter @ai-story/templates typecheck
       - run: pnpm --filter @ai-story/templates test:b0-contract
       - run: pnpm --filter @ai-story/templates test:b0-batch
+      - run: pnpm --filter @ai-story/templates test:b0-multi
       - run: pnpm --filter @ai-story/shared build
       - run: pnpm --filter @ai-story/templates build
       - run: pnpm --filter @apps/api test:b0-batch

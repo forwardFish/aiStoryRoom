@@ -47,12 +47,18 @@ export function validateB0SettlementResolutionV1(value: unknown): ValidationResu
     if (!Array.isArray(entry.mutations)) errors.push(`${path}.mutations must be an array`);
   });
   if (Array.isArray(value.intentRelations)) value.intentRelations.forEach((entry, index) => validateRelation(entry, index, errors));
+  if (Array.isArray(value.conflictGroups)) value.conflictGroups.forEach((entry, index) => validateConflictGroup(entry, index, errors));
   if (Array.isArray(value.intentOutcomes)) value.intentOutcomes.forEach((entry, index) => validateOutcome(entry, index, errors));
+  if (isRecord(value.worldDelta) && Array.isArray(value.worldDelta.mutations)) {
+    value.worldDelta.mutations.forEach((entry, index) => validateMutation(entry, index, errors));
+  }
   if (Array.isArray(value.structuredResults)) value.structuredResults.forEach((entry, index) => validateResult(entry, index, errors));
+  if (Array.isArray(value.pendingEffects)) value.pendingEffects.forEach((entry, index) => validatePendingEffect(entry, index, errors));
   if (Array.isArray(value.causalEdges)) value.causalEdges.forEach((entry, index) => {
     const result = validateB0CausalEdgeV1(entry);
     if (!result.ok) errors.push(...result.errors.map((error) => `resolution.causalEdges[${index}]: ${error}`));
   });
+  validateResolutionReferences(value, errors);
   return errors.length ? fail(errors) : pass(value as B0SettlementResolutionV1);
 }
 
@@ -78,6 +84,19 @@ function validateRelation(value: unknown, index: number, errors: string[]): void
   }
 }
 
+function validateConflictGroup(value: unknown, index: number, errors: string[]): void {
+  const path = `resolution.conflictGroups[${index}]`;
+  errors.push(...objectErrors(value, ["conflictGroupId", "intentIds"], path));
+  if (!isRecord(value)) return;
+  if (!nonEmptyString(value.conflictGroupId)) errors.push(`${path}.conflictGroupId is required`);
+  if (!stringArray(value.intentIds) || value.intentIds.length === 0) {
+    errors.push(`${path}.intentIds must be non-empty`);
+    return;
+  }
+  if (new Set(value.intentIds).size !== value.intentIds.length) errors.push(`${path}.intentIds contains duplicates`);
+  if (value.intentIds.join("|") !== [...value.intentIds].sort().join("|")) errors.push(`${path}.intentIds must be stable-sorted`);
+}
+
 function validateOutcome(value: unknown, index: number, errors: string[]): void {
   const path = `resolution.intentOutcomes[${index}]`;
   errors.push(...objectErrors(value, ["outcomeId", "intentId", "actorId", "status", "summary", "causalEdgeIds"], path));
@@ -85,6 +104,23 @@ function validateOutcome(value: unknown, index: number, errors: string[]): void 
   requireStrings(value, ["outcomeId", "intentId", "actorId", "summary"], path, errors);
   if (!b0OutcomeStatuses.includes(value.status as never) || !stringArray(value.causalEdgeIds)) {
     errors.push(`${path}.status/causalEdgeIds is invalid`);
+  }
+}
+
+function validateMutation(value: unknown, index: number, errors: string[]): void {
+  const path = `resolution.worldDelta.mutations[${index}]`;
+  errors.push(...objectErrors(value, ["mutationId", "entityType", "entityId", "attribute", "operation", "value", "originIntentIds"], path));
+  if (!isRecord(value)) return;
+  requireStrings(value, ["mutationId", "entityId", "attribute"], path, errors);
+  if (!["ACTOR", "LOCATION", "DOCUMENT", "EVIDENCE", "INSTITUTION", "RESOURCE", "RELATION", "WORLD"].includes(String(value.entityType ?? ""))) {
+    errors.push(`${path}.entityType is invalid`);
+  }
+  if (!["SET", "INCREMENT", "ADD", "REMOVE"].includes(String(value.operation ?? ""))) errors.push(`${path}.operation is invalid`);
+  if (!stringArray(value.originIntentIds) || value.originIntentIds.length === 0) errors.push(`${path}.originIntentIds must be non-empty`);
+  if (stringArray(value.originIntentIds) && new Set(value.originIntentIds).size !== value.originIntentIds.length) errors.push(`${path}.originIntentIds contains duplicates`);
+  if (value.value === undefined) errors.push(`${path}.value is required`);
+  if (value.operation === "INCREMENT" && (typeof value.value !== "number" || !Number.isFinite(value.value))) {
+    errors.push(`${path}.value must be finite for INCREMENT`);
   }
 }
 
@@ -113,4 +149,76 @@ function validateResult(value: unknown, index: number, errors: string[]): void {
     || targets.every((id) => origins.includes(id))
     || mutations.length === 0
   )) errors.push(`${path} has no valid cross-player origin or durable impact`);
+}
+
+function validatePendingEffect(value: unknown, index: number, errors: string[]): void {
+  const path = `resolution.pendingEffects[${index}]`;
+  errors.push(...objectErrors(value, ["pendingEffectId", "sourceIntentId", "dueWindowOrdinal"], path));
+  if (!isRecord(value)) return;
+  requireStrings(value, ["pendingEffectId", "sourceIntentId"], path, errors);
+  if (!integerAtLeast(value.dueWindowOrdinal, 1)) errors.push(`${path}.dueWindowOrdinal must be >= 1`);
+}
+
+function validateResolutionReferences(value: Record<string, unknown>, errors: string[]): void {
+  const outcomes = Array.isArray(value.intentOutcomes) ? value.intentOutcomes.filter(isRecord) : [];
+  const intentIds = new Set(outcomes.map((entry) => String(entry.intentId ?? "")).filter(Boolean));
+  const outcomeIds = new Set(outcomes.map((entry) => String(entry.outcomeId ?? "")).filter(Boolean));
+  const mutations = isRecord(value.worldDelta) && Array.isArray(value.worldDelta.mutations)
+    ? value.worldDelta.mutations.filter(isRecord)
+    : [];
+  const mutationIds = new Set(mutations.map((entry) => String(entry.mutationId ?? "")).filter(Boolean));
+  const edges = Array.isArray(value.causalEdges) ? value.causalEdges.filter(isRecord) : [];
+  const edgeIds = new Set(edges.map((entry) => String(entry.id ?? "")).filter(Boolean));
+
+  assertUnique(outcomes.map((entry) => String(entry.intentId ?? "")), "resolution.intentOutcomes intentId", errors);
+  assertUnique(outcomes.map((entry) => String(entry.outcomeId ?? "")), "resolution.intentOutcomes outcomeId", errors);
+  assertUnique(mutations.map((entry) => String(entry.mutationId ?? "")), "resolution.worldDelta mutationId", errors);
+  assertUnique(edges.map((entry) => String(entry.id ?? "")), "resolution.causalEdges id", errors);
+
+  if (Array.isArray(value.intentRelations)) value.intentRelations.filter(isRecord).forEach((entry, index) => {
+    if (entry.batchId !== value.batchId) errors.push(`resolution.intentRelations[${index}].batchId mismatch`);
+    if (!intentIds.has(String(entry.leftIntentId ?? "")) || !intentIds.has(String(entry.rightIntentId ?? ""))) {
+      errors.push(`resolution.intentRelations[${index}] references an unknown intent`);
+    }
+  });
+  if (Array.isArray(value.conflictGroups)) value.conflictGroups.filter(isRecord).forEach((entry, index) => {
+    if (stringArray(entry.intentIds) && entry.intentIds.some((id) => !intentIds.has(id))) {
+      errors.push(`resolution.conflictGroups[${index}] references an unknown intent`);
+    }
+  });
+  outcomes.forEach((entry, index) => {
+    if (stringArray(entry.causalEdgeIds) && entry.causalEdgeIds.some((id) => !edgeIds.has(id))) {
+      errors.push(`resolution.intentOutcomes[${index}] references an unknown causal edge`);
+    }
+  });
+  mutations.forEach((entry, index) => {
+    if (stringArray(entry.originIntentIds) && entry.originIntentIds.some((id) => !intentIds.has(id))) {
+      errors.push(`resolution.worldDelta.mutations[${index}] references an unknown origin intent`);
+    }
+  });
+  if (Array.isArray(value.structuredResults)) value.structuredResults.filter(isRecord).forEach((entry, index) => {
+    if (stringArray(entry.originIntentIds) && entry.originIntentIds.some((id) => !intentIds.has(id))) {
+      errors.push(`resolution.structuredResults[${index}] references an unknown origin intent`);
+    }
+    if (stringArray(entry.durableMutationIds) && entry.durableMutationIds.some((id) => !mutationIds.has(id))) {
+      errors.push(`resolution.structuredResults[${index}] references an unknown durable mutation`);
+    }
+  });
+  edges.forEach((entry, index) => {
+    if (entry.batchId !== value.batchId) errors.push(`resolution.causalEdges[${index}].batchId mismatch`);
+    if (isRecord(entry.from) && (entry.from.type === "INTENT" || entry.from.type === "SYSTEM_INTENT") && !intentIds.has(String(entry.from.id ?? ""))) {
+      errors.push(`resolution.causalEdges[${index}].from references an unknown intent`);
+    }
+    if (isRecord(entry.to) && entry.to.type === "INTENT_OUTCOME" && !outcomeIds.has(String(entry.to.id ?? ""))) {
+      errors.push(`resolution.causalEdges[${index}].to references an unknown outcome`);
+    }
+    if (isRecord(entry.to) && entry.to.type === "MUTATION" && !mutationIds.has(String(entry.to.id ?? ""))) {
+      errors.push(`resolution.causalEdges[${index}].to references an unknown mutation`);
+    }
+  });
+}
+
+function assertUnique(values: string[], path: string, errors: string[]): void {
+  const present = values.filter(Boolean);
+  if (new Set(present).size !== present.length) errors.push(`${path} contains duplicates`);
 }

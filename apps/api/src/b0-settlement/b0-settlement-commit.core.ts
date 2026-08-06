@@ -43,6 +43,10 @@ export interface B0CommitTransactionV1 {
     batch: B0SettlementBatchV1;
     mutation: B0StateMutationV1;
   }): Promise<string>;
+  applyStateMutation(input: {
+    batch: B0SettlementBatchV1;
+    mutation: B0StateMutationV1;
+  }): Promise<string>;
   advanceWorldSequence(input: {
     runId: string;
     expected: number;
@@ -93,14 +97,15 @@ export async function commitB0SettlementV1(
   }
 
   const resourceMutationKeys: string[] = [];
+  const stateMutationKeys: string[] = [];
   for (const mutation of stableMutations(input.resolution.worldDelta.mutations)) {
-    if (mutation.entityType !== "RESOURCE" || mutation.attribute !== "quantity" || mutation.operation !== "INCREMENT") {
-      throw new B0CommitErrorV1("C2_MUTATION_UNSUPPORTED", `C2 only commits bounded resource quantity mutations: ${mutation.mutationId}`);
+    if (isResourceQuantityMutation(mutation)) {
+      assertResourceMutation(mutation);
+      resourceMutationKeys.push(await tx.applyResourceMutation({ batch: input.batch, mutation }));
+    } else {
+      assertStateMutation(mutation);
+      stateMutationKeys.push(await tx.applyStateMutation({ batch: input.batch, mutation }));
     }
-    if (typeof mutation.value !== "number" || !Number.isFinite(mutation.value) || mutation.value > 0) {
-      throw new B0CommitErrorV1("RESOURCE_MUTATION_INVALID", `Resource mutation ${mutation.mutationId} must be a finite non-positive delta.`);
-    }
-    resourceMutationKeys.push(await tx.applyResourceMutation({ batch: input.batch, mutation }));
   }
 
   const advanced = await tx.advanceWorldSequence({
@@ -123,6 +128,7 @@ export async function commitB0SettlementV1(
     resolution: input.resolution,
     committedAt: input.committedAt,
     resourceMutationKeys,
+    stateMutationKeys,
     publicationOutboxKeys,
   });
   await tx.persistCommit({
@@ -133,6 +139,39 @@ export async function commitB0SettlementV1(
     manifest,
   });
   return { status: "COMMITTED", manifest };
+}
+
+function isResourceQuantityMutation(mutation: B0StateMutationV1): boolean {
+  return mutation.entityType === "RESOURCE" && mutation.attribute === "quantity" && mutation.operation === "INCREMENT";
+}
+
+function assertResourceMutation(mutation: B0StateMutationV1): void {
+  if (typeof mutation.value !== "number" || !Number.isFinite(mutation.value) || mutation.value > 0) {
+    throw new B0CommitErrorV1("RESOURCE_MUTATION_INVALID", `Resource mutation ${mutation.mutationId} must be a finite non-positive delta.`);
+  }
+  if (!Number.isInteger(mutation.value)) {
+    throw new B0CommitErrorV1("RESOURCE_MUTATION_INVALID", `Resource mutation ${mutation.mutationId} must be an integer delta.`);
+  }
+  if (mutation.originIntentIds.length === 0) {
+    throw new B0CommitErrorV1("RESOURCE_MUTATION_INVALID", `Resource mutation ${mutation.mutationId} has no causal origin.`);
+  }
+}
+
+function assertStateMutation(mutation: B0StateMutationV1): void {
+  if (mutation.originIntentIds.length === 0) {
+    throw new B0CommitErrorV1("STATE_MUTATION_INVALID", `State mutation ${mutation.mutationId} has no causal origin.`);
+  }
+  if (mutation.operation === "INCREMENT" && (typeof mutation.value !== "number" || !Number.isFinite(mutation.value))) {
+    throw new B0CommitErrorV1("STATE_MUTATION_INVALID", `State mutation ${mutation.mutationId} has a non-finite increment.`);
+  }
+  if (mutation.value === undefined) {
+    throw new B0CommitErrorV1("STATE_MUTATION_INVALID", `State mutation ${mutation.mutationId} has no value.`);
+  }
+  try {
+    JSON.stringify(mutation.value);
+  } catch {
+    throw new B0CommitErrorV1("STATE_MUTATION_INVALID", `State mutation ${mutation.mutationId} is not serializable.`);
+  }
 }
 
 function assertInput(input: B0CommitInputV1): void {
@@ -179,6 +218,7 @@ function stableMutations(mutations: B0StateMutationV1[]): B0StateMutationV1[] {
     left.entityType.localeCompare(right.entityType)
     || left.entityId.localeCompare(right.entityId)
     || left.attribute.localeCompare(right.attribute)
+    || left.operation.localeCompare(right.operation)
     || left.mutationId.localeCompare(right.mutationId));
 }
 

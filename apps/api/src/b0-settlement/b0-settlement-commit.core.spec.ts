@@ -61,8 +61,10 @@ class MemoryCommitTx implements B0CommitTransactionV1 {
   resourceQuantity = 2;
   manifest: B0BatchCommitManifestV1 | null = null;
   readonly applied = new Set<string>();
+  readonly appliedState = new Map<string, B0StateMutationV1>();
   readonly outbox = new Set<string>();
   applyCount = 0;
+  stateApplyCount = 0;
   persistCount = 0;
 
   async readContext(input: B0CommitInputV1): Promise<B0CommitContextV1> {
@@ -75,6 +77,18 @@ class MemoryCommitTx implements B0CommitTransactionV1 {
       this.resourceQuantity += Number(input.mutation.value);
       if (this.resourceQuantity < 0) throw new B0CommitErrorV1("INTENT_RESOURCE_INSUFFICIENT", "negative resource");
       this.applied.add(key); this.applyCount += 1;
+    }
+    return key;
+  }
+  async applyStateMutation(input: { batch: B0SettlementBatchV1; mutation: B0StateMutationV1 }): Promise<string> {
+    const key = `b0:mutation:${input.batch.id}:${input.mutation.mutationId}`;
+    const existing = this.appliedState.get(key);
+    if (existing && JSON.stringify(existing) !== JSON.stringify(input.mutation)) {
+      throw new B0CommitErrorV1("STATE_MUTATION_CONFLICT", "state mutation replay drift");
+    }
+    if (!existing) {
+      this.appliedState.set(key, structuredClone(input.mutation));
+      this.stateApplyCount += 1;
     }
     return key;
   }
@@ -139,18 +153,65 @@ test("C2 stale world sequence fails closed without durable side effects", async 
   await assert.rejects(() => commitB0SettlementV1(tx, commitInput(f)), (error: any) => error?.code === "WORLD_SEQUENCE_MISMATCH");
   assert.equal(tx.resourceQuantity, 2);
   assert.equal(tx.applyCount, 0);
+  assert.equal(tx.stateApplyCount, 0);
   assert.equal(tx.outbox.size, 0);
   assert.equal(tx.manifest, null);
 });
 
-test("C2 rejects unsupported world mutations before advancing sequence", async () => {
+test("C4 commits the complete merged WorldDelta in the same manifest and transaction", async () => {
   const f = fixture(); const tx = new MemoryCommitTx();
   const mutation: B0StateMutationV1 = {
     mutationId: "mutation.world", entityType: "WORLD", entityId: "world.c2", attribute: "state",
     operation: "SET", value: "changed", originIntentIds: ["action.c2"],
   };
+  const resolution = rehash({
+    ...f.resolution,
+    worldDelta: { mutations: [...f.resolution.worldDelta.mutations, mutation] },
+    structuredResults: f.resolution.structuredResults.map((entry) => ({
+      ...entry,
+      durableMutationIds: [...entry.durableMutationIds, mutation.mutationId].sort(),
+    })),
+  });
+  const committed = await commitB0SettlementV1(tx, { ...commitInput(f), resolution });
+  assert.equal(committed.status, "COMMITTED");
+  assert.equal(tx.worldSequence, 8);
+  assert.equal(tx.resourceQuantity, 1);
+  assert.equal(tx.applyCount, 1);
+  assert.equal(tx.stateApplyCount, 2);
+  assert.ok(committed.manifest.stateMutationKeys?.includes("b0:mutation:batch.c2:mutation.world"));
+  assert.equal(committed.manifest.stateMutationKeys?.length, 2);
+  assert.equal(committed.manifest.resourceMutationKeys.length, 1);
+  assert.equal(committed.manifest.publicationOutboxKeys.length, 1);
+});
+
+test("C4 generic mutation replay remains idempotent after the commit manifest exists", async () => {
+  const f = fixture(); const tx = new MemoryCommitTx();
+  const mutation: B0StateMutationV1 = {
+    mutationId: "mutation.relation", entityType: "RELATION", entityId: "relation.c2", attribute: "trust",
+    operation: "INCREMENT", value: 1, originIntentIds: ["action.c2"],
+  };
   const resolution = rehash({ ...f.resolution, worldDelta: { mutations: [mutation] } });
-  await assert.rejects(() => commitB0SettlementV1(tx, { ...commitInput(f), resolution }), (error: any) => error?.code === "C2_MUTATION_UNSUPPORTED");
+  const input = { ...commitInput(f), resolution };
+  await commitB0SettlementV1(tx, input);
+  for (let index = 0; index < 5; index += 1) {
+    assert.equal((await commitB0SettlementV1(tx, input)).status, "ALREADY_COMMITTED");
+  }
+  assert.equal(tx.worldSequence, 8);
+  assert.equal(tx.stateApplyCount, 1);
+  assert.equal(tx.outbox.size, 1);
+  assert.equal(tx.persistCount, 1);
+});
+
+test("C4 rejects a state mutation without a causal origin before advancing sequence", async () => {
+  const f = fixture(); const tx = new MemoryCommitTx();
+  const mutation: B0StateMutationV1 = {
+    mutationId: "mutation.invalid", entityType: "WORLD", entityId: "world.c2", attribute: "state",
+    operation: "SET", value: "changed", originIntentIds: [],
+  };
+  const resolution = rehash({ ...f.resolution, worldDelta: { mutations: [mutation] } });
+  await assert.rejects(() => commitB0SettlementV1(tx, { ...commitInput(f), resolution }), (error: any) =>
+    error?.code === "STATE_MUTATION_INVALID" || error?.code === "RESOLUTION_VALIDATION_FAILED");
   assert.equal(tx.worldSequence, 7);
+  assert.equal(tx.stateApplyCount, 0);
   assert.equal(tx.persistCount, 0);
 });

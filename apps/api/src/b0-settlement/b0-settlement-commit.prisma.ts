@@ -147,6 +147,68 @@ export class PrismaB0CommitTransactionV1 implements B0CommitTransactionV1 {
     return idempotencyKey;
   }
 
+  async applyStateMutation(input: {
+    batch: B0SettlementBatchV1;
+    mutation: B0StateMutationV1;
+  }): Promise<string> {
+    const factKey = `b0:mutation:${input.batch.id}:${input.mutation.mutationId}`;
+    const existing = await this.tx.canonFact.findUnique({
+      where: { runId_factKey: { runId: input.batch.runId, factKey } },
+      select: { id: true },
+    });
+    if (existing) return factKey;
+
+    const originIds = [...new Set(input.mutation.originIntentIds)].sort();
+    if (originIds.length === 0) {
+      throw new B0CommitErrorV1("STATE_MUTATION_INVALID", `Mutation ${input.mutation.mutationId} has no origin intent.`);
+    }
+    const actions = await this.tx.playerAction.findMany({
+      where: { id: { in: originIds }, runId: input.batch.runId },
+      select: { id: true, nodeId: true },
+    });
+    if (actions.length !== originIds.length || actions.some((action: any) => !originIds.includes(action.id))) {
+      throw new B0CommitErrorV1("INTENT_NOT_FOUND", `A causal origin for mutation ${input.mutation.mutationId} is missing.`);
+    }
+    const nodeIds = [...new Set(actions.map((action: any) => action.nodeId))];
+    if (nodeIds.length !== 1) {
+      throw new B0CommitErrorV1("BATCH_CONTEXT_MISMATCH", `Mutation ${input.mutation.mutationId} spans multiple scene nodes.`);
+    }
+    const content = JSON.stringify({
+      schemaVersion: "b0-authoritative-mutation-v1",
+      batchId: input.batch.id,
+      windowId: input.batch.windowId,
+      baseWorldSequence: input.batch.baseWorldSequence,
+      committedWorldSequence: input.batch.baseWorldSequence + 1,
+      mutation: input.mutation,
+    });
+    try {
+      await this.tx.canonFact.create({
+        data: {
+          runId: input.batch.runId,
+          sourceNodeId: nodeIds[0],
+          factKey,
+          content,
+          status: "confirmed",
+          visibility: "private",
+          sourceEventIdsJson: [] as Prisma.InputJsonValue,
+          sourceActionIdsJson: originIds as Prisma.InputJsonValue,
+          knownByRoleIdsJson: [] as Prisma.InputJsonValue,
+        },
+      });
+    } catch (error) {
+      const code = String((error as any)?.code || "");
+      if (code !== "P2002") throw error;
+      const replay = await this.tx.canonFact.findUnique({
+        where: { runId_factKey: { runId: input.batch.runId, factKey } },
+        select: { id: true, content: true },
+      });
+      if (!replay || replay.content !== content) {
+        throw new B0CommitErrorV1("STATE_MUTATION_CONFLICT", `Mutation ${input.mutation.mutationId} was committed with different content.`);
+      }
+    }
+    return factKey;
+  }
+
   async advanceWorldSequence(input: { runId: string; expected: number; next: number }): Promise<boolean> {
     const updated = await this.tx.storyRun.updateMany({
       where: { id: input.runId, worldSequence: input.expected },
