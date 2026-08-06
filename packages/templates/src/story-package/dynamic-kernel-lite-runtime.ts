@@ -88,6 +88,13 @@ const IGNORED_PATHS = new Set([
   "scene", "durableState", "pendingConsequences", "partCompletionStatus",
 ]);
 
+/**
+ * Select and materialize one existing Decision Kernel from authoritative state.
+ * This module owns selection, preview signatures and recovery traces only.
+ * Formal settlement is intentionally centralized in
+ * dynamic-kernel-lite-settlement.ts so production and tests cannot drift onto
+ * separate causal writers.
+ */
 export function buildDynamicPartOneRuntimeWorkingSet(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
@@ -128,59 +135,6 @@ export function buildDynamicPartOneRuntimeWorkingSet(
   const affordances = selectAffordances(evaluation, selectedIds);
   const workingSet = { ...evaluation.workingSet, decisionAffordances: affordances };
   return traced(workingSet, { ...selectionTrace(selection, section, state, workingSet), mode: "DYNAMIC_LITE" });
-}
-
-export function settleDynamicPartOneAction(
-  pkg: PartOneRuntimePackage,
-  state: PartOneState,
-  action: PartOneIncomingAction,
-  turnNumber: number,
-): DynamicPartOneActionSettlement {
-  const current = buildDynamicPartOneRuntimeWorkingSet(pkg, state, Math.max(0, turnNumber - 1));
-  const opening = Boolean(action.decisionId?.startsWith("opening_"));
-  if (!opening && action.affordanceTemplateId) {
-    const bound = current.decisionAffordances.some((candidate) => (
-      candidate.affordanceTemplateId === action.affordanceTemplateId
-      && candidate.decisionKernelId === action.decisionKernelId
-      && candidate.actionText === action.actionText
-    ));
-    if (!bound) throw new Error("PART_ONE_DYNAMIC_STALE_OR_TAMPERED_AFFORDANCE");
-  }
-  const currentKernelId = opening
-    ? "DK-P1-REVIEW-INITIATION"
-    : action.decisionKernelId || current.decisionPoint.decisionKernelId;
-  const currentAffordanceId = opening ? null : action.affordanceTemplateId || null;
-  const currentRequest = { sectionId: state.sectionId, kernelId: currentKernelId, affordanceId: currentAffordanceId };
-  const provisional = settleLegacyAction(forcePackage(pkg, [currentRequest]), state, action, turnNumber);
-  const next = buildDynamicPartOneRuntimeWorkingSet(pkg, provisional.proposedState, turnNumber);
-  const finalPkg = forcePackage(pkg, [
-    currentRequest,
-    {
-      sectionId: provisional.proposedState.sectionId,
-      kernelId: next.decisionPoint.decisionKernelId,
-      affordanceId: null,
-    },
-  ]);
-  const finalized = settleLegacyAction(finalPkg, state, action, turnNumber);
-  if (finalized.event.nextDecisionPoint.decisionKernelId !== next.decisionPoint.decisionKernelId
-    || finalized.event.nextDecisionPoint.decisionPointId !== next.decisionPoint.decisionPointId) {
-    throw new Error("PART_ONE_DYNAMIC_NEXT_DECISION_MISMATCH");
-  }
-  (finalized.event as DynamicPartOneCommittedEvent).nextKernelSelection = clone(next.kernelSelection);
-  return finalized as DynamicPartOneActionSettlement;
-}
-
-export function packageForDynamicCapabilityAction(
-  pkg: PartOneRuntimePackage,
-  state: PartOneState,
-  turnNumber: number,
-): PartOneRuntimePackage {
-  const current = buildDynamicPartOneRuntimeWorkingSet(pkg, state, Math.max(0, turnNumber - 1));
-  return forcePackage(pkg, [{
-    sectionId: state.sectionId,
-    kernelId: current.decisionPoint.decisionKernelId,
-    affordanceId: current.decisionAffordances[0]?.affordanceTemplateId || null,
-  }]);
 }
 
 export function isDynamicCapabilityAction(action: PartOneIncomingAction) {
