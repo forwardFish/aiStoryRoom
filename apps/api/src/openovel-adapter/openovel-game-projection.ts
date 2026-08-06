@@ -1,6 +1,12 @@
 import type { GameProjectionV2, PlayerIntentV2 } from "@ai-story/shared";
 import type { GameDefinition } from "@ai-story/templates";
 import { gamePageProjection } from "../game-page-projection";
+import {
+  projectOpenNovelManeuvers,
+  type OpenNovelLeverageHandProjection,
+  type OpenNovelManeuverPanelProjection,
+  type OpenNovelManeuverProjection,
+} from "./openovel-maneuver";
 import type { OpenNovelPublicRun, OpenNovelVisibleOption } from "./openovel-runtime.client";
 
 export type OpenNovelProjectionRun = {
@@ -9,6 +15,8 @@ export type OpenNovelProjectionRun = {
   templateKey: string;
   status: string;
   ownerUserId: string;
+  version: number;
+  stateJson: unknown;
   billingPolicyVersion: string;
   billingPriceJson: unknown;
   players: Array<{
@@ -32,6 +40,13 @@ export type OpenNovelProjectionNode = {
   createdAt: Date;
 };
 
+export type OpenNovelGameProjectionV2 = GameProjectionV2 & {
+  maneuverVersion: number;
+  maneuverState: OpenNovelManeuverProjection["maneuverState"];
+  maneuverPanel: OpenNovelManeuverPanelProjection;
+  leverageHand: OpenNovelLeverageHandProjection;
+};
+
 export function openNovelGameProjection(input: {
   userId: string;
   run: OpenNovelProjectionRun;
@@ -47,21 +62,45 @@ export function openNovelGameProjection(input: {
     standardActionCost: number;
     customActionCost: number;
   };
-}): GameProjectionV2 {
+}): OpenNovelGameProjectionV2 {
   const membership = input.run.players.find((player) => player.userId === input.userId);
   const role = membership?.role;
   if (!role) throw new Error("OPENOVEL_PRODUCT_ROLE_MISSING");
 
   const turnNumber = input.runtimeRun.turnNumber;
   const completed = input.runtimeRun.status === "COMPLETED";
-  const stageIndex = Math.min(4, Math.floor(turnNumber / 5) + 1);
+  const canHumanAct = !completed;
+  const decisionsOpen = canHumanAct && input.runtimeRun.options.length > 0;
+  const maneuverProjection = projectOpenNovelManeuvers({
+    stateJson: input.run.stateJson,
+    turnNumber,
+    runtimeStatus: input.runtimeRun.status,
+    mainDecisionOpen: decisionsOpen,
+    canHumanAct,
+  });
+  const stageIndex = maneuverProjection.state.usageDay;
   const sceneTarget = {
     type: "PUBLIC_FRAME" as const,
     id: `scene:${turnNumber + 1}`,
     label: "当前局势",
   };
   const decisions = input.runtimeRun.options.map((option) => decisionCandidate(option, sceneTarget));
-  const timeline = input.nodes
+  const availableTargets = uniqueTargets([
+    sceneTarget,
+    ...maneuverProjection.maneuverPanel.contact.options.map((option) => ({
+      type: "ROLE" as const,
+      id: option.roleKey,
+      label: option.displayName,
+    })),
+    ...maneuverProjection.maneuverPanel.leverage.options.flatMap((option) =>
+      option.targets.map((target) => ({
+        type: "ROLE" as const,
+        id: target.roleKey,
+        label: target.displayName,
+      })),
+    ),
+  ]);
+  const nodeTimeline = input.nodes
     .filter((node) => Boolean(node.publicNarration))
     .sort((left, right) => left.nodeIndex - right.nodeIndex)
     .map((node, index) => ({
@@ -73,6 +112,17 @@ export function openNovelGameProjection(input: {
       createdAt: (node.resolvedAt || node.createdAt).toISOString(),
       decisionForm: "STORY_CHOICE" as const,
     }));
+  const maneuverTimeline = maneuverProjection.state.results.map((result) => ({
+    id: result.id,
+    kind: "RESULT" as const,
+    title: result.title,
+    content: result.narrative,
+    worldSequence: result.turnNumber,
+    createdAt: result.createdAt,
+    decisionForm: result.decisionForm,
+  }));
+  const timeline = [...nodeTimeline, ...maneuverTimeline]
+    .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
 
   return {
     schemaVersion: "continuous_game_projection_v2",
@@ -96,20 +146,21 @@ export function openNovelGameProjection(input: {
       identity: role.identity,
       personalGoal: role.personalGoal,
     },
-    control: { mode: "HUMAN_ACTIVE", epoch: 1, canHumanAct: !completed },
+    control: { mode: "HUMAN_ACTIVE", epoch: 1, canHumanAct },
     currentTurn: completed ? null : {
       id: `T${String(turnNumber + 1).padStart(2, "0")}`,
       revision: turnNumber,
       stageIndex,
       turnIndex: turnNumber + 1,
       baseWorldSequence: turnNumber,
-      status: "OPEN",
+      status: decisionsOpen ? "OPEN" : "RESOLVING",
       title: turnNumber === 0 ? "两封文书，一道急令" : `第 ${turnNumber + 1} 回合`,
       narrative: input.runtimeRun.recentCanon,
       visibleFacts: [],
       framing: "你要如何应对？",
       decisions,
-      availableTargets: [sceneTarget],
+      availableTargets,
+      actionAvailability: actionAvailability(maneuverProjection.maneuverPanel, decisions.length > 0, sceneTarget.id),
       customActionAllowed: true,
     },
     timeline,
@@ -121,7 +172,13 @@ export function openNovelGameProjection(input: {
         controllerKind: "AI" as const,
         stageIndex,
       })),
-    visibleAssets: [],
+    visibleAssets: maneuverProjection.leverageHand.items.map((item) => ({
+      assetKey: item.leverageKey,
+      kind: "LEVERAGE",
+      label: item.label,
+      quantity: 1,
+      status: "ACTIVE",
+    })),
     evidenceHoldings: [],
     commitments: [],
     armedConditions: [],
@@ -148,7 +205,59 @@ export function openNovelGameProjection(input: {
     },
     completed,
     resultUrl: completed ? `/game/result?runId=${encodeURIComponent(input.run.id)}` : null,
+    maneuverVersion: input.run.version,
+    maneuverState: maneuverProjection.maneuverState,
+    maneuverPanel: maneuverProjection.maneuverPanel,
+    leverageHand: maneuverProjection.leverageHand,
   };
+}
+
+function actionAvailability(
+  panel: OpenNovelManeuverPanelProjection,
+  storyChoiceAvailable: boolean,
+  sceneTargetId: string,
+) {
+  const item = (
+    enabled: boolean,
+    reason: string | null,
+    targetIds: string[] = [],
+    assetKeys: string[] = [],
+  ) => ({
+    state: enabled ? "AVAILABLE" as const : "LOCKED" as const,
+    reason: enabled ? "" : reason || "当前不可用",
+    targetIds,
+    assetKeys,
+  });
+  return {
+    storyChoice: item(storyChoiceAvailable, "当前主线决策尚未开放", [sceneTargetId]),
+    conversation: item(
+      panel.contact.enabled,
+      panel.contact.disabledReason,
+      panel.contact.options.map((option) => option.roleKey),
+    ),
+    investigation: item(
+      panel.investigate.enabled,
+      panel.investigate.disabledReason,
+      panel.investigate.options.map((option) => option.intentKey),
+    ),
+    leverage: item(
+      panel.leverage.enabled,
+      panel.leverage.disabledReason,
+      panel.leverage.options.flatMap((option) => option.targets.map((target) => target.roleKey)),
+      panel.leverage.options.map((option) => option.leverageKey),
+    ),
+    customPlan: item(panel.custom.enabled, panel.custom.disabledReason, [sceneTargetId]),
+  };
+}
+
+function uniqueTargets<T extends { type: string; id: string; label: string }>(items: T[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = `${item.type}:${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function decisionCandidate(
