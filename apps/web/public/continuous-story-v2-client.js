@@ -1,4 +1,5 @@
 import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260806-opening-sequence-v1";
+import { clearManeuverDraft } from "./maneuver-four-ui.js?v=20260806-mvp-four-v2";
 
 export function createContinuousStoryV2App({ root, window: win, runId, initialProjection, fetchImpl }) {
   if (!root || !runId || typeof fetchImpl !== "function") throw new TypeError("continuous story v2 requires root, runId and fetch");
@@ -11,6 +12,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
   let heartbeatSequence = 0;
   let openingRetryStatus = "";
   let creditMountObserver = null;
+  let maneuverCaptureHandler = null;
   const sessionInstanceId = sessionId(win, runId);
   const onCreditsRequired = (event) => { void showCreditsRequired(event.detail || {}); };
 
@@ -59,6 +61,78 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     return payload;
   }
 
+  function installManeuverPreviewFlow() {
+    maneuverCaptureHandler = (event) => {
+      const button = event.target?.closest?.("#maneuverSubmit, #maneuverConfirm, #maneuverPreviewCancel");
+      if (!button || !root.contains(button)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (button.id === "maneuverSubmit") void previewCurrentManeuver();
+      else if (button.id === "maneuverConfirm") void confirmCurrentManeuver();
+      else cancelManeuverPreview();
+    };
+    root.addEventListener("click", maneuverCaptureHandler, true);
+  }
+
+  async function previewCurrentManeuver() {
+    const state = storyApp?.getState();
+    if (!state || state.busy) return;
+    const activeType = state.activeManeuverType;
+    const draftSnapshot = clone(state.maneuverDrafts);
+    await storyApp.submitManeuver();
+    const nextState = storyApp.getState();
+    const preview = nextState.view?.maneuverPreview;
+    if (!preview) return;
+    nextState.maneuverDrafts = draftSnapshot;
+    nextState.activeManeuverType = activeType;
+    nextState.maneuverPreview = preview;
+    nextState.maneuverGuard = null;
+    storyApp.render();
+  }
+
+  async function confirmCurrentManeuver() {
+    const state = storyApp?.getState();
+    const preview = state?.maneuverPreview || state?.view?.maneuverPreview;
+    if (!state || !preview || state.busy) return;
+    state.busy = true;
+    state.error = "";
+    state.maneuverGuard = null;
+    storyApp.render();
+    try {
+      const result = await storage.confirmManeuver(state.view, preview);
+      if (result?.accepted === false) {
+        state.maneuverGuard = {
+          reason: result.reason || "这项谋划暂时不能确认。",
+          suggestedRewrite: result.suggestedRewrite || "",
+        };
+        return;
+      }
+      state.maneuverPreview = null;
+      if (state.view) delete state.view.maneuverPreview;
+      clearManeuverDraft(state, preview.maneuverType);
+      state.busy = false;
+      await storyApp.refresh({ silent: true });
+    } catch (error) {
+      state.error = error?.message || "主动谋划确认失败。";
+      if (["MANEUVER_PREVIEW_STALE", "MANEUVER_PREVIEW_EXPIRED", "VERSION_CONFLICT"].includes(String(error?.code || ""))) {
+        state.maneuverPreview = null;
+        if (state.view) delete state.view.maneuverPreview;
+      }
+    } finally {
+      state.busy = false;
+      storyApp.render();
+    }
+  }
+
+  function cancelManeuverPreview() {
+    const state = storyApp?.getState();
+    if (!state || state.busy) return;
+    state.maneuverPreview = null;
+    if (state.view) delete state.view.maneuverPreview;
+    state.maneuverGuard = null;
+    storyApp.render();
+  }
+
   function renderCreditChrome() {
     creditMountObserver?.disconnect();
     creditMountObserver = null;
@@ -66,9 +140,6 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     const p = storage.projection;
     const credit = p?.creditControl;
     if (!credit || credit.policyVersion !== "active_action_v1") return;
-    // A human-controlled role gets a compact cost disclosure next to the
-    // decision submit button. Do not turn an ordinary balance into story
-    // chrome or insert it into the opening panel.
     if (p.control?.canHumanAct) return;
     const node = win.document.createElement("section");
     node.dataset.v2CreditChrome = runId;
@@ -167,14 +238,10 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       const { createStoryApp } = await loadOldMainGame();
       storyApp = createStoryApp({ root, window: win, storage });
       await storyApp.boot();
+      installManeuverPreviewFlow();
       win.addEventListener("worldcreditsrequired", onCreditsRequired);
       renderCreditChrome();
       renderOpeningRecovery();
-      // A Solo action is resolved by its own request and returns the updated
-      // projection. Reading, scrolling, typing, or simply leaving the page
-      // open must not poll Supabase. Recovery remains explicit through the
-      // existing refresh/retry controls. Multiplayer keeps its presence and
-      // convergence timers until its transport is migrated separately.
       if (!isSoloProjection(storage.projection)) {
         void refreshHostRequests();
         pollTimer = win.setInterval(() => {
@@ -196,6 +263,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     destroy() {
       if (pollTimer) win.clearInterval(pollTimer);
       if (heartbeatTimer) win.clearInterval(heartbeatTimer);
+      if (maneuverCaptureHandler) root.removeEventListener("click", maneuverCaptureHandler, true);
       creditMountObserver?.disconnect();
       creditMountObserver = null;
       win.removeEventListener("worldcreditsrequired", onCreditsRequired);
@@ -203,7 +271,9 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     },
     refresh,
     submitDecision: () => storyApp?.submitDecision(),
-    submitManeuver: () => storyApp?.submitManeuver(),
+    submitManeuver: previewCurrentManeuver,
+    confirmManeuver: confirmCurrentManeuver,
+    cancelManeuverPreview,
     handoff: () => changeControl("handoff"),
     reclaim: () => changeControl("reclaim"),
     loadResult: () => storage.loadResult(),
@@ -237,4 +307,8 @@ function sessionId(win, runId) {
     win.sessionStorage.setItem(key, value);
     return value;
   } catch { return `v2-${Math.random().toString(36).slice(2, 14)}`; }
+}
+
+function clone(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
 }
