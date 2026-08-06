@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import {
   createOutcomeSignature,
+  kernelTieBreaker,
   selectKernelLite,
   type KernelSelectorLiteCandidate,
 } from "../src/runtime-contract/kernel-selector-lite.js";
@@ -79,7 +80,38 @@ test("same state and candidates remain stable for one hundred executions", () =>
     assert.equal(actual.selected?.pair?.left.affordanceId, expected.selected?.pair?.left.affordanceId);
     assert.equal(actual.selected?.pair?.right.affordanceId, expected.selected?.pair?.right.affordanceId);
     assert.equal(actual.selected?.maximumOutcomeDistance, expected.selected?.maximumOutcomeDistance);
+    assert.equal(actual.selected?.tieBreaker, expected.selected?.tieBreaker);
   }
+});
+
+test("equal structural candidates use a state-bound tie breaker rather than array position", () => {
+  const template = neutralCandidates()[0]!;
+  const alpha = structuredClone(template);
+  alpha.kernelId = "kernel.alpha";
+  const beta = structuredClone(template);
+  beta.kernelId = "kernel.beta";
+  const fingerprint = "STATE-TIE";
+
+  const normal = selectKernelLite([alpha, beta], fingerprint);
+  const reversed = selectKernelLite([beta, alpha], fingerprint);
+  const expected = [alpha.kernelId, beta.kernelId]
+    .sort((left, right) => (
+      kernelTieBreaker(fingerprint, left).localeCompare(
+        kernelTieBreaker(fingerprint, right),
+      )
+      || left.localeCompare(right)
+    ))[0];
+
+  assert.equal(normal.selected?.kernelId, expected);
+  assert.equal(reversed.selected?.kernelId, expected);
+  assert.equal(
+    normal.evaluations.find((item) => item.kernelId === alpha.kernelId)?.tieBreaker,
+    kernelTieBreaker(fingerprint, alpha.kernelId),
+  );
+  assert.notEqual(
+    kernelTieBreaker("STATE-TIE-A", alpha.kernelId),
+    kernelTieBreaker("STATE-TIE-B", alpha.kernelId),
+  );
 });
 
 test("duplicate outcomes cannot form a valid option pair", () => {
