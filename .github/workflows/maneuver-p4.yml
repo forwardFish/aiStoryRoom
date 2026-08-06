@@ -33,4 +33,13 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: python3 scripts/automation/apply-maneuver-p4.py
+      - name: Apply P4 and verify
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/automation/apply-maneuver-p4.py')
+          source = path.read_text(encoding='utf-8')
+          source = source.replace('  plan.title = narrated.title;\\n  plan.narrative = narrated.narrative;\\n', '  plan.title = narrated.title || plan.title;\\n  plan.narrative = narrated.narrative || plan.narrative;\\n')
+          path.write_text(source, encoding='utf-8')
+          PY
+          python3 scripts/automation/apply-maneuver-p4.py
