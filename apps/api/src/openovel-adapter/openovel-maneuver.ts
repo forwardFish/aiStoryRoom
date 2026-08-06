@@ -2,16 +2,9 @@ import { BadRequestException, ConflictException } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import type { PlayerIntentV2 } from "@ai-story/shared";
 import type { MvpAiBudget } from "../mvp-ai-budget";
-import {
-  createMvpAiBudget,
-} from "../mvp-ai-budget";
-import {
-  getLeverageDefinition,
-  getManeuverActor,
-  getManeuverSceneConfig,
-  INITIAL_MVP_LEVERAGE_KEYS,
-} from "../mvp-maneuver-config";
+import { createMvpAiBudget } from "../mvp-ai-budget";
 import { guardPlayerIntentV2 } from "../continuous-story-v2/player-intent";
+import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
 
 export type OpenNovelManeuverType = "contact" | "investigate" | "leverage" | "custom";
 export type OpenNovelManeuverDecisionForm = "CONVERSATION" | "INVESTIGATION" | "LEVERAGE" | "CUSTOM_PLAN";
@@ -50,7 +43,7 @@ export type OpenNovelManeuverState = {
   schemaVersion: "openovel_maneuver_state_v1";
   usageDay: number;
   sceneKey: string;
-  maneuverOpportunitiesPerDay: 2;
+  maneuverOpportunitiesPerDay: number;
   maneuversUsedToday: number;
   maneuverOpportunitiesRemaining: number;
   totalManeuversUsed: number;
@@ -67,7 +60,7 @@ export type OpenNovelManeuverPanelProjection = {
   enabled: boolean;
   disabledReason: string | null;
   quota: {
-    perDay: 2;
+    perDay: number;
     usedToday: number;
     remaining: number;
     usedTypesToday: OpenNovelManeuverType[];
@@ -110,7 +103,7 @@ export type OpenNovelManeuverPanelProjection = {
     enabled: boolean;
     usedToday: boolean;
     disabledReason: string | null;
-    maxLength: 200;
+    maxLength: number;
   };
 };
 
@@ -150,28 +143,26 @@ export type OpenNovelManeuverGuardResult = {
 };
 
 const MANEUVER_TYPES: OpenNovelManeuverType[] = ["contact", "investigate", "leverage", "custom"];
-const SCENE_KEYS = [
-  "d1_1", "d1_2",
-  "d2_1", "d2_2",
-  "d3_1", "d3_2",
-  "d4_1", "d4_2",
-  "d5_1", "d5_2",
-  "d6_1", "d6_2",
-] as const;
-const EXPECTED_OPENOVEL_TURNS = 20;
+const CONTACT_MESSAGE_MAX_LENGTH = 200;
 
-export function openNovelManeuverClock(turnNumberValue: unknown) {
+export function openNovelManeuverClock(
+  turnNumberValue: unknown,
+  maneuverPackage: OpenNovelManeuverPackage,
+) {
   const turnNumber = Math.max(0, Math.floor(Number(turnNumberValue) || 0));
-  const activeTurn = Math.min(EXPECTED_OPENOVEL_TURNS - 1, turnNumber);
+  const expectedTurns = maneuverPackage.calendar.expectedTurns;
+  const sceneEntries = maneuverPackage.calendar.scenes;
+  const activeTurn = Math.min(expectedTurns - 1, turnNumber);
   const sceneIndex = Math.min(
-    SCENE_KEYS.length - 1,
-    Math.floor((activeTurn * SCENE_KEYS.length) / EXPECTED_OPENOVEL_TURNS),
+    sceneEntries.length - 1,
+    Math.floor((activeTurn * sceneEntries.length) / expectedTurns),
   );
+  const scene = sceneEntries[sceneIndex];
   return {
     turnNumber,
     sceneIndex,
-    sceneKey: SCENE_KEYS[sceneIndex],
-    usageDay: Math.floor(sceneIndex / 2) + 1,
+    sceneKey: scene.sceneKey,
+    usageDay: scene.usageDay,
   };
 }
 
@@ -189,10 +180,11 @@ export function openNovelManeuverFingerprint(input: OpenNovelManeuverCommand) {
 export function ensureOpenNovelManeuverState(
   stateJson: unknown,
   turnNumber: number,
+  maneuverPackage: OpenNovelManeuverPackage,
 ): OpenNovelManeuverState {
   const root = record(stateJson);
   const prior = record(root.openovelManeuver);
-  const clock = openNovelManeuverClock(turnNumber);
+  const clock = openNovelManeuverClock(turnNumber, maneuverPackage);
   const priorResults = array(prior.results)
     .map(normalizeResult)
     .filter((item): item is OpenNovelManeuverResult => Boolean(item));
@@ -210,12 +202,13 @@ export function ensureOpenNovelManeuverState(
     ...array(prior.discoveredFactKeys).map(String),
     ...priorResults.flatMap((item) => item.discoveredFactKeys),
   ]);
-  const remaining = Math.max(0, 2 - usedTypesToday.length);
+  const perDay = maneuverPackage.quota.opportunitiesPerDay;
+  const remaining = Math.max(0, perDay - usedTypesToday.length);
   return {
     schemaVersion: "openovel_maneuver_state_v1",
     usageDay: clock.usageDay,
     sceneKey: clock.sceneKey,
-    maneuverOpportunitiesPerDay: 2,
+    maneuverOpportunitiesPerDay: perDay,
     maneuversUsedToday: usedTypesToday.length,
     maneuverOpportunitiesRemaining: remaining,
     totalManeuversUsed: Math.max(
@@ -247,15 +240,22 @@ export function projectOpenNovelManeuvers(input: {
   runtimeStatus: string;
   mainDecisionOpen: boolean;
   canHumanAct: boolean;
+  maneuverPackage: OpenNovelManeuverPackage;
 }): OpenNovelManeuverProjection {
-  const state = ensureOpenNovelManeuverState(input.stateJson, input.turnNumber);
-  const config = getManeuverSceneConfig(state.sceneKey);
-  const globallyDisabled = globalDisabledReason({
-    runtimeStatus: input.runtimeStatus,
-    mainDecisionOpen: input.mainDecisionOpen,
-    canHumanAct: input.canHumanAct,
-    remaining: state.maneuverOpportunitiesRemaining,
-  });
+  const state = ensureOpenNovelManeuverState(
+    input.stateJson,
+    input.turnNumber,
+    input.maneuverPackage,
+  );
+  const config = input.maneuverPackage.scene(state.sceneKey);
+  const globallyDisabled = config
+    ? globalDisabledReason({
+      runtimeStatus: input.runtimeStatus,
+      mainDecisionOpen: input.mainDecisionOpen,
+      canHumanAct: input.canHumanAct,
+      remaining: state.maneuverOpportunitiesRemaining,
+    })
+    : "当前场景未开放主动谋划";
   const contactOptions = (config?.contacts || []).map((item) => ({
     roleKey: item.roleKey,
     displayName: item.displayName,
@@ -271,7 +271,7 @@ export function projectOpenNovelManeuvers(input: {
   const usedLeverage = new Set(state.usedLeverageKeys);
   const leverageOptions = (config?.playableLeverageKeys || [])
     .filter((key) => !usedLeverage.has(key))
-    .map((key) => getLeverageDefinition(key))
+    .map((key) => input.maneuverPackage.leverage(key))
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .map((item) => ({
       leverageKey: item.leverageKey,
@@ -280,7 +280,7 @@ export function projectOpenNovelManeuvers(input: {
       consumptionLabel: "使用后消失" as const,
       requiresTarget: item.requiresTarget,
       targets: item.targetRoleKeys
-        .map((roleKey) => getManeuverActor(roleKey))
+        .map((roleKey) => input.maneuverPackage.actor(roleKey))
         .filter((actor): actor is NonNullable<typeof actor> => Boolean(actor))
         .map((actor) => ({ roleKey: actor.roleKey, displayName: actor.displayName })),
     }));
@@ -288,9 +288,9 @@ export function projectOpenNovelManeuvers(input: {
   const investigateReason = typeDisabledReason(state, "investigate", investigationOptions.length > 0, "当前没有可调查事项", globallyDisabled);
   const leverageReason = typeDisabledReason(state, "leverage", leverageOptions.length > 0, "当前剧情没有合适的出牌时机", globallyDisabled);
   const customReason = typeDisabledReason(state, "custom", Boolean(config?.customEnabled), "当前阶段不能自拟谋划", globallyDisabled);
-  const leverageHandItems = INITIAL_MVP_LEVERAGE_KEYS
+  const leverageHandItems = input.maneuverPackage.initialLeverageKeys
     .filter((key) => !usedLeverage.has(key))
-    .map((key) => getLeverageDefinition(key))
+    .map((key) => input.maneuverPackage.leverage(key))
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .map((item) => ({
       leverageKey: item.leverageKey,
@@ -306,7 +306,7 @@ export function projectOpenNovelManeuvers(input: {
       enabled: !globallyDisabled,
       disabledReason: globallyDisabled,
       quota: {
-        perDay: 2,
+        perDay: state.maneuverOpportunitiesPerDay,
         usedToday: state.maneuversUsedToday,
         remaining: globallyDisabled && !input.mainDecisionOpen ? 0 : state.maneuverOpportunitiesRemaining,
         usedTypesToday: [...state.usedTypesToday],
@@ -336,7 +336,7 @@ export function projectOpenNovelManeuvers(input: {
         enabled: !customReason,
         usedToday: state.usedTypesToday.includes("custom"),
         disabledReason: customReason,
-        maxLength: 200,
+        maxLength: input.maneuverPackage.customPlan.maxLength,
       },
     },
     leverageHand: {
@@ -352,6 +352,7 @@ export function compileOpenNovelManeuverPlan(input: {
   game: any;
   roleKey: string;
   turnNumber: number;
+  maneuverPackage: OpenNovelManeuverPackage;
 }): OpenNovelManeuverPlan | OpenNovelManeuverGuardResult {
   const type = text(input.command.maneuverType) as OpenNovelManeuverType;
   if (!MANEUVER_TYPES.includes(type)) {
@@ -360,9 +361,9 @@ export function compileOpenNovelManeuverPlan(input: {
   assertManeuverTypeAvailable(input.projection.maneuverPanel, type);
   const sceneKey = input.projection.state.sceneKey;
   const usageDay = input.projection.state.usageDay;
-  const config = getManeuverSceneConfig(sceneKey);
+  const config = input.maneuverPackage.scene(sceneKey);
   if (!config) {
-    throw new ConflictException({ code: "MANEUVER_WINDOW_CLOSED", message: "当前剧情没有主动谋划配置" });
+    throw new ConflictException({ code: "MANEUVER_WINDOW_CLOSED", message: "当前场景未开放主动谋划" });
   }
 
   if (type === "contact") {
@@ -371,7 +372,7 @@ export function compileOpenNovelManeuverPlan(input: {
     const option = input.projection.maneuverPanel.contact.options.find((item) => item.roleKey === roleKey);
     if (!option) throw new BadRequestException({ code: "CONTACT_TARGET_UNAVAILABLE", message: "当前人物不在可交谈列表中" });
     if (!messageText) throw new BadRequestException({ code: "CONTACT_MESSAGE_REQUIRED", message: "请写下要对这个人物说的话" });
-    if (messageText.length > 200) throw new BadRequestException({ code: "CONTACT_MESSAGE_TOO_LONG", message: "人物交谈最多 200 字" });
+    if (messageText.length > CONTACT_MESSAGE_MAX_LENGTH) throw new BadRequestException({ code: "CONTACT_MESSAGE_TOO_LONG", message: `人物交谈最多 ${CONTACT_MESSAGE_MAX_LENGTH} 字` });
     const definition = config.contacts.find((item) => item.roleKey === roleKey);
     if (!definition) throw new BadRequestException({ code: "CONTACT_TARGET_UNAVAILABLE", message: "当前人物不能交谈" });
     return {
@@ -380,11 +381,11 @@ export function compileOpenNovelManeuverPlan(input: {
       sceneKey,
       usageDay,
       title: definition.fallbackTitle,
-      fallbackNarrative: `你向${definition.displayName}说明了来意。\n\n${definition.displayName}回道：“${definition.fallbackReply}”`,
+      fallbackNarrative: input.maneuverPackage.surfaces.contactFallback(definition),
       targetRoleKey: roleKey,
       consumedLeverageKey: null,
       factKeys: [],
-      traces: [`${definition.displayName}交谈记录`],
+      traces: [input.maneuverPackage.surfaces.contactTrace(definition)],
       statePatch: { ...definition.statePatch },
       needsAiNarrative: true,
       playerMessage: messageText,
@@ -416,7 +417,7 @@ export function compileOpenNovelManeuverPlan(input: {
     const leverageKey = text(input.command.leverageKey);
     const option = input.projection.maneuverPanel.leverage.options.find((item) => item.leverageKey === leverageKey);
     if (!option) throw new ConflictException({ code: "LEVERAGE_NOT_AVAILABLE", message: "筹码不存在、已使用或当前不可用" });
-    const definition = getLeverageDefinition(leverageKey);
+    const definition = input.maneuverPackage.leverage(leverageKey);
     if (!definition) throw new ConflictException({ code: "LEVERAGE_NOT_AVAILABLE", message: "筹码不存在" });
     const targetRoleKey = text(input.command.targetRoleKey);
     if (definition.requiresTarget && !targetRoleKey) {
@@ -425,7 +426,7 @@ export function compileOpenNovelManeuverPlan(input: {
     if (targetRoleKey && !option.targets.some((target) => target.roleKey === targetRoleKey)) {
       throw new BadRequestException({ code: "LEVERAGE_TARGET_INVALID", message: "这张筹码不能用于当前目标" });
     }
-    const target = targetRoleKey ? getManeuverActor(targetRoleKey) : null;
+    const target = targetRoleKey ? input.maneuverPackage.actor(targetRoleKey) : null;
     const response = definition.fixedResultText || definition.fallbackReply || "这张牌已经改变了谈判条件。";
     return {
       maneuverType: type,
@@ -433,13 +434,15 @@ export function compileOpenNovelManeuverPlan(input: {
       sceneKey,
       usageDay,
       title: definition.resultTitle,
-      fallbackNarrative: target
-        ? `你向${target.displayName}打出了“${definition.label}”。\n\n${target.displayName}回应：“${response}”\n\n筹码已消耗：${definition.label}`
-        : `${response}\n\n筹码已消耗：${definition.label}`,
+      fallbackNarrative: input.maneuverPackage.surfaces.leverageFallback({
+        definition,
+        target,
+        response,
+      }),
       targetRoleKey: targetRoleKey || null,
       consumedLeverageKey: leverageKey,
       factKeys: [...definition.factKeys],
-      traces: [`筹码使用记录：${definition.label}`],
+      traces: [input.maneuverPackage.surfaces.leverageTrace(definition)],
       statePatch: { ...definition.statePatch },
       needsAiNarrative: definition.resolutionMode === "AI_REACTION",
       playerMessage: "",
@@ -447,13 +450,14 @@ export function compileOpenNovelManeuverPlan(input: {
   }
 
   const customText = text(input.command.customText);
+  const customPlan = input.maneuverPackage.customPlan;
   if (!customText) throw new BadRequestException({ code: "MANEUVER_CUSTOM_TEXT_REQUIRED", message: "自拟谋划需要填写内容" });
-  if (customText.length > 200) {
+  if (customText.length > customPlan.maxLength) {
     return {
       accepted: false,
       code: "ACTION_BLOCKED",
-      reason: "自拟谋划最多 200 字，请把意图收束成一项可执行的布局。",
-      suggestedRewrite: customText.slice(0, 200),
+      reason: `自拟谋划最多 ${customPlan.maxLength} 字，请把意图收束成一项可执行的布局。`,
+      suggestedRewrite: customText.slice(0, customPlan.maxLength),
     };
   }
   const guarded = guardCustomManeuver(customText, input.game, input.roleKey, input.turnNumber);
@@ -463,13 +467,13 @@ export function compileOpenNovelManeuverPlan(input: {
     decisionForm: "CUSTOM_PLAN",
     sceneKey,
     usageDay,
-    title: "自拟谋划已执行",
-    fallbackNarrative: `你拟定的布局“${customText}”被拆成一项当前可执行的幕僚任务。它没有替代主线决策，但会成为后续剧情可引用的行动记录。`,
+    title: customPlan.title,
+    fallbackNarrative: customPlan.fallbackNarrative(customText),
     targetRoleKey: null,
     consumedLeverageKey: null,
-    factKeys: [],
-    traces: ["自拟谋划原文", "幕僚执行回执"],
-    statePatch: { "总督权威": 2, "暗账完整度": 4, "清算风险": 1 },
+    factKeys: [...customPlan.factKeys],
+    traces: [...customPlan.traces],
+    statePatch: { ...customPlan.statePatch },
     needsAiNarrative: false,
     playerMessage: customText,
   };
@@ -487,7 +491,10 @@ export function applyOpenNovelManeuverPlan(input: {
   }
   state.usedTypesToday = unique([...state.usedTypesToday, input.plan.maneuverType]);
   state.maneuversUsedToday = state.usedTypesToday.length;
-  state.maneuverOpportunitiesRemaining = Math.max(0, 2 - state.maneuversUsedToday);
+  state.maneuverOpportunitiesRemaining = Math.max(
+    0,
+    state.maneuverOpportunitiesPerDay - state.maneuversUsedToday,
+  );
   state.totalManeuversUsed += 1;
   state.discoveredFactKeys = unique([...state.discoveredFactKeys, ...input.plan.factKeys]);
   if (input.plan.consumedLeverageKey) {
