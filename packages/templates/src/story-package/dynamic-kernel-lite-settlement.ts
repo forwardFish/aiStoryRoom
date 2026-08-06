@@ -33,6 +33,27 @@ type ForcedSelectionRequest = {
 };
 
 /**
+ * Project the exact state that the existing finalizer will commit after all
+ * authorized due consequences have been surfaced in the current turn. Dynamic
+ * selection must run on this state rather than on the intermediate DUE ledger;
+ * otherwise a pressure that has already been paid can incorrectly choose the
+ * next Kernel and the committed trace fingerprint will not match recovery.
+ */
+export function projectFinalizedPartOneSelectionState(
+  settlement: Pick<PartOneActionSettlement, "proposedState" | "event">,
+): PartOneState {
+  const projected = clone(settlement.proposedState);
+  const paidIds = new Set(settlement.event.duePendingConsequenceIds);
+  if (!paidIds.size) return projected;
+  projected.pendingConsequences = projected.pendingConsequences.map((item) => (
+    paidIds.has(item.consequenceId)
+      ? { ...item, status: "PAID" as const }
+      : item
+  ));
+  return projected;
+}
+
+/**
  * Coordinate Dynamic Kernel Lite with the frozen fact Settlement.
  *
  * The frozen engine remains the only causal writer. This layer only makes the
@@ -89,13 +110,14 @@ export function settleDynamicPartOneAction(
     action,
     turnNumber,
   );
+  const selectionState = projectFinalizedPartOneSelectionState(provisional);
   const next = buildDynamicPartOneRuntimeWorkingSet(
     pkg,
-    provisional.proposedState,
+    selectionState,
     turnNumber,
   );
   const nextRequest: ForcedSelectionRequest = {
-    sectionId: provisional.proposedState.sectionId,
+    sectionId: selectionState.sectionId,
     kernelId: next.decisionPoint.decisionKernelId,
     affordanceIds: isContinuation(next)
       ? []
