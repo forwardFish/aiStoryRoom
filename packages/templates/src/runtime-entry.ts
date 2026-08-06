@@ -6,6 +6,7 @@ import {
 import {
   buildDynamicPartOneRuntimeWorkingSet,
   isDynamicCapabilityAction,
+  type DynamicPartOneCommittedEvent as DynamicCommittedEvent,
 } from "./story-package/dynamic-kernel-lite-runtime.js";
 import {
   packageForDynamicCapabilityAction,
@@ -60,7 +61,8 @@ export const settlePartOneAction = (
   ...args: Parameters<typeof runtimeFacade.settlePartOneAction>
 ): ReturnType<typeof runtimeFacade.settlePartOneAction> => {
   const [pkg, state, action, turnNumber] = args;
-  const settlement = isDynamicCapabilityAction(action)
+  const capabilityAction = isDynamicCapabilityAction(action);
+  const settlement = capabilityAction
     ? runtimeFacade.settlePartOneAction(
       packageForDynamicCapabilityAction(pkg, state, turnNumber),
       state,
@@ -68,6 +70,15 @@ export const settlePartOneAction = (
       turnNumber,
     )
     : settleDynamicPartOneAction(pkg, state, action, turnNumber);
+
+  if (capabilityAction) {
+    attachCapabilityKernelSelection(
+      pkg,
+      settlement,
+      turnNumber,
+    );
+  }
+
   const nextStoryBeat = settlement.event.narrativePlan.nextStoryBeat;
   const primaryPattern = nextStoryBeat.dramaticGuidance.scenePatterns[0];
   nextStoryBeat.dramaticBeatPlan = applyNarrativeScenePatternToDramaticBeatPlan(
@@ -76,6 +87,37 @@ export const settlePartOneAction = (
   );
   return settlement;
 };
+
+/**
+ * Observe-only capability actions intentionally leave the current formal
+ * Decision Point open. They still produce an atomic turn, so the exact Kernel
+ * and Affordance pair shown after that turn must be frozen in the same event as
+ * ordinary authored actions rather than re-derived during recovery.
+ */
+function attachCapabilityKernelSelection(
+  pkg: Parameters<typeof runtimeFacade.settlePartOneAction>[0],
+  settlement: ReturnType<typeof runtimeFacade.settlePartOneAction>,
+  turnNumber: number,
+) {
+  const event = settlement.event as DynamicCommittedEvent;
+  const pin = {
+    decisionKernelId: event.nextDecisionPoint.decisionKernelId,
+    decisionPointId: event.nextDecisionPoint.decisionPointId,
+  };
+  const next = buildDynamicPartOneRuntimeWorkingSet(
+    pkg,
+    settlement.proposedState,
+    turnNumber,
+    { mode: "DYNAMIC_LITE", pin },
+  );
+  if (
+    next.decisionPoint.decisionKernelId !== pin.decisionKernelId
+    || next.decisionPoint.decisionPointId !== pin.decisionPointId
+  ) {
+    throw new Error("PART_ONE_CAPABILITY_NEXT_DECISION_MISMATCH");
+  }
+  event.nextKernelSelection = structuredClone(next.kernelSelection);
+}
 
 function nonVerbatimPattern(pattern: DramaticPatternPlanInput): DramaticPatternPlanInput {
   return {
