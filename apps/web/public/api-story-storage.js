@@ -92,11 +92,18 @@ export class ApiStoryStorage {
 
   async submitManeuver(view, input) {
     this.assertView(view);
+    const maneuverType = String(input?.maneuverType || "");
+    const body = maneuverType === "contact"
+      ? { maneuverType, targetRoleKey: String(input.targetRoleKey || ""), messageText: String(input.messageText || "").trim() }
+      : maneuverType === "investigate"
+        ? { maneuverType, intentKey: String(input.intentKey || "") }
+        : maneuverType === "leverage"
+          ? { maneuverType, leverageKey: String(input.leverageKey || ""), targetRoleKey: String(input.targetRoleKey || "") }
+          : { maneuverType: "custom", customText: String(input.customText || "").trim() };
     const payload = await this.request(`/v4/story-runs/${encodeURIComponent(view.run.id)}/maneuvers`, {
       method: "POST",
       body: {
-        ...input,
-        customText: input.maneuverType === "custom" ? String(input.customText || "").trim() : "",
+        ...body,
         version: view.run.version,
         idempotencyKey: input.idempotencyKey || globalThis.crypto?.randomUUID?.() || `maneuver-${Date.now()}`
       }
