@@ -12,6 +12,7 @@
     "prebuild": "pnpm run prepare:templates",
     "pretypecheck": "pnpm run prepare:templates",
     "pretest": "pnpm run prepare:templates",
+    "pretest:b0-runtime": "pnpm run prepare:templates",
     "dev": "tsx --env-file-if-exists=../../.env src/server.ts",
     "dev:test": "tsx --env-file=../../.env.test src/server.ts",
     "smoke:test": "tsx --env-file=../../.env.test src/cli/smoke.ts",
@@ -20,7 +21,8 @@
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.spec.ts"
+    "test": "node --import tsx --test tests/*.spec.ts",
+    "test:b0-runtime": "node --import tsx --test tests/b0-narrative-runtime.spec.ts"
   },
   "dependencies": {
     "@ai-story/templates": "workspace:*",
