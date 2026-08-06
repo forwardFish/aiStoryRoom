@@ -114,6 +114,47 @@ test("equal structural candidates use a state-bound tie breaker rather than arra
   );
 });
 
+test("runtime-generated transfer and event identities cannot manufacture Outcome diversity", () => {
+  const transfer = (suffix: string, topic = "records_available") => ({
+    transferId: `KT-${suffix}`,
+    causedByEventId: `EVENT-${suffix}`,
+    topic,
+    senderRef: "actor.sender",
+    recipientRef: "actor.recipient",
+    deliveryMode: "COURIER",
+    status: "DELIVERED",
+    nested: {
+      beatId: `BEAT-${suffix}`,
+      sourceEventId: `SOURCE-${suffix}`,
+      stableValue: "kept",
+    },
+  });
+  const signature = (suffix: string, topic?: string) => createOutcomeSignature({
+    affordanceId: `action.${suffix}`,
+    stateFeatures: [
+      `state:knowledgeTransfers=${JSON.stringify([transfer(suffix, topic)])}`,
+    ],
+    durablePredicateFeatures: [],
+    pendingRuleFeatures: [],
+    sectionAfter: "section.port",
+    partCompletionStatusAfter: null,
+  });
+
+  const first = signature("A");
+  const retry = signature("B");
+  const semanticChange = signature("C", "different_topic");
+
+  assert.deepEqual(first.stateFeatures, retry.stateFeatures);
+  assert.equal(first.hash, retry.hash);
+  assert.notEqual(first.hash, semanticChange.hash);
+  assert.match(first.stateFeatures[0]!, /records_available/u);
+  assert.match(first.stateFeatures[0]!, /stableValue/u);
+  assert.doesNotMatch(
+    first.stateFeatures[0]!,
+    /KT-A|EVENT-A|BEAT-A|SOURCE-A/u,
+  );
+});
+
 test("duplicate outcomes are traced and cannot form a valid option pair", () => {
   const duplicate = outcome("action.first", "state:access=OPEN");
   const result = selectKernelLite([{
