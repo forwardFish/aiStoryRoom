@@ -206,6 +206,90 @@ test("start=new explicitly creates a fresh Solo run instead of resuming the acti
   dom.window.close();
 });
 
+test("insufficient World Credits opens a purchase dialog and preserves the selected role return path", async () => {
+  const dom = new JSDOM('<!doctype html><main id="roleApp"></main>');
+  const assigned = [];
+  const location = {
+    href: "http://game.test/role-select?story=sangtian&start=new",
+    pathname: "/role-select",
+    hostname: "game.test",
+    search: "?story=sangtian&start=new",
+    hash: "",
+    assign: (url) => assigned.push(url)
+  };
+  const browserWindow = {
+    location,
+    crypto: { randomUUID: () => "credits-run-0000-0000-0000-000000000001" },
+    localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+  };
+  const fetchImpl = async (_url, options = {}) => {
+    if (options.method === "POST") {
+      return new Response(JSON.stringify({
+        code: "WORLD_CREDITS_REQUIRED",
+        message: "More World Credits are required for this action.",
+        required: 20,
+        available: 6
+      }), { status: 402, headers: { "content-type": "application/json" } });
+    }
+    return new Response(JSON.stringify({
+      id: "sangtian",
+      title: "The Mulberry Edict",
+      roles: [{ key: "zhejiang_governor", name: "Governor of Zhejiang", playableSolo: true }]
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  const root = dom.window.document.querySelector("#roleApp");
+  const app = createRoleSelectApp({ root, window: browserWindow, fetchImpl });
+  await app.boot();
+  await app.createRun();
+
+  const dialog = root.querySelector('[role="dialog"]');
+  assert.ok(dialog);
+  assert.equal(dialog.getAttribute("aria-modal"), "true");
+  assert.match(dialog.textContent, /Add Credits to begin/);
+  assert.match(dialog.textContent, /Required\s*20/);
+  assert.match(dialog.textContent, /Available\s*6/);
+  assert.match(dialog.textContent, /14 more/);
+  assert.equal(root.querySelector(".role-alert"), null);
+  assert.equal(app.getState().selectedRoleKey, "zhejiang_governor");
+
+  root.querySelector("[data-credits-required-purchase]").click();
+  assert.deepEqual(assigned, ["/credits?intent=RUN_CREATE&returnTo=%2Frole-select%3Fstory%3Dsangtian%26start%3Dnew%26role%3Dzhejiang_governor"]);
+
+  root.querySelector("[data-credits-required-dismiss]").click();
+  assert.equal(root.querySelector('[role="dialog"]'), null);
+  assert.equal(app.getState().selectedRoleKey, "zhejiang_governor");
+  dom.window.close();
+});
+
+test("returning from the Credits page restores the player's selected role", async () => {
+  const dom = new JSDOM('<!doctype html><main id="roleApp"></main>');
+  const location = {
+    href: "http://game.test/role-select?story=sangtian&role=xunfu",
+    hostname: "game.test",
+    search: "?story=sangtian&role=xunfu"
+  };
+  const browserWindow = {
+    location,
+    localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+  };
+  const fetchImpl = async () => new Response(JSON.stringify({
+    id: "sangtian",
+    title: "The Mulberry Edict",
+    roles: [
+      { key: "zhejiang_governor", name: "Governor of Zhejiang", playableSolo: true },
+      { key: "xunfu", name: "Provincial Governor", playableSolo: true }
+    ]
+  }), { status: 200, headers: { "content-type": "application/json" } });
+
+  const app = createRoleSelectApp({ root: dom.window.document.querySelector("#roleApp"), window: browserWindow, fetchImpl });
+  await app.boot();
+
+  assert.equal(app.getState().selectedRoleKey, "xunfu");
+  assert.equal(dom.window.document.querySelector('[data-room-role-key="xunfu"]').getAttribute("aria-pressed"), "true");
+  dom.window.close();
+});
+
 test("both six-role multiplayer worlds keep compact cards beside the side panels", async () => {
   const css = await readFile(new URL("../public/room-role-selection.css", import.meta.url), "utf8");
   assert.match(css, /data-room-mode="multiplayer"[^}]*\.mw-room-body\s*\{[^}]*min-height:\s*396px;/s);

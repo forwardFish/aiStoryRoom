@@ -599,6 +599,7 @@ export class FileStoryWorkspace {
       paths.openingPresentation,
       {},
     );
+    const inferredPrologue = inferPrologueNarrative(canon, recentCanon);
     const ending = await readJson(paths.endingPresentation, null);
     return {
       runId,
@@ -610,7 +611,7 @@ export class FileStoryWorkspace {
       canon,
       recentCanon,
       prologueNarrative: metadata.turnNumber === 0
-        ? String(openingPresentation.prologueNarrative || inferPrologueNarrative(canon, recentCanon)).trim()
+        ? String(inferredPrologue || openingPresentation.prologueNarrative || "").trim()
         : "",
       ending,
       options: options.map(({ effect: _hidden, ...visible }) => visible),

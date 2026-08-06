@@ -199,6 +199,10 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
   const currentTurnIndex = turn?.turnIndex || results.length;
   const visibleAssets = p.visibleAssets || [];
   const latestStory = turn?.narrative || results.at(-1)?.content || "你的故事正在整理最后的回响。";
+  const openingNarrative = [p.prologueNarrative, latestStory]
+    .map((value) => String(value || "").trim())
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join("\n\n");
   const legacyProfile = role.gameplayProfile || approvedLegacyProfile(p);
   const canDecide = !completed
     && turn?.status === "OPEN"
@@ -208,7 +212,7 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
   return {
     continuousV2: true,
     storyRevisionToken: turn ? `${turn.id}:${turn.revision}:${turn.baseWorldSequence}` : `completed:${p.worldSequence}`,
-    openingNarrative: latestStory,
+    openingNarrative,
     v2Projection: p,
     v2CurrentTurn: turn,
     run: {
