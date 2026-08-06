@@ -119,3 +119,27 @@ test("committed Legacy fallback recovery rejects a missing or tampered Affordanc
     tampered,
   ), /PART_ONE_DYNAMIC_AFFORDANCE_NOT_FOUND|PART_ONE_COMMITTED_FALLBACK_RECOVERY_MISMATCH/u);
 });
+
+test("committed Legacy fallback recovery rejects a trace or state fingerprint mismatch", () => {
+  const pkg = duplicateOutcomePackage();
+  const state = authorityState(pkg);
+  const fallback = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4);
+
+  const tamperedTrace = structuredClone(fallback.kernelSelection);
+  tamperedTrace.stateFingerprint = "TAMPERED";
+  assert.throws(() => buildCommittedLegacyFallbackWorkingSet(
+    pkg,
+    state,
+    4,
+    tamperedTrace,
+  ), /PART_ONE_COMMITTED_FALLBACK_STATE_FINGERPRINT_MISMATCH/u);
+
+  const tamperedState = structuredClone(state);
+  tamperedState.review.authority = "TAMPERED";
+  assert.throws(() => buildCommittedLegacyFallbackWorkingSet(
+    pkg,
+    tamperedState,
+    4,
+    fallback.kernelSelection,
+  ), /PART_ONE_COMMITTED_FALLBACK_STATE_FINGERPRINT_MISMATCH/u);
+});
