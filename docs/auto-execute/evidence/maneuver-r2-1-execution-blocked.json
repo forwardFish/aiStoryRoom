@@ -1,0 +1,44 @@
+{
+  "status": "CANDIDATE_BRANCH_INCOMPLETE",
+  "stage": "R2-1",
+  "classification": "EXTERNAL_ENVIRONMENT_GITHUB_ACTIONS_RUNNER_ALLOCATION",
+  "userRequestedStartSha": "104fc18c93d28556eed467b7612ec3c3b91a5bb2",
+  "implementationBaseSha": "55952a74b32d0ef59fdcc1f4a70af2f856f5e7f6",
+  "productCommitCreated": false,
+  "tests": {
+    "total": 0,
+    "pass": 0,
+    "fail": 0,
+    "skip": 0,
+    "reason": "All three executions stopped before repository checkout or commands"
+  },
+  "attempts": [
+    {
+      "runId": 31119171317,
+      "jobId": 92676078393,
+      "runner": "ubuntu-latest",
+      "status": "failure",
+      "phase": "Set up job",
+      "evidence": "Service Unavailable while resolving Action download information"
+    },
+    {
+      "runId": 31121003155,
+      "jobId": 92681488693,
+      "runner": "ubuntu-latest",
+      "status": "in_progress_without_steps",
+      "phase": "runner allocation",
+      "evidence": "No steps; job log endpoint returned BlobNotFound"
+    },
+    {
+      "runId": 31121379028,
+      "jobId": 92682608228,
+      "runner": "ubuntu-22.04",
+      "status": "queued_without_steps",
+      "phase": "runner allocation",
+      "evidence": "No steps after removing workflow concurrency dependency"
+    }
+  ],
+  "temporaryScaffoldingRemoved": true,
+  "mainModified": false,
+  "releaseModified": false
+}
