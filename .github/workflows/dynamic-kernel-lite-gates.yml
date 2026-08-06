@@ -33,6 +33,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Publish pending commit status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="pending" \
+            -f context="dynamic-kernel-lite/gates" \
+            -f description="Dynamic Kernel Lite gates are running" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10.12.1
