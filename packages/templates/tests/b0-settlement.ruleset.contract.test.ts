@@ -37,7 +37,8 @@ test("ruleset hash is key-order independent and freeze is detached", () => {
   const input = JSON.parse(JSON.stringify(first)); const frozen = freezeB0RoomRulesetV1(input);
   input.rulesetVersion = "changed-outside";
   assert.equal(frozen.rulesetVersion, "b0-rules-v1");
-  assert.throws(() => { (frozen.featureFlags as { narrativeAsyncEnabled: boolean }).narrativeAsyncEnabled = false; }, TypeError);
+  assert.equal(Reflect.set(frozen.featureFlags, "narrativeAsyncEnabled", false), false);
+  assert.equal(frozen.featureFlags.narrativeAsyncEnabled, true);
 });
 
 test("window validator and state machine are fail-closed", () => {
