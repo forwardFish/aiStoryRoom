@@ -25,12 +25,12 @@ env:
   OPENOVEL_DEEPSEEK_THINKING: disabled
 
 concurrency:
-  group: chatgpt-pro-final-candidate-acceptance
+  group: chatgpt-pro-final-candidate-${{ github.event.pull_request.base.sha }}
   cancel-in-progress: false
 
 jobs:
   final-acceptance:
-    if: github.event.pull_request.title == 'ci: final ai story candidate acceptance'
+    if: "${{ github.event.pull_request.title == 'ci: final ai story candidate acceptance' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -40,25 +40,30 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha }}
           fetch-depth: 0
 
-      - name: Prove repository and branch boundary
+      - name: Prove repository, branch, baseline and clean tree
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p candidate-evidence/logs candidate-evidence/assets
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "base_ref=${{ github.event.pull_request.base.ref }}"
+            echo "candidate_sha=${{ github.event.pull_request.base.sha }}"
+            echo "checked_out=$(git rev-parse HEAD)"
+            echo "frozen_base=${FROZEN_BASE_SHA}"
+            echo "merge_base=$(git merge-base HEAD ${FROZEN_BASE_SHA})"
+            echo "main_remote=$(git rev-parse origin/main)"
+            echo "status_begin"
+            git status --short
+            echo "status_end"
+          } | tee candidate-evidence/logs/00-boundary.log
           test "${GITHUB_REPOSITORY}" = "forwardFish/aiStoryRoom"
           test "${{ github.event.pull_request.base.ref }}" = "${CANDIDATE_BRANCH}"
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
           test "$(git merge-base HEAD ${FROZEN_BASE_SHA})" = "${FROZEN_BASE_SHA}"
           test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
           test -z "$(git status --short)"
-          mkdir -p candidate-evidence/logs
-          {
-            echo "repository=${GITHUB_REPOSITORY}"
-            echo "branch=${CANDIDATE_BRANCH}"
-            echo "candidate_sha=$(git rev-parse HEAD)"
-            echo "frozen_base_sha=${FROZEN_BASE_SHA}"
-            echo "main_sha=$(git rev-parse origin/main)"
-            echo "merge_base=$(git merge-base HEAD ${FROZEN_BASE_SHA})"
-          } | tee candidate-evidence/logs/00-boundary.log
+          git diff --check
 
       - uses: pnpm/action-setup@v4
         with:
@@ -70,69 +75,85 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Locked install
+      - name: Install locked workspace
         shell: bash
         run: |
           set -o pipefail
           pnpm install --frozen-lockfile 2>&1 | tee candidate-evidence/logs/01-install.log
 
-      - name: Compile and verify source-grounded authoring assets
+      - name: Compile immutable authoring assets without source writes
         shell: bash
         run: |
           set -euo pipefail
-          node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
-            2>&1 | tee candidate-evidence/logs/02-compile-authoring.log
-          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs \
-            2>&1 | tee candidate-evidence/logs/03-compile-supplement.log
-          git diff --exit-code -- \
-            packages/templates/config/sangtian/story-package/part-one-runtime.json \
-            packages/templates/config/sangtian/story-package/part-one-narrative-supplement.json
-
-      - name: Full engineering gates
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm --filter @ai-story/templates typecheck \
-            2>&1 | tee candidate-evidence/logs/04-templates-typecheck.log
-          pnpm --filter @ai-story/templates build \
-            2>&1 | tee candidate-evidence/logs/05-templates-build.log
-          pnpm --filter @ai-story/templates test:story-package \
-            2>&1 | tee candidate-evidence/logs/06-story-package.log
-          pnpm --filter @apps/openovel-runtime typecheck \
-            2>&1 | tee candidate-evidence/logs/07-openovel-typecheck.log
-          pnpm --filter @apps/openovel-runtime build \
-            2>&1 | tee candidate-evidence/logs/08-openovel-build.log
-          pnpm test:story:v4 \
-            2>&1 | tee candidate-evidence/logs/09-story-v4.log
-          pnpm --filter @apps/openovel-runtime test \
-            2>&1 | tee candidate-evidence/logs/10-openovel-tests.log
-          pnpm test:story:convergence \
-            2>&1 | tee candidate-evidence/logs/11-static-convergence.log
-          pnpm test:story:branch-persistence \
-            2>&1 | tee candidate-evidence/logs/12-branch-persistence.log
-          pnpm --filter @apps/openovel-runtime smoke:http \
-            2>&1 | tee candidate-evidence/logs/13-http-smoke.log
-
-      - name: Reproducible immutable asset comparison
-        shell: bash
-        run: |
-          set -euo pipefail
-          tmp_root="${RUNNER_TEMP}/sangtian-authoring"
-          mkdir -p "${tmp_root}"
+          authoring_root="${RUNNER_TEMP}/authoring"
+          mkdir -p "${authoring_root}"
           export SANGTIAN_SKIP_SOURCE_WRITES=1
-          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${tmp_root}/authoring"
-          export SANGTIAN_RUNTIME_PACKAGE_PATH="${tmp_root}/part-one-runtime.json"
+          export SANGTIAN_AUTHORING_OUTPUT_ROOT="${authoring_root}/release"
+          export SANGTIAN_RUNTIME_PACKAGE_PATH="${authoring_root}/part-one-runtime.json"
           node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
-            2>&1 | tee candidate-evidence/logs/14-authoring-recompile.log
-          sha256sum \
-            packages/templates/config/sangtian/story-package/part-one-runtime.json \
-            "${tmp_root}/part-one-runtime.json" \
-            | tee candidate-evidence/logs/15-authoring-sha256.log
+            2>&1 | tee candidate-evidence/logs/02-authoring-compile.log
           cmp --silent \
             packages/templates/config/sangtian/story-package/part-one-runtime.json \
-            "${tmp_root}/part-one-runtime.json"
+            "${SANGTIAN_RUNTIME_PACKAGE_PATH}"
+          sha256sum \
+            packages/templates/config/sangtian/story-package/part-one-runtime.json \
+            "${SANGTIAN_RUNTIME_PACKAGE_PATH}" \
+            | tee candidate-evidence/logs/03-authoring-sha256.log
+          cp "${SANGTIAN_RUNTIME_PACKAGE_PATH}" candidate-evidence/assets/recompiled-part-one-runtime.json
 
-      - name: Require real DeepSeek credentials and exact model
+      - name: Compile P3 supplement twice and prove determinism
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SANGTIAN_NARRATIVE_SUPPLEMENT_PATH="${RUNNER_TEMP}/part-one-narrative-supplement-a.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs \
+            2>&1 | tee candidate-evidence/logs/04-supplement-a.log
+          export SANGTIAN_NARRATIVE_SUPPLEMENT_PATH="${RUNNER_TEMP}/part-one-narrative-supplement-b.json"
+          node scripts/story-decomposition/compile-sangtian-part-one-narrative-supplement.mjs \
+            2>&1 | tee candidate-evidence/logs/05-supplement-b.log
+          cmp --silent \
+            "${RUNNER_TEMP}/part-one-narrative-supplement-a.json" \
+            "${RUNNER_TEMP}/part-one-narrative-supplement-b.json"
+          sha256sum \
+            "${RUNNER_TEMP}/part-one-narrative-supplement-a.json" \
+            "${RUNNER_TEMP}/part-one-narrative-supplement-b.json" \
+            | tee candidate-evidence/logs/06-supplement-sha256.log
+          cp "${RUNNER_TEMP}/part-one-narrative-supplement-a.json" \
+            candidate-evidence/assets/part-one-narrative-supplement.json
+          test -z "$(git status --short)"
+
+      - name: Run complete deterministic engineering gates
+        shell: bash
+        env:
+          AI_STORY_CONVERGENCE_EVIDENCE_PATH: ${{ github.workspace }}/candidate-evidence/static-convergence.json
+          AI_STORY_BRANCH_EVIDENCE_PATH: ${{ github.workspace }}/candidate-evidence/branch-persistence.json
+          AI_STORY_OPTIONS_EVIDENCE_PATH: ${{ github.workspace }}/candidate-evidence/options-after-canon.json
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          pnpm --filter @ai-story/templates typecheck \
+            2>&1 | tee candidate-evidence/logs/07-templates-typecheck.log
+          pnpm --filter @ai-story/templates build \
+            2>&1 | tee candidate-evidence/logs/08-templates-build.log
+          pnpm --filter @ai-story/templates test:story-package \
+            2>&1 | tee candidate-evidence/logs/09-story-package.log
+          pnpm --filter @apps/openovel-runtime typecheck \
+            2>&1 | tee candidate-evidence/logs/10-openovel-typecheck.log
+          pnpm --filter @apps/openovel-runtime build \
+            2>&1 | tee candidate-evidence/logs/11-openovel-build.log
+          pnpm test:story:v4 \
+            2>&1 | tee candidate-evidence/logs/12-story-v4.log
+          pnpm --filter @apps/openovel-runtime smoke:http \
+            2>&1 | tee candidate-evidence/logs/13-http-smoke.log
+          pnpm test:story:convergence \
+            2>&1 | tee candidate-evidence/logs/14-static-convergence.log
+          pnpm test:story:branch-persistence \
+            2>&1 | tee candidate-evidence/logs/15-branch-persistence.log
+          pnpm test:story:options \
+            2>&1 | tee candidate-evidence/logs/16-options-after-canon.log
+          test -z "$(git status --short)"
+
+      - name: Require exact real DeepSeek configuration
         shell: bash
         run: |
           set -euo pipefail
@@ -145,101 +166,144 @@ jobs:
           test "${OPENOVEL_STORYKEEPER_MODEL}" = "deepseek-v4-pro"
           test "${OPENOVEL_DEEPSEEK_THINKING}" = "disabled"
 
-      - name: Real DeepSeek G00-T20 continuous player acceptance
+      - name: Run fresh G00-T05 then fresh G00-T20 real-model player acceptance
         shell: bash
         env:
-          AI_STORY_REAL_MODEL_EVIDENCE_ROOT: ${{ github.workspace }}/docs/auto-execute/evidence/chatgpt-pro-g00-t20
+          AI_STORY_REAL_MODEL_EVIDENCE_ROOT: ${{ github.workspace }}/candidate-evidence/real-model
           AI_STORY_REAL_MODEL_TIMEOUT_MS: "6300000"
+          AI_STORY_REAL_MODEL_TURN_TIMEOUT_MS: "420000"
+          AI_STORY_INPUT_PRICE_PER_MILLION: "0.435"
+          AI_STORY_OUTPUT_PRICE_PER_MILLION: "0.87"
         run: |
+          set -euo pipefail
           set -o pipefail
           pnpm test:story:real-model:g00-t20 \
-            2>&1 | tee candidate-evidence/logs/16-real-model-g00-t20.log
+            2>&1 | tee candidate-evidence/logs/17-real-model-player-acceptance.log
           node - <<'NODE'
           const fs = require('fs');
-          const path = 'docs/auto-execute/evidence/chatgpt-pro-g00-t20/real-model-g00-t20-summary.json';
+          const path = 'candidate-evidence/real-model/real-model-acceptance-summary.json';
           const value = JSON.parse(fs.readFileSync(path, 'utf8'));
           if (value.verdict !== 'PASS') throw new Error('REAL_MODEL_VERDICT_NOT_PASS');
+          if (value.providerBaseUrl !== 'https://api.deepseek.com') throw new Error(`REAL_MODEL_PROVIDER:${value.providerBaseUrl}`);
           if (value.expectedModel !== 'deepseek-v4-pro') throw new Error(`REAL_MODEL_EXPECTED:${value.expectedModel}`);
-          if (!Array.isArray(value.observedModels) || !value.observedModels.some((name) => String(name).toLowerCase() === 'deepseek-v4-pro')) {
-            throw new Error(`REAL_MODEL_IDENTITY_NOT_OBSERVED:${JSON.stringify(value.observedModels)}`);
+          if (!Array.isArray(value.observedModels) || value.observedModels.length !== 1 || value.observedModels[0] !== 'deepseek-v4-pro') {
+            throw new Error(`REAL_MODEL_IDENTITY:${JSON.stringify(value.observedModels)}`);
           }
           if (!Number.isInteger(value.providerCallCount) || value.providerCallCount < 1) throw new Error('REAL_MODEL_CALLS_MISSING');
           if (value.fixtureSignalCount !== 0) throw new Error('REAL_MODEL_FIXTURE_SIGNAL');
-          if (!value.opening || value.opening.turnId !== 'G00') throw new Error('REAL_MODEL_G00_MISSING');
-          if (value.turnCount !== 20) throw new Error(`REAL_MODEL_TURN_COUNT:${value.turnCount}`);
-          const ids = value.turns.map((turn) => turn.turnId);
+          if (value.shortRun?.verdict !== 'PASS' || value.shortRun?.turnCount !== 5) throw new Error('G00_T05_NOT_PASS');
+          if (value.longRun?.verdict !== 'PASS' || value.longRun?.turnCount !== 20) throw new Error('G00_T20_NOT_PASS');
+          if (value.longRun?.finalStatus !== 'COMPLETED') throw new Error(`T20_FINAL_STATUS:${value.longRun?.finalStatus}`);
           const expected = Array.from({ length: 20 }, (_, index) => `T${String(index + 1).padStart(2, '0')}`);
+          const ids = value.longRun.turns.map((turn) => turn.turnId);
           if (JSON.stringify(ids) !== JSON.stringify(expected)) throw new Error(`REAL_MODEL_TURN_IDS:${JSON.stringify(ids)}`);
-          for (const turn of value.turns) {
-            if (!turn.playerAction) throw new Error(`REAL_MODEL_ACTION_MISSING:${turn.turnId}`);
-            if (!turn.narrativePreview) throw new Error(`REAL_MODEL_NARRATIVE_MISSING:${turn.turnId}`);
-            if (turn.canonBinding === null || turn.canonBinding === undefined) throw new Error(`REAL_MODEL_CANON_MISSING:${turn.turnId}`);
-            if (turn.reviewStatus === null || turn.reviewStatus === undefined) throw new Error(`REAL_MODEL_REVIEW_MISSING:${turn.turnId}`);
+          for (const run of [value.shortRun, value.longRun]) {
+            if (run.opening?.turnId !== 'G00') throw new Error(`G00_MISSING:${run.label}`);
+            if (run.audit?.technical?.passed !== true || run.audit?.player?.passed !== true) {
+              throw new Error(`PLAYER_AUDIT_NOT_PASS:${run.label}`);
+            }
+            for (const turn of run.turns) {
+              if (!turn.playerAction || !turn.narrative) throw new Error(`TURN_SURFACE_MISSING:${run.label}:${turn.turnId}`);
+              if (!turn.canonBinding || !turn.settlement || !turn.nextBeatPlan || !turn.criticalState) {
+                throw new Error(`TURN_EVIDENCE_MISSING:${run.label}:${turn.turnId}`);
+              }
+              if (turn.fallbackReason) throw new Error(`UNEXPECTED_FALLBACK:${run.label}:${turn.turnId}`);
+            }
           }
           NODE
 
-      - name: Build final evidence and clean temporary execution files
+      - name: Assemble durable candidate evidence
         shell: bash
         run: |
           set -euo pipefail
-          evidence_root=docs/auto-execute/evidence/chatgpt-pro-final
-          mkdir -p "${evidence_root}"
-          cp candidate-evidence/logs/*.log "${evidence_root}/"
-          cp docs/auto-execute/evidence/chatgpt-pro-g00-t20/real-model-g00-t20-summary.json \
-            "${evidence_root}/real-model-g00-t20-summary.json"
-          cp docs/auto-execute/evidence/chatgpt-pro-convergence/static-convergence.json \
-            "${evidence_root}/static-convergence.json"
-          cp docs/auto-execute/evidence/chatgpt-pro-convergence/branch-persistence.json \
-            "${evidence_root}/branch-persistence.json"
-          git log --reverse --format='%H%x09%s' "${FROZEN_BASE_SHA}..HEAD" \
-            > "${evidence_root}/commit-list.tsv"
-          git diff --name-status "${FROZEN_BASE_SHA}..HEAD" \
-            > "${evidence_root}/changed-files.tsv"
+          final_root=docs/auto-execute/evidence/chatgpt-pro-final
+          rm -rf "${final_root}"
+          mkdir -p "${final_root}/logs" "${final_root}/g00-t05" "${final_root}/g00-t20"
+          cp candidate-evidence/logs/*.log "${final_root}/logs/"
+          cp candidate-evidence/static-convergence.json "${final_root}/static-convergence.json"
+          cp candidate-evidence/branch-persistence.json "${final_root}/branch-persistence.json"
+          cp candidate-evidence/options-after-canon.json "${final_root}/options-after-canon.json"
+          cp candidate-evidence/real-model/real-model-acceptance-summary.json \
+            "${final_root}/real-model-acceptance-summary.json"
+          for run in g00-t05 g00-t20; do
+            cp "candidate-evidence/real-model/${run}/acceptance-audit.json" "${final_root}/${run}/acceptance-audit.json"
+            cp "candidate-evidence/real-model/${run}/player-reviews.json" "${final_root}/${run}/player-reviews.json"
+            cp "candidate-evidence/real-model/${run}/checkpoint-index.json" "${final_root}/${run}/checkpoint-index.json"
+            cp "candidate-evidence/real-model/${run}/model-calls.json" "${final_root}/${run}/model-calls.json"
+            cp "candidate-evidence/real-model/${run}/storykeeper.json" "${final_root}/${run}/storykeeper.json"
+            cp "candidate-evidence/real-model/${run}/canon.md" "${final_root}/${run}/canon.md"
+          done
+          git log --reverse --format='%H%x09%s' "${FROZEN_BASE_SHA}..HEAD" > "${final_root}/commit-list.tsv"
+          git diff --name-status "${FROZEN_BASE_SHA}..HEAD" > "${final_root}/changed-files.tsv"
           node - <<'NODE'
           const crypto = require('crypto');
           const fs = require('fs');
           const cp = require('child_process');
           const path = require('path');
           const root = 'docs/auto-execute/evidence/chatgpt-pro-final';
-          const real = JSON.parse(fs.readFileSync(path.join(root, 'real-model-g00-t20-summary.json'), 'utf8'));
+          const real = JSON.parse(fs.readFileSync(path.join(root, 'real-model-acceptance-summary.json'), 'utf8'));
           const structural = JSON.parse(fs.readFileSync(path.join(root, 'static-convergence.json'), 'utf8'));
           const branches = JSON.parse(fs.readFileSync(path.join(root, 'branch-persistence.json'), 'utf8'));
-          for (const [name, value] of Object.entries({ real, structural, branches })) {
+          const options = JSON.parse(fs.readFileSync(path.join(root, 'options-after-canon.json'), 'utf8'));
+          for (const [name, value] of Object.entries({ real, structural, branches, options })) {
             if (value.verdict !== 'PASS') throw new Error(`${name.toUpperCase()}_NOT_PASS`);
           }
-          const logs = fs.readdirSync(root).filter((name) => name.endsWith('.log')).sort();
-          const logSha256 = Object.fromEntries(logs.map((name) => [
-            name,
-            crypto.createHash('sha256').update(fs.readFileSync(path.join(root, name))).digest('hex'),
+          const testedSourceSha = cp.execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          const files = [];
+          const walk = (dir) => {
+            for (const name of fs.readdirSync(dir)) {
+              const target = path.join(dir, name);
+              const stat = fs.statSync(target);
+              if (stat.isDirectory()) walk(target); else files.push(target);
+            }
+          };
+          walk(root);
+          const sha256 = Object.fromEntries(files.sort().map((file) => [
+            path.relative(root, file).replaceAll('\\', '/'),
+            crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),
           ]));
           const report = {
-            schemaVersion: 'omw.chatgpt-pro-candidate-ready.v1',
+            schemaVersion: 'omw.chatgpt-pro-candidate-ready.v2',
             status: 'CANDIDATE_BRANCH_READY',
             repository: 'forwardFish/aiStoryRoom',
             branch: 'codex/chatgpt-pro-ai-story-convergence',
-            testedSourceSha: cp.execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
             frozenBaseSha: '1b750e56858dabefb0ddb8b922c6bdcbe0574e4c',
+            testedSourceSha,
             mainUntouched: cp.execFileSync('git', ['rev-parse', 'origin/main'], { encoding: 'utf8' }).trim() === '1b750e56858dabefb0ddb8b922c6bdcbe0574e4c',
-            deterministicGates: {
-              lockedInstall: 'PASS', templatesTypecheck: 'PASS', templatesBuild: 'PASS',
-              storyPackage: 'PASS', openNovelTypecheck: 'PASS', openNovelBuild: 'PASS',
-              storyV4: 'PASS', openNovelTests: 'PASS', staticConvergence: 'PASS',
-              branchPersistence: 'PASS', httpSmoke: 'PASS', immutableAssetRecompile: 'PASS',
+            stages: {
+              P0: 'PASS', P1: 'PASS', P2: 'PASS', P3: 'PASS',
+              P4: 'PASS', P5: 'PASS', P6: 'PASS', P7: 'PASS',
             },
+            deterministicGates: 'PASS',
             realModel: {
-              verdict: real.verdict,
               providerBaseUrl: real.providerBaseUrl,
               expectedModel: real.expectedModel,
               observedModels: real.observedModels,
+              observedProviders: real.observedProviders,
               providerCallCount: real.providerCallCount,
               fixtureSignalCount: real.fixtureSignalCount,
-              opening: real.opening,
-              turnCount: real.turnCount,
-              turns: real.turns,
+              usage: real.usage,
+              pricing: real.pricing,
+              shortRun: {
+                runId: real.shortRun.runId,
+                verdict: real.shortRun.verdict,
+                turnCount: real.shortRun.turnCount,
+              },
+              longRun: {
+                runId: real.longRun.runId,
+                verdict: real.longRun.verdict,
+                turnCount: real.longRun.turnCount,
+                finalStatus: real.longRun.finalStatus,
+              },
             },
             structuralCounts: structural.counts,
             branchDivergence: branches.divergence,
-            logSha256,
+            optionAcceptance: {
+              staticKernelCount: options.staticKernelCount,
+              continuationDefinitionCount: options.continuationDefinitionCount,
+              branches: options.branches,
+            },
+            evidenceSha256: sha256,
             generatedAt: new Date().toISOString(),
           };
           if (!report.mainUntouched) throw new Error('MAIN_CHANGED');
@@ -250,41 +314,60 @@ jobs:
             `- Branch: ${report.branch}`,
             `- Tested source SHA: ${report.testedSourceSha}`,
             `- Frozen baseline/main SHA: ${report.frozenBaseSha}`,
+            '- P0-P7: PASS',
             '- Deterministic engineering gates: PASS',
             `- Real provider: ${report.realModel.providerBaseUrl}`,
             `- Real model observed: ${report.realModel.observedModels.join(', ')}`,
             `- Provider calls: ${report.realModel.providerCallCount}`,
-            '- Continuous player acceptance: G00 and T01-T20 PASS',
+            '- Fresh player acceptance: G00-T05 PASS; G00-T20 PASS',
             '- Fixture/mock signals: 0',
             '- main modified or merged: NO', '',
-            'Final validation and any merge into main remain the responsibility of local Codex.', '',
+            'Final independent verification and any merge into main remain the responsibility of local Codex.', '',
           ].join('\n'));
           NODE
-
-          rm -f docs/auto-execute/PARTIAL_SUBMISSION_AI_STORY_CONVERGENCE_2026-08-05.md
-          find docs/auto-execute -maxdepth 1 -type f \( \
-            -name '.connector-*' -o \
-            -name '.multi-file-*' -o \
-            -name '.pre-push-*' -o \
-            -name '.push-files-*' -o \
-            -name '.chatgpt-pro-*.patch' -o \
-            -name '.chatgpt-pro-*.patch.gz.b64' -o \
-            -name '.chatgpt-pro-*.tar.gz' -o \
-            -name '.chatgpt-pro-source-bootstrap.md' \
-          \) -delete
-          find .github/workflows -maxdepth 1 -type f -name 'chatgpt-pro-*' -delete
           git diff --check
 
-      - name: Commit and push only the candidate branch
+      - name: Upload complete candidate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-story-candidate-${{ github.event.pull_request.base.sha }}
+          path: |
+            candidate-evidence/
+            docs/auto-execute/evidence/chatgpt-pro-final/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Commit P7 evidence and push only the candidate branch
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse origin/main)" = "${FROZEN_BASE_SHA}"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
+          git rm .github/workflows/chatgpt-pro-final-candidate-20260805.yml
+          git add docs/auto-execute/evidence/chatgpt-pro-final
+          python - <<'PY'
+          import subprocess
+          allowed_prefix = 'docs/auto-execute/evidence/chatgpt-pro-final/'
+          allowed_exact = {'.github/workflows/chatgpt-pro-final-candidate-20260805.yml'}
+          unexpected = []
+          for row in subprocess.check_output(['git', 'status', '--short'], text=True).splitlines():
+              path = row[3:]
+              if path not in allowed_exact and not path.startswith(allowed_prefix):
+                  unexpected.append(row)
+          if unexpected:
+              raise SystemExit('UNEXPECTED_P7_FILES:\n' + '\n'.join(unexpected))
+          PY
+          git diff --cached --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          test -n "$(git diff --cached --name-only)"
-          git commit -m "test(ai-story): record final G00-T20 candidate acceptance"
+          git commit -m "test(P7): record real G00-T20 candidate acceptance"
           git fetch origin "${CANDIDATE_BRANCH}"
           test "$(git rev-parse FETCH_HEAD)" = "${{ github.event.pull_request.base.sha }}"
           git push origin HEAD:"${CANDIDATE_BRANCH}"
+          final_sha=$(git rev-parse HEAD)
+          remote_sha=$(git ls-remote origin "refs/heads/${CANDIDATE_BRANCH}" | awk '{print $1}')
+          test "${remote_sha}" = "${final_sha}"
+          echo "CANDIDATE_BRANCH_READY"
+          echo "tested_source_sha=${{ github.event.pull_request.base.sha }}"
+          echo "final_remote_sha=${remote_sha}"

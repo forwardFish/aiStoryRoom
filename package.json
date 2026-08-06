@@ -90,7 +90,10 @@
     "ops:backup": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ops\\backup-postgres.ps1",
     "ops:restore-smoke": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ops\\restore-smoke.ps1",
     "ops:wal-check": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ops\\check-wal-archive.ps1",
-    "typecheck": "pnpm -r --workspace-concurrency=1 typecheck"
+    "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
+    "test:story:convergence": "pnpm --filter @ai-story/templates build && node scripts/acceptance/verify-ai-story-convergence.mjs",
+    "test:story:real-model": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs",
+    "test:story:real-model:g00-t20": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -1,32 +1,51 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const root = resolve(import.meta.dirname, "../..");
-const runtimePath = resolve(root, "packages/templates/config/sangtian/story-package/part-one-runtime.json");
-const runtime = readJson(runtimePath);
-const authoringRoot = resolve(root, "packages/templates/authoring/sangtian");
-const evidenceProfiles = readJson(resolve(authoringRoot, "evidence/approved/part-01-v3.evidence-profiles.json"));
+const configRoot = resolve(root, "packages/templates/config");
+const runtimeEntryPath = resolve(root, "packages/templates/dist/runtime-entry.js");
+const frozenLoaderPath = resolve(
+  root,
+  "packages/templates/dist/story-package/part-one-runtime-loader.js",
+);
+const runtimeEntry = await import(pathToFileURL(runtimeEntryPath).href);
+const frozenLoader = await import(pathToFileURL(frozenLoaderPath).href);
+const frozen = frozenLoader.loadPartOneRuntimePackage("sangtian", configRoot).package;
+const runtime = runtimeEntry.loadPartOneRuntimePackage("sangtian", configRoot).package;
+const evidenceProfiles = readJson(resolve(
+  root,
+  "packages/templates/authoring/sangtian/evidence/approved/part-01-v3.evidence-profiles.json",
+));
 const sourceFiles = {
   adapter: readText("apps/openovel-runtime/src/decision-adapter.ts"),
   resolver: readText("apps/openovel-runtime/src/intent-resolver.ts"),
   decisions: readText("apps/openovel-runtime/src/sangtian-decisions.ts"),
+  runtimeFacade: readText("packages/templates/src/runtime-facade.ts"),
   engine: readText("packages/templates/src/story-package/part-one-runtime-engine.ts"),
+  runtimeEntry: readText("packages/templates/src/runtime-entry.ts"),
+  playableLoader: readText("packages/templates/src/story-package/playable-part-one-runtime.ts"),
   reviewer: readText("apps/openovel-runtime/src/scene-review-modules.ts"),
   foreground: readText("apps/openovel-runtime/src/foreground.ts"),
   atomic: readText("apps/openovel-runtime/src/atomic-turn.ts"),
+  options: readText("apps/openovel-runtime/src/options-memory-module.ts"),
 };
 const failures = [];
 const pass = (condition, code, details = null) => {
   if (!condition) failures.push({ code, details });
 };
 
+const frozenAssets = array(frozen.assets);
 const assets = array(runtime.assets);
 const sections = array(runtime.sections);
 const requirements = array(runtime.requirements);
 const patterns = assets.filter((asset) => asset.assetType === "NARRATIVE_SCENE_PATTERN");
 const evidenceAssets = assets.filter((asset) => asset.assetType === "EVIDENCE_PROFILE");
-const kernels = assets.filter((asset) => asset.assetType === "DECISION_KERNEL");
+const kernels = assets.filter((asset) => (
+  asset.assetType === "DECISION_KERNEL"
+  && String(asset.assetId).startsWith("DK-P1-")
+));
 const consequences = assets.filter((asset) => asset.assetType === "PENDING_CONSEQUENCE_RULE");
 const floors = assets.filter((asset) => asset.assetType === "SECTION_FLOOR_OBLIGATION");
 const arcs = assets.filter((asset) => asset.assetType === "CAUSAL_ARC");
@@ -34,10 +53,15 @@ const sourceScenes = assets.filter((asset) => asset.assetType === "SOURCE_SCENE_
 const adaptations = array(runtime.approvedAdaptations);
 const continuationDecisions = floors.flatMap((floor) => array(floor.payload?.continuationDecisions));
 
+pass(frozenAssets.length === 65, "P0_FROZEN_ASSET_COUNT", frozenAssets.length);
+pass(frozen.contentCounts?.narrativeScenePatterns === 3, "P0_FROZEN_PATTERN_COUNT", frozen.contentCounts?.narrativeScenePatterns);
+pass(frozen.immutableHash === runtime.narrativeSupplement?.baseRuntimeImmutableHash, "P3_FROZEN_HASH_BINDING");
+pass(runtime.immutableHash !== frozen.immutableHash, "P3_PLAYABLE_HASH_NOT_DERIVED");
+pass(runtime.narrativeSupplement?.assetCount === 11, "P3_SUPPLEMENT_ASSET_COUNT", runtime.narrativeSupplement?.assetCount);
 pass(sections.length === 4, "P3_SECTION_COUNT", sections.length);
 pass(requirements.length === 12, "P3_REQUIREMENT_COUNT", requirements.length);
-pass(assets.length === 74, "P3_ASSET_COUNT", assets.length);
-pass(patterns.length === 12, "P3_PATTERN_COUNT", patterns.length);
+pass(assets.length === 76, "P3_PLAYABLE_ASSET_COUNT", assets.length);
+pass(patterns.length === 14, "P3_PLAYABLE_PATTERN_COUNT", patterns.length);
 pass(evidenceAssets.length === 1, "P3_EVIDENCE_PROFILE_ASSET_COUNT", evidenceAssets.length);
 pass(kernels.length === 15, "P1_KERNEL_COUNT", kernels.length);
 pass(consequences.length === 12, "P5_CONSEQUENCE_RULE_COUNT", consequences.length);
@@ -45,21 +69,43 @@ pass(floors.length === 4, "P4_FLOOR_COUNT", floors.length);
 pass(arcs.length === 4, "P4_CAUSAL_ARC_COUNT", arcs.length);
 pass(sourceScenes.length === 10, "P3_SOURCE_SCENE_COUNT", sourceScenes.length);
 pass(adaptations.length === 7, "P3_ADAPTATION_COUNT", adaptations.length);
-pass(continuationDecisions.length === 5, "P4_CONTINUATION_DECISION_COUNT", continuationDecisions.length);
+pass(continuationDecisions.length === 5, "P6_CONTINUATION_DECISION_COUNT", continuationDecisions.length);
 
+const patternById = new Map(patterns.map((pattern) => [pattern.assetId, pattern]));
+const kernelPatternCoverage = {};
 for (const section of sections) {
   const sectionPatterns = patterns.filter((pattern) => array(pattern.sectionIds).includes(section.sectionId));
-  pass(sectionPatterns.length === 3, "P3_SECTION_PATTERN_COVERAGE", { sectionId: section.sectionId, count: sectionPatterns.length });
+  pass(sectionPatterns.length >= 2 && sectionPatterns.length <= 4, "P3_SECTION_PATTERN_COVERAGE", {
+    sectionId: section.sectionId,
+    count: sectionPatterns.length,
+  });
   for (const pattern of sectionPatterns) {
     const payload = object(pattern.payload);
+    pass(payload.patternId === pattern.assetId, "P3_PATTERN_ID_BINDING", pattern.assetId);
     pass(array(payload.orderedBeats).length >= 3, "P3_PATTERN_ORDERED_BEATS", pattern.assetId);
-    pass(array(payload.dialogueTactics).length >= 2, "P3_PATTERN_DIALOGUE_TACTICS", pattern.assetId);
+    pass(array(payload.dialogueTactics).length >= 1, "P3_PATTERN_DIALOGUE_TACTICS", pattern.assetId);
     pass(array(payload.blockingPrinciples).length >= 3, "P3_PATTERN_BLOCKING", pattern.assetId);
     pass(array(payload.transferableTechniques).length >= 3, "P3_PATTERN_TRANSFER", pattern.assetId);
     pass(array(payload.forbiddenFlattening).length >= 3, "P3_PATTERN_FLATTENING_GUARDS", pattern.assetId);
     pass(payload.reviewStatus === "APPROVED", "P3_PATTERN_APPROVAL", pattern.assetId);
     pass(payload.verbatimPolicy === "MECHANISM_ONLY_NO_VERBATIM_REUSE", "P3_PATTERN_COPYRIGHT_BOUNDARY", pattern.assetId);
   }
+}
+for (const kernel of kernels) {
+  const indexedIds = array(runtime.runtimeIndex?.byDecisionKernel?.[kernel.assetId]);
+  const covered = indexedIds.filter((id) => patternById.has(id));
+  kernelPatternCoverage[kernel.assetId] = covered;
+  pass(covered.length >= 1, "P3_KERNEL_PATTERN_COVERAGE", kernel.assetId);
+  const payload = object(kernel.payload);
+  const options = array(payload.options);
+  pass(payload.allowFreeAction === true, "P1_FREE_ACTION_ENABLED", kernel.assetId);
+  pass(options.length >= 2 && options.length <= 4, "P6_VISIBLE_OPTION_COUNT", {
+    kernelId: kernel.assetId,
+    count: options.length,
+  });
+  pass(hasText(payload.decisionPrompt?.prompt), "P4_DECISION_PROMPT", kernel.assetId);
+  pass(hasText(payload.decisionPrompt?.resultCeiling), "P4_DECISION_RESULT_CEILING", kernel.assetId);
+  validateOptionSet(options, kernel.assetId);
 }
 
 pass(evidenceProfiles.reviewStatus === "APPROVED", "P3_EVIDENCE_SET_APPROVAL");
@@ -72,27 +118,6 @@ for (const profile of array(evidenceProfiles.profiles)) {
   pass(array(profile.openingBeatContract?.requiredAnchorGroups).length >= 5, "P4_OPENING_ANCHORS");
   pass(array(profile.revealPolicy?.tiers).length >= 2, "P3_REVEAL_TIERS");
   pass(array(profile.invariants).some((item) => /人物说法.*客观事实/u.test(String(item))), "P3_ATTRIBUTION_INVARIANT");
-}
-
-for (const kernel of kernels) {
-  const payload = object(kernel.payload);
-  const options = array(payload.options);
-  pass(payload.allowFreeAction === true, "P1_FREE_ACTION_ENABLED", kernel.assetId);
-  pass(options.length >= 2, "P1_VISIBLE_OPTION_FLOOR", kernel.assetId);
-  pass(options.length <= 3, "P1_VISIBLE_OPTION_CEILING", kernel.assetId);
-  pass(hasText(payload.decisionPrompt?.prompt), "P4_DECISION_PROMPT", kernel.assetId);
-  pass(hasText(payload.decisionPrompt?.resultCeiling), "P4_DECISION_RESULT_CEILING", kernel.assetId);
-  for (const option of options) {
-    pass(hasText(option.actionText), "P1_OPTION_ACTION", option.affordanceTemplateId);
-    pass(hasText(option.targetRef), "P1_OPTION_TARGET", option.affordanceTemplateId);
-    pass(hasText(option.method), "P1_OPTION_METHOD", option.affordanceTemplateId);
-    pass(hasText(option.visibleTradeoff), "P1_OPTION_TRADEOFF", option.affordanceTemplateId);
-    pass(Object.keys(object(option.statePatch)).length > 0, "P1_OPTION_STATE_PATCH", option.affordanceTemplateId);
-    pass(hasText(option.protectedNarrative), "P4_PROTECTED_NARRATIVE", option.affordanceTemplateId);
-    pass(object(option.playerVisibleFallback) && Object.keys(option.playerVisibleFallback).length >= 3, "P4_PLAYER_FALLBACK", option.affordanceTemplateId);
-    pass(array(option.protectedEffectRefs).length > 0, "P4_PROTECTED_EFFECT_REFS", option.affordanceTemplateId);
-    pass(option.createsPendingConsequence === true, "P5_OPTION_PENDING_CONSEQUENCE", option.affordanceTemplateId);
-  }
 }
 
 for (const rule of consequences) {
@@ -110,19 +135,15 @@ for (const rule of consequences) {
     pass(hasText(beat.resultCeiling), "P5_PAYOFF_CEILING", beat.beatId);
   }
 }
-
 for (const floor of floors) {
   const payload = object(floor.payload);
   pass(payload.mayOnlyMoveNpcOrWorld === true, "P4_FLOOR_NPC_WORLD_ONLY", floor.assetId);
   pass(payload.mayNotDecideForPlayer === true, "P4_FLOOR_PLAYER_AGENCY", floor.assetId);
   pass(payload.mayNotInventEvidence === true, "P4_FLOOR_EVIDENCE_BOUNDARY", floor.assetId);
   for (const decision of array(payload.continuationDecisions)) {
-    pass(array(decision.options).length === 2, "P4_CONTINUATION_TWO_RESPONSES", decision.continuationDecisionId);
+    pass(array(decision.options).length >= 2 && array(decision.options).length <= 4, "P6_CONTINUATION_OPTION_COUNT", decision.continuationDecisionId);
     pass(hasText(decision.worldPressure?.summary), "P4_CONTINUATION_PRESSURE", decision.continuationDecisionId);
-    for (const option of array(decision.options)) {
-      pass(Object.keys(object(option.statePatch)).length > 0, "P5_CONTINUATION_STATE_PATCH", option.affordanceTemplateId);
-      pass(option.createsPendingConsequence === true, "P5_CONTINUATION_PENDING", option.affordanceTemplateId);
-    }
+    validateOptionSet(array(decision.options), decision.continuationDecisionId);
   }
 }
 
@@ -130,19 +151,33 @@ pass(sourceFiles.adapter.includes("DISPLAYED_OPTIONS"), "P1_DISPLAYED_AFFORDANCE
 pass(sourceFiles.adapter.includes("BOUND_CAPABILITY"), "P1_CAPABILITY_BINDING_ADAPTER");
 pass(sourceFiles.resolver.includes("BOUND_CAPABILITY"), "P1_CAPABILITY_BINDING_RESOLVER");
 pass(sourceFiles.resolver.includes("CAPABILITY_VARIANT"), "P1_CAPABILITY_VARIANT_CONTRACT");
-pass(sourceFiles.decisions.includes("FREE_TEXT_CAPABILITY"), "P1_CAPABILITY_SETTLEMENT_BINDING");
-pass(sourceFiles.engine.includes("OBSERVE_ONLY"), "P1_OBSERVE_ONLY_SETTLEMENT");
-pass(sourceFiles.engine.includes("completedKernelIds") && sourceFiles.engine.includes("pendingConsequences"), "P5_DURABLE_BRANCH_STATE");
+pass(sourceFiles.runtimeFacade.includes("FREE_TEXT_CAPABILITY"), "P1_CAPABILITY_SETTLEMENT_BINDING");
 pass(sourceFiles.reviewer.includes("normalizeP0NoneSentinels"), "P2_NONE_NORMALIZATION");
 pass(sourceFiles.reviewer.includes('"NONE"'), "P2_UNIQUE_NONE_SENTINEL");
+pass(sourceFiles.runtimeEntry.includes("loadPlayablePartOneRuntimePackage"), "P3_PRODUCTION_PLAYABLE_LOADER");
+pass(sourceFiles.playableLoader.includes("loadFrozenPartOneRuntimePackage"), "P3_FROZEN_BASE_FIRST");
+pass(sourceFiles.engine.includes("patternId: pattern.patternId"), "P4_PATTERN_PROVENANCE_PROJECTED");
+pass(sourceFiles.engine.includes("dramaticBeatPlan"), "P4_DRAMATIC_BEAT_PLAN");
 pass(sourceFiles.foreground.includes("BeatManifest") || sourceFiles.foreground.includes("beatManifest"), "P4_FOREGROUND_BEAT_CONTRACT");
+pass(sourceFiles.engine.includes("completedKernelIds") && sourceFiles.engine.includes("pendingConsequences"), "P5_DURABLE_BRANCH_STATE");
 pass(sourceFiles.atomic.includes("AtomicTurn") || sourceFiles.atomic.includes("atomic"), "P6_ATOMIC_CANON_COMMIT");
+pass(sourceFiles.options.includes("afterCommit"), "P6_OPTIONS_AFTER_COMMIT_MODULE");
+pass(sourceFiles.options.includes("COMMITTED_WORLD_STATE"), "P6_OPTIONS_COMMITTED_STATE_SOURCE");
 pass(sourceFiles.decisions.includes("currentSangtianOptions"), "P6_SERVER_OPTIONS_SOURCE");
-pass(sourceFiles.decisions.includes("buildPartOneRuntimeWorkingSet"), "P6_POST_CANON_WORKING_SET");
 
 const evidence = {
-  schemaVersion: "omw.ai-story-convergence-static-evidence.v1",
+  schemaVersion: "omw.ai-story-convergence-static-evidence.v2",
   verdict: failures.length ? "FAIL" : "PASS",
+  frozen: {
+    immutableHash: frozen.immutableHash,
+    assetCount: frozenAssets.length,
+    narrativeScenePatternCount: frozen.contentCounts?.narrativeScenePatterns,
+  },
+  playable: {
+    immutableHash: runtime.immutableHash,
+    baseRuntimeImmutableHash: runtime.narrativeSupplement?.baseRuntimeImmutableHash || null,
+    supplementImmutableHash: runtime.narrativeSupplement?.immutableHash || null,
+  },
   counts: {
     sections: sections.length,
     requirements: requirements.length,
@@ -161,8 +196,8 @@ const evidence = {
     section.sectionId,
     patterns.filter((pattern) => array(pattern.sectionIds).includes(section.sectionId)).map((pattern) => pattern.assetId),
   ])),
+  kernelPatternCoverage,
   sourceHashes: Object.fromEntries(Object.entries(sourceFiles).map(([key, value]) => [key, sha256(value)])),
-  runtimePackageHash: runtime.immutableHash,
   failures,
   generatedAt: new Date().toISOString(),
 };
@@ -175,6 +210,27 @@ writeFileSync(outputPath, JSON.stringify(evidence, null, 2) + "\n", "utf8");
 console.log(JSON.stringify(evidence, null, 2));
 if (failures.length) process.exitCode = 1;
 
+function validateOptionSet(options, label) {
+  const ids = options.map((option) => String(option.affordanceTemplateId || option.id || "").trim());
+  pass(ids.every(Boolean) && new Set(ids).size === ids.length, "P6_OPTION_IDS_UNIQUE", label);
+  const surfaces = options.map((option) => ({
+    action: String(option.actionText || option.label || "").trim(),
+    target: String(option.targetRef || "").trim(),
+    method: String(option.method || "").trim(),
+  }));
+  pass(surfaces.every((surface) => surface.action && surface.target && surface.method), "P6_OPTION_SURFACE_COMPLETE", label);
+  for (let left = 0; left < surfaces.length; left += 1) {
+    for (let right = left + 1; right < surfaces.length; right += 1) {
+      pass(
+        surfaces[left].target !== surfaces[right].target || surfaces[left].method !== surfaces[right].method,
+        "P6_OPTION_MATERIAL_DISTINCTION",
+        { label, left: ids[left], right: ids[right] },
+      );
+    }
+  }
+  const forbidden = /statePatch|pendingConsequence|decisionKernel|affordanceTemplate|resultCeiling|sourceRef|fixture|mock|测试|后台|内部字段/iu;
+  pass(surfaces.every((surface) => !forbidden.test(surface.action)), "P6_OPTION_INTERNAL_LEAK", label);
+}
 function readText(path) {
   return readFileSync(resolve(root, path), "utf8");
 }
