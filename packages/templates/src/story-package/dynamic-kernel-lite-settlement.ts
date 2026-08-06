@@ -1,4 +1,7 @@
-import { stableCanonicalJson } from "../runtime-contract/kernel-selector-lite.js";
+import {
+  stableCanonicalJson,
+  stableSha256,
+} from "../runtime-contract/kernel-selector-lite.js";
 import {
   buildDynamicPartOneRuntimeWorkingSet,
   type DynamicPartOneActionSettlement,
@@ -169,6 +172,11 @@ export function buildCommittedLegacyFallbackWorkingSet(
     || !trace.selectedDecisionPointId
   ) {
     throw new Error("PART_ONE_COMMITTED_FALLBACK_TRACE_INVALID");
+  }
+  if (trace.stateFingerprint !== stableSha256(state)) {
+    throw new Error(
+      "PART_ONE_COMMITTED_FALLBACK_STATE_FINGERPRINT_MISMATCH",
+    );
   }
   const section = pkg.sections.find(
     (item) => item.sectionId === state.sectionId,
