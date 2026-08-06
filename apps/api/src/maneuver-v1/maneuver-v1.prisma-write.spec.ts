@@ -107,11 +107,22 @@ function actionRow(status = "PENDING", resolvedAt: Date | null = null) {
 
 test("fallback CanonFact investigation commits from the transaction-authoritative context", async () => {
   let actorTurnRead = false;
+  let playerActionUpdated = false;
   let evidenceState: unknown = null;
+  const resolvedAt = new Date("2026-08-06T00:00:00.000Z");
   const db = {
     playerAction: {
       create: async () => actionRow(),
-      update: async () => actionRow("RESOLVED", new Date("2026-08-06T00:00:00.000Z")),
+      update: async ({ where, data }: any) => {
+        playerActionUpdated = true;
+        assert.deepEqual(where, { id: "action.1" });
+        assert.equal(data.status, "RESOLVED");
+        assert.deepEqual(data.resolvedAt instanceof Date, true);
+        assert.equal(data.resolvedJson.schemaVersion, "maneuver_investigation_result_v1");
+        assert.equal(data.resolvedJson.privateEvidenceAssetId, "asset.evidence.1");
+        assert.equal(data.resolvedJson.provenanceKey, "canon:fact.visible.confirmed");
+        return actionRow("RESOLVED", resolvedAt);
+      },
     },
     actorTurn: {
       findUnique: async () => {
@@ -148,6 +159,7 @@ test("fallback CanonFact investigation commits from the transaction-authoritativ
   const result = await createCommittedManeuverV1(db as never, input());
 
   assert.equal(actorTurnRead, false);
+  assert.equal(playerActionUpdated, true);
   assert.equal(result.status, "RESOLVED");
   assert.equal(result.remaining, 1);
   assert.deepEqual(evidenceState, {
