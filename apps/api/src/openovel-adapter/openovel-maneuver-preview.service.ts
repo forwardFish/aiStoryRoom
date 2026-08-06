@@ -17,7 +17,9 @@ import {
   type OpenNovelManeuverCommand,
   type OpenNovelManeuverGuardResult,
   type OpenNovelManeuverPlan,
+  type OpenNovelManeuverProjection,
 } from "./openovel-maneuver";
+import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
 import {
   issueOpenNovelManeuverPreview,
   normalizePreviewCommand,
@@ -33,6 +35,14 @@ import {
 } from "./openovel-runtime.client";
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
+
+type PreviewRunContext = {
+  run: any;
+  runtimeRun: OpenNovelPublicRun;
+  role: any;
+  maneuverPackage: OpenNovelManeuverPackage;
+  projection: OpenNovelManeuverProjection;
+};
 
 @Injectable()
 export class OpenNovelManeuverPreviewService {
@@ -78,7 +88,13 @@ export class OpenNovelManeuverPreviewService {
       previewed: true as const,
       maneuverVersion: context.run.version,
       previewToken: issued.previewToken,
-      preview: previewCard(context, planned, command, issued.payload.expiresAt),
+      preview: previewCard(
+        context.maneuverPackage,
+        planned,
+        command,
+        issued.payload.previewId,
+        issued.payload.expiresAt,
+      ),
     };
   }
 
@@ -134,7 +150,10 @@ export class OpenNovelManeuverPreviewService {
     return confirmation;
   }
 
-  private compile(context: Awaited<ReturnType<OpenNovelManeuverPreviewService["loadContext"]>>, command: OpenNovelManeuverCommand) {
+  private compile(
+    context: PreviewRunContext,
+    command: OpenNovelManeuverCommand,
+  ) {
     return compileOpenNovelManeuverPlan({
       command,
       projection: context.projection,
@@ -145,7 +164,10 @@ export class OpenNovelManeuverPreviewService {
     });
   }
 
-  private async loadContext(user: AuthenticatedUser, runId: string) {
+  private async loadContext(
+    user: AuthenticatedUser,
+    runId: string,
+  ): Promise<PreviewRunContext> {
     const [run, runtimeRun] = await Promise.all([
       this.authorizedRun(user, runId),
       this.runtime.getRun(runId),
@@ -211,20 +233,19 @@ export class OpenNovelManeuverPreviewService {
 }
 
 function previewCard(
-  context: {
-    maneuverPackage: ReturnType<typeof openNovelManeuverPackages.require>;
-  },
+  maneuverPackage: OpenNovelManeuverPackage,
   plan: OpenNovelManeuverPlan,
   command: OpenNovelManeuverCommand,
+  previewId: string,
   expiresAt: string,
 ): OpenNovelManeuverPreviewCard {
   const target = plan.targetRoleKey
-    ? context.maneuverPackage.actor(plan.targetRoleKey)
+    ? maneuverPackage.actor(plan.targetRoleKey)
     : null;
   const leverage = plan.consumedLeverageKey
-    ? context.maneuverPackage.leverage(plan.consumedLeverageKey)
+    ? maneuverPackage.leverage(plan.consumedLeverageKey)
     : null;
-  const investigation = context.maneuverPackage
+  const investigation = maneuverPackage
     .scene(plan.sceneKey)
     ?.investigations.find((item) => item.intentKey === String(command.intentKey || ""));
   const title = plan.maneuverType === "contact"
@@ -249,7 +270,7 @@ function previewCard(
         ? `确认使用并消耗“${leverage?.label || "筹码"}”`
         : "确认执行谋划";
   return {
-    previewId: "",
+    previewId,
     maneuverType: plan.maneuverType,
     decisionForm: plan.decisionForm,
     sceneKey: plan.sceneKey,
