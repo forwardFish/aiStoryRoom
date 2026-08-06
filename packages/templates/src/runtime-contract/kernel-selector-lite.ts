@@ -22,6 +22,28 @@ const RUNTIME_IDENTITY_KEYS = new Set([
   "sourceEventId",
 ]);
 
+const SELECTION_PRESENTATION_KEYS = new Set([
+  "title",
+  "label",
+  "description",
+  "prompt",
+  "method",
+  "immediateIntent",
+  "visibleTradeoff",
+  "protectedNarrative",
+  "fallbackContinuation",
+  "playerVisibleFallback",
+  "situation",
+  "observableFacts",
+  "continuityNote",
+  "timeLabel",
+  "locationLabel",
+  "summary",
+  "action",
+  "requiredTermGroups",
+  "resultCeiling",
+]);
+
 export type AffordanceOutcomeSignature = {
   affordanceId: string;
   stateFeatures: string[];
@@ -84,9 +106,18 @@ export function stableCanonicalJson(value: unknown): string {
   return JSON.stringify(canonicalize(value)) ?? "null";
 }
 
+/**
+ * Selector hashes are semantic rather than byte-for-byte state hashes. Runtime
+ * identities and player-facing prose cannot affect candidate ordering, retry
+ * stability or a tie breaker. String inputs are already canonical payloads and
+ * are therefore hashed verbatim.
+ */
 export function stableSha256(value: unknown): string {
+  const payload = typeof value === "string"
+    ? value
+    : stableCanonicalJson(stripSelectionTransientFields(value));
   return createHash("sha256")
-    .update(typeof value === "string" ? value : stableCanonicalJson(value))
+    .update(payload)
     .digest("hex")
     .toUpperCase();
 }
@@ -301,6 +332,19 @@ function stripRuntimeIdentity(value: unknown): unknown {
     Object.entries(value as Record<string, unknown>)
       .filter(([key]) => !RUNTIME_IDENTITY_KEYS.has(key))
       .map(([key, entry]) => [key, stripRuntimeIdentity(entry)]),
+  );
+}
+
+function stripSelectionTransientFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripSelectionTransientFields);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => (
+        !RUNTIME_IDENTITY_KEYS.has(key)
+        && !SELECTION_PRESENTATION_KEYS.has(key)
+      ))
+      .map(([key, entry]) => [key, stripSelectionTransientFields(entry)]),
   );
 }
 
