@@ -87,6 +87,11 @@ jobs:
           )
           room_test.write_text(source, encoding='utf-8')
 
+          batching_provider = Path('apps/api/src/continuous-story-v2/story-narrative.provider.ts')
+          source = batching_provider.read_text(encoding='utf-8')
+          source = source.replace('        batch.timer.unref?.();\n', '')
+          batching_provider.write_text(source, encoding='utf-8')
+
           automation = Path('scripts/automation/apply-maneuver-p5.py')
           source = automation.read_text(encoding='utf-8')
           source = source.replace(
