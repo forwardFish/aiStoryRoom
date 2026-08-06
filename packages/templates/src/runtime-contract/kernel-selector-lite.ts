@@ -22,17 +22,8 @@ const RUNTIME_IDENTITY_KEYS = new Set([
   "sourceEventId",
 ]);
 
-const SELECTION_PRESENTATION_KEYS = new Set([
-  "title",
+const STATE_PRESENTATION_KEYS = new Set([
   "label",
-  "description",
-  "prompt",
-  "method",
-  "immediateIntent",
-  "visibleTradeoff",
-  "protectedNarrative",
-  "fallbackContinuation",
-  "playerVisibleFallback",
   "situation",
   "observableFacts",
   "continuityNote",
@@ -108,9 +99,9 @@ export function stableCanonicalJson(value: unknown): string {
 
 /**
  * Selector hashes are semantic rather than byte-for-byte state hashes. Runtime
- * identities and player-facing prose cannot affect candidate ordering, retry
- * stability or a tie breaker. String inputs are already canonical payloads and
- * are therefore hashed verbatim.
+ * identities and state presentation prose cannot affect candidate ordering,
+ * retry stability or a tie breaker. String inputs are already canonical
+ * payloads and are therefore hashed verbatim.
  */
 export function stableSha256(value: unknown): string {
   const payload = typeof value === "string"
@@ -342,7 +333,7 @@ function stripSelectionTransientFields(value: unknown): unknown {
     Object.entries(value as Record<string, unknown>)
       .filter(([key]) => (
         !RUNTIME_IDENTITY_KEYS.has(key)
-        && !SELECTION_PRESENTATION_KEYS.has(key)
+        && !STATE_PRESENTATION_KEYS.has(key)
       ))
       .map(([key, entry]) => [key, stripSelectionTransientFields(entry)]),
   );
