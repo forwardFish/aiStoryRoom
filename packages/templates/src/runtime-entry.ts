@@ -95,6 +95,12 @@ export const settlePartOneAction = (
  * Decision Point open. They still produce an atomic turn, so the exact Kernel
  * and Affordance pair shown after that turn must be frozen in the same event as
  * ordinary authored actions rather than re-derived during recovery.
+ *
+ * A committed Legacy fallback is the one valid exception to normal Dynamic
+ * pinning: it can exist precisely because the Kernel has fewer than two unique
+ * Preview Outcomes. If strict pinning rejects it, the only permitted recovery
+ * is the same Legacy fallback Kernel and Decision Point selected from the same
+ * proposed state. Every other pin failure remains fail-closed.
  */
 function attachCapabilityKernelSelection(
   pkg: Parameters<typeof runtimeFacade.settlePartOneAction>[0],
@@ -106,12 +112,29 @@ function attachCapabilityKernelSelection(
     decisionKernelId: event.nextDecisionPoint.decisionKernelId,
     decisionPointId: event.nextDecisionPoint.decisionPointId,
   };
-  const next = buildDynamicPartOneRuntimeWorkingSet(
-    pkg,
-    settlement.proposedState,
-    turnNumber,
-    { mode: "DYNAMIC_LITE", pin },
-  );
+  let next: ReturnType<typeof buildDynamicPartOneRuntimeWorkingSet>;
+  try {
+    next = buildDynamicPartOneRuntimeWorkingSet(
+      pkg,
+      settlement.proposedState,
+      turnNumber,
+      { mode: "DYNAMIC_LITE", pin },
+    );
+  } catch (pinError) {
+    const fallback = buildDynamicPartOneRuntimeWorkingSet(
+      pkg,
+      settlement.proposedState,
+      turnNumber,
+    );
+    if (
+      fallback.kernelSelection.mode !== "LEGACY_FALLBACK"
+      || fallback.decisionPoint.decisionKernelId !== pin.decisionKernelId
+      || fallback.decisionPoint.decisionPointId !== pin.decisionPointId
+    ) {
+      throw pinError;
+    }
+    next = fallback;
+  }
   if (
     next.decisionPoint.decisionKernelId !== pin.decisionKernelId
     || next.decisionPoint.decisionPointId !== pin.decisionPointId
