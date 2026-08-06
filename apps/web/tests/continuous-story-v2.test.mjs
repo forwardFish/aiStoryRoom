@@ -120,8 +120,12 @@ test("opening recovery is visible but retries only after an explicit click", asy
 });
 
 test("opening recovery keeps polling the read projection until a turn is published", async () => {
-  const waitingForOpening = projection({ currentTurn: null, completed: false });
-  const published = projection();
+  const waitingForOpening = projection({
+    currentTurn: null,
+    completed: false,
+    room: { ...projection().room, mode: "multiplayer" }
+  });
+  const published = projection({ room: { ...projection().room, mode: "multiplayer" } });
   const { dom, root } = page();
   const intervals = [];
   dom.window.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
@@ -149,6 +153,7 @@ test("opening recovery keeps polling the read projection until a turn is publish
 
 test("the World Credits banner stays in the story flow and never covers the primary action", async () => {
   const withCredits = projection({
+    control: { mode: "AI_ACTIVE", epoch: 1, canHumanAct: false },
     creditControl: {
       policyVersion: "active_action_v1",
       available: 30,
@@ -210,7 +215,7 @@ test("Story V2 uses the approved old main-game layout and shows story before dec
   assert.ok(root.querySelector('[data-testid="role-opening"]'));
   assert.equal(root.querySelector('[data-testid="continuous-story-v2-shell"]'), null);
   assert.match(root.textContent, /巡抚亲自把两册粮账放到案上/);
-  assert.match(root.textContent, /决策后立即单独推演/);
+  assert.match(root.textContent, /点击进入今日主线决策/);
   assert.match(root.textContent, /银两\s*42 万两/);
   assert.match(root.textContent, /粮草\s*23 万石/);
   assert.match(root.textContent, /兵丁\s*4\/5/);
@@ -591,7 +596,8 @@ test("polling pauses during opening, custom writing and an active decision", asy
     }
     return json({ accepted: true });
   };
-  const app = createContinuousStoryV2App({ root, window: dom.window, runId: "room-v2", initialProjection: projection(), fetchImpl });
+  const multiplayerProjection = projection({ room: { ...projection().room, mode: "multiplayer" } });
+  const app = createContinuousStoryV2App({ root, window: dom.window, runId: "room-v2", initialProjection: multiplayerProjection, fetchImpl });
   await app.boot();
   assert.deepEqual(intervals.map((item) => item.delay), [1_500, 10_000]);
   intervals[0].callback();

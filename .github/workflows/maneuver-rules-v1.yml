@@ -1,17 +1,16 @@
-name: Temporary browser-smoke reconstruction
+name: Maneuver Rules V1
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
-    paths:
-      - ".github/workflows/causal-mvp.yml"
+      - feat/maneuver-rules-v1-full-implementation-20260805
 
 permissions:
   contents: write
 
 jobs:
-  reconstruct:
+  install-browser-smoke:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -50,7 +49,7 @@ jobs:
 
           groups = [
               ['84ab5a37c675cce61ae02539ab742d0ffb0f488e'],
-              ['9d255cf92478ec2f474a243bca2ee8b3c04814b8','28303d17ca88db18d350d543ea7da83e58f777f9','18654dc6c5a6f256edc0f872f3b78ccfc03ea219','2d1e60e4eba01fef4707cfd959602c101fa75998','aa04b01e95efd579c1a35727bbbd34e06335c326'],
+              ['9d255cf92478ec2f474a243bca2ee8b3c04814b8','28303d17ca88db18d350d543ea7da83e58f777f9','18654d3c209bdc90ad3d79ce96381a4f568021d9','2d1e60e4eba01fef4707cfd959602c101fa75998','aa04b01e95efd579c1a35727bbbd34e06335c326'],
               ['54bb15124fbbd5a5f53d2891ff1f4c36f9d10a2d','923303268534f297dce1ff197e3530719fca3be5','705be59fc30d8dc13dbbebfc2709dd77f3a91224','9240548d150d2672fc134271bbdb41f8bafe9549','872f49d414adf13a831005629ad7eead3221b523'],
               ['8d800feaba279dd87a5334b6a29aa51e3c9184fc','45afea8cd1ad5533cbd5d763d89a4e8030fe0a13','5a169d8c7e1a256adc84411fce08ec633e6980e2','041fd3166376edf582e260b18f7ca564ca18e62c','e73452990fd117289acc4f523f4d01ab45cdb7e4'],
               ['78505eaff7d7a4407dbaf53b1bf4be22c84b10c5'],

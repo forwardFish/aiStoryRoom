@@ -30,6 +30,7 @@ import {
   type OpenNovelTurnEvent,
 } from "./openovel-runtime.client";
 import { openNovelGameProjection } from "./openovel-game-projection";
+import { OpenNovelSoloManeuverService } from "../maneuver-v1/openovel-solo-maneuver.service";
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const STRATEGY_VERSION = "openovel_first_v1";
@@ -48,6 +49,7 @@ type SubmitActionInput = {
     label?: string;
   } | null;
   expectedStateRevision?: number;
+  maneuverContext?: string;
 };
 
 export type OpenNovelMirrorEvent = {
@@ -63,6 +65,7 @@ export class OpenNovelAdapterService {
     @Inject(StoryService) private readonly story: StoryService,
     @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService,
     @Inject(OpenNovelRuntimeClient) private readonly runtime: OpenNovelRuntimeClient,
+    @Inject(OpenNovelSoloManeuverService) private readonly maneuvers: OpenNovelSoloManeuverService = null as never,
   ) {}
 
   async createRun(user: AuthenticatedUser, input: CreateRunInput) {
@@ -210,12 +213,20 @@ export class OpenNovelAdapterService {
     ]);
     const creditConfig = readCreditConsumptionConfig();
     const billing = parseRunBilling(run, creditConfig.prices);
+    const game = getGameDefinition(run.templateKey);
+    const runForProjection = this.maneuvers
+      ? await this.maneuvers.settleOnProjection({ user, run, runtimeRun, game })
+      : run;
+    const maneuverRulesV1 = this.maneuvers?.projection({ user, run: runForProjection, runtimeRun, game });
+    const maneuverTimeline = this.maneuvers?.timeline({ user, run: runForProjection, runtimeRun, game }) || [];
     return openNovelGameProjection({
       userId: user.id,
-      run,
+      run: runForProjection,
       runtimeRun,
-      game: getGameDefinition(run.templateKey),
+      game,
       nodes,
+      maneuverRulesV1,
+      maneuverTimeline,
       credits: {
         policyVersion: billing.policyVersion,
         meteringMode: creditConfig.meteringMode,
@@ -226,6 +237,40 @@ export class OpenNovelAdapterService {
         customActionCost: billing.prices.customAction,
       },
     });
+  }
+
+  async previewManeuver(user: AuthenticatedUser, runId: string, turnId: string, command: unknown) {
+    if (!this.maneuvers) {
+      throw new ConflictException({ code: "MANEUVER_PREVIEW_UNAVAILABLE", message: "当前 OpenNovel 运行时尚未加载有限谋划服务。" });
+    }
+    const run = await this.authorizedRun(user, runId);
+    const runtimeRun = await this.runtime.getRun(runId);
+    return this.maneuvers.preview({
+      user,
+      run,
+      runtimeRun,
+      game: getGameDefinition(run.templateKey),
+      turnId,
+      command,
+    });
+  }
+
+  async commitManeuverPreview(user: AuthenticatedUser, runId: string, previewId: string, command: unknown) {
+    if (!this.maneuvers) {
+      throw new ConflictException({ code: "MANEUVER_PREVIEW_UNAVAILABLE", message: "当前 OpenNovel 运行时尚未加载有限谋划服务。" });
+    }
+    const run = await this.authorizedRun(user, runId);
+    const runtimeRun = await this.runtime.getRun(runId);
+    const committed = await this.maneuvers.commit({
+      user,
+      run,
+      runtimeRun,
+      game: getGameDefinition(run.templateKey),
+      previewId,
+      command,
+    });
+    const { maneuverRulesV1: _internalProjection, ...safe } = committed;
+    return { ...safe, gameProjection: await this.game(user, runId) };
   }
 
   async result(user: AuthenticatedUser, runId: string) {
@@ -312,7 +357,16 @@ export class OpenNovelAdapterService {
       });
     }
 
+    const run = await this.authorizedRun(user, runId);
     const runtimeBefore = await this.runtime.getRun(runId);
+    const game = getGameDefinition(run.templateKey);
+    if (this.maneuvers && await this.maneuvers.settleBeforeMainDecision({ user, run, runtimeRun: runtimeBefore, game })) {
+      throw new ConflictException({
+        code: "TURN_CONTEXT_UPDATED",
+        message: "锁定主线前，一项调查刚刚返回。请先阅读新证据，再重新确认主线决定。",
+      });
+    }
+    const maneuverContext = this.maneuvers?.mainDecisionContext({ user, run, runtimeRun: runtimeBefore, game }) || "";
     const expectedTurnId = `T${String(runtimeBefore.turnNumber + 1).padStart(2, "0")}`;
     if (turnId !== expectedTurnId || command.turnRevision !== runtimeBefore.turnNumber) {
       throw new ConflictException({
@@ -336,6 +390,7 @@ export class OpenNovelAdapterService {
       idempotencyKey,
       expectedStateRevision: command.turnRevision,
       boundOption: selected ? { id: selected.id, label: selected.label } : null,
+      maneuverContext,
     }, () => undefined);
     return {
       accepted: true as const,
@@ -362,7 +417,14 @@ export class OpenNovelAdapterService {
     if (action.length > 2_000) throw new BadRequestException({ code: "OPENOVEL_ACTION_TOO_LONG", message: "The action is too long." });
     const idempotencyKey = requiredIdempotency(input.idempotencyKey);
     const boundOption = normalizeBoundOption(input.boundOption);
-    const requestHash = creditRequestHash({ runId, action, boundOption });
+    const maneuverContext = String(input.maneuverContext || "").trim();
+    const runtimeAction = maneuverContext
+      ? `${maneuverContext}
+
+【玩家本轮主线决定】
+${action}`
+      : action;
+    const requestHash = creditRequestHash({ runId, action, boundOption, maneuverContext });
     const actionIdempotencyKey = `openovel-action:${runId}:${user.id}:${idempotencyKey}`;
     const replay = await this.prisma.playerAction.findUnique({ where: { idempotencyKey: actionIdempotencyKey } });
     if (replay) {
@@ -468,7 +530,7 @@ export class OpenNovelAdapterService {
       committed = await this.runtime.streamAction(
         {
           runId,
-          action,
+          action: runtimeAction,
           submissionId: playerAction.id,
           expectedStateRevision: input.expectedStateRevision,
           boundOption,

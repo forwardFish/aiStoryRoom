@@ -90,6 +90,51 @@ export class ApiStoryStorage {
     return payload;
   }
 
+  async previewManeuver(view, draft, { idempotencyKey } = {}) {
+    this.assertView(view);
+    const capability = view?.capabilities?.maneuverRulesV1;
+    if (!capability?.enabled) {
+      throw new StoryApiError("当前故事局尚未启用行动预演。", { code: "MANEUVER_PREVIEW_UNAVAILABLE" });
+    }
+    return this.request(`/v4/story-runs/${encodeURIComponent(view.run.id)}/maneuvers/preview`, {
+      method: "POST",
+      body: {
+        version: view.run.version,
+        turnRevision: view.run.version,
+        expectedStateRevision: view.run.version,
+        expectedManeuverWindowVersion: capability.window?.version,
+        controlEpoch: 1,
+        idempotencyKey: idempotencyKey || globalThis.crypto?.randomUUID?.() || `preview-${Date.now()}`,
+        draft
+      }
+    });
+  }
+
+  async commitManeuverPreview(view, preview, { idempotencyKey } = {}) {
+    this.assertView(view);
+    if (!preview?.previewId || !preview?.previewToken) {
+      throw new StoryApiError("行动预演不完整，请重新预演。", { code: "ACTION_PREVIEW_TOKEN_INVALID" });
+    }
+    const payload = await this.request(`/v4/story-runs/${encodeURIComponent(view.run.id)}/maneuvers/commit`, {
+      method: "POST",
+      body: {
+        version: view.run.version,
+        previewId: preview.previewId,
+        previewToken: preview.previewToken,
+        expectedStateRevision: view.run.version,
+        expectedManeuverWindowVersion: view?.capabilities?.maneuverRulesV1?.window?.version,
+        controlEpoch: 1,
+        ...(preview?.safeDebug?.requestHash ? { previewRequestHash: preview.safeDebug.requestHash } : {}),
+        idempotencyKey: idempotencyKey || globalThis.crypto?.randomUUID?.() || `commit-${preview.previewId}`
+      }
+    });
+    if (!payload?.accepted || !payload?.gameProjection) {
+      throw new StoryApiError("行动确认没有返回新的游戏状态。", { code: "INVALID_MANEUVER_COMMIT_RESPONSE", details: payload });
+    }
+    this.assertView(payload.gameProjection);
+    return payload;
+  }
+
   async submitManeuver(view, input) {
     this.assertView(view);
     const payload = await this.request(`/v4/story-runs/${encodeURIComponent(view.run.id)}/maneuvers`, {

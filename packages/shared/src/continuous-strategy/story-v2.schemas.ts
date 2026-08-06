@@ -3,6 +3,7 @@ import { fail, integerAtLeast, isRecord, nonEmptyString, pass, type ValidationRe
 import type { CreditControlProjection } from "./credit-control.schemas";
 
 export type IntentTargetTypeV2 = "ROLE" | "PERSON" | "DOCUMENT" | "EVIDENCE" | "RESOURCE" | "LOCATION" | "INSTITUTION" | "PUBLIC_FRAME";
+export type ManeuverTargetTypeV1 = IntentTargetTypeV2 | "ACTOR" | "TRACE" | "WORLD_ENTITY";
 export type IntentVisibilityV2 = "PRIVATE" | "LIMITED" | "OBSERVABLE" | "PUBLIC";
 export type IntentRiskToleranceV2 = "LOW" | "MEDIUM" | "HIGH";
 
@@ -66,12 +67,23 @@ export type DecisionCandidateV2 = {
 
 export type StoryTimelineEntryV2 = {
   id: string;
-  kind: "OPENING" | "RESULT" | "CROSS_IMPACT" | "OBSERVABLE_TRACE" | "NEXT_SITUATION" | "ENDING";
+  kind:
+    | "OPENING"
+    | "RESULT"
+    | "CROSS_IMPACT"
+    | "OBSERVABLE_TRACE"
+    | "NEXT_SITUATION"
+    | "ENDING"
+    | "MANEUVER_ACTION"
+    | "MANEUVER_RESULT"
+    | "EVIDENCE"
+    | "REACTION";
   title: string;
   content: string;
   worldSequence: number;
   createdAt: string;
   sourceRoleName?: string;
+  sourceActionId?: string;
   decisionForm?: DecisionFormV2;
 };
 
@@ -159,6 +171,109 @@ export type ObservableTraceProjectionV2 = {
   createdAt: string;
 };
 
+
+export type ManeuverWindowProjectionV1 = {
+  windowId: string;
+  status: "OPEN" | "CLOSING" | "CLOSED";
+  totalOpportunities: number;
+  remainingOpportunities: number;
+  usedSlots: Array<{ slot: "MANEUVER_1" | "MANEUVER_2"; actionId: string; kind: string; status: string }>;
+  formLimits: { conversationRemaining: number; investigationRemaining: number };
+  version: number;
+  closesWhen: "MAIN_DECISION_COMMITS" | "DAY_ADVANCES";
+};
+
+export type ManeuverContactProjectionV1 = {
+  actorId: string;
+  roleId?: string;
+  displayName: string;
+  publicIdentity: string;
+  currentAccess: string;
+  whyRelevant: string;
+  canReceiveEvidence: boolean;
+  visibilityOptions: Array<"LIMITED" | "PUBLIC">;
+};
+
+export type ManeuverInvestigationLeadProjectionV1 = {
+  traceId: string;
+  title: string;
+  narrativeHook: string;
+  urgency: "NOW" | "THIS_TURN" | "PERSISTENT";
+  expiresAtLabel: string | null;
+  knownBecause: string;
+  routeCount: number;
+  visibleToCurrentRole: true;
+  routes: Array<{
+    routeId: string;
+    label: string;
+    narrativeMethod: string;
+    mayLearn: string[];
+    cannotProve: string[];
+    costLabels: string[];
+    returnLabel: string;
+    possibleTrail: string | null;
+  }>;
+};
+
+export type ManeuverRuleCardProjectionV1 = {
+  cardAssetKey: string;
+  cardKey: string;
+  label: string;
+  status: "AVAILABLE" | "LOCKED" | "COOLDOWN" | "CONSUMED";
+  timing: Array<"ACTIVE" | "SET" | "ATTACH" | "REACTION">;
+  guaranteedEffects: string[];
+  limitations: string[];
+  counterTags: string[];
+  legalTargets?: Array<{ id: string; label: string; type: ManeuverTargetTypeV1 }>;
+  triggerOptions?: Array<{ triggerPatternId: string; label: string }>;
+};
+
+export type ManeuverEvidenceProjectionV1 = {
+  evidenceId: string;
+  title: string;
+  level: string;
+  authenticity: string;
+  supports: string[];
+  cannotProve: string[];
+  visibility: "PRIVATE" | "SHARED" | "PUBLIC";
+  sourceLabel: string;
+};
+
+export type ManeuverPendingActionProjectionV1 = {
+  actionId: string;
+  kind: "CONVERSATION" | "INVESTIGATION" | "CARD_LAYOUT" | "CUSTOM_PLAN" | "REACTION";
+  title: string;
+  status: string;
+  slot: "MANEUVER_1" | "MANEUVER_2" | "REACTION";
+  revealsAtLabel?: string | null;
+  sourceActionId?: string | null;
+  resultTitle?: string | null;
+  resultNarrative?: string | null;
+  evidenceId?: string | null;
+};
+
+export type ManeuverReactionProjectionV1 = {
+  reactionId: string;
+  storyNotice: { title: string; narrative: string };
+  options: Array<{ optionId: string; label: string; description: string }>;
+  eligibleCardAssetKeys: string[];
+  customAllowed: boolean;
+  holdAllowed: boolean;
+  expiresAt: string | null;
+};
+
+export type ManeuverRulesProjectionV1 = {
+  schemaVersion: "maneuver_rules_projection_v1";
+  enabled: true;
+  window: ManeuverWindowProjectionV1;
+  contacts: ManeuverContactProjectionV1[];
+  investigationLeads: ManeuverInvestigationLeadProjectionV1[];
+  ruleCards: ManeuverRuleCardProjectionV1[];
+  evidenceCards: ManeuverEvidenceProjectionV1[];
+  pendingActions: ManeuverPendingActionProjectionV1[];
+  reactions: ManeuverReactionProjectionV1[];
+};
+
 export type GamePageWorldProjectionV1 = {
   schemaVersion: "game_page_world_v1";
   worldId: string;
@@ -216,6 +331,7 @@ export type GameProjectionV2 = {
   armedConditions: ArmedConditionProjectionV2[];
   pendingInteractions: PendingInteractionProjectionV2[];
   observableTraces: ObservableTraceProjectionV2[];
+  capabilities?: { maneuverRulesV1?: ManeuverRulesProjectionV1 };
   access: { state: string; requiresUnlock: boolean; requiredCredits: number; canCurrentUserUnlock: boolean; unlockEndpoint: string | null };
   creditControl: CreditControlProjection;
   completed: boolean;
@@ -264,7 +380,98 @@ export function validateGameProjectionV2(value: unknown): ValidationResult<GameP
   for (const key of ["visibleAssets", "evidenceHoldings", "commitments", "armedConditions", "pendingInteractions", "observableTraces"] as const) {
     if (!Array.isArray(value[key])) errors.push(`${key} must be an array`);
   }
+  if (value.capabilities !== undefined) {
+    if (!isRecord(value.capabilities)) errors.push("capabilities must be an object when provided");
+    else if (value.capabilities.maneuverRulesV1 !== undefined) {
+      const maneuver = value.capabilities.maneuverRulesV1;
+      validateManeuverRulesProjectionV1(maneuver, errors);
+    }
+  }
   if (typeof value.completed !== "boolean") errors.push("completed must be boolean");
   if (value.resultUrl !== null && typeof value.resultUrl !== "string") errors.push("resultUrl must be string or null");
   return errors.length ? fail(errors) : pass(value as GameProjectionV2);
+}
+
+function validateManeuverRulesProjectionV1(value: unknown, errors: string[]) {
+  if (!isRecord(value) || value.schemaVersion !== "maneuver_rules_projection_v1" || value.enabled !== true) {
+    errors.push("invalid maneuverRulesV1 capability");
+    return;
+  }
+  const window = value.window;
+  if (!isRecord(window)) {
+    errors.push("maneuverRulesV1.window must be an object");
+  } else {
+    if (!nonEmptyString(window.windowId)) errors.push("maneuverRulesV1.window.windowId is required");
+    if (!["OPEN", "CLOSING", "CLOSED"].includes(String(window.status || ""))) errors.push("invalid maneuverRulesV1.window.status");
+    if (!integerAtLeast(window.totalOpportunities, 0)) errors.push("maneuverRulesV1.window.totalOpportunities must be >= 0");
+    if (!integerAtLeast(window.remainingOpportunities, 0)) errors.push("maneuverRulesV1.window.remainingOpportunities must be >= 0");
+    if (Number(window.remainingOpportunities) > Number(window.totalOpportunities)) errors.push("maneuverRulesV1.window remaining exceeds total");
+    if (!integerAtLeast(window.version, 1)) errors.push("maneuverRulesV1.window.version must be >= 1");
+    if (!Array.isArray(window.usedSlots)) errors.push("maneuverRulesV1.window.usedSlots must be an array");
+    else for (const [index, slot] of window.usedSlots.entries()) {
+      if (!isRecord(slot)
+        || !["MANEUVER_1", "MANEUVER_2"].includes(String(slot.slot || ""))
+        || !nonEmptyString(slot.actionId)
+        || !nonEmptyString(slot.kind)
+        || !nonEmptyString(slot.status)) errors.push(`invalid maneuverRulesV1.window.usedSlots[${index}]`);
+    }
+    if (!isRecord(window.formLimits)
+      || !integerAtLeast(window.formLimits.conversationRemaining, 0)
+      || !integerAtLeast(window.formLimits.investigationRemaining, 0)) errors.push("invalid maneuverRulesV1.window.formLimits");
+  }
+
+  for (const key of ["contacts", "investigationLeads", "ruleCards", "evidenceCards", "pendingActions", "reactions"] as const) {
+    if (!Array.isArray(value[key])) errors.push(`maneuverRulesV1.${key} must be an array`);
+  }
+  if (Array.isArray(value.contacts)) value.contacts.forEach((item, index) => {
+    if (!isRecord(item) || !nonEmptyString(item.actorId) || !nonEmptyString(item.displayName)
+      || !Array.isArray(item.visibilityOptions) || typeof item.canReceiveEvidence !== "boolean") {
+      errors.push(`invalid maneuverRulesV1.contacts[${index}]`);
+    }
+  });
+  if (Array.isArray(value.investigationLeads)) value.investigationLeads.forEach((item, index) => {
+    if (!isRecord(item) || !nonEmptyString(item.traceId) || !nonEmptyString(item.title)
+      || item.visibleToCurrentRole !== true || !Array.isArray(item.routes)
+      || !integerAtLeast(item.routeCount, 0) || item.routes.length !== item.routeCount) {
+      errors.push(`invalid maneuverRulesV1.investigationLeads[${index}]`);
+      return;
+    }
+    item.routes.forEach((route, routeIndex) => {
+      if (!isRecord(route) || !nonEmptyString(route.routeId) || !nonEmptyString(route.label)
+        || !Array.isArray(route.mayLearn) || !Array.isArray(route.cannotProve)
+        || !Array.isArray(route.costLabels) || !nonEmptyString(route.returnLabel)) {
+        errors.push(`invalid maneuverRulesV1.investigationLeads[${index}].routes[${routeIndex}]`);
+      }
+    });
+  });
+  if (Array.isArray(value.ruleCards)) value.ruleCards.forEach((item, index) => {
+    if (!isRecord(item) || !nonEmptyString(item.cardAssetKey) || !nonEmptyString(item.cardKey)
+      || !["AVAILABLE", "LOCKED", "COOLDOWN", "CONSUMED"].includes(String(item.status || ""))
+      || !Array.isArray(item.timing) || !Array.isArray(item.guaranteedEffects)
+      || !Array.isArray(item.limitations) || !Array.isArray(item.counterTags)) {
+      errors.push(`invalid maneuverRulesV1.ruleCards[${index}]`);
+    }
+  });
+  if (Array.isArray(value.evidenceCards)) value.evidenceCards.forEach((item, index) => {
+    if (!isRecord(item) || !nonEmptyString(item.evidenceId) || !nonEmptyString(item.title)
+      || !["PRIVATE", "SHARED", "PUBLIC"].includes(String(item.visibility || ""))
+      || !Array.isArray(item.supports) || !Array.isArray(item.cannotProve)) {
+      errors.push(`invalid maneuverRulesV1.evidenceCards[${index}]`);
+    }
+  });
+  if (Array.isArray(value.pendingActions)) value.pendingActions.forEach((item, index) => {
+    if (!isRecord(item) || !nonEmptyString(item.actionId)
+      || !["CONVERSATION", "INVESTIGATION", "CARD_LAYOUT", "CUSTOM_PLAN", "REACTION"].includes(String(item.kind || ""))
+      || !["MANEUVER_1", "MANEUVER_2", "REACTION"].includes(String(item.slot || ""))) {
+      errors.push(`invalid maneuverRulesV1.pendingActions[${index}]`);
+    }
+  });
+  if (Array.isArray(value.reactions)) value.reactions.forEach((item, index) => {
+    if (!isRecord(item) || !nonEmptyString(item.reactionId) || !isRecord(item.storyNotice)
+      || !nonEmptyString(item.storyNotice.title) || !nonEmptyString(item.storyNotice.narrative)
+      || !Array.isArray(item.options) || !Array.isArray(item.eligibleCardAssetKeys)
+      || typeof item.customAllowed !== "boolean" || typeof item.holdAllowed !== "boolean") {
+      errors.push(`invalid maneuverRulesV1.reactions[${index}]`);
+    }
+  });
 }

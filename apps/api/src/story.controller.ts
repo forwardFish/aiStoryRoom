@@ -131,6 +131,16 @@ export class StoryController {
     return this.story.deferMvpCriticalEvent(runId, messageId, body);
   }
 
+  @Post("v4/story-runs/:runId/maneuvers/preview")
+  previewMvpManeuver(@Param("runId") runId: string, @Body() body: Record<string, unknown>) {
+    return this.story.previewMvpManeuver(runId, body);
+  }
+
+  @Post("v4/story-runs/:runId/maneuvers/commit")
+  commitMvpManeuverPreview(@Param("runId") runId: string, @Body() body: Record<string, unknown>) {
+    return this.story.commitMvpManeuverPreview(runId, body);
+  }
+
   @Post("v4/story-runs/:runId/maneuvers")
   async submitMvpManeuver(@Param("runId") runId: string, @Body() body: Record<string, unknown>) {
     const result = await this.story.submitMvpManeuver(runId, body) as any;

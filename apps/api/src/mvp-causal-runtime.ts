@@ -1,15 +1,50 @@
 import { BadRequestException, ConflictException } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { checkMvpAiBudget, createMvpAiBudget, exhaustMvpAiBudget, recordMvpAiBudgetUse } from "./mvp-ai-budget";
+import {
+  ManeuverValidationError,
+  createActionPreviewV1,
+  projectContactsV1,
+  projectEvidenceHandV1,
+  projectInvestigationLeadsV1,
+  projectRuleCardsV1,
+  parseCreateActionPreviewCommandV1,
+  resolveInvestigationV1,
+  stablePreviewRequestHashV1,
+  type ActionPreviewPresentationV1,
+  type ActionPreviewResponseV1,
+  type CompiledManeuverActionV1,
+  type CreateActionPreviewCommandV1,
+  type EvidenceCardStateV1,
+  type InvestigationRouteV1,
+  type ManeuverCompileContextV1,
+  type ManeuverDraftV1,
+  type RuleCardDefinitionV1,
+} from "@ai-story/templates";
 import type { MvpStoryStorage } from "./mvp-storage";
 import type {
   MvpActiveDecision,
   MvpDecisionOption,
   MvpMutationInput,
   MvpNarrativeProvider,
+  MvpPendingManeuverV1,
   MvpStoryEvent,
   MvpView
 } from "./mvp-types";
+import {
+  SANGTIAN_MVP_ACTION_BINDINGS,
+  SANGTIAN_MVP_INVESTIGATION_ROUTES,
+  SANGTIAN_MVP_RULE_CARDS,
+  SANGTIAN_MVP_TARGETS,
+  contactsForMvpView,
+  initialSangtianMvpRuleCardHoldings,
+  initialSangtianMvpTraces,
+} from "./maneuver-v1/sangtian-mvp-package";
+import {
+  signManeuverPreviewTokenV1,
+  verifyManeuverPreviewTokenV1,
+  type ManeuverPreviewTokenPayloadV1,
+} from "./maneuver-v1/preview-token";
 
 type Operator = ">=" | "<=" | ">" | "<" | "==";
 type StatPredicate = { stat: string; op: Operator; value: number };
@@ -282,6 +317,257 @@ export class MvpStoryEngine {
     return projectPublicMvpView(ensureMvpCausalView(await this.storage.load(runId)));
   }
 
+  /**
+   * Compiles one of the four maneuver drafts into a player-safe narrative preview.
+   * This method is deliberately side-effect free: it does not write storage,
+   * consume an opportunity, lock a card, or change the run version.
+   */
+  async previewManeuver(runId: string, input: MvpMutationInput) {
+    const stored = ensureMvpCausalView(await this.storage.load(runId));
+    assertVersion(stored, input.version);
+
+    const context = buildMvpManeuverContext(stored);
+    let command: CreateActionPreviewCommandV1;
+    try {
+      command = parseCreateActionPreviewCommandV1({
+        idempotencyKey: String(input.idempotencyKey || `preview-${randomUUID()}`),
+        turnRevision: Number(input.turnRevision ?? input.version),
+        expectedStateRevision: Number(input.expectedStateRevision ?? input.version),
+        expectedManeuverWindowVersion: Number(input.expectedManeuverWindowVersion ?? stored.maneuverRulesV1.windowVersion),
+        controlEpoch: Number(input.controlEpoch ?? 1),
+        draft: input.draft,
+      });
+    } catch (error) {
+      if (error instanceof ManeuverValidationError) {
+        throw new BadRequestException({ code: error.code, message: error.message, path: error.path });
+      }
+      throw error;
+    }
+    const draft = command.draft;
+    assertManeuverDraftAvailable(stored, draft);
+
+    let preview: ActionPreviewResponseV1;
+    try {
+      preview = createActionPreviewV1(command, context);
+    } catch (error) {
+      if (error instanceof ManeuverValidationError) {
+        throw new BadRequestException({ code: error.code, message: error.message, path: error.path });
+      }
+      throw error;
+    }
+
+    if (preview.decision !== "READY" || !preview.previewId || !preview.expiresAt || !preview.compiledAction || !preview.presentation) {
+      return preview;
+    }
+
+    const tokenPayload: ManeuverPreviewTokenPayloadV1 = {
+      schemaVersion: "maneuver_preview_token_v1",
+      previewId: preview.previewId,
+      runId,
+      actorTurnId: context.actorTurnId,
+      turnVersion: stored.run.version,
+      stateRevision: context.stateRevision,
+      maneuverWindowVersion: stored.maneuverRulesV1.windowVersion,
+      controlEpoch: context.controlEpoch,
+      contextHash: context.contextHash,
+      requestHash: stablePreviewRequestHashV1(command),
+      previewIdempotencyKey: command.idempotencyKey,
+      expiresAt: preview.expiresAt,
+      draft,
+      compiledAction: preview.compiledAction,
+      presentation: preview.presentation,
+    };
+
+    return {
+      ...preview,
+      // The compiled contract remains server-owned. The signed token is the
+      // only value accepted by commit; clients cannot replace its contents.
+      compiledAction: undefined,
+      previewToken: signManeuverPreviewTokenV1(tokenPayload),
+    };
+  }
+
+  /**
+   * Revalidates and atomically commits a previously signed preview.
+   */
+  async commitManeuverPreview(runId: string, input: MvpMutationInput) {
+    const stored = ensureMvpCausalView(await this.storage.load(runId));
+    const idempotencyKey = String(input.idempotencyKey || "").trim();
+    if (!idempotencyKey) {
+      throw new BadRequestException({ code: "IDEMPOTENCY_KEY_REQUIRED", message: "确认行动需要 idempotencyKey。" });
+    }
+
+    const previous = stored.events.find((item: MvpStoryEvent) => (
+      ["maneuver_preview_committed", "maneuver_reaction_held"].includes(item.type)
+      && item.payload?.idempotencyKey === idempotencyKey
+    ));
+    if (previous) {
+      const requestedPreviewId = String(input.previewId || "");
+      if (String(previous.payload?.previewId || "") !== requestedPreviewId) {
+        throw new ConflictException({
+          code: "IDEMPOTENCY_KEY_REUSED",
+          message: "同一个 idempotencyKey 不能确认不同的行动预演。",
+        });
+      }
+      return {
+        accepted: true,
+        idempotentReplay: true,
+        action: previous.payload.action,
+        immediateReceipt: previous.payload.immediateReceipt,
+        gameProjection: projectPublicMvpView(stored),
+      };
+    }
+
+    assertVersion(stored, input.version);
+
+    let token: ManeuverPreviewTokenPayloadV1;
+    try {
+      token = verifyManeuverPreviewTokenV1(input.previewToken);
+    } catch (error: any) {
+      if (error?.code === "ACTION_PREVIEW_EXPIRED") {
+        throw new ConflictException({ code: error.code, message: error.message });
+      }
+      throw new BadRequestException({ code: error?.code || "ACTION_PREVIEW_TOKEN_INVALID", message: error?.message || "行动预演凭证无效。" });
+    }
+
+    if (token.runId !== runId || token.previewId !== String(input.previewId || "")) {
+      throw new BadRequestException({ code: "ACTION_PREVIEW_TOKEN_INVALID", message: "行动预演与当前故事局不匹配。" });
+    }
+
+    assertManeuverDraftAvailable(stored, token.draft);
+    const currentContext = buildMvpManeuverContext(stored);
+    const inputWindowVersion = Number(input.expectedManeuverWindowVersion ?? currentContext.maneuverWindowVersion);
+    const inputStateRevision = Number(input.expectedStateRevision ?? currentContext.stateRevision);
+    const inputControlEpoch = Number(input.controlEpoch ?? currentContext.controlEpoch);
+    const stale = token.turnVersion !== stored.run.version
+      || token.stateRevision !== currentContext.stateRevision
+      || token.maneuverWindowVersion !== currentContext.maneuverWindowVersion
+      || token.controlEpoch !== currentContext.controlEpoch
+      || token.contextHash !== currentContext.contextHash
+      || token.actorTurnId !== currentContext.actorTurnId
+      || token.compiledAction.turnRevision !== currentContext.turnRevision
+      || token.compiledAction.stateRevision !== currentContext.stateRevision
+      || token.compiledAction.maneuverWindowVersion !== currentContext.maneuverWindowVersion
+      || token.compiledAction.controlEpoch !== currentContext.controlEpoch
+      || token.compiledAction.contextHash !== currentContext.contextHash
+      || token.requestHash !== stablePreviewRequestHashV1({
+        idempotencyKey: token.previewIdempotencyKey,
+        turnRevision: token.turnVersion,
+        expectedStateRevision: token.stateRevision,
+        expectedManeuverWindowVersion: token.maneuverWindowVersion,
+        controlEpoch: token.controlEpoch,
+        draft: token.draft,
+      })
+      || inputWindowVersion !== currentContext.maneuverWindowVersion
+      || inputStateRevision !== currentContext.stateRevision
+      || inputControlEpoch !== currentContext.controlEpoch;
+    if (stale) {
+      throw new ConflictException({
+        code: "ACTION_PREVIEW_STALE",
+        message: "局势已经发生变化。这项谋划没有执行，请根据最新剧情重新预演。",
+        latest: {
+          turnRevision: currentContext.turnRevision,
+          stateRevision: currentContext.stateRevision,
+          maneuverWindowVersion: currentContext.maneuverWindowVersion,
+          controlEpoch: currentContext.controlEpoch,
+        },
+      });
+    }
+
+    // The encrypted preview token binds the canonical request hash and the
+    // server-owned compiled action. A client may echo the hash for diagnostics,
+    // but it can never replace the action contract carried inside the token.
+    if (typeof (input as any).previewRequestHash === "string"
+        && (input as any).previewRequestHash !== token.requestHash) {
+      throw new BadRequestException({ code: "ACTION_PREVIEW_TOKEN_INVALID", message: "行动预演请求摘要不匹配。" });
+    }
+
+    const expectedVersion = stored.run.version;
+    const view = structuredClone(stored);
+
+    if (isReactionHoldV1(token.compiledAction)) {
+      const reactionId = token.compiledAction.primaryEffect.reactionId;
+      const current = view.criticalEvent;
+      if (!current || String(current.eventId) !== reactionId || !["pending", "deferred"].includes(String(current.status))) {
+        throw new ConflictException({ code: "REACTION_WINDOW_CLOSED", message: "当前应变窗口已经关闭。" });
+      }
+      const held = { ...current, status: "held" };
+      view.criticalEvent = null;
+      view.pendingCriticalEvents = (view.pendingCriticalEvents || []).map((item: any) => (
+        String(item.eventId) === reactionId ? held : item
+      ));
+      view.maneuverRulesV1.windowVersion += 1;
+      const actionSummary = {
+        actionId: `hold:${reactionId}:${token.previewId}`,
+        kind: "REACTION" as const,
+        slot: "REACTION" as const,
+        status: "RESOLVED",
+      };
+      const immediateReceipt = {
+        title: "暂不应变",
+        narrative: "你没有在这一刻出手。当前事件继续推进，但这不是一项行动，也不会消耗主动谋划。",
+        visibility: "PRIVATE" as const,
+      };
+      // The audit event supports idempotent replay only. It is not rendered as
+      // a story event, does not create a pending maneuver, and does not mutate
+      // any world fact or resource.
+      view.events.push(event("maneuver_reaction_held", {
+        previewId: token.previewId,
+        idempotencyKey,
+        reactionId,
+        action: actionSummary,
+        immediateReceipt,
+        day: view.run.currentDay,
+      }));
+      bumpVersion(view, expectedVersion);
+      await this.storage.save(view, expectedVersion);
+      return {
+        accepted: true,
+        action: actionSummary,
+        immediateReceipt,
+        gameProjection: projectPublicMvpView(view),
+      };
+    }
+
+    const actionId = id("maneuver");
+    const committed = applyCompiledManeuver(view, token.compiledAction, token.presentation, actionId);
+
+    view.maneuverState.maneuversUsedToday += committed.consumesOpportunity ? 1 : 0;
+    view.maneuverState.maneuverOpportunitiesRemaining -= committed.consumesOpportunity ? 1 : 0;
+    view.maneuverState.totalManeuversUsed += committed.consumesOpportunity ? 1 : 0;
+    if (token.draft.kind === "CONVERSATION") view.maneuverRulesV1.conversationUsedToday += 1;
+    if (token.draft.kind === "INVESTIGATION") view.maneuverRulesV1.investigationUsedToday += 1;
+    view.maneuverRulesV1.windowVersion += 1;
+
+    const actionSummary = {
+      actionId,
+      kind: token.compiledAction.actionKind,
+      slot: token.compiledAction.slot,
+      status: committed.status,
+    };
+    const immediateReceipt = {
+      title: committed.title,
+      narrative: committed.narrative,
+      visibility: token.compiledAction.visibility.scope,
+    };
+    view.events.push(event("maneuver_preview_committed", {
+      previewId: token.previewId,
+      idempotencyKey,
+      action: actionSummary,
+      immediateReceipt,
+      day: view.run.currentDay,
+    }));
+
+    bumpVersion(view, expectedVersion);
+    await this.storage.save(view, expectedVersion);
+    return {
+      accepted: true,
+      action: actionSummary,
+      immediateReceipt,
+      gameProjection: projectPublicMvpView(view),
+    };
+  }
+
   async submitDecision(runId: string, messageId: string, input: MvpMutationInput) {
     const stored = await this.storage.load(runId);
     const requestedOptionKey = String(input.optionKey || "").toUpperCase();
@@ -436,6 +722,12 @@ export class MvpStoryEngine {
     view.run.decisionsRequiredToday = view.run.currentDay === 7 ? 0 : 2;
     view.maneuverState.maneuversUsedToday = 0;
     view.maneuverState.maneuverOpportunitiesRemaining = view.run.currentDay === 7 ? 0 : view.maneuverState.maneuverOpportunitiesPerDay;
+    view.maneuverRulesV1.conversationUsedToday = 0;
+    view.maneuverRulesV1.investigationUsedToday = 0;
+    view.maneuverRulesV1.windowVersion += 1;
+    refreshMvpRuleCardsForDay(view);
+    resolveDueMvpInvestigations(view);
+    if (view.run.currentDay === 4) triggerArmedRuleCards(view, "document_transfer_attempt", "world.day4.suspected_evidence_destruction");
     view.daySummary = null;
     if (view.run.currentDay === 7) {
       view.run.status = "awaiting_finalization";
@@ -474,10 +766,731 @@ export class MvpStoryEngine {
   }
 }
 
+
+interface AppliedManeuverReceiptV1 {
+  status: "PENDING" | "ARMED" | "RESOLVED";
+  title: string;
+  narrative: string;
+  consumesOpportunity: boolean;
+}
+
+function assertManeuverWindowOpen(view: MvpView): void {
+  if (view.run.currentDay < 1
+      || view.run.currentDay > 6
+      || !["awaiting_decision", "awaiting_day_advance"].includes(view.run.status)) {
+    throw new ConflictException({ code: "MANEUVER_WINDOW_CLOSED", message: "当前场景的谋划窗口已经关闭。" });
+  }
+  if (view.maneuverState.maneuverOpportunitiesRemaining <= 0) {
+    throw new ConflictException({ code: "MANEUVER_OPPORTUNITY_EXHAUSTED", message: "本场景的谋划机会已经用尽。" });
+  }
+}
+
+function assertManeuverDraftAvailable(view: MvpView, draft: ManeuverDraftV1): void {
+  if (draft.kind === "REACTION") {
+    const activeReactionId = String(view.criticalEvent?.eventId || "");
+    if (!activeReactionId || activeReactionId !== draft.reactionId
+        || !["pending", "deferred"].includes(String(view.criticalEvent?.status || ""))) {
+      throw new ConflictException({ code: "REACTION_WINDOW_CLOSED", message: "当前应变窗口已经关闭或不属于这项事件。" });
+    }
+    if (draft.optionId && draft.optionId !== "respond") {
+      throw new ConflictException({ code: "REACTION_OPTION_INVALID", message: "所选应变选项不属于当前关键事件。" });
+    }
+    if (draft.cardAssetKey) {
+      const holding = view.maneuverRulesV1.ruleCardHoldings.find((item) => item.cardAssetKey === draft.cardAssetKey && item.status === "AVAILABLE");
+      const definition = holding && SANGTIAN_MVP_RULE_CARDS.find((item) => item.cardKey === holding.cardKey && item.timing.includes("REACTION"));
+      if (!holding || !definition) {
+        throw new ConflictException({ code: "CARD_NOT_OWNED", message: "这张筹码不能用于当前应变。" });
+      }
+    }
+    return;
+  }
+  assertManeuverWindowOpen(view);
+  assertManeuverFormAvailable(view, draft.kind);
+}
+
+function assertManeuverFormAvailable(view: MvpView, kind: ManeuverDraftV1["kind"]): void {
+  if (kind === "CONVERSATION" && view.maneuverRulesV1.conversationUsedToday >= 1) {
+    throw new ConflictException({ code: "MANEUVER_FORM_LIMIT_REACHED", message: "本场景已经主动发起过一次人物交谈。" });
+  }
+  if (kind === "INVESTIGATION" && view.maneuverRulesV1.investigationUsedToday >= 1) {
+    throw new ConflictException({ code: "MANEUVER_FORM_LIMIT_REACHED", message: "本场景已经派遣过一次调查。" });
+  }
+}
+
+function maneuverSlot(view: MvpView): "MANEUVER_1" | "MANEUVER_2" {
+  return view.maneuverState.maneuversUsedToday <= 0 ? "MANEUVER_1" : "MANEUVER_2";
+}
+
+function maneuverContextHash(view: MvpView): string {
+  return createHash("sha256").update(JSON.stringify({
+    runId: view.run.id,
+    version: view.run.version,
+    windowVersion: view.maneuverRulesV1.windowVersion,
+    day: view.run.currentDay,
+    traces: view.maneuverRulesV1.traces.map((trace) => [trace.traceId, trace.status, trace.expiresAtStage]),
+    evidence: view.maneuverRulesV1.evidenceCards.map((card) => [card.evidenceId, card.visibility, card.ownerRoleId]),
+    cards: view.maneuverRulesV1.ruleCardHoldings.map((card) => [card.cardAssetKey, card.status, card.cooldownUntilStage]),
+  })).digest("hex");
+}
+
+function routesForMvpView(view: MvpView): InvestigationRouteV1[] {
+  const routes = [...SANGTIAN_MVP_INVESTIGATION_ROUTES];
+  for (const trace of view.maneuverRulesV1.traces) {
+    if (!trace.traceId.startsWith("trace.document_transfer.")) continue;
+    routes.push(
+      {
+        routeId: `${trace.traceId}:inspect_registry`,
+        traceId: trace.traceId,
+        label: "核对搬运与门禁记录",
+        narrativeMethod: "让幕僚核对搬运登记、封箱编号和门禁记录",
+        requiredCapabilityIds: ["capability.governor.inspect_records"],
+        requiredResourceCosts: [{ resourceId: "staff", amount: 1, label: "幕僚" }],
+        optionalCardTags: ["RECORD_ACCESS"],
+        revealRules: [{
+          claimKey: `claim.${trace.traceId}.registered_move`,
+          statement: "登记与封箱编号能够确认一次文件搬运确实发生过。",
+          strength: 2,
+          when: "ALWAYS",
+        }],
+        evidenceCeiling: "CORROBORATION",
+        mayLearn: ["搬运发生的时辰", "登记经手人和封箱编号"],
+        cannotProve: ["箱内文件完整真实", "最终下令者的私人目的"],
+        settlementMoment: { kind: "IMMEDIATE_AFTER_COMMIT" },
+        observableTrail: { summary: "档房经手人可能发现有人核对搬运记录。", audiencePolicyId: "archive-record-office" },
+        counterTags: ["RECORD_FORGED", "ACCESS_BLOCKED"],
+        expiresWithTrace: true,
+      },
+      {
+        routeId: `${trace.traceId}:follow_route`,
+        traceId: trace.traceId,
+        label: "沿搬运路线继续追踪",
+        narrativeMethod: "派亲信沿封箱离开的路线核对停靠点和接触人员",
+        requiredCapabilityIds: ["capability.governor.dispatch_agent"],
+        requiredResourceCosts: [{ resourceId: "staff", amount: 1, label: "幕僚" }],
+        optionalCardTags: [],
+        revealRules: [{
+          claimKey: `claim.${trace.traceId}.route`,
+          statement: "沿途痕迹能够指向封箱离开后的一个停靠地点。",
+          strength: 1,
+          when: "ALWAYS",
+        }],
+        evidenceCeiling: "LEAD",
+        mayLearn: ["封箱离开后的路线", "可能停靠的地点"],
+        cannotProve: ["封箱中的具体文件", "谁最终接收了文件"],
+        settlementMoment: { kind: "NEXT_ACTOR_TURN" },
+        observableTrail: { summary: "沿途经手人可能察觉有人追问封箱去向。", audiencePolicyId: "transfer-route-observers" },
+        counterTags: ["TAIL_DETECTED", "ROUTE_CHANGED"],
+        expiresWithTrace: true,
+      },
+    );
+  }
+  return routes;
+}
+
+function buildMvpManeuverContext(view: MvpView): ManeuverCompileContextV1 {
+  const dynamicTargets = contactsForMvpView(view).map((contact) => ({
+    type: "ACTOR" as const,
+    id: contact.actorId,
+    label: contact.displayName,
+  }));
+  return {
+    runId: view.run.id,
+    actorTurnId: `${view.run.id}:day:${view.run.currentDay}:decision:${view.run.decisionsCompletedToday}`,
+    actorRoleId: "role.zhejiang_governor",
+    actorRoleKey: "zhejiang_governor",
+    actorId: "actor.zhejiang_governor",
+    actorLabel: "浙江总督",
+    slot: maneuverSlot(view),
+    turnRevision: view.run.version,
+    stateRevision: view.run.version,
+    maneuverWindowVersion: view.maneuverRulesV1.windowVersion,
+    controlEpoch: 1,
+    contextHash: maneuverContextHash(view),
+    contacts: contactsForMvpView(view),
+    traces: view.maneuverRulesV1.traces,
+    investigationRoutes: routesForMvpView(view),
+    ruleCards: SANGTIAN_MVP_RULE_CARDS,
+    ruleCardHoldings: view.maneuverRulesV1.ruleCardHoldings,
+    actionBindings: SANGTIAN_MVP_ACTION_BINDINGS,
+    targets: [...SANGTIAN_MVP_TARGETS, ...dynamicTargets],
+    evidence: view.maneuverRulesV1.evidenceCards,
+    capabilityIds: [
+      "capability.governor.inspect_records",
+      "capability.governor.dispatch_agent",
+      "capability.governor.seal_archive",
+      "capability.governor.move_document",
+      "capability.governor.protect_person",
+      "capability.governor.submit_memorial",
+      "capability.governor.use_county_letter",
+      "capability.governor.secret_memorial",
+    ],
+    resourceAmounts: { staff: 4, guards: 4 },
+    currentStage: view.run.currentDay,
+    nowIso: new Date().toISOString(),
+    previewTtlSeconds: Math.max(30, Number(process.env.MANEUVER_PREVIEW_TTL_SECONDS || 300)),
+  };
+}
+
+function applyCompiledManeuver(
+  view: MvpView,
+  action: CompiledManeuverActionV1,
+  presentation: ActionPreviewPresentationV1,
+  actionId: string,
+): AppliedManeuverReceiptV1 {
+  const createdAt = new Date().toISOString();
+  view.messages.push(message(
+    view,
+    "maneuver_committed",
+    presentation.title,
+    presentation.narrative,
+    "主动谋划",
+    { sourceActionId: actionId, actionKind: action.actionKind, status: "COMMITTED", visibility: "private" },
+  ));
+  view.events.push(event("maneuver_action_committed", {
+    actionId,
+    actionKind: action.actionKind,
+    slot: action.slot,
+    targetId: action.target.id,
+    settlementBindingId: action.settlementBindingId,
+    day: view.run.currentDay,
+  }));
+
+  switch (action.primaryEffect.kind) {
+    case "OPEN_INTERACTION":
+      return applyConversationManeuver(view, action, actionId, createdAt);
+    case "START_INVESTIGATION":
+      return applyInvestigationManeuver(view, action, actionId, createdAt);
+    case "PLAY_RULE_CARD":
+      return applyRuleCardManeuver(view, action, actionId, createdAt);
+    case "APPLY_CAPABILITY":
+      return applyCustomPlanManeuver(view, action, actionId, createdAt);
+    case "DISCLOSE_EVIDENCE":
+      return applyEvidenceDisclosureManeuver(view, action, actionId, createdAt);
+    case "REACTION_RESPONSE":
+      return applyReactionManeuver(view, action, actionId, createdAt);
+  }
+}
+
+function pushPendingManeuver(view: MvpView, item: MvpPendingManeuverV1): void {
+  view.maneuverRulesV1.pendingActions.push(item);
+  if (view.maneuverRulesV1.pendingActions.length > 40) {
+    view.maneuverRulesV1.pendingActions = view.maneuverRulesV1.pendingActions.slice(-40);
+  }
+}
+
+function applyConversationManeuver(
+  view: MvpView,
+  action: CompiledManeuverActionV1,
+  actionId: string,
+  createdAt: string,
+): AppliedManeuverReceiptV1 {
+  const target = contactsForMvpView(view).find((contact) => contact.actorId === action.target.id);
+  const targetLabel = target?.displayName || action.target.label;
+  const reply = conversationReply(target?.actorId || action.target.id, action.primaryEffect.kind === "OPEN_INTERACTION" ? action.primaryEffect.requestKind : "ASK");
+  const resultNarrative = `${targetLabel}已经听完你的话。${reply} 这次回应只改变双方掌握的信息与预期，不代表对方已经履行任何要求。`;
+  pushPendingManeuver(view, {
+    actionId,
+    kind: "CONVERSATION",
+    slot: action.slot,
+    day: view.run.currentDay,
+    title: `与${targetLabel}交谈`,
+    status: "RESOLVED",
+    resultNarrative,
+    createdAt,
+    resolvedAt: createdAt,
+  });
+  view.messages.push(message(view, "maneuver_result", `${targetLabel}作出回应`, resultNarrative, "人物交谈", {
+    sourceActionId: actionId,
+    speaker: targetLabel,
+    visibility: action.visibility.scope === "PUBLIC" ? "public" : "private",
+  }));
+  view.events.push(event("conversation_resolved", { actionId, targetActorId: action.target.id, requestKind: action.primaryEffect.kind === "OPEN_INTERACTION" ? action.primaryEffect.requestKind : "ASK" }));
+  return { status: "RESOLVED", title: `${targetLabel}已收到你的话`, narrative: resultNarrative, consumesOpportunity: true };
+}
+
+function conversationReply(actorId: string, requestKind: string): string {
+  const base: Record<string, string> = {
+    "actor.xunfu": "巡抚没有正面承认任何失误，只说愿意让经手人把能够公开的记录送来。",
+    "actor.county_magistrate": "县令答应继续保留副本，但要求先确认总督府不会把他单独推出去担责。",
+    "actor.merchant": "会首没有拒绝，只反问官府准备拿什么保证商会不会在事后成为唯一替罪羊。",
+    "actor.sili_jian": "织造使记下你的说法，却没有透露他会怎样向御前复述。",
+  };
+  const purpose = requestKind === "PRESSURE" ? "他也明显听出了其中的压力。" : requestKind === "PROPOSE_TERM" ? "他要求把条件说得更具体。" : "他没有把态度完全亮明。";
+  return `${base[actorId] || "对方表示已经听明白你的意思。"}${purpose}`;
+}
+
+function applyInvestigationManeuver(
+  view: MvpView,
+  action: CompiledManeuverActionV1,
+  actionId: string,
+  createdAt: string,
+): AppliedManeuverReceiptV1 {
+  if (action.primaryEffect.kind !== "START_INVESTIGATION") throw new Error("INVALID_INVESTIGATION_EFFECT");
+  const effect = action.primaryEffect;
+  const trace = view.maneuverRulesV1.traces.find((item) => item.traceId === effect.traceId);
+  const route = routesForMvpView(view).find((item) => item.routeId === effect.routeId && item.traceId === effect.traceId);
+  if (!trace || !route) throw new ConflictException({ code: "ACTION_PREVIEW_STALE", message: "调查痕迹或路线已经失效，请重新预演。" });
+  const pending: MvpPendingManeuverV1 = {
+    actionId,
+    kind: "INVESTIGATION",
+    slot: action.slot,
+    day: view.run.currentDay,
+    title: `追查：${trace.title}`,
+    status: "PENDING",
+    traceId: trace.traceId,
+    routeId: route.routeId,
+    createdAt,
+  };
+  if (route.settlementMoment.kind === "NEXT_ACTOR_TURN") pending.revealAtDay = view.run.currentDay + 1;
+  pushPendingManeuver(view, pending);
+
+  if (route.observableTrail) {
+    view.messages.push(message(view, "observable_trace", "调查留下了可察觉的动静", route.observableTrail.summary, "行动痕迹", {
+      sourceActionId: actionId,
+      visibility: "limited",
+    }));
+  }
+
+  if (route.settlementMoment.kind === "IMMEDIATE_AFTER_COMMIT" || route.settlementMoment.kind === "BEFORE_MAIN_LOCK") {
+    const result = resolveMvpInvestigation(view, pending, route, trace);
+    return { status: "RESOLVED", title: pending.title, narrative: result, consumesOpportunity: true };
+  }
+
+  view.events.push(event("investigation_started", { actionId, traceId: trace.traceId, routeId: route.routeId, revealAtDay: pending.revealAtDay }));
+  return {
+    status: "PENDING",
+    title: pending.title,
+    narrative: `调查已经开始，结果将在${route.settlementMoment.kind === "NEXT_ACTOR_TURN" ? "下一次轮到你行动时" : "规则指定的节点"}返回。`,
+    consumesOpportunity: true,
+  };
+}
+
+function resolveMvpInvestigation(
+  view: MvpView,
+  pending: MvpPendingManeuverV1,
+  route: InvestigationRouteV1,
+  trace: MvpView["maneuverRulesV1"]["traces"][number],
+): string {
+  const evidenceId = id("evidence");
+  const resolution = resolveInvestigationV1({
+    trace,
+    route,
+    actorRoleId: "role.zhejiang_governor",
+    actorCapabilityIds: buildMvpManeuverContext(view).capabilityIds,
+    availableResources: buildMvpManeuverContext(view).resourceAmounts,
+    obstruction: null,
+    evidenceId,
+    evidenceTitle: evidenceTitleForRoute(route),
+    acquiredAtRevision: view.run.version + 1,
+  });
+  pending.status = "RESOLVED";
+  pending.resolvedAt = new Date().toISOString();
+  pending.resultNarrative = resolution.processNarrative;
+  if (resolution.evidence) {
+    view.maneuverRulesV1.evidenceCards.push(resolution.evidence);
+    pending.evidenceId = resolution.evidence.evidenceId;
+    pending.evidenceTitle = resolution.evidence.title;
+    view.messages.push(message(view, "investigation_result", `你获得了：${resolution.evidence.title}`, evidenceResultBody(resolution.evidence), "调查结果", {
+      sourceActionId: pending.actionId,
+      evidenceId: resolution.evidence.evidenceId,
+      visibility: "private",
+    }));
+    view.events.push(event("evidence_acquired", {
+      actionId: pending.actionId,
+      evidenceId: resolution.evidence.evidenceId,
+      level: resolution.evidence.level,
+      claimKeys: resolution.evidence.supports.map((support) => support.claimKey),
+    }));
+  } else {
+    view.messages.push(message(view, "investigation_result", "调查路线已经返回", resolution.processNarrative, "调查结果", {
+      sourceActionId: pending.actionId,
+      visibility: "private",
+    }));
+  }
+  view.events.push(event("investigation_resolved", { actionId: pending.actionId, status: resolution.status, routeId: route.routeId }));
+  return resolution.evidence
+    ? `${resolution.processNarrative} 你获得了“${resolution.evidence.title}”，但它只覆盖牌面写明的有限命题。`
+    : resolution.processNarrative;
+}
+
+function evidenceTitleForRoute(route: InvestigationRouteV1): string {
+  if (route.routeId.includes("paper") || route.routeId.includes("copy_registry")) return "底册重新装订的痕迹";
+  if (route.routeId.includes("inn_registry")) return "巡抚幕僚的驿站登记";
+  if (route.routeId.includes("follow")) return "幕僚离开驿站后的路线";
+  if (route.routeId.includes("inspect_registry")) return "封箱搬运与门禁记录";
+  return `调查所得：${route.label}`;
+}
+
+function evidenceResultBody(evidence: EvidenceCardStateV1): string {
+  const supports = evidence.supports.map((item) => `能支持：${item.statement}`).join("\n");
+  const cannot = evidence.cannotProve.map((item) => `不能证明：${item}`).join("\n");
+  return `${supports}\n${cannot}\n这张证据默认只有你能看到。`;
+}
+
+function applyRuleCardManeuver(
+  view: MvpView,
+  action: CompiledManeuverActionV1,
+  actionId: string,
+  createdAt: string,
+): AppliedManeuverReceiptV1 {
+  if (action.primaryEffect.kind !== "PLAY_RULE_CARD") throw new Error("INVALID_CARD_EFFECT");
+  const effect = action.primaryEffect;
+  const holding = view.maneuverRulesV1.ruleCardHoldings.find((item) => item.cardAssetKey === effect.cardAssetKey);
+  const card = holding && SANGTIAN_MVP_RULE_CARDS.find((item) => item.cardKey === holding.cardKey);
+  if (!holding || !card || holding.status !== "AVAILABLE") {
+    throw new ConflictException({ code: "ACTION_PREVIEW_STALE", message: "筹码状态已经改变，请重新预演。" });
+  }
+
+  if (effect.playMode === "SET") {
+    holding.status = "LOCKED";
+    view.maneuverRulesV1.armedCards.push({
+      actionId,
+      day: view.run.currentDay,
+      cardAssetKey: holding.cardAssetKey,
+      targetId: action.target.id,
+      triggerPatternId: effect.triggerPatternId || "",
+      status: "ARMED",
+      createdAt,
+    });
+    pushPendingManeuver(view, {
+      actionId,
+      kind: "CARD_LAYOUT",
+      slot: action.slot,
+      day: view.run.currentDay,
+      title: `伏置：${card.label}`,
+      status: "ARMED",
+      createdAt,
+    });
+    view.events.push(event("rule_card_armed", { actionId, cardAssetKey: holding.cardAssetKey, triggerPatternId: effect.triggerPatternId, targetId: action.target.id }));
+    return { status: "ARMED", title: `已伏下${card.label}`, narrative: "筹码已按牌面条件秘密伏置；触发前不会直接改变世界。", consumesOpportunity: true };
+  }
+
+  consumeOrCooldownCard(view, holding, card);
+  const result = applyActiveRuleCardEffect(view, card, action.target.id, actionId);
+  pushPendingManeuver(view, {
+    actionId,
+    kind: "CARD_LAYOUT",
+    slot: action.slot,
+    day: view.run.currentDay,
+    title: `打出：${card.label}`,
+    status: "RESOLVED",
+    resultNarrative: result,
+    createdAt,
+    resolvedAt: createdAt,
+  });
+  view.messages.push(message(view, "card_triggered", `${card.label}已经生效`, result, "筹码布局", { sourceActionId: actionId }));
+  view.events.push(event("rule_card_played", { actionId, cardAssetKey: holding.cardAssetKey, targetId: action.target.id, mode: "ACTIVE" }));
+  return { status: "RESOLVED", title: `${card.label}已经落子`, narrative: result, consumesOpportunity: true };
+}
+
+function consumeOrCooldownCard(view: MvpView, holding: MvpView["maneuverRulesV1"]["ruleCardHoldings"][number], card: RuleCardDefinitionV1): void {
+  if (card.consumption === "CONSUME") holding.status = "CONSUMED";
+  else if (card.consumption === "COOLDOWN") {
+    holding.status = "COOLDOWN";
+    holding.cooldownUntilStage = view.run.currentDay + Math.max(1, card.cooldownStages || 1);
+  } else if (card.consumption === "LOCK") holding.status = "LOCKED";
+}
+
+function applyActiveRuleCardEffect(view: MvpView, card: RuleCardDefinitionV1, targetId: string, actionId: string): string {
+  if (card.cardKey === "governor_seal_token") {
+    patchDashboard(view, { "总督权威": 3, "巡抚敌意": 2 });
+    view.dashboard.traces = Array.from(new Set([...(view.dashboard.traces || []), "公开使用总督封缄令牌"]));
+    return `封缄令牌已经落在${targetLabelById(targetId)}上。普通差役必须停止继续搬运，但更高权限和已经完成的转移仍可能改变结果。`;
+  }
+  if (card.cardKey === "county_letter") {
+    patchDashboard(view, { "暗账完整度": 2, "县令信任": 2 });
+    const evidence = countyLetterEvidence(view, actionId);
+    if (!view.maneuverRulesV1.evidenceCards.some((item) => item.evidenceId === evidence.evidenceId)) {
+      view.maneuverRulesV1.evidenceCards.push(evidence);
+    }
+    return "县令密信打开了一条可核验的记录入口，并形成一张私人线索牌；密信本身仍不能证明暗账为真。";
+  }
+  if (card.cardKey === "secret_memorial_channel") {
+    patchDashboard(view, { "皇帝信任": 3, "内阁疑心": 2, "清算风险": -1 });
+    return "奏报已经进入受保护的密奏渠道，但何时抵达、由谁先看到以及是否被采信仍待后续结算。";
+  }
+  return `“${card.label}”按牌面规则作用于${targetLabelById(targetId)}。`;
+}
+
+function countyLetterEvidence(view: MvpView, actionId: string): EvidenceCardStateV1 {
+  return {
+    schemaVersion: "evidence_card_v1",
+    evidenceId: `evidence_county_letter_${actionId}`,
+    title: "清流县令密信中的具体疑点",
+    level: "LEAD",
+    authenticity: "SUPPORTED",
+    supports: [{ claimKey: "claim.county_magistrate_raised_specific_doubt", statement: "清流县令曾对三页田亩编号提出过具体疑点。", strength: 1 }],
+    cannotProve: ["底册确实被故意替换", "巡抚或商会参与了修改"],
+    source: { traceId: "asset.county_letter", routeId: "card.active.county_letter", sourceGroupKey: "source.county_letter", sourceEventIds: [actionId] },
+    ownerRoleId: "role.zhejiang_governor",
+    visibility: "PRIVATE",
+    sharedWithRoleIds: [],
+    acquiredAtRevision: view.run.version + 1,
+    derivedFromEvidenceIds: [],
+  };
+}
+
+function applyCustomPlanManeuver(
+  view: MvpView,
+  action: CompiledManeuverActionV1,
+  actionId: string,
+  createdAt: string,
+): AppliedManeuverReceiptV1 {
+  if (action.primaryEffect.kind !== "APPLY_CAPABILITY") throw new Error("INVALID_CUSTOM_PLAN_EFFECT");
+  const effectKey = action.primaryEffect.effectKey;
+  const effect = applyCustomEffectPatch(view, effectKey, action, actionId);
+  pushPendingManeuver(view, {
+    actionId,
+    kind: "CUSTOM_PLAN",
+    slot: action.slot,
+    day: view.run.currentDay,
+    title: action.objective,
+    status: "RESOLVED",
+    resultNarrative: effect.narrative,
+    createdAt,
+    resolvedAt: createdAt,
+  });
+  view.messages.push(message(view, "maneuver_result", action.objective, effect.narrative, "自拟谋划", {
+    sourceActionId: actionId,
+    visibility: action.visibility.scope === "PUBLIC" ? "public" : "limited",
+  }));
+  view.events.push(event("custom_plan_resolved", { actionId, effectKey, targetId: action.target.id, patch: effect.patch }));
+  return { status: "RESOLVED", title: action.objective, narrative: effect.narrative, consumesOpportunity: true };
+}
+
+function applyCustomEffectPatch(view: MvpView, effectKey: string, action: CompiledManeuverActionV1, actionId: string): { patch: Record<string, number>; narrative: string } {
+  let patch: Record<string, number> = {};
+  let narrative = "行动已经开始，并按角色权限、资源、时间和当前世界状态完成有限结算。";
+  if (effectKey === "seal_archive") {
+    patch = { "总督权威": 4, "巡抚敌意": 4, "清算风险": 1 };
+    narrative = `封锁命令已经送达${action.target.label}，兵丁开始接管出入。是否赶在文件离开前完成控制，仍取决于先后时序和现场权限。`;
+  } else if (effectKey === "move_document") {
+    patch = { "暗账完整度": 3, "清算风险": 4 };
+    narrative = `经手人已经开始接触${action.target.label}并尝试转移。行动没有被写成“必然成功”，同时留下了可以被追查的搬运、封箱和路线痕迹。`;
+    createDocumentTransferTrace(view, action, actionId);
+    triggerArmedRuleCards(view, "document_transfer_attempt", actionId);
+  } else if (effectKey === "protect_person") {
+    patch = { "暗账完整度": 4, "县令信任": 3, "巡抚敌意": 2 };
+    narrative = `可信人手已经开始接触${action.target.label}并建立保护安排。目标是否愿意作证，以及保护能否赶在对手施压前完成，仍待后续局势。`;
+  } else if (effectKey === "submit_memorial") {
+    patch = { "皇帝信任": 3, "内阁疑心": 2, "清算风险": -1 };
+    narrative = `奏报已经完成封缄并离开总督府。它何时抵达、谁先看到以及御前是否采信，仍由后续奏报竞争决定。`;
+  }
+  patchDashboard(view, patch);
+  view.dashboard.latestChanges = Object.entries(patch).map(([key, value]) => [key, value]);
+  if (action.tracePolicy.leavesTrace && action.tracePolicy.playerSafeHint) {
+    view.dashboard.traces = Array.from(new Set([...(view.dashboard.traces || []), action.tracePolicy.playerSafeHint]));
+  }
+  return { patch, narrative };
+}
+
+function createDocumentTransferTrace(view: MvpView, action: CompiledManeuverActionV1, actionId: string): void {
+  const traceId = `trace.document_transfer.${actionId}`;
+  if (view.maneuverRulesV1.traces.some((trace) => trace.traceId === traceId)) return;
+  view.maneuverRulesV1.traces.push({
+    traceId,
+    runId: view.run.id,
+    title: `关于“${action.target.label}”的一次搬运痕迹`,
+    narrativeHook: "封箱、经手登记与沿途询问中出现了彼此能够对应的搬运痕迹。",
+    traceType: "BEHAVIOR",
+    subjectEntityIds: [action.target.id],
+    sourceEventIds: [actionId],
+    supportedClaimKeys: [`claim.${traceId}.registered_move`, `claim.${traceId}.route`],
+    sourceGroupKey: `source.${traceId}`,
+    accessRoleIds: ["role.zhejiang_governor"],
+    routeIds: [`${traceId}:inspect_registry`, `${traceId}:follow_route`],
+    visibility: { scope: "PRIVATE", roleIds: ["role.zhejiang_governor"] },
+    status: "ACTIVE",
+    createdAtRevision: view.run.version + 1,
+    expiresAtStage: view.run.currentDay + 1,
+  });
+}
+
+function applyEvidenceDisclosureManeuver(
+  view: MvpView,
+  action: CompiledManeuverActionV1,
+  actionId: string,
+  createdAt: string,
+): AppliedManeuverReceiptV1 {
+  if (action.primaryEffect.kind !== "DISCLOSE_EVIDENCE") throw new Error("INVALID_DISCLOSURE_EFFECT");
+  const cards = view.maneuverRulesV1.evidenceCards.filter((card) => action.primaryEffect.kind === "DISCLOSE_EVIDENCE" && action.primaryEffect.evidenceAssetIds.includes(card.evidenceId));
+  if (cards.length !== action.primaryEffect.evidenceAssetIds.length) {
+    throw new ConflictException({ code: "EVIDENCE_NOT_OWNED", message: "证据所有权已经变化，请重新预演。" });
+  }
+  for (const card of cards) card.visibility = action.primaryEffect.audience === "PUBLIC" ? "PUBLIC" : "SHARED";
+  const narrative = `你公开或定向出示了 ${cards.length} 张证据。系统只确认各证据牌面写明的命题，不会把推测扩大成事实。`;
+  pushPendingManeuver(view, { actionId, kind: "CUSTOM_PLAN", slot: action.slot, day: view.run.currentDay, title: "出示证据", status: "RESOLVED", resultNarrative: narrative, createdAt, resolvedAt: createdAt });
+  view.messages.push(message(view, "evidence_revealed", "证据已经出示", narrative, "证据", { sourceActionId: actionId }));
+  return { status: "RESOLVED", title: "证据已经出示", narrative, consumesOpportunity: true };
+}
+
+function applyReactionManeuver(
+  view: MvpView,
+  action: CompiledManeuverActionV1,
+  actionId: string,
+  createdAt: string,
+): AppliedManeuverReceiptV1 {
+  if (action.primaryEffect.kind !== "REACTION_RESPONSE") throw new Error("INVALID_REACTION_EFFECT");
+  const hold = action.primaryEffect.hold;
+  const narrative = hold
+    ? "你暂时没有在这一刻出手。当前事件继续推进，但这次选择不会消耗主动谋划。"
+    : "你的应变已经进入当前事件的结算；它只能回应这次影响，不能扩展为无关行动。";
+  pushPendingManeuver(view, { actionId, kind: "REACTION", slot: "REACTION", day: view.run.currentDay, title: hold ? "暂不应变" : "应变", status: "RESOLVED", resultNarrative: narrative, createdAt, resolvedAt: createdAt });
+  view.messages.push(message(view, "reaction_result", hold ? "你保留了应变" : "你已经应变", narrative, "应变", { sourceActionId: actionId }));
+  return { status: "RESOLVED", title: hold ? "暂不应变" : "应变已经提交", narrative, consumesOpportunity: false };
+}
+
+function isReactionHoldV1(action: CompiledManeuverActionV1): action is CompiledManeuverActionV1 & {
+  primaryEffect: Extract<CompiledManeuverActionV1["primaryEffect"], { kind: "REACTION_RESPONSE" }> & { hold: true };
+} {
+  return action.actionKind === "REACTION"
+    && action.primaryEffect.kind === "REACTION_RESPONSE"
+    && action.primaryEffect.hold === true;
+}
+
+function targetLabelById(targetId: string): string {
+  return SANGTIAN_MVP_TARGETS.find((target) => target.id === targetId)?.label || targetId;
+}
+
+function triggerArmedRuleCards(view: MvpView, eventPatternId: string, sourceActionId: string): void {
+  for (const armed of view.maneuverRulesV1.armedCards) {
+    if (armed.status !== "ARMED" || armed.triggerPatternId !== eventPatternId) continue;
+    const holding = view.maneuverRulesV1.ruleCardHoldings.find((item) => item.cardAssetKey === armed.cardAssetKey);
+    const card = holding && SANGTIAN_MVP_RULE_CARDS.find((item) => item.cardKey === holding.cardKey);
+    if (!holding || !card) continue;
+    armed.status = "TRIGGERED";
+    armed.resolvedAt = new Date().toISOString();
+    holding.status = card.consumption === "COOLDOWN" ? "COOLDOWN" : card.consumption === "CONSUME" ? "CONSUMED" : "AVAILABLE";
+    if (holding.status === "COOLDOWN") holding.cooldownUntilStage = view.run.currentDay + Math.max(1, card.cooldownStages || 1);
+    const pending = view.maneuverRulesV1.pendingActions.find((item) => item.actionId === armed.actionId);
+    if (pending) {
+      pending.status = "RESOLVED";
+      pending.resolvedAt = armed.resolvedAt;
+      pending.resultNarrative = `伏置的“${card.label}”被一次可观察的转移动作触发。`;
+    }
+    patchDashboard(view, { "总督权威": 3, "巡抚敌意": 2 });
+    view.messages.push(message(view, "card_triggered", `${card.label}被触发`, `有人试图移动相关文件时，伏置的“${card.label}”自动进入结算。普通搬运被要求暂停，但已经完成的转移与更高权限仍不受它保证。`, "筹码触发", {
+      sourceActionId: armed.actionId,
+      triggerSourceActionId: sourceActionId,
+    }));
+    view.events.push(event("rule_card_triggered", { actionId: armed.actionId, sourceActionId, eventPatternId, cardAssetKey: armed.cardAssetKey }));
+  }
+}
+
+function resolveDueMvpInvestigations(view: MvpView): void {
+  const routes = routesForMvpView(view);
+  for (const pending of view.maneuverRulesV1.pendingActions) {
+    if (pending.kind !== "INVESTIGATION" || pending.status !== "PENDING") continue;
+    if (!pending.revealAtDay || pending.revealAtDay > view.run.currentDay) continue;
+    const trace = view.maneuverRulesV1.traces.find((item) => item.traceId === pending.traceId);
+    const route = routes.find((item) => item.routeId === pending.routeId && item.traceId === pending.traceId);
+    if (!trace || !route) {
+      pending.status = "EXPIRED";
+      pending.resolvedAt = new Date().toISOString();
+      pending.resultNarrative = "调查返回时，原痕迹已经无法继续核验。";
+      view.messages.push(message(view, "investigation_result", pending.title, pending.resultNarrative, "调查结果", { sourceActionId: pending.actionId, visibility: "private" }));
+      continue;
+    }
+    resolveMvpInvestigation(view, pending, route, trace);
+  }
+}
+
+function refreshMvpRuleCardsForDay(view: MvpView): void {
+  for (const holding of view.maneuverRulesV1.ruleCardHoldings) {
+    if (holding.status === "COOLDOWN" && Number(holding.cooldownUntilStage || Infinity) <= view.run.currentDay) {
+      holding.status = "AVAILABLE";
+      delete holding.cooldownUntilStage;
+    }
+  }
+  for (const trace of view.maneuverRulesV1.traces) {
+    if (trace.status === "ACTIVE" && trace.expiresAtStage !== undefined && trace.expiresAtStage < view.run.currentDay) {
+      trace.status = "EXPIRED";
+    }
+  }
+}
+
 /** Public projection is the only shape controllers should return to a browser. */
 export function projectPublicMvpView(view: MvpView) {
   const result: any = structuredClone(view);
   const ledger = view.causalLedger;
+  const maneuverContext = buildMvpManeuverContext(view);
+  const projectedCards = projectRuleCardsV1({
+    cards: SANGTIAN_MVP_RULE_CARDS,
+    holdings: view.maneuverRulesV1.ruleCardHoldings,
+    roleId: "role.zhejiang_governor",
+  }).map((projected) => {
+    const definition = SANGTIAN_MVP_RULE_CARDS.find((card) => card.cardKey === projected.cardKey);
+    return {
+      ...projected,
+      legalTargets: definition
+        ? maneuverContext.targets
+            .filter((target) => definition.legalTargetTypes.includes(target.type))
+            .map((target) => ({ id: target.id, label: target.label, type: target.type }))
+        : [],
+      triggerOptions: (definition?.triggerPatternIds || []).map((triggerPatternId) => ({
+        triggerPatternId,
+        label: triggerPatternId === "document_transfer_attempt" ? "有人试图转移相关文件" : triggerPatternId,
+      })),
+    };
+  });
+  const currentDayActions = view.maneuverRulesV1.pendingActions.filter((item) => item.day === view.run.currentDay);
+  result.capabilities = {
+    ...(result.capabilities || {}),
+    maneuverRulesV1: {
+      schemaVersion: "maneuver_rules_projection_v1",
+      enabled: true,
+      window: {
+        windowId: `${view.run.id}:day:${view.run.currentDay}`,
+        status: ["awaiting_decision", "awaiting_day_advance"].includes(view.run.status) && view.run.currentDay <= 6 ? "OPEN" : "CLOSED",
+        totalOpportunities: view.maneuverState.maneuverOpportunitiesPerDay,
+        remainingOpportunities: view.maneuverState.maneuverOpportunitiesRemaining,
+        usedSlots: currentDayActions
+          .filter((item) => item.slot !== "REACTION")
+          .map((item) => ({ slot: item.slot, actionId: item.actionId, kind: item.kind, status: item.status })),
+        formLimits: {
+          conversationRemaining: Math.max(0, 1 - view.maneuverRulesV1.conversationUsedToday),
+          investigationRemaining: Math.max(0, 1 - view.maneuverRulesV1.investigationUsedToday),
+        },
+        version: view.maneuverRulesV1.windowVersion,
+        closesWhen: "DAY_ADVANCES",
+      },
+      contacts: projectContactsV1(contactsForMvpView(view), "role.zhejiang_governor"),
+      investigationLeads: projectInvestigationLeadsV1({
+        traces: view.maneuverRulesV1.traces,
+        routes: routesForMvpView(view),
+        roleId: "role.zhejiang_governor",
+        currentStage: view.run.currentDay,
+      }),
+      ruleCards: projectedCards,
+      evidenceCards: projectEvidenceHandV1(view.maneuverRulesV1.evidenceCards, "role.zhejiang_governor"),
+      pendingActions: view.maneuverRulesV1.pendingActions
+        .slice(-12)
+        .map((item) => ({
+          actionId: item.actionId,
+          kind: item.kind,
+          slot: item.slot,
+          day: item.day,
+          title: item.title,
+          status: item.status,
+          revealAtLabel: item.revealAtDay ? `第 ${item.revealAtDay} 天开始时` : null,
+          evidenceId: item.evidenceId,
+          evidenceTitle: item.evidenceTitle,
+          resultNarrative: item.resultNarrative,
+        })),
+      reactions: result.criticalEvent && ["pending", "deferred"].includes(String(result.criticalEvent.status))
+        ? [{
+            reactionId: String(result.criticalEvent.eventId),
+            storyNotice: { title: result.criticalEvent.title, narrative: result.criticalEvent.summary },
+            options: [
+              { optionId: "respond", label: "立即回应", description: "进入当前关键事件的回应选择。" },
+            ],
+            eligibleCardAssetKeys: projectedCards.filter((card) => card.timing.includes("REACTION") && card.status === "AVAILABLE").map((card) => card.cardAssetKey),
+            customAllowed: true,
+            holdAllowed: true,
+          }]
+        : [],
+    },
+  };
   result.meta = {
     eventCount: view.events.length,
     schemaVersion: view.runtime.schemaVersion
@@ -549,6 +1562,9 @@ export function projectPublicMvpView(view: MvpView) {
     if (publicItem.optionKey === "CUSTOM") publicItem.body = "自定义决策（内容已通过身份、资源、时代与阶段校验）";
     return publicItem;
   });
+  // Never expose internal trace sources, private evidence ownership metadata,
+  // armed-card trigger state, or compiler context directly to the browser.
+  delete result.maneuverRulesV1;
   return result;
 }
 
@@ -575,6 +1591,26 @@ export function ensureMvpCausalView(payload: any, _phase?: string) {
     usedLeverageKeys: []
   };
   payload.maneuverState.usedLeverageKeys ||= [];
+  payload.maneuverRulesV1 ||= {
+    schemaVersion: "mvp_maneuver_rules_state_v1",
+    enabled: true,
+    windowVersion: 1,
+    conversationUsedToday: 0,
+    investigationUsedToday: 0,
+    traces: initialSangtianMvpTraces(payload.run.id),
+    evidenceCards: [],
+    ruleCardHoldings: initialSangtianMvpRuleCardHoldings(),
+    pendingActions: [],
+    armedCards: []
+  };
+  payload.maneuverRulesV1.windowVersion ||= 1;
+  payload.maneuverRulesV1.conversationUsedToday ||= 0;
+  payload.maneuverRulesV1.investigationUsedToday ||= 0;
+  payload.maneuverRulesV1.traces ||= initialSangtianMvpTraces(payload.run.id);
+  payload.maneuverRulesV1.evidenceCards ||= [];
+  payload.maneuverRulesV1.ruleCardHoldings ||= initialSangtianMvpRuleCardHoldings();
+  payload.maneuverRulesV1.pendingActions ||= [];
+  payload.maneuverRulesV1.armedCards ||= [];
   return payload;
 }
 
@@ -640,8 +1676,20 @@ function createInitialView(options: { mode: string; selectedRoleKey: string }): 
     daySummaries: {},
     finalJudgement: null,
     outcome: null,
-    runtime: { schemaVersion: "mvp-causal-v4.1", narrativeProvider: "deterministic-rules", fallbackUsed: true, aiBudget: createMvpAiBudget() }
-    ,maneuverState: {
+    runtime: { schemaVersion: "mvp-causal-v4.1", narrativeProvider: "deterministic-rules", fallbackUsed: true, aiBudget: createMvpAiBudget() },
+    maneuverRulesV1: {
+      schemaVersion: "mvp_maneuver_rules_state_v1",
+      enabled: true,
+      windowVersion: 1,
+      conversationUsedToday: 0,
+      investigationUsedToday: 0,
+      traces: initialSangtianMvpTraces(runId),
+      evidenceCards: [],
+      ruleCardHoldings: initialSangtianMvpRuleCardHoldings(),
+      pendingActions: [],
+      armedCards: []
+    },
+    maneuverState: {
       maneuverOpportunitiesPerDay: 2,
       maneuversUsedToday: 0,
       maneuverOpportunitiesRemaining: 2,
@@ -847,7 +1895,10 @@ function buildRuleDecisionOutput(view: MvpView, active: MvpActiveDecision, selec
   const visibleAction = selected.key === "CUSTOM" ? "自定义决策（内容已按规则校验）" : selected.body;
   const targetRole = selected.reactionRoleKey || active.reactionRoleKey;
   const information = decisionInformation(active, selected, targetRole);
-  const stateChangesText = Object.entries(selected.patch).map(([key, value]) => `${key} ${value >= 0 ? "+" : ""}${value}`);
+  const stateChangesText = Object.entries(selected.patch).map(([key, value]) => {
+    const numeric = Number(value);
+    return `${key} ${numeric >= 0 ? "+" : ""}${numeric}`;
+  });
   const traces = tags.includes("secret_memorial") ? ["御前密奏底稿", "驿站递送记录", "两份奏报口径"]
     : tags.includes("merchant") ? ["商会入府记录", "粮银往来传话", "仓价变化账册"]
       : tags.includes("evidence") ? ["田契副本", "县衙递信记录", "总督府阅账批注"]

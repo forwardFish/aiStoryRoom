@@ -53,6 +53,10 @@ export class ContinuousStoryV2LegacyStorage {
       // turn after the submission has already moved it forward.  Refresh the
       // database projection instead of showing a stale English conflict toast
       // or letting the old choice be submitted again.
+      if (error?.code === "TURN_CONTEXT_UPDATED" && error?.details?.gameProjection) {
+        this.projection = requireProjection(error.details.gameProjection);
+        return adaptProjection(this.projection);
+      }
       if (["TURN_MOVED", "STORY_GENERATION_IN_PROGRESS"].includes(error?.code)) {
         return this.getRun();
       }
@@ -84,11 +88,49 @@ export class ContinuousStoryV2LegacyStorage {
         body: JSON.stringify(body)
       });
     } catch (error) {
-      if (["TURN_MOVED", "STORY_GENERATION_IN_PROGRESS"].includes(error?.code)) return this.getRun();
+      if (["TURN_MOVED", "STORY_GENERATION_IN_PROGRESS", "TURN_CONTEXT_UPDATED"].includes(error?.code)) return this.getRun();
       throw error;
     }
     this.projection = requireProjection(response.gameProjection);
     return adaptProjection(this.projection, { resolution: response.resolution || null, decisionForm: maneuver.decisionForm });
+  }
+
+  async previewManeuver(_view, draft, { idempotencyKey } = {}) {
+    const projection = this.projection;
+    const turn = projection.currentTurn;
+    const capability = projection.capabilities?.maneuverRulesV1;
+    if (!turn || turn.status !== "OPEN" || !projection.control?.canHumanAct) {
+      throw requestError("MANEUVER_WINDOW_CLOSED", "当前角色暂时不能预演谋划。", 409);
+    }
+    if (!capability?.enabled || capability.window?.status !== "OPEN") {
+      throw requestError("MANEUVER_PREVIEW_UNAVAILABLE", "当前故事局尚未启用行动预演。", 409);
+    }
+    return this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game/turns/${encodeURIComponent(turn.id)}/action-previews`, {
+      method: "POST",
+      body: JSON.stringify({
+        idempotencyKey: idempotencyKey || uniqueKey("maneuver-preview", turn.id),
+        turnRevision: turn.revision,
+        expectedStateRevision: projection.worldSequence,
+        expectedManeuverWindowVersion: capability.window.version,
+        controlEpoch: projection.control.epoch,
+        draft
+      })
+    });
+  }
+
+  async commitManeuverPreview(_view, preview, { idempotencyKey } = {}) {
+    if (!preview?.previewId || !preview?.previewToken) {
+      throw requestError("ACTION_PREVIEW_TOKEN_INVALID", "行动预演不完整，请重新预演。", 400);
+    }
+    const payload = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game/action-previews/${encodeURIComponent(preview.previewId)}/commit`, {
+      method: "POST",
+      body: JSON.stringify({
+        idempotencyKey: idempotencyKey || uniqueKey("maneuver-commit", preview.previewId),
+        previewToken: preview.previewToken
+      })
+    });
+    this.projection = requireProjection(payload.gameProjection);
+    return { ...payload, gameProjection: adaptProjection(this.projection) };
   }
 
   async startCriticalResponse() { return this.getRun(); }
@@ -127,12 +169,21 @@ export class ContinuousStoryV2LegacyStorage {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const error = new Error(payload?.message || payload?.code || "故事服务暂时无法完成这次操作。");
-      error.code = payload?.code || "STORY_REQUEST_FAILED";
+      const nested = payload?.message && typeof payload.message === "object" && !Array.isArray(payload.message)
+        ? payload.message
+        : null;
+      const server = nested || payload;
+      const message = typeof server?.message === "string"
+        ? server.message
+        : typeof payload?.message === "string"
+          ? payload.message
+          : server?.code || "故事服务暂时无法完成这次操作。";
+      const error = new Error(message);
+      error.code = server?.code || payload?.code || "STORY_REQUEST_FAILED";
       error.status = response.status;
-      error.details = payload;
+      error.details = server;
       if (response.status === 402 && ["PLAYER_CREDITS_REQUIRED", "INSUFFICIENT_WORLD_CREDITS"].includes(error.code)) {
-        globalThis.window?.dispatchEvent?.(new CustomEvent("worldcreditsrequired", { detail: { ...payload, runId: this.runId } }));
+        globalThis.window?.dispatchEvent?.(new CustomEvent("worldcreditsrequired", { detail: { ...server, runId: this.runId } }));
       }
       throw error;
     }
@@ -159,19 +210,45 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
     const latestResult = entry.kind === "RESULT" && entry.id === results.at(-1)?.id;
     const entryDecisionForm = normalizeDecisionForm(entry.decisionForm || (latestResult ? decisionForm : null));
     const maneuverResult = entry.kind === "RESULT" && isManeuverDecisionForm(entryDecisionForm);
+    const maneuverTimelineResult = entry.kind === "MANEUVER_RESULT";
     const nextStory = latestResult && turn?.narrative && !containsStory(entry.content, turn.narrative)
       ? `\n\n${turn.narrative}`
       : "";
+    const messageType = entry.kind === "RESULT"
+      ? (maneuverResult ? "maneuver_result" : "decision_result")
+      : maneuverTimelineResult
+        ? "maneuver_result"
+        : entry.kind === "MANEUVER_ACTION"
+          ? "system_hint"
+          : entry.kind === "EVIDENCE"
+            ? "private_intel"
+            : entry.kind === "REACTION"
+              ? "role_action"
+              : ["CROSS_IMPACT", "OBSERVABLE_TRACE"].includes(entry.kind)
+                ? "causal_visible"
+                : "system";
+    const messageLabel = entry.kind === "RESULT"
+      ? (maneuverResult ? maneuverLabel(entryDecisionForm) : "你的行动结果")
+      : maneuverTimelineResult
+        ? "主动谋划"
+        : entry.kind === "MANEUVER_ACTION"
+          ? "已提交谋划"
+          : entry.kind === "EVIDENCE"
+            ? "情报与证据"
+            : entry.kind === "REACTION"
+              ? "局势应变"
+              : "剧情";
     return {
       id: entry.id,
-      type: entry.kind === "RESULT" ? (maneuverResult ? "maneuver_result" : "decision_result") : entry.kind === "IMPACT" ? "causal_visible" : "system",
-      label: entry.kind === "RESULT" ? (maneuverResult ? maneuverLabel(entryDecisionForm) : "你的行动结果") : "剧情",
+      type: messageType,
+      label: messageLabel,
       title: entry.title,
       body: `${entry.content}${nextStory}`,
       day: turn?.stageIndex || 7,
       time: `世界事件 ${entry.worldSequence}`,
       visibility: "player_visible",
       sequence: index + 1,
+      sourceActionId: entry.sourceActionId || null,
       decisionForm: entryDecisionForm
     };
   });
@@ -246,7 +323,11 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
       risks: [], relationships: [], traces: []
     },
     dayProgress: { completed: 0, required: 1 },
-    maneuverState: { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 },
+    capabilities: p.capabilities || undefined,
+    maneuverState: {
+      maneuverOpportunitiesPerDay: Number(p.capabilities?.maneuverRulesV1?.window?.totalOpportunities || 2),
+      maneuverOpportunitiesRemaining: Number(p.capabilities?.maneuverRulesV1?.window?.remainingOpportunities ?? 2)
+    },
     activePrompt: canDecide ? {
       eventId: turn.id,
       promptKind: activeInteraction(p) ? "critical_response" : "main_decision",
@@ -493,6 +574,13 @@ function containsStory(existing, next) {
 
 function uniqueKey(prefix, subject) {
   return `${prefix}:${subject}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function requestError(code, message, status = 400) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  return error;
 }
 
 function clone(value) { return value == null ? value : JSON.parse(JSON.stringify(value)); }
