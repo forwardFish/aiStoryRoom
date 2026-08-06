@@ -12,6 +12,7 @@ import templatesPackage, {
   type PartOneState,
 } from "@ai-story/templates";
 import {
+  currentSangtianOptions,
   sangtianDecisionAdapter,
   type PreparedSangtianDecision,
 } from "../src/sangtian-decisions.js";
@@ -27,7 +28,10 @@ type EventWithKernelTrace = PartOneActionSettlement["event"] & {
 };
 
 function packageUnderTest() {
-  return templatesPackage.loadPartOneRuntimePackage("sangtian", configRoot).package;
+  return templatesPackage.loadPartOneRuntimePackage(
+    "sangtian",
+    configRoot,
+  ).package;
 }
 
 function stateForAuthority(pkg: PartOneRuntimePackage): PartOneState {
@@ -52,7 +56,9 @@ function stateForAuthority(pkg: PartOneRuntimePackage): PartOneState {
 }
 
 function incomingFor(
-  affordance: ReturnType<typeof templatesPackage.buildPartOneRuntimeWorkingSet>["decisionAffordances"][number],
+  affordance: ReturnType<
+    typeof templatesPackage.buildPartOneRuntimeWorkingSet
+  >["decisionAffordances"][number],
 ) {
   return {
     source: "RECOMMENDED",
@@ -65,34 +71,29 @@ function incomingFor(
   };
 }
 
-function optionSurface(
-  workingSet: ReturnType<typeof templatesPackage.buildPartOneRuntimeWorkingSet>,
-): OpenNovelOption[] {
-  return workingSet.decisionAffordances.map((affordance) => ({
-    id: affordance.affordanceTemplateId,
-    label: affordance.actionText,
-    key: true,
-    effect: {
-      decisionPointId: affordance.decisionPointId,
-      intent: affordance.immediateIntent,
-      consequence: affordance.visibleTradeoff,
-      reversible: false,
-    },
-  }));
-}
-
 async function workspaceFixture(
   state: PartOneState,
   event: unknown,
-  previousOptions: OpenNovelOption[],
+  initialOptions: OpenNovelOption[] = [],
 ) {
-  const root = await mkdtemp(path.join(tmpdir(), "sangtian-dynamic-production-"));
+  const root = await mkdtemp(
+    path.join(tmpdir(), "sangtian-dynamic-production-"),
+  );
   const partOneState = path.join(root, "part-one-state.json");
   const partOneEvents = path.join(root, "part-one-events.jsonl");
-  await writeFile(partOneState, JSON.stringify(state, null, 2), "utf8");
-  await writeFile(partOneEvents, `${JSON.stringify(event)}\n`, "utf8");
+  await writeFile(
+    partOneState,
+    JSON.stringify(state, null, 2),
+    "utf8",
+  );
+  await writeFile(
+    partOneEvents,
+    `${JSON.stringify(event)}\n`,
+    "utf8",
+  );
 
   let modelCalls = 0;
+  let previousOptions = [...initialOptions];
   const workspace = {
     projectRoot,
     metadata: async () => ({
@@ -113,13 +114,20 @@ async function workspaceFixture(
     root,
     workspace,
     modelCalls: () => modelCalls,
+    setPreviousOptions: (options: OpenNovelOption[]) => {
+      previousOptions = [...options];
+    },
   };
 }
 
 test("production runtime entry and the settlement coordinator commit the same authoritative result", () => {
   const pkg = packageUnderTest();
   const state = stateForAuthority(pkg);
-  const workingSet = templatesPackage.buildPartOneRuntimeWorkingSet(pkg, state, 4);
+  const workingSet = templatesPackage.buildPartOneRuntimeWorkingSet(
+    pkg,
+    state,
+    4,
+  );
   const chosen = workingSet.decisionAffordances[0]!;
   const action = incomingFor(chosen);
 
@@ -140,21 +148,30 @@ test("production runtime entry and the settlement coordinator commit the same au
 
   assert.deepEqual(production.proposedState, coordinated.proposedState);
   assert.deepEqual(productionEvent.statePatch, coordinatedEvent.statePatch);
-  assert.deepEqual(productionEvent.durableEffects, coordinatedEvent.durableEffects);
-  assert.deepEqual(productionEvent.nextDecisionPoint, coordinatedEvent.nextDecisionPoint);
+  assert.deepEqual(
+    productionEvent.durableEffects,
+    coordinatedEvent.durableEffects,
+  );
+  assert.deepEqual(
+    productionEvent.nextDecisionPoint,
+    coordinatedEvent.nextDecisionPoint,
+  );
   assert.deepEqual(
     productionEvent.nextKernelSelection,
     coordinatedEvent.nextKernelSelection,
   );
 });
 
-test("equivalent free text binds the committed dynamic affordance and settles exactly like a click without model calls", async () => {
+test("committed option recovery, equivalent free text and click settlement use one dynamic pair without model calls", async () => {
   const pkg = packageUnderTest();
   const state = stateForAuthority(pkg);
   const eventId = "EVENT-DYNAMIC-FREE-TEXT";
   state.lastCommittedEventId = eventId;
-  const workingSet = templatesPackage.buildPartOneRuntimeWorkingSet(pkg, state, 4);
-  const previousOptions = optionSurface(workingSet);
+  const workingSet = templatesPackage.buildPartOneRuntimeWorkingSet(
+    pkg,
+    state,
+    4,
+  );
   const event = {
     eventId,
     turnNumber: state.turnNumber,
@@ -162,10 +179,28 @@ test("equivalent free text binds the committed dynamic affordance and settles ex
     nextDecisionPoint: workingSet.decisionPoint,
     nextKernelSelection: workingSet.kernelSelection,
   };
-  const fixture = await workspaceFixture(state, event, previousOptions);
+  const fixture = await workspaceFixture(state, event);
 
   try {
-    const target = previousOptions[0]!;
+    const recovered = await currentSangtianOptions(
+      fixture.workspace,
+      "run.dynamic-recovery",
+    );
+    assert.ok(recovered);
+    assert.deepEqual(
+      recovered.map((option) => option.id),
+      workingSet.kernelSelection.selectedAffordanceIds,
+    );
+    assert.equal(
+      recovered.every((option) => (
+        option.effect?.decisionPointId
+        === workingSet.decisionPoint.decisionPointId
+      )),
+      true,
+    );
+    fixture.setPreviousOptions(recovered);
+
+    const target = recovered[0]!;
     const freeText = `${target.label}。`;
     const freePrepared = await sangtianDecisionAdapter.prepare(
       fixture.workspace,
@@ -188,7 +223,8 @@ test("equivalent free text binds the committed dynamic affordance and settles ex
 
     assert.ok(freePrepared);
     assert.ok(clickPrepared);
-    const resolution = freePrepared.audit.intentResolution as Record<string, unknown>;
+    const resolution = freePrepared.audit.intentResolution
+      as Record<string, unknown>;
     assert.equal(resolution.moduleStatus, "BOUND_AFFORDANCE");
     assert.equal(resolution.intentType, "AFFORDANCE_EQUIVALENT");
     assert.equal(resolution.matchedAffordanceId, target.id);
@@ -200,6 +236,8 @@ test("equivalent free text binds the committed dynamic affordance and settles ex
       freePayload.settlement.event.affordanceTemplateId,
       target.id,
     );
+    assert.ok(freePrepared.selectedOption?.effect?.beatContract);
+    assert.ok(clickPrepared.selectedOption?.effect?.beatContract);
     assert.deepEqual(
       freePayload.settlement.event.statePatch,
       clickPayload.settlement.event.statePatch,
@@ -213,8 +251,10 @@ test("equivalent free text binds the committed dynamic affordance and settles ex
       clickPayload.settlement.proposedState,
     );
     assert.deepEqual(
-      (freePayload.settlement.event as EventWithKernelTrace).nextKernelSelection,
-      (clickPayload.settlement.event as EventWithKernelTrace).nextKernelSelection,
+      (freePayload.settlement.event as EventWithKernelTrace)
+        .nextKernelSelection,
+      (clickPayload.settlement.event as EventWithKernelTrace)
+        .nextKernelSelection,
     );
     assert.equal(fixture.modelCalls(), 0);
   } finally {
