@@ -1,0 +1,36 @@
+name: Maneuver MVP P4 AI continuation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+env:
+  TARGET_BRANCH: feat/mvp-four-maneuver-actions
+
+concurrency:
+  group: maneuver-mvp-p4
+  cancel-in-progress: false
+
+jobs:
+  implement-p4:
+    if: github.head_ref == 'feat/mvp-four-maneuver-actions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/mvp-four-maneuver-actions
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: python3 scripts/automation/apply-maneuver-p4.py
