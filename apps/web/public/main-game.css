@@ -1483,3 +1483,32 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   text-align: center;
   white-space: nowrap;
 }
+
+/* Simplified four-maneuver MVP */
+.maneuver-panel--mvp { padding: 14px; }
+.maneuver-action-list { display: grid; gap: 8px; margin-top: 10px; }
+.maneuver-action-card { width: 100%; min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border: 1px solid #d8c3a5; border-radius: 7px; background: rgba(255,251,244,.88); color: #493522; text-align: left; }
+.maneuver-action-card span { display: grid; gap: 4px; }
+.maneuver-action-card b { font-size: 15px; }
+.maneuver-action-card small { color: #77624a; font-size: 12px; line-height: 1.35; }
+.maneuver-action-card em { min-width: 36px; color: #8d6632; font-style: normal; font-weight: 700; text-align: right; }
+.maneuver-action-card.active { border-color: #9d7339; box-shadow: inset 3px 0 #9d7339; background: #fbf0dc; }
+.maneuver-action-card.disabled { opacity: .52; }
+.maneuver-idle-hint { margin: 12px 2px 2px; color: #7a6750; font-size: 12px; line-height: 1.5; }
+.maneuver-workbench { display: grid; gap: 9px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddcbb2; }
+.maneuver-workbench-head { display: flex; align-items: end; justify-content: space-between; gap: 10px; }
+.maneuver-workbench-head small { color: #806b53; font-size: 11px; text-align: right; }
+.maneuver-option-list { display: grid; gap: 7px; }
+.maneuver-option-card { width: 100%; display: flex; align-items: center; gap: 9px; padding: 9px; border: 1px solid #dfcdb5; border-radius: 6px; background: #fffaf1; color: #4c3926; text-align: left; }
+.maneuver-option-card > span:not(.contact-avatar) { display: grid; gap: 3px; flex: 1; }
+.maneuver-option-card small { color: #78634b; font-size: 11px; line-height: 1.4; }
+.maneuver-option-card em { color: #9b7137; font-size: 11px; font-style: normal; }
+.maneuver-option-card.selected, .maneuver-target-list button.selected { border-color: #9d7339; background: #f8ead1; box-shadow: inset 3px 0 #9d7339; }
+.maneuver-workbench textarea { width: 100%; min-height: 76px; padding: 9px 10px; resize: vertical; border: 1px solid #d7c3a6; border-radius: 6px; background: #fffaf1; color: #3f2e1d; }
+.maneuver-workbench > button#maneuverSubmit { min-height: 40px; border: 1px solid #8f6734; border-radius: 6px; background: #9b7138; color: #fffaf0; font-weight: 700; }
+.maneuver-target-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.maneuver-target-list > b { width: 100%; font-size: 12px; }
+.maneuver-target-list button { padding: 6px 9px; border: 1px solid #d8c3a5; border-radius: 5px; background: #fffaf1; color: #55402a; }
+.maneuver-counter { justify-self: end; color: #8a745a; font-size: 11px; }
+.leverage-panel li { display: grid; gap: 3px; margin: 8px 0; }
+.leverage-panel li small { color: #75624d; font-size: 11px; line-height: 1.4; }

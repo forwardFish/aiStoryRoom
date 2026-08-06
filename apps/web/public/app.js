@@ -1,6 +1,7 @@
 import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js?v=20260721-story-access-error-v4";
 import { renderTransitionScreen } from "./transition-screen.js";
 import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260806-play-again-v3";
+import { bindManeuverInputs, buildManeuverCommand, clearManeuverDraft, emptyManeuverDrafts, prepareManeuverDraft, renderFourManeuverPanel, renderLeverageHand, validateManeuverCommand } from "./maneuver-four-ui.js?v=20260806-mvp-four-v1";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
@@ -32,7 +33,8 @@ export function createStoryApp({
     view: null,
     selectedOption: "A",
     customText: "",
-    maneuverDraft: { maneuverType: "custom", targetRoleKey: "county_magistrate", intentKey: "", leverageKey: "", customText: "" },
+    activeManeuverType: null,
+    maneuverDrafts: emptyManeuverDrafts(),
     maneuverGuard: null,
     historyOpen: false,
     historyFilter: "all",
@@ -151,25 +153,14 @@ export function createStoryApp({
 
   async function submitManeuver() {
     if (!state.view || state.busy || Number(state.view.run.currentDay) >= FINAL_DAY) return;
-    const draft = {
-      ...state.maneuverDraft,
-      customText: root.querySelector("#maneuverCustomText")?.value.trim() || state.maneuverDraft.customText.trim()
-    };
-    const missingManeuverInput = draft.maneuverType === "contact" && (!draft.targetRoleKey || !draft.customText)
-      ? { reason: !draft.targetRoleKey ? "请先选择要交谈的人物。" : "请写下你准备向此人询问或交涉的具体事情。", suggestedRewrite: "问清他何时得知田契副本被封存，以及消息由谁送到。" }
-      : draft.maneuverType === "investigate" && !draft.intentKey
-        ? { reason: "请先选择一项真实的调查方向。", suggestedRewrite: "选择一项线索，再明确派谁查、查什么原件或经手人。" }
-        : draft.maneuverType === "leverage" && (!draft.leverageKey || !draft.customText)
-          ? { reason: !draft.leverageKey ? "请先选择本次真正要使用的筹码。" : "请写下你准备用这项筹码迫使对方做什么。", suggestedRewrite: "只出示密信落款，要求商会会首交出对应账页并说明经手人。" }
-          : draft.maneuverType === "custom" && !draft.customText
-            ? { reason: "请先写下你要主动推进的一件事。", suggestedRewrite: "派幕僚暗查驿站登记，确认巡抚急奏的经手人员。" }
-            : null;
-    if (missingManeuverInput) {
-      state.maneuverGuard = missingManeuverInput;
+    const command = buildManeuverCommand(state);
+    const validation = validateManeuverCommand(command, state.view);
+    if (validation) {
+      state.maneuverGuard = validation;
       render();
       return;
     }
-    state.maneuverDraft = draft;
+    const submittedType = command.maneuverType;
     state.maneuverGuard = null;
     state.error = "";
     state.notice = "";
@@ -177,13 +168,13 @@ export function createStoryApp({
     render();
     try {
       const previousView = state.view;
-      const result = await storage.submitManeuver(state.view, draft);
+      const result = await storage.submitManeuver(state.view, command);
       if (result.accepted === false) {
-        state.maneuverGuard = { reason: result.reason || "这项谋划暂时无法执行。", suggestedRewrite: result.rewriteSuggestion || "" };
+        state.maneuverGuard = { reason: result.reason || "这项谋划暂时无法执行。", suggestedRewrite: result.rewriteSuggestion || result.suggestedRewrite || "" };
       } else {
         const resultKind = completedResultKind(previousView, result);
         acceptView(result);
-        state.maneuverDraft = { maneuverType: "custom", targetRoleKey: "county_magistrate", intentKey: "", leverageKey: "", customText: "" };
+        clearManeuverDraft(state, submittedType);
         if (resultKind === "maneuver") startManeuverResultStream(result);
         else if (resultKind === "decision") startResultStream(result);
       }
@@ -195,10 +186,7 @@ export function createStoryApp({
       }
       if (error?.code === "ACTION_BLOCKED") {
         const blocked = error.details?.message && typeof error.details.message === "object" ? error.details.message : error.details;
-        state.maneuverGuard = {
-          reason: blocked?.reason || error.message || "这项谋划暂时不能执行。",
-          suggestedRewrite: blocked?.rewriteSuggestion || ""
-        };
+        state.maneuverGuard = { reason: blocked?.reason || error.message || "这项谋划暂时不能执行。", suggestedRewrite: blocked?.rewriteSuggestion || "" };
       } else {
         state.error = errorMessage(error);
       }
@@ -242,18 +230,18 @@ export function createStoryApp({
     }
   }
 
-  function chooseManeuver(maneuverType, targetRoleKey = "", leverageKey = "", intentKey = "") {
-    const sameType = state.maneuverDraft.maneuverType === maneuverType;
+  function chooseManeuver(maneuverType) {
+    const section = state.view?.maneuverPanel?.[maneuverType];
     state.maneuverGuard = null;
-    state.maneuverDraft = {
-      ...state.maneuverDraft,
-      maneuverType,
-      targetRoleKey,
-      leverageKey,
-      intentKey,
-      customText: sameType ? state.maneuverDraft.customText : ""
-    };
+    if (!section?.enabled) {
+      state.maneuverGuard = { reason: section?.disabledReason || state.view?.maneuverPanel?.disabledReason || "当前不能执行这项主动谋划。" };
+      render();
+      return false;
+    }
+    state.activeManeuverType = state.activeManeuverType === maneuverType ? null : maneuverType;
+    if (state.activeManeuverType) prepareManeuverDraft(state, state.view, maneuverType);
     render();
+    return true;
   }
 
   async function advanceDay() {
@@ -329,9 +317,11 @@ export function createStoryApp({
   }
 
   function acceptView(view) {
+    const previousSceneKey = state.view?.maneuverPanel?.sceneKey || null;
     stopResultStream();
     stopOpeningStream();
     state.view = view;
+    if (previousSceneKey && previousSceneKey !== view?.maneuverPanel?.sceneKey) state.activeManeuverType = null;
     state.guard = null;
     state.selectedOption = activePromptForView(view)?.options?.[0]?.optionKey || view.activeDecision?.options?.[0]?.key || "A";
     state.customText = "";
@@ -630,14 +620,7 @@ export function createStoryApp({
     root.querySelector("#criticalDeferBtn")?.addEventListener("click", () => deferCriticalEvent(root.querySelector("#criticalDeferBtn")?.dataset.eventId));
     root.querySelector("#criticalDeferIconBtn")?.addEventListener("click", () => deferCriticalEvent(root.querySelector("#criticalDeferIconBtn")?.dataset.eventId));
     root.querySelector("#criticalDeferredOpenBtn")?.addEventListener("click", () => startCriticalResponse(root.querySelector("#criticalDeferredOpenBtn")?.dataset.eventId));
-    root.querySelectorAll("[data-maneuver-type]:not([data-maneuver-direct])").forEach((button) => button.addEventListener("click", () => chooseManeuver(button.dataset.maneuverType, button.dataset.targetRole || "", button.dataset.leverageKey || "")));
-    root.querySelectorAll("[data-maneuver-direct]").forEach((button) => button.addEventListener("click", () => {
-      chooseManeuver(button.dataset.maneuverType, button.dataset.targetRole || "", button.dataset.leverageKey || "", button.dataset.intentKey || "");
-    }));
-    root.querySelector("#maneuverType")?.addEventListener("change", (event) => { state.maneuverDraft.maneuverType = event.target.value; render(); });
-    root.querySelector("#maneuverTarget")?.addEventListener("change", (event) => { state.maneuverDraft.targetRoleKey = event.target.value; });
-    root.querySelector("#maneuverLeverage")?.addEventListener("change", (event) => { state.maneuverDraft.leverageKey = event.target.value; });
-    root.querySelector("#maneuverCustomText")?.addEventListener("input", (event) => { state.maneuverDraft.customText = event.target.value; });
+    bindManeuverInputs({ root, state, render, chooseManeuver });
     root.querySelectorAll("#advanceBtn").forEach((button) => button.addEventListener("click", advanceDay));
     root.querySelector("#finalizeBtn")?.addEventListener("click", finalize);
     root.querySelector("#resetBtn")?.addEventListener("click", resetRun);
@@ -872,42 +855,11 @@ function renderManeuverIntentEditor(draft, placeholder, submitLabel, disabled, g
 }
 
 function renderLeverage(view) {
-  const player = view.player || {};
-  const leverage = array(player.leverage);
-  return `<section class="causal-panel leverage-panel"><h2 class="panel-heading">${panelHeadingIcon("leverage")}<span>${isEnglish(view) ? "Leverage" : "我的筹码"}</span></h2>${leverage.length ? `<ul>${leverage.map((item) => `<li>${esc(typeof item === "string" ? item : item?.title)}</li>`).join("")}</ul>` : `<p>${isEnglish(view) ? "No leverage is available yet." : "尚未获得可用筹码。"}</p>`}</section>`;
+  return renderLeverageHand(view);
 }
 
 function renderManeuverPanel(view, state) {
-  if (isEnglish(view)) return renderEnglishManeuverPanel(view, state);
-  const maneuver = view.maneuverState || { maneuverOpportunitiesPerDay: 2, maneuverOpportunitiesRemaining: 2 };
-  const disabled = Boolean(roomSessionForView(view)) || Number(view.run.currentDay) >= FINAL_DAY || Number(maneuver.maneuverOpportunitiesRemaining) <= 0 || state.busy || (view.continuousV2 && !view.activePrompt);
-  const draft = state.maneuverDraft;
-  const contacts = [["county_magistrate", "卢象升", "县令 · 信任", "art-avatar-county"], ["merchant", "江南商会会首", "商会 · 观望", "art-avatar-merchant"], ["xunfu", "刘瑾", "巡抚 · 敌对", "art-avatar-xunfu"], ["sili_jian", "司礼监织造使", "内廷 · 警惕", "art-avatar-sili"]];
-  const types = [["contact", "人物交谈"], ["investigate", "派遣调查"], ["leverage", "使用筹码"], ["custom", "自拟谋划"]];
-  const investigationChoices = [["inspect_land_register", "核对田亩底册", "让幕僚复核田亩数目，查清改桑名册的来源。"], ["inspect_courier_registry", "查验驿站登记", "追查巡抚催报的往来文书与经手人。"], ["inspect_grain_store", "清点粮仓库存", "核实城中余粮，判断粮价异动的真实压力。"]];
-  const currentAssets = array(view.v2Projection?.visibleAssets)
-    .filter((asset) => asset?.status === "ACTIVE" && Number(asset?.quantity) > 0)
-    .map((asset) => [asset.label || asset.assetKey, asset.assetKey]);
-  const leverage = currentAssets.length
-    ? currentAssets
-    : [["田契暗账半页", "land_contract_fragment"], ["清流县令密信", "county_letter"], ["海防军报", "coastal_report"]];
-  const activeType = types.find(([key]) => key === draft.maneuverType)?.[1] || "自拟谋划";
-  const workbench = draft.maneuverType === "contact"
-    ? `<section class="maneuver-workbench maneuver-contact-workbench" data-testid="maneuver-contact-workbench"><div class="maneuver-workbench-head"><span>可接触人物</span><small>选择一人问询</small></div>${contacts.map(([key, name, action, iconClass]) => `<button class="contact-row ${draft.targetRoleKey === key ? "selected" : ""}" type="button" data-maneuver-type="contact" data-maneuver-direct="true" data-maneuver-contact="${key}" data-target-role="${key}" ${disabled ? "disabled" : ""}><span class="contact-avatar ${iconClass}" aria-hidden="true"></span><span><b>${name}</b><small>${action}</small></span><em>选择</em></button>`).join("")}<button class="see-more" type="button">查看全部人物&nbsp;›</button>${renderManeuverIntentEditor(draft, "写下你准备向此人询问或交涉的具体事情……", "开始交谈", disabled, "先选择人物，再由你决定谈什么；不会自动替你提交。")}</section>`
-    : draft.maneuverType === "investigate"
-      ? `<section class="maneuver-workbench maneuver-investigate-workbench" data-testid="maneuver-investigate-workbench"><div class="maneuver-workbench-head"><span>调查方向</span><small>选择一项派遣幕僚</small></div><div class="maneuver-choice-list">${investigationChoices.map(([intentKey, title, description]) => `<button class="maneuver-choice-card ${draft.intentKey === intentKey ? "selected" : ""}" type="button" data-maneuver-type="investigate" data-maneuver-direct="true" data-maneuver-investigation="${intentKey}" data-intent-key="${intentKey}" ${disabled ? "disabled" : ""}><b>${title}</b><small>${description}</small><em>选择</em></button>`).join("")}</div>${renderManeuverIntentEditor(draft, "可补充你特别要求查清的原件、经手人或时辰……", "派遣调查", disabled, "选择调查方向后再确认；补充要求可以留空。")}</section>`
-      : draft.maneuverType === "leverage"
-        ? `<section class="maneuver-workbench maneuver-leverage-workbench" data-testid="maneuver-leverage-workbench"><div class="maneuver-workbench-head"><span>可用筹码</span><small>使用后会留下痕迹</small></div>${leverage.map(([label, key]) => `<div class="leverage-row"><span class="leverage-icon">▣</span><span>${label}</span><button type="button" class="${draft.leverageKey === key ? "selected" : ""}" data-maneuver-type="leverage" data-maneuver-direct="true" data-maneuver-leverage="${key}" data-target-role="merchant" data-leverage-key="${key}" ${disabled ? "disabled" : ""}>选择</button></div>`).join("")}${renderManeuverIntentEditor(draft, "写下你准备用这项筹码迫使对方做什么……", "使用筹码", disabled, "筹码不会自动消耗；只有确认提交后才进入推演。")}</section>`
-        : `<section class="maneuver-workbench maneuver-custom-workbench" data-testid="maneuver-custom-workbench"><div class="maneuver-workbench-head"><span>自拟谋划</span><small>写下你准备推进的一件事</small></div><div class="custom-wrap"><textarea id="maneuverCustomText" maxlength="200" placeholder="输入你的谋划……">${esc(draft.customText || "")}</textarea><span>${String(draft.customText || "").length} / 200</span></div><div class="maneuver-form-row"><button id="maneuverSubmit" type="button" ${disabled ? "disabled" : ""}>执行谋划</button></div></section>`;
-  return `<section class="maneuver-panel" data-testid="maneuver-panel">
-    <div class="maneuver-heading"><h2>谋划中枢</h2><button class="help-dot" type="button" title="主动谋划不能替代主线决策">?</button></div>
-    <section class="maneuver-usage"><span>今日谋划</span><b>${Number(maneuver.maneuverOpportunitiesRemaining)} / ${Number(maneuver.maneuverOpportunitiesPerDay)}</b><div class="opportunity-dots" aria-label="剩余机会"><i class="${Number(maneuver.maneuverOpportunitiesRemaining) < 2 ? "spent" : ""}"></i><i class="${Number(maneuver.maneuverOpportunitiesRemaining) < 1 ? "spent" : ""}"></i></div><small>剩余机会不结转</small></section>
-    <div class="maneuver-type-grid" aria-label="选择谋划类型">${types.map(([key, label]) => `<button type="button" class="${draft.maneuverType === key ? "active" : ""}" data-maneuver-type="${key}" aria-pressed="${draft.maneuverType === key}" ${disabled ? "disabled" : ""}>${label}</button>`).join("")}</div>
-    <div class="maneuver-active-label">当前：${activeType}</div>
-    ${workbench}
-    ${renderManeuverGuard(state.maneuverGuard)}
-    <details class="maneuver-progress"><summary>正在推进 <span>2 项</span></summary><div class="progress-row"><span>查清巡抚与商会旧约</span><b>1 / 3</b></div><div class="progress-row"><span>稳住杭州粮价</span><b class="danger-text">状态：恶化</b></div></details>
-  </section>`;
+  return renderFourManeuverPanel(view, state);
 }
 
 function renderManeuverGuard(guard) {
