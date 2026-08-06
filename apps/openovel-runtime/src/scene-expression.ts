@@ -33,6 +33,7 @@ export type DramaticSceneGuidance = {
   dramaticTask: string;
   sourceMechanisms: string[];
   scenePatterns: Array<{
+    patternId: string;
     dramaticFunction: string;
     openingPressure: string;
     orderedBeats: Array<{

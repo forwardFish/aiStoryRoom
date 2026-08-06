@@ -138,6 +138,7 @@ export type PartOneDramaticGuidance = {
   sourceMechanisms: string[];
   scenePatterns: Array<Pick<
     NarrativeScenePattern,
+    | "patternId"
     | "dramaticFunction"
     | "openingPressure"
     | "orderedBeats"

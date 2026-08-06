@@ -1364,6 +1364,7 @@ function buildNextStoryBeat(input: {
   }, 2).map((asset) => {
     const pattern = asset.payload as unknown as import("./narrative-scene-pattern").NarrativeScenePattern;
     return {
+      patternId: pattern.patternId,
       dramaticFunction: pattern.dramaticFunction,
       openingPressure: pattern.openingPressure,
       orderedBeats: pattern.orderedBeats,
