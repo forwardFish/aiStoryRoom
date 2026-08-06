@@ -1,3 +1,5 @@
-candidate_workflow=edd735d1fedcea315d989f2a68dbbc76e9add095
-validated_code=ff7a925c00c8d2c4cbaccbf7ad277b7f29ddc414
+candidate_workflow=3ae263617876ebc8b32991784ea812f512dbb77f
+validated_code=3ae263617876ebc8b32991784ea812f512dbb77f
+stage=P4
 never_merge=true
+synchronize_nonce=2026-08-06T00:55:00Z
