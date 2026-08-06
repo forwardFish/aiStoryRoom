@@ -24,6 +24,7 @@ import type {
 
 export type DynamicPartOneSettlementExecutionOptions = {
   currentPin?: PartOneDecisionPin | null;
+  currentWorkingSetOverride?: DynamicPartOneRuntimeWorkingSet | null;
 };
 
 type ForcedSelectionRequest = {
@@ -69,14 +70,21 @@ export function settleDynamicPartOneAction(
   turnNumber: number,
   options: DynamicPartOneSettlementExecutionOptions = {},
 ): DynamicPartOneActionSettlement {
-  const current = buildDynamicPartOneRuntimeWorkingSet(
-    pkg,
-    state,
-    Math.max(0, turnNumber - 1),
-    options.currentPin
-      ? { mode: "DYNAMIC_LITE", pin: options.currentPin }
-      : {},
-  );
+  const current = options.currentWorkingSetOverride
+    ? validateCurrentWorkingSetOverride(
+      pkg,
+      state,
+      turnNumber,
+      options.currentWorkingSetOverride,
+    )
+    : buildDynamicPartOneRuntimeWorkingSet(
+      pkg,
+      state,
+      Math.max(0, turnNumber - 1),
+      options.currentPin
+        ? { mode: "DYNAMIC_LITE", pin: options.currentPin }
+        : {},
+    );
   const opening = Boolean(action.decisionId?.startsWith("opening_"));
   if (!opening && action.affordanceTemplateId) {
     const bound = current.decisionAffordances.some((candidate) => (
@@ -148,53 +156,37 @@ export function settleDynamicPartOneAction(
 /**
  * The observe-only capability facade needs one authored affordance as a
  * scaffold. A Floor continuation already reconstructs its own option list and
- * therefore must receive the unmodified package.
- *
- * Recovery can supply an exact committed Pin. Normal Dynamic pins are rebuilt
- * directly; an authored Legacy fallback is the only valid exception and must
- * resolve to the same Kernel and Decision Point when recomputed from the same
- * state. This mirrors the formal-action recovery discipline without allowing a
- * capability turn to drift onto a different decision surface.
+ * therefore must receive the unmodified package. A committed WorkingSet
+ * override is authoritative and is validated before use; an explicit Pin must
+ * pass strict Dynamic recovery and is never silently converted to a Legacy
+ * fallback.
  */
 export function packageForDynamicCapabilityAction(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
   turnNumber: number,
   currentPin: PartOneDecisionPin | null = null,
+  currentWorkingSetOverride: DynamicPartOneRuntimeWorkingSet | null = null,
 ): PartOneRuntimePackage {
-  let current: DynamicPartOneRuntimeWorkingSet;
-  if (currentPin) {
-    try {
-      current = buildDynamicPartOneRuntimeWorkingSet(
+  const current = currentWorkingSetOverride
+    ? validateCurrentWorkingSetOverride(
+      pkg,
+      state,
+      turnNumber,
+      currentWorkingSetOverride,
+    )
+    : currentPin
+      ? buildDynamicPartOneRuntimeWorkingSet(
         pkg,
         state,
         Math.max(0, turnNumber - 1),
         { mode: "DYNAMIC_LITE", pin: currentPin },
-      );
-    } catch (pinError) {
-      const fallback = buildDynamicPartOneRuntimeWorkingSet(
+      )
+      : buildDynamicPartOneRuntimeWorkingSet(
         pkg,
         state,
         Math.max(0, turnNumber - 1),
       );
-      if (
-        fallback.kernelSelection.mode !== "LEGACY_FALLBACK"
-        || fallback.decisionPoint.decisionKernelId
-          !== currentPin.decisionKernelId
-        || fallback.decisionPoint.decisionPointId
-          !== currentPin.decisionPointId
-      ) {
-        throw pinError;
-      }
-      current = fallback;
-    }
-  } else {
-    current = buildDynamicPartOneRuntimeWorkingSet(
-      pkg,
-      state,
-      Math.max(0, turnNumber - 1),
-    );
-  }
   if (isContinuation(current)) return pkg;
   return forcePackage(pkg, [{
     sectionId: state.sectionId,
@@ -274,6 +266,37 @@ export function buildCommittedLegacyFallbackWorkingSet(
       stateRevision: Number(state.turnNumber ?? turnNumber),
     },
   };
+}
+
+function validateCurrentWorkingSetOverride(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  turnNumber: number,
+  workingSet: DynamicPartOneRuntimeWorkingSet,
+): DynamicPartOneRuntimeWorkingSet {
+  const expectedTurn = Math.max(0, turnNumber - 1);
+  if (
+    workingSet.packageHash !== pkg.immutableHash
+    || workingSet.section.sectionId !== state.sectionId
+    || workingSet.turnNumber !== expectedTurn
+    || workingSet.kernelSelection.sectionId !== state.sectionId
+    || workingSet.kernelSelection.stateRevision
+      !== Number(state.turnNumber ?? expectedTurn)
+    || workingSet.kernelSelection.stateFingerprint !== stableSha256(state)
+    || workingSet.decisionPoint.decisionKernelId
+      !== workingSet.kernelSelection.selectedKernelId
+    || workingSet.decisionPoint.decisionPointId
+      !== workingSet.kernelSelection.selectedDecisionPointId
+    || !sameStringArray(
+      workingSet.decisionAffordances.map(
+        (affordance) => affordance.affordanceTemplateId,
+      ),
+      workingSet.kernelSelection.selectedAffordanceIds,
+    )
+  ) {
+    throw new Error("PART_ONE_COMMITTED_WORKING_SET_MISMATCH");
+  }
+  return clone(workingSet);
 }
 
 /**
