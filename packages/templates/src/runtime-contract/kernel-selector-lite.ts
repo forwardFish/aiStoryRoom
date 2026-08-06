@@ -166,8 +166,12 @@ export function selectKernelLite<TPayload>(
   stateFingerprint: string,
 ): KernelSelectorLiteResult<TPayload> {
   const evaluations = candidates.map((candidate) => {
-    const pair = chooseMostDifferentOutcomePair(candidate.validAffordances);
-    const reasons = [...candidate.rejectionCodes];
+    const uniqueAffordances = deduplicateOutcomes(candidate.validAffordances);
+    const pair = chooseMostDifferentOutcomePair(uniqueAffordances);
+    const reasons = [
+      ...candidate.rejectionCodes,
+      ...duplicateOutcomeRejectionCodes(candidate.validAffordances),
+    ];
     if (candidate.completed) reasons.push("KERNEL_COMPLETED");
     if (!candidate.allowedInCurrentScope) reasons.push("KERNEL_OUTSIDE_SCOPE");
     if (candidate.structurallyResolved) reasons.push("OBLIGATION_ALREADY_SATISFIED");
@@ -182,10 +186,10 @@ export function selectKernelLite<TPayload>(
       tieBreaker: kernelTieBreaker(stateFingerprint, candidate.kernelId),
       eligible,
       reasonCodes: uniqueSorted(reasons),
-      validAffordanceIds: candidate.validAffordances
+      validAffordanceIds: uniqueAffordances
         .map((item) => item.affordanceId)
         .sort((left, right) => left.localeCompare(right)),
-      outcomeHashes: uniqueSorted(candidate.validAffordances.map((item) => item.outcome.hash)),
+      outcomeHashes: uniqueSorted(uniqueAffordances.map((item) => item.outcome.hash)),
       maximumOutcomeDistance: pair?.distance || 0,
       pair,
       candidate,
@@ -207,6 +211,32 @@ export function selectKernelLite<TPayload>(
     selected,
     evaluations,
   };
+}
+
+function duplicateOutcomeRejectionCodes<TPayload>(
+  affordances: Array<KernelSelectorLiteAffordance<TPayload>>,
+) {
+  const groups = new Map<string, Array<KernelSelectorLiteAffordance<TPayload>>>();
+  for (const affordance of affordances) {
+    const group = groups.get(affordance.outcome.hash) || [];
+    group.push(affordance);
+    groups.set(affordance.outcome.hash, group);
+  }
+  const codes: string[] = [];
+  for (const group of groups.values()) {
+    const ordered = [...group].sort((left, right) => (
+      left.sourceOrder - right.sourceOrder
+      || left.affordanceId.localeCompare(right.affordanceId)
+    ));
+    const retained = ordered[0];
+    if (!retained) continue;
+    for (const duplicate of ordered.slice(1)) {
+      codes.push(
+        `DUPLICATE_OUTCOME:${duplicate.affordanceId}:${retained.affordanceId}`,
+      );
+    }
+  }
+  return uniqueSorted(codes);
 }
 
 function deduplicateOutcomes<TPayload>(
