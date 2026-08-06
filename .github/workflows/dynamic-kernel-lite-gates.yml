@@ -1,3 +1,4 @@
+# Branch-scoped acceptance workflow; never targets or modifies main.
 name: Dynamic Kernel Lite Gates
 
 on:
