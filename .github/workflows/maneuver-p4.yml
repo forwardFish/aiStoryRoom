@@ -33,6 +33,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
       - name: Apply P4 and verify
         run: |
           python3 - <<'PY'
