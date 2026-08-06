@@ -14,7 +14,19 @@ import {
 import { loadPlayablePartOneRuntimePackage } from "./story-package/playable-part-one-runtime.js";
 
 export * from "./index.js";
-export * from "./story-package/dynamic-kernel-lite-runtime.js";
+export {
+  buildDynamicPartOneRuntimeWorkingSet,
+  isDynamicCapabilityAction,
+} from "./story-package/dynamic-kernel-lite-runtime.js";
+export type {
+  DynamicPartOneActionSettlement,
+  DynamicPartOneCommittedEvent,
+  DynamicPartOneRuntimeWorkingSet,
+  KernelSelectionTrace,
+  PartOneDecisionPin,
+  PartOneKernelSelectionMode,
+  PartOneWorkingSetSelectionOptions,
+} from "./story-package/dynamic-kernel-lite-runtime.js";
 export {
   packageForDynamicCapabilityAction,
   settleDynamicPartOneAction,
@@ -29,6 +41,11 @@ export type {
  * namespace therefore use one playable loader and the Dynamic Kernel Selector
  * Lite path, while source-level authoring tests can still import the frozen
  * engine directly from story-package modules.
+ *
+ * Dynamic settlement is exported only from dynamic-kernel-lite-settlement.
+ * The selector module deliberately exposes selection and trace contracts but
+ * not its historical settlement harness, preventing tests or consumers from
+ * accidentally validating a path that production does not execute.
  */
 export const loadPartOneRuntimePackage = loadPlayablePartOneRuntimePackage;
 export const buildPartOneRuntimeWorkingSet = buildDynamicPartOneRuntimeWorkingSet;
