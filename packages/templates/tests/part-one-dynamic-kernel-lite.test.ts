@@ -3,8 +3,10 @@ import { resolve } from "node:path";
 import test from "node:test";
 import {
   buildDynamicPartOneRuntimeWorkingSet,
-  settleDynamicPartOneAction,
 } from "../src/story-package/dynamic-kernel-lite-runtime.js";
+import {
+  settleDynamicPartOneAction,
+} from "../src/story-package/dynamic-kernel-lite-settlement.js";
 import {
   createInitialPartOneState,
   partOneSceneForSection,
@@ -146,33 +148,44 @@ test("no distinct preview pair safely falls back to the legacy selector", () => 
   assert.equal(workingSet.openDecisionKernel.assetId, "DK-P1-REVIEW-AUTHORITY");
 });
 
-test("formal settlement and deterministic rebuild agree on the next decision point", () => {
+test("production settlement coordinator and deterministic rebuild agree on every selected branch", () => {
   const pkg = packageUnderTest();
-  const state = stateWithOnlyAuthorityUnresolved(pkg);
-  const workingSet = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4);
-  const chosen = workingSet.decisionAffordances[0]!;
-  const settlement = settleDynamicPartOneAction(pkg, state, {
-    source: "RECOMMENDED",
-    decisionId: chosen.affordanceTemplateId,
-    decisionKernelId: chosen.decisionKernelId,
-    affordanceTemplateId: chosen.affordanceTemplateId,
-    label: chosen.title,
-    actionText: chosen.actionText,
-    targetRef: chosen.target.id,
-  }, 5);
-  const rebuilt = buildDynamicPartOneRuntimeWorkingSet(pkg, settlement.proposedState, 5);
-  assert.equal(
-    settlement.event.nextDecisionPoint.decisionKernelId,
-    rebuilt.decisionPoint.decisionKernelId,
-  );
-  assert.equal(
-    settlement.event.nextDecisionPoint.decisionPointId,
-    rebuilt.decisionPoint.decisionPointId,
-  );
-  assert.deepEqual(
-    settlement.event.nextKernelSelection?.selectedAffordanceIds,
-    rebuilt.kernelSelection.selectedAffordanceIds,
-  );
+  const states = [
+    stateWithOnlyAuthorityUnresolved(pkg),
+    stateWithOnlyWitnessUnresolved(pkg),
+  ];
+
+  for (const state of states) {
+    const workingSet = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4);
+    for (const chosen of workingSet.decisionAffordances) {
+      const settlement = settleDynamicPartOneAction(pkg, structuredClone(state), {
+        source: "RECOMMENDED",
+        decisionId: chosen.affordanceTemplateId,
+        decisionKernelId: chosen.decisionKernelId,
+        affordanceTemplateId: chosen.affordanceTemplateId,
+        label: chosen.title,
+        actionText: chosen.actionText,
+        targetRef: chosen.target.id,
+      }, 5);
+      const rebuilt = buildDynamicPartOneRuntimeWorkingSet(pkg, settlement.proposedState, 5);
+      assert.equal(
+        settlement.event.nextDecisionPoint.decisionKernelId,
+        rebuilt.decisionPoint.decisionKernelId,
+      );
+      assert.equal(
+        settlement.event.nextDecisionPoint.decisionPointId,
+        rebuilt.decisionPoint.decisionPointId,
+      );
+      assert.deepEqual(
+        settlement.event.nextKernelSelection?.selectedAffordanceIds,
+        rebuilt.kernelSelection.selectedAffordanceIds,
+      );
+      assert.deepEqual(
+        settlement.event.nextKernelSelection?.selectedOutcomeHashes,
+        rebuilt.kernelSelection.selectedOutcomeHashes,
+      );
+    }
+  }
 });
 
 test("pinned primary recovery reproduces the committed pair and rejects hash drift", () => {
