@@ -14,6 +14,7 @@ import {
 } from "../src/story-package/part-one-runtime-engine.js";
 import {
   settlePartOneAction as settleProductionPartOneAction,
+  withPartOneDecisionWorkingSet,
 } from "../src/runtime-entry.js";
 import { loadPlayablePartOneRuntimePackage } from "../src/story-package/playable-part-one-runtime.js";
 import type {
@@ -117,6 +118,74 @@ test("a committed Legacy fallback pair recovers without reapplying the Dynamic d
       (item) => item.affordanceTemplateId,
     ),
     fallback.kernelSelection.selectedAffordanceIds,
+  );
+});
+
+test("a non-default committed Legacy fallback pair is used for binding and formal Settlement", () => {
+  const pkg = duplicateOutcomePackage();
+  const state = authorityState(pkg);
+  const fallback = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4);
+  assert.equal(fallback.kernelSelection.mode, "LEGACY_FALLBACK");
+
+  const kernel = pkg.assets.find(
+    (item) => item.assetId === fallback.decisionPoint.decisionKernelId,
+  );
+  assert.ok(kernel);
+  const authoredIds = (Array.isArray(kernel.payload.options)
+    ? kernel.payload.options
+    : [])
+    .map((option) => option.affordanceTemplateId);
+  assert.ok(authoredIds.length >= 3);
+  const nonDefaultIds = [authoredIds[0]!, authoredIds[1]!];
+  assert.notDeepEqual(
+    nonDefaultIds,
+    fallback.kernelSelection.selectedAffordanceIds,
+  );
+
+  const trace = structuredClone(fallback.kernelSelection);
+  trace.selectedAffordanceIds = [...nonDefaultIds];
+  trace.selectedOutcomeHashes = [];
+  const committed = buildCommittedLegacyFallbackWorkingSet(
+    pkg,
+    state,
+    4,
+    trace,
+  );
+  const chosen = committed.decisionAffordances.find(
+    (affordance) => affordance.affordanceTemplateId === authoredIds[1],
+  );
+  assert.ok(chosen);
+
+  const settlement = withPartOneDecisionWorkingSet(
+    committed,
+    () => settleProductionPartOneAction(
+      pkg,
+      structuredClone(state),
+      {
+        source: "RECOMMENDED",
+        decisionId: chosen.affordanceTemplateId,
+        decisionKernelId: chosen.decisionKernelId,
+        affordanceTemplateId: chosen.affordanceTemplateId,
+        label: chosen.title,
+        actionText: chosen.actionText,
+        targetRef: chosen.target.id,
+      },
+      5,
+    ),
+  );
+
+  assert.equal(
+    settlement.appliedAffordance?.affordanceTemplateId,
+    chosen.affordanceTemplateId,
+  );
+  assert.equal(
+    settlement.event.affordanceTemplateId,
+    chosen.affordanceTemplateId,
+  );
+  assert.ok(
+    (settlement.event as typeof settlement.event & {
+      nextKernelSelection?: KernelSelectionTrace;
+    }).nextKernelSelection,
   );
 });
 
