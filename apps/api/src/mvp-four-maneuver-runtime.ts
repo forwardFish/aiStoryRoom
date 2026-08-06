@@ -80,7 +80,8 @@ export function ensureFourManeuverState(view: MvpView): MvpView {
   const prior = (view.maneuverState || {}) as Partial<FourManeuverState>;
   const reconstructedTypes = eventTypesForCurrentDay(view);
   const reconstructedFacts = factsFromEvents(view);
-  const sameUsageDay = Number(prior.usageDay) === Number(view.run.currentDay);
+  const sameUsageDay = prior.usageDay === undefined || prior.usageDay === null
+    || Number(prior.usageDay) === Number(view.run.currentDay);
   const usedTypesToday = unique([
     ...(sameUsageDay && Array.isArray(prior.usedTypesToday) ? prior.usedTypesToday.filter(isManeuverType) : []),
     ...reconstructedTypes
@@ -109,7 +110,7 @@ export function ensureFourManeuverState(view: MvpView): MvpView {
 
 function globalDisabledReason(view: MvpView): string | null {
   if (Number(view.run.currentDay) >= 7 || view.run.status === "awaiting_day_advance") return "今日剧情已经结束";
-  if (view.run.status !== "awaiting_decision" || !view.activeDecision) return "当前阶段不能使用主动谋划";
+  if (view.run.status !== "awaiting_decision" || !view.activeDecision) return "当前阶段不能使用主劢谋划";
   if (Number(view.maneuverState.maneuverOpportunitiesRemaining) <= 0) return "今日谋划机会已用完";
   return null;
 }
