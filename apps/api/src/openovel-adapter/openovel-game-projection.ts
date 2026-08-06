@@ -7,6 +7,7 @@ import {
   type OpenNovelManeuverPanelProjection,
   type OpenNovelManeuverProjection,
 } from "./openovel-maneuver";
+import { openNovelManeuverPackages } from "./openovel-maneuver-packages";
 import type { OpenNovelPublicRun, OpenNovelVisibleOption } from "./openovel-runtime.client";
 
 export type OpenNovelProjectionRun = {
@@ -66,7 +67,11 @@ export function openNovelGameProjection(input: {
   const membership = input.run.players.find((player) => player.userId === input.userId);
   const role = membership?.role;
   if (!role) throw new Error("OPENOVEL_PRODUCT_ROLE_MISSING");
+  if (input.runtimeRun.worldId !== input.run.templateKey) {
+    throw new Error("OPENOVEL_MANEUVER_WORLD_MISMATCH");
+  }
 
+  const maneuverPackage = openNovelManeuverPackages.require(input.run.templateKey);
   const turnNumber = input.runtimeRun.turnNumber;
   const completed = input.runtimeRun.status === "COMPLETED";
   const canHumanAct = !completed;
@@ -77,6 +82,7 @@ export function openNovelGameProjection(input: {
     runtimeStatus: input.runtimeRun.status,
     mainDecisionOpen: decisionsOpen,
     canHumanAct,
+    maneuverPackage,
   });
   const stageIndex = maneuverProjection.state.usageDay;
   const sceneTarget = {
