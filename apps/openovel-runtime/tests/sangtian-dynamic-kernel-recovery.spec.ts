@@ -10,7 +10,11 @@ import templatesPackage, {
   type PartOneRuntimePackage,
   type PartOneState,
 } from "@ai-story/templates";
-import { currentSangtianOptions } from "../src/sangtian-decisions.js";
+import {
+  currentSangtianOptions,
+  sangtianDecisionAdapter,
+  type PreparedSangtianDecision,
+} from "../src/sangtian-decisions.js";
 import type { FileStoryWorkspace } from "../src/workspace.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -106,6 +110,7 @@ async function workspaceFixture(
       turnNumber,
     }),
     paths: () => ({ partOneState, partOneEvents }),
+    recordSceneEvent: async () => ({}),
   } as unknown as FileStoryWorkspace;
   return { root, workspace, partOneState, partOneEvents };
 }
@@ -152,6 +157,120 @@ test("current options recover the exact committed primary pair and fail closed o
       currentSangtianOptions(fixture.workspace, "run.primary"),
       /PART_ONE_DYNAMIC_AFFORDANCE_PAIR_MISSING|PART_ONE_PINNED_AFFORDANCE_NOT_FOUND/u,
     );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("a committed non-default primary pair remains authoritative when its option settles", async () => {
+  const pkg = packageUnderTest();
+  const state = stateForAuthority(pkg);
+  const defaultWorkingSet = templatesPackage.buildPartOneRuntimeWorkingSet(
+    pkg,
+    state,
+    state.turnNumber,
+  );
+  const candidate = defaultWorkingSet.kernelSelection.candidates.find(
+    (item) => item.kernelId === defaultWorkingSet.decisionPoint.decisionKernelId,
+  );
+  assert.ok(candidate);
+  const kernel = pkg.assets.find(
+    (item) => item.assetId === defaultWorkingSet.decisionPoint.decisionKernelId,
+  );
+  assert.ok(kernel);
+  const authoredIds = (Array.isArray(kernel.payload.options)
+    ? kernel.payload.options
+    : [])
+    .map((option) => option.affordanceTemplateId)
+    .filter((id) => candidate.validAffordanceIds.includes(id));
+  assert.ok(authoredIds.length >= 3);
+
+  const pairs: string[][] = [];
+  for (let left = 0; left < authoredIds.length; left += 1) {
+    for (let right = left + 1; right < authoredIds.length; right += 1) {
+      pairs.push([authoredIds[left]!, authoredIds[right]!]);
+    }
+  }
+  const defaultIds = defaultWorkingSet.kernelSelection.selectedAffordanceIds;
+  const alternateIds = pairs.find((pair) => !sameStringArray(pair, defaultIds));
+  assert.ok(alternateIds);
+  const alternateOnlyId = alternateIds.find((id) => !defaultIds.includes(id));
+  assert.ok(alternateOnlyId);
+
+  const pin = {
+    decisionKernelId: defaultWorkingSet.decisionPoint.decisionKernelId,
+    decisionPointId: defaultWorkingSet.decisionPoint.decisionPointId,
+    affordanceIds: [...alternateIds],
+  };
+  const pinnedWorkingSet = templatesPackage.buildPartOneRuntimeWorkingSet(
+    pkg,
+    state,
+    state.turnNumber,
+    { mode: "DYNAMIC_LITE", pin },
+  );
+  assert.deepEqual(
+    pinnedWorkingSet.decisionAffordances.map(
+      (affordance) => affordance.affordanceTemplateId,
+    ),
+    alternateIds,
+  );
+
+  const eventId = "EVENT-COMMITTED-NON-DEFAULT-PAIR";
+  state.lastCommittedEventId = eventId;
+  const trace = structuredClone(defaultWorkingSet.kernelSelection);
+  trace.selectedKernelId = pin.decisionKernelId;
+  trace.selectedDecisionPointId = pin.decisionPointId;
+  trace.selectedAffordanceIds = [...alternateIds];
+  trace.selectedOutcomeHashes = [];
+  trace.stateRevision = state.turnNumber;
+  trace.stateFingerprint = templatesPackage.stableSha256(state);
+  const event = {
+    eventId,
+    turnNumber: state.turnNumber,
+    sectionIdAfter: state.sectionId,
+    nextDecisionPoint: pinnedWorkingSet.decisionPoint,
+    nextKernelSelection: trace,
+  };
+  const fixture = await workspaceFixture(
+    state,
+    [event],
+    state.turnNumber,
+  );
+  try {
+    const recovered = await currentSangtianOptions(
+      fixture.workspace,
+      "run.non-default-pair",
+    );
+    assert.ok(recovered);
+    assert.deepEqual(
+      recovered.map((option) => option.id),
+      alternateIds,
+    );
+    const selectedOption = recovered.find(
+      (option) => option.id === alternateOnlyId,
+    );
+    assert.ok(selectedOption);
+
+    const prepared = await sangtianDecisionAdapter.prepare(
+      fixture.workspace,
+      {
+        runId: "run.non-default-pair",
+        turnNumber: state.turnNumber + 1,
+        action: selectedOption.label,
+        selectedOption,
+      },
+    );
+    assert.ok(prepared);
+    const payload = prepared.payload as PreparedSangtianDecision;
+    assert.equal(
+      payload.settlement.event.affordanceTemplateId,
+      alternateOnlyId,
+    );
+    assert.equal(
+      payload.settlement.appliedAffordance?.affordanceTemplateId,
+      alternateOnlyId,
+    );
+    assert.ok(prepared.selectedOption?.effect?.beatContract);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -339,3 +458,8 @@ test("current options recover the exact Floor continuation decision point", asyn
     await rm(fixture.root, { recursive: true, force: true });
   }
 });
+
+function sameStringArray(left: string[], right: string[]) {
+  return left.length === right.length
+    && left.every((value, index) => value === right[index]);
+}
