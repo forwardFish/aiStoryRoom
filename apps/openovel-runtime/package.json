@@ -22,7 +22,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.spec.ts",
-    "test:b0-runtime": "node --import tsx --test tests/b0-narrative-runtime.spec.ts"
+    "test:b0-runtime": "node --import tsx --test tests/b0-narrative-runtime.spec.ts tests/b0-narrative-service.spec.ts"
   },
   "dependencies": {
     "@ai-story/templates": "workspace:*",
