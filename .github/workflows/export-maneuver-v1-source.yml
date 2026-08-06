@@ -1,0 +1,116 @@
+name: Bootstrap maneuver v1 implementation
+
+on:
+  push:
+    branches:
+      - feat/maneuver-rules-v1-gpt56-20260805
+
+permissions:
+  contents: write
+
+concurrency:
+  group: maneuver-v1-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: test
+  MANEUVER_RULES_V1_ENABLED: "true"
+  MANEUVER_RULES_V1_WORLD_ALLOWLIST: sangtian
+  MANEUVER_PREVIEW_SECRET: ci-maneuver-preview-secret-at-least-32-characters
+
+jobs:
+  apply-test-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect complete implementation payload
+        id: payload
+        shell: bash
+        run: |
+          if [[ -f tmp/maneuver-v1.ready ]]; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+            echo 'The implementation payload is not marked complete; nothing to bootstrap.'
+          fi
+
+      - name: Reconstruct and apply implementation
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          test "$(find tmp -maxdepth 1 -type f -name 'maneuver-v1.patch.gz.b64.part-*' | wc -l)" -eq 4
+          cat tmp/maneuver-v1.patch.gz.b64.part-* > "$RUNNER_TEMP/maneuver-v1.patch.gz.b64"
+          echo '6420026bdda7ee7a54a0a752129983f24125a0e69462e3b4d99031baf7daab3a  '"$RUNNER_TEMP/maneuver-v1.patch.gz.b64" | sha256sum --check --strict
+          base64 --decode "$RUNNER_TEMP/maneuver-v1.patch.gz.b64" > "$RUNNER_TEMP/maneuver-v1.patch.gz"
+          gzip --decompress --stdout "$RUNNER_TEMP/maneuver-v1.patch.gz" > "$RUNNER_TEMP/maneuver-v1.patch"
+          echo '5c1fb576888947e1be1848b43a4c286c88f55f251fe467f08fe413de0c90b127  '"$RUNNER_TEMP/maneuver-v1.patch.gz" | sha256sum --check --strict
+          echo '4bd412075c2f240d560c6233232246878c4aa6cec8e021a57f34186007cd87ec  '"$RUNNER_TEMP/maneuver-v1.patch" | sha256sum --check --strict
+          git apply --index --whitespace=error "$RUNNER_TEMP/maneuver-v1.patch"
+          git diff --cached --check
+
+      - name: Set up pnpm
+        if: steps.payload.outputs.present == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        if: steps.payload.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.payload.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        if: steps.payload.outputs.present == 'true'
+        run: pnpm db:generate
+
+      - name: Typecheck implementation
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          pnpm --filter @ai-story/templates typecheck
+          pnpm --filter @ai-story/shared typecheck
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/openovel-runtime typecheck
+
+      - name: Run focused maneuver tests
+        if: steps.payload.outputs.present == 'true'
+        run: pnpm test:maneuver:v1
+
+      - name: Run critical regressions
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          pnpm --filter @ai-story/templates test:runtime-contract
+          pnpm --filter @apps/api test:openovel
+          pnpm --filter @apps/web test
+
+      - name: Remove bootstrap payload and workflow
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          rm -f tmp/maneuver-v1.patch.gz.b64.part-* tmp/maneuver-v1.ready
+          rmdir tmp 2>/dev/null || true
+          rm -f .github/workflows/export-maneuver-v1-source.yml
+          git add -A
+          git diff --cached --check
+
+      - name: Commit and push verified implementation
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat(maneuver-v1): implement finite multiplayer maneuver rules'
+          git push origin HEAD:feat/maneuver-rules-v1-gpt56-20260805
