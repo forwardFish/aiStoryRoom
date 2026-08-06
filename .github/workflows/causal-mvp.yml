@@ -6,6 +6,7 @@ on:
       - ".github/workflows/causal-mvp.yml"
       - "apps/api/**"
       - "apps/web/**"
+      - "apps/openovel-runtime/**"
       - "packages/shared/**"
       - "packages/templates/**"
       - "package.json"
@@ -41,6 +42,8 @@ jobs:
       - run: pnpm --filter @ai-story/templates test:b0-audience
       - run: pnpm --filter @ai-story/shared build
       - run: pnpm --filter @ai-story/templates build
+      - run: pnpm --filter @apps/openovel-runtime test:b0-runtime
+      - run: pnpm --filter @apps/openovel-runtime typecheck
       - run: pnpm --filter @apps/api test:b0-batch
       - run: pnpm --filter @apps/api test:b0-window
       - run: pnpm --filter @apps/api typecheck
