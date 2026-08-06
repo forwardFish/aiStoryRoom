@@ -9,7 +9,8 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
   const params = new URLSearchParams(browserWindow?.location?.search || "");
   const storyId = params.get("story")?.trim() || "";
   const startFresh = params.get("start") === "new";
-  const state = { loading: true, busy: false, error: "", story: null, selectedRoleKey: "" };
+  const requestedRoleKey = params.get("role")?.trim() || "";
+  const state = { loading: true, busy: false, error: "", creditsRequired: null, story: null, selectedRoleKey: "" };
 
   async function boot() {
     state.loading = true;
@@ -23,7 +24,8 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
         throw new Error(payload?.message || `The role roster could not be loaded (HTTP ${response.status}).`);
       }
       state.story = payload;
-      state.selectedRoleKey = payload.roles.find((role) => role.playableSolo !== false)?.key || payload.roles[0]?.key || "";
+      const requestedRole = payload.roles.find((role) => role.key === requestedRoleKey && role.playableSolo !== false);
+      state.selectedRoleKey = requestedRole?.key || payload.roles.find((role) => role.playableSolo !== false)?.key || payload.roles[0]?.key || "";
     } catch (error) {
       state.error = error instanceof Error ? error.message : String(error);
     } finally {
@@ -46,6 +48,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
     storage?.setItem?.(pendingKey, idempotencyKey);
     state.busy = true;
     state.error = "";
+    state.creditsRequired = null;
     render();
     try {
       const response = await fetchImpl(`${apiBase(browserWindow?.location)}/v4/rooms/solo`, {
@@ -57,6 +60,12 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
       const payload = await response.json().catch(() => null);
       if (requiresAuthentication(response, payload)) {
         redirectToLogin(browserWindow);
+        return;
+      }
+      if (requiresWorldCredits(response, payload)) {
+        state.creditsRequired = normalizeCreditsRequired(payload);
+        state.busy = false;
+        render();
         return;
       }
       const runId = payload?.id || payload?.runId || payload?.roomId;
@@ -114,6 +123,25 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
       busy: state.busy
     });
     if (state.error) root.querySelector(".mw-room-footer")?.insertAdjacentHTML("beforebegin", `<div class="role-alert" role="alert">${escapeHtml(state.error)}</div>`);
+    if (state.creditsRequired) {
+      root.insertAdjacentHTML("beforeend", renderCreditsRequiredDialog(state.creditsRequired));
+      const dialog = root.querySelector(".credits-required-dialog");
+      const purchaseButton = root.querySelector("[data-credits-required-purchase]");
+      const dismiss = () => {
+        state.creditsRequired = null;
+        render();
+        root.querySelector("#enterRole")?.focus?.();
+      };
+      root.querySelectorAll("[data-credits-required-dismiss]").forEach((button) => button.addEventListener("click", dismiss));
+      root.querySelector(".credits-required-backdrop")?.addEventListener("click", (event) => {
+        if (event.target === event.currentTarget) dismiss();
+      });
+      dialog?.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") dismiss();
+      });
+      purchaseButton?.addEventListener("click", () => navigateToCredits(browserWindow, state.selectedRoleKey));
+      purchaseButton?.focus?.();
+    }
     root.querySelectorAll("[data-room-role-key]").forEach((button) => button.addEventListener("click", () => selectRole(button.dataset.roomRoleKey)));
     root.querySelector("#enterRole")?.addEventListener("click", createRun);
   }
@@ -151,6 +179,77 @@ function apiOverride(location = globalThis.location) {
 
 function requiresAuthentication(response, payload) {
   return response?.status === 401 || payload?.code === "AUTHENTICATION_REQUIRED";
+}
+
+function requiresWorldCredits(response, payload) {
+  return response?.status === 402 && ["WORLD_CREDITS_REQUIRED", "RUN_CREATION_CREDITS_REQUIRED"].includes(payload?.code);
+}
+
+function normalizeCreditsRequired(payload) {
+  const required = finiteCreditValue(payload?.required ?? payload?.requiredCredits);
+  const available = finiteCreditValue(payload?.available ?? payload?.availableCredits);
+  return {
+    required,
+    available,
+    missing: required !== null && available !== null ? Math.max(0, required - available) : null
+  };
+}
+
+function finiteCreditValue(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
+}
+
+function renderCreditsRequiredDialog(credits) {
+  const hasExactBalance = credits.required !== null && credits.available !== null;
+  const summary = hasExactBalance
+    ? `Starting this story requires ${formatCredits(credits.required)} World Credits. Your account currently has ${formatCredits(credits.available)}.`
+    : "Add World Credits to your account before starting this story.";
+  const missing = credits.missing !== null && credits.missing > 0
+    ? `<p class="credits-required-gap">You need <strong>${formatCredits(credits.missing)} more</strong> World Credits to begin.</p>`
+    : "";
+  const balance = hasExactBalance
+    ? `<div class="credits-required-summary" aria-label="World Credits requirement">
+        <div><span>Required</span><strong>${formatCredits(credits.required)}</strong></div>
+        <div><span>Available</span><strong>${formatCredits(credits.available)}</strong></div>
+      </div>`
+    : "";
+  return `<div class="credits-required-backdrop" role="presentation">
+    <section class="credits-required-dialog" role="dialog" aria-modal="true" aria-labelledby="credits-required-title" aria-describedby="credits-required-description" tabindex="-1">
+      <button class="credits-required-close" type="button" data-credits-required-dismiss aria-label="Close">&times;</button>
+      <div class="credits-required-emblem" aria-hidden="true"><span>✦</span></div>
+      <p class="credits-required-eyebrow">WORLD CREDITS</p>
+      <h2 id="credits-required-title">Add Credits to begin</h2>
+      <p id="credits-required-description" class="credits-required-copy">${escapeHtml(summary)}</p>
+      ${balance}
+      ${missing}
+      <div class="credits-required-actions">
+        <button class="credits-required-secondary" type="button" data-credits-required-dismiss>Not now</button>
+        <button class="credits-required-primary" type="button" data-credits-required-purchase><span aria-hidden="true">✦</span> Get World Credits</button>
+      </div>
+      <p class="credits-required-note">Your selected role will be kept when you return.</p>
+    </section>
+  </div>`;
+}
+
+function formatCredits(value) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+}
+
+function navigateToCredits(browserWindow, selectedRoleKey = "") {
+  const location = browserWindow?.location;
+  let returnTo = "/";
+  try {
+    const current = new URL(location?.href || `${location?.pathname || "/"}${location?.search || ""}${location?.hash || ""}`, "http://many-worlds.invalid");
+    if (selectedRoleKey) current.searchParams.set("role", selectedRoleKey);
+    returnTo = `${current.pathname}${current.search}${current.hash}`;
+  } catch {
+    returnTo = `${location?.pathname || ""}${location?.search || ""}${location?.hash || ""}`;
+    if (!returnTo.startsWith("/")) returnTo = "/";
+  }
+  const creditsUrl = `/credits?${new URLSearchParams({ intent: "RUN_CREATE", returnTo: returnTo || "/" })}`;
+  if (typeof location?.assign === "function") location.assign(creditsUrl);
+  else if (location) location.href = creditsUrl;
 }
 
 function redirectToLogin(browserWindow) {

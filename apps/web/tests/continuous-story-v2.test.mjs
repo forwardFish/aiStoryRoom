@@ -119,9 +119,8 @@ test("opening recovery is visible but retries only after an explicit click", asy
   app.destroy(); dom.window.close();
 });
 
-test("opening recovery keeps polling the read projection until a turn is published", async () => {
+test("Solo opening recovery stays explicit and does not poll the read projection", async () => {
   const waitingForOpening = projection({ currentTurn: null, completed: false });
-  const published = projection();
   const { dom, root } = page();
   const intervals = [];
   dom.window.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
@@ -132,22 +131,19 @@ test("opening recovery keeps polling the read projection until a turn is publish
     runId: waitingForOpening.room.id,
     initialProjection: waitingForOpening,
     fetchImpl: async (url) => {
-      if (String(url).includes("/game")) { gameReads += 1; return json(published); }
+      if (String(url).includes("/game")) { gameReads += 1; return json(waitingForOpening); }
       return json({});
     }
   });
   await app.boot();
 
-  intervals.find((item) => item.delay === 1_500).callback();
-  await new Promise((resolve) => setTimeout(resolve, 0));
-
-  assert.equal(gameReads, 1);
-  assert.equal(app.getState().projection.currentTurn.id, published.currentTurn.id);
-  assert.equal(dom.window.document.querySelector("[data-v2-opening-recovery]"), null);
+  assert.deepEqual(intervals, []);
+  assert.equal(gameReads, 0);
+  assert.ok(dom.window.document.querySelector("[data-v2-opening-recovery]"));
   app.destroy(); dom.window.close();
 });
 
-test("the World Credits banner stays in the story flow and never covers the primary action", async () => {
+test("a human-controlled Solo story does not render the internal World Credits banner", async () => {
   const withCredits = projection({
     creditControl: {
       policyVersion: "active_action_v1",
@@ -161,9 +157,8 @@ test("the World Credits banner stays in the story flow and never covers the prim
   await new Promise((resolve) => setTimeout(resolve, 0));
   const banner = dom.window.document.querySelector("[data-v2-credit-chrome]");
 
-  assert.ok(banner);
+  assert.equal(banner, null);
   assert.ok(root.querySelector(".causal-center"), root.innerHTML.slice(0, 300));
-  assert.ok(banner.closest(".causal-center"));
   assert.ok(root.querySelector("#beginStoryBtn"));
   app.destroy(); dom.window.close();
 });
@@ -210,7 +205,7 @@ test("Story V2 uses the approved old main-game layout and shows story before dec
   assert.ok(root.querySelector('[data-testid="role-opening"]'));
   assert.equal(root.querySelector('[data-testid="continuous-story-v2-shell"]'), null);
   assert.match(root.textContent, /巡抚亲自把两册粮账放到案上/);
-  assert.match(root.textContent, /决策后立即单独推演/);
+  assert.doesNotMatch(root.textContent, /决策后立即单独推演/);
   assert.match(root.textContent, /银两\s*42 万两/);
   assert.match(root.textContent, /粮草\s*23 万石/);
   assert.match(root.textContent, /兵丁\s*4\/5/);
@@ -574,7 +569,7 @@ test("a cross-role request is answered as its own immediate decision", async () 
   app.destroy(); dom.window.close();
 });
 
-test("polling pauses during opening, custom writing and an active decision", async () => {
+test("Solo decisions do not start background polling during opening or resolution", async () => {
   const { dom, root } = page();
   const intervals = [];
   dom.window.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
@@ -593,9 +588,7 @@ test("polling pauses during opening, custom writing and an active decision", asy
   };
   const app = createContinuousStoryV2App({ root, window: dom.window, runId: "room-v2", initialProjection: projection(), fetchImpl });
   await app.boot();
-  assert.deepEqual(intervals.map((item) => item.delay), [1_500, 10_000]);
-  intervals[0].callback();
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(intervals, []);
   assert.equal(gameReads, 0, "opening narrative must not be replaced by polling");
 
   enterSituation(root);
@@ -603,9 +596,6 @@ test("polling pauses during opening, custom writing and an active decision", asy
   const submitted = app.submitDecision();
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(decisionStarted, true);
-  intervals[0].callback();
-  intervals[1].callback();
-  await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(gameReads, 0, "polling must pause while a decision is resolving");
   releaseDecision();
   await submitted;

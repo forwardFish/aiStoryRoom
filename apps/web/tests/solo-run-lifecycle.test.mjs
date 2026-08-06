@@ -29,7 +29,8 @@ test("play again uses an in-game accessible dialog instead of a browser confirm"
   assert.match(dialog, /aria-modal="true"/);
   assert.match(dialog, /id="playAgainCancelBtn"/);
   assert.match(dialog, /id="playAgainConfirmBtn"/);
-  assert.match(dialog, /当前这一局及历史记录都会保留/);
+  assert.match(dialog, /当前进度会保留；新一局将重新选择角色，并从完整开场开始/);
+  assert.doesNotMatch(dialog, /当前这一局|确认之后|play-again-summary/);
 });
 
 test("the main game integrates the play-again lifecycle without replacing history or home", async () => {
@@ -45,7 +46,7 @@ test("the main game integrates the play-again lifecycle without replacing histor
   assert.match(app, /querySelector\("#playAgainBtn"\).*openPlayAgain/);
   assert.match(app, /querySelector\("#playAgainConfirmBtn"\).*confirmPlayAgain/);
   assert.doesNotMatch(app, /browserWindow\.confirm\([^)]*再来一局/);
-  assert.match(page, /solo-run-lifecycle\.css\?v=20260805-play-again-v2/);
+  assert.match(page, /solo-run-lifecycle\.css\?v=20260806-play-again-v3/);
   assert.match(css, /grid-template-columns:\s*repeat\(3,\s*max-content\)/);
   assert.match(css, /\.play-again-dialog\s*\{/);
 });

@@ -32,6 +32,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force && pnpm db:seed",
+    "db:clear:test-game-data": "node --env-file=.env.test scripts/ops/clear-supabase-game-data.mjs",
     "build:vercel": "node scripts/deploy/prepare-vercel-web-assets.mjs && pnpm --filter @apps/web build",
     "lint:config": "tsx scripts/config/lint-sangtian-config.ts",
     "test:config": "pnpm lint:config",
