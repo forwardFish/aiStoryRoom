@@ -154,6 +154,11 @@ export class OpenNovelManeuverPreviewService {
     const planned = this.compile(context, payload.command);
     if (isGuardResult(planned)) return planned;
 
+    // Two requests can both pass the first check while awaiting PostgreSQL and
+    // runtime reads. This second check has no await before set(), so one API
+    // process executes exactly one logical submit for the same preview key.
+    const lateInFlight = this.inFlightConfirms.get(confirmationKey);
+    if (lateInFlight) return lateInFlight;
     const confirmation = this.maneuvers.submit(user, runId, payload.command)
       .finally(() => this.inFlightConfirms.delete(confirmationKey));
     this.inFlightConfirms.set(confirmationKey, confirmation);
