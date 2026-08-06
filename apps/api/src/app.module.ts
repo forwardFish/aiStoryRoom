@@ -25,6 +25,8 @@ import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.co
 import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
 import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
+import { OpenNovelManeuverController } from "./openovel-adapter/openovel-maneuver.controller";
+import { OpenNovelManeuverService } from "./openovel-adapter/openovel-maneuver.service";
 import { installFourManeuverRuntime } from "./mvp-four-maneuver-runtime";
 import { installFourManeuverResolution } from "./mvp-four-maneuver-resolution";
 
@@ -33,7 +35,7 @@ installFourManeuverResolution();
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
-  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController],
+  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController, OpenNovelManeuverController],
   providers: [
     StoryService,
     StoryTaskOutboxService,
@@ -41,7 +43,8 @@ installFourManeuverResolution();
     PresenceHeartbeatRateLimitGuard,
     OpenNovelAdapterService,
     OpenNovelRuntimeClient,
-    OpenNovelSharedService
+    OpenNovelSharedService,
+    OpenNovelManeuverService
   ]
 })
 export class AppModule {}
