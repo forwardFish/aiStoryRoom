@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import runtimeFacade from "./runtime-facade.js";
 import {
   applyNarrativeScenePatternToDramaticBeatPlan,
@@ -7,11 +8,14 @@ import {
   buildDynamicPartOneRuntimeWorkingSet,
   isDynamicCapabilityAction,
   type DynamicPartOneCommittedEvent as DynamicCommittedEvent,
+  type PartOneDecisionPin,
+  type PartOneWorkingSetSelectionOptions,
 } from "./story-package/dynamic-kernel-lite-runtime.js";
 import {
   buildCommittedLegacyFallbackWorkingSet,
   packageForDynamicCapabilityAction,
   settleDynamicPartOneAction,
+  type DynamicPartOneSettlementExecutionOptions,
 } from "./story-package/dynamic-kernel-lite-settlement.js";
 import { loadPlayablePartOneRuntimePackage } from "./story-package/playable-part-one-runtime.js";
 
@@ -39,6 +43,30 @@ export type {
 } from "./story-package/dynamic-kernel-lite-settlement.js";
 
 /**
+ * Recovery validation happens in the OpenNovel adapter before the frozen
+ * authored-decision module binds and settles an action. The base module keeps
+ * its stable public signature, so the exact committed Pin is carried through
+ * an AsyncLocalStorage scope. This is concurrency-safe and ensures both the
+ * WorkingSet used for action binding and the formal Settlement use the same
+ * already-committed decision surface.
+ */
+const decisionPinContext = new AsyncLocalStorage<PartOneDecisionPin | null>();
+
+export function withPartOneDecisionPin<T>(
+  pin: PartOneDecisionPin | null,
+  execute: () => T,
+): T {
+  return decisionPinContext.run(
+    pin ? structuredClone(pin) : null,
+    execute,
+  );
+}
+
+function contextualDecisionPin() {
+  return decisionPinContext.getStore() ?? null;
+}
+
+/**
  * Explicit exports win over the star-exported frozen implementations. Native
  * ESM named imports, CommonJS namespace imports and the default runtime
  * namespace therefore use one playable loader and the Dynamic Kernel Selector
@@ -51,7 +79,30 @@ export type {
  * accidentally validating a path that production does not execute.
  */
 export const loadPartOneRuntimePackage = loadPlayablePartOneRuntimePackage;
-export const buildPartOneRuntimeWorkingSet = buildDynamicPartOneRuntimeWorkingSet;
+
+export const buildPartOneRuntimeWorkingSet = (
+  pkg: Parameters<typeof buildDynamicPartOneRuntimeWorkingSet>[0],
+  state: Parameters<typeof buildDynamicPartOneRuntimeWorkingSet>[1],
+  turnNumber: Parameters<typeof buildDynamicPartOneRuntimeWorkingSet>[2],
+  options: PartOneWorkingSetSelectionOptions = {},
+): ReturnType<typeof buildDynamicPartOneRuntimeWorkingSet> => {
+  const ambientPin = contextualDecisionPin();
+  const effectiveOptions = options.pin !== undefined
+    || options.mode === "LEGACY_FIXED"
+    || !ambientPin
+    ? options
+    : {
+      ...options,
+      mode: "DYNAMIC_LITE" as const,
+      pin: ambientPin,
+    };
+  return buildDynamicPartOneRuntimeWorkingSet(
+    pkg,
+    state,
+    turnNumber,
+    effectiveOptions,
+  );
+};
 
 /**
  * Settlement is complete before scene grammar is attached. The selected
@@ -60,18 +111,36 @@ export const buildPartOneRuntimeWorkingSet = buildDynamicPartOneRuntimeWorkingSe
  * open Kernel, evidence, documents, secrets or pending consequences.
  */
 export const settlePartOneAction = (
-  ...args: Parameters<typeof runtimeFacade.settlePartOneAction>
+  pkg: Parameters<typeof runtimeFacade.settlePartOneAction>[0],
+  state: Parameters<typeof runtimeFacade.settlePartOneAction>[1],
+  action: Parameters<typeof runtimeFacade.settlePartOneAction>[2],
+  turnNumber: Parameters<typeof runtimeFacade.settlePartOneAction>[3],
+  options: DynamicPartOneSettlementExecutionOptions = {},
 ): ReturnType<typeof runtimeFacade.settlePartOneAction> => {
-  const [pkg, state, action, turnNumber] = args;
+  const ambientPin = contextualDecisionPin();
+  const currentPin = options.currentPin === undefined
+    ? ambientPin
+    : options.currentPin;
   const capabilityAction = isDynamicCapabilityAction(action);
   const settlement = capabilityAction
     ? runtimeFacade.settlePartOneAction(
-      packageForDynamicCapabilityAction(pkg, state, turnNumber),
+      packageForDynamicCapabilityAction(
+        pkg,
+        state,
+        turnNumber,
+        currentPin,
+      ),
       state,
       action,
       turnNumber,
     )
-    : settleDynamicPartOneAction(pkg, state, action, turnNumber);
+    : settleDynamicPartOneAction(
+      pkg,
+      state,
+      action,
+      turnNumber,
+      { currentPin },
+    );
 
   if (capabilityAction) {
     attachCapabilityKernelSelection(
@@ -189,6 +258,7 @@ const runtimeEntry = {
   buildPartOneRuntimeWorkingSet,
   buildCommittedLegacyFallbackWorkingSet,
   settlePartOneAction,
+  withPartOneDecisionPin,
 };
 
 export default runtimeEntry;
