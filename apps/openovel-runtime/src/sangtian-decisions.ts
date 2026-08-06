@@ -28,7 +28,7 @@ const {
   loadPartOneRuntimePackage,
   projectFinalizedPartOneSelectionState,
   stableSha256,
-  withPartOneDecisionPin,
+  withPartOneDecisionWorkingSet,
 } = templatesPackage;
 
 type EventWithKernelSelection = PartOneActionSettlement["event"] & {
@@ -43,7 +43,6 @@ type SangtianDecisionContext = {
     kernelSelection?: KernelSelectionTrace;
   };
   pin: PartOneDecisionPin;
-  useCommittedPin: boolean;
 };
 
 export async function prepareSangtianDecision(
@@ -69,8 +68,8 @@ export async function prepareSangtianDecision(
   }
 
   const prepare = () => base.prepareSangtianDecision(workspace, input);
-  return context?.useCommittedPin
-    ? withPartOneDecisionPin(context.pin, prepare)
+  return context
+    ? withPartOneDecisionWorkingSet(context.workingSet, prepare)
     : prepare();
 }
 
@@ -265,7 +264,6 @@ function decisionContextForCommittedEvent(
     turnNumber,
     workingSet,
     pin,
-    useCommittedPin: !legacyFallback,
   };
 }
 
