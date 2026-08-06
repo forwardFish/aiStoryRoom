@@ -24,8 +24,8 @@ function snapshot() {
     baseWorldSequence: 7,
     ruleset: windowedRuleset(),
     worldState: { phase: "open", sequence: 7 },
-    actorStates: [{ actorId: "actor.a" }],
-    roleBindings: [{ actorId: "actor.a", roleId: "role.a" }],
+    actorStates: [{ actorId: "actor.a" }, { actorId: "actor.b" }],
+    roleBindings: [{ actorId: "actor.a", roleId: "role.a" }, { actorId: "actor.b", roleId: "role.b" }],
     knowledgeState: { actor: "actor.a", facts: [] },
     relationshipState: { edges: [] },
     resourceState: { resources: [{ id: "resource.a", quantity: 2 }] },
@@ -87,14 +87,16 @@ test("C2 single-intent adapter and batch entry produce the same deterministic re
   assert.deepEqual(throughBatch.worldDelta.mutations[0].value, -1);
 });
 
-test("C2 rejects unsealed inputs, context drift, and premature multi-intent settlement", () => {
+test("C2 rejects unsealed inputs and context drift while C4 accepts a shared multi-intent batch", () => {
   const snap = snapshot(); const intent = lockedAction();
   const batch = prepareB0SettlementBatchV1({ id: "batch.c2", snapshot: snap, intents: [intent], createdAt: "2026-08-06T00:05:01.000Z" });
   assert.throws(() => settleB0BatchV1({ ruleset: windowedRuleset(), snapshot: snap, batch: { ...batch, inputHash: "0".repeat(64) }, intents: [intent] }), /BATCH_INPUT_HASH_MISMATCH|immutable hash/);
   assert.throws(() => settleB0BatchV1({ ruleset: windowedRuleset(), snapshot: snap, batch, intents: [{ ...intent, status: "CONFIRMED" }] }), /not locked/);
-  const second = { ...intent, id: "intent.second", actorId: "actor.b" };
+  const second = { ...intent, id: "intent.second", actorId: "actor.b", clientRequestId: "client.second", resourceCommitments: [] };
   const two = prepareB0SettlementBatchV1({ id: "batch.two", snapshot: snap, intents: [intent, second], createdAt: "2026-08-06T00:05:01.000Z" });
-  assert.throws(() => settleB0BatchV1({ ruleset: windowedRuleset(), snapshot: snap, batch: two, intents: [intent, second] }), /C2 accepts exactly one/);
+  const resolution = settleB0BatchV1({ ruleset: windowedRuleset(), snapshot: snap, batch: two, intents: [intent, second] });
+  assert.equal(resolution.intentOutcomes.length, 2);
+  assert.deepEqual(resolution.conflictGroups[0].intentIds, ["intent.c2", "intent.second"]);
 });
 
 test("C2 commit manifest binds snapshot, input, resolution and one sequence advance", () => {

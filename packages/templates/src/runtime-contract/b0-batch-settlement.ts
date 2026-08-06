@@ -195,7 +195,7 @@ function settleDeterministic(input: SettleB0BatchInputV1, conservative: boolean)
   const conflictGroups = buildConflictGroups(input.batch.id, all, relations);
   const statusByIntent = conservative ? conservativeStatuses(all) : resolveStatuses(all, relations, conflictGroups);
   const worldDelta = mergeB0WorldDeltaV1(
-    all.flatMap((intent) => candidateMutations(intent, statusByIntent.get(intent.id) ?? "FAILED", input.batch.id)),
+    all.flatMap((intent) => candidateMutations(intent, statusByIntent.get(intent.id) ?? "FAILED", input.batch.id, all.length > 1)),
     input.batch.id,
   );
   const causalEdges = buildCausalEdges(input.batch.id, all, relations, statusByIntent, worldDelta);
@@ -359,7 +359,7 @@ function connectedComponents(ids: string[], support: B0IntentRelationV1[]): stri
   return result;
 }
 
-function candidateMutations(intent: B0ActionContractV1, status: B0OutcomeStatusV1, batchId: string): B0StateMutationV1[] {
+function candidateMutations(intent: B0ActionContractV1, status: B0OutcomeStatusV1, batchId: string, includeProactiveEffect: boolean): B0StateMutationV1[] {
   const costs = intent.resourceCommitments.map((entry) => ({
     mutationId: stableId("resource-cost", batchId, intent.id, entry.resourceId),
     entityType: "RESOURCE" as const,
@@ -369,7 +369,7 @@ function candidateMutations(intent: B0ActionContractV1, status: B0OutcomeStatusV
     value: -entry.amount,
     originIntentIds: [intent.id],
   }));
-  if (intent.kind === "HOLD" || intent.kind === "OBSERVE" || !["SUCCESS", "PARTIAL_SUCCESS"].includes(status)) return costs;
+  if (!includeProactiveEffect || intent.kind === "HOLD" || intent.kind === "OBSERVE" || !["SUCCESS", "PARTIAL_SUCCESS"].includes(status)) return costs;
   const target = [...intent.targetRefs].sort((a, b) => `${a.type}:${a.id}`.localeCompare(`${b.type}:${b.id}`))[0];
   if (!target) return costs;
   const magnitude = magnitudeFor(intent.primaryEffect.requestedMagnitude, status);

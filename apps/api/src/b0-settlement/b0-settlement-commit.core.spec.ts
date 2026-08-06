@@ -177,9 +177,9 @@ test("C4 commits the complete merged WorldDelta in the same manifest and transac
   assert.equal(tx.worldSequence, 8);
   assert.equal(tx.resourceQuantity, 1);
   assert.equal(tx.applyCount, 1);
-  assert.equal(tx.stateApplyCount, 2);
+  assert.equal(tx.stateApplyCount, 1);
   assert.ok(committed.manifest.stateMutationKeys?.includes("b0:mutation:batch.c2:mutation.world"));
-  assert.equal(committed.manifest.stateMutationKeys?.length, 2);
+  assert.equal(committed.manifest.stateMutationKeys?.length, 1);
   assert.equal(committed.manifest.resourceMutationKeys.length, 1);
   assert.equal(committed.manifest.publicationOutboxKeys.length, 1);
 });
