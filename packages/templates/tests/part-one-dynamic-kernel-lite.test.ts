@@ -174,3 +174,50 @@ test("formal settlement and deterministic rebuild agree on the next decision poi
     rebuilt.kernelSelection.selectedAffordanceIds,
   );
 });
+
+test("pinned primary recovery reproduces the committed pair and rejects hash drift", () => {
+  const pkg = packageUnderTest();
+  const state = stateWithOnlyAuthorityUnresolved(pkg);
+  const original = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4);
+  const pin = {
+    decisionKernelId: original.decisionPoint.decisionKernelId,
+    decisionPointId: original.decisionPoint.decisionPointId,
+    affordanceIds: [...original.kernelSelection.selectedAffordanceIds],
+    outcomeHashes: [...original.kernelSelection.selectedOutcomeHashes],
+  };
+  const recovered = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4, { pin });
+  assert.equal(recovered.kernelSelection.mode, "PINNED_RECOVERY");
+  assert.deepEqual(
+    recovered.decisionAffordances.map((item) => item.affordanceTemplateId),
+    original.decisionAffordances.map((item) => item.affordanceTemplateId),
+  );
+  assert.throws(() => buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4, {
+    pin: { ...pin, outcomeHashes: ["BAD", ...pin.outcomeHashes.slice(1)] },
+  }), /PART_ONE_PINNED_OUTCOME_HASH_MISMATCH/u);
+});
+
+test("pinned continuation recovery keeps the exact continuation decision point", () => {
+  const pkg = packageUnderTest();
+  const state = sectionTwoState(pkg);
+  const section = pkg.sections.find((item) => item.sectionId === state.sectionId);
+  assert.ok(section);
+  state.completedKernelIds = [...section.activeDecisionKernelIds];
+  state.sectionTurnNumber = section.activeDecisionKernelIds.length;
+  const continuation = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 8);
+  assert.notEqual(
+    continuation.decisionPoint.decisionPointId,
+    continuation.decisionPoint.decisionKernelId,
+  );
+  const recovered = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 8, {
+    pin: {
+      decisionKernelId: continuation.decisionPoint.decisionKernelId,
+      decisionPointId: continuation.decisionPoint.decisionPointId,
+    },
+  });
+  assert.equal(recovered.decisionPoint.decisionKernelId, continuation.decisionPoint.decisionKernelId);
+  assert.equal(recovered.decisionPoint.decisionPointId, continuation.decisionPoint.decisionPointId);
+  assert.deepEqual(
+    recovered.decisionAffordances.map((item) => item.affordanceTemplateId),
+    continuation.decisionAffordances.map((item) => item.affordanceTemplateId),
+  );
+});
