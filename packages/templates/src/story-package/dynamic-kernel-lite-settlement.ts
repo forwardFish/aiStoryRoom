@@ -1,3 +1,4 @@
+import { stableCanonicalJson } from "../runtime-contract/kernel-selector-lite.js";
 import {
   buildDynamicPartOneRuntimeWorkingSet,
   type DynamicPartOneActionSettlement,
@@ -9,6 +10,7 @@ import {
   type PartOneIncomingAction,
 } from "./part-one-runtime-engine.js";
 import type {
+  PartOneActionSettlement,
   PartOneRuntimePackage,
   PartOneRuntimeWorkingSet,
   PartOneState,
@@ -100,6 +102,7 @@ export function settleDynamicPartOneAction(
     turnNumber,
   );
 
+  assertProvisionalCausalStateStable(provisional, finalized);
   if (
     finalized.event.nextDecisionPoint.decisionKernelId
       !== next.decisionPoint.decisionKernelId
@@ -137,6 +140,51 @@ export function packageForDynamicCapabilityAction(
       ? [current.decisionAffordances[0].affordanceTemplateId]
       : [],
   }]);
+}
+
+/**
+ * The provisional pass exists only to expose the resulting authoritative state
+ * to the selector. Reordering the next Kernel or its option surface must never
+ * change the player action's causal result. The final pass may legitimately
+ * produce different narrative pressure text, so scene.situation and narrative
+ * plans are excluded; every durable or material state field remains covered.
+ */
+function assertProvisionalCausalStateStable(
+  provisional: PartOneActionSettlement,
+  finalized: PartOneActionSettlement,
+) {
+  const left = causalSettlementSnapshot(provisional);
+  const right = causalSettlementSnapshot(finalized);
+  if (stableCanonicalJson(left) !== stableCanonicalJson(right)) {
+    throw new Error("PART_ONE_DYNAMIC_PROVISIONAL_FINAL_CAUSAL_MISMATCH");
+  }
+}
+
+function causalSettlementSnapshot(settlement: PartOneActionSettlement) {
+  const proposedState = clone(settlement.proposedState);
+  if (proposedState.scene) {
+    proposedState.scene = {
+      ...proposedState.scene,
+      situation: "",
+    };
+  }
+  return {
+    proposedState,
+    decisionKernelId: settlement.event.decisionKernelId,
+    affordanceTemplateId: settlement.event.affordanceTemplateId,
+    sectionIdBefore: settlement.event.sectionIdBefore,
+    sectionIdAfter: settlement.event.sectionIdAfter,
+    sectionTransitioned: settlement.event.sectionTransitioned,
+    statePatch: settlement.event.statePatch,
+    durableEffects: settlement.event.durableEffects,
+    changedStatePaths: [...settlement.event.changedStatePaths].sort(),
+    createdPendingConsequenceIds: [
+      ...settlement.event.createdPendingConsequenceIds,
+    ].sort(),
+    duePendingConsequenceIds: [
+      ...settlement.event.duePendingConsequenceIds,
+    ].sort(),
+  };
 }
 
 function forcePackage(
