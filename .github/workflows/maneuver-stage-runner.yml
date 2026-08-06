@@ -1,0 +1,40 @@
+name: Maneuver MVP staged implementation
+
+on:
+  push:
+    branches:
+      - feat/mvp-four-maneuver-actions
+
+permissions:
+  contents: write
+
+env:
+  TARGET_BRANCH: feat/mvp-four-maneuver-actions
+
+concurrency:
+  group: maneuver-mvp-stage-runner
+  cancel-in-progress: false
+
+jobs:
+  implement:
+    if: github.actor != 'github-actions[bot]' && contains(github.event.head_commit.message, 'bootstrap staged implementation')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/mvp-four-maneuver-actions
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Implement and commit P1-P5
+        run: |
+          cat scripts/automation/maneuver-stage-runner.py.gz.b64.* | base64 -d | gzip -dc > /tmp/maneuver-stage-runner.py
+          python3 /tmp/maneuver-stage-runner.py
