@@ -63,6 +63,8 @@ export interface OpenNovelManeuverPackage {
   calendar: {
     expectedTurns: number;
     turns: readonly OpenNovelManeuverCalendarEntry[];
+    /** Compatibility alias consumed by the generic adapter; must equal turns. */
+    scenes: readonly OpenNovelManeuverCalendarEntry[];
   };
   quota: {
     opportunitiesPerDay: number;
@@ -138,7 +140,14 @@ function validatePackage(pkg: OpenNovelManeuverPackage) {
   if (!Number.isInteger(pkg.calendar.expectedTurns) || pkg.calendar.expectedTurns < 1) {
     throw new Error(`OPENOVEL_MANEUVER_PACKAGE_TURN_COUNT_INVALID:${pkg.worldId}`);
   }
-  if (pkg.calendar.turns.length !== pkg.calendar.expectedTurns) {
+  if (
+    pkg.calendar.turns.length !== pkg.calendar.expectedTurns
+    || pkg.calendar.scenes.length !== pkg.calendar.expectedTurns
+    || pkg.calendar.turns.some((entry, index) => (
+      entry.sceneKey !== pkg.calendar.scenes[index]?.sceneKey
+      || entry.usageDay !== pkg.calendar.scenes[index]?.usageDay
+    ))
+  ) {
     throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CALENDAR_LENGTH_INVALID:${pkg.worldId}`);
   }
   if (!Number.isInteger(pkg.quota.opportunitiesPerDay) || pkg.quota.opportunitiesPerDay < 1) {
