@@ -1,0 +1,79 @@
+name: Maneuver independent acceptance
+
+on:
+  push:
+    branches:
+      - feat/mvp-four-maneuver-actions
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maneuver-independent-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  r1-prisma:
+    if: startsWith(github.event.head_commit.message, 'test(maneuver): verify prisma persistence and atomic conflicts')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: maneuver_r1
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d maneuver_r1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/maneuver_r1?schema=public
+      MVP_STORY_STORAGE: prisma
+      NODE_ENV: test
+      PORT: 3102
+      API_PORT: 3102
+      AUTH_TOKEN_SECRET: maneuver-r1-isolated-session-secret
+      AUTH_COOKIE_SECURE: "false"
+      STORY_WORKER_ENABLED: "false"
+      AI_CAUSAL_PROVIDER: rules
+      EMAIL_PROVIDER: file
+      AUTH_MAIL_SINK_FILE: artifacts/maneuver-r1/auth-mail.ndjson
+      CREEM_ENV: test
+      CREEM_API_KEY: creem_test_placeholder
+      CREEM_WEBHOOK_SECRET: creem_webhook_placeholder
+      PUBLIC_WEB_ORIGIN: http://127.0.0.1:5177
+      PAYMENT_RETURN_ORIGIN: http://127.0.0.1:5177
+      MANEUVER_ACCEPTANCE_DIR: artifacts/maneuver-r1
+      EXPECTED_R1_PARENT_SHA: ab7bda4a198eaab09563ebe6fdccfc256069e450
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      - name: Apply existing schema to isolated PostgreSQL
+        run: pnpm exec prisma db push --skip-generate
+      - name: Run real Prisma/API restart acceptance
+        run: pnpm exec tsx scripts/acceptance/maneuver-prisma-live.ts
+      - name: Upload R1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maneuver-r1-prisma-${{ github.sha }}
+          path: artifacts/maneuver-r1
+          if-no-files-found: error
+          retention-days: 30
