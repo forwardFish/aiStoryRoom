@@ -36,11 +36,17 @@ function fixture() {
     updatedAt: new Date().toISOString(),
   };
   let submitCalls = 0;
+  let committed = false;
   let releaseSubmit: ((value: unknown) => void) | null = null;
   const submitted = new Promise((resolve) => { releaseSubmit = resolve; });
   const prisma = {
     storyRun: {
       findUnique: async () => run,
+    },
+    storyEvent: {
+      findUnique: async () => committed
+        ? { id: "event-1", payloadJson: { requestFingerprint: "durable" } }
+        : null,
     },
   };
   const runtime = {
@@ -49,6 +55,7 @@ function fixture() {
   const maneuvers = {
     submit: async () => {
       submitCalls += 1;
+      if (committed) return { accepted: true, replayed: true, resolution: { id: "event-1" } };
       return submitted;
     },
   };
@@ -63,6 +70,7 @@ function fixture() {
     runtimeRun,
     get submitCalls() { return submitCalls; },
     release(value: unknown) { releaseSubmit?.(value); },
+    markCommitted() { committed = true; },
   };
 }
 
@@ -96,7 +104,23 @@ test("concurrent confirms for one signed preview execute the logical submit once
   const second = f.service.confirm(user, f.run.id, preview.previewToken);
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(f.submitCalls, 1);
-  f.release({ accepted: true, replayed: false });
+  f.release({ accepted: true, replayed: false, resolution: { id: "event-1" } });
   const [a, b] = await Promise.all([first, second]);
   assert.deepEqual(a, b);
+});
+
+test("a committed confirm replays before checking the now-advanced revision", async () => {
+  const f = fixture();
+  const preview = await f.service.preview(user, f.run.id, command);
+  const first = f.service.confirm(user, f.run.id, preview.previewToken);
+  f.release({ accepted: true, replayed: false, resolution: { id: "event-1" } });
+  await first;
+  f.markCommitted();
+  f.run.version = 8;
+
+  const replay = await f.service.confirm(user, f.run.id, preview.previewToken);
+
+  assert.equal((replay as any).accepted, true);
+  assert.equal((replay as any).replayed, true);
+  assert.equal(f.submitCalls, 2, "the second call delegates to the durable replay path, not a new commit");
 });
