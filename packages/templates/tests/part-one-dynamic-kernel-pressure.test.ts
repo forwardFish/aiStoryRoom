@@ -103,12 +103,17 @@ test("two due structured pressures can reopen and prioritize their directly link
   const witness = pressured.kernelSelection.candidates.find((candidate) => (
     candidate.kernelId === "DK-P1-WITNESS-ACCESS"
   ));
+  const authority = pressured.kernelSelection.candidates.find((candidate) => (
+    candidate.kernelId === "DK-P1-REVIEW-AUTHORITY"
+  ));
   assert.ok(witness);
-  assert.equal(witness.duePressureCount, undefined);
+  assert.ok(authority);
+  assert.equal(witness.eligible, true);
   assert.equal(
     witness.reasonCodes.includes("OBLIGATION_ALREADY_SATISFIED"),
     false,
   );
+  assert.ok(witness.score > authority.score);
   assert.equal(
     pressured.openDecisionKernel.assetId,
     "DK-P1-WITNESS-ACCESS",
