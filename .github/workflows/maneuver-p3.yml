@@ -1,0 +1,36 @@
+name: Maneuver MVP P3 continuation
+
+on:
+  push:
+    branches:
+      - feat/mvp-four-maneuver-actions
+
+permissions:
+  contents: write
+
+env:
+  TARGET_BRANCH: feat/mvp-four-maneuver-actions
+
+concurrency:
+  group: maneuver-mvp-p3
+  cancel-in-progress: false
+
+jobs:
+  implement-p3:
+    if: github.actor != 'github-actions[bot]' && contains(github.event.head_commit.message, 'bootstrap P3 continuation')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/mvp-four-maneuver-actions
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: python3 scripts/automation/apply-maneuver-p3.py
