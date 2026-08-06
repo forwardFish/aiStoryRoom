@@ -44,6 +44,8 @@ jobs:
           source = path.read_text(encoding='utf-8')
           source = source.replace('node --test --test-isolation=none apps/web/tests/maneuver-ui.test.mjs', 'node --test apps/web/tests/maneuver-ui.test.mjs')
           source = source.replace('replace_between(app, "function renderLeverage(view) {", "\\nfunction renderRisks"', 'replace_between(app, "function renderLeverage(view) {", "\\nfunction renderManeuverPanel"')
+          source = source.replace('assert.equal(root.querySelector("textarea"), null);', 'assert.equal(root.querySelector(\'[data-testid="maneuver-investigate-workbench"] textarea\'), null);', 1)
+          source = source.replace('assert.equal(root.querySelector("textarea"), null);', 'assert.equal(root.querySelector(\'[data-testid="maneuver-leverage-workbench"] textarea\'), null);', 1)
           path.write_text(source, encoding='utf-8')
           PY
           python3 scripts/automation/apply-maneuver-p3.py
