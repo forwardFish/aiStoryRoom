@@ -43,8 +43,11 @@ test("approved scene grammar reaches Narrator only through transient DramaticBea
     const plan = prepared.beatManifest.dramaticBeatPlan;
     assert.ok(pattern);
     assert.ok(plan);
+    assert.equal(plan.steps[0]?.kind, "PLAYER_RESULT");
+    assert.equal(plan.steps[0]?.requiredMeaning, prepared.settledNarrative);
     assert.ok(plan.steps.some((step) => step.kind === "PATTERN_OPENING"));
     assert.ok(plan.steps.some((step) => step.kind === "PATTERN_MOVE"));
+    assert.ok(plan.steps.some((step) => step.kind === "VISIBLE_CONSEQUENCE"));
     assert.ok(plan.steps.every((step) => step.durableMutationAllowed === false));
     assert.equal(plan.steps.at(-1)?.kind, "DECISION_PRESSURE");
 
@@ -58,8 +61,12 @@ test("approved scene grammar reaches Narrator only through transient DramaticBea
       .map((message) => message.content)
       .join("\n");
 
+    assert.match(prompt, /"protectedSlots"[\s\S]*"PLAYER_RESULT"/u);
+    assert.doesNotMatch(prompt, /"kind": "PLAYER_RESULT"/u);
     assert.match(prompt, /"kind": "PATTERN_OPENING"/u);
     assert.match(prompt, /"kind": "PATTERN_MOVE"/u);
+    assert.match(prompt, /"kind": "VISIBLE_CONSEQUENCE"/u);
+    assert.match(prompt, /"narratorOwnsRegularScene": true/u);
     assert.match(prompt, /"expressionPolicy": "ADAPT_PATTERN_TO_CURRENT_SCENE"/u);
     assert.match(prompt, /不得照搬来源场景/u);
     assert.doesNotMatch(prompt, new RegExp(escapeRegExp(pattern.orderedBeats[0]!.observableMove), "u"));

@@ -100,6 +100,12 @@ export type OpenNovelOptionEffect = {
     authorizedPlayerActions?: string[];
     constraints?: string[];
     settledNarrative?: string;
+    /**
+     * World-agnostic ownership for the already-settled player result.
+     * Regular turns let the Narrator express it; only author-reviewed,
+     * high-risk actions should request a protected visible surface.
+     */
+    playerResultExpressionOwner?: "NARRATOR" | "PROTECTED";
     fallbackContinuation?: string;
     playerVisibleFallback?: PlayerVisibleFallbackSurface;
     /**

@@ -25,6 +25,7 @@ type OpeningAsset = {
     intent?: string;
     method?: string;
     protectedNarrative: string;
+    playerResultExpressionOwner?: "NARRATOR" | "PROTECTED";
     fallbackContinuation: string;
     playerVisibleFallback?: {
       PLAYER_RESULT: string;
@@ -196,6 +197,9 @@ export async function seedSangtianWorkspace(
               sourceRef: evidenceProfile.assetId,
               ...evidenceProfile.payload.openingBeatContract,
               settledNarrative: decision.protectedNarrative.trim(),
+              ...(decision.playerResultExpressionOwner
+                ? { playerResultExpressionOwner: decision.playerResultExpressionOwner }
+                : {}),
               fallbackContinuation: decision.fallbackContinuation.trim(),
               playerVisibleFallback: decision.playerVisibleFallback,
             },
@@ -213,6 +217,9 @@ export async function seedSangtianWorkspace(
               moves: [decision.description],
               requiredAnchorGroups: [],
               settledNarrative: decision.protectedNarrative.trim(),
+              ...(decision.playerResultExpressionOwner
+                ? { playerResultExpressionOwner: decision.playerResultExpressionOwner }
+                : {}),
               fallbackContinuation: decision.fallbackContinuation.trim(),
               playerVisibleFallback: decision.playerVisibleFallback,
               stopCondition: decision.description,

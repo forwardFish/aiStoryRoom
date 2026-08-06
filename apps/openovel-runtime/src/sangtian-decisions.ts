@@ -1,6 +1,7 @@
 import path from "node:path";
 import templatesPackage from "@ai-story/templates";
 import {
+  bindDramaticBeatPlanExpression,
   type PartOneActionSettlement,
   type PartOneIncomingAction,
   type PartOneRuntimeAffordance,
@@ -17,7 +18,7 @@ import {
   type PreparedFactSettlement,
 } from "./decision-adapter.js";
 import type { FileStoryWorkspace } from "./workspace.js";
-import type { OpenNovelOption } from "./types.js";
+import type { OpenNovelOption, PlayerVisibleFallbackSurface } from "./types.js";
 import {
   bindProtectedFallbackDraft,
   SCENE_DRAFT_SCHEMA,
@@ -345,9 +346,10 @@ function withNarrativeContract(
           fallbackContinuation:
             String(plan.nextStoryBeat.fallbackContinuation || "").trim()
             || evidenceContract.fallbackContinuation,
-          playerVisibleFallback:
-            evidenceContract.playerVisibleFallback
-            || plan.nextStoryBeat.playerVisibleFallback,
+          playerVisibleFallback: mergePlayerVisibleFallback(
+            evidenceContract.playerVisibleFallback,
+            plan.nextStoryBeat.playerVisibleFallback,
+          ),
           sceneProjection: narratorSceneProjection(plan),
           narrativeSeed: {
             playerOutcome: plan.nextStoryBeat.playerOutcome,
@@ -400,9 +402,10 @@ function withNarrativeContract(
         fallbackContinuation:
           String(plan.nextStoryBeat.fallbackContinuation || "").trim()
           || option.effect?.beatContract?.fallbackContinuation,
-        playerVisibleFallback:
-          option.effect?.beatContract?.playerVisibleFallback
-          || plan.nextStoryBeat.playerVisibleFallback,
+        playerVisibleFallback: mergePlayerVisibleFallback(
+          option.effect?.beatContract?.playerVisibleFallback,
+          plan.nextStoryBeat.playerVisibleFallback,
+        ),
         sceneProjection: narratorSceneProjection(plan),
         narrativeSeed: {
           playerOutcome: plan.nextStoryBeat.playerOutcome,
@@ -424,6 +427,34 @@ function withNarrativeContract(
         stopCondition: plan.nextStoryBeat.stopCondition,
       },
     },
+  };
+}
+
+function mergePlayerVisibleFallback(
+  authored: PlayerVisibleFallbackSurface | undefined,
+  planned: PlayerVisibleFallbackSurface | undefined,
+): PlayerVisibleFallbackSurface | undefined {
+  if (!authored && !planned) return undefined;
+  const playerResult = String(
+    authored?.PLAYER_RESULT || planned?.PLAYER_RESULT || "",
+  ).trim();
+  const worldPressure = String(
+    authored?.WORLD_PRESSURE || planned?.WORLD_PRESSURE || "",
+  ).trim();
+  const decisionStop = String(
+    planned?.DECISION_STOP || authored?.DECISION_STOP || "",
+  ).trim();
+  if (!playerResult || !worldPressure || !decisionStop) {
+    throw new Error("PLAYER_VISIBLE_FALLBACK_BINDING_INVALID");
+  }
+  return {
+    ...(planned || {}),
+    ...(authored || {}),
+    PLAYER_RESULT: playerResult,
+    WORLD_PRESSURE: worldPressure,
+    // The planner owns the current stop point. An authored fallback cannot
+    // carry an older decision into a newly selected continuation Kernel.
+    DECISION_STOP: decisionStop,
   };
 }
 
@@ -531,6 +562,10 @@ async function planSangtianNextBeat(
     const protectedTransition = compilePartOneProtectedTransition(event);
     const protectedText = authoredProtectedText;
     const beatContract = prepared.selectedOption?.effect?.beatContract;
+    const playerResultExpressionOwner = settlement.storyComplete
+      || beatContract?.playerResultExpressionOwner === "PROTECTED"
+      ? "PROTECTED" as const
+      : "NARRATOR" as const;
     const protectedStopText = String(
       beatContract?.narrativeSeed?.stopCondition
         || beatContract?.stopCondition
@@ -552,6 +587,17 @@ async function planSangtianNextBeat(
         `PLAYER_VISIBLE_FALLBACK_MISSING:${event.decisionKernelId}:${prepared.selectedOption?.id || "unknown"}`,
       );
     }
+    const dramaticBeatPlan = bindDramaticBeatPlanExpression(
+      event.narrativePlan.nextStoryBeat.dramaticBeatPlan,
+      {
+        playerResultMeaning: protectedText,
+        visibleConsequenceMeaning: event.narrativePlan.nextStoryBeat.visibleConsequence,
+        decisionStopMeaning: protectedStopText,
+      },
+    );
+    // This is a private planner clone. Bind the one plan used by event trace,
+    // BeatManifest, Narrator and Fallback without mutating world settlement.
+    event.narrativePlan.nextStoryBeat.dramaticBeatPlan = dramaticBeatPlan;
     const playerSourceRefs = [
       event.eventId,
       ...event.changedStatePaths,
@@ -580,11 +626,15 @@ async function planSangtianNextBeat(
         dramaticTask: event.narrativePlan.dramaticTask
           || event.narrativePlan.nextStoryBeat.dramaticGuidance.dramaticTask,
       },
-      dramaticBeatPlan: event.narrativePlan.nextStoryBeat.dramaticBeatPlan,
+      dramaticBeatPlan,
       tickets: [
         narrativeTicket(
           event, "player-result", "PLAYER_RESULT", "ACTION_PHASE",
-          protectedText, playerSourceRefs, true, "PROTECTED", protectedText,
+          protectedText,
+          playerSourceRefs,
+          true,
+          playerResultExpressionOwner,
+          playerResultExpressionOwner === "PROTECTED" ? protectedText : undefined,
         ),
         ...(fallbackSlots.IMMEDIATE_REACTION
           ? [narrativeTicket(

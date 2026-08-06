@@ -13,6 +13,8 @@ import {
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { classifyModelCallErrors } from "./lib/model-call-error-policy.mjs";
+
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "../..");
 const runtimeEntry = resolve(repoRoot, "apps/openovel-runtime/dist/server.js");
@@ -111,6 +113,9 @@ try {
     runId: `${acceptanceId}_t05`,
     targetTurns: 5,
     chooseOption: (options, turnNumber) => options[(turnNumber - 1) % options.length],
+    freeTextByTurn: {
+      1: "暂不签发，先让两边把各自知道的事说清。",
+    },
     port,
     token,
     workspaceRoot,
@@ -265,6 +270,9 @@ async function runPlaythrough(input) {
     validatePublicOptions(currentOptions, `${input.label}:T${pad(turnNumber)}:before`);
     const selected = input.chooseOption(currentOptions, turnNumber);
     if (!selected) throw new Error(`${input.label}:OPTION_SELECTION_FAILED:T${pad(turnNumber)}`);
+    const freeTextAction = String(input.freeTextByTurn?.[turnNumber] || "").trim();
+    const submittedAction = freeTextAction || selected.label;
+    const submissionMode = freeTextAction ? "FREE_TEXT" : "BOUND_OPTION";
     const actionResponse = await runtimeJson(
       input.port,
       input.token,
@@ -272,8 +280,10 @@ async function runPlaythrough(input) {
       {
         method: "POST",
         body: JSON.stringify({
-          action: selected.label,
-          boundOption: { id: selected.id, label: selected.label },
+          action: submittedAction,
+          boundOption: freeTextAction
+            ? null
+            : { id: selected.id, label: selected.label },
           submissionId: `${input.runId}_T${pad(turnNumber)}`,
         }),
       },
@@ -298,8 +308,9 @@ async function runPlaythrough(input) {
       checkpoint: `T${pad(turnNumber)}`,
       turnId: actionResponse.turnId,
       turnNumber,
-      playerAction: selected.label,
-      selectedOption: { id: selected.id, label: selected.label },
+      playerAction: submittedAction,
+      selectedOption: freeTextAction ? null : { id: selected.id, label: selected.label },
+      submissionMode,
       narrative: actionResponse.narration,
       publicOptions: actionResponse.options,
       publicStatus: publicRun.status,
@@ -316,6 +327,9 @@ async function runPlaythrough(input) {
       storyComplete: actionResponse.storyComplete === true,
       ending: actionResponse.ending || null,
     };
+    if (freeTextAction && !privateCheckpoint.settlement?.decisionKernelId) {
+      throw new Error(`${input.label}:FREE_TEXT_KERNEL_BINDING_MISSING:T${pad(turnNumber)}`);
+    }
     checkpoints.push(checkpoint);
     turns.push(checkpoint);
     writeJson(resolve(runRoot, "turns", `${checkpoint.turnId}.json`), checkpoint);
@@ -385,9 +399,6 @@ async function runPlaythrough(input) {
     throw new Error(`${input.label}:AUDIT_NOT_PASS:${JSON.stringify(audit)}`);
   }
   const allModelCalls = readAllModelCalls(input.workspaceRoot, input.runId);
-  if (allModelCalls.some((call) => call.error)) {
-    throw new Error(`${input.label}:RECORDED_MODEL_ERROR:${JSON.stringify(allModelCalls.filter((call) => call.error))}`);
-  }
   const fallbackTurns = turns
     .filter((turn) => (
       turn.fallbackReason
@@ -398,7 +409,16 @@ async function runPlaythrough(input) {
       narrativeOwner: turn.narrativeOwner,
       fallbackReason: turn.fallbackReason,
     }));
+  const modelCallErrors = classifyModelCallErrors({
+    modelCalls: allModelCalls,
+    turns,
+    storykeeper: background,
+  });
+  if (modelCallErrors.unexpected.length > 0) {
+    throw new Error(`${input.label}:UNRECOVERED_MODEL_ERROR:${JSON.stringify(modelCallErrors.unexpected)}`);
+  }
   writeJson(resolve(runRoot, "model-calls.json"), allModelCalls);
+  writeJson(resolve(runRoot, "model-call-error-classification.json"), modelCallErrors);
   writeJson(resolve(runRoot, "storykeeper.json"), background);
   return {
     label: input.label,
@@ -412,6 +432,7 @@ async function runPlaythrough(input) {
     playerReviewCalls: playerReview.calls,
     background,
     fallbackTurns,
+    modelCallErrors,
     evidenceRoot: runRoot,
   };
 }
@@ -889,13 +910,19 @@ async function runtimeJson(port, token, route, init = {}, requestTimeoutMs = 30_
 }
 
 async function stopRuntime(child) {
-  if (!child || child.exitCode !== null || child.killed) return;
+  if (!child || child.exitCode !== null) return;
   child.kill("SIGTERM");
   await Promise.race([
     new Promise((resolvePromise) => child.once("exit", resolvePromise)),
     delay(5_000),
   ]);
-  if (child.exitCode === null && !child.killed) child.kill("SIGKILL");
+  if (child.exitCode === null) {
+    child.kill("SIGKILL");
+    await Promise.race([
+      new Promise((resolvePromise) => child.once("exit", resolvePromise)),
+      delay(2_000),
+    ]);
+  }
 }
 
 async function reservePort() {
@@ -1021,9 +1048,11 @@ function summarizePlaythrough(run) {
     turns: run.turns,
     finalStatus: run.finalPublicRun.status,
     storyComplete: run.finalPublicRun.status === "COMPLETED",
+    freeTextTurnCount: run.turns.filter((turn) => turn.submissionMode === "FREE_TEXT").length,
     audit: run.audit,
     storykeeper: run.background,
     fallbackTurns: run.fallbackTurns,
+    modelCallErrors: run.modelCallErrors,
     evidenceRoot: relative(evidenceRoot, run.evidenceRoot).replaceAll("\\", "/"),
   };
 }

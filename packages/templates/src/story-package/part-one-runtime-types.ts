@@ -172,6 +172,7 @@ export type PartOneNextStoryBeat = {
   presentMoves: string[];
   playerOutcome: string;
   npcOrWorldPressure: string;
+  visibleConsequence: string;
   stopCondition: string;
   evidencePacket: PartOneSceneEvidencePacket;
   dramaticGuidance: PartOneDramaticGuidance;

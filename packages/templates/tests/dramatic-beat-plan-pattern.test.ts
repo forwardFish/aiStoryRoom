@@ -15,12 +15,15 @@ test("approved scene grammar becomes transient ordered steps in a neutral world"
       "actor.witness": "Witness",
       "actor.custodian": "Custodian",
     },
+    playerActorRef: "actor.reader",
     pressureActorRefs: ["actor.custodian"],
     actorPolicies: [
       { actorRef: "actor.custodian", goal: "Keep custody traceable." },
       { actorRef: "actor.witness", goal: "Limit what the signature proves." },
     ],
+    playerResultMeaning: "The reader keeps the record sealed while requesting a witnessed review.",
     pressureMeaning: "The custodian asks for a custody ruling.",
+    visibleConsequenceMeaning: "The unopened record remains under visible custody.",
     decisionStopMeaning: "Who may open the record, and under whose witness?",
   });
   const original = structuredClone(base);
@@ -54,16 +57,32 @@ test("approved scene grammar becomes transient ordered steps in a neutral world"
   assert.deepEqual(
     result.steps.map((step) => step.kind),
     [
+      "PLAYER_RESULT",
       "PATTERN_OPENING",
       "PATTERN_MOVE",
       "PATTERN_MOVE",
       "OBJECT_POWER_MOVE",
       "COUNTERMOVE",
       "REACTION_WINDOW",
+      "VISIBLE_CONSEQUENCE",
       "DECISION_PRESSURE",
     ],
   );
+  assert.equal(
+    result.steps.find((step) => step.kind === "PLAYER_RESULT")?.requiredMeaning,
+    "The reader keeps the record sealed while requesting a witnessed review.",
+  );
+  assert.equal(
+    result.steps.find((step) => step.kind === "VISIBLE_CONSEQUENCE")?.requiredMeaning,
+    "The unopened record remains under visible custody.",
+  );
   assert.equal(result.steps.at(-1)?.requiredMeaning, "Who may open the record, and under whose witness?");
+  assert.deepEqual(result.expressionContract, {
+    settlementOwnsFacts: true,
+    narratorOwnsRegularScene: true,
+    fallbackUsesSamePlan: true,
+    decisionPressureIsTerminal: true,
+  });
   assert.ok(result.steps.every((step) => step.durableMutationAllowed === false));
   assert.ok(
     result.steps
@@ -88,9 +107,12 @@ test("pattern application is idempotent and cannot replace the authoritative pre
       "actor.reader": "Reader",
       "actor.envoy": "Envoy",
     },
+    playerActorRef: "actor.reader",
     pressureActorRefs: ["actor.envoy"],
     actorPolicies: [],
+    playerResultMeaning: "The reader withholds immediate release.",
     pressureMeaning: "The envoy demands a release condition.",
+    visibleConsequenceMeaning: "The release remains paused in front of both parties.",
     decisionStopMeaning: "Will the reader release, defer, or add a condition?",
   });
   const pattern = {

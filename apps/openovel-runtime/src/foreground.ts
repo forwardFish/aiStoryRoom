@@ -335,11 +335,11 @@ export function buildNarratorMessages(
         "Write a lived dramatic scene, not a settlement report, policy summary, task list or decision memo.",
         "Put pressure on stage through a character's entrance, gesture, refusal, bargaining move, question or visible consequence. Let other characters react before the next choice appears.",
         "Use the dramaticGuidance as scene grammar and characterization technique only. It is not a list of current-world facts and must never be copied as exposition.",
-        "Follow dramaticBeatPlan in order. It is the server-owned shape of this scene: dramatize its required meanings, use only its listed on-stage actors for causal moves, and stop at its final unresolved pressure.",
+        "Follow dramaticBeatPlan in order. It is the server-owned shape of this scene: show the settled player result once, stage an NPC/world countermove, make its visible consequence perceptible, and stop at the final unresolved pressure.",
         "REACTION_WINDOW permits only brief, non-durable reactions and dialogue consistent with the listed actor goals. It never authorizes a new order, document, evidence, secret, promise, arrival, departure or completed world event.",
         "Never import a name, number, object, location or event from sourceMechanisms into the current world. Borrow only the conflict shape and dramatic technique.",
         "WORLD_PRESSURE must dramatize an NPC or world countermove in the current scene. DECISION_STOP must arise from that confrontation, not from an abstract sentence saying the protagonist must decide.",
-        "Narrator-owned slots happen after any protected player result. Never replay that result, make the protagonist issue another order, or make the protagonist handle the same key object again.",
+        "In a regular turn Narrator owns PLAYER_RESULT and must express the already-settled action exactly once without changing its facts. If PLAYER_RESULT is protected, begin after it and never replay or paraphrase it.",
         "serverRenderedContext is immutable prose that will appear immediately before your slots. Continue from its aftermath; do not quote, paraphrase or reproduce it.",
         "Write one focused confrontation. Do not exhaust every possible argument; usually six to ten short paragraphs and one to three dialogue exchanges are enough.",
         "The Reader Action is the only new protagonist action. Do not add another protagonist order, signature, commitment or major disposition.",
@@ -524,15 +524,24 @@ function projectDramaticBeatPlanForNarrator(
 ) {
   if (!plan) return null;
   const protectedSet = new Set(protectedSlots);
+  const slotForStep = (kind: typeof plan.steps[number]["kind"]) => {
+    if (kind === "PLAYER_RESULT") return "PLAYER_RESULT" as const;
+    if (kind === "COUNTERMOVE" || kind === "VISIBLE_CONSEQUENCE") {
+      return "WORLD_PRESSURE" as const;
+    }
+    if (kind === "DECISION_PRESSURE") return "DECISION_STOP" as const;
+    return null;
+  };
   return {
     sceneObjective: plan.sceneObjective,
     activeActors: plan.activeActors.map((actor) => ({
       name: actor.displayName,
       ...(actor.goal ? { motivation: actor.goal } : {}),
     })),
-    orderedSteps: plan.steps.filter((step) => !(
-      step.kind === "COUNTERMOVE" && protectedSet.has("WORLD_PRESSURE")
-    )).map((step) => ({
+    orderedSteps: plan.steps.filter((step) => {
+      const slot = slotForStep(step.kind);
+      return !slot || !protectedSet.has(slot);
+    }).map((step) => ({
       kind: step.kind,
       actors: step.actorLabels,
       requiredMeaning: step.requiredMeaning,
@@ -540,6 +549,7 @@ function projectDramaticBeatPlanForNarrator(
       expressionPolicy: step.expressionPolicy,
     })),
     texturePolicy: plan.texturePolicy,
+    expressionContract: plan.expressionContract,
   };
 }
 

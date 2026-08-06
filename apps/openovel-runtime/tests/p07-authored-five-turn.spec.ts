@@ -58,22 +58,38 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
 
     for (let turn = 1; turn <= 20; turn += 1) {
       const submissionId = `authored_t${String(turn).padStart(2, "0")}_submission`;
+      const freeTextAction = turn === 1
+        ? "暂不签发，先让两边把各自知道的事说清。"
+        : "";
+      const submittedAction = freeTextAction || selected.label;
+      const submittedBoundOption = freeTextAction
+        ? null
+        : { id: selected.id, label: selected.label };
       if (turn === 20) {
         finalSubmissionId = submissionId;
-        finalAction = selected.label;
-        finalBoundOption = { id: selected.id, label: selected.label };
+        finalAction = submittedAction;
+        finalBoundOption = submittedBoundOption;
       }
       const result = await runtime.processAction({
         runId,
-        action: selected.label,
+        action: submittedAction,
         submissionId,
-        boundOption: { id: selected.id, label: selected.label },
+        boundOption: submittedBoundOption,
       });
       if (turn === 20) finalTurnResult = result;
       assert.equal(result.turnNumber, turn);
       assert.ok(result.narration.trim().length > 0);
       assert.ok(result.causalDelta.beatContract?.narrativeSeed);
       assert.ok(result.causalDelta.beatContract?.sceneEvidence?.evidenceItems.length);
+      if (turn === 1) {
+        const firstEvent = JSON.parse((await readFile(
+          workspace.paths(runId).partOneEvents,
+          "utf8",
+        )).trim().split(/\r?\n/u).at(-1)!);
+        assert.ok(String(firstEvent.decisionKernelId || "").trim());
+        assert.equal(firstEvent.affordanceTemplateId, null);
+        assert.equal(result.causalDelta.readerAction, freeTextAction);
+      }
       if (turn === 2) {
         assert.doesNotMatch(result.narration, /只写|不得写|内部状态|验收关键词/u);
         assert.doesNotMatch(result.narration, /随即交由.*持有/u);

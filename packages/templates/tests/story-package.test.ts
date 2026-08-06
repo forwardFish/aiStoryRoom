@@ -214,11 +214,25 @@ test("the server fixes a source-grounded Next Story Beat before any Narrator cal
   assert.equal(beat.dramaticBeatPlan.sceneObjective, beat.stopCondition);
   assert.deepEqual(
     beat.dramaticBeatPlan.steps.map((step) => step.kind),
-    ["COUNTERMOVE", "REACTION_WINDOW", "DECISION_PRESSURE"],
+    [
+      "PLAYER_RESULT",
+      "COUNTERMOVE",
+      "REACTION_WINDOW",
+      "VISIBLE_CONSEQUENCE",
+      "DECISION_PRESSURE",
+    ],
   );
   assert.equal(
-    beat.dramaticBeatPlan.steps[0]?.requiredMeaning,
+    beat.dramaticBeatPlan.steps.find((step) => step.kind === "PLAYER_RESULT")?.requiredMeaning,
+    beat.playerOutcome,
+  );
+  assert.equal(
+    beat.dramaticBeatPlan.steps.find((step) => step.kind === "COUNTERMOVE")?.requiredMeaning,
     beat.playerVisibleFallback?.WORLD_PRESSURE,
+  );
+  assert.equal(
+    beat.dramaticBeatPlan.steps.find((step) => step.kind === "VISIBLE_CONSEQUENCE")?.requiredMeaning,
+    beat.visibleConsequence,
   );
   assert.equal(
     beat.dramaticBeatPlan.steps.at(-1)?.requiredMeaning,

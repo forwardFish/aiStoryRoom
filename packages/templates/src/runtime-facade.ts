@@ -159,11 +159,14 @@ function buildObserveOnlyCapabilitySettlement(input: {
     sceneObjective: input.workingSet.section.dramaticPurpose,
     presentActorRefs: scene.presentActorRefs,
     actorLabelsByRef,
+    playerActorRef: input.pkg.perspectiveRoleKey,
     pressureActorRefs: worldMove.actorRefs.length
       ? worldMove.actorRefs
       : input.workingSet.decisionPoint.actorRefs,
     actorPolicies,
+    playerResultMeaning: playerOutcome,
     pressureMeaning: worldPressure,
+    visibleConsequenceMeaning: worldPressure,
     decisionStopMeaning: decisionStop,
   });
 
@@ -207,6 +210,7 @@ function buildObserveOnlyCapabilitySettlement(input: {
       presentMoves: [worldPressure],
       playerOutcome,
       npcOrWorldPressure: worldPressure,
+      visibleConsequence: worldPressure,
       stopCondition: decisionStop,
       evidencePacket: {
         packetId: `SEP-CAPABILITY-${digest(evidenceItems.map((item) => item.evidenceId).join("|" )).slice(0, 18)}`,

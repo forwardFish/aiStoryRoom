@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { delimiter, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
@@ -236,6 +236,10 @@ test("the supplement compiler rejects a cross-scene Claim before producing runti
         timeout: 30_000,
         env: {
           ...process.env,
+          NODE_PATH: [
+            resolve(repoRoot, "packages/openovel-runtime/node_modules"),
+            process.env.NODE_PATH || "",
+          ].filter(Boolean).join(delimiter),
           SANGTIAN_NARRATIVE_SUPPLEMENT_PATH: fixture.outputPath,
         },
       },
