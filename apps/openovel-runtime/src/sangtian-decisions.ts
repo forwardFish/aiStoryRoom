@@ -23,6 +23,7 @@ import type { PreparedSangtianDecision } from "./sangtian-decisions-base.js";
 export * from "./sangtian-decisions-base.js";
 
 const {
+  buildCommittedLegacyFallbackWorkingSet,
   buildPartOneRuntimeWorkingSet,
   loadPartOneRuntimePackage,
 } = templatesPackage;
@@ -222,12 +223,20 @@ function decisionContextForCommittedEvent(
   }
 
   const pin = decisionPinForCommittedEvent(event, includeOutcomeHashes);
-  const workingSet = buildPartOneRuntimeWorkingSet(
-    pkg,
-    state,
-    turnNumber,
-    { mode: "DYNAMIC_LITE", pin },
-  );
+  const trace = (event as EventWithKernelSelection).nextKernelSelection;
+  const workingSet = trace?.mode === "LEGACY_FALLBACK"
+    ? buildCommittedLegacyFallbackWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      trace,
+    )
+    : buildPartOneRuntimeWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      { mode: "DYNAMIC_LITE", pin },
+    );
   if (
     workingSet.decisionPoint.decisionKernelId !== pin.decisionKernelId
     || workingSet.decisionPoint.decisionPointId !== pin.decisionPointId
