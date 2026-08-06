@@ -25,7 +25,7 @@ function view(sceneKey = "d4_1"): MvpView {
       messageId: "m-1", decisionKey: sceneKey, day: 4, index: 0,
       title: "如何使用暗账", help: "", reactionRoleKey: "county_magistrate", options: []
     },
-    dashboard: {}, decisionHistory: [], events: [], causalLedger: {}, daySummary: null,
+    dashboard: {}, decisionHistory: [], events: [], causalLedger: { fateSeeds: [], evidenceLedger: [], responsibilityLedger: [], narrativeFrames: [], finalJudgementInputs: [] }, daySummary: null,
     daySummaries: {}, finalJudgement: null, outcome: null,
     runtime: {
       schemaVersion: "test", narrativeProvider: "rules", fallbackUsed: true,
