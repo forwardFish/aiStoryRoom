@@ -54,6 +54,8 @@ export interface OpenNovelManeuverSceneDefinition {
 export interface OpenNovelManeuverCalendarEntry {
   sceneKey: string;
   usageDay: number;
+  startTurnInclusive: number;
+  endTurnExclusive: number;
 }
 
 export interface OpenNovelManeuverPackage {
@@ -148,6 +150,7 @@ function validatePackage(pkg: OpenNovelManeuverPackage) {
   }
 
   const sceneKeys = new Set<string>();
+  let nextExpectedTurn = 0;
   for (const entry of pkg.calendar.scenes) {
     if (!entry.sceneKey.trim() || sceneKeys.has(entry.sceneKey)) {
       throw new Error(`OPENOVEL_MANEUVER_PACKAGE_SCENE_INVALID:${pkg.worldId}:${entry.sceneKey}`);
@@ -155,6 +158,16 @@ function validatePackage(pkg: OpenNovelManeuverPackage) {
     if (!Number.isInteger(entry.usageDay) || entry.usageDay < 1) {
       throw new Error(`OPENOVEL_MANEUVER_PACKAGE_DAY_INVALID:${pkg.worldId}:${entry.sceneKey}`);
     }
+    if (
+      !Number.isInteger(entry.startTurnInclusive)
+      || !Number.isInteger(entry.endTurnExclusive)
+      || entry.startTurnInclusive !== nextExpectedTurn
+      || entry.endTurnExclusive <= entry.startTurnInclusive
+      || entry.endTurnExclusive > pkg.calendar.expectedTurns
+    ) {
+      throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CALENDAR_GAP:${pkg.worldId}:${entry.sceneKey}`);
+    }
+    nextExpectedTurn = entry.endTurnExclusive;
     sceneKeys.add(entry.sceneKey);
     const scene = pkg.scene(entry.sceneKey);
     if (!scene || scene.sceneKey !== entry.sceneKey) {
@@ -176,6 +189,9 @@ function validatePackage(pkg: OpenNovelManeuverPackage) {
         }
       }
     }
+  }
+  if (nextExpectedTurn !== pkg.calendar.expectedTurns) {
+    throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CALENDAR_INCOMPLETE:${pkg.worldId}`);
   }
 
   for (const leverageKey of pkg.initialLeverageKeys) {
