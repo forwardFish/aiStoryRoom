@@ -40,7 +40,7 @@ export class OpenNovelManeuverController {
     @Param("roomId") roomId: string,
     @Body() body: { previewToken?: unknown },
   ) {
-    const result = await this.maneuvers.confirm(user, roomId, body.previewToken);
+    const result: any = await this.maneuvers.confirm(user, roomId, body.previewToken);
     return {
       ...result,
       gameProjection: await this.adapter.game(user, roomId),
