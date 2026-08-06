@@ -7,15 +7,24 @@ import type {
   B0SettlementSnapshotV1,
   B0StateMutationV1,
 } from "@ai-story/shared";
-import {
+import { hashB0RoomRulesetV1, hashCanonicalB0Value } from "./b0-settlement";
+
+const {
   validateB0ActionContractV1,
   validateB0BatchCommitManifestV1,
   validateB0RoomRulesetV1,
   validateB0SettlementBatchV1,
   validateB0SettlementResolutionV1,
   validateB0SettlementSnapshotV1,
-} from "@ai-story/shared";
-import { hashB0RoomRulesetV1, hashCanonicalB0Value } from "./b0-settlement";
+} = require("../../../shared/dist/index.js") as Pick<
+  typeof import("@ai-story/shared"),
+  | "validateB0ActionContractV1"
+  | "validateB0BatchCommitManifestV1"
+  | "validateB0RoomRulesetV1"
+  | "validateB0SettlementBatchV1"
+  | "validateB0SettlementResolutionV1"
+  | "validateB0SettlementSnapshotV1"
+>;
 
 export type CaptureB0SnapshotInputV1 = {
   id: string;
