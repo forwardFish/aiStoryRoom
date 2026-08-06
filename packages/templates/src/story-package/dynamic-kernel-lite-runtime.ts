@@ -1,5 +1,6 @@
 import {
   createOutcomeSignature,
+  kernelTieBreaker,
   selectKernelLite,
   stableCanonicalJson,
   stableSha256,
@@ -51,6 +52,7 @@ export type KernelSelectionTrace = {
   candidates: Array<{
     kernelId: string;
     score: number;
+    tieBreaker: string;
     eligible: boolean;
     reasonCodes: string[];
     validAffordanceIds: string[];
@@ -75,7 +77,7 @@ type Preview = {
 };
 type Evaluation = {
   kernelId: string;
-  workingSet: PartOneRuntimeWorkingSet;
+  workingSet: PartOneRuntimeWorkingSet | null;
   authoredOrder: Map<string, number>;
   previews: Preview[];
   candidate: KernelSelectorLiteCandidate<Preview>;
@@ -104,22 +106,49 @@ export function buildDynamicPartOneRuntimeWorkingSet(
   const section = requireSection(pkg, state.sectionId);
   const fingerprint = fingerprintState(state);
   if (state.partCompletionStatus === "HANDOFF_READY") {
-    return traced(buildLegacyWorkingSet(pkg, state, turnNumber), baseTrace("HANDOFF", section, state, fingerprint));
+    return traced(
+      buildLegacyWorkingSet(pkg, state, turnNumber),
+      baseTrace("HANDOFF", section, state, fingerprint),
+    );
   }
-  if (options.pin) return pinnedWorkingSet(pkg, state, turnNumber, options.pin, fingerprint);
+  if (options.pin) {
+    return pinnedWorkingSet(pkg, state, turnNumber, options.pin, fingerprint);
+  }
   if (options.mode === "LEGACY_FIXED") {
     const legacy = buildLegacyWorkingSet(pkg, state, turnNumber);
-    return traced(legacy, baseTrace(isContinuation(legacy) ? "CONTINUATION" : "LEGACY_FIXED", section, state, fingerprint));
+    return traced(
+      legacy,
+      baseTrace(
+        isContinuation(legacy) ? "CONTINUATION" : "LEGACY_FIXED",
+        section,
+        state,
+        fingerprint,
+      ),
+    );
   }
 
   const completed = new Set(state.completedKernelIds || []);
-  const unresolved = section.activeDecisionKernelIds.filter((id) => !completed.has(id));
+  const unresolved = section.activeDecisionKernelIds.filter(
+    (id) => !completed.has(id),
+  );
   if (!unresolved.length) {
-    return traced(buildLegacyWorkingSet(pkg, state, turnNumber), baseTrace("CONTINUATION", section, state, fingerprint));
+    return traced(
+      buildLegacyWorkingSet(pkg, state, turnNumber),
+      baseTrace("CONTINUATION", section, state, fingerprint),
+    );
   }
 
-  const evaluated = unresolved.map((kernelId) => evaluateKernel(pkg, state, section, kernelId, turnNumber));
-  const selection = selectKernelLite(evaluated.map((item) => item.candidate), fingerprint);
+  const evaluated = unresolved.map((kernelId) => evaluateKernelSafely(
+    pkg,
+    state,
+    section,
+    kernelId,
+    turnNumber,
+  ));
+  const selection = selectKernelLite(
+    evaluated.map((item) => item.candidate),
+    fingerprint,
+  );
   if (!selection.selected?.pair) {
     const fallback = buildLegacyWorkingSet(pkg, state, turnNumber);
     return traced(fallback, {
@@ -129,12 +158,25 @@ export function buildDynamicPartOneRuntimeWorkingSet(
     });
   }
 
-  const evaluation = evaluated.find((item) => item.kernelId === selection.selected!.kernelId);
-  if (!evaluation) throw new Error("PART_ONE_DYNAMIC_KERNEL_SELECTION_MISSING");
-  const selectedIds = [selection.selected.pair.left.affordanceId, selection.selected.pair.right.affordanceId];
+  const evaluation = evaluated.find(
+    (item) => item.kernelId === selection.selected!.kernelId,
+  );
+  if (!evaluation?.workingSet) {
+    throw new Error("PART_ONE_DYNAMIC_KERNEL_SELECTION_MISSING");
+  }
+  const selectedIds = [
+    selection.selected.pair.left.affordanceId,
+    selection.selected.pair.right.affordanceId,
+  ];
   const affordances = selectAffordances(evaluation, selectedIds);
-  const workingSet = { ...evaluation.workingSet, decisionAffordances: affordances };
-  return traced(workingSet, { ...selectionTrace(selection, section, state, workingSet), mode: "DYNAMIC_LITE" });
+  const workingSet = {
+    ...evaluation.workingSet,
+    decisionAffordances: affordances,
+  };
+  return traced(workingSet, {
+    ...selectionTrace(selection, section, state, workingSet),
+    mode: "DYNAMIC_LITE",
+  });
 }
 
 export function isDynamicCapabilityAction(action: PartOneIncomingAction) {
@@ -151,32 +193,63 @@ function pinnedWorkingSet(
   const section = requireSection(pkg, state.sectionId);
   if (pin.decisionPointId !== pin.decisionKernelId) {
     const legacy = buildLegacyWorkingSet(pkg, state, turnNumber);
-    if (legacy.decisionPoint.decisionKernelId !== pin.decisionKernelId
-      || legacy.decisionPoint.decisionPointId !== pin.decisionPointId) {
+    if (
+      legacy.decisionPoint.decisionKernelId !== pin.decisionKernelId
+      || legacy.decisionPoint.decisionPointId !== pin.decisionPointId
+    ) {
       throw new Error("PART_ONE_PINNED_DECISION_POINT_NOT_FOUND");
     }
-    return traced(legacy, baseTrace("CONTINUATION", section, state, fingerprint));
+    return traced(
+      legacy,
+      baseTrace("CONTINUATION", section, state, fingerprint),
+    );
   }
   if (!section.activeDecisionKernelIds.includes(pin.decisionKernelId)) {
     throw new Error("PART_ONE_PINNED_KERNEL_NOT_IN_SECTION");
   }
 
-  const evaluation = evaluateKernel(pkg, state, section, pin.decisionKernelId, turnNumber);
+  const evaluation = evaluateKernelSafely(
+    pkg,
+    state,
+    section,
+    pin.decisionKernelId,
+    turnNumber,
+  );
+  if (!evaluation.workingSet) {
+    throw new Error("PART_ONE_PINNED_KERNEL_EVALUATION_FAILED");
+  }
   let ids = pin.affordanceIds ? [...new Set(pin.affordanceIds)] : [];
   if (!ids.length) {
-    const selected = selectKernelLite([evaluation.candidate], fingerprint).selected;
-    if (!selected?.pair) throw new Error("PART_ONE_PINNED_AFFORDANCE_PREVIEW_REJECTED");
+    const selected = selectKernelLite(
+      [evaluation.candidate],
+      fingerprint,
+    ).selected;
+    if (!selected?.pair) {
+      throw new Error("PART_ONE_PINNED_AFFORDANCE_PREVIEW_REJECTED");
+    }
     ids = [selected.pair.left.affordanceId, selected.pair.right.affordanceId];
   }
   const affordances = selectAffordances(evaluation, ids);
-  const hashes = ids.map((id) => evaluation.previews.find((item) => item.affordance.affordanceTemplateId === id)?.signature.hash);
-  if (hashes.some((hash) => !hash)) throw new Error("PART_ONE_PINNED_AFFORDANCE_NOT_FOUND");
-  if (pin.outcomeHashes?.length && (
-    pin.outcomeHashes.length !== hashes.length
-    || pin.outcomeHashes.some((hash, index) => hash !== hashes[index])
-  )) throw new Error("PART_ONE_PINNED_OUTCOME_HASH_MISMATCH");
+  const hashes = ids.map((id) => evaluation.previews.find(
+    (item) => item.affordance.affordanceTemplateId === id,
+  )?.signature.hash);
+  if (hashes.some((hash) => !hash)) {
+    throw new Error("PART_ONE_PINNED_AFFORDANCE_NOT_FOUND");
+  }
+  if (
+    pin.outcomeHashes?.length
+    && (
+      pin.outcomeHashes.length !== hashes.length
+      || pin.outcomeHashes.some((hash, index) => hash !== hashes[index])
+    )
+  ) {
+    throw new Error("PART_ONE_PINNED_OUTCOME_HASH_MISMATCH");
+  }
 
-  return traced({ ...evaluation.workingSet, decisionAffordances: affordances }, {
+  return traced({
+    ...evaluation.workingSet,
+    decisionAffordances: affordances,
+  }, {
     schemaVersion: "kernel-selection-trace-v1",
     selectorVersion: "kernel-selector-lite-v1",
     mode: "PINNED_RECOVERY",
@@ -185,18 +258,63 @@ function pinnedWorkingSet(
     stateFingerprint: fingerprint,
     selectedKernelId: pin.decisionKernelId,
     selectedDecisionPointId: pin.decisionPointId,
-    selectedAffordanceIds: affordances.map((item) => item.affordanceTemplateId),
+    selectedAffordanceIds: affordances.map(
+      (item) => item.affordanceTemplateId,
+    ),
     selectedOutcomeHashes: hashes as string[],
     candidates: [{
       kernelId: evaluation.kernelId,
       score: 0,
+      tieBreaker: kernelTieBreaker(fingerprint, evaluation.kernelId),
       eligible: true,
-      reasonCodes: ["PINNED_RECOVERY"],
-      validAffordanceIds: evaluation.previews.map((item) => item.affordance.affordanceTemplateId).sort(),
-      outcomeHashes: evaluation.previews.map((item) => item.signature.hash).sort(),
+      reasonCodes: [
+        ...evaluation.candidate.rejectionCodes,
+        "PINNED_RECOVERY",
+      ],
+      validAffordanceIds: evaluation.previews
+        .map((item) => item.affordance.affordanceTemplateId)
+        .sort(),
+      outcomeHashes: evaluation.previews
+        .map((item) => item.signature.hash)
+        .sort(),
       maximumOutcomeDistance: 0,
     }],
   });
+}
+
+function evaluateKernelSafely(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  section: PartOneSectionContract,
+  kernelId: string,
+  turnNumber: number,
+): Evaluation {
+  try {
+    return evaluateKernel(pkg, state, section, kernelId, turnNumber);
+  } catch (error) {
+    return {
+      kernelId,
+      workingSet: null,
+      authoredOrder: new Map(),
+      previews: [],
+      candidate: {
+        kernelId,
+        completed: Boolean(state.completedKernelIds?.includes(kernelId)),
+        allowedInCurrentScope: section.activeDecisionKernelIds.includes(kernelId),
+        structurallyResolved: false,
+        unmetMustEstablishCount: 0,
+        unmetExitGateCount: 0,
+        duePressureCount: 0,
+        pendingPressureCount: 0,
+        activeArcCount: 0,
+        availablePressureActorCount: 0,
+        validAffordances: [],
+        rejectionCodes: [
+          `KERNEL_EVALUATION_FAILED:${normalizeErrorCode(error)}`,
+        ],
+      },
+    };
+  }
 }
 
 function evaluateKernel(
@@ -207,44 +325,113 @@ function evaluateKernel(
   turnNumber: number,
 ): Evaluation {
   const kernel = requireKernel(pkg, kernelId);
-  const options = Array.isArray(kernel.payload.options) ? kernel.payload.options : [];
-  const authoredOrder = new Map(options.map((option, index) => [option.affordanceTemplateId, index]));
-  const materialized = options.map((option) => materializeAffordance(pkg, state, turnNumber, kernelId, option.affordanceTemplateId));
-  const first = materialized[0]?.workingSet || buildLegacyWorkingSet(
-    forcePackage(pkg, [{ sectionId: section.sectionId, kernelId, affordanceId: null }]),
-    state,
-    turnNumber,
-  );
-  const affordances = materialized.flatMap((item) => item.affordance ? [item.affordance] : []);
-  const candidateWorkingSet = { ...first, decisionAffordances: affordances };
+  const options = Array.isArray(kernel.payload.options)
+    ? kernel.payload.options
+    : [];
+  const authoredOrder = new Map(options.map(
+    (option, index) => [option.affordanceTemplateId, index],
+  ));
+  const rejectionCodes: string[] = [];
+  const materialized: Array<{
+    workingSet: PartOneRuntimeWorkingSet;
+    affordance: PartOneRuntimeAffordance;
+  }> = [];
+
+  for (const option of options) {
+    try {
+      const result = materializeAffordance(
+        pkg,
+        state,
+        turnNumber,
+        kernelId,
+        option.affordanceTemplateId,
+      );
+      if (!result.affordance) {
+        rejectionCodes.push(
+          `AFFORDANCE_NOT_SURFACED:${option.affordanceTemplateId}`,
+        );
+        continue;
+      }
+      materialized.push({
+        workingSet: result.workingSet,
+        affordance: result.affordance,
+      });
+    } catch (error) {
+      rejectionCodes.push(
+        `AFFORDANCE_MATERIALIZATION_FAILED:${option.affordanceTemplateId}:${normalizeErrorCode(error)}`,
+      );
+    }
+  }
+
+  const first = materialized[0]?.workingSet;
+  if (!first) {
+    throw new Error("PART_ONE_DYNAMIC_KERNEL_WORKING_SET_UNAVAILABLE");
+  }
+  const affordances = materialized.map((item) => item.affordance);
+  const candidateWorkingSet = {
+    ...first,
+    decisionAffordances: affordances,
+  };
   const previews: Preview[] = [];
   for (const affordance of affordances) {
     try {
       const preview = settleLegacyAction(
-        forcePackage(pkg, [{ sectionId: section.sectionId, kernelId, affordanceId: affordance.affordanceTemplateId }]),
+        forcePackage(pkg, [{
+          sectionId: section.sectionId,
+          kernelId,
+          affordanceId: affordance.affordanceTemplateId,
+        }]),
         state,
         incomingForAffordance(affordance),
         turnNumber + 1,
       );
-      const signature = outcomeSignature(preview, affordance.affordanceTemplateId);
-      if (hasMaterialOutcome(signature, preview)) previews.push({ affordance, signature });
-    } catch {
-      // A candidate that cannot pass the authoritative Settlement is ineligible.
+      const signature = outcomeSignature(
+        preview,
+        affordance.affordanceTemplateId,
+      );
+      if (hasMaterialOutcome(signature, preview)) {
+        previews.push({ affordance, signature });
+      } else {
+        rejectionCodes.push(
+          `NO_MATERIAL_OUTCOME:${affordance.affordanceTemplateId}`,
+        );
+      }
+    } catch (error) {
+      rejectionCodes.push(
+        `AFFORDANCE_PREVIEW_REJECTED:${affordance.affordanceTemplateId}:${normalizeErrorCode(error)}`,
+      );
     }
   }
 
-  const coveredPaths = new Set([...kernel.stateDependencies, ...options.flatMap((option) => option.stateEffects || [])]);
-  const mustRules = uniqueRules(section.mustEstablish).filter((rule) => coveredPaths.has(rule.statePath));
-  const exitRules = uniqueRules(section.exitGates).filter((rule) => coveredPaths.has(rule.statePath));
-  const unmetMust = mustRules.filter((rule) => !evaluatePartOneRule(state, rule));
-  const unmetExit = exitRules.filter((rule) => !evaluatePartOneRule(state, rule));
+  const coveredPaths = new Set([
+    ...kernel.stateDependencies,
+    ...options.flatMap((option) => option.stateEffects || []),
+    ...options.flatMap((option) => Object.keys(option.statePatch || {})),
+  ]);
+  const mustRules = uniqueRules(section.mustEstablish).filter(
+    (rule) => coveredPaths.has(rule.statePath),
+  );
+  const exitRules = uniqueRules(section.exitGates).filter(
+    (rule) => coveredPaths.has(rule.statePath),
+  );
+  const unmetMust = mustRules.filter(
+    (rule) => !evaluatePartOneRule(state, rule),
+  );
+  const unmetExit = exitRules.filter(
+    (rule) => !evaluatePartOneRule(state, rule),
+  );
   const pending = linkedPending(pkg, state, kernel);
   const nextTurn = turnNumber + 1;
   const present = new Set(state.scene?.presentActorRefs || []);
-  const rejectionCodes: string[] = [];
-  if (options.length < 2) rejectionCodes.push("KERNEL_OPTIONS_MISSING");
-  if (affordances.length !== options.length) rejectionCodes.push("AFFORDANCE_MATERIALIZATION_FAILED");
-  if (previews.length < 2) rejectionCodes.push("AFFORDANCE_PREVIEW_FAILED");
+  if (options.length < 2) {
+    rejectionCodes.push("KERNEL_OPTIONS_MISSING");
+  }
+  if (affordances.length !== options.length) {
+    rejectionCodes.push("AFFORDANCE_MATERIALIZATION_FAILED");
+  }
+  if (previews.length < 2) {
+    rejectionCodes.push("AFFORDANCE_PREVIEW_FAILED");
+  }
 
   return {
     kernelId,
@@ -254,18 +441,34 @@ function evaluateKernel(
     candidate: {
       kernelId,
       completed: Boolean(state.completedKernelIds?.includes(kernelId)),
-      allowedInCurrentScope: section.activeDecisionKernelIds.includes(kernelId) && kernel.sectionIds.includes(section.sectionId),
-      structurallyResolved: mustRules.length + exitRules.length > 0
-        && unmetMust.length === 0 && unmetExit.length === 0 && pending.length === 0,
+      allowedInCurrentScope:
+        section.activeDecisionKernelIds.includes(kernelId)
+        && kernel.sectionIds.includes(section.sectionId),
+      structurallyResolved:
+        mustRules.length + exitRules.length > 0
+        && unmetMust.length === 0
+        && unmetExit.length === 0
+        && pending.length === 0,
       unmetMustEstablishCount: unmetMust.length,
       unmetExitGateCount: unmetExit.length,
-      duePressureCount: pending.filter((item) => item.dueTurn <= nextTurn).length,
-      pendingPressureCount: pending.filter((item) => item.dueTurn > nextTurn).length,
-      activeArcCount: kernel.causalArcIds.filter((arcId) => !RESOLVED_ARCS.has(String(state.causalArcStages?.[arcId] || "OPEN").toUpperCase())).length,
-      availablePressureActorCount: candidateWorkingSet.decisionPoint.actorRefs.filter((actorId) => present.has(actorId)).length,
+      duePressureCount: pending.filter(
+        (item) => item.dueTurn <= nextTurn,
+      ).length,
+      pendingPressureCount: pending.filter(
+        (item) => item.dueTurn > nextTurn,
+      ).length,
+      activeArcCount: kernel.causalArcIds.filter((arcId) => (
+        !RESOLVED_ARCS.has(
+          String(state.causalArcStages?.[arcId] || "OPEN").toUpperCase(),
+        )
+      )).length,
+      availablePressureActorCount: candidateWorkingSet.decisionPoint.actorRefs
+        .filter((actorId) => present.has(actorId)).length,
       validAffordances: previews.map((preview) => ({
         affordanceId: preview.affordance.affordanceTemplateId,
-        sourceOrder: authoredOrder.get(preview.affordance.affordanceTemplateId) ?? Number.MAX_SAFE_INTEGER,
+        sourceOrder: authoredOrder.get(
+          preview.affordance.affordanceTemplateId,
+        ) ?? Number.MAX_SAFE_INTEGER,
         outcome: preview.signature,
         payload: preview,
       })),
@@ -282,54 +485,86 @@ function materializeAffordance(
   affordanceId: string,
 ) {
   const workingSet = buildLegacyWorkingSet(
-    forcePackage(pkg, [{ sectionId: state.sectionId, kernelId, affordanceId }]),
+    forcePackage(pkg, [{
+      sectionId: state.sectionId,
+      kernelId,
+      affordanceId,
+    }]),
     state,
     turnNumber,
   );
   return {
     workingSet,
-    affordance: workingSet.decisionAffordances.find((item) => item.affordanceTemplateId === affordanceId) || null,
+    affordance: workingSet.decisionAffordances.find(
+      (item) => item.affordanceTemplateId === affordanceId,
+    ) || null,
   };
 }
 
-function outcomeSignature(settlement: PartOneActionSettlement, affordanceId: string) {
+function outcomeSignature(
+  settlement: PartOneActionSettlement,
+  affordanceId: string,
+) {
   const stateFeatures = [...new Set(settlement.event.changedStatePaths)]
     .filter((path) => !IGNORED_PATHS.has(path))
     .flatMap((path) => {
       const before = getPath(settlement.beforeState, path);
       const after = getPath(settlement.proposedState, path);
-      return deepEqual(before, after) ? [] : [`state:${path}=${stableCanonicalJson(after)}`];
+      return deepEqual(before, after)
+        ? []
+        : [`state:${path}=${stableCanonicalJson(after)}`];
     });
-  const beforeDurable = new Set((settlement.beforeState.durableState?.predicates || []).map(stableCanonicalJson));
-  const durablePredicateFeatures = (settlement.proposedState.durableState?.predicates || [])
+  const beforeDurable = new Set(
+    (settlement.beforeState.durableState?.predicates || [])
+      .map(stableCanonicalJson),
+  );
+  const durablePredicateFeatures = (
+    settlement.proposedState.durableState?.predicates || []
+  )
     .map(stableCanonicalJson)
     .filter((predicate) => !beforeDurable.has(predicate))
     .map((predicate) => `durable:${predicate}`);
-  const beforePending = new Set((settlement.beforeState.pendingConsequences || []).map((item) => item.consequenceId));
-  const pendingRuleFeatures = (settlement.proposedState.pendingConsequences || [])
+  const beforePending = new Set(
+    (settlement.beforeState.pendingConsequences || [])
+      .map((item) => item.consequenceId),
+  );
+  const pendingRuleFeatures = (
+    settlement.proposedState.pendingConsequences || []
+  )
     .filter((item) => !beforePending.has(item.consequenceId))
-    .map((item) => `pending:${item.ruleAssetId}:${item.status}:${item.dueTurn - settlement.event.turnNumber}`);
+    .map((item) => (
+      `pending:${item.ruleAssetId}:${item.status}:${item.dueTurn - settlement.event.turnNumber}`
+    ));
   return createOutcomeSignature({
     affordanceId,
     stateFeatures,
     durablePredicateFeatures,
     pendingRuleFeatures,
     sectionAfter: settlement.event.sectionIdAfter,
-    partCompletionStatusAfter: settlement.proposedState.partCompletionStatus || null,
+    partCompletionStatusAfter:
+      settlement.proposedState.partCompletionStatus || null,
   });
 }
 
-function hasMaterialOutcome(signature: AffordanceOutcomeSignature, settlement: PartOneActionSettlement) {
+function hasMaterialOutcome(
+  signature: AffordanceOutcomeSignature,
+  settlement: PartOneActionSettlement,
+) {
   return signature.stateFeatures.length > 0
     || signature.durablePredicateFeatures.length > 0
     || signature.pendingRuleFeatures.length > 0
     || settlement.event.sectionIdBefore !== settlement.event.sectionIdAfter
-    || settlement.beforeState.partCompletionStatus !== settlement.proposedState.partCompletionStatus;
+    || settlement.beforeState.partCompletionStatus
+      !== settlement.proposedState.partCompletionStatus;
 }
 
 function forcePackage(
   pkg: PartOneRuntimePackage,
-  requests: Array<{ sectionId: string; kernelId: string; affordanceId: string | null }>,
+  requests: Array<{
+    sectionId: string;
+    kernelId: string;
+    affordanceId: string | null;
+  }>,
 ): PartOneRuntimePackage {
   const kernelsBySection = new Map<string, string[]>();
   const affordanceByKernel = new Map<string, string>();
@@ -337,56 +572,98 @@ function forcePackage(
     const ids = kernelsBySection.get(request.sectionId) || [];
     if (!ids.includes(request.kernelId)) ids.push(request.kernelId);
     kernelsBySection.set(request.sectionId, ids);
-    if (request.affordanceId) affordanceByKernel.set(request.kernelId, request.affordanceId);
+    if (request.affordanceId) {
+      affordanceByKernel.set(request.kernelId, request.affordanceId);
+    }
   }
   return {
     ...pkg,
     sections: pkg.sections.map((section) => {
       const preferred = kernelsBySection.get(section.sectionId);
-      return !preferred?.length ? section : {
-        ...section,
-        activeDecisionKernelIds: [...preferred, ...section.activeDecisionKernelIds.filter((id) => !preferred.includes(id))],
-      };
+      return !preferred?.length
+        ? section
+        : {
+          ...section,
+          activeDecisionKernelIds: [
+            ...preferred,
+            ...section.activeDecisionKernelIds.filter(
+              (id) => !preferred.includes(id),
+            ),
+          ],
+        };
     }),
     assets: pkg.assets.map((asset) => {
       const affordanceId = affordanceByKernel.get(asset.assetId);
-      if (!affordanceId || asset.assetType !== "DECISION_KERNEL") return asset;
-      const options = Array.isArray(asset.payload.options) ? asset.payload.options : [];
-      const selected = options.find((option) => option.affordanceTemplateId === affordanceId);
-      if (!selected) throw new Error(`PART_ONE_DYNAMIC_AFFORDANCE_NOT_FOUND:${affordanceId}`);
+      if (
+        !affordanceId
+        || asset.assetType !== "DECISION_KERNEL"
+      ) {
+        return asset;
+      }
+      const assetOptions = Array.isArray(asset.payload.options)
+        ? asset.payload.options
+        : [];
+      const selected = assetOptions.find(
+        (option) => option.affordanceTemplateId === affordanceId,
+      );
+      if (!selected) {
+        throw new Error(
+          `PART_ONE_DYNAMIC_AFFORDANCE_NOT_FOUND:${affordanceId}`,
+        );
+      }
       return {
         ...asset,
-        payload: { ...asset.payload, options: [selected, ...options.filter((option) => option !== selected)] },
+        payload: {
+          ...asset.payload,
+          options: [
+            selected,
+            ...assetOptions.filter((option) => option !== selected),
+          ],
+        },
       };
     }),
   };
 }
 
-function linkedPending(pkg: PartOneRuntimePackage, state: PartOneState, kernel: PartOneRuntimeAsset) {
+function linkedPending(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  kernel: PartOneRuntimeAsset,
+) {
   const requirements = new Set(kernel.requirementIds);
   const arcs = new Set(kernel.causalArcIds);
   return (state.pendingConsequences || []).filter((pending) => {
     if (!ACTIVE_PENDING.has(String(pending.status))) return false;
-    const rule = pkg.assets.find((asset) => asset.assetId === pending.ruleAssetId);
-    return Boolean(rule && rule.assetType === "PENDING_CONSEQUENCE_RULE" && (
-      rule.decisionKernelIds.includes(kernel.assetId)
-      || rule.requirementIds.some((id) => requirements.has(id))
-      || rule.causalArcIds.some((id) => arcs.has(id))
-    ));
+    const rule = pkg.assets.find(
+      (asset) => asset.assetId === pending.ruleAssetId,
+    );
+    return Boolean(
+      rule
+      && rule.assetType === "PENDING_CONSEQUENCE_RULE"
+      && (
+        rule.decisionKernelIds.includes(kernel.assetId)
+        || rule.requirementIds.some((id) => requirements.has(id))
+        || rule.causalArcIds.some((id) => arcs.has(id))
+      )
+    );
   });
 }
 
 function selectAffordances(evaluation: Evaluation, ids: string[]) {
   const uniqueIds = [...new Set(ids)];
   const affordances = uniqueIds
-    .map((id) => evaluation.previews.find((item) => item.affordance.affordanceTemplateId === id)?.affordance)
+    .map((id) => evaluation.previews.find(
+      (item) => item.affordance.affordanceTemplateId === id,
+    )?.affordance)
     .filter((item): item is PartOneRuntimeAffordance => Boolean(item));
   if (affordances.length !== 2 || affordances.length !== uniqueIds.length) {
     throw new Error("PART_ONE_DYNAMIC_AFFORDANCE_PAIR_MISSING");
   }
   return affordances.sort((left, right) => (
-    (evaluation.authoredOrder.get(left.affordanceTemplateId) ?? Number.MAX_SAFE_INTEGER)
-    - (evaluation.authoredOrder.get(right.affordanceTemplateId) ?? Number.MAX_SAFE_INTEGER)
+    (evaluation.authoredOrder.get(left.affordanceTemplateId)
+      ?? Number.MAX_SAFE_INTEGER)
+    - (evaluation.authoredOrder.get(right.affordanceTemplateId)
+      ?? Number.MAX_SAFE_INTEGER)
   ));
 }
 
@@ -405,19 +682,27 @@ function selectionTrace(
     stateFingerprint: selection.stateFingerprint,
     selectedKernelId: workingSet.decisionPoint.decisionKernelId,
     selectedDecisionPointId: workingSet.decisionPoint.decisionPointId,
-    selectedAffordanceIds: workingSet.decisionAffordances.map((item) => item.affordanceTemplateId),
+    selectedAffordanceIds: workingSet.decisionAffordances.map(
+      (item) => item.affordanceTemplateId,
+    ),
     selectedOutcomeHashes: selection.selected?.pair
-      ? [selection.selected.pair.left.outcome.hash, selection.selected.pair.right.outcome.hash]
+      ? [
+        selection.selected.pair.left.outcome.hash,
+        selection.selected.pair.right.outcome.hash,
+      ]
       : [],
-    candidates: selection.evaluations.map((item: KernelSelectorLiteEvaluation<Preview>) => ({
-      kernelId: item.kernelId,
-      score: item.score,
-      eligible: item.eligible,
-      reasonCodes: item.reasonCodes,
-      validAffordanceIds: item.validAffordanceIds,
-      outcomeHashes: item.outcomeHashes,
-      maximumOutcomeDistance: item.maximumOutcomeDistance,
-    })),
+    candidates: selection.evaluations.map(
+      (item: KernelSelectorLiteEvaluation<Preview>) => ({
+        kernelId: item.kernelId,
+        score: item.score,
+        tieBreaker: item.tieBreaker,
+        eligible: item.eligible,
+        reasonCodes: item.reasonCodes,
+        validAffordanceIds: item.validAffordanceIds,
+        outcomeHashes: item.outcomeHashes,
+        maximumOutcomeDistance: item.maximumOutcomeDistance,
+      }),
+    ),
   };
 }
 
@@ -442,21 +727,30 @@ function baseTrace(
   };
 }
 
-function traced(workingSet: PartOneRuntimeWorkingSet, trace: KernelSelectionTrace): DynamicPartOneRuntimeWorkingSet {
+function traced(
+  workingSet: PartOneRuntimeWorkingSet,
+  trace: KernelSelectionTrace,
+): DynamicPartOneRuntimeWorkingSet {
   return {
     ...workingSet,
     kernelSelection: {
       ...trace,
-      selectedKernelId: trace.selectedKernelId || workingSet.decisionPoint.decisionKernelId,
-      selectedDecisionPointId: trace.selectedDecisionPointId || workingSet.decisionPoint.decisionPointId,
+      selectedKernelId:
+        trace.selectedKernelId || workingSet.decisionPoint.decisionKernelId,
+      selectedDecisionPointId:
+        trace.selectedDecisionPointId || workingSet.decisionPoint.decisionPointId,
       selectedAffordanceIds: trace.selectedAffordanceIds.length
         ? trace.selectedAffordanceIds
-        : workingSet.decisionAffordances.map((item) => item.affordanceTemplateId),
+        : workingSet.decisionAffordances.map(
+          (item) => item.affordanceTemplateId,
+        ),
     },
   };
 }
 
-function incomingForAffordance(affordance: PartOneRuntimeAffordance): PartOneIncomingAction {
+function incomingForAffordance(
+  affordance: PartOneRuntimeAffordance,
+): PartOneIncomingAction {
   return {
     source: "RECOMMENDED",
     decisionId: affordance.affordanceTemplateId,
@@ -467,28 +761,57 @@ function incomingForAffordance(affordance: PartOneRuntimeAffordance): PartOneInc
     targetRef: affordance.target.id,
   };
 }
+
 function isContinuation(workingSet: PartOneRuntimeWorkingSet) {
-  return workingSet.decisionPoint.decisionPointId !== workingSet.decisionPoint.decisionKernelId;
+  return workingSet.decisionPoint.decisionPointId
+    !== workingSet.decisionPoint.decisionKernelId;
 }
+
 function fingerprintState(state: PartOneState) {
-  return stableSha256({ ...state, scene: state.scene ? { ...state.scene, situation: undefined } : state.scene });
+  return stableSha256({
+    ...state,
+    scene: state.scene
+      ? { ...state.scene, situation: undefined }
+      : state.scene,
+  });
 }
+
 function revisionOf(state: PartOneState, fallback: number) {
-  return Number(state.durableState?.revision ?? state.turnNumber ?? fallback);
+  const turnRevision = Number(state.turnNumber);
+  if (Number.isFinite(turnRevision)) return turnRevision;
+  const durableRevision = Number(state.durableState?.revision);
+  if (Number.isFinite(durableRevision)) return durableRevision;
+  return Number(fallback);
 }
-function requireSection(pkg: PartOneRuntimePackage, sectionId: string) {
+
+function requireSection(
+  pkg: PartOneRuntimePackage,
+  sectionId: string,
+) {
   const section = pkg.sections.find((item) => item.sectionId === sectionId);
-  if (!section) throw new Error(`PART_ONE_RUNTIME_SECTION_MISSING:${sectionId}`);
+  if (!section) {
+    throw new Error(`PART_ONE_RUNTIME_SECTION_MISSING:${sectionId}`);
+  }
   return section;
 }
-function requireKernel(pkg: PartOneRuntimePackage, kernelId: string) {
-  const kernel = pkg.assets.find((item) => item.assetId === kernelId && item.assetType === "DECISION_KERNEL");
-  if (!kernel) throw new Error(`PART_ONE_RUNTIME_KERNEL_MISSING:${kernelId}`);
+
+function requireKernel(
+  pkg: PartOneRuntimePackage,
+  kernelId: string,
+) {
+  const kernel = pkg.assets.find(
+    (item) => item.assetId === kernelId && item.assetType === "DECISION_KERNEL",
+  );
+  if (!kernel) {
+    throw new Error(`PART_ONE_RUNTIME_KERNEL_MISSING:${kernelId}`);
+  }
   return kernel;
 }
+
 function uniqueRules(rules: PartOneStateRule[]) {
   return [...new Map(rules.map((rule) => [rule.ruleId, rule])).values()];
 }
+
 function getPath(value: unknown, path: string) {
   return path.split(".").reduce<unknown>((current, key) => (
     current && typeof current === "object" && !Array.isArray(current)
@@ -496,9 +819,17 @@ function getPath(value: unknown, path: string) {
       : undefined
   ), value);
 }
+
 function deepEqual(left: unknown, right: unknown) {
   return stableCanonicalJson(left) === stableCanonicalJson(right);
 }
-function clone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+
+function normalizeErrorCode(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  const code = message.split(":", 1)[0] || "UNKNOWN_ERROR";
+  return code
+    .trim()
+    .replace(/[^A-Za-z0-9_]+/gu, "_")
+    .toUpperCase()
+    .slice(0, 96) || "UNKNOWN_ERROR";
 }
