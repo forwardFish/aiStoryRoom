@@ -1,20 +1,32 @@
-# R2-1 OpenNovel 投影合同：执行环境阻断报告
+# R2-1 OpenNovel 投影合同：历史执行环境阻断记录
 
 ## 结论
 
-`CANDIDATE_BRANCH_INCOMPLETE`
+本文件只记录三次 GitHub Actions 执行环境故障，**不能用于否定分支中已经存在的产品提交**。
 
-R2-1 的产品修改没有提交。三次独立执行均未进入仓库 checkout、依赖安装、源码修改或测试步骤，因此不得把本轮视为通过，也不得把 0 tests 当作验收结果。
+在这些 runner 尝试开始前，远程分支已经包含以下产品实现：
+
+- `75cb505ca44c253a42c6c262ef8efb31b7c2f985`：R2-1 OpenNovel 谋划投影；
+- `0294389d82a18ca06acb66e3906f12c25bc2f539`：R2-2 OpenNovel 谋划持久化链；
+- `a5c50bb36051c272d1c10ea8d2561a4593b7e73a`：R2-3 Web 提交适配；
+- `f3b956767dbc8a67e1f971ad4cce3dc570b4e509`：共享 OpenNovel storage 测试修复；
+- `067f1679d77195ad00720c05b72ae1838f71e114`：正式谋划客户端模块测试接入。
+
+准确口径是：
+
+> 下述三次 runner 尝试没有新增产品提交，也没有产生可采用的测试结果；它们不是对上述产品提交的失败判定。
+
+随后，本分支又继续提交了世界无关 Maneuver Package、注册表和中性第二世界 fixture。当前产品状态必须以远程最新 SHA 及独立验证结果为准，不能再使用“产品修改没有提交”的旧表述。
 
 ## 固定范围
 
 - 仓库：`forwardFish/aiStoryRoom`
 - 唯一分支：`feat/mvp-four-maneuver-actions`
 - 用户给定起点：`104fc18c93d28556eed467b7612ec3c3b91a5bb2`
-- 开始施工前远程已被并发任务前进；本轮始终使用 non-force fast-forward，未覆盖并发提交。
-- R2-1 实际通用实现基线：`55952a74b32d0ef59fdcc1f4a70af2f856f5e7f6`
+- 三次 runner 尝试开始时的远程节点：`55952a74b32d0ef59fdcc1f4a70af2f856f5e7f6`
+- 所有分支更新均使用 non-force fast-forward；没有覆盖并发提交。
 
-## 三次证据
+## 三次外部环境证据
 
 ### 尝试 1：GitHub Actions 初始化失败
 
@@ -26,8 +38,8 @@ R2-1 的产品修改没有提交。三次独立执行均未进入仓库 checkout
 - 错误：GitHub 无法解析/下载 Action 信息，返回 `Service Unavailable`。
 - checkout：未执行
 - `pnpm install`：未执行
-- 产品代码：未修改
-- 测试：0
+- 本次尝试新增产品代码：无
+- 本次尝试测试：0
 
 ### 尝试 2：Job 无步骤僵死
 
@@ -39,8 +51,8 @@ R2-1 的产品修改没有提交。三次独立执行均未进入仓库 checkout
 - 日志下载：`BlobNotFound`
 - checkout：未执行
 - `pnpm install`：未执行
-- 产品代码：未修改
-- 测试：0
+- 本次尝试新增产品代码：无
+- 本次尝试测试：0
 
 ### 尝试 3：跨 runner 池仍无法获得执行资源
 
@@ -49,34 +61,29 @@ R2-1 的产品修改没有提交。三次独立执行均未进入仓库 checkout
 - Runner：`ubuntu-22.04`
 - 状态：长期 `queued`
 - Steps：无
-- 已移除仓库 workflow concurrency 阻塞后仍未启动。
+- 移除 workflow concurrency 依赖后仍未启动。
 - checkout：未执行
 - `pnpm install`：未执行
-- 产品代码：未修改
-- 测试：0
+- 本次尝试新增产品代码：无
+- 本次尝试测试：0
 
 ## 根因分类
 
 - 层级：`外部环境 / GitHub Actions runner allocation`
 - 不是：资产、产品合同、投影、持久化、UI 或模型输出失败。
-- 当前会话没有可用的本地 GitHub checkout/CLI 执行环境；GitHub connector 可以安全写 Git 对象，但不能执行 `pnpm`、TypeScript 或浏览器测试。Actions 是本轮唯一可执行环境，而三次均未进入仓库命令。
+- 这三次尝试均未进入仓库命令，因此不能拿来判断已有产品代码是否通过。
 
-## 为什么当前方案不能成立
+## 后续验证口径
 
-R2-1 要求同时完成源码开发、类型检查、OpenNovel runtime 测试、API 投影测试、Web 回归、配置校验、提交和远程回读。未获得 runner 时，任何产品提交都只能是未经执行验证的代码。按照任务约束，不能把静态计划、Mock、0 tests、历史日志或自述当作 PASS，因此没有推送未验证的 R2-1 产品修改。
+- 不再循环尝试 GitHub-hosted runner；
+- 不再新增临时 workflow、Base64 源码分片或 CI 传输脚手架；
+- 由隔离本地克隆对远程精确 SHA 执行 typecheck、聚焦测试、PostgreSQL、浏览器和真实模型验收；
+- 只有实际执行的测试命令及其原始结果可以计入 PASS；
+- runner 排队、0 tests、历史日志和 HTTP 200 不能计入 PASS。
 
-## 通用替代方案
+## 清理与分支安全
 
-1. 在具有仓库 checkout、Node 22、pnpm 10.15、GitHub 写权限的连接编码环境中执行 R2-1；或
-2. 恢复 GitHub-hosted runner 分配能力并取消僵死 run 后，重新运行同一通用实现；或
-3. 使用仓库已有自托管 runner，但必须能运行完整目标 workspace 测试并保留原始日志。
-
-不得通过故事专用词、中文正则、单场景例外、前端伪投影或删除测试来绕过。
-
-## 清理
-
-- 已恢复原 `.github/workflows/causal-mvp.yml`。
-- 已删除临时 `.github/workflows/maneuver-r2-1.yml`。
-- 已删除 `scripts/automation/r2-1-chunks/**`。
-- 未提交任何半成品产品代码。
-- 未修改、推送或合并 `main` / `release`。
+- 临时 `.github/workflows/maneuver-r2-1.yml` 已删除；
+- `scripts/automation/r2-1-chunks/**` 已删除；
+- 没有修改、推送或合并 `main` / `release`；
+- 没有创建 PR，也没有部署或操作线上数据。
