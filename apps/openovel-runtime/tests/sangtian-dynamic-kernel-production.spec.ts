@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import templatesPackage, {
+  settleDynamicPartOneAction,
   type KernelSelectionTrace,
   type PartOneActionSettlement,
   type PartOneRuntimePackage,
@@ -14,7 +15,6 @@ import {
   sangtianDecisionAdapter,
   type PreparedSangtianDecision,
 } from "../src/sangtian-decisions.js";
-import { settleDynamicPartOneAction } from "../../../packages/templates/src/story-package/dynamic-kernel-lite-settlement.js";
 import type { FileStoryWorkspace } from "../src/workspace.js";
 import type { OpenNovelOption } from "../src/types.js";
 
