@@ -53,15 +53,20 @@ const accessPass = {
   fallbackReply: "The archive can answer one bounded question.",
 };
 
+const NEUTRAL_TURN_CALENDAR = [
+  { sceneKey: "phase_alpha", usageDay: 1 },
+  { sceneKey: "phase_alpha", usageDay: 1 },
+  { sceneKey: "phase_beta", usageDay: 2 },
+  { sceneKey: "phase_beta", usageDay: 2 },
+] as const;
+
 const neutralPackage = defineOpenNovelManeuverPackage({
   packageVersion: "openovel_maneuver_package_v1",
   worldId: "neutral_fixture",
   calendar: {
-    expectedTurns: 4,
-    scenes: [
-      { sceneKey: "phase_alpha", usageDay: 1 },
-      { sceneKey: "phase_beta", usageDay: 2 },
-    ],
+    expectedTurns: NEUTRAL_TURN_CALENDAR.length,
+    turns: NEUTRAL_TURN_CALENDAR,
+    scenes: NEUTRAL_TURN_CALENDAR,
   },
   quota: { opportunitiesPerDay: 2 },
   initialLeverageKeys: ["access_pass"],
