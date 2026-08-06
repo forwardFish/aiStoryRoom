@@ -11,6 +11,17 @@ export const KERNEL_SELECTOR_LITE_WEIGHTS = {
   PRESENT_PRESSURE_ACTOR: 4,
 } as const;
 
+const RUNTIME_IDENTITY_KEYS = new Set([
+  "eventId",
+  "lastCommittedEventId",
+  "causedByEventId",
+  "transferId",
+  "consequenceId",
+  "beatId",
+  "reactionEventId",
+  "sourceEventId",
+]);
+
 export type AffordanceOutcomeSignature = {
   affordanceId: string;
   stateFeatures: string[];
@@ -87,10 +98,32 @@ export function kernelTieBreaker(
   return stableSha256({ stateFingerprint, kernelId });
 }
 
+/**
+ * Normalize one `state:<path>=<json>` feature before hashing. Runtime-generated
+ * event, transfer, consequence and beat identities are replay metadata rather
+ * than causal outcomes; retaining them would let action wording or retry IDs
+ * manufacture false option diversity. All semantic fields remain intact.
+ */
+export function normalizeOutcomeStateFeature(feature: string): string {
+  const separator = feature.indexOf("=");
+  if (!feature.startsWith("state:") || separator < 0) return feature;
+  const prefix = feature.slice(0, separator + 1);
+  const encoded = feature.slice(separator + 1);
+  try {
+    return `${prefix}${stableCanonicalJson(
+      stripRuntimeIdentity(JSON.parse(encoded)),
+    )}`;
+  } catch {
+    return feature;
+  }
+}
+
 export function createOutcomeSignature(input: Omit<AffordanceOutcomeSignature, "hash">): AffordanceOutcomeSignature {
   const normalized = {
     ...input,
-    stateFeatures: uniqueSorted(input.stateFeatures),
+    stateFeatures: uniqueSorted(
+      input.stateFeatures.map(normalizeOutcomeStateFeature),
+    ),
     durablePredicateFeatures: uniqueSorted(input.durablePredicateFeatures),
     pendingRuleFeatures: uniqueSorted(input.pendingRuleFeatures),
   };
@@ -259,6 +292,16 @@ function symmetricDifferenceSize(left: string[], right: string[]) {
   for (const value of leftSet) if (!rightSet.has(value)) size += 1;
   for (const value of rightSet) if (!leftSet.has(value)) size += 1;
   return size;
+}
+
+function stripRuntimeIdentity(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripRuntimeIdentity);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !RUNTIME_IDENTITY_KEYS.has(key))
+      .map(([key, entry]) => [key, stripRuntimeIdentity(entry)]),
+  );
 }
 
 function uniqueSorted(values: string[]) {
