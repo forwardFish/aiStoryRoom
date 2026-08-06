@@ -26,6 +26,7 @@ const {
   buildCommittedLegacyFallbackWorkingSet,
   buildPartOneRuntimeWorkingSet,
   loadPartOneRuntimePackage,
+  projectFinalizedPartOneSelectionState,
   stableSha256,
   withPartOneDecisionPin,
 } = templatesPackage;
@@ -76,7 +77,7 @@ export async function prepareSangtianDecision(
 export function nextSangtianOptions(
   prepared: PreparedSangtianDecision,
 ): OpenNovelOption[] {
-  const state = prepared.settlement.proposedState;
+  const state = projectFinalizedPartOneSelectionState(prepared.settlement);
   if (state.partCompletionStatus === "HANDOFF_READY") return [];
   const context = decisionContextForCommittedEvent(
     prepared.package,
