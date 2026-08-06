@@ -38,5 +38,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Apply P3 and verify
         run: |
-          sed -i 's/node --test --test-isolation=none apps\/web\/tests\/maneuver-ui.test.mjs/node --test apps\/web\/tests\/maneuver-ui.test.mjs/' scripts/automation/apply-maneuver-p3.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/automation/apply-maneuver-p3.py')
+          source = path.read_text(encoding='utf-8')
+          source = source.replace('node --test --test-isolation=none apps/web/tests/maneuver-ui.test.mjs', 'node --test apps/web/tests/maneuver-ui.test.mjs')
+          source = source.replace('replace_between(app, "function renderLeverage(view) {", "\\nfunction renderRisks"', 'replace_between(app, "function renderLeverage(view) {", "\\nfunction renderManeuverPanel"')
+          path.write_text(source, encoding='utf-8')
+          PY
           python3 scripts/automation/apply-maneuver-p3.py
