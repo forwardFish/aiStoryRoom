@@ -204,4 +204,5 @@ function clone(value) {
 
 installOpenNovelManeuverStoragePatch();
 
+export { ContinuousStoryV2LegacyStorage };
 export { createContinuousStoryV2App } from "./continuous-story-v2-client.js?v=20260806-comfortable-reading-v1";
