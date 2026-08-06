@@ -27,6 +27,7 @@ const {
   buildPartOneRuntimeWorkingSet,
   loadPartOneRuntimePackage,
   stableSha256,
+  withPartOneDecisionPin,
 } = templatesPackage;
 
 type EventWithKernelSelection = PartOneActionSettlement["event"] & {
@@ -41,6 +42,7 @@ type SangtianDecisionContext = {
     kernelSelection?: KernelSelectionTrace;
   };
   pin: PartOneDecisionPin;
+  useCommittedPin: boolean;
 };
 
 export async function prepareSangtianDecision(
@@ -52,20 +54,23 @@ export async function prepareSangtianDecision(
     selectedOption: OpenNovelOption | null;
   },
 ): Promise<PreparedSangtianDecision | null> {
+  const opening = Boolean(input.selectedOption?.id.startsWith("opening_"));
+  const context = opening
+    ? null
+    : await currentSangtianDecisionContext(workspace, input.runId);
   if (
     input.selectedOption
-    && !input.selectedOption.id.startsWith("opening_")
+    && !opening
     && !input.selectedOption.id.startsWith("opt_")
+    && context
   ) {
-    const context = await currentSangtianDecisionContext(
-      workspace,
-      input.runId,
-    );
-    if (context) {
-      assertSelectedOptionMatchesContext(input.selectedOption, context);
-    }
+    assertSelectedOptionMatchesContext(input.selectedOption, context);
   }
-  return base.prepareSangtianDecision(workspace, input);
+
+  const prepare = () => base.prepareSangtianDecision(workspace, input);
+  return context?.useCommittedPin
+    ? withPartOneDecisionPin(context.pin, prepare)
+    : prepare();
 }
 
 export function nextSangtianOptions(
@@ -225,7 +230,8 @@ function decisionContextForCommittedEvent(
 
   const pin = decisionPinForCommittedEvent(event, state, includeOutcomeHashes);
   const trace = (event as EventWithKernelSelection).nextKernelSelection;
-  const workingSet = trace?.mode === "LEGACY_FALLBACK"
+  const legacyFallback = trace?.mode === "LEGACY_FALLBACK";
+  const workingSet = legacyFallback
     ? buildCommittedLegacyFallbackWorkingSet(
       pkg,
       state,
@@ -258,6 +264,7 @@ function decisionContextForCommittedEvent(
     turnNumber,
     workingSet,
     pin,
+    useCommittedPin: !legacyFallback,
   };
 }
 
