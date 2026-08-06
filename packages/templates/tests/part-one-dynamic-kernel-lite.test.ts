@@ -81,6 +81,10 @@ test("reversing activeDecisionKernelIds cannot change the selected kernel or pai
     actual.decisionAffordances.map((item) => item.affordanceTemplateId),
     normal.decisionAffordances.map((item) => item.affordanceTemplateId),
   );
+  assert.deepEqual(
+    actual.kernelSelection.candidates.map((item) => [item.kernelId, item.tieBreaker]),
+    normal.kernelSelection.candidates.map((item) => [item.kernelId, item.tieBreaker]),
+  );
 });
 
 test("same Part One state remains stable for one hundred selector executions", () => {
@@ -95,7 +99,45 @@ test("same Part One state remains stable for one hundred selector executions", (
       actual.decisionAffordances.map((item) => item.affordanceTemplateId),
       expected.decisionAffordances.map((item) => item.affordanceTemplateId),
     );
+    assert.deepEqual(
+      actual.kernelSelection.candidates.map((item) => item.tieBreaker),
+      expected.kernelSelection.candidates.map((item) => item.tieBreaker),
+    );
   }
+});
+
+test("selection trace revision follows the authoritative turn rather than a lagging durable revision", () => {
+  const pkg = packageUnderTest();
+  const state = stateWithOnlyAuthorityUnresolved(pkg);
+  state.turnNumber = 7;
+  state.durableState.revision = 2;
+  const workingSet = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 7);
+  assert.equal(workingSet.kernelSelection.stateRevision, 7);
+});
+
+test("one malformed candidate is isolated instead of aborting another valid dynamic kernel", () => {
+  const pkg = structuredClone(packageUnderTest());
+  const broken = pkg.assets.find((item) => (
+    item.assetId === "DK-P1-REVIEW-AUTHORITY"
+  ));
+  assert.ok(broken);
+  broken.payload.options = [];
+
+  const workingSet = buildDynamicPartOneRuntimeWorkingSet(
+    pkg,
+    stateWithOnlyWitnessUnresolved(pkg),
+    4,
+  );
+  assert.equal(workingSet.openDecisionKernel.assetId, "DK-P1-WITNESS-ACCESS");
+  const failed = workingSet.kernelSelection.candidates.find((item) => (
+    item.kernelId === "DK-P1-REVIEW-AUTHORITY"
+  ));
+  assert.ok(failed);
+  assert.equal(failed.eligible, false);
+  assert.equal(
+    failed.reasonCodes.some((code) => code.startsWith("KERNEL_EVALUATION_FAILED:")),
+    true,
+  );
 });
 
 test("completed kernels and structurally satisfied obligations do not reopen", () => {
