@@ -66,14 +66,17 @@ test("critical Sangtian turn protects facts while Narrator owns literary express
       boundOption: { id: selected.id, label: selected.label },
     });
     assert.deepEqual(provider.profiles, ["narrator"]);
+    assert.match(result.narration, /总督把封缄令牌交给亲随/u);
     assert.match(result.narration, /灯芯在屏风后爆了一声/u);
     assert.match(result.narration, /书吏没有催促，只把袖口从案沿收了回去/u);
+    assert.equal((result.narration.match(/总督把封缄令牌交给亲随/gu) || []).length, 1);
     const head = JSON.parse(await readFile(workspace.paths(runId).head, "utf8"));
     const root = path.join(workspace.paths(runId).root, head.artifactDirectory);
     const assembly = JSON.parse(await readFile(path.join(root, "assembly-manifest.json"), "utf8"));
     const disposition = JSON.parse(await readFile(path.join(root, "disposition.json"), "utf8"));
     assert.equal(assembly.owner, "COMPOSED");
-    assert.equal(assembly.slotOwners.PLAYER_RESULT, "PROTECTED");
+    assert.equal(assembly.slotOwners.PLAYER_RESULT, "NARRATOR");
+    assert.equal(assembly.slotOwners.SCENE_TRANSITION, "PROTECTED");
     assert.equal(assembly.slotOwners.WORLD_PRESSURE, "NARRATOR");
     assert.equal(disposition.narrativeOwner, "COMPOSED");
     assert.equal(disposition.disposition.kind, "USE_ORIGINAL");
@@ -189,6 +192,7 @@ class LiteraryProvider implements OpenNovelProvider {
         draftId: "T01.draft.original",
         owner: "NARRATOR",
         slots: {
+          PLAYER_RESULT: "总督把封缄令牌交给亲随，命他传达封存档房之令；随后暂缓签发，限三日内复核。",
           IMMEDIATE_REACTION: "灯芯在屏风后爆了一声。巡抚书吏没有催促，只把袖口从案沿收了回去，像是在等这句话落成一纸可以带走的凭据。",
           WORLD_PRESSURE: "书吏朝已经合上的厅门看了一眼，转向案后的总督：‘封档房的令牌已经出了门。公文可以候，巡抚衙门问起来，下官该回哪一句？’",
           DECISION_STOP: "屋里静下来。书吏站在屏风外，等的是一句能带回巡抚衙门、也能落到纸上的答复。",
@@ -212,6 +216,7 @@ class SurfaceLeakProvider implements OpenNovelProvider {
         draftId: "T01.draft.original",
         owner: "NARRATOR",
         slots: {
+          PLAYER_RESULT: "总督把封缄令牌交给亲随，命他传达封存档房之令；随后暂缓签发，限三日内复核。",
           IMMEDIATE_REACTION: "The waiting clerk lowered his eyes and listened.",
           WORLD_PRESSURE: "The turnEnvelopeId remained visible beside the deadline.",
           DECISION_STOP: "The clerk waited for the governor's answer.",

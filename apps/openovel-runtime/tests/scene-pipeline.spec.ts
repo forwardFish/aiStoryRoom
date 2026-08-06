@@ -56,6 +56,20 @@ test("model slot-list transport is normalized without changing prose", () => {
     WORLD_PRESSURE: "The envoy refuses the signature.",
     DECISION_STOP: "The council waits for a decision.",
   });
+
+  const textAlias = JSON.stringify({
+    schemaVersion: SCENE_DRAFT_SCHEMA,
+    draftId: "T03.draft.original",
+    owner: "NARRATOR",
+    slots: [
+      { slot: "WORLD_PRESSURE", text: "The envoy refuses the signature." },
+      { slot: "DECISION_STOP", text: "The council waits for a decision." },
+    ],
+  });
+  assert.deepEqual(parseSceneDraft(textAlias, "T03.draft.original").slots, {
+    WORLD_PRESSURE: "The envoy refuses the signature.",
+    DECISION_STOP: "The council waits for a decision.",
+  });
 });
 
 test("model slot-list transport rejects duplicates and unknown fields", () => {

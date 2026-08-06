@@ -11,6 +11,7 @@
     "presmoke:test": "pnpm run prepare:templates",
     "prebuild": "pnpm run prepare:templates",
     "pretypecheck": "pnpm run prepare:templates",
+    "pretest": "pnpm run prepare:templates",
     "dev": "tsx --env-file-if-exists=../../.env src/server.ts",
     "dev:test": "tsx --env-file=../../.env.test src/server.ts",
     "smoke:test": "tsx --env-file=../../.env.test src/cli/smoke.ts",

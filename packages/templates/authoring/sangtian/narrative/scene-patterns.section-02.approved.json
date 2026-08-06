@@ -20,14 +20,26 @@
           "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
         }
       ],
-      "sectionIds": ["SEC-P1-02"],
-      "requirementIds": ["REQ-P1-KNOWLEDGE-CHAIN", "REQ-P1-REVIEW-AUTHORITY"],
-      "decisionKernelIds": ["DK-P1-WITNESS-ACCESS", "DK-P1-DISCLOSURE-SCOPE"],
-      "actorRefs": ["actor.zhejiang_governor", "actor.zhejiang_xunfu", "actor.xunfu_aide", "actor.reform_clerk"],
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "REQ-P1-REVIEW-AUTHORITY"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-DISCLOSURE-SCOPE"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.xunfu_aide",
+        "actor.reform_clerk"
+      ],
       "sourceClaimIds": [
         "DM1566-C03-CL-GOVERNOR-INVARIANT",
         "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
-        "DM1566-C03-CL-REJECTION-DOCUMENT-SHOWN",
         "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
       ],
       "dramaticFunction": "把知道更多是否反而扩大责任写成一场主动的知识边界争夺，并迫使玩家决定谁能接触哪一层材料。",
@@ -111,10 +123,23 @@
           "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
         }
       ],
-      "sectionIds": ["SEC-P1-02"],
-      "requirementIds": ["REQ-P1-REVIEW-AUTHORITY", "REQ-P1-KNOWLEDGE-CHAIN"],
-      "decisionKernelIds": ["DK-P1-REVIEW-AUTHORITY", "DK-P1-DISCLOSURE-SCOPE"],
-      "actorRefs": ["actor.zhejiang_governor", "actor.zhejiang_xunfu", "actor.xunfu_aide", "actor.qingliu_magistrate"],
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-REVIEW-AUTHORITY",
+        "REQ-P1-KNOWLEDGE-CHAIN"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.xunfu_aide",
+        "actor.qingliu_magistrate"
+      ],
       "sourceClaimIds": [
         "DM1566-C04-CL-REPORT-OMITS-DELAY",
         "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
@@ -202,10 +227,23 @@
           "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
         }
       ],
-      "sectionIds": ["SEC-P1-02"],
-      "requirementIds": ["REQ-P1-REGISTER-CUSTODY", "REQ-P1-KNOWLEDGE-CHAIN"],
-      "decisionKernelIds": ["DK-P1-EVIDENCE-CUSTODY", "DK-P1-WITNESS-ACCESS"],
-      "actorRefs": ["actor.zhejiang_governor", "actor.qingliu_magistrate", "actor.reform_clerk", "actor.xunfu_aide"],
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-KNOWLEDGE-CHAIN"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.qingliu_magistrate",
+        "actor.reform_clerk",
+        "actor.xunfu_aide"
+      ],
       "sourceClaimIds": [
         "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
         "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",

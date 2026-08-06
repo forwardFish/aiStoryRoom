@@ -377,9 +377,10 @@ export function validatePreparedAuthoredDecision(
   prepared: PreparedAuthoredDecision,
 ): PreparedAuthoredDecision {
   const manifest = validateBeatManifest(prepared.beatManifest);
-  validatePlayerVisibleFallbackDraft(prepared.fallbackDraft, manifest);
   const resultTicket = manifest.tickets.find((ticket) => ticket.slot === "PLAYER_RESULT");
   const stopTicket = manifest.tickets.find((ticket) => ticket.slot === "DECISION_STOP");
+  // Settlement and the server-selected stop point are semantic authority.
+  // Validate those bindings before literary fallback surfaces.
   if (!resultTicket || normalize(resultTicket.requiredMeaning) !== normalize(prepared.settledNarrative)) {
     throw new Error("BEAT_MANIFEST_PLAYER_RESULT_MISMATCH");
   }
@@ -387,6 +388,7 @@ export function validatePreparedAuthoredDecision(
     !== normalize(prepared.truthContexts.afterPhase.stopCondition || "")) {
     throw new Error("BEAT_MANIFEST_STOP_POINT_MISMATCH");
   }
+  validatePlayerVisibleFallbackDraft(prepared.fallbackDraft, manifest);
   return prepared;
 }
 

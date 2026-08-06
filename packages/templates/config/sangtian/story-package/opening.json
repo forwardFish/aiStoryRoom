@@ -48,7 +48,8 @@
       "distinctAxis": "先查后签",
       "concreteCost": "巡抚可能借机指责总督拖延急令",
       "expectedCountermove": "巡抚会催促限时答复并追问扣文理由",
-      "groundingIds": []
+      "groundingIds": [],
+      "playerResultExpressionOwner": "PROTECTED"
     },
     {
       "decisionId": "opening_d2",

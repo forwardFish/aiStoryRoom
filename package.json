@@ -55,6 +55,8 @@
     "test:story:v4:contracts": "pnpm --filter @ai-story/templates typecheck && pnpm --filter @ai-story/templates test:runtime-contract && pnpm --filter @ai-story/templates test:story-package && pnpm --filter @ai-story/templates build",
     "test:story:v4:runtime": "pnpm --filter @apps/openovel-runtime typecheck && pnpm --filter @apps/openovel-runtime test && pnpm --filter @apps/openovel-runtime build",
     "test:story:v4": "pnpm test:story:v4:contracts && pnpm test:story:v4:runtime",
+    "test:story:branch-persistence": "pnpm --filter @ai-story/templates build && node scripts/acceptance/verify-part-one-branch-persistence.mjs",
+    "test:story:options": "pnpm --filter @ai-story/templates build && node scripts/acceptance/verify-part-one-options.mjs",
     "test:world-credits": "tsx scripts/e2e/world-credits-local.ts",
     "test:world-credits:consumption-db": "tsx --env-file=.env.test --tsconfig apps/api/tsconfig.json scripts/e2e/world-credits-consumption-db.ts",
     "test:api-contract": "tsx --tsconfig apps/api/tsconfig.json scripts/e2e/v4-api-contract-audit.ts",
@@ -88,7 +90,10 @@
     "ops:backup": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ops\\backup-postgres.ps1",
     "ops:restore-smoke": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ops\\restore-smoke.ps1",
     "ops:wal-check": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ops\\check-wal-archive.ps1",
-    "typecheck": "pnpm -r --workspace-concurrency=1 typecheck"
+    "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
+    "test:story:convergence": "pnpm --filter @ai-story/templates build && node scripts/acceptance/verify-ai-story-convergence.mjs",
+    "test:story:real-model": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs",
+    "test:story:real-model:g00-t20": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

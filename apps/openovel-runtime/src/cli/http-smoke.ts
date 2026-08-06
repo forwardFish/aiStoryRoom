@@ -33,10 +33,12 @@ try {
   const actions = [
     "暂不签发，先让两边把各自知道的事说清。",
     "让巡抚书吏说明中丞究竟催的是落印，还是一份可带回去的答复。",
-    "转问县令亲随：清流若接到查验命令，谁能先守住原册所在的档房。",
   ];
   const turnEvidence = [];
-  for (const action of actions) {
+  for (let index = 0; index < 3; index += 1) {
+    const action = index < actions.length
+      ? actions[index]!
+      : await currentPublishedAction(runtimePort, runId);
     const events = await runtimeSse(runtimePort, runId, action);
     const committed = events.find((event) => event.type === "turn.committed");
     assert.ok(committed, `missing turn.committed for ${action}`);
@@ -58,8 +60,8 @@ try {
   assert.equal(turnEvidence[0].turnId, "T01");
   assert.equal(turnEvidence[1].turnId, "T02");
   assert.equal(turnEvidence[2].turnId, "T03");
-  assert.equal(turnEvidence[1].options, 0);
-  assert.ok(turnEvidence[1].warningCodes.includes("OPTIONS_UNAVAILABLE"));
+  assert.ok(turnEvidence[1].options >= 2);
+  assert.equal(turnEvidence[1].warningCodes.includes("OPTIONS_UNAVAILABLE"), false);
 
   await waitForStorykeeper(runtimePort, runId, 3);
   const beforeRestart = await runtimeJson(
@@ -88,9 +90,9 @@ try {
     runtimeMode: afterRestart.runtimeMode,
     currentTurn: afterRestart.turnNumber,
     canonTurns: (afterRestart.canon.match(/^\*\*读者选择\*\*：/gm) || []).length,
-    optionsFailureDidNotBlock: turnEvidence[1].options === 0
-      && turnEvidence[1].warningCodes.includes("OPTIONS_UNAVAILABLE"),
-    freeTextTurns: actions.length,
+    committedOptionsAvailableAfterCanon: turnEvidence[1].options >= 2
+      && !turnEvidence[1].warningCodes.includes("OPTIONS_UNAVAILABLE"),
+    freeTextTurns: turnEvidence.length,
     storykeeperApplied: 3,
     restartRecoveredCanon: afterRestart.canon === beforeRestart.canon,
     providerCalls: provider.calls,
@@ -202,6 +204,16 @@ async function runtimeSse(port: number, targetRunId: string, action: string) {
       .join("\n");
     return type && data ? [{ type, data: JSON.parse(data) }] : [];
   });
+}
+
+async function currentPublishedAction(port: number, targetRunId: string) {
+  const run = await runtimeJson(
+    port,
+    `/internal/openovel/runs/${encodeURIComponent(targetRunId)}`,
+  );
+  const action = String(run.options?.[0]?.label || "").trim();
+  assert.ok(action, "current published option required for the next free-text smoke turn");
+  return action;
 }
 
 function scriptedProvider() {

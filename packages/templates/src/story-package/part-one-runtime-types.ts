@@ -138,6 +138,7 @@ export type PartOneDramaticGuidance = {
   sourceMechanisms: string[];
   scenePatterns: Array<Pick<
     NarrativeScenePattern,
+    | "patternId"
     | "dramaticFunction"
     | "openingPressure"
     | "orderedBeats"
@@ -171,6 +172,7 @@ export type PartOneNextStoryBeat = {
   presentMoves: string[];
   playerOutcome: string;
   npcOrWorldPressure: string;
+  visibleConsequence: string;
   stopCondition: string;
   evidencePacket: PartOneSceneEvidencePacket;
   dramaticGuidance: PartOneDramaticGuidance;

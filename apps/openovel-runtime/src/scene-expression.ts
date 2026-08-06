@@ -33,6 +33,7 @@ export type DramaticSceneGuidance = {
   dramaticTask: string;
   sourceMechanisms: string[];
   scenePatterns: Array<{
+    patternId: string;
     dramaticFunction: string;
     openingPressure: string;
     orderedBeats: Array<{
@@ -137,7 +138,6 @@ export function validateBeatManifest(manifest: BeatManifest): BeatManifest {
     throw new Error("BEAT_MANIFEST_TICKETS_MISSING");
   }
   validateDramaticGuidance(manifest.dramaticGuidance);
-  validateDramaticBeatPlan(manifest.dramaticBeatPlan, manifest.transition.afterScene);
   const ticketIds = new Set<string>();
   for (const ticket of manifest.tickets) {
     if (!nonEmpty(ticket.ticketId) || ticketIds.has(ticket.ticketId)) {
@@ -174,12 +174,18 @@ export function validateBeatManifest(manifest: BeatManifest): BeatManifest {
     && !manifest.tickets.some((ticket) => ticket.slot === "SCENE_TRANSITION" && ticket.required)) {
     throw new Error("BEAT_MANIFEST_TRANSITION_TICKET_MISSING");
   }
+  validateDramaticBeatPlan(
+    manifest.dramaticBeatPlan,
+    manifest.transition.afterScene,
+    manifest.tickets,
+  );
   return manifest;
 }
 
 function validateDramaticBeatPlan(
   plan: DramaticBeatPlan | undefined,
   afterScene: SceneSnapshot,
+  tickets: NarrativeFactTicket[],
 ) {
   if (!plan) return;
   if (plan.schemaVersion !== "dramatic-beat-plan-v1"
@@ -187,20 +193,53 @@ function validateDramaticBeatPlan(
     || plan.sceneRef !== afterScene.sceneId
     || !nonEmpty(plan.sceneObjective)
     || !Array.isArray(plan.steps)
-    || plan.steps.length < 2) {
+    || plan.steps.length < 4
+    || plan.expressionContract?.settlementOwnsFacts !== true
+    || plan.expressionContract?.narratorOwnsRegularScene !== true
+    || plan.expressionContract?.fallbackUsesSamePlan !== true
+    || plan.expressionContract?.decisionPressureIsTerminal !== true) {
     throw new Error("DRAMATIC_BEAT_PLAN_INVALID");
   }
   const presentActorIds = new Set(afterScene.presentActorIds);
+  const stepIds = new Set<string>();
   for (const step of plan.steps) {
     if (!nonEmpty(step.stepId)
+      || stepIds.has(step.stepId)
       || !nonEmpty(step.requiredMeaning)
       || step.durableMutationAllowed !== false
       || step.actorRefs.some((actorRef) => !presentActorIds.has(actorRef))) {
       throw new Error(`DRAMATIC_BEAT_STEP_INVALID:${step.stepId || "unknown"}`);
     }
+    stepIds.add(step.stepId);
   }
-  if (plan.steps.at(-1)?.kind !== "DECISION_PRESSURE") {
-    throw new Error("DRAMATIC_BEAT_STOP_MISSING");
+
+  const single = (kind: DramaticBeatPlan["steps"][number]["kind"]) => {
+    const matches = plan.steps.filter((step) => step.kind === kind);
+    if (matches.length !== 1) throw new Error(`DRAMATIC_BEAT_STEP_CARDINALITY:${kind}`);
+    return matches[0]!;
+  };
+  const playerResult = single("PLAYER_RESULT");
+  const countermove = single("COUNTERMOVE");
+  const visibleConsequence = single("VISIBLE_CONSEQUENCE");
+  const decisionPressure = single("DECISION_PRESSURE");
+  const indexOf = (step: DramaticBeatPlan["steps"][number]) => plan.steps.indexOf(step);
+  if (!(indexOf(playerResult) < indexOf(countermove)
+    && indexOf(countermove) < indexOf(visibleConsequence)
+    && indexOf(visibleConsequence) < indexOf(decisionPressure)
+    && plan.steps.at(-1) === decisionPressure)) {
+    throw new Error("DRAMATIC_BEAT_ORDER_INVALID");
+  }
+
+  const requiredTicketMeaning = (slot: NarrativeSlotId) => {
+    const matches = tickets.filter((ticket) => ticket.required && ticket.slot === slot);
+    if (matches.length !== 1) throw new Error(`DRAMATIC_BEAT_TICKET_CARDINALITY:${slot}`);
+    return normalize(matches[0]!.requiredMeaning);
+  };
+  if (normalize(playerResult.requiredMeaning) !== requiredTicketMeaning("PLAYER_RESULT")) {
+    throw new Error("DRAMATIC_BEAT_PLAYER_RESULT_MISMATCH");
+  }
+  if (normalize(decisionPressure.requiredMeaning) !== requiredTicketMeaning("DECISION_STOP")) {
+    throw new Error("DRAMATIC_BEAT_DECISION_STOP_MISMATCH");
   }
 }
 
@@ -367,6 +406,16 @@ export function validatePlayerVisibleFallbackDraft(
     if (protectedTexts.length === 1 && normalize(text) !== protectedTexts[0]) {
       throw new Error("FALLBACK_PROTECTED_SLOT_MISMATCH:" + slot);
     }
+    const requiredMeanings = [...new Set(manifest.tickets
+      .filter((ticket) => ticket.slot === slot && ticket.required)
+      .map((ticket) => normalize(ticket.requiredMeaning))
+      .filter(Boolean))];
+    if (requiredMeanings.length > 1) {
+      throw new Error(`FALLBACK_REQUIRED_MEANING_CONFLICT:${slot}`);
+    }
+    // Required meaning is semantic authority, not mandatory verbatim prose.
+    // Only PROTECTED tickets require exact visible text; regular fallback
+    // slots may render the same plan naturally.
     const expected = manifest.tickets
       .filter((ticket) => ticket.slot === slot)
       .map((ticket) => ticket.ticketId)

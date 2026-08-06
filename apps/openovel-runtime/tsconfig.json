@@ -6,12 +6,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "noEmit": false,
-    "baseUrl": ".",
-    "paths": {
-      "@ai-story/templates": [
-        "../../packages/templates/dist/runtime-entry.d.ts"
-      ]
-    }
+    "paths": {}
   },
   "include": ["src/**/*.ts"]
 }

@@ -9,11 +9,13 @@ export type DramaticBeatActor = {
 export type DramaticBeatStep = {
   stepId: string;
   kind:
+    | "PLAYER_RESULT"
     | "PATTERN_OPENING"
     | "PATTERN_MOVE"
     | "OBJECT_POWER_MOVE"
     | "COUNTERMOVE"
     | "REACTION_WINDOW"
+    | "VISIBLE_CONSEQUENCE"
     | "DECISION_PRESSURE";
   actorRefs: string[];
   actorLabels: string[];
@@ -48,6 +50,12 @@ export type DramaticBeatPlan = {
     nonDurableDialogueMayVary: true;
     newDurableFactsForbidden: true;
   };
+  expressionContract: {
+    settlementOwnsFacts: true;
+    narratorOwnsRegularScene: true;
+    fallbackUsesSamePlan: true;
+    decisionPressureIsTerminal: true;
+  };
 };
 
 export type DramaticBeatPolicyInput = {
@@ -60,9 +68,12 @@ export type DramaticBeatPlannerInput = {
   sceneObjective: string;
   presentActorRefs: string[];
   actorLabelsByRef: Record<string, string>;
+  playerActorRef?: string;
   pressureActorRefs: string[];
   actorPolicies: DramaticBeatPolicyInput[];
+  playerResultMeaning: string;
   pressureMeaning: string;
+  visibleConsequenceMeaning: string;
   decisionStopMeaning: string;
 };
 
@@ -94,7 +105,15 @@ export const deterministicDramaticBeatPlanner: DramaticBeatPlannerModule = {
 export function compileDramaticBeatPlan(input: DramaticBeatPlannerInput): DramaticBeatPlan {
   const sceneRef = required(input.sceneRef, "DRAMATIC_BEAT_SCENE_MISSING");
   const sceneObjective = required(input.sceneObjective, "DRAMATIC_BEAT_OBJECTIVE_MISSING");
+  const playerResultMeaning = required(
+    input.playerResultMeaning,
+    "DRAMATIC_BEAT_PLAYER_RESULT_MISSING",
+  );
   const pressureMeaning = required(input.pressureMeaning, "DRAMATIC_BEAT_PRESSURE_MISSING");
+  const visibleConsequenceMeaning = required(
+    input.visibleConsequenceMeaning,
+    "DRAMATIC_BEAT_VISIBLE_CONSEQUENCE_MISSING",
+  );
   const decisionStopMeaning = required(input.decisionStopMeaning, "DRAMATIC_BEAT_STOP_MISSING");
   const presentActorRefs = unique(input.presentActorRefs.map(clean).filter(Boolean));
   if (!presentActorRefs.length) throw new Error("DRAMATIC_BEAT_CAST_MISSING");
@@ -111,6 +130,11 @@ export function compileDramaticBeatPlan(input: DramaticBeatPlannerInput): Dramat
       ? { goal: policyGoalByActor.get(actorRef) }
       : {}),
   }));
+  const requestedPlayerActorRef = clean(input.playerActorRef || "");
+  const playerActorRefs = requestedPlayerActorRef
+    && presentActorRefs.includes(requestedPlayerActorRef)
+    ? [requestedPlayerActorRef]
+    : presentActorRefs.slice(0, 1);
   const pressureActorRefs = unique(
     input.pressureActorRefs.map(clean).filter((actorRef) => presentActorRefs.includes(actorRef)),
   );
@@ -134,6 +158,16 @@ export function compileDramaticBeatPlan(input: DramaticBeatPlannerInput): Dramat
     activeActors,
     steps: [
       {
+        stepId: "PLAYER_RESULT",
+        kind: "PLAYER_RESULT",
+        actorRefs: playerActorRefs,
+        actorLabels: labelsFor(playerActorRefs),
+        requiredMeaning: playerResultMeaning,
+        actorGoals: goalsFor(playerActorRefs),
+        expressionPolicy: "DRAMATIZE_REQUIRED_MEANING",
+        durableMutationAllowed: false,
+      },
+      {
         stepId: "COUNTERMOVE",
         kind: "COUNTERMOVE",
         actorRefs: primaryActorRefs,
@@ -156,6 +190,16 @@ export function compileDramaticBeatPlan(input: DramaticBeatPlannerInput): Dramat
           }]
         : []),
       {
+        stepId: "VISIBLE_CONSEQUENCE",
+        kind: "VISIBLE_CONSEQUENCE",
+        actorRefs: primaryActorRefs,
+        actorLabels: labelsFor(primaryActorRefs),
+        requiredMeaning: visibleConsequenceMeaning,
+        actorGoals: goalsFor(primaryActorRefs),
+        expressionPolicy: "DRAMATIZE_REQUIRED_MEANING",
+        durableMutationAllowed: false,
+      },
+      {
         stepId: "DECISION_PRESSURE",
         kind: "DECISION_PRESSURE",
         actorRefs: primaryActorRefs,
@@ -171,6 +215,49 @@ export function compileDramaticBeatPlan(input: DramaticBeatPlannerInput): Dramat
       nonDurableDialogueMayVary: true,
       newDurableFactsForbidden: true,
     },
+    expressionContract: {
+      settlementOwnsFacts: true,
+      narratorOwnsRegularScene: true,
+      fallbackUsesSamePlan: true,
+      decisionPressureIsTerminal: true,
+    },
+  };
+}
+
+export function bindDramaticBeatPlanExpression(
+  plan: DramaticBeatPlan,
+  input: {
+    playerResultMeaning: string;
+    visibleConsequenceMeaning?: string;
+    decisionStopMeaning: string;
+  },
+): DramaticBeatPlan {
+  const replacements: Partial<Record<DramaticBeatStep["kind"], string>> = {
+    PLAYER_RESULT: required(input.playerResultMeaning, "DRAMATIC_BEAT_PLAYER_RESULT_MISSING"),
+    ...(input.visibleConsequenceMeaning
+      ? {
+          VISIBLE_CONSEQUENCE: required(
+            input.visibleConsequenceMeaning,
+            "DRAMATIC_BEAT_VISIBLE_CONSEQUENCE_MISSING",
+          ),
+        }
+      : {}),
+    DECISION_PRESSURE: required(
+      input.decisionStopMeaning,
+      "DRAMATIC_BEAT_DECISION_STOP_MISSING",
+    ),
+  };
+  for (const kind of Object.keys(replacements) as DramaticBeatStep["kind"][]) {
+    if (plan.steps.filter((step) => step.kind === kind).length !== 1) {
+      throw new Error(`DRAMATIC_BEAT_EXPRESSION_BINDING_CARDINALITY:${kind}`);
+    }
+  }
+  return {
+    ...plan,
+    steps: plan.steps.map((step) => ({
+      ...step,
+      requiredMeaning: replacements[step.kind] || step.requiredMeaning,
+    })),
   };
 }
 
