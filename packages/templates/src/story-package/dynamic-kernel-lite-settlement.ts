@@ -127,17 +127,52 @@ export function settleDynamicPartOneAction(
  * The observe-only capability facade needs one authored affordance as a
  * scaffold. A Floor continuation already reconstructs its own option list and
  * therefore must receive the unmodified package.
+ *
+ * Recovery can supply an exact committed Pin. Normal Dynamic pins are rebuilt
+ * directly; an authored Legacy fallback is the only valid exception and must
+ * resolve to the same Kernel and Decision Point when recomputed from the same
+ * state. This mirrors the formal-action recovery discipline without allowing a
+ * capability turn to drift onto a different decision surface.
  */
 export function packageForDynamicCapabilityAction(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
   turnNumber: number,
+  currentPin: PartOneDecisionPin | null = null,
 ): PartOneRuntimePackage {
-  const current = buildDynamicPartOneRuntimeWorkingSet(
-    pkg,
-    state,
-    Math.max(0, turnNumber - 1),
-  );
+  let current: DynamicPartOneRuntimeWorkingSet;
+  if (currentPin) {
+    try {
+      current = buildDynamicPartOneRuntimeWorkingSet(
+        pkg,
+        state,
+        Math.max(0, turnNumber - 1),
+        { mode: "DYNAMIC_LITE", pin: currentPin },
+      );
+    } catch (pinError) {
+      const fallback = buildDynamicPartOneRuntimeWorkingSet(
+        pkg,
+        state,
+        Math.max(0, turnNumber - 1),
+      );
+      if (
+        fallback.kernelSelection.mode !== "LEGACY_FALLBACK"
+        || fallback.decisionPoint.decisionKernelId
+          !== currentPin.decisionKernelId
+        || fallback.decisionPoint.decisionPointId
+          !== currentPin.decisionPointId
+      ) {
+        throw pinError;
+      }
+      current = fallback;
+    }
+  } else {
+    current = buildDynamicPartOneRuntimeWorkingSet(
+      pkg,
+      state,
+      Math.max(0, turnNumber - 1),
+    );
+  }
   if (isContinuation(current)) return pkg;
   return forcePackage(pkg, [{
     sectionId: state.sectionId,
