@@ -35,4 +35,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - name: Implement and verify P5
-        run: python3 scripts/automation/apply-maneuver-p5.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('apps/api/src/mvp-four-maneuver-runtime.spec.ts')
+          source = path.read_text(encoding='utf-8')
+          source = source.replace(
+              'dashboard: {}, decisionHistory: [], events: [], causalLedger: {}, daySummary: null,',
+              'dashboard: {}, decisionHistory: [], events: [], causalLedger: { fateSeeds: [], evidenceLedger: [], responsibilityLedger: [], narrativeFrames: [], finalJudgementInputs: [] }, daySummary: null,'
+          )
+          path.write_text(source, encoding='utf-8')
+          PY
+          python3 scripts/automation/apply-maneuver-p5.py
