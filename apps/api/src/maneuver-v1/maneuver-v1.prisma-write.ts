@@ -6,7 +6,6 @@ import type {
 } from "./maneuver-v1.core";
 import {
   createPrivateEvidenceCardV1,
-  investigationOutcomesFromContextV1,
   preserveSameProvenanceEvidenceV1,
   privateEvidenceAssetKeyV1,
   readPrivateEvidenceCardV1,
@@ -99,12 +98,12 @@ export async function createCommittedManeuverV1(
   if (input.compiled.kind !== "INVESTIGATION") return committedFromRow(action);
   if (!input.draft.routeId) throw domain("TRACE_UNAVAILABLE", "The investigation route is missing.", 409);
 
-  const turn = await db.actorTurn.findUnique({
-    where: { id: input.context.actorTurnId },
-    select: { contextJson: true },
-  });
-  if (!turn) throw domain("PREVIEW_STALE", "The investigation turn no longer exists.", 409);
-  const outcome = investigationOutcomesFromContextV1(turn.contextJson)
+  // The current authoritative context was read and revalidated inside the same
+  // serializable transaction before createAction was called. Use that context
+  // as the single source for both configured and fallback investigation routes.
+  // Re-reading only ActorTurn.contextJson here would discard valid fallback
+  // routes derived from role-visible confirmed CanonFacts.
+  const outcome = input.context.investigationOutcomes
     .find((candidate) => candidate.routeId === input.draft.routeId);
   if (!outcome) throw domain("PREVIEW_STALE", "The investigation route no longer has an authoritative evidence binding.", 409);
 
