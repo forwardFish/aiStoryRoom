@@ -258,15 +258,41 @@ function decisionPinForCommittedEvent(
   const traced = event as EventWithKernelSelection;
   const next = event.nextDecisionPoint;
   const trace = traced.nextKernelSelection;
-  if (
-    trace
-    && (
+  if (trace) {
+    if (
       trace.selectedKernelId !== next.decisionKernelId
       || trace.selectedDecisionPointId !== next.decisionPointId
       || trace.sectionId !== event.sectionIdAfter
-    )
-  ) {
-    throw new Error("SANGTIAN_COMMITTED_KERNEL_TRACE_MISMATCH");
+    ) {
+      throw new Error("SANGTIAN_COMMITTED_KERNEL_TRACE_MISMATCH");
+    }
+    if (Number(trace.stateRevision) !== Number(event.turnNumber)) {
+      throw new Error(
+        "SANGTIAN_COMMITTED_KERNEL_TRACE_REVISION_MISMATCH",
+      );
+    }
+    if (
+      trace.selectedAffordanceIds.length
+      && trace.selectedAffordanceIds.length !== 2
+    ) {
+      throw new Error(
+        "SANGTIAN_COMMITTED_KERNEL_TRACE_AFFORDANCE_COUNT_INVALID",
+      );
+    }
+    if (
+      trace.selectedOutcomeHashes.length
+      && trace.selectedOutcomeHashes.length
+        !== trace.selectedAffordanceIds.length
+    ) {
+      throw new Error(
+        "SANGTIAN_COMMITTED_KERNEL_TRACE_OUTCOME_COUNT_INVALID",
+      );
+    }
+    if (!String(trace.stateFingerprint || "").trim()) {
+      throw new Error(
+        "SANGTIAN_COMMITTED_KERNEL_TRACE_FINGERPRINT_MISSING",
+      );
+    }
   }
   return {
     decisionKernelId: next.decisionKernelId,
