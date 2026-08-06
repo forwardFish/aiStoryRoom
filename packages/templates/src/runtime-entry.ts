@@ -9,6 +9,7 @@ import {
   type DynamicPartOneCommittedEvent as DynamicCommittedEvent,
 } from "./story-package/dynamic-kernel-lite-runtime.js";
 import {
+  buildCommittedLegacyFallbackWorkingSet,
   packageForDynamicCapabilityAction,
   settleDynamicPartOneAction,
 } from "./story-package/dynamic-kernel-lite-settlement.js";
@@ -29,6 +30,7 @@ export type {
   PartOneWorkingSetSelectionOptions,
 } from "./story-package/dynamic-kernel-lite-runtime.js";
 export {
+  buildCommittedLegacyFallbackWorkingSet,
   packageForDynamicCapabilityAction,
   settleDynamicPartOneAction,
 } from "./story-package/dynamic-kernel-lite-settlement.js";
@@ -162,6 +164,7 @@ const runtimeEntry = {
   ...runtimeFacade,
   loadPartOneRuntimePackage,
   buildPartOneRuntimeWorkingSet,
+  buildCommittedLegacyFallbackWorkingSet,
   settlePartOneAction,
 };
 
