@@ -9,8 +9,10 @@ import {
   projectOpenNovelManeuvers,
   withOpenNovelManeuverState,
 } from "./openovel-maneuver";
+import { sangtianOpenNovelManeuverPackage } from "./sangtian-openovel-maneuver.package";
 
 const game = getGameDefinition("sangtian");
+const maneuverPackage = sangtianOpenNovelManeuverPackage;
 
 function projection(stateJson: unknown = {}, turnNumber = 0) {
   return projectOpenNovelManeuvers({
@@ -19,6 +21,7 @@ function projection(stateJson: unknown = {}, turnNumber = 0) {
     runtimeStatus: "READY",
     mainDecisionOpen: true,
     canHumanAct: true,
+    maneuverPackage,
   });
 }
 
@@ -36,7 +39,7 @@ function resultInput(id: string, turnNumber: number, title: string, narrative: s
 
 test("OpenNovel projects server-authoritative maneuver availability for the opening turn", () => {
   const projected = projection();
-  assert.deepEqual(openNovelManeuverClock(0), {
+  assert.deepEqual(openNovelManeuverClock(0, maneuverPackage), {
     turnNumber: 0,
     sceneIndex: 0,
     sceneKey: "d1_1",
@@ -67,6 +70,7 @@ test("two distinct maneuver types consume the daily quota without advancing the 
     game,
     roleKey: "zhejiang_governor",
     turnNumber: 0,
+    maneuverPackage,
   });
   assert.equal("accepted" in contact, false);
   const afterContact = applyOpenNovelManeuverPlan({
@@ -89,6 +93,7 @@ test("two distinct maneuver types consume the daily quota without advancing the 
     game,
     roleKey: "zhejiang_governor",
     turnNumber: 0,
+    maneuverPackage,
   });
   assert.equal((investigate as any).needsAiNarrative, false);
   const afterInvestigation = applyOpenNovelManeuverPlan({
@@ -117,6 +122,7 @@ test("moving to the next authored day resets type quota but preserves durable fa
     game,
     roleKey: "zhejiang_governor",
     turnNumber: 2,
+    maneuverPackage,
   });
   const used = applyOpenNovelManeuverPlan({
     state: d1SecondScene.state,
@@ -137,7 +143,7 @@ test("moving to the next authored day resets type quota but preserves durable fa
 test("legacy stateJson without maneuver fields is migrated deterministically", () => {
   const restored = ensureOpenNovelManeuverState({
     openovel: { turnNumber: 0 },
-  }, 0);
+  }, 0, maneuverPackage);
   assert.equal(restored.schemaVersion, "openovel_maneuver_state_v1");
   assert.equal(restored.maneuverOpportunitiesRemaining, 2);
   assert.deepEqual(restored.usedTypesToday, []);
@@ -156,6 +162,7 @@ test("generic ActionGuard rejects an attempt to control every other actor", () =
     game,
     roleKey: "zhejiang_governor",
     turnNumber: 0,
+    maneuverPackage,
   });
   assert.equal("accepted" in guarded, true);
   assert.equal((guarded as any).accepted, false);
