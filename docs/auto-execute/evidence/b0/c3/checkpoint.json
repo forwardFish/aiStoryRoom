@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "b0-c3-checkpoint-v1",
+  "stage": "C3",
+  "branch": "codex/chatgpt-pro-maneuver-evidence-v1",
+  "baseSha": "80ebbaaa53902440c14bd37a3c7a839a5c832c6d",
+  "testedCodeSha": "80845790d7b1af4d0f9e2cc7c73cb294258da361",
+  "workflow": {
+    "name": "Causal MVP",
+    "runId": 31101176245,
+    "jobId": 92614843719,
+    "focusedConclusion": "pass",
+    "aggregateConclusion": "known_baseline_failure"
+  },
+  "implementation": [
+    "frozen B0 window configuration containing ruleset hash, expected actor set and role-control bindings",
+    "authoritative draft revision envelope with latest draft, last confirmed revision, locked intent and request hash",
+    "idempotent draft replay and confirmation",
+    "Ready and Unready participant state with optimistic version checks",
+    "ALL_READY, DEADLINE and IMMEDIATE freeze policies",
+    "freeze selects the latest confirmed revision and never executes an unconfirmed draft",
+    "missing confirmed intent deterministically becomes HOLD",
+    "compare-and-set window claim prevents duplicate freeze",
+    "one immutable snapshot and one batch per frozen window",
+    "server projection reconstruction after refresh",
+    "restart recovery scans expired OPEN windows",
+    "Settlement Commit consumes the frozen ResolutionWorkflow and transitions the window to COMMITTED",
+    "existing ActionWindow, ActionWindowParticipant, PlayerAction, ResolutionWorkflow and StoryTaskOutbox reused without a new Prisma model or migration"
+  ],
+  "commands": [
+    {
+      "command": "pnpm --filter @ai-story/shared typecheck",
+      "workspace": "packages/shared",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @ai-story/templates typecheck",
+      "workspace": "packages/templates",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @ai-story/templates test:b0-contract",
+      "workspace": "packages/templates",
+      "total": 13,
+      "pass": 13,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @ai-story/templates test:b0-batch",
+      "workspace": "packages/templates",
+      "total": 5,
+      "pass": 5,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/api test:b0-batch",
+      "workspace": "apps/api",
+      "total": 4,
+      "pass": 4,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/api test:b0-window",
+      "workspace": "apps/api",
+      "total": 7,
+      "pass": 7,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/api typecheck",
+      "workspace": "apps/api",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/web typecheck",
+      "workspace": "apps/web",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm test:causal",
+      "workspace": "root",
+      "total": 220,
+      "pass": 209,
+      "fail": 11,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 1,
+      "result": "KNOWN_BASELINE_FAILURE",
+      "failureArea": "apps/api/src/solo-story-engine/__tests__/part-one-runtime-integration.spec.ts",
+      "baselineComparison": "same 209/220 pass and 11 fail recorded by C0; no focused B0 C1-C3 failure"
+    }
+  ],
+  "invariantsProvedByFocusedTests": [
+    "draft revision and confirmation are idempotent",
+    "freeze uses last confirmed revision, not a newer draft",
+    "missing confirmation produces HOLD",
+    "Ready and Deadline race creates only one freeze, snapshot and batch",
+    "locked window rejects edits and confirmations",
+    "refresh projection is reconstructed from persisted server state",
+    "freeze transaction performs no model, Narrator or external network call"
+  ],
+  "excludedUntilLaterStages": [
+    "C4 multi-intent relation graph and merged WorldDelta",
+    "C5 typed audience publication",
+    "C6 OpenNovel narrative jobs",
+    "C7 real /game window interface",
+    "C8 diagnostics, credits and rollout controls",
+    "C9 real PostgreSQL three-role six-window acceptance"
+  ],
+  "main": {
+    "modified": false,
+    "pushed": false,
+    "merged": false
+  }
+}
