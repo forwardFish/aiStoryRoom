@@ -9,26 +9,39 @@ import {
   type OpenNovelContactDefinition,
   type OpenNovelLeverageDefinition,
   type OpenNovelManeuverActorDefinition,
+  type OpenNovelManeuverCalendarEntry,
 } from "./openovel-maneuver-package";
 
-const SANGTIAN_SCENE_KEYS = [
-  "d1_1", "d1_2",
-  "d2_1", "d2_2",
-  "d3_1", "d3_2",
-  "d4_1", "d4_2",
-  "d5_1", "d5_2",
-  "d6_1", "d6_2",
-] as const;
+const SANGTIAN_TURN_CALENDAR: readonly OpenNovelManeuverCalendarEntry[] = [
+  { sceneKey: "d1_1", usageDay: 1 },
+  { sceneKey: "d1_1", usageDay: 1 },
+  { sceneKey: "d1_2", usageDay: 1 },
+  { sceneKey: "d1_2", usageDay: 1 },
+  { sceneKey: "d2_1", usageDay: 2 },
+  { sceneKey: "d2_2", usageDay: 2 },
+  { sceneKey: "d2_2", usageDay: 2 },
+  { sceneKey: "d3_1", usageDay: 3 },
+  { sceneKey: "d3_1", usageDay: 3 },
+  { sceneKey: "d3_2", usageDay: 3 },
+  { sceneKey: "d4_1", usageDay: 4 },
+  { sceneKey: "d4_1", usageDay: 4 },
+  { sceneKey: "d4_2", usageDay: 4 },
+  { sceneKey: "d4_2", usageDay: 4 },
+  { sceneKey: "d5_1", usageDay: 5 },
+  { sceneKey: "d5_2", usageDay: 5 },
+  { sceneKey: "d5_2", usageDay: 5 },
+  { sceneKey: "d6_1", usageDay: 6 },
+  { sceneKey: "d6_1", usageDay: 6 },
+  { sceneKey: "d6_2", usageDay: 6 },
+];
 
 export const sangtianOpenNovelManeuverPackage = defineOpenNovelManeuverPackage({
   packageVersion: "openovel_maneuver_package_v1",
   worldId: "sangtian",
   calendar: {
-    expectedTurns: 20,
-    scenes: SANGTIAN_SCENE_KEYS.map((sceneKey, index) => ({
-      sceneKey,
-      usageDay: Math.floor(index / 2) + 1,
-    })),
+    expectedTurns: SANGTIAN_TURN_CALENDAR.length,
+    turns: SANGTIAN_TURN_CALENDAR,
+    scenes: SANGTIAN_TURN_CALENDAR,
   },
   quota: { opportunitiesPerDay: 2 },
   initialLeverageKeys: [...INITIAL_MVP_LEVERAGE_KEYS],
