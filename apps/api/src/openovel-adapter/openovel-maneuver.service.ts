@@ -16,7 +16,6 @@ import {
   type MvpAiBudget,
 } from "../mvp-ai-budget";
 import { createConfiguredMvpNarrativeProvider } from "../mvp-narrative-provider";
-import { getLeverageDefinition, getManeuverActor } from "../mvp-maneuver-config";
 import { PrismaService } from "../prisma.service";
 import {
   OPENOVEL_ENGINE_VERSION,
@@ -36,6 +35,8 @@ import {
   type OpenNovelManeuverResult,
   type OpenNovelManeuverState,
 } from "./openovel-maneuver";
+import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
+import { openNovelManeuverPackages } from "./openovel-maneuver-packages";
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const MANEUVER_EVENT_TYPE = "openovel_maneuver_result";
@@ -82,6 +83,7 @@ export class OpenNovelManeuverService {
       this.authorizedRun(user, runId),
       this.runtime.getRun(runId),
     ]);
+    const maneuverPackage = packageForRun(run.templateKey, runtimeRun.worldId);
     assertManeuverVersion(run.version, command.version);
     const role = run.players[0]?.role;
     if (!role) {
@@ -96,6 +98,7 @@ export class OpenNovelManeuverService {
       runtimeStatus: runtimeRun.status,
       mainDecisionOpen: runtimeRun.status !== "COMPLETED" && runtimeRun.options.length > 0,
       canHumanAct: runtimeRun.status !== "COMPLETED",
+      maneuverPackage,
     });
     const planned = compileOpenNovelManeuverPlan({
       command,
@@ -103,10 +106,16 @@ export class OpenNovelManeuverService {
       game: getGameDefinition(run.templateKey),
       roleKey: role.roleKey,
       turnNumber: runtimeRun.turnNumber,
+      maneuverPackage,
     });
     if (isGuardResult(planned)) return planned;
 
-    const narrative = await resolveNarrative(planned, projection.state, runtimeRun);
+    const narrative = await resolveNarrative(
+      planned,
+      projection.state,
+      runtimeRun,
+      maneuverPackage,
+    );
     const eventId = `ovl_maneuver_${randomUUID()}`;
     const createdAt = new Date();
     const applied = applyOpenNovelManeuverPlan({
@@ -134,6 +143,8 @@ export class OpenNovelManeuverService {
       fallbackReason: narrative.fallbackReason,
       provider: narrative.provider,
       tokenUsage: narrative.tokenUsage,
+      maneuverPackageVersion: maneuverPackage.packageVersion,
+      maneuverWorldId: maneuverPackage.worldId,
     };
 
     try {
@@ -176,6 +187,7 @@ export class OpenNovelManeuverService {
               plan: planned,
               narrative,
               createdAt,
+              maneuverPackage,
             }) as any,
           });
         }
@@ -238,6 +250,7 @@ async function resolveNarrative(
   plan: OpenNovelManeuverPlan,
   state: OpenNovelManeuverState,
   runtimeRun: OpenNovelPublicRun,
+  maneuverPackage: OpenNovelManeuverPackage,
 ): Promise<NarrativeResolution> {
   const budget = structuredClone(state.aiBudget);
   const deterministic = {
@@ -280,8 +293,12 @@ async function resolveNarrative(
     };
   }
 
-  const target = plan.targetRoleKey ? getManeuverActor(plan.targetRoleKey) : null;
-  const leverage = plan.consumedLeverageKey ? getLeverageDefinition(plan.consumedLeverageKey) : null;
+  const target = plan.targetRoleKey
+    ? maneuverPackage.actor(plan.targetRoleKey)
+    : null;
+  const leverage = plan.consumedLeverageKey
+    ? maneuverPackage.leverage(plan.consumedLeverageKey)
+    : null;
   try {
     const candidate = await provider.generateManeuverCandidate({
       task: plan.maneuverType === "contact"
@@ -307,7 +324,13 @@ async function resolveNarrative(
         traces: plan.traces,
       },
     });
-    const normalized = normalizeNarrative(candidate, plan, target?.displayName || "对方", leverage?.label || "");
+    const normalized = normalizeNarrative(
+      candidate,
+      plan,
+      target?.displayName || "对方",
+      leverage?.label || "",
+      maneuverPackage.surfaces.consumedLeverageLabel,
+    );
     const usage = recordMvpAiBudgetUse(budget, budgetCheck, provider.lastCall || {});
     return {
       ...normalized,
@@ -343,6 +366,7 @@ function normalizeNarrative(
   plan: OpenNovelManeuverPlan,
   targetName: string,
   leverageLabel: string,
+  consumedLeverageLabel: string,
 ) {
   const source = record(candidate);
   const title = clean(source.title, 120) || plan.title;
@@ -350,8 +374,12 @@ function normalizeNarrative(
   let narrative = clean(source.narrative, 1_500);
   if (!narrative && replyText) narrative = `${targetName}回应：“${replyText}”`;
   if (!narrative) throw new Error("maneuver narrative candidate empty");
-  if (plan.maneuverType === "leverage" && leverageLabel && !narrative.includes("筹码已消耗")) {
-    narrative = `${narrative}\n\n筹码已消耗：${leverageLabel}`;
+  if (
+    plan.maneuverType === "leverage"
+    && leverageLabel
+    && !narrative.includes(consumedLeverageLabel)
+  ) {
+    narrative = `${narrative}\n\n${consumedLeverageLabel}：${leverageLabel}`;
   }
   return { title, narrative };
 }
@@ -384,6 +412,7 @@ function aiTaskData(input: {
   plan: OpenNovelManeuverPlan;
   narrative: NarrativeResolution;
   createdAt: Date;
+  maneuverPackage: OpenNovelManeuverPackage;
 }) {
   const resultJson = {
     fallbackUsed: input.narrative.fallbackUsed,
@@ -403,6 +432,8 @@ function aiTaskData(input: {
     modelName: input.narrative.provider,
     status: input.narrative.fallbackUsed ? "fallback" : "completed",
     inputJson: {
+      worldId: input.maneuverPackage.worldId,
+      maneuverPackageVersion: input.maneuverPackage.packageVersion,
       sceneKey: input.plan.sceneKey,
       maneuverType: input.plan.maneuverType,
       targetRoleKey: input.plan.targetRoleKey,
@@ -420,6 +451,26 @@ function aiTaskData(input: {
     completedAt: input.createdAt,
     errorMessage: input.narrative.errorMessage,
   };
+}
+
+function packageForRun(templateKey: string, runtimeWorldId: string) {
+  if (templateKey !== runtimeWorldId) {
+    throw new ConflictException({
+      code: "OPENOVEL_MANEUVER_WORLD_MISMATCH",
+      message: "The product run and OpenNovel runtime disagree on the world package.",
+      templateKey,
+      runtimeWorldId,
+    });
+  }
+  try {
+    return openNovelManeuverPackages.require(templateKey);
+  } catch {
+    throw new ConflictException({
+      code: "OPENOVEL_MANEUVER_PACKAGE_MISSING",
+      message: "This OpenNovel world has no registered maneuver package.",
+      worldId: templateKey,
+    });
+  }
 }
 
 function isGuardResult(
