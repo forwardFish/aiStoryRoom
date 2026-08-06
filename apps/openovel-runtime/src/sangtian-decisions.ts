@@ -201,7 +201,7 @@ async function currentSangtianDecisionContext(
     state,
     metadata.turnNumber,
     matches[0]!,
-    false,
+    true,
   );
 }
 
