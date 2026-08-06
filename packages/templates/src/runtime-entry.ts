@@ -147,6 +147,7 @@ export const settlePartOneAction = (
       pkg,
       settlement,
       turnNumber,
+      currentPin,
     );
   }
 
@@ -175,12 +176,18 @@ function attachCapabilityKernelSelection(
   pkg: Parameters<typeof runtimeFacade.settlePartOneAction>[0],
   settlement: ReturnType<typeof runtimeFacade.settlePartOneAction>,
   turnNumber: number,
+  currentPin: PartOneDecisionPin | null,
 ) {
   const event = settlement.event as DynamicCommittedEvent;
-  const pin = {
-    decisionKernelId: event.nextDecisionPoint.decisionKernelId,
-    decisionPointId: event.nextDecisionPoint.decisionPointId,
-  };
+  const nextPoint = event.nextDecisionPoint;
+  const pin = currentPin
+    && currentPin.decisionKernelId === nextPoint.decisionKernelId
+    && currentPin.decisionPointId === nextPoint.decisionPointId
+    ? currentPin
+    : {
+      decisionKernelId: nextPoint.decisionKernelId,
+      decisionPointId: nextPoint.decisionPointId,
+    };
   let next: ReturnType<typeof buildDynamicPartOneRuntimeWorkingSet>;
   try {
     next = buildDynamicPartOneRuntimeWorkingSet(
@@ -197,20 +204,47 @@ function attachCapabilityKernelSelection(
     );
     if (
       fallback.kernelSelection.mode !== "LEGACY_FALLBACK"
-      || fallback.decisionPoint.decisionKernelId !== pin.decisionKernelId
-      || fallback.decisionPoint.decisionPointId !== pin.decisionPointId
+      || fallback.decisionPoint.decisionKernelId
+        !== nextPoint.decisionKernelId
+      || fallback.decisionPoint.decisionPointId
+        !== nextPoint.decisionPointId
+      || (
+        pin.affordanceIds?.length
+        && !sameStringArray(
+          fallback.decisionAffordances.map(
+            (affordance) => affordance.affordanceTemplateId,
+          ),
+          pin.affordanceIds,
+        )
+      )
     ) {
       throw pinError;
     }
     next = fallback;
   }
   if (
-    next.decisionPoint.decisionKernelId !== pin.decisionKernelId
-    || next.decisionPoint.decisionPointId !== pin.decisionPointId
+    next.decisionPoint.decisionKernelId !== nextPoint.decisionKernelId
+    || next.decisionPoint.decisionPointId !== nextPoint.decisionPointId
   ) {
     throw new Error("PART_ONE_CAPABILITY_NEXT_DECISION_MISMATCH");
   }
+  if (
+    pin.affordanceIds?.length
+    && !sameStringArray(
+      next.decisionAffordances.map(
+        (affordance) => affordance.affordanceTemplateId,
+      ),
+      pin.affordanceIds,
+    )
+  ) {
+    throw new Error("PART_ONE_CAPABILITY_NEXT_AFFORDANCE_PAIR_MISMATCH");
+  }
   event.nextKernelSelection = structuredClone(next.kernelSelection);
+}
+
+function sameStringArray(left: string[], right: string[]) {
+  return left.length === right.length
+    && left.every((value, index) => value === right[index]);
 }
 
 function nonVerbatimPattern(pattern: DramaticPatternPlanInput): DramaticPatternPlanInput {
