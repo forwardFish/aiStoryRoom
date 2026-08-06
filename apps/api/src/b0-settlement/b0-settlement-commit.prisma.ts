@@ -76,6 +76,12 @@ export class PrismaB0CommitTransactionV1 implements B0CommitTransactionV1 {
     if (!envelope) {
       throw new B0CommitErrorV1("B0_WORKFLOW_OCCUPIED", "The window already has a non-B0 resolution workflow.");
     }
+    if (envelope.schemaVersion === "b0-freeze-envelope-v1") {
+      if (envelope.batch?.id !== batchId || workflow.rulesInputHash !== envelope.batch?.inputHash) {
+        throw new B0CommitErrorV1("BATCH_ALREADY_COMMITTED", "The window is already bound to another B0 batch.");
+      }
+      return null;
+    }
     if (envelope.schemaVersion !== "b0-commit-envelope-v1") {
       throw new B0CommitErrorV1("B0_WORKFLOW_OCCUPIED", "The window already has an incompatible resolution workflow.");
     }
@@ -237,6 +243,22 @@ export class PrismaB0CommitTransactionV1 implements B0CommitTransactionV1 {
         outputRefId: input.manifest.batchId,
         completedAt: new Date(input.manifest.committedAt),
       },
+    });
+    const committed = await this.tx.actionWindow.updateMany({
+      where: { id: input.context.windowId, status: { in: ["LOCKED", "SETTLING", "COMMITTED"] } },
+      data: {
+        status: "COMMITTED",
+        resolvedAt: new Date(input.manifest.committedAt),
+        version: { increment: 1 },
+        projectionVersion: { increment: 1 },
+      },
+    });
+    if (committed.count !== 1) {
+      throw new B0CommitErrorV1("WINDOW_NOT_COMMITTABLE", "The B0 window did not accept the authoritative commit transition.");
+    }
+    await this.tx.actionWindowParticipant.updateMany({
+      where: { windowId: input.context.windowId },
+      data: { mainStatus: "B0_COMMITTED", version: { increment: 1 } },
     });
   }
 }
