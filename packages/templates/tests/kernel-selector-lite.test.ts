@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   createOutcomeSignature,
@@ -111,4 +113,29 @@ test("completed and structurally resolved kernels are never eligible", () => {
   assert.equal(result.selected, null);
   assert.equal(result.evaluations.find((item) => item.kernelId === completed.kernelId)?.reasonCodes.includes("KERNEL_COMPLETED"), true);
   assert.equal(result.evaluations.find((item) => item.kernelId === resolved.kernelId)?.reasonCodes.includes("OBLIGATION_ALREADY_SATISFIED"), true);
+});
+
+test("the reusable selector core contains no story vocabulary or narrative parsing hooks", () => {
+  const source = readFileSync(
+    resolve(__dirname, "../src/runtime-contract/kernel-selector-lite.ts"),
+    "utf8",
+  );
+  assert.doesNotMatch(source, /\p{Script=Han}/u);
+  for (const forbidden of [
+    "sangtian",
+    "zhejiang",
+    "qingliu",
+    "review.authority",
+    "evidence.chainStatus",
+    "availableWhen",
+    "actionText",
+    "protectedNarrative",
+    "decisionPrompt",
+  ]) {
+    assert.equal(
+      source.toLocaleLowerCase("und").includes(forbidden.toLocaleLowerCase("und")),
+      false,
+      `world-agnostic selector leaked forbidden token: ${forbidden}`,
+    );
+  }
 });
