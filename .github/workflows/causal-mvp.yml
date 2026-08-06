@@ -6,6 +6,8 @@ on:
       - ".github/workflows/causal-mvp.yml"
       - "apps/api/**"
       - "apps/web/**"
+      - "packages/shared/**"
+      - "packages/templates/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -31,6 +33,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
+      - run: pnpm --filter @ai-story/shared typecheck
+      - run: pnpm --filter @ai-story/templates typecheck
+      - run: pnpm --filter @ai-story/templates test:b0-contract
       - run: pnpm --filter @apps/api typecheck
       - run: pnpm --filter @apps/web typecheck
       - run: pnpm test:causal
