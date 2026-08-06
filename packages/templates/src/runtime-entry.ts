@@ -180,10 +180,16 @@ function attachCapabilityKernelSelection(
 ) {
   const event = settlement.event as DynamicCommittedEvent;
   const nextPoint = event.nextDecisionPoint;
-  const pin = currentPin
+  const pin: PartOneDecisionPin = currentPin
     && currentPin.decisionKernelId === nextPoint.decisionKernelId
     && currentPin.decisionPointId === nextPoint.decisionPointId
-    ? currentPin
+    ? {
+      decisionKernelId: currentPin.decisionKernelId,
+      decisionPointId: currentPin.decisionPointId,
+      ...(currentPin.affordanceIds?.length
+        ? { affordanceIds: [...currentPin.affordanceIds] }
+        : {}),
+    }
     : {
       decisionKernelId: nextPoint.decisionKernelId,
       decisionPointId: nextPoint.decisionPointId,
