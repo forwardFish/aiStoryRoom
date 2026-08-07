@@ -3,6 +3,9 @@ import {
   stableSha256,
 } from "../runtime-contract/kernel-selector-lite.js";
 import {
+  forcePackageForProvisionalSettlement,
+} from "./dynamic-kernel-lite-projection.js";
+import {
   buildDynamicPartOneRuntimeWorkingSet,
   forcePackageForDynamicWorkingSets,
   type DynamicPartOneActionSettlement,
@@ -28,10 +31,6 @@ export type DynamicPartOneSettlementExecutionOptions = {
   currentWorkingSetOverride?: DynamicPartOneRuntimeWorkingSet | null;
 };
 
-/**
- * Project the exact state that the existing finalizer will commit after all
- * authorized due consequences have been surfaced in the current turn.
- */
 export function projectFinalizedPartOneSelectionState(
   settlement: Pick<PartOneActionSettlement, "proposedState" | "event">,
 ): PartOneState {
@@ -49,9 +48,9 @@ export function projectFinalizedPartOneSelectionState(
 /**
  * The frozen engine remains the only causal writer. This coordinator projects
  * the exact committed current WorkingSet and the exact selected next
- * WorkingSet into an immutable package clone. Primary Dynamic, Legacy Fallback
- * and Floor Continuation therefore share one formal Settlement path without
- * asking the frozen engine to infer a decision surface from array position.
+ * WorkingSet into immutable package clones. The provisional pass is isolated
+ * from unrelated later Kernels; the final pass is bound to the real next
+ * decision selected from the authoritative finalized-state projection.
  */
 export function settleDynamicPartOneAction(
   pkg: PartOneRuntimePackage,
@@ -91,7 +90,7 @@ export function settleDynamicPartOneAction(
   }
 
   const provisionalPackage = current
-    ? forcePackageForDynamicWorkingSets(pkg, [{ state, workingSet: current }])
+    ? forcePackageForProvisionalSettlement(pkg, state, current)
     : pkg;
   const provisional = settleLegacyAction(
     provisionalPackage,
@@ -133,11 +132,6 @@ export function settleDynamicPartOneAction(
   return finalized as DynamicPartOneActionSettlement;
 }
 
-/**
- * Observe-only capability actions use the same exact committed WorkingSet as
- * display, binding and authored Settlement. Continuations are projected as
- * explicit Floor entries rather than being re-derived from sectionTurnNumber.
- */
 export function packageForDynamicCapabilityAction(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
@@ -166,11 +160,6 @@ export function packageForDynamicCapabilityAction(
   );
 }
 
-/**
- * A committed Legacy fallback may have no valid Dynamic Outcome pair. Recover
- * the exact authored pair without reapplying the Dynamic diversity gate; all
- * semantic and state-integrity checks remain fail-closed.
- */
 export function buildCommittedLegacyFallbackWorkingSet(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
