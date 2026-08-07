@@ -21,10 +21,11 @@ test("the legacy Dynamic Kernel workflow is explicitly auxiliary-only", async ()
 });
 
 test("formal acceptance is Supabase-only and cannot execute migration commands", async () => {
-  const [workflow, runner, contract] = await Promise.all([
+  const [workflow, runner, contract, databaseSmoke] = await Promise.all([
     source(".github/workflows/dynamic-kernel-lite-supabase-formal.yml"),
     source("scripts/acceptance/run-dynamic-kernel-lite-supabase.mjs"),
     source("scripts/acceptance/supabase-formal-acceptance.mjs"),
+    source("scripts/e2e/v4-database-smoke.ts"),
   ]);
   assert.match(workflow, /dynamic-kernel-lite\/supabase-formal/u);
   assert.match(workflow, /SUPABASE_ACCEPTANCE_DATABASE_URL/u);
@@ -35,6 +36,8 @@ test("formal acceptance is Supabase-only and cannot execute migration commands",
   assert.match(runner, /dynamic-kernel-lite-supabase-browser\.mjs/u);
   assert.match(contract, /FORMAL_ACCEPTANCE_REQUIRES_SUPABASE/u);
   assert.match(contract, /DATABASE_MIGRATION_FORBIDDEN/u);
+  assert.match(databaseSmoke, /ACCEPTANCE_DATA_NAMESPACE/u);
+  assert.match(databaseSmoke, /syntheticEmail: EMAIL/u);
   assert.doesNotMatch(
     `${workflow}\n${runner}`,
     /(?:prisma\s+(?:migrate|db\s+(?:push|seed))|pnpm\s+db:(?:migrate|push|reset|seed))\b/iu,
