@@ -29,13 +29,16 @@ import { ManeuverV1Controller } from "./maneuver-v1/maneuver-v1.controller";
 import { ManeuverV1PrismaStore } from "./maneuver-v1/maneuver-v1.prisma-store";
 import { ManeuverV1Service } from "./maneuver-v1/maneuver-v1.service";
 import { B0SettlementCommitService } from "./b0-settlement/b0-settlement-commit.prisma";
+import { B0SettlementPipelineService } from "./b0-settlement/b0-settlement-pipeline.service";
+import { B0OpsController } from "./b0-settlement/b0-ops.controller";
+import { B0OutboxBridgeService } from "./b0-settlement/b0-outbox-bridge.service";
 import { B0WindowCoordinatorService } from "./b0-settlement/b0-window-coordinator.prisma";
 import { B0WindowPlayerController } from "./b0-settlement/b0-window-player.controller";
 import { B0WindowPlayerService } from "./b0-settlement/b0-window-player.service";
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
-  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController, ManeuverV1Controller, B0WindowPlayerController],
+  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController, ManeuverV1Controller, B0WindowPlayerController, B0OpsController],
   providers: [
     StoryService,
     StoryTaskOutboxService,
@@ -48,6 +51,8 @@ import { B0WindowPlayerService } from "./b0-settlement/b0-window-player.service"
     ManeuverV1Service,
     B0SettlementCommitService,
     B0WindowCoordinatorService,
+    B0SettlementPipelineService,
+    B0OutboxBridgeService,
     B0WindowPlayerService
   ]
 })
