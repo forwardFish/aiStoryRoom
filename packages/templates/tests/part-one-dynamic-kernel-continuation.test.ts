@@ -9,6 +9,10 @@ import {
   settleDynamicPartOneAction,
 } from "../src/story-package/dynamic-kernel-lite-settlement.js";
 import {
+  settlePartOneAction as settleProductionPartOneAction,
+  withPartOneDecisionWorkingSet,
+} from "../src/runtime-entry.js";
+import {
   createInitialPartOneState,
   partOneSceneForSection,
 } from "../src/story-package/part-one-runtime-engine.js";
@@ -21,6 +25,8 @@ import type {
 } from "../src/story-package/part-one-runtime-types.js";
 
 const configRoot = resolve(__dirname, "../config");
+const CAPABILITY_ACTION_PREFIX = "\u2063OMW_CAPABILITY_V1:";
+const CAPABILITY_ACTION_SUFFIX = "\u2063";
 
 function packageUnderTest() {
   return loadPlayablePartOneRuntimePackage("sangtian", configRoot).package;
@@ -63,6 +69,18 @@ function asTemplate(
   return structuredClone(template);
 }
 
+function encodedCapabilityAction(
+  decisionPointId: string,
+  action: string,
+) {
+  const envelope = Buffer.from(JSON.stringify({
+    schemaVersion: "omw-capability-action-v1",
+    decisionPointId,
+    action,
+  }), "utf8").toString("base64url");
+  return `${CAPABILITY_ACTION_PREFIX}${envelope}${CAPABILITY_ACTION_SUFFIX}`;
+}
+
 test("a Floor continuation affordance settles without forcing the base Kernel option list", () => {
   const pkg = packageUnderTest();
   const state = continuationState(pkg);
@@ -93,6 +111,48 @@ test("the observe-only capability scaffold leaves a Floor continuation package u
   const pkg = packageUnderTest();
   const state = continuationState(pkg);
   assert.equal(packageForDynamicCapabilityAction(pkg, state, 9), pkg);
+});
+
+test("the production capability path preserves the committed Floor continuation and pair", () => {
+  const pkg = packageUnderTest();
+  const state = continuationState(pkg);
+  const current = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 8);
+  const settlement = withPartOneDecisionWorkingSet(
+    current,
+    () => settleProductionPartOneAction(
+      pkg,
+      structuredClone(state),
+      {
+        source: "FREE_TEXT",
+        actionText: encodedCapabilityAction(
+          current.decisionPoint.decisionPointId,
+          "Inspect the public record without making a formal disposition.",
+        ),
+        targetRef: "public_frame",
+      },
+      9,
+    ),
+  );
+
+  assert.equal(settlement.event.actionSource, "FREE_TEXT_CAPABILITY");
+  assert.equal(settlement.appliedAffordance, null);
+  assert.deepEqual(settlement.event.statePatch, {});
+  assert.deepEqual(settlement.event.durableEffects, []);
+  assert.equal(
+    settlement.event.nextDecisionPoint.decisionKernelId,
+    current.decisionPoint.decisionKernelId,
+  );
+  assert.equal(
+    settlement.event.nextDecisionPoint.decisionPointId,
+    current.decisionPoint.decisionPointId,
+  );
+  assert.ok(settlement.event.nextKernelSelection);
+  assert.deepEqual(
+    settlement.event.nextKernelSelection.selectedAffordanceIds,
+    current.decisionAffordances.map(
+      (affordance) => affordance.affordanceTemplateId,
+    ),
+  );
 });
 
 test("a committed continuation pin wins after the authored continuation index advances", () => {
