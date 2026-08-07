@@ -126,6 +126,8 @@ export interface MvpNarrativeProvider {
     maxAttempts: number;
     inputTokens?: number;
     outputTokens?: number;
+    requestId?: string | null;
+    modelName?: string | null;
   };
   generateDecisionCandidate(context: Record<string, unknown>): Promise<unknown>;
   generateManeuverCandidate?(context: Record<string, unknown>): Promise<unknown>;

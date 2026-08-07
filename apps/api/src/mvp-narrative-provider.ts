@@ -1,6 +1,8 @@
 import type { MvpNarrativeProvider } from "./mvp-types";
 
 type DeepSeekPayload = {
+  id?: string;
+  model?: string;
   choices?: Array<{ message?: { content?: string } }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number };
   error?: { code?: string; message?: string };
@@ -13,6 +15,16 @@ type RequestSpec = {
   temperature: number;
 };
 
+type ProviderCallMeta = {
+  attempts: number;
+  elapsedMs: number;
+  maxAttempts: number;
+  inputTokens: number;
+  outputTokens: number;
+  requestId: string | null;
+  modelName: string | null;
+};
+
 /**
  * Optional narration adapter. It can only propose player-visible wording;
  * rule-owned state, evidence, responsibility, cards and endings are ignored.
@@ -21,7 +33,7 @@ export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
   readonly name: string;
   readonly timeoutMs: number;
   readonly maxAttempts: number;
-  lastCall = { attempts: 0, elapsedMs: 0, maxAttempts: 2, inputTokens: 0, outputTokens: 0 };
+  lastCall: ProviderCallMeta;
   private readonly apiKey: string;
   private readonly baseUrl: string;
   private readonly model: string;
@@ -32,7 +44,7 @@ export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
     this.model = config.model || "deepseek-v4-pro";
     this.timeoutMs = Math.max(1000, Math.min(60_000, Number(config.timeoutMs || 15_000)));
     this.maxAttempts = Math.max(1, Math.min(3, Number(config.maxAttempts || 2)));
-    this.lastCall = { attempts: 0, elapsedMs: 0, maxAttempts: this.maxAttempts, inputTokens: 0, outputTokens: 0 };
+    this.lastCall = emptyCall(this.maxAttempts, this.model);
     this.name = `deepseek:${this.model}`;
   }
 
@@ -82,6 +94,8 @@ export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
   private async requestJson(spec: RequestSpec) {
     const startedAt = Date.now();
     let lastError: unknown = new Error("causal narrative provider failed");
+    let lastRequestId: string | null = null;
+    let lastModelName: string | null = this.model;
     for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) {
       try {
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -102,6 +116,13 @@ export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
           })
         });
         const payload = await response.json().catch(() => ({})) as DeepSeekPayload;
+        lastRequestId = String(
+          response.headers.get("x-request-id")
+          || response.headers.get("request-id")
+          || payload.id
+          || "",
+        ).trim() || null;
+        lastModelName = String(payload.model || this.model).trim() || this.model;
         if (!response.ok) throw new Error(`causal narrative provider failed: ${payload.error?.code || `http_${response.status}`}`);
         const content = payload.choices?.[0]?.message?.content;
         if (!content) throw new Error("causal narrative provider returned no content");
@@ -111,7 +132,9 @@ export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
           elapsedMs: Date.now() - startedAt,
           maxAttempts: this.maxAttempts,
           inputTokens: Math.max(0, Number(payload.usage?.prompt_tokens || 0)),
-          outputTokens: Math.max(0, Number(payload.usage?.completion_tokens || 0))
+          outputTokens: Math.max(0, Number(payload.usage?.completion_tokens || 0)),
+          requestId: lastRequestId,
+          modelName: lastModelName,
         };
         return candidate;
       } catch (error) {
@@ -119,7 +142,13 @@ export class DeepSeekMvpNarrativeProvider implements MvpNarrativeProvider {
         if (attempt < this.maxAttempts) continue;
       }
     }
-    this.lastCall = { attempts: this.maxAttempts, elapsedMs: Date.now() - startedAt, maxAttempts: this.maxAttempts, inputTokens: 0, outputTokens: 0 };
+    this.lastCall = {
+      ...emptyCall(this.maxAttempts, lastModelName || this.model),
+      attempts: this.maxAttempts,
+      elapsedMs: Date.now() - startedAt,
+      requestId: lastRequestId,
+      modelName: lastModelName,
+    };
     throw lastError;
   }
 }
@@ -137,4 +166,16 @@ export function createConfiguredMvpNarrativeProvider(): MvpNarrativeProvider | u
     timeoutMs: Number(process.env.AI_CAUSAL_TIMEOUT_MS || 15_000),
     maxAttempts: Number(process.env.AI_CAUSAL_MAX_ATTEMPTS || 2)
   });
+}
+
+function emptyCall(maxAttempts: number, modelName: string | null): ProviderCallMeta {
+  return {
+    attempts: 0,
+    elapsedMs: 0,
+    maxAttempts,
+    inputTokens: 0,
+    outputTokens: 0,
+    requestId: null,
+    modelName,
+  };
 }
