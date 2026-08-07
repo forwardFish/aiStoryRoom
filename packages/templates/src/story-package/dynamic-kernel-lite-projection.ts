@@ -8,47 +8,73 @@ import type {
   PartOneContinuationDecisionTemplate,
   PartOneRuntimeAsset,
   PartOneRuntimePackage,
+  PartOneSectionContract,
   PartOneState,
 } from "./part-one-runtime-types.js";
 
 /**
- * The provisional pass exists only to obtain the authoritative post-action
- * state. It must not fail because a later unrelated Kernel is malformed or a
- * legacy section has no authored Floor entry. Restrict the cloned section to
- * the exact current Primary and provide one deterministic Floor exit. The
- * final pass receives the real next WorkingSet and remains the committed
- * decision surface.
+ * The provisional/scaffold pass exists only to obtain an authoritative
+ * post-action state. It must not fail because a later unrelated Kernel is
+ * malformed or because a legacy section has no authored next Floor entry.
+ * Primary projections are isolated to the exact current Kernel; continuation
+ * projections retain their current entry and receive one deterministic
+ * successor so the frozen engine can finish its internal scaffold Settlement.
  */
 export function forcePackageForProvisionalSettlement(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
   workingSet: DynamicPartOneRuntimeWorkingSet,
 ): PartOneRuntimePackage {
-  const projected = forcePackageForDynamicWorkingSets(
+  let projected = forcePackageForDynamicWorkingSets(
     pkg,
     [{ state, workingSet }],
   );
-  if (
-    workingSet.decisionPoint.decisionPointId
-    !== workingSet.decisionPoint.decisionKernelId
-  ) {
-    return projected;
-  }
-
   const section = projected.sections.find(
     (item) => item.sectionId === state.sectionId,
   );
   if (!section) {
     throw new Error(`PART_ONE_RUNTIME_SECTION_MISSING:${state.sectionId}`);
   }
-  const floor = selectOrCreateFloor(projected, section.floorObligationIds[0]);
-  const index = Math.max(0, Number(state.sectionTurnNumber || 0));
-  const continuation = continuationTemplate(
+  const continuation = isContinuation(workingSet);
+  const currentIndex = continuation
+    ? Math.max(
+      0,
+      Number(state.sectionTurnNumber || 0)
+        - section.activeDecisionKernelIds.length,
+    )
+    : Math.max(0, Number(state.sectionTurnNumber || 0));
+  const successorIndex = continuation ? currentIndex + 1 : currentIndex;
+  const floorId = workingSet.nextDecisionPressure?.sourceFloorAssetId
+    || section.floorObligationIds[0];
+  const floor = selectOrCreateFloor(projected, section, floorId);
+  const successor = continuationTemplate(
     state.sectionId,
     floor.assetId,
-    index,
+    successorIndex,
     workingSet,
   );
+  projected = upsertContinuation(
+    projected,
+    section,
+    floor,
+    successorIndex,
+    successor,
+    !continuation,
+    workingSet.decisionPoint.decisionKernelId,
+  );
+  return projected;
+}
+
+function upsertContinuation(
+  pkg: PartOneRuntimePackage,
+  section: PartOneSectionContract,
+  floor: PartOneRuntimeAsset,
+  index: number,
+  continuation: PartOneContinuationDecisionTemplate,
+  restrictPrimary: boolean,
+  currentKernelId: string,
+) {
+  const projected = structuredClone(pkg);
   const existing = Array.isArray(floor.payload.continuationDecisions)
     ? structuredClone(floor.payload.continuationDecisions)
     : [];
@@ -59,22 +85,22 @@ export function forcePackageForProvisionalSettlement(
       continuationDecisionId: fillIndex === index
         ? continuation.continuationDecisionId
         : `CONT-${stableSha256({
-          sectionId: state.sectionId,
+          sectionId: section.sectionId,
           floorId: floor.assetId,
           index: fillIndex,
-          kernelId: workingSet.decisionPoint.decisionKernelId,
+          kernelId: currentKernelId,
         }).slice(0, 20)}`,
     });
   }
   existing[index] = continuation;
 
   projected.sections = projected.sections.map((candidate) => (
-    candidate.sectionId === state.sectionId
+    candidate.sectionId === section.sectionId
       ? {
         ...candidate,
-        activeDecisionKernelIds: [
-          workingSet.decisionPoint.decisionKernelId,
-        ],
+        ...(restrictPrimary
+          ? { activeDecisionKernelIds: [currentKernelId] }
+          : {}),
         floorObligationIds: [floor.assetId],
       }
       : candidate
@@ -149,26 +175,25 @@ function toTemplate(
 
 function selectOrCreateFloor(
   pkg: PartOneRuntimePackage,
+  section: PartOneSectionContract,
   floorId: string | undefined,
 ): PartOneRuntimeAsset {
   if (floorId) {
     const existing = pkg.assets.find((asset) => asset.assetId === floorId);
     if (existing) return existing;
   }
-  const sectionId = pkg.sections.find((section) => (
-    section.floorObligationIds.includes(String(floorId || ""))
-  ))?.sectionId || "UNSCOPED";
-  const id = floorId || `FLOOR-${stableSha256(sectionId).slice(0, 20)}`;
+  const id = floorId
+    || `FLOOR-${stableSha256(section.sectionId).slice(0, 20)}`;
   return {
     schemaVersion: "runtime-story-asset-v1",
     assetId: id,
     assetType: "SECTION_FLOOR_OBLIGATION",
-    partIds: [pkg.partId],
-    sectionIds: sectionId === "UNSCOPED" ? [] : [sectionId],
-    requirementIds: [],
-    decisionKernelIds: [],
-    causalArcIds: [],
-    actorRefs: [],
+    partIds: [section.partId],
+    sectionIds: [section.sectionId],
+    requirementIds: [...section.requiredRequirementIds],
+    decisionKernelIds: [...section.activeDecisionKernelIds],
+    causalArcIds: [...section.activeCausalArcIds],
+    actorRefs: [...section.foregroundActorRefs],
     stateDependencies: [],
     visibilityRules: [],
     sourceClaimIds: [],
@@ -176,4 +201,9 @@ function selectOrCreateFloor(
     retrievalTags: ["SECTION_FLOOR_OBLIGATION"],
     payload: {},
   };
+}
+
+function isContinuation(workingSet: DynamicPartOneRuntimeWorkingSet) {
+  return workingSet.decisionPoint.decisionPointId
+    !== workingSet.decisionPoint.decisionKernelId;
 }
