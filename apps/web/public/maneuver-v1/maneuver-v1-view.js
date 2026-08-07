@@ -1,3 +1,6 @@
+import { b0CanEdit } from "../b0-window/b0-window-state.js";
+import { renderB0WindowStatusV1 } from "../b0-window/b0-window-view.js";
+
 const LABELS = Object.freeze({
   zh: {
     board: "谋划中枢", usage: "本场景谋划", expires: "主线决策锁定后失效",
@@ -28,11 +31,12 @@ export function localeForManeuverV1(documentLike) {
   return String(documentLike?.documentElement?.lang || "").toLowerCase().startsWith("en") ? "en" : "zh";
 }
 
-export function renderManeuverPanelV1(state, locale = "zh") {
+export function renderManeuverPanelV1(state, locale = "zh", b0State = null) {
   const label = LABELS[locale] || LABELS.zh;
   const projection = state.projection;
   if (!projection) return `<div class="maneuver-v1-shell" data-maneuver-v1-root><div class="maneuver-v1-loading">${esc(label.loading)}</div></div>`;
-  const disabled = state.busy || projection.windowState !== "OPEN" || projection.remaining <= 0;
+  const b0Locked = Boolean(b0State?.active && !b0CanEdit(b0State));
+  const disabled = state.busy || b0State?.busy || projection.windowState !== "OPEN" || projection.remaining <= 0 || b0Locked;
   const kindButtons = ["CONTACT", "INVESTIGATE", "LEVERAGE", "CUSTOM"].map((kind) => `
     <button type="button" data-mv1-kind="${kind}" data-testid="maneuver-kind-${kind.toLowerCase()}" class="maneuver-v1-kind ${state.selectedKind === kind ? "active" : ""}" aria-pressed="${state.selectedKind === kind}" ${disabled ? "disabled" : ""}>${esc(label[kind])}</button>`).join("");
   const progress = projection.inProgress.length
@@ -40,6 +44,7 @@ export function renderManeuverPanelV1(state, locale = "zh") {
     : `<p class="maneuver-v1-empty">${esc(label.noProgress)}</p>`;
   return `<div class="maneuver-v1-shell" data-maneuver-v1-root data-testid="maneuver-panel-v1">
     <div class="maneuver-v1-heading"><h2>${esc(label.board)}</h2><span class="maneuver-v1-live" aria-hidden="true"></span></div>
+    ${b0State?.active ? renderB0WindowStatusV1(b0State, locale) : ""}
     <section class="maneuver-v1-usage" data-testid="maneuver-opportunities"><span>${esc(label.usage)}</span><b>${projection.remaining} / ${projection.maxPerTurn}</b><small>${esc(label.expires)}</small></section>
     <div class="maneuver-v1-kind-grid" aria-label="${esc(label.board)}">${kindButtons}</div>
     ${renderWorkbenchV1(state, label, disabled)}
