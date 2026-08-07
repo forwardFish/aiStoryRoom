@@ -62,21 +62,13 @@ export function settleDynamicPartOneAction(
   const opening = Boolean(action.decisionId?.startsWith("opening_"));
   const current = opening
     ? null
-    : options.currentWorkingSetOverride
-      ? validateCurrentWorkingSetOverride(
-        pkg,
-        state,
-        turnNumber,
-        options.currentWorkingSetOverride,
-      )
-      : buildDynamicPartOneRuntimeWorkingSet(
-        pkg,
-        state,
-        Math.max(0, turnNumber - 1),
-        options.currentPin
-          ? { mode: "DYNAMIC_LITE", pin: options.currentPin }
-          : {},
-      );
+    : resolveCurrentWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      options.currentPin ?? null,
+      options.currentWorkingSetOverride ?? null,
+    );
 
   if (!opening && action.affordanceTemplateId) {
     const bound = current!.decisionAffordances.some((candidate) => (
@@ -132,6 +124,18 @@ export function settleDynamicPartOneAction(
   return finalized as DynamicPartOneActionSettlement;
 }
 
+/**
+ * Preserve the historical helper contract used by source-level tests and by
+ * callers that only need to inspect the authored capability surface. An
+ * existing Floor Continuation is already a complete decision surface and must
+ * keep the original immutable package identity. Primary surfaces still need a
+ * projected option order so the legacy facade can inspect the chosen Pair.
+ *
+ * Formal capability Settlement uses packageForDynamicCapabilitySettlement()
+ * below; it may add an internal successor continuation to an isolated clone so
+ * the frozen engine can finish its scaffold pass without mutating this public
+ * projection contract.
+ */
 export function packageForDynamicCapabilityAction(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
@@ -139,21 +143,37 @@ export function packageForDynamicCapabilityAction(
   currentPin: PartOneDecisionPin | null = null,
   currentWorkingSetOverride: DynamicPartOneRuntimeWorkingSet | null = null,
 ): PartOneRuntimePackage {
-  const current = currentWorkingSetOverride
-    ? validateCurrentWorkingSetOverride(
-      pkg,
-      state,
-      turnNumber,
-      currentWorkingSetOverride,
-    )
-    : buildDynamicPartOneRuntimeWorkingSet(
-      pkg,
-      state,
-      Math.max(0, turnNumber - 1),
-      currentPin
-        ? { mode: "DYNAMIC_LITE", pin: currentPin }
-        : {},
-    );
+  const current = resolveCurrentWorkingSet(
+    pkg,
+    state,
+    turnNumber,
+    currentPin,
+    currentWorkingSetOverride,
+  );
+  if (isContinuation(current)) return pkg;
+  return forcePackageForProvisionalSettlement(pkg, state, current);
+}
+
+/**
+ * Internal production scaffold for an observe-only capability turn. Unlike the
+ * public projection helper, this always provides the frozen engine with the
+ * exact committed WorkingSet plus one deterministic continuation successor.
+ * It is an immutable package clone and never changes authoritative state.
+ */
+export function packageForDynamicCapabilitySettlement(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  turnNumber: number,
+  currentPin: PartOneDecisionPin | null = null,
+  currentWorkingSetOverride: DynamicPartOneRuntimeWorkingSet | null = null,
+): PartOneRuntimePackage {
+  const current = resolveCurrentWorkingSet(
+    pkg,
+    state,
+    turnNumber,
+    currentPin,
+    currentWorkingSetOverride,
+  );
   return forcePackageForProvisionalSettlement(pkg, state, current);
 }
 
@@ -219,6 +239,30 @@ export function buildCommittedLegacyFallbackWorkingSet(
       stateRevision: Number(state.turnNumber ?? turnNumber),
     },
   };
+}
+
+function resolveCurrentWorkingSet(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  turnNumber: number,
+  currentPin: PartOneDecisionPin | null,
+  currentWorkingSetOverride: DynamicPartOneRuntimeWorkingSet | null,
+) {
+  return currentWorkingSetOverride
+    ? validateCurrentWorkingSetOverride(
+      pkg,
+      state,
+      turnNumber,
+      currentWorkingSetOverride,
+    )
+    : buildDynamicPartOneRuntimeWorkingSet(
+      pkg,
+      state,
+      Math.max(0, turnNumber - 1),
+      currentPin
+        ? { mode: "DYNAMIC_LITE", pin: currentPin }
+        : {},
+    );
 }
 
 function validateCurrentWorkingSetOverride(
@@ -342,6 +386,11 @@ function reorderOptions(
       options: [selected[0]!, ...remaining, selected[1]!],
     },
   };
+}
+
+function isContinuation(workingSet: DynamicPartOneRuntimeWorkingSet) {
+  return workingSet.decisionPoint.decisionPointId
+    !== workingSet.decisionPoint.decisionKernelId;
 }
 
 function sameStringArray(left: string[], right: string[]) {
