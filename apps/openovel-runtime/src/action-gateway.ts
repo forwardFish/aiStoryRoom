@@ -1,7 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { actionConflict, actionRejected } from "./runtime-errors.js";
 import {
+  clearConfirmedManeuverRuntimeContext,
   stageConfirmedManeuverRuntimeContext,
+  type RuntimeConfirmedManeuverContextV1,
 } from "./confirmed-maneuver-context.js";
 import type { BoundOption, OpenNovelOption } from "./types.js";
 
@@ -60,11 +62,6 @@ export class DefaultActionGateway implements ActionGatewayModule {
       if (decorated.context.preparedAtTurnNumber !== input.currentStateRevision) {
         throw actionConflict("SERVER_CONTEXT_STALE");
       }
-      stageConfirmedManeuverRuntimeContext({
-        runId: input.runId,
-        stateRevision: input.currentStateRevision,
-        context: decorated.context,
-      });
     }
     if (
       input.expectedStateRevision !== undefined
@@ -72,10 +69,20 @@ export class DefaultActionGateway implements ActionGatewayModule {
     ) {
       throw actionConflict("STATE_REVISION_CONFLICT");
     }
+
+    if (decorated) {
+      stageConfirmedManeuverRuntimeContext({
+        runId: input.runId,
+        stateRevision: input.currentStateRevision,
+        context: decorated.context,
+      });
+    } else {
+      clearConfirmedManeuverRuntimeContext(input.runId, input.currentStateRevision);
+    }
     return {
       runId: input.runId,
-      // The authoritative context is staged separately. Every downstream
-      // action, settlement and audit surface receives the player's real text.
+      // Transport metadata never reaches action matching, settlement, history,
+      // chapter text or the public result. Only ContextCompiler receives it.
       action: playerAction,
       stateRevision: input.currentStateRevision,
     };
@@ -114,54 +121,70 @@ function parseConfirmedManeuverAction(raw: string) {
   } catch {
     return null;
   }
-  const source = record(payload);
+  const context = normalizeContext(payload);
+  return context ? { playerAction, signature, payloadJson, context } : null;
+}
+
+function normalizeContext(value: unknown): RuntimeConfirmedManeuverContextV1 | null {
+  const source = record(value);
   if (source.schemaVersion !== "openovel_confirmed_maneuver_context_v1") return null;
-  if (!Array.isArray(source.sourceResultIds) || source.sourceResultIds.length < 1) return null;
-  if (!source.sourceResultIds.every((item: unknown) => typeof item === "string" && item.trim())) return null;
-  if (!Array.isArray(source.summaries) || !Array.isArray(source.visibleFacts)) return null;
-  if (!Array.isArray(source.consumedLeverageKeys)) return null;
+  const instruction = String(source.instruction || "").trim();
   const preparedAtTurnNumber = Number(source.preparedAtTurnNumber);
-  if (!Number.isInteger(preparedAtTurnNumber) || preparedAtTurnNumber < 0) return null;
-  if (!String(source.instruction || "").trim()) return null;
-  const summaries = source.summaries.map((item: unknown) => record(item));
-  if (!summaries.every((item) => (
-    String(item.resultId || "").trim()
-    && String(item.decisionForm || "").trim()
-    && String(item.title || "").trim()
-    && String(item.content || "").trim()
-    && String(item.sceneKey || "").trim()
-    && Number.isInteger(Number(item.turnNumber))
-  ))) return null;
-  const visibleFacts = source.visibleFacts.map((item: unknown) => record(item));
-  if (!visibleFacts.every((item) => (
-    String(item.factKey || "").trim()
-    && String(item.content || "").trim()
-    && String(item.sourceResultId || "").trim()
-  ))) return null;
+  const sourceResultIds = stringArray(source.sourceResultIds, false);
+  const consumedLeverageKeys = stringArray(source.consumedLeverageKeys, true);
+  if (!instruction || !Number.isInteger(preparedAtTurnNumber) || preparedAtTurnNumber < 0) return null;
+  if (!sourceResultIds || !consumedLeverageKeys) return null;
+
+  const summaries = Array.isArray(source.summaries)
+    ? source.summaries.map((item) => {
+        const summary = record(item);
+        const decisionForm = String(summary.decisionForm || "");
+        if (
+          !String(summary.resultId || "").trim()
+          || !["CONVERSATION", "INVESTIGATION", "LEVERAGE", "CUSTOM_PLAN"].includes(decisionForm)
+          || !String(summary.title || "").trim()
+          || !String(summary.content || "").trim()
+          || !String(summary.sceneKey || "").trim()
+          || !Number.isInteger(Number(summary.turnNumber))
+          || Number(summary.turnNumber) < 0
+        ) return null;
+        return {
+          resultId: String(summary.resultId),
+          decisionForm: decisionForm as RuntimeConfirmedManeuverContextV1["summaries"][number]["decisionForm"],
+          title: String(summary.title),
+          content: String(summary.content),
+          sceneKey: String(summary.sceneKey),
+          turnNumber: Number(summary.turnNumber),
+        };
+      })
+    : [];
+  if (!summaries.length || summaries.some((item) => !item)) return null;
+
+  const visibleFacts = Array.isArray(source.visibleFacts)
+    ? source.visibleFacts.map((item) => {
+        const fact = record(item);
+        if (
+          !String(fact.factKey || "").trim()
+          || !String(fact.content || "").trim()
+          || !String(fact.sourceResultId || "").trim()
+        ) return null;
+        return {
+          factKey: String(fact.factKey),
+          content: String(fact.content),
+          sourceResultId: String(fact.sourceResultId),
+        };
+      })
+    : [];
+  if (visibleFacts.some((item) => !item)) return null;
+
   return {
-    playerAction,
-    signature,
-    payloadJson,
-    context: {
-      schemaVersion: "openovel_confirmed_maneuver_context_v1" as const,
-      instruction: String(source.instruction),
-      preparedAtTurnNumber,
-      sourceResultIds: source.sourceResultIds.map(String),
-      summaries: summaries.map((item) => ({
-        resultId: String(item.resultId),
-        decisionForm: String(item.decisionForm),
-        title: String(item.title),
-        content: String(item.content),
-        sceneKey: String(item.sceneKey),
-        turnNumber: Number(item.turnNumber),
-      })),
-      visibleFacts: visibleFacts.map((item) => ({
-        factKey: String(item.factKey),
-        content: String(item.content),
-        sourceResultId: String(item.sourceResultId),
-      })),
-      consumedLeverageKeys: source.consumedLeverageKeys.map(String),
-    },
+    schemaVersion: "openovel_confirmed_maneuver_context_v1",
+    instruction,
+    preparedAtTurnNumber,
+    sourceResultIds,
+    summaries: summaries as RuntimeConfirmedManeuverContextV1["summaries"],
+    visibleFacts: visibleFacts as RuntimeConfirmedManeuverContextV1["visibleFacts"],
+    consumedLeverageKeys,
   };
 }
 
@@ -181,6 +204,13 @@ function maneuverContextSecret() {
     return "openovel-confirmed-maneuver-development-secret-v1";
   }
   throw new Error("OPENOVEL_INTERNAL_TOKEN_REQUIRED_FOR_MANEUVER_CONTEXT");
+}
+
+function stringArray(value: unknown, allowEmpty: boolean) {
+  if (!Array.isArray(value)) return null;
+  const result = value.map((item) => String(item || "").trim());
+  if ((!allowEmpty && !result.length) || result.some((item) => !item)) return null;
+  return result;
 }
 
 function record(value: unknown): Record<string, any> {
