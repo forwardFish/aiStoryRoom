@@ -23,24 +23,21 @@ if start < 0:
 end = text.find("\nfunction ", start + 1)
 if end < 0:
     raise SystemExit("buildNextStoryBeat end missing")
-segment = text[start:end]
-segment = segment.replace(
+segment = text[start:end].replace(
     "input.decisionKernelId",
     "narrativeKernelId",
 )
-entry = ''')}): PartOneNarrativePlan["nextStoryBeat"] {
-  if (!narrativeKernelId) {
+guard = '''  if (!narrativeKernelId) {
     throw new Error("PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING");
   }'''
-replacement = ''')}): PartOneNarrativePlan["nextStoryBeat"] {
-  const narrativeKernelId = input.decisionKernelId
+replacement = '''  const narrativeKernelId = input.decisionKernelId
     || input.nextDecisionPoint.decisionKernelId;
   if (!narrativeKernelId) {
     throw new Error("PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING");
   }'''
-if entry not in segment:
-    raise SystemExit("buildNextStoryBeat entry replacement missing")
-segment = segment.replace(entry, replacement, 1)
+if guard not in segment:
+    raise SystemExit("buildNextStoryBeat guard replacement missing")
+segment = segment.replace(guard, replacement, 1)
 text = text[:start] + segment + text[end:]
 engine.write_text(text, encoding="utf-8")
 
