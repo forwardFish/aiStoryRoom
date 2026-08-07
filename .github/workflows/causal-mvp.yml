@@ -50,5 +50,13 @@ jobs:
       - run: pnpm --filter @apps/api typecheck
       - run: pnpm --filter @apps/web typecheck
       - run: pnpm --filter @apps/web test:b0-window
+      - name: Use Node 24 for the repository's browser regression mode
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - run: pnpm --filter @apps/web test
+      - name: Restore Node 22 for the existing aggregate gate
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - run: pnpm test:causal
