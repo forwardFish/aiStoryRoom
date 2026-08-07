@@ -1,3 +1,8 @@
+.maneuver-v1-shell:has(> .b0-window-status) > .maneuver-v1-usage,
+.maneuver-v1-shell:has(> .b0-window-status) > .maneuver-v1-progress {
+  display: none;
+}
+
 .b0-window-status {
   margin: 10px 0 14px;
   padding: 13px;
