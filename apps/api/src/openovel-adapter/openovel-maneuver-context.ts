@@ -14,6 +14,9 @@ import {
 } from "./openovel-maneuver";
 import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
 
+export const OPENOVEL_MANEUVER_RESULT_EVENT_TYPE = "openovel_maneuver_result";
+export const OPENOVEL_MANEUVER_CANON_CONSUMED_EVENT_TYPE = "openovel_maneuver_context_consumed";
+
 export type OpenNovelManeuverKnowledgeProjection = {
   visibleFacts: Array<{ factKey: string; content: string }>;
   evidenceHoldings: VisibleAssetV2[];
@@ -23,21 +26,31 @@ export type OpenNovelManeuverKnowledgeProjection = {
 export function hydrateOpenNovelManeuverStateFromEvents(input: {
   stateJson: unknown;
   eventPayloads: unknown[];
+  consumptionPayloads?: unknown[];
   turnNumber: number;
   maneuverPackage: OpenNovelManeuverPackage;
 }) {
   const root = record(input.stateJson);
   const prior = record(root.openovelManeuver);
   const priorResults = array(prior.results);
+  const priorConsumed = unique(array(prior.canonConsumedResultIds).map(String).filter(Boolean));
+  const consumptionPayloads = array(input.consumptionPayloads);
   const rawResults = uniqueById([
     ...priorResults,
     ...input.eventPayloads.map(extractEventResult).filter(Boolean),
   ]);
+  const consumedFromEvents = unique(
+    consumptionPayloads.flatMap(extractConsumedResultIds),
+  );
   const candidateStateJson = {
     ...root,
     openovelManeuver: {
       ...prior,
       results: rawResults,
+      canonConsumedResultIds: unique([
+        ...priorConsumed,
+        ...consumedFromEvents,
+      ]),
     },
   };
   const state = ensureOpenNovelManeuverState(
@@ -49,8 +62,22 @@ export function hydrateOpenNovelManeuverStateFromEvents(input: {
   // Recompute the complete record even when only one key is missing or corrupt;
   // otherwise a partially damaged legacy snapshot can retain phantom values.
   state.metrics = recomputeMetrics(state.results);
+  const consumedTurns = consumptionPayloads
+    .map((payload) => normalizeNullableInteger(record(payload).turnNumber))
+    .filter((value): value is number => value !== null);
+  if (consumedTurns.length) {
+    state.lastCanonBridgeTurnNumber = Math.max(
+      state.lastCanonBridgeTurnNumber ?? 0,
+      ...consumedTurns,
+    );
+  }
   const recoveredEventCount = Math.max(0, rawResults.length - priorResults.length);
+  const priorConsumedSet = new Set(priorConsumed);
+  const recoveredConsumptionCount = state.canonConsumedResultIds
+    .filter((id) => !priorConsumedSet.has(id))
+    .length;
   const needsPersistence = recoveredEventCount > 0
+    || recoveredConsumptionCount > 0
     || prior.schemaVersion !== state.schemaVersion
     || !Array.isArray(prior.results)
     || !Array.isArray(prior.usedTypesToday)
@@ -72,6 +99,7 @@ export function hydrateOpenNovelManeuverStateFromEvents(input: {
     state,
     stateJson: withOpenNovelManeuverState(root, state),
     recoveredEventCount,
+    recoveredConsumptionCount,
     needsPersistence,
   };
 }
@@ -204,6 +232,11 @@ function extractEventResult(value: unknown) {
   const nested = record(source.result);
   const candidate = String(source.id || "").trim() ? source : nested;
   return String(candidate.id || "").trim() ? candidate : null;
+}
+
+function extractConsumedResultIds(value: unknown) {
+  const source = record(value);
+  return unique(array(source.sourceResultIds).map(String).filter(Boolean));
 }
 
 function uniqueById(items: unknown[]) {

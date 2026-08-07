@@ -3,7 +3,11 @@ import type { AuthenticatedUser } from "../auth/current-user.decorator";
 import { CreditConsumptionService } from "../credits/credit-consumption.service";
 import { PrismaService } from "../prisma.service";
 import { StoryService } from "../story.service";
-import { hydrateOpenNovelManeuverStateFromEvents } from "./openovel-maneuver-context";
+import {
+  hydrateOpenNovelManeuverStateFromEvents,
+  OPENOVEL_MANEUVER_CANON_CONSUMED_EVENT_TYPE,
+  OPENOVEL_MANEUVER_RESULT_EVENT_TYPE,
+} from "./openovel-maneuver-context";
 import { ensureOpenNovelManeuverState } from "./openovel-maneuver";
 import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
 import { openNovelManeuverPackages } from "./openovel-maneuver-packages";
@@ -98,14 +102,27 @@ export class OpenNovelManeuverAwareAdapterService extends OpenNovelAdapterServic
     const [runtimeRun, events] = await Promise.all([
       this.recoveryRuntime.getRun(runId),
       this.recoveryPrisma.storyEvent.findMany({
-        where: { runId, type: "openovel_maneuver_result" },
+        where: {
+          runId,
+          type: {
+            in: [
+              OPENOVEL_MANEUVER_RESULT_EVENT_TYPE,
+              OPENOVEL_MANEUVER_CANON_CONSUMED_EVENT_TYPE,
+            ],
+          },
+        },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        select: { payloadJson: true },
+        select: { type: true, payloadJson: true },
       }),
     ]);
     const recovered = hydrateOpenNovelManeuverStateFromEvents({
       stateJson: run.stateJson,
-      eventPayloads: events.map((event) => event.payloadJson),
+      eventPayloads: events
+        .filter((event) => event.type === OPENOVEL_MANEUVER_RESULT_EVENT_TYPE)
+        .map((event) => event.payloadJson),
+      consumptionPayloads: events
+        .filter((event) => event.type === OPENOVEL_MANEUVER_CANON_CONSUMED_EVENT_TYPE)
+        .map((event) => event.payloadJson),
       turnNumber: runtimeRun.turnNumber,
       maneuverPackage,
     });

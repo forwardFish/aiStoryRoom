@@ -23,7 +23,7 @@ try {
   const leverageRace = await verifyLeverageRace();
   const canonBridge = await verifyCanonBridge();
   const report = {
-    schemaVersion: "openovel_maneuver_r2_4_prisma_extended_v1",
+    schemaVersion: "openovel_maneuver_r2_4_prisma_extended_v2",
     verdict: "PASS",
     commitSha: process.env.OPENOVEL_R2_4_COMMIT_SHA || null,
     apiBase: API_BASE,
@@ -39,7 +39,7 @@ try {
 } catch (error) {
   await mkdir(EVIDENCE_ROOT, { recursive: true }).catch(() => undefined);
   await writeFile(path.join(EVIDENCE_ROOT, "report.json"), `${JSON.stringify({
-    schemaVersion: "openovel_maneuver_r2_4_prisma_extended_v1",
+    schemaVersion: "openovel_maneuver_r2_4_prisma_extended_v2",
     verdict: "FAIL",
     error: serializeError(error),
     startedAt,
@@ -184,6 +184,12 @@ async function verifyCanonBridge() {
   const maneuverState = record(record(stored.stateJson).openovelManeuver);
   assert.ok(maneuverState.canonConsumedResultIds.includes(resultId));
   assert.equal(maneuverState.lastCanonBridgeTurnNumber, 1);
+  const acknowledgementEvents = await prisma.storyEvent.findMany({
+    where: { runId, type: "openovel_maneuver_context_consumed" },
+    orderBy: { createdAt: "asc" },
+  });
+  assert.equal(acknowledgementEvents.length, 1);
+  assert.deepEqual(record(acknowledgementEvents[0].payloadJson).sourceResultIds, [resultId]);
   const latestAction = await prisma.playerAction.findFirstOrThrow({
     where: { runId, status: "resolved" },
     orderBy: { createdAt: "desc" },
@@ -194,13 +200,32 @@ async function verifyCanonBridge() {
     immediateJson: latestAction.immediateJson,
   });
   assert.equal(serializedAction.includes("OPENOVEL_SERVER_CONFIRMED_MANEUVERS_V1"), false);
+
+  const versionBeforeRecovery = stored.version;
+  const totalEventCount = await prisma.storyEvent.count({ where: { runId } });
+  const damaged = structuredClone(record(stored.stateJson));
+  delete damaged.openovelManeuver;
+  await prisma.storyRun.update({
+    where: { id: runId },
+    data: { stateJson: damaged },
+  });
+  await gameProjection(runId);
+  const recoveredRun = await prisma.storyRun.findUniqueOrThrow({ where: { id: runId } });
+  const recoveredState = record(record(recoveredRun.stateJson).openovelManeuver);
+  assert.equal(recoveredRun.version, versionBeforeRecovery);
+  assert.equal(await prisma.storyEvent.count({ where: { runId } }), totalEventCount);
+  assert.ok(recoveredState.canonConsumedResultIds.includes(resultId));
+  assert.equal(recoveredState.lastCanonBridgeTurnNumber, 1);
+
   return {
     runId,
     resultId,
     worldSequenceBefore: beforeMain.worldSequence,
     worldSequenceAfter: main.worldSequence,
-    canonConsumedResultIds: maneuverState.canonConsumedResultIds,
-    lastCanonBridgeTurnNumber: maneuverState.lastCanonBridgeTurnNumber,
+    canonConsumedResultIds: recoveredState.canonConsumedResultIds,
+    lastCanonBridgeTurnNumber: recoveredState.lastCanonBridgeTurnNumber,
+    canonAcknowledgementEventId: acknowledgementEvents[0].id,
+    stateRecoveryVersionUnchanged: recoveredRun.version === versionBeforeRecovery,
     playerActionContainsServerEnvelope: false,
   };
 }
