@@ -1,0 +1,90 @@
+name: Dynamic Kernel Architecture Debug
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/dynamic-kernel-architecture-debug.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ai-story/templates build
+      - name: Debug opening selection trace
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('apps/openovel-runtime/tests/openovel-first.spec.ts')
+          s=p.read_text()
+          needle='''    assert.deepEqual(\n      result.options.map((option) => option.id),'''
+          insert='''    const debugEvent = JSON.parse((await readFile(\n      workspace.paths(runId).partOneEvents, "utf8",\n    )).trim().split(/\\r?\\n/u).at(-1)!);\n    console.error("DEBUG_OPENING_SELECTION", JSON.stringify(debugEvent.nextKernelSelection, null, 2));\n    assert.deepEqual(\n      result.options.map((option) => option.id),'''
+          if needle not in s: raise SystemExit('OPENING_PATCH_TARGET_MISSING')
+          p.write_text(s.replace(needle,insert,1))
+          PY
+          cd apps/openovel-runtime
+          node --import tsx --test --test-name-pattern="authored decision state machine keeps curated choices" tests/openovel-first.spec.ts
+        continue-on-error: true
+      - name: Debug unknown continuation state
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/acceptance/verify-part-one-options.mjs')
+          s=p.read_text()
+          needle='''      assert(continuation, `CONTINUATION_UNKNOWN:${branchId}:T${pad(turnNumber)}:${pointId}`);'''
+          insert='''      if (!continuation) {\n        console.error("DEBUG_UNKNOWN_CONTINUATION", JSON.stringify({ branchId, turnNumber, state, workingSet }, null, 2));\n      }\n      assert(continuation, `CONTINUATION_UNKNOWN:${branchId}:T${pad(turnNumber)}:${pointId}`);'''
+          if needle not in s: raise SystemExit('OPTIONS_PATCH_TARGET_MISSING')
+          p.write_text(s.replace(needle,insert,1))
+          PY
+          node scripts/acceptance/verify-part-one-options.mjs
+        continue-on-error: true
+      - name: Debug context compiler failure
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('apps/api/src/solo-story-engine/__tests__/part-one-runtime-integration.spec.ts')
+          s=p.read_text()
+          needle='''  assert.equal(compiled.ok, true);'''
+          insert='''  if (!compiled.ok) console.error("DEBUG_CONTEXT_COMPILE", JSON.stringify(compiled, null, 2));\n  assert.equal(compiled.ok, true);'''
+          if needle not in s: raise SystemExit('API_PATCH_TARGET_MISSING')
+          p.write_text(s.replace(needle,insert,1))
+          PY
+          cd apps/api
+          node --import tsx --test --test-name-pattern="Narrator budget grants" src/solo-story-engine/__tests__/part-one-runtime-integration.spec.ts
+        continue-on-error: true
+      - name: Debug fallback transition mismatch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('apps/openovel-runtime/src/scene-expression.ts')
+          s=p.read_text()
+          needle='''    throw new Error("SCENE_DRAFT_UNAUTHORIZED_TRANSITION");'''
+          insert='''    throw new Error("SCENE_DRAFT_UNAUTHORIZED_TRANSITION:" + JSON.stringify({ transition: manifest.transition, slots: draft.slots }));'''
+          if needle not in s: raise SystemExit('SCENE_PATCH_TARGET_MISSING')
+          p.write_text(s.replace(needle,insert,1))
+          PY
+          cd apps/openovel-runtime
+          node --import tsx --test tests/p07-authored-five-turn.spec.ts
+        continue-on-error: true
