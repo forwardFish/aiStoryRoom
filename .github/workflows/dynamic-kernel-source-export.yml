@@ -31,20 +31,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Create source archive
+      - name: Create focused source archive
         shell: bash
         run: |
           set -euo pipefail
           archive="${RUNNER_TEMP}/dynamic-kernel-source-${GITHUB_SHA}.tar.gz"
-          tar \
-            --exclude=.git \
-            --exclude=node_modules \
-            --exclude=.pnpm-store \
-            --exclude=dist \
-            --exclude=coverage \
-            --exclude=.next \
-            --exclude=.turbo \
-            -czf "${archive}" .
+          paths=(
+            packages/templates
+            packages/shared
+            apps/openovel-runtime
+            apps/api
+            scripts
+            prisma
+            package.json
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
+          )
+          for optional in \
+            packages/openovel-runtime \
+            tsconfig.json \
+            tsconfig.base.json \
+            .npmrc \
+            AGENTS.md \
+            CLAUDE.md \
+            README.md; do
+            if [ -e "${optional}" ]; then paths+=("${optional}"); fi
+          done
+          git archive --format=tar.gz --output="${archive}" HEAD -- "${paths[@]}"
           echo "SOURCE_ARCHIVE=${archive}" >> "${GITHUB_ENV}"
       - name: Upload source archive
         uses: actions/upload-artifact@v4
