@@ -26,7 +26,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context="dynamic-kernel-lite/architecture-debug" \
-            -f description="Final architecture diagnostics running" \
+            -f description="Structural field diagnostics running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
       - uses: actions/checkout@v4
         with:
@@ -61,15 +61,15 @@ jobs:
           from pathlib import Path
           p=Path('apps/openovel-runtime/tests/openovel-first.spec.ts')
           s=p.read_text()
-          needle='''    assert.match(jointSignatureContext, /复核由谁主持/);'''
-          insert='''    console.error("DEBUG_RESPONSIBILITY_NEXT_PLAN", JSON.stringify({\n      nextDecisionPoint: jointSignaturePrepared.settlement.event.nextDecisionPoint,\n      nextKernelSelection: jointSignaturePrepared.settlement.event.nextKernelSelection,\n      proposedState: jointSignaturePrepared.settlement.proposedState,\n    }, null, 2));\n    assert.match(jointSignatureContext, /复核由谁主持/);'''
+          needle='''    const jointSignaturePrepared = await sangtianDecisionAdapter.prepare(workspace, {'''
+          insert='''    const debugJointSignaturePrepared = await prepareSangtianDecision(workspace, {\n      runId,\n      turnNumber: 3,\n      action: jointSignature.label,\n      selectedOption: jointSignature,\n    });\n    console.error("DEBUG_RESPONSIBILITY_NEXT_PLAN", JSON.stringify({\n      nextDecisionPoint: debugJointSignaturePrepared?.settlement.event.nextDecisionPoint,\n      nextKernelSelection: debugJointSignaturePrepared?.settlement.event.nextKernelSelection,\n      proposedState: debugJointSignaturePrepared?.settlement.proposedState,\n    }, null, 2));\n    const jointSignaturePrepared = await sangtianDecisionAdapter.prepare(workspace, {'''
           if needle not in s: raise SystemExit('OPENOVEL_DEBUG_TARGET_MISSING')
           p.write_text(s.replace(needle, insert, 1))
           PY
           cd apps/openovel-runtime
           node --import tsx --test --test-name-pattern="authored decision state machine keeps curated choices" tests/openovel-first.spec.ts
         continue-on-error: true
-      - name: Debug Narrator P0 budget composition
+      - name: Debug Settlement projection field budget
         shell: bash
         run: |
           python - <<'PY'
@@ -77,7 +77,7 @@ jobs:
           p=Path('apps/api/src/solo-story-engine/context-compiler.ts')
           s=p.read_text()
           needle='''    if (item.mustPreserve) {\n      dropped.push({ itemId: item.itemId, reason: "P0_BUDGET_EXHAUSTED" });'''
-          insert='''    if (item.mustPreserve) {\n      console.error("DEBUG_P0_BUDGET", JSON.stringify({\n        maxTokenEstimate: input.maxTokenEstimate,\n        usedBeforeFailure: used,\n        failingItem: { itemId: item.itemId, section: item.section, tokenEstimate: item.tokenEstimate },\n        orderedItems: ordered.map((candidate) => ({\n          itemId: candidate.itemId,\n          section: candidate.section,\n          priority: candidate.priority,\n          mustPreserve: candidate.mustPreserve,\n          tokenEstimate: candidate.tokenEstimate,\n        })),\n      }, null, 2));\n      dropped.push({ itemId: item.itemId, reason: "P0_BUDGET_EXHAUSTED" });'''
+          insert='''    if (item.mustPreserve) {\n      console.error("DEBUG_P0_BUDGET", JSON.stringify({\n        maxTokenEstimate: input.maxTokenEstimate,\n        usedBeforeFailure: used,\n        failingItem: { itemId: item.itemId, section: item.section, tokenEstimate: item.tokenEstimate },\n        settlementFieldTokens: item.section === "PART_ONE_SETTLEMENT"\n          ? Object.entries(item.content as Record<string, unknown>).map(([key, value]) => ({\n            key,\n            tokenEstimate: estimateJsonTokens(value),\n          })).sort((left, right) => right.tokenEstimate - left.tokenEstimate)\n          : [],\n      }, null, 2));\n      dropped.push({ itemId: item.itemId, reason: "P0_BUDGET_EXHAUSTED" });'''
           if needle not in s: raise SystemExit('CONTEXT_DEBUG_TARGET_MISSING')
           p.write_text(s.replace(needle, insert, 1))
           PY
@@ -94,5 +94,5 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
             -f context="dynamic-kernel-lite/architecture-debug" \
-            -f description="Final architecture diagnostics completed" \
+            -f description="Structural field diagnostics completed" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
