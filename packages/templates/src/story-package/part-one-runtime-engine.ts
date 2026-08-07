@@ -36,6 +36,34 @@ export type PartOneIncomingAction = {
   targetRef?: string | null;
 };
 
+/**
+ * Authoritative result of applying the already-committed decision surface for
+ * the current action. This phase owns causal mutation only. It deliberately
+ * does not select, synthesize or validate the next turn's decision surface.
+ */
+export type PartOneCurrentActionSettlement = {
+  beforeState: PartOneState;
+  proposedState: PartOneState;
+  settledAction: PartOneIncomingAction;
+  currentWorkingSet: PartOneRuntimeWorkingSet;
+  appliedAffordance: PartOneRuntimeAffordance | null;
+  decisionKernelId: string | null;
+  affordanceTemplateId: string | null;
+  statePatch: Record<string, unknown>;
+  durableEffects: DurablePredicate[];
+  targetRef: string;
+  eventId: string;
+  changedStatePaths: string[];
+  createdPendingConsequences: PartOnePendingConsequenceState[];
+  dueConsequences: PartOnePendingConsequenceState[];
+  sectionBefore: string;
+  sectionAfter: string;
+  sceneBefore: PartOneSceneState;
+  sceneAfter: PartOneSceneState;
+  sectionTransitioned: boolean;
+  turnNumber: number;
+};
+
 const TARGETS: Record<string, PartOneRuntimeTarget> = {
   "actor.zhejiang_governor": { type: "ROLE", id: "actor.zhejiang_governor", label: "浙江总督" },
   "actor.zhejiang_xunfu": { type: "ROLE", id: "actor.zhejiang_xunfu", label: "浙江巡抚" },
@@ -253,51 +281,152 @@ export function settlePartOneAction(
   action: PartOneIncomingAction,
   turnNumber: number
 ): PartOneActionSettlement {
+  const current = settlePartOneCurrentAction(
+    pkg,
+    currentState,
+    action,
+    turnNumber,
+  );
+  const nextWorkingSet = buildPartOneRuntimeWorkingSet(
+    pkg,
+    current.proposedState,
+    turnNumber,
+  );
+  return completePartOneActionSettlement(pkg, current, nextWorkingSet);
+}
+
+/**
+ * Apply one current action against one already-selected decision surface.
+ *
+ * The optional override is the committed surface recovered by the Dynamic
+ * coordinator. When supplied, no current Kernel, continuation or fallback is
+ * reselected. The returned state is authoritative for the action but is not
+ * yet coupled to any next-turn plan.
+ */
+export function settlePartOneCurrentAction(
+  pkg: PartOneRuntimePackage,
+  currentState: PartOneState,
+  action: PartOneIncomingAction,
+  turnNumber: number,
+  committedDecisionSurface?: PartOneRuntimeWorkingSet,
+): PartOneCurrentActionSettlement {
   const beforeState = clone(currentState);
-  beforeState.durableState = normalizePartOneDurableState(beforeState.durableState, pkg.worldId);
-  beforeState.scene = normalizeSceneState(beforeState.scene, beforeState.sectionId);
+  beforeState.durableState = normalizePartOneDurableState(
+    beforeState.durableState,
+    pkg.worldId,
+  );
+  beforeState.scene = normalizeSceneState(
+    beforeState.scene,
+    beforeState.sectionId,
+  );
   projectDurableStateIntoScene(beforeState.scene, beforeState.durableState);
   const proposedState = clone(beforeState);
   proposedState.turnNumber = turnNumber;
-  proposedState.pendingConsequences = Array.isArray(proposedState.pendingConsequences) ? proposedState.pendingConsequences : [];
+  proposedState.pendingConsequences = Array.isArray(
+    proposedState.pendingConsequences,
+  ) ? proposedState.pendingConsequences : [];
   const dueConsequences = proposedState.pendingConsequences
-    .filter((item) => ["PENDING", "DUE"].includes(item.status) && item.dueTurn <= turnNumber)
+    .filter((item) => (
+      ["PENDING", "DUE"].includes(item.status)
+      && item.dueTurn <= turnNumber
+    ))
     .map((item) => ({ ...item, status: "DUE" as const }));
-  const dueIds = new Set(dueConsequences.map((item) => item.consequenceId));
-  proposedState.pendingConsequences = proposedState.pendingConsequences.map((item) => dueIds.has(item.consequenceId) ? { ...item, status: "DUE" } : item);
+  const dueIds = new Set(
+    dueConsequences.map((item) => item.consequenceId),
+  );
+  proposedState.pendingConsequences = proposedState.pendingConsequences.map(
+    (item) => dueIds.has(item.consequenceId)
+      ? { ...item, status: "DUE" }
+      : item,
+  );
 
   const opening = action.decisionId ? OPENING_PATCHES[action.decisionId] : null;
   const settledAction = opening
     ? { ...action, actionText: opening.canonicalActionText }
     : action;
-  const currentWorkingSet = buildPartOneRuntimeWorkingSet(pkg, currentState, Math.max(0, turnNumber - 1));
-  const appliedAffordance = opening ? null : findAffordance(currentWorkingSet, action);
-  const decisionKernelId = opening?.kernelId || appliedAffordance?.decisionKernelId || null;
+  const currentWorkingSet = committedDecisionSurface
+    ? clone(committedDecisionSurface)
+    : buildPartOneRuntimeWorkingSet(
+      pkg,
+      currentState,
+      Math.max(0, turnNumber - 1),
+    );
+  if (
+    committedDecisionSurface
+    && (
+      currentWorkingSet.packageHash !== pkg.immutableHash
+      || currentWorkingSet.section.sectionId !== currentState.sectionId
+      || currentWorkingSet.turnNumber !== Math.max(0, turnNumber - 1)
+    )
+  ) {
+    throw new Error("PART_ONE_COMMITTED_DECISION_SURFACE_MISMATCH");
+  }
+  const appliedAffordance = opening
+    ? null
+    : findAffordance(currentWorkingSet, action);
+  const decisionKernelId = opening?.kernelId
+    || appliedAffordance?.decisionKernelId
+    || null;
   const affordanceTemplateId = appliedAffordance?.affordanceTemplateId || null;
-  const statePatch = clone(opening?.patch || appliedAffordance?.statePatch || {});
-  const durableEffects = clone(opening?.durableEffects || appliedAffordance?.durableEffects || []);
-  const targetRef = opening?.targetRef || appliedAffordance?.targetRef || action.targetRef || "public_frame";
-  const eventId = eventIdFor({ turnNumber, beforeState, action: settledAction, decisionKernelId, affordanceTemplateId, statePatch, durableEffects });
-  const changedStatePaths = applyStatePatch(proposedState, statePatch, eventId);
-  proposedState.durableState = advancePartOneDurableState(proposedState.durableState, durableEffects);
+  const statePatch = clone(
+    opening?.patch || appliedAffordance?.statePatch || {},
+  );
+  const durableEffects = clone(
+    opening?.durableEffects || appliedAffordance?.durableEffects || [],
+  );
+  const targetRef = opening?.targetRef
+    || appliedAffordance?.targetRef
+    || action.targetRef
+    || "public_frame";
+  const eventId = eventIdFor({
+    turnNumber,
+    beforeState,
+    action: settledAction,
+    decisionKernelId,
+    affordanceTemplateId,
+    statePatch,
+    durableEffects,
+  });
+  const changedStatePaths = applyStatePatch(
+    proposedState,
+    statePatch,
+    eventId,
+  );
+  proposedState.durableState = advancePartOneDurableState(
+    proposedState.durableState,
+    durableEffects,
+  );
   changedStatePaths.push("durableState");
 
   if (decisionKernelId) {
-    proposedState.completedKernelIds = unique([...(proposedState.completedKernelIds || []), decisionKernelId]);
+    proposedState.completedKernelIds = unique([
+      ...(proposedState.completedKernelIds || []),
+      decisionKernelId,
+    ]);
   }
-  const pendingRule = decisionKernelId ? findPendingRule(pkg, decisionKernelId, proposedState.sectionId) : null;
+  const pendingRule = decisionKernelId
+    ? findPendingRule(pkg, decisionKernelId, proposedState.sectionId)
+    : null;
   const createdPendingConsequences: PartOnePendingConsequenceState[] = [];
   if (pendingRule) {
     const consequences = asStringArray(pendingRule.payload.consequences);
     const payoffBeats = Array.isArray(pendingRule.payload.payoffBeats)
       ? pendingRule.payload.payoffBeats
       : [];
-    const consequenceIndex = consequenceIndexFor(settledAction, appliedAffordance, consequences.length);
+    const consequenceIndex = consequenceIndexFor(
+      settledAction,
+      appliedAffordance,
+      consequences.length,
+    );
     const summary = consequences[consequenceIndex]
       || appliedAffordance?.visibleTradeoff
       || "这道命令引起的反制必须在下一回合兑现。";
     const payoffTemplate = payoffBeats[consequenceIndex]
-      || fallbackPayoffBeat(pendingRule.assetId, summary, pendingRule.actorRefs);
+      || fallbackPayoffBeat(
+        pendingRule.assetId,
+        summary,
+        pendingRule.actorRefs,
+      );
     const consequenceId = `PC-P1-${String(turnNumber).padStart(2, "0")}-${digest(`${eventId}:${pendingRule.assetId}`).slice(0, 12)}`;
     const consequence: PartOnePendingConsequenceState = {
       consequenceId,
@@ -307,11 +436,11 @@ export function settlePartOneAction(
       payoffBeat: {
         ...clone(payoffTemplate),
         beatId: `${payoffTemplate.beatId}-${digest(consequenceId).slice(0, 8)}`,
-        consequenceId
+        consequenceId,
       },
       dueTurn: turnNumber + 1,
       priority: "P0",
-      status: "PENDING"
+      status: "PENDING",
     };
     proposedState.pendingConsequences.push(consequence);
     createdPendingConsequences.push(consequence);
@@ -319,104 +448,174 @@ export function settlePartOneAction(
 
   const sectionBefore = beforeState.sectionId;
   const sceneBefore = clone(beforeState.scene);
-  const sectionTransitioned = advanceSectionWhenGatesPass(pkg, proposedState, turnNumber);
+  const sectionTransitioned = advanceSectionWhenGatesPass(
+    pkg,
+    proposedState,
+    turnNumber,
+  );
   const sectionAfter = proposedState.sectionId;
   const sceneAfter = sectionTransitioned
     ? sceneForSection(sectionAfter)
     : clone(sceneBefore);
   projectDurableStateIntoScene(sceneAfter, proposedState.durableState);
-  proposedState.scene = sceneAfter;
+  proposedState.scene = clone(sceneAfter);
   if (sectionBefore !== sectionAfter) changedStatePaths.push("sectionId");
   if (!deepEqual(sceneBefore, sceneAfter)) changedStatePaths.push("scene");
-  proposedState.sectionTurnNumber = sectionTransitioned ? 0 : Number(proposedState.sectionTurnNumber || 0) + 1;
+  proposedState.sectionTurnNumber = sectionTransitioned
+    ? 0
+    : Number(proposedState.sectionTurnNumber || 0) + 1;
   proposedState.lastCommittedEventId = eventId;
-  if (sectionAfter === "SEC-P1-04" && turnNumber >= 20 && sectionExitPassed(pkg, proposedState, sectionAfter)) {
+  if (
+    sectionAfter === "SEC-P1-04"
+    && turnNumber >= 20
+    && sectionExitPassed(pkg, proposedState, sectionAfter)
+  ) {
     proposedState.partCompletionStatus = "HANDOFF_READY";
-    // A completed part must not hand the next part a backlog of already-due
-    // scene pressures. Those pressures remain auditable in the ledger, but
-    // the completed part's durable state has already absorbed them. Preserve
-    // genuinely future consequences so the next part can still pay them off.
-    proposedState.pendingConsequences = proposedState.pendingConsequences.map((item) => (
-      item.status === "DUE" && item.dueTurn <= turnNumber
+    proposedState.pendingConsequences = proposedState.pendingConsequences.map(
+      (item) => item.status === "DUE" && item.dueTurn <= turnNumber
         ? { ...item, status: "TRANSFORMED" as const }
-        : item
-    ));
+        : item,
+    );
   }
-  updateArcStages(pkg, proposedState, sectionBefore, sectionAfter, sectionTransitioned);
-
-  const nextWorkingSet = buildPartOneRuntimeWorkingSet(pkg, proposedState, turnNumber);
-  const authoritativeObservableFacts = buildAuthoritativeObservableFacts(settledAction, statePatch, proposedState);
-  const authoritativeNpcReactions = buildAuthoritativeNpcReactions({
-    eventId,
-    sceneAfter,
-    nextWorkingSet
-  });
-  const authoritativeWorldMoves = buildAuthoritativeWorldMoves({
-    dueConsequences,
-    nextWorkingSet,
+  updateArcStages(
+    pkg,
+    proposedState,
+    sectionBefore,
+    sectionAfter,
     sectionTransitioned,
+  );
+
+  return {
+    beforeState,
+    proposedState,
+    settledAction,
+    currentWorkingSet,
+    appliedAffordance,
+    decisionKernelId,
+    affordanceTemplateId,
+    statePatch,
+    durableEffects,
+    targetRef,
+    eventId,
+    changedStatePaths: unique(changedStatePaths),
+    createdPendingConsequences,
+    dueConsequences,
     sectionBefore,
     sectionAfter,
     sceneBefore,
     sceneAfter,
-    statePatch
+    sectionTransitioned,
+    turnNumber,
+  };
+}
+
+/**
+ * Enrich one already-authoritative current-action result with an independently
+ * planned next decision surface. This phase is pure with respect to the causal
+ * draft, so a failed next-turn plan can be retried or replaced without applying
+ * the player's current action a second time.
+ */
+export function completePartOneActionSettlement(
+  pkg: PartOneRuntimePackage,
+  current: PartOneCurrentActionSettlement,
+  nextWorkingSet: PartOneRuntimeWorkingSet,
+): PartOneActionSettlement {
+  if (
+    nextWorkingSet.packageHash !== pkg.immutableHash
+    || nextWorkingSet.section.sectionId !== current.proposedState.sectionId
+    || nextWorkingSet.turnNumber !== current.turnNumber
+  ) {
+    throw new Error("PART_ONE_NEXT_DECISION_SURFACE_MISMATCH");
+  }
+
+  const proposedState = clone(current.proposedState);
+  const sceneBefore = clone(current.sceneBefore);
+  const sceneAfter = clone(current.sceneAfter);
+  const changedStatePaths = [...current.changedStatePaths];
+  const authoritativeObservableFacts = buildAuthoritativeObservableFacts(
+    current.settledAction,
+    current.statePatch,
+    proposedState,
+  );
+  const authoritativeNpcReactions = buildAuthoritativeNpcReactions({
+    eventId: current.eventId,
+    sceneAfter,
+    nextWorkingSet,
+  });
+  const authoritativeWorldMoves = buildAuthoritativeWorldMoves({
+    dueConsequences: current.dueConsequences,
+    nextWorkingSet,
+    sectionTransitioned: current.sectionTransitioned,
+    sectionBefore: current.sectionBefore,
+    sectionAfter: current.sectionAfter,
+    sceneBefore,
+    sceneAfter,
+    statePatch: current.statePatch,
   });
   const payableDueIds = new Set(
     authoritativeWorldMoves
-      .filter((move) => move.sourceType === "DUE_CONSEQUENCE" && move.consequenceId)
-      .map((move) => move.consequenceId!)
+      .filter((move) => (
+        move.sourceType === "DUE_CONSEQUENCE"
+        && move.consequenceId
+      ))
+      .map((move) => move.consequenceId!),
   );
-  const payableDueConsequences = dueConsequences.filter((item) =>
-    payableDueIds.has(item.consequenceId)
+  const payableDueConsequences = current.dueConsequences.filter(
+    (item) => payableDueIds.has(item.consequenceId),
   );
   sceneAfter.situation = reconcileSceneSituationAfterSettlement({
-    action: settledAction,
+    action: current.settledAction,
     sceneBefore,
     sceneAfter,
-    sectionTransitioned,
+    sectionTransitioned: current.sectionTransitioned,
     authoritativeObservableFacts,
     authoritativeNpcReactions,
-    authoritativeWorldMoves
+    authoritativeWorldMoves,
   });
   proposedState.scene = sceneAfter;
   if (!deepEqual(sceneBefore, sceneAfter)) changedStatePaths.push("scene");
   const narrativePlan = buildNarrativePlan({
     pkg,
-    action: settledAction,
-    decisionKernelId,
-    protectedNarrative: appliedAffordance?.protectedNarrative,
-    fallbackContinuation: appliedAffordance?.fallbackContinuation,
-    playerVisibleFallback: appliedAffordance?.playerVisibleFallback,
-    // A transition turn still has to finish the section the player acted in.
-    // The next section's broad purpose belongs to subsequent turns; exposing
-    // it as this turn's objective invites the Narrator to reveal evidence that
-    // the transition scene only establishes as a future contest.
-    section: requireSection(pkg, sectionTransitioned ? sectionBefore : sectionAfter),
+    action: current.settledAction,
+    decisionKernelId: current.decisionKernelId,
+    protectedNarrative: current.appliedAffordance?.protectedNarrative,
+    fallbackContinuation: current.appliedAffordance?.fallbackContinuation,
+    playerVisibleFallback: current.appliedAffordance?.playerVisibleFallback,
+    section: requireSection(
+      pkg,
+      current.sectionTransitioned
+        ? current.sectionBefore
+        : current.sectionAfter,
+    ),
     sceneBefore,
     sceneAfter,
-    sectionTransitioned,
+    sectionTransitioned: current.sectionTransitioned,
     authoritativeObservableFacts,
     authoritativeNpcReactions,
     authoritativeWorldMoves,
-    nextDecisionPoint: nextWorkingSet.decisionPoint
+    nextDecisionPoint: nextWorkingSet.decisionPoint,
   });
 
   const event: PartOneCommittedEvent = {
     schemaVersion: "sangtian-part-one-event-v1",
-    eventId,
-    turnNumber,
-    sectionIdBefore: sectionBefore,
-    sectionIdAfter: sectionAfter,
-    actionSource: settledAction.source,
-    decisionKernelId,
-    affordanceTemplateId,
-    actionText: settledAction.actionText,
-    targetRef,
-    statePatch,
-    durableEffects,
+    eventId: current.eventId,
+    turnNumber: current.turnNumber,
+    sectionIdBefore: current.sectionBefore,
+    sectionIdAfter: current.sectionAfter,
+    actionSource: current.settledAction.source,
+    decisionKernelId: current.decisionKernelId,
+    affordanceTemplateId: current.affordanceTemplateId,
+    actionText: current.settledAction.actionText,
+    targetRef: current.targetRef,
+    statePatch: clone(current.statePatch),
+    durableEffects: clone(current.durableEffects),
     changedStatePaths: unique(changedStatePaths),
-    createdPendingConsequenceIds: createdPendingConsequences.map((item) => item.consequenceId),
-    duePendingConsequenceIds: payableDueConsequences.map((item) => item.consequenceId),
+    createdPendingConsequenceIds: current.createdPendingConsequences.map(
+      (item) => item.consequenceId,
+    ),
+    duePendingConsequenceIds: payableDueConsequences.map(
+      (item) => item.consequenceId,
+    ),
     authoritativeObservableFacts,
     authoritativeNpcReactions,
     sceneBefore,
@@ -424,14 +623,14 @@ export function settlePartOneAction(
     authoritativeWorldMoves,
     nextDecisionPoint: clone(nextWorkingSet.decisionPoint),
     narrativePlan,
-    sectionTransitioned
+    sectionTransitioned: current.sectionTransitioned,
   };
   return {
-    beforeState,
+    beforeState: clone(current.beforeState),
     proposedState,
     event,
-    appliedAffordance,
-    dueConsequences: payableDueConsequences
+    appliedAffordance: clone(current.appliedAffordance),
+    dueConsequences: payableDueConsequences,
   };
 }
 

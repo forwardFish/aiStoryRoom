@@ -1,5 +1,4 @@
 import {
-  stableCanonicalJson,
   stableSha256,
 } from "../runtime-contract/kernel-selector-lite.js";
 import {
@@ -7,7 +6,7 @@ import {
 } from "./dynamic-kernel-lite-projection.js";
 import {
   buildDynamicPartOneRuntimeWorkingSet,
-  forcePackageForDynamicWorkingSets,
+  buildRecoveredNextTurnWorkingSet,
   type DynamicPartOneActionSettlement,
   type DynamicPartOneCommittedEvent,
   type DynamicPartOneRuntimeWorkingSet,
@@ -16,11 +15,12 @@ import {
 } from "./dynamic-kernel-lite-runtime.js";
 import {
   buildPartOneRuntimeWorkingSet as buildLegacyWorkingSet,
-  settlePartOneAction as settleLegacyAction,
+  completePartOneActionSettlement,
+  settlePartOneCurrentAction,
+  type PartOneCurrentActionSettlement,
   type PartOneIncomingAction,
 } from "./part-one-runtime-engine.js";
 import type {
-  PartOneActionSettlement,
   PartOneRuntimeAsset,
   PartOneRuntimePackage,
   PartOneState,
@@ -31,8 +31,14 @@ export type DynamicPartOneSettlementExecutionOptions = {
   currentWorkingSetOverride?: DynamicPartOneRuntimeWorkingSet | null;
 };
 
+type NextTurnPlan = {
+  workingSet: DynamicPartOneRuntimeWorkingSet;
+  status: "PLANNED" | "RECOVERED";
+  failureCode?: string;
+};
+
 export function projectFinalizedPartOneSelectionState(
-  settlement: Pick<PartOneActionSettlement, "proposedState" | "event">,
+  settlement: Pick<DynamicPartOneActionSettlement, "proposedState" | "event">,
 ): PartOneState {
   const projected = clone(settlement.proposedState);
   const paidIds = new Set(settlement.event.duePendingConsequenceIds);
@@ -46,11 +52,10 @@ export function projectFinalizedPartOneSelectionState(
 }
 
 /**
- * The frozen engine remains the only causal writer. This coordinator projects
- * the exact committed current WorkingSet and the exact selected next
- * WorkingSet into immutable package clones. The provisional pass is isolated
- * from unrelated later Kernels; the final pass is bound to the real next
- * decision selected from the authoritative finalized-state projection.
+ * Execute the committed current decision surface exactly once, then plan the
+ * next revision independently. A next-turn planning failure is recovered after
+ * the current causal state exists and therefore cannot reject or rebind the
+ * legal action that produced that state.
  */
 export function settleDynamicPartOneAction(
   pkg: PartOneRuntimePackage,
@@ -81,60 +86,130 @@ export function settleDynamicPartOneAction(
     }
   }
 
-  const provisionalPackage = current
-    ? forcePackageForProvisionalSettlement(pkg, state, current)
-    : pkg;
-  const provisional = settleLegacyAction(
-    provisionalPackage,
-    state,
-    action,
-    turnNumber,
-  );
-  const selectionState = projectFinalizedPartOneSelectionState(provisional);
-  const next = buildDynamicPartOneRuntimeWorkingSet(
+  const causal = settlePartOneCurrentAction(
     pkg,
-    selectionState,
-    turnNumber,
-  );
-  const projections = current
-    ? [
-      { state, workingSet: current },
-      { state: selectionState, workingSet: next },
-    ]
-    : [{ state: selectionState, workingSet: next }];
-  const finalized = settleLegacyAction(
-    forcePackageForDynamicWorkingSets(pkg, projections),
     state,
     action,
     turnNumber,
+    current ?? undefined,
+  );
+  const recoverySurface = current ?? buildDynamicPartOneRuntimeWorkingSet(
+    pkg,
+    state,
+    Math.max(0, turnNumber - 1),
+  );
+  let plan = planNextTurn(
+    pkg,
+    causal.proposedState,
+    turnNumber,
+    recoverySurface,
+  );
+  let settlement = completeWithRecoverablePlan(
+    pkg,
+    causal,
+    plan,
+    recoverySurface,
   );
 
-  assertProvisionalCausalStateStable(provisional, finalized);
+  const finalizedSelectionState = projectFinalizedPartOneSelectionState(
+    settlement as DynamicPartOneActionSettlement,
+  );
   if (
-    finalized.event.nextDecisionPoint.decisionKernelId
-      !== next.decisionPoint.decisionKernelId
-    || finalized.event.nextDecisionPoint.decisionPointId
-      !== next.decisionPoint.decisionPointId
+    plan.workingSet.kernelSelection.stateFingerprint
+      !== stableSha256(finalizedSelectionState)
+  ) {
+    plan = planNextTurn(
+      pkg,
+      finalizedSelectionState,
+      turnNumber,
+      recoverySurface,
+    );
+    settlement = completeWithRecoverablePlan(
+      pkg,
+      causal,
+      plan,
+      recoverySurface,
+    );
+  }
+
+  if (
+    settlement.event.nextDecisionPoint.decisionKernelId
+      !== plan.workingSet.decisionPoint.decisionKernelId
+    || settlement.event.nextDecisionPoint.decisionPointId
+      !== plan.workingSet.decisionPoint.decisionPointId
   ) {
     throw new Error("PART_ONE_DYNAMIC_NEXT_DECISION_MISMATCH");
   }
-  (finalized.event as DynamicPartOneCommittedEvent).nextKernelSelection = clone(
-    next.kernelSelection,
-  );
-  return finalized as DynamicPartOneActionSettlement;
+  const event = settlement.event as DynamicPartOneCommittedEvent;
+  event.nextKernelSelection = clone(plan.workingSet.kernelSelection);
+  event.nextPlanningStatus = plan.status;
+  if (plan.failureCode) event.nextPlanningFailureCode = plan.failureCode;
+  return settlement as DynamicPartOneActionSettlement;
+}
+
+function completeWithRecoverablePlan(
+  pkg: PartOneRuntimePackage,
+  causal: PartOneCurrentActionSettlement,
+  plan: NextTurnPlan,
+  recoverySurface: DynamicPartOneRuntimeWorkingSet,
+) {
+  try {
+    return completePartOneActionSettlement(
+      pkg,
+      causal,
+      plan.workingSet,
+    );
+  } catch (error) {
+    if (plan.status === "RECOVERED") throw error;
+    const failureCode = normalizeErrorCode(error);
+    const recovered = buildRecoveredNextTurnWorkingSet(
+      pkg,
+      causal.proposedState,
+      causal.turnNumber,
+      recoverySurface,
+      error,
+    );
+    plan.workingSet = recovered;
+    plan.status = "RECOVERED";
+    plan.failureCode = failureCode;
+    return completePartOneActionSettlement(pkg, causal, recovered);
+  }
+}
+
+function planNextTurn(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  turnNumber: number,
+  recoverySurface: DynamicPartOneRuntimeWorkingSet,
+): NextTurnPlan {
+  try {
+    return {
+      workingSet: buildDynamicPartOneRuntimeWorkingSet(
+        pkg,
+        state,
+        turnNumber,
+      ),
+      status: "PLANNED",
+    };
+  } catch (error) {
+    return {
+      workingSet: buildRecoveredNextTurnWorkingSet(
+        pkg,
+        state,
+        turnNumber,
+        recoverySurface,
+        error,
+      ),
+      status: "RECOVERED",
+      failureCode: normalizeErrorCode(error),
+    };
+  }
 }
 
 /**
- * Preserve the historical helper contract used by source-level tests and by
- * callers that only need to inspect the authored capability surface. An
- * existing Floor Continuation is already a complete decision surface and must
- * keep the original immutable package identity. Primary surfaces still need a
- * projected option order so the legacy facade can inspect the chosen Pair.
- *
- * Formal capability Settlement uses packageForDynamicCapabilitySettlement()
- * below; it may add an internal successor continuation to an isolated clone so
- * the frozen engine can finish its scaffold pass without mutating this public
- * projection contract.
+ * Preserve the historical public projection contract used by source-level
+ * capability tests. Existing Floor continuations keep the immutable package;
+ * Primary surfaces receive only the committed current Pair projection.
  */
 export function packageForDynamicCapabilityAction(
   pkg: PartOneRuntimePackage,
@@ -155,10 +230,8 @@ export function packageForDynamicCapabilityAction(
 }
 
 /**
- * Internal production scaffold for an observe-only capability turn. Unlike the
- * public projection helper, this always provides the frozen engine with the
- * exact committed WorkingSet plus one deterministic continuation successor.
- * It is an immutable package clone and never changes authoritative state.
+ * Internal observe-only capability scaffold. Capability behavior is preserved
+ * while authored-action Settlement uses the two-phase current/next contract.
  */
 export function packageForDynamicCapabilitySettlement(
   pkg: PartOneRuntimePackage,
@@ -296,44 +369,6 @@ function validateCurrentWorkingSetOverride(
   return clone(workingSet);
 }
 
-function assertProvisionalCausalStateStable(
-  provisional: PartOneActionSettlement,
-  finalized: PartOneActionSettlement,
-) {
-  const left = causalSettlementSnapshot(provisional);
-  const right = causalSettlementSnapshot(finalized);
-  if (stableCanonicalJson(left) !== stableCanonicalJson(right)) {
-    throw new Error("PART_ONE_DYNAMIC_PROVISIONAL_FINAL_CAUSAL_MISMATCH");
-  }
-}
-
-function causalSettlementSnapshot(settlement: PartOneActionSettlement) {
-  const proposedState = clone(settlement.proposedState);
-  if (proposedState.scene) {
-    proposedState.scene = {
-      ...proposedState.scene,
-      situation: "",
-    };
-  }
-  return {
-    proposedState,
-    decisionKernelId: settlement.event.decisionKernelId,
-    affordanceTemplateId: settlement.event.affordanceTemplateId,
-    sectionIdBefore: settlement.event.sectionIdBefore,
-    sectionIdAfter: settlement.event.sectionIdAfter,
-    sectionTransitioned: settlement.event.sectionTransitioned,
-    statePatch: settlement.event.statePatch,
-    durableEffects: settlement.event.durableEffects,
-    changedStatePaths: [...settlement.event.changedStatePaths].sort(),
-    createdPendingConsequenceIds: [
-      ...settlement.event.createdPendingConsequenceIds,
-    ].sort(),
-    duePendingConsequenceIds: [
-      ...settlement.event.duePendingConsequenceIds,
-    ].sort(),
-  };
-}
-
 function forceFallbackPackage(
   pkg: PartOneRuntimePackage,
   sectionId: string,
@@ -396,6 +431,15 @@ function isContinuation(workingSet: DynamicPartOneRuntimeWorkingSet) {
 function sameStringArray(left: string[], right: string[]) {
   return left.length === right.length
     && left.every((value, index) => value === right[index]);
+}
+
+function normalizeErrorCode(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return (message.split(":", 1)[0] || "UNKNOWN_ERROR")
+    .trim()
+    .replace(/[^A-Za-z0-9_]+/gu, "_")
+    .toUpperCase()
+    .slice(0, 96) || "UNKNOWN_ERROR";
 }
 
 function clone<T>(value: T): T {

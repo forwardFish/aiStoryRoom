@@ -12,7 +12,8 @@ import {
 import {
   buildPartOneRuntimeWorkingSet as buildLegacyWorkingSet,
   evaluatePartOneRule,
-  settlePartOneAction as settleLegacyAction,
+  settlePartOneCurrentAction,
+  type PartOneCurrentActionSettlement,
   type PartOneIncomingAction,
 } from "./part-one-runtime-engine.js";
 import type {
@@ -68,6 +69,8 @@ export type DynamicPartOneRuntimeWorkingSet = PartOneRuntimeWorkingSet & {
 };
 export type DynamicPartOneCommittedEvent = PartOneCommittedEvent & {
   nextKernelSelection?: KernelSelectionTrace;
+  nextPlanningStatus?: "PLANNED" | "RECOVERED";
+  nextPlanningFailureCode?: string;
 };
 export type DynamicPartOneActionSettlement = Omit<PartOneActionSettlement, "event"> & {
   event: DynamicPartOneCommittedEvent;
@@ -217,6 +220,115 @@ export function buildDynamicPartOneRuntimeWorkingSet(
 export function isDynamicCapabilityAction(action: PartOneIncomingAction) {
   return String(action.actionText || "")
     .startsWith("\u2063OMW_CAPABILITY_V1:");
+}
+
+/**
+ * Recover next-turn planning after the current action has already been settled.
+ *
+ * Recovery never rebinds or reapplies the current action. It first attempts the
+ * ordinary Legacy path for any still-open Kernel. When the section has no open
+ * Kernel and its authored Floor is missing, exhausted or structurally unusable,
+ * it compiles one deterministic continuation from the exact committed Pair.
+ * This makes planning failure explicit and recoverable without granting option
+ * previews ownership over the current Settlement.
+ */
+export function buildRecoveredNextTurnWorkingSet(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  turnNumber: number,
+  committedCurrentSurface: DynamicPartOneRuntimeWorkingSet,
+  planningFailure: unknown,
+): DynamicPartOneRuntimeWorkingSet {
+  const section = requireSection(pkg, state.sectionId);
+  const fingerprint = fingerprintState(state);
+  const failureCode = normalizeErrorCode(planningFailure);
+
+  if (state.partCompletionStatus === "HANDOFF_READY") {
+    return buildDynamicPartOneRuntimeWorkingSet(pkg, state, turnNumber);
+  }
+
+  const completed = new Set(state.completedKernelIds || []);
+  const unresolved = section.activeDecisionKernelIds.filter(
+    (kernelId) => !completed.has(kernelId),
+  );
+  if (unresolved.length) {
+    const fallback = legacyFallbackWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      section,
+      fingerprint,
+      "LEGACY_FALLBACK",
+    );
+    return {
+      ...fallback,
+      kernelSelection: {
+        ...fallback.kernelSelection,
+        fallbackReason: `NEXT_TURN_PLANNING_RECOVERED:${failureCode}`,
+      },
+    };
+  }
+
+  if (
+    committedCurrentSurface.section.sectionId !== section.sectionId
+    || committedCurrentSurface.decisionAffordances.length !== 2
+    || !section.activeDecisionKernelIds.includes(
+      committedCurrentSurface.decisionPoint.decisionKernelId,
+    )
+  ) {
+    throw new Error(
+      `PART_ONE_NEXT_TURN_RECOVERY_SURFACE_UNAVAILABLE:${failureCode}`,
+    );
+  }
+
+  const index = Math.max(
+    0,
+    Number(state.sectionTurnNumber || 0)
+      - section.activeDecisionKernelIds.length,
+  );
+  const pin: PartOneDecisionPin = {
+    decisionKernelId:
+      committedCurrentSurface.decisionPoint.decisionKernelId,
+    decisionPointId: `CONT-RECOVERY-${stableSha256({
+      sectionId: section.sectionId,
+      stateFingerprint: fingerprint,
+      turnNumber,
+      priorDecisionPointId:
+        committedCurrentSurface.decisionPoint.decisionPointId,
+      failureCode,
+    }).slice(0, 20)}`,
+    affordanceIds: committedCurrentSurface.decisionAffordances.map(
+      (affordance) => affordance.affordanceTemplateId,
+    ),
+  };
+  const projected = synthesizeContinuationPackage(
+    pkg,
+    state,
+    pin,
+    index,
+    pin.decisionKernelId,
+  );
+  const workingSet = buildLegacyWorkingSet(
+    projected,
+    state,
+    turnNumber,
+  );
+  if (!isContinuation(workingSet)) {
+    throw new Error(
+      `PART_ONE_NEXT_TURN_RECOVERY_NOT_CONTINUATION:${failureCode}`,
+    );
+  }
+  assertContinuationPin(workingSet, pin);
+  return traced(workingSet, {
+    ...continuationTrace(
+      workingSet,
+      section,
+      state,
+      fingerprint,
+      pin,
+    ),
+    fallbackReason: `NEXT_TURN_PLANNING_RECOVERED:${failureCode}`,
+  });
 }
 
 export function forcePackageForDynamicWorkingSets(
@@ -623,17 +735,12 @@ function evaluateKernel(
   const previews: Preview[] = [];
   for (const affordance of affordances) {
     try {
-      const previewPackage = buildPreviewPackage(
+      const preview = settlePartOneCurrentAction(
         pkg,
-        state,
-        kernelId,
-        affordance.affordanceTemplateId,
-      );
-      const preview = settleLegacyAction(
-        previewPackage,
         state,
         incomingForAffordance(affordance),
         turnNumber + 1,
+        candidateWorkingSet,
       );
       const signature = outcomeSignature(
         preview,
@@ -643,7 +750,7 @@ function evaluateKernel(
         previews.push({
           affordance,
           signature,
-          changedStatePaths: [...new Set(preview.event.changedStatePaths)]
+          changedStatePaths: [...new Set(preview.changedStatePaths)]
             .filter((path) => !IGNORED_PATHS.has(path)),
         });
       } else {
@@ -658,12 +765,10 @@ function evaluateKernel(
     }
   }
 
-  const coveredPaths = requirementCoveragePaths(
+  const coveredPaths = obligationOwnershipPaths(
     pkg,
     section,
     kernel,
-    options,
-    previews,
   );
   const mustRules = uniqueRules(section.mustEstablish).filter(
     (rule) => coveredPaths.has(rule.statePath),
@@ -732,30 +837,25 @@ function evaluateKernel(
   };
 }
 
-function requirementCoveragePaths(
+/**
+ * Return only obligations explicitly owned by this Kernel through reciprocal
+ * Requirement/Decision-Contract links. A candidate's state dependencies,
+ * option patches and successful previews prove that it can execute; they do
+ * not grant ownership of every path it happens to touch.
+ */
+function obligationOwnershipPaths(
   pkg: PartOneRuntimePackage,
   section: PartOneSectionContract,
   kernel: PartOneRuntimeAsset,
-  options: PartOneAffordanceTemplate[],
-  previews: Preview[],
 ) {
   const linkedRequirements = pkg.requirements.filter((requirement) => (
     requirement.sectionIds.includes(section.sectionId)
-    && (
-      requirement.decisionKernelIds.includes(kernel.assetId)
-      || kernel.requirementIds.includes(requirement.requirementId)
-    )
+    && requirement.decisionKernelIds.includes(kernel.assetId)
+    && kernel.requirementIds.includes(requirement.requirementId)
   ));
-  const requirementPaths = linkedRequirements.flatMap((requirement) => (
+  return new Set(linkedRequirements.flatMap((requirement) => (
     asStringArray(requirement.stateEffects)
-  ));
-  return new Set([
-    ...requirementPaths,
-    ...kernel.stateDependencies,
-    ...options.flatMap((option) => option.stateEffects || []),
-    ...options.flatMap((option) => Object.keys(option.statePatch || {})),
-    ...previews.flatMap((preview) => preview.changedStatePaths),
-  ]);
+  )));
 }
 
 function materializeAffordance(
@@ -784,33 +884,11 @@ function materializeAffordance(
   };
 }
 
-function buildPreviewPackage(
-  pkg: PartOneRuntimePackage,
-  state: PartOneState,
-  kernelId: string,
-  affordanceId: string,
-) {
-  const isolated = forcePrimaryPackage(
-    pkg,
-    state.sectionId,
-    kernelId,
-    [affordanceId],
-    true,
-  );
-  return synthesizeContinuationPackage(
-    isolated,
-    state,
-    null,
-    Number(state.sectionTurnNumber || 0),
-    kernelId,
-  );
-}
-
 function outcomeSignature(
-  settlement: PartOneActionSettlement,
+  settlement: PartOneCurrentActionSettlement,
   affordanceId: string,
 ) {
-  const stateFeatures = [...new Set(settlement.event.changedStatePaths)]
+  const stateFeatures = [...new Set(settlement.changedStatePaths)]
     .filter((path) => !IGNORED_PATHS.has(path))
     .flatMap((path) => {
       const before = getPath(settlement.beforeState, path);
@@ -838,14 +916,14 @@ function outcomeSignature(
   )
     .filter((item) => !beforePending.has(item.consequenceId))
     .map((item) => (
-      `pending:${item.ruleAssetId}:${item.status}:${item.dueTurn - settlement.event.turnNumber}`
+      `pending:${item.ruleAssetId}:${item.status}:${item.dueTurn - settlement.turnNumber}`
     ));
   return createOutcomeSignature({
     affordanceId,
     stateFeatures,
     durablePredicateFeatures,
     pendingRuleFeatures,
-    sectionAfter: settlement.event.sectionIdAfter,
+    sectionAfter: settlement.sectionAfter,
     partCompletionStatusAfter:
       settlement.proposedState.partCompletionStatus || null,
   });
@@ -853,12 +931,12 @@ function outcomeSignature(
 
 function hasMaterialOutcome(
   signature: AffordanceOutcomeSignature,
-  settlement: PartOneActionSettlement,
+  settlement: PartOneCurrentActionSettlement,
 ) {
   return signature.stateFeatures.length > 0
     || signature.durablePredicateFeatures.length > 0
     || signature.pendingRuleFeatures.length > 0
-    || settlement.event.sectionIdBefore !== settlement.event.sectionIdAfter
+    || settlement.sectionBefore !== settlement.sectionAfter
     || settlement.beforeState.partCompletionStatus
       !== settlement.proposedState.partCompletionStatus;
 }
@@ -1012,7 +1090,6 @@ function selectContinuationBaseKernel(
     if (!section.activeDecisionKernelIds.includes(preferred.assetId)) {
       throw new Error("PART_ONE_PINNED_KERNEL_NOT_IN_SECTION");
     }
-    requireTwoContinuationOptions(preferred, null);
     return preferred;
   }
   const floorRequirements = new Set(floor.requirementIds);
