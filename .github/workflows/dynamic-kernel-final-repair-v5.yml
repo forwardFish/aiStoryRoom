@@ -1,6 +1,6 @@
 name: Dynamic Kernel Final Generic Repair V5
 
-# Re-run after obligation breadth normalization and Narrator evidence restoration.
+# Re-run after balanced Narrator context and focused-obligation scoring.
 on:
   push:
     branches:
@@ -29,7 +29,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context="dynamic-kernel-lite/final-repair-v5" \
-            -f description="Focused-obligation final matrix running" \
+            -f description="Balanced-context final matrix running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
       - uses: actions/checkout@v4
         with:
@@ -65,11 +65,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           state=failure
-          description="Focused-obligation repair failed deterministic gates"
+          description="Balanced-context repair failed deterministic gates"
           if [ -f "${EVIDENCE_ROOT}/status.txt" ] \
             && [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass ]; then
             state=success
-            description="Focused-obligation repair passed deterministic gates"
+            description="Balanced-context repair passed deterministic gates"
           fi
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
