@@ -21,6 +21,7 @@ import { SoloStoryEngineModule } from "./solo-story-engine/solo-story-engine.mod
 import { MetricsController } from "./observability/metrics.controller";
 import { OpenNovelAdapterController } from "./openovel-adapter/openovel-adapter.controller";
 import { OpenNovelAdapterService } from "./openovel-adapter/openovel-adapter.service";
+import { OpenNovelManeuverAwareAdapterService } from "./openovel-adapter/openovel-maneuver-aware-adapter.service";
 import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.controller";
 import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
@@ -42,7 +43,10 @@ installFourManeuverResolution();
     StoryTaskOutboxService,
     RoomsService,
     PresenceHeartbeatRateLimitGuard,
-    OpenNovelAdapterService,
+    {
+      provide: OpenNovelAdapterService,
+      useClass: OpenNovelManeuverAwareAdapterService,
+    },
     OpenNovelRuntimeClient,
     OpenNovelSharedService,
     OpenNovelManeuverService,
