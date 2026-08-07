@@ -48,6 +48,7 @@ jobs:
       - run: pnpm --filter @apps/api test:b0-batch
       - run: pnpm --filter @apps/api test:b0-window
       - run: pnpm --filter @apps/api test:b0-player-window
+      - run: pnpm --filter @apps/api test:b0-pipeline
       - run: pnpm --filter @apps/api typecheck
       - run: pnpm --filter @apps/web typecheck
       - run: pnpm --filter @apps/web test:b0-window
