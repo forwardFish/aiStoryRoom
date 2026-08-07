@@ -47,8 +47,10 @@ export function validateManeuverCommand(command, view) {
   const section = view?.maneuverPanel?.[command.maneuverType];
   if (!section?.enabled) return { reason: section?.disabledReason || view?.maneuverPanel?.disabledReason || "当前不能执行这项主动谋划。" };
   if (command.maneuverType === "contact") {
+    const messageText = String(command.messageText || "").trim();
     if (!command.targetRoleKey) return { reason: "请先选择要交谈的人物。" };
-    if (!String(command.messageText || "").trim()) return { reason: "请写下要对这个人物说的话。" };
+    if (!messageText) return { reason: "请写下要对这个人物说的话。" };
+    if (messageText.length > 200) return { reason: "人物交谈最多 200 字，请缩短后再提交。" };
   }
   if (command.maneuverType === "investigate" && !command.intentKey) return { reason: "请选择一项调查。" };
   if (command.maneuverType === "leverage") {
@@ -56,7 +58,12 @@ export function validateManeuverCommand(command, view) {
     const option = section.options?.find((item) => item.leverageKey === command.leverageKey);
     if (option?.requiresTarget && !command.targetRoleKey) return { reason: "请选择筹码使用对象。" };
   }
-  if (command.maneuverType === "custom" && !String(command.customText || "").trim()) return { reason: "请写下要主动推进的一件事。" };
+  if (command.maneuverType === "custom") {
+    const customText = String(command.customText || "").trim();
+    const maxLength = Math.max(1, Number(section.maxLength) || 200);
+    if (!customText) return { reason: "请写下要主动推进的一件事。" };
+    if (customText.length > maxLength) return { reason: `自拟谋划最多 ${maxLength} 字，请缩短后再提交。` };
+  }
   return null;
 }
 
@@ -144,7 +151,10 @@ function renderWorkbench(view, state, type) {
 }
 
 export function renderLeverageHand(view) {
-  const items = view?.leverageHand?.items || [];
+  if (!view?.leverageHand) {
+    return `<section class="causal-panel leverage-panel"><h2 class="panel-heading"><span>我的筹码</span></h2><p>筹码信息暂不可用，请刷新页面后重试。</p></section>`;
+  }
+  const items = view.leverageHand.items || [];
   return `<section class="causal-panel leverage-panel"><h2 class="panel-heading"><span>我的筹码</span></h2>${items.length ? `<ul>${items.map((item) => `<li><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.description)}</small></li>`).join("")}</ul>` : `<p>你的筹码已经全部使用。</p>`}</section>`;
 }
 
