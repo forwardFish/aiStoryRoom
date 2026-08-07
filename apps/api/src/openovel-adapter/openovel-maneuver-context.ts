@@ -227,8 +227,9 @@ function recomputeMetrics(results: OpenNovelManeuverResult[]) {
 function sameStringSet(value: unknown, expected: string[]) {
   if (!Array.isArray(value)) return false;
   const actual = unique(value.map(String)).sort();
-  return actual.length === expected.length
-    && actual.every((item, index) => item === [...expected].sort()[index]);
+  const sortedExpected = [...expected].sort();
+  return actual.length === sortedExpected.length
+    && actual.every((item, index) => item === sortedExpected[index]);
 }
 
 function sameNumericRecord(value: unknown, expected: Record<string, number>) {
@@ -243,6 +244,7 @@ function sameNumericRecord(value: unknown, expected: Record<string, number>) {
 }
 
 function normalizeNullableInteger(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 }
