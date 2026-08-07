@@ -219,13 +219,6 @@ export function isDynamicCapabilityAction(action: PartOneIncomingAction) {
     .startsWith("\u2063OMW_CAPABILITY_V1:");
 }
 
-/**
- * Make one or more already-selected WorkingSets visible to the frozen engine.
- * This is the sole package-projection path used by formal Settlement and
- * capability scaffolding. It never changes authoritative state or assets in
- * place; it only reorders existing Primary options or injects deterministic
- * Floor continuation templates into a cloned package.
- */
 export function forcePackageForDynamicWorkingSets(
   pkg: PartOneRuntimePackage,
   projections: WorkingSetProjection[],
@@ -392,11 +385,17 @@ function buildContinuationWorkingSet(
     if (!isContinuation(authored)) {
       throw new Error("PART_ONE_CONTINUATION_PRIMARY_PATH_COLLISION");
     }
-    assertContinuationPin(authored, pin);
-    return traced(
-      authored,
-      continuationTrace(authored, section, state, fingerprint, pin),
-    );
+    if (!pin || continuationMatchesPin(authored, pin)) {
+      return traced(
+        authored,
+        continuationTrace(authored, section, state, fingerprint, pin),
+      );
+    }
+    // The authoritative event may pin the previously committed continuation
+    // even though sectionTurnNumber now points at the next authored entry. In
+    // that case the pin, not array position, owns recovery. Fall through to the
+    // deterministic synthesis path below; invalid kernel or Affordance IDs
+    // still fail closed during synthesis.
   } catch (error) {
     if (!String(error instanceof Error ? error.message : error)
       .startsWith(CONTINUATION_EXHAUSTED)) {
@@ -421,6 +420,25 @@ function buildContinuationWorkingSet(
   return traced(
     workingSet,
     continuationTrace(workingSet, section, state, fingerprint, pin),
+  );
+}
+
+function continuationMatchesPin(
+  workingSet: PartOneRuntimeWorkingSet,
+  pin: PartOneDecisionPin,
+) {
+  if (
+    workingSet.decisionPoint.decisionKernelId !== pin.decisionKernelId
+    || workingSet.decisionPoint.decisionPointId !== pin.decisionPointId
+  ) {
+    return false;
+  }
+  if (!pin.affordanceIds?.length) return true;
+  return sameStringArray(
+    workingSet.decisionAffordances.map(
+      (affordance) => affordance.affordanceTemplateId,
+    ),
+    pin.affordanceIds,
   );
 }
 
