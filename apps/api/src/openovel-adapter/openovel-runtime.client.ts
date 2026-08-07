@@ -201,11 +201,15 @@ export class OpenNovelRuntimeClient {
       });
     }
     if (bridge?.context?.sourceResultIds?.length) {
+      // Canon is already committed at this point. A transient mirror update
+      // must not make the product report the main turn as failed; retry with
+      // CAS and leave the result pending for safe reinjection only if every
+      // database attempt loses a concurrent race.
       await this.consumeConfirmedManeuverBridge(
         input.runId,
         Math.max(0, Number(committed.turnNumber || input.expectedStateRevision || 0)),
         bridge.context.sourceResultIds,
-      );
+      ).catch(() => undefined);
     }
     return committed;
   }
@@ -217,7 +221,7 @@ export class OpenNovelRuntimeClient {
     if (!this.prisma) return null;
     const run = await this.prisma.storyRun.findUnique({
       where: { id: runId },
-      select: { templateKey: true, stateJson: true },
+      select: { templateKey: true, stateJson: true, version: true },
     });
     if (!run) return null;
     const maneuverPackage = openNovelManeuverPackages.get(run.templateKey);
@@ -235,8 +239,8 @@ export class OpenNovelRuntimeClient {
       maneuverPackage,
     });
     if (hydrated.recoveredEventCount > 0) {
-      await this.prisma.storyRun.update({
-        where: { id: runId },
+      await this.prisma.storyRun.updateMany({
+        where: { id: runId, version: run.version },
         data: { stateJson: hydrated.stateJson as any },
       });
     }
@@ -254,23 +258,26 @@ export class OpenNovelRuntimeClient {
     resultIds: string[],
   ) {
     if (!this.prisma || !resultIds.length) return;
-    const run = await this.prisma.storyRun.findUnique({
-      where: { id: runId },
-      select: { templateKey: true, stateJson: true },
-    });
-    if (!run) return;
-    const maneuverPackage = openNovelManeuverPackages.get(run.templateKey);
-    if (!maneuverPackage) return;
-    const stateJson = markConfirmedManeuverContextConsumed({
-      stateJson: run.stateJson,
-      turnNumber,
-      maneuverPackage,
-      resultIds,
-    });
-    await this.prisma.storyRun.update({
-      where: { id: runId },
-      data: { stateJson: stateJson as any },
-    });
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const run = await this.prisma.storyRun.findUnique({
+        where: { id: runId },
+        select: { templateKey: true, stateJson: true, version: true },
+      });
+      if (!run) return;
+      const maneuverPackage = openNovelManeuverPackages.get(run.templateKey);
+      if (!maneuverPackage) return;
+      const stateJson = markConfirmedManeuverContextConsumed({
+        stateJson: run.stateJson,
+        turnNumber,
+        maneuverPackage,
+        resultIds,
+      });
+      const updated = await this.prisma.storyRun.updateMany({
+        where: { id: runId, version: run.version },
+        data: { stateJson: stateJson as any },
+      });
+      if (updated.count === 1) return;
+    }
   }
 
   private async requestJson(path: string, init: RequestInit) {
