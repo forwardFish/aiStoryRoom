@@ -4,8 +4,12 @@
   "buildCommand": "pnpm build:vercel",
   "outputDirectory": "apps/web/dist-vercel",
   "redirects": [
-    { "source": "/", "destination": "/home", "permanent": false },
-    { "source": "/credits.html", "destination": "/credits", "permanent": false },
+    { "source": "/home", "destination": "/", "permanent": true },
+    { "source": "/home.html", "destination": "/", "permanent": true },
+    { "source": "/worlds.html", "destination": "/worlds", "permanent": true },
+    { "source": "/worlds-caesar.html", "destination": "/worlds/caesar", "permanent": true },
+    { "source": "/worlds-sangtian.html", "destination": "/worlds/sangtian", "permanent": true },
+    { "source": "/credits.html", "destination": "/credits", "permanent": true },
     { "source": "/credits-success.html", "destination": "/credits/status", "permanent": false },
     { "source": "/join.html", "destination": "/join", "permanent": false },
     { "source": "/room-game", "destination": "/game", "permanent": true }
@@ -19,11 +23,27 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
-    }
+    },
+    { "source": "/auth", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/account", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/admin/:path*", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/join", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/rooms", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/rooms/:path*", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/game", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/game/:path*", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/role-select", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/trio", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/reset-password", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/credits/status", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/credits/cancel", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/credits/failed", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/shared/result", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] },
+    { "source": "/platform.html", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }] }
   ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/proxy?path=:path*" },
-    { "source": "/home", "destination": "/home.html" },
+    { "source": "/", "destination": "/home.html" },
     { "source": "/privacy", "destination": "/legal.html" },
     { "source": "/terms", "destination": "/legal.html" },
     { "source": "/refund", "destination": "/legal.html" },
@@ -37,6 +57,8 @@
     { "source": "/reset-password", "destination": "/reset-password.html" },
     { "source": "/join", "destination": "/platform.html" },
     { "source": "/worlds", "destination": "/worlds.html" },
+    { "source": "/worlds/caesar", "destination": "/worlds-caesar.html" },
+    { "source": "/worlds/sangtian", "destination": "/worlds-sangtian.html" },
     { "source": "/worlds/:path*", "destination": "/platform.html" },
     { "source": "/rooms", "destination": "/platform.html" },
     { "source": "/rooms/:path*", "destination": "/platform.html" },
