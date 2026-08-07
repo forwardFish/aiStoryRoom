@@ -6,6 +6,7 @@ on:
       - codex/chatgpt-pro-dynamic-kernel-lite
     paths:
       - .github/workflows/dynamic-kernel-apply-followup-repair.yml
+      - .github/repair/dynamic-kernel-followup.patch.gz.b64
   workflow_dispatch:
 
 permissions:
@@ -28,7 +29,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context="dynamic-kernel-lite/followup-repair" \
-            -f description="Follow-up architecture repair running" \
+            -f description="Follow-up architecture repair retry running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
       - uses: actions/checkout@v4
         with:
@@ -49,13 +50,15 @@ jobs:
           tr -d '[:space:]' \
             < .github/repair/dynamic-kernel-followup.patch.gz.b64 \
             > "${RUNNER_TEMP}/followup.patch.gz.b64"
-          test "$(sha256sum "${RUNNER_TEMP}/followup.patch.gz.b64" | cut -d' ' -f1)" = \
-            "3f67b893abbc8b63d0ace3cc286fb0bb16d078c21523a540c63d102a49a05d63"
+          actual_b64="$(sha256sum "${RUNNER_TEMP}/followup.patch.gz.b64" | cut -d' ' -f1)"
+          echo "base64_sha256=${actual_b64}"
+          test "${actual_b64}" = "3f67b893abbc8b63d0ace3cc286fb0bb16d078c21523a540c63d102a49a05d63"
           base64 --decode "${RUNNER_TEMP}/followup.patch.gz.b64" \
             | gzip --decompress \
             > "${RUNNER_TEMP}/followup.patch"
-          test "$(sha256sum "${RUNNER_TEMP}/followup.patch" | cut -d' ' -f1)" = \
-            "f5b21a509007fa1e069d69be823864ad37d88491d8f053822795591d7050d2f0"
+          actual_patch="$(sha256sum "${RUNNER_TEMP}/followup.patch" | cut -d' ' -f1)"
+          echo "patch_sha256=${actual_patch}"
+          test "${actual_patch}" = "f5b21a509007fa1e069d69be823864ad37d88491d8f053822795591d7050d2f0"
           git apply --check "${RUNNER_TEMP}/followup.patch"
           git apply "${RUNNER_TEMP}/followup.patch"
           git diff --check
