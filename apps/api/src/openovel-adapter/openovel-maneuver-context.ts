@@ -6,6 +6,7 @@ import type {
 import {
   OPENOVEL_CONFIRMED_MANEUVER_CONTEXT_SCHEMA,
 } from "@ai-story/shared";
+import type { MvpAiBudget } from "../mvp-ai-budget";
 import {
   ensureOpenNovelManeuverState,
   withOpenNovelManeuverState,
@@ -58,10 +59,11 @@ export function hydrateOpenNovelManeuverStateFromEvents(input: {
     input.turnNumber,
     input.maneuverPackage,
   );
-  // Maneuver metrics are a deterministic read model of committed root events.
-  // Recompute the complete record even when only one key is missing or corrupt;
-  // otherwise a partially damaged legacy snapshot can retain phantom values.
+  // Metrics and maneuver-specific model usage are deterministic read models of
+  // committed root events. Recompute the complete records so a partially
+  // damaged snapshot cannot retain phantom metrics or reset the AI ceiling.
   state.metrics = recomputeMetrics(state.results);
+  state.aiBudget = recomputeAiBudget(state.aiBudget, input.eventPayloads);
   const consumedTurns = consumptionPayloads
     .map((payload) => normalizeNullableInteger(record(payload).turnNumber))
     .filter((value): value is number => value !== null);
@@ -94,6 +96,7 @@ export function hydrateOpenNovelManeuverStateFromEvents(input: {
     || !sameStringSet(prior.discoveredFactKeys, state.discoveredFactKeys)
     || !sameStringSet(prior.canonConsumedResultIds, state.canonConsumedResultIds)
     || !sameNumericRecord(prior.metrics, state.metrics)
+    || !sameAiBudget(prior.aiBudget, state.aiBudget)
     || normalizeNullableInteger(prior.lastCanonBridgeTurnNumber) !== state.lastCanonBridgeTurnNumber;
   return {
     state,
@@ -258,6 +261,31 @@ function recomputeMetrics(results: OpenNovelManeuverResult[]) {
   return metrics;
 }
 
+function recomputeAiBudget(base: MvpAiBudget, eventPayloads: unknown[]): MvpAiBudget {
+  const budget: MvpAiBudget = {
+    ...base,
+    calls: 0,
+    totalTokens: 0,
+    totalCostMinor: 0,
+    exhausted: false,
+    lastFallbackReason: null,
+  };
+  for (const payload of eventPayloads) {
+    const source = record(payload);
+    const usage = record(source.tokenUsage);
+    budget.calls += nonNegativeInteger(usage.attempts);
+    budget.totalTokens += nonNegativeInteger(usage.inputTokens)
+      + nonNegativeInteger(usage.outputTokens);
+    budget.totalCostMinor += nonNegativeInteger(usage.costMinor);
+    const fallbackReason = String(source.fallbackReason || "").trim();
+    if (fallbackReason.startsWith("ai_budget_")) {
+      budget.exhausted = true;
+      budget.lastFallbackReason = fallbackReason;
+    }
+  }
+  return budget;
+}
+
 function sameStringSet(value: unknown, expected: string[]) {
   if (!Array.isArray(value)) return false;
   const actual = unique(value.map(String)).sort();
@@ -277,10 +305,27 @@ function sameNumericRecord(value: unknown, expected: Record<string, number>) {
     ));
 }
 
+function sameAiBudget(value: unknown, expected: MvpAiBudget) {
+  const actual = record(value);
+  return Number(actual.maxCalls) === expected.maxCalls
+    && Number(actual.maxTotalTokens) === expected.maxTotalTokens
+    && normalizeNullableInteger(actual.costLimitMinor) === expected.costLimitMinor
+    && Number(actual.calls) === expected.calls
+    && Number(actual.totalTokens) === expected.totalTokens
+    && Number(actual.totalCostMinor) === expected.totalCostMinor
+    && Boolean(actual.exhausted) === expected.exhausted
+    && (String(actual.lastFallbackReason || "").trim() || null) === expected.lastFallbackReason;
+}
+
 function normalizeNullableInteger(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function nonNegativeInteger(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
 }
 
 function clampMetric(value: number) {

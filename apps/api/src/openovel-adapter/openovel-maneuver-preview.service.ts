@@ -27,6 +27,7 @@ import {
   type OpenNovelManeuverPreviewCard,
 } from "./openovel-maneuver-preview";
 import { openNovelManeuverPackages } from "./openovel-maneuver-packages";
+import { recoverOpenNovelManeuverRun } from "./openovel-maneuver-state-recovery";
 import { OpenNovelManeuverService } from "./openovel-maneuver.service";
 import {
   OPENOVEL_ENGINE_VERSION,
@@ -183,23 +184,34 @@ export class OpenNovelManeuverPreviewService {
     user: AuthenticatedUser,
     runId: string,
   ): Promise<PreviewRunContext> {
-    const [run, runtimeRun] = await Promise.all([
+    const [storedRun, runtimeRun] = await Promise.all([
       this.authorizedRun(user, runId),
       this.runtime.getRun(runId),
     ]);
-    if (run.templateKey !== runtimeRun.worldId) {
+    if (storedRun.templateKey !== runtimeRun.worldId) {
       throw new ConflictException({
         code: "OPENOVEL_MANEUVER_WORLD_MISMATCH",
         message: "The product run and OpenNovel runtime disagree on the world package.",
       });
     }
-    const maneuverPackage = openNovelManeuverPackages.get(run.templateKey);
+    const maneuverPackage = openNovelManeuverPackages.get(storedRun.templateKey);
     if (!maneuverPackage) {
       throw new ConflictException({
         code: "OPENOVEL_MANEUVER_PACKAGE_MISSING",
         message: "This OpenNovel world has no registered maneuver package.",
       });
     }
+    // Preview must remain zero-side-effect. Recover the event-ledger state in
+    // memory so validation is authoritative even if the client did not GET
+    // /game first; the confirmed action transaction persists the next state.
+    const recovered = await recoverOpenNovelManeuverRun({
+      prisma: this.prisma,
+      run: storedRun,
+      turnNumber: runtimeRun.turnNumber,
+      maneuverPackage,
+      persist: false,
+    });
+    const run = recovered.run;
     const role = run.players[0]?.role;
     if (!role) {
       throw new ForbiddenException({

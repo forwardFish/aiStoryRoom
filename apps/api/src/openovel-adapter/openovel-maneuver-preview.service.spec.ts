@@ -80,6 +80,7 @@ function fixture() {
     updatedAt: new Date().toISOString(),
   };
   let submitCalls = 0;
+  let updateCalls = 0;
   let committed = false;
   let releaseSubmit: ((value: unknown) => void) | null = null;
   const submitted = new Promise((resolve) => { releaseSubmit = resolve; });
@@ -88,6 +89,10 @@ function fixture() {
     storyRun: {
       value: {
         findUnique: async () => run,
+        updateMany: async () => {
+          updateCalls += 1;
+          return { count: 1 };
+        },
       },
     },
     storyEvent: {
@@ -95,6 +100,7 @@ function fixture() {
         findUnique: async () => committed
           ? { id: "event-1", payloadJson: { requestFingerprint: "durable" } }
           : null,
+        findMany: async () => [],
       },
     },
   });
@@ -128,6 +134,7 @@ function fixture() {
     run,
     runtimeRun,
     get submitCalls() { return submitCalls; },
+    get updateCalls() { return updateCalls; },
     release(value: unknown) { releaseSubmit?.(value); },
     markCommitted() { committed = true; },
   };
@@ -162,6 +169,7 @@ test("preview validates the authoritative projection without model or persistenc
   assert.equal(result.preview.sceneKey, "d1_1");
   assert.equal(result.preview.maneuverType, "contact");
   assert.equal(f.submitCalls, 0);
+  assert.equal(f.updateCalls, 0, "Preview may read event-ledger state but must not repair the mirror");
   assert.equal(JSON.stringify(f.run), before);
 });
 
