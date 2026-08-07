@@ -52,6 +52,15 @@ export const sangtianOpenNovelManeuverPackage = defineOpenNovelManeuverPackage({
     statePatch: { "总督权威": 2, "暗账完整度": 4, "清算风险": 1 },
     factKeys: [],
     traces: ["自拟谋划原文", "幕僚执行回执"],
+    technologyBoundary: {
+      forbiddenTerms: [
+        "互联网", "手机", "电话", "卫星", "摄像头", "无人机", "飞机", "宇宙飞船",
+        "外太空", "电脑", "区块链", "社交媒体", "电子邮件", "短信", "现代银行", "GPS",
+      ],
+      reason: "这项做法使用了嘉靖时代不存在的技术或制度。",
+      replacement: "驿递、公文、耳目或当面查验",
+      rewriteSuffix: "（保留原目标，改用当时可行的渠道）",
+    },
     fallbackNarrative(customText) {
       return `你拟定的布局“${customText}”被拆成一项当前可执行的幕僚任务。它没有替代主线决策，但会成为后续剧情可引用的行动记录。`;
     },

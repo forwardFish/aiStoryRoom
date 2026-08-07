@@ -25,6 +25,13 @@ export type IntentFactContext = {
   knownByRoleIds: string[];
 };
 
+export type IntentTechnologyBoundary = {
+  forbiddenTerms: readonly string[];
+  reason: string;
+  replacement: string;
+  rewriteSuffix?: string;
+};
+
 export type IntentGuardContext = {
   role: StoryRoleContext;
   allRoles: Array<{ id: string; roleKey: string; roleName: string }>;
@@ -32,6 +39,12 @@ export type IntentGuardContext = {
   allFacts: IntentFactContext[];
   assets: IntentAssetContext[];
   stage: StageDefinition;
+  /**
+   * undefined keeps the legacy Continuous Story V2 policy for compatibility;
+   * null explicitly means the current world has no technology boundary;
+   * an object is the current world's own rule.
+   */
+  technologyBoundary?: IntentTechnologyBoundary | null;
 };
 
 export type PlannedIntentAction = ResolvedStoryAction & {
@@ -50,7 +63,15 @@ const VISIBILITIES = new Set(["PRIVATE", "LIMITED", "OBSERVABLE", "PUBLIC"]);
 const RISKS = new Set(["LOW", "MEDIUM", "HIGH"]);
 const FALLBACK_TRIGGERS = new Set(["PRIMARY_BLOCKED", "PRIMARY_PARTIAL", "TARGET_REFUSED"]);
 
-const OUT_OF_WORLD = /互联网|手机|电话|卫星|摄像头|无人机|飞机|宇宙飞船|外太空|电脑|区块链|社交媒体|电子邮件|短信|现代银行|GPS/i;
+const LEGACY_JIAJING_TECHNOLOGY_BOUNDARY: IntentTechnologyBoundary = {
+  forbiddenTerms: [
+    "互联网", "手机", "电话", "卫星", "摄像头", "无人机", "飞机", "宇宙飞船",
+    "外太空", "电脑", "区块链", "社交媒体", "电子邮件", "短信", "现代银行", "GPS",
+  ],
+  reason: "这项做法使用了嘉靖时代不存在的技术或制度。",
+  replacement: "驿递、公文、耳目或当面查验",
+  rewriteSuffix: "（保留原目标，改用当时可行的渠道）",
+};
 const CONTROL_OTHER = /直接控制(?:所有|其他|对方|该)?角色|替(?:他|她|对方|目标角色)决定|无需(?:他|她|对方|目标角色)同意|强制玩家选择|让所有人服从|控制所有角色/i;
 const DECLARE_RESULT = /必定成功|保证成功|宣布(?:已经)?成功|直接判定|直接处死皇帝|已经迫使|已经让.+(?:交出|背叛|认罪|公开秘密|改变阵营)/i;
 const CAUSAL_GAP = /无需调查|无需证据|无需过程|瞬间完成|凭空得到|直接知道全部|立即掌握所有|跳过(?:审讯|核验|交涉|递送|查验)/i;
@@ -117,8 +138,24 @@ export function guardPlayerIntentV2(raw: PlayerIntentV2, context: IntentGuardCon
   if (decision === "ACCEPT" && intent.condition && !intent.fallback) {
     reject("REWRITE_NEEDED", "CONDITION_REQUIRES_FALLBACK", "条件行动必须同时写明触发后真正执行的后手，不能只登记一个抽象条件。" );
   }
-  if (decision === "ACCEPT" && OUT_OF_WORLD.test(text)) {
-    reject("REJECT_OUT_OF_WORLD", "ERA_TECHNOLOGY_BOUNDARY", "这项做法使用了嘉靖时代不存在的技术或制度。", `${intent.method.replace(OUT_OF_WORLD, "驿递、公文、耳目或当面查验")}（保留原目标，改用当时可行的渠道）`);
+  const stageTechnologyBoundary = (context.stage as StageDefinition & {
+    technologyBoundary?: IntentTechnologyBoundary | null;
+  }).technologyBoundary;
+  const technologyBoundary = context.technologyBoundary !== undefined
+    ? context.technologyBoundary
+    : stageTechnologyBoundary !== undefined
+      ? stageTechnologyBoundary
+      : LEGACY_JIAJING_TECHNOLOGY_BOUNDARY;
+  const unavailableTechnology = technologyBoundary
+    ? firstMatchingTerm(text, technologyBoundary.forbiddenTerms)
+    : null;
+  if (decision === "ACCEPT" && technologyBoundary && unavailableTechnology) {
+    reject(
+      "REJECT_OUT_OF_WORLD",
+      "ERA_TECHNOLOGY_BOUNDARY",
+      technologyBoundary.reason,
+      `${replaceUnavailableMethod(intent.method, unavailableTechnology, technologyBoundary.replacement)}${technologyBoundary.rewriteSuffix || ""}`,
+    );
   }
   if (decision === "ACCEPT" && CONTROL_OTHER.test(text)) {
     reject("REJECT_CONTROL_OTHER_PLAYER", "OTHER_PLAYER_AGENCY", "你可以施压、请求或设置条件，但不能替另一名角色决定。", `向${intent.target.label}提出“${intent.objective}”的要求并留下现实压力，由对方自行回应`);
@@ -313,6 +350,19 @@ function normalize(value: string) {
 
 function anchors(value: string) {
   return String(value || "").split(/[，。；、：:\s]/).map((item) => item.trim()).filter((item) => item.length >= 6).slice(0, 10);
+}
+
+function firstMatchingTerm(value: string, terms: readonly string[]) {
+  const normalizedValue = normalize(value);
+  return terms.find((term) => normalize(term) && normalizedValue.includes(normalize(term))) || null;
+}
+
+function replaceUnavailableMethod(method: string, term: string, replacement: string) {
+  const lowerMethod = method.toLowerCase();
+  const lowerTerm = term.toLowerCase();
+  const index = lowerMethod.indexOf(lowerTerm);
+  if (index < 0) return `${replacement}完成原有目标`;
+  return `${method.slice(0, index)}${replacement}${method.slice(index + term.length)}`;
 }
 
 function riskTerms(value: string) {

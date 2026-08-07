@@ -3,7 +3,10 @@ import {
   type GameDefinition,
   type StageDefinition,
 } from "@ai-story/templates";
-import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
+import type {
+  OpenNovelManeuverPackage,
+  OpenNovelTechnologyBoundary,
+} from "./openovel-maneuver-package";
 
 export function installOpenNovelManeuverGuardStages(
   maneuverPackage: OpenNovelManeuverPackage,
@@ -73,7 +76,9 @@ export function compileGuardStages(
     })),
   ];
   const maxUsageDay = Math.max(...maneuverPackage.calendar.turns.map((entry) => entry.usageDay));
-  return Array.from({ length: maxUsageDay }, (_, index): StageDefinition => {
+  return Array.from({ length: maxUsageDay }, (_, index): StageDefinition & {
+    technologyBoundary: OpenNovelTechnologyBoundary | null;
+  } => {
     const usageDay = index + 1;
     const dayEntries = maneuverPackage.calendar.turns.filter((entry) => entry.usageDay === usageDay);
     const sceneKey = dayEntries[0]?.sceneKey || maneuverPackage.calendar.turns[0].sceneKey;
@@ -100,6 +105,7 @@ export function compileGuardStages(
       systemActionKey: `openovel_system:${sceneKey}`,
       nextStateKey: nextSceneKey,
       minimumDistinctPlayableInfluenceSources: 1,
+      technologyBoundary: maneuverPackage.customPlan.technologyBoundary || null,
     };
   });
 }
