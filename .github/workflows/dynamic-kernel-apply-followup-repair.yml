@@ -46,7 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "${EVIDENCE_ROOT}/logs"
+          mkdir -p "${EVIDENCE_ROOT}/logs" "${EVIDENCE_ROOT}/patched-source"
           tr -d '[:space:]' \
             < .github/repair/dynamic-kernel-followup.patch.gz.b64 \
             > "${RUNNER_TEMP}/followup.patch.gz.b64"
@@ -63,6 +63,19 @@ jobs:
           git apply "${RUNNER_TEMP}/followup.patch"
           git diff --check
           git diff --stat | tee "${EVIDENCE_ROOT}/logs/00-applied-diff.log"
+          git diff --binary > "${EVIDENCE_ROOT}/applied-repair.patch"
+          for source in \
+            packages/templates/src/runtime-contract/kernel-selector-lite.ts \
+            packages/templates/tests/kernel-selector-lite.test.ts \
+            apps/api/src/solo-story-engine/context-compiler.ts \
+            apps/openovel-runtime/src/sangtian-decisions-base.ts \
+            apps/openovel-runtime/src/sangtian-decisions.ts \
+            apps/openovel-runtime/tests/sangtian-dynamic-kernel-production.spec.ts; do
+            if [ -f "${source}" ]; then
+              mkdir -p "${EVIDENCE_ROOT}/patched-source/$(dirname "${source}")"
+              cp "${source}" "${EVIDENCE_ROOT}/patched-source/${source}"
+            fi
+          done
       - name: Install frozen workspace
         shell: bash
         run: pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
