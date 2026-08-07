@@ -1,0 +1,133 @@
+{
+  "$schema": "../schema/video-spec.schema.json",
+  "schemaVersion": "1.0",
+  "videoId": "sangtian-governor-crisis",
+  "series": "CAN YOU CHANGE HISTORY?",
+  "creativeAngle": "shared-causality",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "durationSeconds": 27,
+    "safeMargins": { "top": 150, "right": 100, "bottom": 300, "left": 100 }
+  },
+  "brand": {
+    "productName": "OUR MANY WORLDS",
+    "tagline": "ONE WORLD. MANY PERSPECTIVES. NO STORY IS WRITTEN IN ADVANCE.",
+    "cta": "ENTER ZHEJIANG.",
+    "palette": {
+      "ink": "#28231F",
+      "paper": "#F7F3E9",
+      "accent": "#7657B5",
+      "accentSoft": "#E8DFF4",
+      "danger": "#9A4A45"
+    }
+  },
+  "world": {
+    "name": "ZHEJIANG",
+    "time": "MING DYNASTY",
+    "fateTarget": "THE PROVINCE",
+    "location": "THE GOVERNOR'S HALL"
+  },
+  "hook": {
+    "type": "counterfactual",
+    "endpoint": "ZHEJIANG IS NEAR COLLAPSE.",
+    "question": "CAN YOU CHANGE ITS FATE?",
+    "visualCue": "A pale administrative map, empty grain measures, sealed court orders and worried officials; no disaster spectacle, only visible institutional pressure."
+  },
+  "rewind": {
+    "label": "GO BACK.",
+    "frames": [
+      "The final tax order is lifted from the governor's desk.",
+      "County ledgers return unopened to their cases.",
+      "The imperial demand arrives at the provincial gate."
+    ]
+  },
+  "player": {
+    "role": "GOVERNOR OF ZHEJIANG",
+    "roleLine": "YOU ARE THE GOVERNOR.",
+    "relationshipLine": "THE COURT EXPECTS YOUR OBEDIENCE.",
+    "visualCue": "The governor stands in a bright, restrained hall beside ledgers, seals and a provincial map."
+  },
+  "conflict": {
+    "lines": [
+      "THE COURT DEMANDS MORE SILK.",
+      "THE PEOPLE CANNOT PAY ANOTHER TAX."
+    ],
+    "dilemmaLines": [
+      "OBEY THE COURT",
+      "OR PROTECT THE FARMS?"
+    ],
+    "visualCue": "Court order on one side, farm ledgers and local petitions on the other, the governor between them."
+  },
+  "choices": [
+    { "id": "obey-court", "label": "OBEY THE COURT", "strategy": "Execute the order quickly and transfer the burden downward." },
+    { "id": "protect-farms", "label": "PROTECT THE FARMS", "strategy": "Delay conversion and defend grain production at political cost." },
+    { "id": "audit-ledgers", "label": "AUDIT THE LEDGERS", "strategy": "Demand county records before accepting either side's claims." }
+  ],
+  "selectedChoiceId": "audit-ledgers",
+  "consequences": [
+    {
+      "character": "THE COURT",
+      "effect": "DELAYS THE FINAL ORDER.",
+      "visualCue": "A revised dispatch leaves the capital with narrower wording and a deadline."
+    },
+    {
+      "character": "COUNTY OFFICIALS",
+      "effect": "BEGIN HIDING RECORDS.",
+      "visualCue": "Clerks move selected ledgers away from the public archive."
+    },
+    {
+      "character": "MERCHANTS",
+      "effect": "RAISE SILK PRICES.",
+      "visualCue": "Merchants revise account boards as uncertainty spreads through the market."
+    }
+  ],
+  "worldResult": "THE LEDGERS BECOME THE BATTLEFIELD.",
+  "productMessage": [
+    "ONE DECISION CHANGES THREE SIDES.",
+    "EVERY ROLE ACTS INSIDE THE SAME WORLD."
+  ],
+  "timing": {
+    "hook": 1.8,
+    "challenge": 1.4,
+    "rewind": 1.8,
+    "role": 2.2,
+    "conflict": 3.0,
+    "choice": 3.4,
+    "selection": 0.9,
+    "consequences": 5.3,
+    "product": 3.2,
+    "logo": 4.0
+  },
+  "assets": {
+    "hookImage": "assets/source/sangtian/zhejiang-crisis.png",
+    "rewindImages": [
+      "assets/source/sangtian/order-desk.png",
+      "assets/source/sangtian/ledger-case.png",
+      "assets/source/sangtian/imperial-dispatch.png"
+    ],
+    "playerPortrait": "assets/source/sangtian/governor.png",
+    "conflictPortraits": [
+      "assets/source/sangtian/court-envoy.png",
+      "assets/source/sangtian/farm-representative.png"
+    ],
+    "consequencePortraits": [
+      "assets/source/sangtian/court-envoy.png",
+      "assets/source/sangtian/county-clerk.png",
+      "assets/source/sangtian/silk-merchant.png"
+    ],
+    "worldImage": "assets/source/sangtian/zhejiang-map.png",
+    "gameUiImage": "assets/source/ui/sangtian-choice-screen.png",
+    "logoVideo": "assets/source/brand/our-many-worlds-logo.mp4"
+  },
+  "publish": {
+    "landingPath": "/worlds/sangtian?mode=solo&role=governor&utm_source=short_video&utm_campaign=sangtian_mvp&utm_content=sangtian_governor_crisis",
+    "captionVariants": [
+      "The court demands silk. The farms cannot survive another order. What would you do?",
+      "One audit changes the court, the counties and the merchants.",
+      "A political crisis where every role sees a different truth."
+    ],
+    "hashtags": ["#OurManyWorlds", "#HistoryGame", "#MingDynasty", "#StrategyGame", "#ChoiceGame"]
+  }
+}

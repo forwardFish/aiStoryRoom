@@ -1,0 +1,133 @@
+{
+  "$schema": "../schema/video-spec.schema.json",
+  "schemaVersion": "1.0",
+  "videoId": "caesar-caesar-warning",
+  "series": "CAN YOU CHANGE HISTORY?",
+  "creativeAngle": "role-identity",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "durationSeconds": 27,
+    "safeMargins": { "top": 150, "right": 100, "bottom": 300, "left": 100 }
+  },
+  "brand": {
+    "productName": "OUR MANY WORLDS",
+    "tagline": "ONE WORLD. MANY PERSPECTIVES. NO STORY IS WRITTEN IN ADVANCE.",
+    "cta": "PLAY AS CAESAR.",
+    "palette": {
+      "ink": "#211A2E",
+      "paper": "#F7F3FF",
+      "accent": "#7C4DFF",
+      "accentSoft": "#EAE0FF",
+      "danger": "#9D3F5B"
+    }
+  },
+  "world": {
+    "name": "ROME",
+    "time": "44 BC",
+    "fateTarget": "CAESAR",
+    "location": "THE ROMAN SENATE"
+  },
+  "hook": {
+    "type": "countdown",
+    "endpoint": "10 MINUTES BEFORE CAESAR DIES.",
+    "question": "THIS TIME, YOU ARE CAESAR.",
+    "visualCue": "Caesar approaches the Senate steps while the crowd opens around him; an understated ten-minute countdown sits in the upper corner."
+  },
+  "rewind": {
+    "label": "GO BACK.",
+    "frames": [
+      "A warning tablet falls beside the Senate steps.",
+      "The tablet returns to the messenger's hands.",
+      "The messenger crosses the forum toward Caesar."
+    ]
+  },
+  "player": {
+    "role": "CAESAR",
+    "roleLine": "YOU ARE CAESAR.",
+    "relationshipLine": "BRUTUS SENDS A SECRET WARNING.",
+    "visualCue": "Caesar in pale daylight, composed but alert, receiving a sealed message before the Senate session."
+  },
+  "conflict": {
+    "lines": [
+      "YOUR CLOSEST ALLY MAY BE TELLING THE TRUTH.",
+      "OR HE MAY BE SETTING A TRAP."
+    ],
+    "dilemmaLines": [
+      "TRUST BRUTUS",
+      "OR TEST HIM?"
+    ],
+    "visualCue": "Caesar examines the sealed warning while Brutus and Antony appear as distant, uncertain figures."
+  },
+  "choices": [
+    { "id": "enter-senate", "label": "ENTER THE SENATE", "strategy": "Reject the warning and preserve your public confidence." },
+    { "id": "arrest-cassius", "label": "ARREST CASSIUS", "strategy": "Act openly against the suspected conspiracy before evidence is complete." },
+    { "id": "pretend-ignorance", "label": "PRETEND YOU KNOW NOTHING", "strategy": "Delay the session and quietly observe who changes position." }
+  ],
+  "selectedChoiceId": "pretend-ignorance",
+  "consequences": [
+    {
+      "character": "BRUTUS",
+      "effect": "BELIEVES HIS WARNING WORKED.",
+      "visualCue": "Brutus watches Caesar change course without knowing whether he was trusted."
+    },
+    {
+      "character": "CASSIUS",
+      "effect": "MOVES THE PLAN FORWARD.",
+      "visualCue": "Cassius reads the delay as danger and signals the conspirators to act sooner."
+    },
+    {
+      "character": "ANTONY",
+      "effect": "RECEIVES A PRIVATE ORDER.",
+      "visualCue": "Antony receives an instruction to keep the guards near but out of sight."
+    }
+  ],
+  "worldResult": "THE CONSPIRACY CHANGES SHAPE.",
+  "productMessage": [
+    "FIVE ROLES. FIVE SECRET GOALS.",
+    "EVERY DECISION RESHAPES THE SAME ROME."
+  ],
+  "timing": {
+    "hook": 1.8,
+    "challenge": 1.4,
+    "rewind": 1.8,
+    "role": 2.2,
+    "conflict": 3.0,
+    "choice": 3.4,
+    "selection": 0.9,
+    "consequences": 5.3,
+    "product": 3.2,
+    "logo": 4.0
+  },
+  "assets": {
+    "hookImage": "assets/source/caesar/caesar-senate-countdown.png",
+    "rewindImages": [
+      "assets/source/caesar/warning-tablet-ground.png",
+      "assets/source/caesar/warning-tablet-messenger.png",
+      "assets/source/caesar/forum-messenger.png"
+    ],
+    "playerPortrait": "assets/source/caesar/caesar.png",
+    "conflictPortraits": [
+      "assets/source/caesar/brutus.png",
+      "assets/source/caesar/antony.png"
+    ],
+    "consequencePortraits": [
+      "assets/source/caesar/brutus.png",
+      "assets/source/caesar/cassius.png",
+      "assets/source/caesar/antony.png"
+    ],
+    "worldImage": "assets/source/caesar/rome-forum.png",
+    "gameUiImage": "assets/source/ui/caesar-choice-screen.png",
+    "logoVideo": "assets/source/brand/our-many-worlds-logo.mp4"
+  },
+  "publish": {
+    "landingPath": "/worlds/caesar?mode=solo&role=caesar&utm_source=short_video&utm_campaign=caesar_mvp&utm_content=caesar_caesar_warning",
+    "captionVariants": [
+      "Ten minutes before history changes. This time, you are Caesar.",
+      "Brutus warns you. Do you trust him—or test him?",
+      "A single delay changes every player's next move."
+    ],
+    "hashtags": ["#OurManyWorlds", "#Caesar", "#HistoryGame", "#StrategyGame", "#WhatWouldYouDo"]
+  }
+}

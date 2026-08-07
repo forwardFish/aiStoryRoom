@@ -1,0 +1,134 @@
+{
+  "$schema": "../schema/video-spec.schema.json",
+  "schemaVersion": "1.0",
+  "videoId": "caesar-brutus-fate",
+  "series": "CAN YOU CHANGE HISTORY?",
+  "creativeAngle": "change-history",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "durationSeconds": 27,
+    "safeMargins": { "top": 150, "right": 100, "bottom": 300, "left": 100 }
+  },
+  "brand": {
+    "productName": "OUR MANY WORLDS",
+    "tagline": "ONE WORLD. MANY PERSPECTIVES. NO STORY IS WRITTEN IN ADVANCE.",
+    "cta": "PLAY AS BRUTUS.",
+    "palette": {
+      "ink": "#211A2E",
+      "paper": "#F7F3FF",
+      "accent": "#7C4DFF",
+      "accentSoft": "#EAE0FF",
+      "danger": "#9D3F5B"
+    }
+  },
+  "world": {
+    "name": "ROME",
+    "time": "44 BC",
+    "fateTarget": "CAESAR",
+    "location": "THE ROMAN SENATE"
+  },
+  "hook": {
+    "type": "fate-endpoint",
+    "endpoint": "CAESAR IS DEAD.",
+    "question": "CAN YOU CHANGE HIS FATE?",
+    "visualCue": "A non-graphic symbolic aftermath in the Senate: a fallen laurel wreath, shocked senators in silhouette, Caesar obscured by foreground robes, no visible injury."
+  },
+  "rewind": {
+    "label": "REWIND.",
+    "frames": [
+      "The Senate freezes at the moment of crisis.",
+      "The crowd and senators move backward through the chamber.",
+      "Caesar returns to the Senate steps before the danger.",
+      "Rome welcomes Caesar beneath banners and pale daylight."
+    ]
+  },
+  "player": {
+    "role": "BRUTUS",
+    "roleLine": "YOU ARE BRUTUS.",
+    "relationshipLine": "CAESAR TRUSTS YOU.",
+    "visualCue": "Brutus alone in a bright marble corridor, holding an unopened sealed letter, divided light across his face, premium historical editorial illustration."
+  },
+  "conflict": {
+    "lines": [
+      "CASSIUS WANTS YOU TO BETRAY CAESAR.",
+      "BUT CAESAR CALLS YOU HIS FRIEND."
+    ],
+    "dilemmaLines": [
+      "SAVE A FRIEND",
+      "OR SAVE THE REPUBLIC?"
+    ],
+    "visualCue": "Brutus centered between Caesar and Cassius as separate portrait panels; trust on one side, conspiracy on the other."
+  },
+  "choices": [
+    { "id": "warn-caesar", "label": "WARN CAESAR", "strategy": "Protect Caesar openly and risk exposing yourself to the conspirators." },
+    { "id": "join-cassius", "label": "JOIN CASSIUS", "strategy": "Commit to the conspiracy and accept the consequences for Caesar." },
+    { "id": "deceive-both", "label": "DECEIVE THEM BOTH", "strategy": "Send a warning while concealing your allegiance from both sides." }
+  ],
+  "selectedChoiceId": "deceive-both",
+  "consequences": [
+    {
+      "character": "CAESAR",
+      "effect": "DELAYS THE SENATE MEETING.",
+      "visualCue": "Caesar pauses outside the Senate while an aide presents a sealed warning."
+    },
+    {
+      "character": "CASSIUS",
+      "effect": "SUSPECTS A TRAITOR.",
+      "visualCue": "Cassius studies the conspirators as trust fractures across the group."
+    },
+    {
+      "character": "ANTONY",
+      "effect": "MOBILIZES THE GUARDS.",
+      "visualCue": "Antony gives a quiet order as guards shift position near the Senate."
+    }
+  ],
+  "worldResult": "ROME ENTERS A NEW CRISIS.",
+  "productMessage": [
+    "EVERY PLAYER CHOOSES.",
+    "EVERY CHOICE CHANGES THE SAME WORLD."
+  ],
+  "timing": {
+    "hook": 1.8,
+    "challenge": 1.4,
+    "rewind": 1.8,
+    "role": 2.2,
+    "conflict": 3.0,
+    "choice": 3.4,
+    "selection": 0.9,
+    "consequences": 5.3,
+    "product": 3.2,
+    "logo": 4.0
+  },
+  "assets": {
+    "hookImage": "assets/source/caesar/01-hook-fate.png",
+    "rewindImages": [
+      "assets/source/caesar/02-rewind-crisis.png",
+      "assets/source/caesar/03-rewind-senate.png",
+      "assets/source/caesar/04-rewind-triumph.png"
+    ],
+    "playerPortrait": "assets/source/caesar/brutus.png",
+    "conflictPortraits": [
+      "assets/source/caesar/caesar.png",
+      "assets/source/caesar/cassius.png"
+    ],
+    "consequencePortraits": [
+      "assets/source/caesar/caesar.png",
+      "assets/source/caesar/cassius.png",
+      "assets/source/caesar/antony.png"
+    ],
+    "worldImage": "assets/source/caesar/rome-senate.png",
+    "gameUiImage": "assets/source/ui/caesar-choice-screen.png",
+    "logoVideo": "assets/source/brand/our-many-worlds-logo.mp4"
+  },
+  "publish": {
+    "landingPath": "/worlds/caesar?mode=solo&role=brutus&utm_source=short_video&utm_campaign=caesar_mvp&utm_content=caesar_brutus_fate",
+    "captionVariants": [
+      "Caesar trusts you. Rome fears him. What would you do as Brutus?",
+      "History chose one ending. Your Rome does not have to.",
+      "One decision changes Caesar, Cassius, Antony—and the same Rome."
+    ],
+    "hashtags": ["#OurManyWorlds", "#Caesar", "#Brutus", "#HistoryGame", "#ChoiceGame"]
+  }
+}

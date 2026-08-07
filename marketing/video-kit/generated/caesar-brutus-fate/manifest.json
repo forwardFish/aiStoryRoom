@@ -1,0 +1,90 @@
+{
+  "generator": "Our Many Worlds MVP Video Kit",
+  "generatorVersion": "1.0.0",
+  "generatedAt": "2026-08-07T03:18:30.434Z",
+  "videoId": "caesar-brutus-fate",
+  "sourceSpecSha256": "88ce8954b530a5571f1a2b9ef1d75c0206f979cce3a0e544bdc285ff79ee4ce5",
+  "durationSeconds": 27,
+  "sceneCount": 10,
+  "warnings": [
+    "conflict carries 34.7 characters/second; shorten copy or extend the scene.",
+    "selection carries 32.2 characters/second; shorten copy or extend the scene."
+  ],
+  "files": [
+    {
+      "path": "frames/01-hook.svg",
+      "bytes": 1668,
+      "sha256": "6b2b30da8129667f7f0efe44b4ae154ae485549b4b0c0435224c5f174e0dbcfd"
+    },
+    {
+      "path": "frames/02-challenge.svg",
+      "bytes": 1677,
+      "sha256": "5ef94f87ead602706ee76c9e1526c5240159bbe735e9fcc2df995070a3cdafea"
+    },
+    {
+      "path": "frames/03-rewind.svg",
+      "bytes": 1982,
+      "sha256": "6739cb4bdf5ac9a7d6be6afce425cb5d48f43fd0d8635eff33bf53ac89257e9a"
+    },
+    {
+      "path": "frames/04-role.svg",
+      "bytes": 1827,
+      "sha256": "6375e0da4144c7b6d55af7886761c78aba8120f67a1e2145041ff40fd7cc4e4d"
+    },
+    {
+      "path": "frames/05-conflict.svg",
+      "bytes": 2573,
+      "sha256": "5a01b83426a626829dad2baabe9bca78a4687aac6da685c3b64f2e5002467ea2"
+    },
+    {
+      "path": "frames/06-choice.svg",
+      "bytes": 2144,
+      "sha256": "660e8ca0c1bfb4651a0105e4c9d7e007ebd1dcb21b7949a2c074b9239eb62551"
+    },
+    {
+      "path": "frames/07-selection.svg",
+      "bytes": 2294,
+      "sha256": "0ed69fabb2817d7bf77b77255c47ea4b2a7cf173210caeba2caba4bf3bea9966"
+    },
+    {
+      "path": "frames/08-consequences.svg",
+      "bytes": 2625,
+      "sha256": "e837731e6c0bf5021e790050c11b921e2046e09211725653ede64ed3a163dfee"
+    },
+    {
+      "path": "frames/09-product.svg",
+      "bytes": 2687,
+      "sha256": "eaa60f93046c3c8507c4bb939304f7c81efd1bc83b7cb691638846fda22359b7"
+    },
+    {
+      "path": "frames/10-logo.svg",
+      "bytes": 1824,
+      "sha256": "2338c85b7fd9befc322402e32a7f54e0b3446a537b7d81bac8c7253100bd4674"
+    },
+    {
+      "path": "contact-sheet.svg",
+      "bytes": 7307,
+      "sha256": "b14a8663cc8d5208511a5733016fe0435d852c17152c4adf8670ada580cefb68"
+    },
+    {
+      "path": "storyboard.md",
+      "bytes": 3336,
+      "sha256": "4bb7c6e86f18b9ff6cbcf3d0e0dfdf56756a1fd712341c9bac355f74623db96d"
+    },
+    {
+      "path": "subtitles.srt",
+      "bytes": 881,
+      "sha256": "64bee85a4ffc6ccd2a2b905c39a1a6688e202c2f2b39f66889eb2def623893cb"
+    },
+    {
+      "path": "edit-decision-list.csv",
+      "bytes": 3296,
+      "sha256": "c311395cbf0b3b5f6f42f168953a7db0914d6cdae4df8ad1e07ebfc6fa4db869"
+    },
+    {
+      "path": "asset-checklist.md",
+      "bytes": 1122,
+      "sha256": "d61a33b09a0bb9a52570e7827a0aecb7935a6b1c38a442b7fadffd572d3ef064"
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.com/schemas/mvp-short-video-spec-v1.json",
+  "title": "Our Many Worlds MVP Short Video Spec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "videoId",
+    "series",
+    "format",
+    "brand",
+    "world",
+    "hook",
+    "rewind",
+    "player",
+    "conflict",
+    "choices",
+    "selectedChoiceId",
+    "consequences",
+    "worldResult",
+    "productMessage",
+    "timing",
+    "assets",
+    "publish"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "videoId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,79}$" },
+    "series": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "creativeAngle": {
+      "type": "string",
+      "enum": ["change-history", "role-identity", "shared-causality", "player-ending", "audience-choice"]
+    },
+    "format": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "fps", "durationSeconds", "safeMargins"],
+      "properties": {
+        "width": { "const": 1080 },
+        "height": { "const": 1920 },
+        "fps": { "type": "integer", "enum": [24, 25, 30] },
+        "durationSeconds": { "type": "number", "minimum": 20, "maximum": 32 },
+        "safeMargins": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["top", "right", "bottom", "left"],
+          "properties": {
+            "top": { "type": "integer", "minimum": 80, "maximum": 300 },
+            "right": { "type": "integer", "minimum": 60, "maximum": 220 },
+            "bottom": { "type": "integer", "minimum": 180, "maximum": 420 },
+            "left": { "type": "integer", "minimum": 60, "maximum": 220 }
+          }
+        }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["productName", "tagline", "cta", "palette"],
+      "properties": {
+        "productName": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "tagline": { "type": "string", "minLength": 1, "maxLength": 110 },
+        "cta": { "type": "string", "minLength": 1, "maxLength": 36 },
+        "palette": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ink", "paper", "accent", "accentSoft", "danger"],
+          "properties": {
+            "ink": { "$ref": "#/$defs/color" },
+            "paper": { "$ref": "#/$defs/color" },
+            "accent": { "$ref": "#/$defs/color" },
+            "accentSoft": { "$ref": "#/$defs/color" },
+            "danger": { "$ref": "#/$defs/color" }
+          }
+        }
+      }
+    },
+    "world": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "time", "fateTarget", "location"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "time": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "fateTarget": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "location": { "type": "string", "minLength": 1, "maxLength": 60 }
+      }
+    },
+    "hook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "endpoint", "question", "visualCue"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["fate-endpoint", "countdown", "relationship-betrayal", "counterfactual", "unexpected-ending"]
+        },
+        "endpoint": { "type": "string", "minLength": 1, "maxLength": 52 },
+        "question": { "type": "string", "minLength": 1, "maxLength": 58 },
+        "visualCue": { "type": "string", "minLength": 1, "maxLength": 260 }
+      }
+    },
+    "rewind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "frames"],
+      "properties": {
+        "label": { "type": "string", "maxLength": 20 },
+        "frames": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 4,
+          "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+        }
+      }
+    },
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "roleLine", "relationshipLine", "visualCue"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "roleLine": { "type": "string", "minLength": 1, "maxLength": 42 },
+        "relationshipLine": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "visualCue": { "type": "string", "minLength": 1, "maxLength": 260 }
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lines", "dilemmaLines", "visualCue"],
+      "properties": {
+        "lines": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "dilemmaLines": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": { "type": "string", "minLength": 1, "maxLength": 38 }
+        },
+        "visualCue": { "type": "string", "minLength": 1, "maxLength": 260 }
+      }
+    },
+    "choices": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "strategy"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,39}$" },
+          "label": { "type": "string", "minLength": 1, "maxLength": 26 },
+          "strategy": { "type": "string", "minLength": 1, "maxLength": 100 }
+        }
+      }
+    },
+    "selectedChoiceId": { "type": "string", "minLength": 2, "maxLength": 40 },
+    "consequences": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["character", "effect", "visualCue"],
+        "properties": {
+          "character": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "effect": { "type": "string", "minLength": 1, "maxLength": 54 },
+          "visualCue": { "type": "string", "minLength": 1, "maxLength": 220 }
+        }
+      }
+    },
+    "worldResult": { "type": "string", "minLength": 1, "maxLength": 52 },
+    "productMessage": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "items": { "type": "string", "minLength": 1, "maxLength": 58 }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hook", "challenge", "rewind", "role", "conflict", "choice", "selection", "consequences", "product", "logo"],
+      "properties": {
+        "hook": { "$ref": "#/$defs/duration" },
+        "challenge": { "$ref": "#/$defs/duration" },
+        "rewind": { "$ref": "#/$defs/duration" },
+        "role": { "$ref": "#/$defs/duration" },
+        "conflict": { "$ref": "#/$defs/duration" },
+        "choice": { "$ref": "#/$defs/duration" },
+        "selection": { "$ref": "#/$defs/duration" },
+        "consequences": { "$ref": "#/$defs/duration" },
+        "product": { "$ref": "#/$defs/duration" },
+        "logo": { "$ref": "#/$defs/duration" }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hookImage", "rewindImages", "playerPortrait", "conflictPortraits", "consequencePortraits", "worldImage", "gameUiImage", "logoVideo"],
+      "properties": {
+        "hookImage": { "type": "string" },
+        "rewindImages": { "type": "array", "minItems": 3, "maxItems": 4, "items": { "type": "string" } },
+        "playerPortrait": { "type": "string" },
+        "conflictPortraits": { "type": "array", "minItems": 2, "maxItems": 3, "items": { "type": "string" } },
+        "consequencePortraits": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "string" } },
+        "worldImage": { "type": "string" },
+        "gameUiImage": { "type": "string" },
+        "logoVideo": { "type": "string" }
+      }
+    },
+    "publish": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["landingPath", "captionVariants", "hashtags"],
+      "properties": {
+        "landingPath": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "captionVariants": { "type": "array", "minItems": 2, "maxItems": 5, "items": { "type": "string", "minLength": 1, "maxLength": 220 } },
+        "hashtags": { "type": "array", "minItems": 2, "maxItems": 8, "items": { "type": "string", "pattern": "^#[A-Za-z0-9_]+$" } }
+      }
+    }
+  },
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "duration": { "type": "number", "exclusiveMinimum": 0, "maximum": 8 }
+  }
+}

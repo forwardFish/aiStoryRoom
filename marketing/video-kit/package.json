@@ -1,0 +1,16 @@
+{
+  "name": "@our-many-worlds/video-kit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dependency-free MVP short-video storyboard, subtitle and editing-plan generator for Our Many Worlds.",
+  "scripts": {
+    "test": "node --test tests/video-kit.test.mjs",
+    "validate": "node scripts/video-kit.mjs validate examples",
+    "generate": "node scripts/video-kit.mjs batch examples generated",
+    "generate:caesar": "node scripts/video-kit.mjs generate examples/caesar-brutus-fate.json generated/caesar-brutus-fate"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

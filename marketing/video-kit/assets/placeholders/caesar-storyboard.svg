@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="3200" viewBox="0 0 1200 3200" role="img" aria-labelledby="title desc">
+  <title id="title">Our Many Worlds Caesar MVP short-video storyboard</title>
+  <desc id="desc">Ten reusable vertical-video panels from fate endpoint to logo.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#241B38"/>
+      <stop offset="0.55" stop-color="#7C4DFF"/>
+      <stop offset="1" stop-color="#A45C78"/>
+    </linearGradient>
+    <style>
+      .panel{fill:url(#bg);stroke:#EAE0FF;stroke-width:3}
+      .safe{fill:none;stroke:#EAE0FF;stroke-width:2;stroke-dasharray:10 10;opacity:.55}
+      .h{font:800 28px Inter,Arial,sans-serif;fill:#fff;text-anchor:middle}
+      .s{font:650 17px Inter,Arial,sans-serif;fill:#F7F3FF;text-anchor:middle}
+      .n{font:800 18px Intes,Arial,sans-serif;fill:#211A2E}
+      .card{fill:#F7F3FF;stroke:#EAE0FF;stroke-width:3}
+      .accent{fill:#7C4DFF}
+      .danger{fill:#9D3F5B}
+      .ink{fill:#211A2E}
+    </style>
+    <g id="person"><circle cx="0" cy="-28" r="34" class="ink"/><path d="M-62 74C-54 6-28-2 0-2s54 8 62 76Z" class="ink"/></g>
+  </defs>
+  <rect width="1200" height="3200" fill="#F7F3FF"/>
+  <text x="70" y="72" class="n" font-size="34">CAN YOU CHANGE HISTORY? — CAESAR / BRUTUS / 27s</text>
+
+  <!-- 01 -->
+  <g transform="translate(70 120)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <path d="M130 215h240M155 215V95M345 215V95" fill="none" stroke="#EAE0FF" stroke-width="18" opacity=".5"/>
+    <ellipse cx="250" cy="220" rx="92" ry="36" fill="none" stroke="#EAE0FF" stroke-width="14" stroke-dasharray="28 12"/>
+    <text x="250" y="375" class="h">CAESAR IS DEAD.</text><text x="250" y="520" class="s">01 · FATE ENDPOINT</text>
+  </g>
+  <!-- 02 -->
+  <g transform="translate(630 120)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <circle cx="250" cy="220" r="95" fill="none" stroke="#EAE0FF" stroke-width="16"/><text x="250" y="236" class="h" font-size="64">?</text>
+    <text x="250" y="355" class="h">CAN YOU CHANGE</text><text x="250" y="392" class="h">HIS FATE?</text><text x="250" y="520" class="s">02 · CHALLENGE</text>
+  </g>
+  <!-- 03 -->
+  <g transform="translate(70 720)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <rect x="72" y="130" width="105" height="220" rx="18" fill="#F7F3FF" opacity=".25"/><rect x="198" y="130" width="105" height="220" rx="18" fill="#F7F3FF" opacity=".35"/><rect x="324" y="130" width="105" height="220" rx="18" fill="#F7F3FF" opacity=".48"/>
+    <path d="M410 110c55 40 50 115 0 146" fill="none" stroke="#7C4DFF" stroke-width="16"/><path d="m397 102 44 8-24 37" class="accent"/>
+    <text x="250" y="410" class="h">REWIND.</text><text x="250" y="520" class="s">03 · TIME REVERSAL</text>
+  </g>
+  <!-- 04 -->
+  <g transform="translate(630 720)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <g transform="translate(250 245) scale(1.45)"><use href="#person"/></g>
+    <text x="250" y="390" class="h">YOU ARE BRUTUS.</text><text x="250" y="425" class="s">CAESAR TRUSTS YOU.</text><text x="250" y="520" class="s">04 · ROLE IDENTITY</text>
+  </g>
+  <!-- 05 -->
+  <g transform="translate(70 1320)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <rect x="65" y="95" width="165" height="245" rx="26" fill="#F7F3FF" opacity=".2"/><rect x="270" y="95" width="165" height="245" rx="26" fill="#F7F3FF" opacity=".2"/>
+    <g transform="translate(147 230)"><use href="#person"/></g><g transform="translate(352 230)"><use href="#person"/></g>
+    <text x="250" y="380" class="h">FRIEND OR REPUBLIC?</text><text x="250" y="520" class="s">05 · CONFLICT</text>
+  </g>
+  <!-- 06 -->
+  <g transform="translate(630 1320)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <text x="250" y="92" class="h">WHAT WOULD YOU DO?</text>
+    <rect x="70" y="135" width="360" height="80" rx="20" class="card"/><text x="250" y="184" class="n" text-anchor="middle">WARN CAESAR</text>
+    <rect x="70" y="235" width="360" height="80" rx="20" class="card"/><text x="250" y="284" class="n" text-anchor="middle">JOIN CASSIUS</text>
+    <rect x="70" y="335" width="360" height="80" rx="20" class="card"/><text x="250" y="384" class="n" text-anchor="middle">DECEIVE BOTH</text>
+    <text x="250" y="520" class="s">06 · AUDIENCE CHOICE</text>
+  </g>
+  <!-- 07 -->
+  <g transform="translate(70 1920)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <text x="250" y="110" class="h">YOU CHOOSE:</text><rect x="70" y="200" width="360" height="105" rx="22" class="accent" stroke="#fff" stroke-width="5"/><text x="250" y="265" class="h">DECEIVE BOTH</text>
+    <text x="250" y="520" class="s">07 · SELECTION</text>
+  </g>
+  <!-- 08 -->
+  <g transform="translate(630 1920)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <rect x="55" y="85" width="390" height="105" rx="20" class="card"/><circle cx="115" cy="138" r="31" class="accent"/><text x="165" y="132" class="n">CAESAR</text><text x="165" y="160" class="n" font-size="14">DELAYS THE MEETING</text>
+    <rect x="55" y="215" width="390" height="105" rx="20" class="card"/><circle cx="115" cy="268" r="31" class="danger"/><text x="165" y="262" class="n">CASSIUS</text><text x="165" y="290" class="n" font-size="14">SUSPECTS A TRAITOR</text>
+    <rect x="55" y="345" width="390" height="105" rx="20" class="card"/><circle cx="115" cy="398" r="31" class="ink"/><text x="165" y="392" class="n">ANTONY</text><text x="165" y="420" class="n" font-size="14">MOBILIZES THE GUARDS</text>
+    <text x="250" y="520" class="s">08 · CHAIN CONSEQUENCES</text>
+  </g>
+  <!-- 09 -->
+  <g transform="translate(70 2520)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <path d="M250 160 130 280M250 160l120 120M250 160l-65 225M250 160l65 225" stroke="#EAE0FF" stroke-width="8"/>
+    <circle cx="250" cy="160" r="60" class="accent"/><circle cx="130" cy="280" r="45" fill="#F7F3FF"/><circle cx="370" cy="280" r="45" fill="#F7F3FF"/><circle cx="185" cy="385" r="45" fill="#F7F3FF"/><circle cx="315" cy="385" r="45" fill="#F7F3FF"/>
+    <text x="250" y="465" class="h">EVERY CHOICE CHANGES</text><text x="250" y="500" class="h">THE SAME WORLD.</text><text x="250" y="535" class="s">09 · PRODUCT MECHANIC</text>
+  </g>
+  <!-- 10 -->
+  <g transform="translate(630 2520)">
+    <rect width="500" height="550" rx="28" class="panel"/><rect x="38" y="38" width="424" height="474" rx="22" class="safe"/>
+    <circle cx="250" cy="220" r="90" fill="none" stroke="#7C4DFF" stroke-width="16"/><path d="M165 220c45-65 125-65 170 0-45 65-125 65-170 0Z" fill="none" stroke="#EAE0FF" stroke-width="14"/>
+    <text x="250" y="365" class="h">OUR MANY WORLDS</text><text x="250" y="405" class="h">PLAY AS BRUTUS.</text><text x="250" y="520" class="s">10 · EXISTING LOGO VIDEO</text>
+  </g>
+</svg>
