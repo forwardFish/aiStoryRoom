@@ -53,6 +53,10 @@ export type OpenNovelManeuverState = {
   metrics: Record<string, number>;
   aiBudget: MvpAiBudget;
   results: OpenNovelManeuverResult[];
+  /** Confirmed results already supplied to a later main OpenNovel turn. */
+  canonConsumedResultIds: string[];
+  /** Main turn that most recently consumed confirmed maneuver context. */
+  lastCanonBridgeTurnNumber: number | null;
 };
 
 export type OpenNovelManeuverPanelProjection = {
@@ -114,7 +118,10 @@ export type OpenNovelLeverageHandProjection = {
 
 export type OpenNovelManeuverProjection = {
   state: OpenNovelManeuverState;
-  maneuverState: Omit<OpenNovelManeuverState, "metrics" | "aiBudget" | "results">;
+  maneuverState: Omit<
+    OpenNovelManeuverState,
+    "metrics" | "aiBudget" | "results" | "canonConsumedResultIds" | "lastCanonBridgeTurnNumber"
+  >;
   maneuverPanel: OpenNovelManeuverPanelProjection;
   leverageHand: OpenNovelLeverageHandProjection;
 };
@@ -202,6 +209,10 @@ export function ensureOpenNovelManeuverState(
     ...array(prior.discoveredFactKeys).map(String),
     ...priorResults.flatMap((item) => item.discoveredFactKeys),
   ]);
+  const resultIds = new Set(priorResults.map((item) => item.id));
+  const canonConsumedResultIds = unique(
+    array(prior.canonConsumedResultIds).map(String).filter((id) => resultIds.has(id)),
+  );
   const perDay = maneuverPackage.quota.opportunitiesPerDay;
   const remaining = Math.max(0, perDay - usedTypesToday.length);
   return {
@@ -221,6 +232,10 @@ export function ensureOpenNovelManeuverState(
     metrics: numericRecord(prior.metrics),
     aiBudget: normalizeAiBudget(prior.aiBudget),
     results: priorResults,
+    canonConsumedResultIds,
+    lastCanonBridgeTurnNumber: Number.isInteger(Number(prior.lastCanonBridgeTurnNumber))
+      ? Math.max(0, Math.floor(Number(prior.lastCanonBridgeTurnNumber)))
+      : null,
   };
 }
 
@@ -460,7 +475,15 @@ export function compileOpenNovelManeuverPlan(input: {
       suggestedRewrite: customText.slice(0, customPlan.maxLength),
     };
   }
-  const guarded = guardCustomManeuver(customText, input.game, input.roleKey, input.turnNumber);
+  const guarded = guardCustomManeuver({
+    customText,
+    game: input.game,
+    roleKey: input.roleKey,
+    turnNumber: input.turnNumber,
+    sceneKey,
+    usageDay,
+    projection: input.projection,
+  });
   if (guarded) return guarded;
   return {
     maneuverType: type,
@@ -552,55 +575,79 @@ function assertManeuverTypeAvailable(
   });
 }
 
-function guardCustomManeuver(
-  customText: string,
-  game: any,
-  roleKey: string,
-  turnNumber: number,
-): OpenNovelManeuverGuardResult | null {
-  const roleDefinition = array(game?.roles).find((item) => String(item?.roleKey) === roleKey)
-    || array(game?.roles)[0]
+function guardCustomManeuver(input: {
+  customText: string;
+  game: any;
+  roleKey: string;
+  turnNumber: number;
+  sceneKey: string;
+  usageDay: number;
+  projection: OpenNovelManeuverProjection;
+}): OpenNovelManeuverGuardResult | null {
+  const roleDefinition = array(input.game?.roles).find((item) => String(item?.roleKey) === input.roleKey)
+    || array(input.game?.roles)[0]
     || {};
-  const allRoles = array(game?.roles).map((item) => ({
+  const roleId = String(roleDefinition.roleKey || input.roleKey);
+  const allRoles = array(input.game?.roles).map((item) => ({
     id: String(item.roleKey || ""),
     roleKey: String(item.roleKey || ""),
     roleName: String(item.roleName || item.identity || item.roleKey || ""),
   }));
   const target = {
     type: "PUBLIC_FRAME" as const,
-    id: `openovel:turn:${turnNumber}`,
+    id: `openovel:turn:${input.turnNumber}`,
     label: "当前局势",
   };
   const intent: PlayerIntentV2 = {
-    objective: customText,
+    objective: input.customText,
     target,
-    method: customText,
+    method: input.customText,
     leverageKeys: [],
     visibility: "PRIVATE",
     riskTolerance: "MEDIUM",
     fallback: null,
     condition: null,
-    freeText: customText,
+    freeText: input.customText,
+  };
+  const visibleFacts = input.projection.state.results.flatMap((result) =>
+    result.discoveredFactKeys.map((factKey) => ({
+      factKey,
+      content: `${result.title}：${result.narrative}`,
+    })),
+  );
+  const stage = array(input.game?.stages)[Math.max(0, input.usageDay - 1)] || {
+    stageKey: input.sceneKey,
+    stageIndex: input.usageDay,
+    title: input.sceneKey,
   };
   const guard = guardPlayerIntentV2(intent, {
     role: {
-      id: String(roleDefinition.roleKey || roleKey),
-      roleKey: String(roleDefinition.roleKey || roleKey),
-      roleName: String(roleDefinition.roleName || roleDefinition.identity || roleKey),
+      id: roleId,
+      roleKey: roleId,
+      roleName: String(roleDefinition.roleName || roleDefinition.identity || input.roleKey),
       identity: String(roleDefinition.identity || ""),
       publicInfo: String(roleDefinition.publicInfo || ""),
+      hiddenSecret: null,
       personalGoal: String(roleDefinition.personalGoal || ""),
       currentState: String(roleDefinition.currentState || ""),
-      abilityText: String(roleDefinition.abilityText || ""),
-      arcText: String(roleDefinition.arcText || ""),
-      knownInfo: array(roleDefinition.knownInfo).map(String),
+      abilityText: text(roleDefinition.abilityText) || null,
       cannotDo: array(roleDefinition.cannotDo).map(String),
-    } as any,
+    },
     allRoles,
-    visibleFacts: [],
-    allFacts: [],
-    assets: [],
-    stage: {} as any,
+    visibleFacts,
+    allFacts: visibleFacts.map((fact) => ({
+      ...fact,
+      visibility: "private",
+      knownByRoleIds: [roleId],
+    })),
+    assets: input.projection.leverageHand.items.map((item) => ({
+      assetKey: item.leverageKey,
+      kind: "LEVERAGE",
+      ownerRoleId: roleId,
+      quantity: 1,
+      status: "ACTIVE",
+    })),
+    stage,
   });
   if (guard.decision === "ACCEPT" || guard.decision === "ACCEPT_WITH_COST") return null;
   return {
@@ -650,6 +697,8 @@ function publicManeuverState(state: OpenNovelManeuverState) {
     metrics: _metrics,
     aiBudget: _aiBudget,
     results: _results,
+    canonConsumedResultIds: _canonConsumedResultIds,
+    lastCanonBridgeTurnNumber: _lastCanonBridgeTurnNumber,
     ...publicState
   } = structuredClone(state);
   return publicState;

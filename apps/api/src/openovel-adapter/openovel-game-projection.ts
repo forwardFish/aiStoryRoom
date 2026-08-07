@@ -1,6 +1,7 @@
 import type { GameProjectionV2, PlayerIntentV2 } from "@ai-story/shared";
 import type { GameDefinition } from "@ai-story/templates";
 import { gamePageProjection } from "../game-page-projection";
+import { projectOpenNovelManeuverKnowledge } from "./openovel-maneuver-context";
 import {
   projectOpenNovelManeuvers,
   type OpenNovelLeverageHandProjection,
@@ -84,13 +85,16 @@ export function openNovelGameProjection(input: {
     canHumanAct,
     maneuverPackage,
   });
+  const maneuverKnowledge = projectOpenNovelManeuverKnowledge(maneuverProjection.state);
+  const basisFactKeys = maneuverKnowledge.visibleFacts.map((fact) => fact.factKey);
   const stageIndex = maneuverProjection.state.usageDay;
   const sceneTarget = {
     type: "PUBLIC_FRAME" as const,
     id: `scene:${turnNumber + 1}`,
     label: "当前局势",
   };
-  const decisions = input.runtimeRun.options.map((option) => decisionCandidate(option, sceneTarget));
+  const decisions = input.runtimeRun.options.map((option) =>
+    decisionCandidate(option, sceneTarget, basisFactKeys));
   const availableTargets = uniqueTargets([
     sceneTarget,
     ...maneuverProjection.maneuverPanel.contact.options.map((option) => ({
@@ -162,7 +166,7 @@ export function openNovelGameProjection(input: {
       status: decisionsOpen ? "OPEN" : "RESOLVING",
       title: turnNumber === 0 ? "两封文书，一道急令" : `第 ${turnNumber + 1} 回合`,
       narrative: input.runtimeRun.recentCanon,
-      visibleFacts: [],
+      visibleFacts: maneuverKnowledge.visibleFacts,
       framing: "你要如何应对？",
       decisions,
       availableTargets,
@@ -185,11 +189,11 @@ export function openNovelGameProjection(input: {
       quantity: 1,
       status: "ACTIVE",
     })),
-    evidenceHoldings: [],
+    evidenceHoldings: maneuverKnowledge.evidenceHoldings,
     commitments: [],
     armedConditions: [],
     pendingInteractions: [],
-    observableTraces: [],
+    observableTraces: maneuverKnowledge.observableTraces,
     access: {
       state: "UNLOCKED",
       requiresUnlock: false,
@@ -269,6 +273,7 @@ function uniqueTargets<T extends { type: string; id: string; label: string }>(it
 function decisionCandidate(
   option: OpenNovelVisibleOption,
   target: { type: "PUBLIC_FRAME"; id: string; label: string },
+  basisFactKeys: string[],
 ) {
   const intentDraft: PlayerIntentV2 = {
     objective: option.label,
@@ -289,7 +294,7 @@ function decisionCandidate(
     targetRoleId: null,
     targetRoleName: null,
     risk: "NORMAL" as const,
-    basisFactKeys: [],
+    basisFactKeys: [...basisFactKeys],
     requiredAssetKeys: [],
     authorityBasis: "当前 Story Package 与已结算状态",
     intendedOutcome: option.label,

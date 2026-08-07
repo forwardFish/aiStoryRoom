@@ -1,4 +1,21 @@
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import {
+  Inject,
+  Injectable,
+  Optional,
+  ServiceUnavailableException,
+} from "@nestjs/common";
+import { createHmac } from "node:crypto";
+import {
+  appendOpenNovelConfirmedManeuverContext,
+  type OpenNovelConfirmedManeuverContextV1,
+} from "@ai-story/shared";
+import { PrismaService } from "../prisma.service";
+import {
+  compileConfirmedManeuverContext,
+  hydrateOpenNovelManeuverStateFromEvents,
+  markConfirmedManeuverContextConsumed,
+} from "./openovel-maneuver-context";
+import { openNovelManeuverPackages } from "./openovel-maneuver-packages";
 
 export const OPENOVEL_ENGINE_VERSION = "openovel_v1";
 export const OPENOVEL_RUNTIME_MODE = "OPENOVEL_V1";
@@ -56,7 +73,9 @@ export class OpenNovelRuntimeClient {
   private readonly baseUrl: string;
   private readonly token: string;
 
-  constructor() {
+  constructor(
+    @Optional() @Inject(PrismaService) private readonly prisma?: PrismaService,
+  ) {
     this.baseUrl = String(process.env.OPENOVEL_RUNTIME_URL || "http://127.0.0.1:3110").replace(/\/+$/, "");
     this.token = String(process.env.OPENOVEL_INTERNAL_TOKEN || "").trim();
   }
@@ -139,16 +158,23 @@ export class OpenNovelRuntimeClient {
       submissionId: string;
       expectedStateRevision?: number;
       boundOption?: { id: string; label: string } | null;
+      confirmedManeuverContext?: OpenNovelConfirmedManeuverContextV1 | null;
     },
     onEvent: (event: OpenNovelTurnEvent) => void | Promise<void>,
   ) {
+    const bridge = input.confirmedManeuverContext
+      ? { context: input.confirmedManeuverContext }
+      : await this.prepareConfirmedManeuverBridge(
+        input.runId,
+        input.expectedStateRevision,
+      );
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}/internal/openovel/runs/${encodeURIComponent(input.runId)}/actions`, {
         method: "POST",
         headers: this.headers({ accept: "text/event-stream" }),
         body: JSON.stringify({
-          action: input.action,
+          action: signedRuntimeAction(input.action, bridge?.context),
           submissionId: input.submissionId,
           expectedStateRevision: input.expectedStateRevision,
           boundOption: input.boundOption || null,
@@ -174,7 +200,77 @@ export class OpenNovelRuntimeClient {
         message: "The story runtime ended before committing the turn.",
       });
     }
+    if (bridge?.context?.sourceResultIds?.length) {
+      await this.consumeConfirmedManeuverBridge(
+        input.runId,
+        Math.max(0, Number(committed.turnNumber || input.expectedStateRevision || 0)),
+        bridge.context.sourceResultIds,
+      );
+    }
     return committed;
+  }
+
+  private async prepareConfirmedManeuverBridge(
+    runId: string,
+    turnNumberValue: unknown,
+  ) {
+    if (!this.prisma) return null;
+    const run = await this.prisma.storyRun.findUnique({
+      where: { id: runId },
+      select: { templateKey: true, stateJson: true },
+    });
+    if (!run) return null;
+    const maneuverPackage = openNovelManeuverPackages.get(run.templateKey);
+    if (!maneuverPackage) return null;
+    const events = await this.prisma.storyEvent.findMany({
+      where: { runId, type: "openovel_maneuver_result" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { payloadJson: true },
+    });
+    const turnNumber = Math.max(0, Math.floor(Number(turnNumberValue) || 0));
+    const hydrated = hydrateOpenNovelManeuverStateFromEvents({
+      stateJson: run.stateJson,
+      eventPayloads: events.map((event) => event.payloadJson),
+      turnNumber,
+      maneuverPackage,
+    });
+    if (hydrated.recoveredEventCount > 0) {
+      await this.prisma.storyRun.update({
+        where: { id: runId },
+        data: { stateJson: hydrated.stateJson as any },
+      });
+    }
+    const context = compileConfirmedManeuverContext({
+      stateJson: hydrated.stateJson,
+      turnNumber,
+      maneuverPackage,
+    });
+    return context ? { context } : null;
+  }
+
+  private async consumeConfirmedManeuverBridge(
+    runId: string,
+    turnNumber: number,
+    resultIds: string[],
+  ) {
+    if (!this.prisma || !resultIds.length) return;
+    const run = await this.prisma.storyRun.findUnique({
+      where: { id: runId },
+      select: { templateKey: true, stateJson: true },
+    });
+    if (!run) return;
+    const maneuverPackage = openNovelManeuverPackages.get(run.templateKey);
+    if (!maneuverPackage) return;
+    const stateJson = markConfirmedManeuverContextConsumed({
+      stateJson: run.stateJson,
+      turnNumber,
+      maneuverPackage,
+      resultIds,
+    });
+    await this.prisma.storyRun.update({
+      where: { id: runId },
+      data: { stateJson: stateJson as any },
+    });
   }
 
   private async requestJson(path: string, init: RequestInit) {
@@ -197,6 +293,19 @@ export class OpenNovelRuntimeClient {
     if (this.token) headers.set("authorization", `Bearer ${this.token}`);
     return headers;
   }
+}
+
+export function signedRuntimeAction(
+  actionValue: unknown,
+  context?: OpenNovelConfirmedManeuverContextV1 | null,
+) {
+  const action = String(actionValue || "").trim();
+  if (!context?.sourceResultIds?.length) return action;
+  const payloadJson = JSON.stringify(context);
+  const signature = createHmac("sha256", maneuverContextSecret())
+    .update(payloadJson)
+    .digest("base64url");
+  return appendOpenNovelConfirmedManeuverContext(action, context, signature);
 }
 
 export async function readSse(
@@ -241,6 +350,15 @@ async function runtimeHttpError(response: Response) {
     message: String(payload.message || payload.error || `Story runtime HTTP ${response.status}`),
     runtimeStatus: response.status,
   });
+}
+
+function maneuverContextSecret() {
+  const configured = String(process.env.OPENOVEL_INTERNAL_TOKEN || "").trim();
+  if (configured.length >= 24) return configured;
+  if (process.env.NODE_ENV !== "production") {
+    return "openovel-confirmed-maneuver-development-secret-v1";
+  }
+  throw new Error("OPENOVEL_INTERNAL_TOKEN_REQUIRED_FOR_MANEUVER_CONTEXT");
 }
 
 function unavailable(error: unknown) {
