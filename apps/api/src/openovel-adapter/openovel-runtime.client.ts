@@ -4,7 +4,7 @@ import {
   Optional,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import {
   appendOpenNovelConfirmedManeuverContext,
   type OpenNovelConfirmedManeuverContextV1,
@@ -14,7 +14,10 @@ import {
   compileConfirmedManeuverContext,
   hydrateOpenNovelManeuverStateFromEvents,
   markConfirmedManeuverContextConsumed,
+  OPENOVEL_MANEUVER_CANON_CONSUMED_EVENT_TYPE,
+  OPENOVEL_MANEUVER_RESULT_EVENT_TYPE,
 } from "./openovel-maneuver-context";
+import { ensureOpenNovelManeuverState } from "./openovel-maneuver";
 import { openNovelManeuverPackages } from "./openovel-maneuver-packages";
 
 export const OPENOVEL_ENGINE_VERSION = "openovel_v1";
@@ -202,9 +205,9 @@ export class OpenNovelRuntimeClient {
     }
     if (bridge?.context?.sourceResultIds?.length) {
       // Canon is already committed at this point. A transient mirror update
-      // must not make the product report the main turn as failed; retry with
-      // CAS and leave the result pending for safe reinjection only if every
-      // database attempt loses a concurrent race.
+      // must not make the product report the main turn as failed. Persist a
+      // private acknowledgement event with the state mirror so event-ledger
+      // recovery cannot inject the same maneuver context a second time.
       await this.consumeConfirmedManeuverBridge(
         input.runId,
         Math.max(0, Number(committed.turnNumber || input.expectedStateRevision || 0)),
@@ -227,18 +230,31 @@ export class OpenNovelRuntimeClient {
     const maneuverPackage = openNovelManeuverPackages.get(run.templateKey);
     if (!maneuverPackage) return null;
     const events = await this.prisma.storyEvent.findMany({
-      where: { runId, type: "openovel_maneuver_result" },
+      where: {
+        runId,
+        type: {
+          in: [
+            OPENOVEL_MANEUVER_RESULT_EVENT_TYPE,
+            OPENOVEL_MANEUVER_CANON_CONSUMED_EVENT_TYPE,
+          ],
+        },
+      },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      select: { payloadJson: true },
+      select: { type: true, payloadJson: true },
     });
     const turnNumber = Math.max(0, Math.floor(Number(turnNumberValue) || 0));
     const hydrated = hydrateOpenNovelManeuverStateFromEvents({
       stateJson: run.stateJson,
-      eventPayloads: events.map((event) => event.payloadJson),
+      eventPayloads: events
+        .filter((event) => event.type === OPENOVEL_MANEUVER_RESULT_EVENT_TYPE)
+        .map((event) => event.payloadJson),
+      consumptionPayloads: events
+        .filter((event) => event.type === OPENOVEL_MANEUVER_CANON_CONSUMED_EVENT_TYPE)
+        .map((event) => event.payloadJson),
       turnNumber,
       maneuverPackage,
     });
-    if (hydrated.recoveredEventCount > 0) {
+    if (hydrated.needsPersistence) {
       await this.prisma.storyRun.updateMany({
         where: { id: runId, version: run.version },
         data: { stateJson: hydrated.stateJson as any },
@@ -258,25 +274,82 @@ export class OpenNovelRuntimeClient {
     resultIds: string[],
   ) {
     if (!this.prisma || !resultIds.length) return;
+    const normalizedTurn = Math.max(0, Math.floor(turnNumber));
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const run = await this.prisma.storyRun.findUnique({
         where: { id: runId },
-        select: { templateKey: true, stateJson: true, version: true },
+        select: {
+          templateKey: true,
+          stateJson: true,
+          version: true,
+          currentDay: true,
+          selectedRoleKey: true,
+        },
       });
       if (!run) return;
       const maneuverPackage = openNovelManeuverPackages.get(run.templateKey);
       if (!maneuverPackage) return;
+      const state = ensureOpenNovelManeuverState(
+        run.stateJson,
+        normalizedTurn,
+        maneuverPackage,
+      );
+      const existingResultIds = new Set(state.results.map((result) => result.id));
+      const pendingIds = [...new Set(resultIds)]
+        .filter((id) => existingResultIds.has(id))
+        .sort();
+      if (!pendingIds.length) return;
       const stateJson = markConfirmedManeuverContextConsumed({
         stateJson: run.stateJson,
-        turnNumber,
+        turnNumber: normalizedTurn,
         maneuverPackage,
-        resultIds,
+        resultIds: pendingIds,
       });
-      const updated = await this.prisma.storyRun.updateMany({
-        where: { id: runId, version: run.version },
-        data: { stateJson: stateJson as any },
-      });
-      if (updated.count === 1) return;
+      const acknowledgementHash = createHash("sha256")
+        .update(JSON.stringify({ runId, turnNumber: normalizedTurn, sourceResultIds: pendingIds }))
+        .digest("hex")
+        .slice(0, 24);
+      const acknowledgementId = `ovl_maneuver_canon_${acknowledgementHash}`;
+      const dedupeKey = `openovel-maneuver-canon:${runId}:${normalizedTurn}:${acknowledgementHash}`;
+
+      try {
+        const outcome = await this.prisma.$transaction(async (tx) => {
+          const existing = await tx.storyEvent.findUnique({ where: { dedupeKey } });
+          const updated = await tx.storyRun.updateMany({
+            where: { id: runId, version: run.version },
+            data: { stateJson: stateJson as any },
+          });
+          if (updated.count !== 1) return { retry: true as const };
+          if (!existing) {
+            await tx.storyEvent.create({
+              data: {
+                id: acknowledgementId,
+                runId,
+                day: Math.max(1, Number(run.currentDay || 1)),
+                type: OPENOVEL_MANEUVER_CANON_CONSUMED_EVENT_TYPE,
+                messageType: "system",
+                roleKey: run.selectedRoleKey,
+                visibility: "private_system",
+                payloadJson: {
+                  sourceResultIds: pendingIds,
+                  turnNumber: normalizedTurn,
+                } as any,
+                dedupeKey,
+              },
+            });
+          }
+          return { retry: false as const };
+        }, { maxWait: 10_000, timeout: 30_000 });
+        if (!outcome.retry) return;
+      } catch (error) {
+        const existing = await this.prisma.storyEvent.findUnique({ where: { dedupeKey } });
+        if (existing) {
+          // The acknowledgement is authoritative. A later GET can repair a
+          // stale stateJson mirror from it without reinjecting the context.
+          return;
+        }
+        if (attempt === 2) throw error;
+      }
     }
   }
 

@@ -40,7 +40,8 @@ statePatch；
 idempotencyKey；
 requestFingerprint；
 versionBefore / versionAfter；
-provider / tokenUsage / fallback。
+provider / providerRequestId / providerModelName；
+tokenUsage / fallback。
 ```
 
 ## 2. 为什么不为一次动作创建多条权威 StoryEvent
@@ -79,6 +80,38 @@ CUSTOM_PLAN       → custom_maneuver_resolved；
 
 页面时间线、统计、Canon bridge、证据投影和旧状态恢复只能读取权威根事件或其确定性派生，不能创建第二套事实来源。
 
+### 2.1 Canon 消费回执不是第二个谋划结果
+
+当下一次主线 Turn 已经成功把 Confirmed Maneuver Context 写入 Canon 后，产品层创建一个私有系统回执：
+
+```text
+StoryEvent.type = openovel_maneuver_context_consumed
+StoryEvent.messageType = system
+StoryEvent.visibility = private_system
+```
+
+回执只保存：
+
+```text
+sourceResultIds；
+turnNumber。
+```
+
+它不代表新的玩家行动，不出现在玩家时间线，不修改剧情事实，也不重复扣次数。它的唯一职责是：
+
+```text
+证明哪些 openovel_maneuver_result 已经进入主线 Canon；
+在 stateJson 镜像缺失或损坏时恢复 canonConsumedResultIds；
+阻止同一谋划结果被后续主线再次注入。
+```
+
+因此正式账本关系是：
+
+```text
+每次谋划 Confirm：恰好一个 openovel_maneuver_result 根事件；
+每次主线消费一批结果：最多一个私有 Canon 消费回执。
+```
+
 ## 3. 存储权威最终决策
 
 正式产品采用混合权威，而不是把同一功能复制到 Memory/File/Prisma 三套实现：
@@ -96,6 +129,7 @@ PostgreSQL / Prisma：
 - 玩家和角色所有权；
 - maneuverState 镜像；
 - openovel_maneuver_result 账本；
+- openovel_maneuver_context_consumed 私有回执；
 - AiTask；
 - Credits、Session 和产品查询投影。
 ```
@@ -132,12 +166,16 @@ API 重启与刷新读回。
 
 ```text
 GET /game 前读取全部 openovel_maneuver_result 根事件；
+读取全部 openovel_maneuver_context_consumed 私有回执；
 按 result.id 去重；
 恢复 results、usedTypesToday、usedLeverageKeys、discoveredFactKeys、metrics 和剩余次数；
+从消费回执恢复 canonConsumedResultIds 与最后消费 Turn；
+metrics 始终从权威结果完整重算，不保留缺失或幽灵指标；
 不增加 StoryRun.version；
-不创建新事件；
+不创建新的玩家行动；
 不恢复已消耗筹码；
-不赠送额外行动机会。
+不赠送额外行动机会；
+已进入 Canon 的结果不得再次注入。
 ```
 
 ## 6. 完成标准
@@ -146,8 +184,10 @@ GET /game 前读取全部 openovel_maneuver_result 根事件；
 一次成功 Confirm 恰好一个权威根事件；
 根事件与状态、筹码和 AiTask 原子提交；
 所有语义事件可以确定性派生；
-旧状态可从根事件恢复；
-主线 Canon 只消费已确认根事件；
+旧状态可从根事件和私有消费回执恢复；
+主线 Canon 只消费已确认且尚未消费的根事件；
 Preview、失败和拒绝不创建根事件；
+人物回应只接收世界包明确允许的角色资料和事实；
+真实模型响应的模型名与 Provider Request ID 可在事件和 AiTask 中追溯；
 正式持久化在真实 Runtime workspace + PostgreSQL 上通过重启、并发和幂等验收。
 ```
