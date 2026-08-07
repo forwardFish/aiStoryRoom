@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-final-gates
+      EVIDENCE_ROOT: /tmp/dynamic-kernel-final-gates
     steps:
       - name: Publish pending status
         shell: bash
@@ -86,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dynamic-kernel-final-deterministic-${{ github.sha }}
-          path: ${{ env.EVIDENCE_ROOT }}/
+          path: /tmp/dynamic-kernel-final-gates/
           if-no-files-found: error
           retention-days: 7
       - name: Publish final status
