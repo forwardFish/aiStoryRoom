@@ -1,5 +1,6 @@
 name: Dynamic Kernel Final Generic Repair V5
 
+# Re-run after the robust unbound-narrative transformer correction.
 on:
   push:
     branches:
