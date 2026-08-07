@@ -169,8 +169,9 @@ GET /game 前读取全部 openovel_maneuver_result 根事件；
 读取全部 openovel_maneuver_context_consumed 私有回执；
 按 result.id 去重；
 恢复 results、usedTypesToday、usedLeverageKeys、discoveredFactKeys、metrics 和剩余次数；
+从根事件 tokenUsage / fallback 重建谋划专用 AI 调用数、Token、成本和预算耗尽原因；
 从消费回执恢复 canonConsumedResultIds 与最后消费 Turn；
-metrics 始终从权威结果完整重算，不保留缺失或幽灵指标；
+metrics 与 AI budget 使用量都从权威事件完整重算，不保留缺失或幽灵值；
 不增加 StoryRun.version；
 不创建新的玩家行动；
 不恢复已消耗筹码；
@@ -185,6 +186,7 @@ metrics 始终从权威结果完整重算，不保留缺失或幽灵指标；
 根事件与状态、筹码和 AiTask 原子提交；
 所有语义事件可以确定性派生；
 旧状态可从根事件和私有消费回执恢复；
+模型调用预算不会因 stateJson 损坏而重置；
 主线 Canon 只消费已确认且尚未消费的根事件；
 Preview、失败和拒绝不创建根事件；
 人物回应只接收世界包明确允许的角色资料和事实；

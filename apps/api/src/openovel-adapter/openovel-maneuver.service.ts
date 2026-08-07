@@ -38,6 +38,7 @@ import {
 import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
 import { openNovelManeuverPackages } from "./openovel-maneuver-packages";
 import { buildOpenNovelManeuverNarrativeContext } from "./openovel-maneuver-narrative-context";
+import { recoverOpenNovelManeuverRun } from "./openovel-maneuver-state-recovery";
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const MANEUVER_EVENT_TYPE = "openovel_maneuver_result";
@@ -82,11 +83,22 @@ export class OpenNovelManeuverService {
       return replayResponse(existing, requestFingerprint);
     }
 
-    const [run, runtimeRun] = await Promise.all([
+    const [storedRun, runtimeRun] = await Promise.all([
       this.authorizedRun(user, runId),
       this.runtime.getRun(runId),
     ]);
-    const maneuverPackage = packageForRun(run.templateKey, runtimeRun.worldId);
+    const maneuverPackage = packageForRun(storedRun.templateKey, runtimeRun.worldId);
+    // A direct Confirm/API retry must be authoritative even when the browser
+    // did not GET /game first. Recover committed roots in memory; the action
+    // transaction below persists the repaired state and the new result once.
+    const recovered = await recoverOpenNovelManeuverRun({
+      prisma: this.prisma,
+      run: storedRun,
+      turnNumber: runtimeRun.turnNumber,
+      maneuverPackage,
+      persist: false,
+    });
+    const run = recovered.run;
     assertManeuverVersion(run.version, command.version);
     const role = run.players[0]?.role;
     if (!role) {

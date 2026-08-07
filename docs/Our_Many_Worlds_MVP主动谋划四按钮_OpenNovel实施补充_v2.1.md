@@ -84,6 +84,8 @@ observableTraces：已确认谋划留下的玩家可见行动痕迹。
 
 前端不能自行补人物、调查、筹码、事实、禁用原因或次数。
 
+如果完整 `maneuverPanel` 或 `leverageHand` 缺失，页面必须 fail-closed 显示明确的刷新/重试提示；不得永久显示“配置正在加载”，也不得把缺失的手牌投影误报为“筹码已经全部使用”。
+
 ## 4. 世界包边界
 
 通用 OpenNovel adapter 不得包含《桑田诏》专用：
@@ -126,6 +128,7 @@ Confirm 成功
 → 玩家原始主线行动与服务器上下文分离
 → ContextCompiler 只在下一次主线生成中注入已确认结果
 → 主线提交成功后把 sourceResultIds 标记为已消费
+→ 写入私有 openovel_maneuver_context_consumed 回执
 ```
 
 约束：
@@ -133,11 +136,12 @@ Confirm 成功
 ```text
 Preview、失败、拒绝和篡改请求永远不能进入 Canon；
 传闻不能升级为事实；
-模型不能看到内部 statePatch；
+模型不能看到内部 statePatch 数值；
 同一结果默认只注入一次；
 玩家原始主线行动不能被服务器包装污染；
 签名上下文不能显示在玩家章节、行动历史或页面中；
-主线失败时结果仍保持待消费，允许下一次安全重试。
+主线失败时结果仍保持待消费，允许下一次安全重试；
+Canon 消费回执是私有系统生命周期事件，不是第二次玩家行动或第二个谋划结果。
 ```
 
 ## 6. 旧状态恢复
@@ -148,27 +152,35 @@ Preview、失败、拒绝和篡改请求永远不能进入 Canon；
 
 ```text
 StoryEvent.type = openovel_maneuver_result
+StoryEvent.type = openovel_maneuver_context_consumed
 ```
 
-恢复：
+分别恢复：
 
 ```text
-results；
-usedTypesToday；
-usedLeverageKeys；
-discoveredFactKeys；
-metrics；
-剩余谋划次数。
+结果根事件：
+- results；
+- usedTypesToday；
+- usedLeverageKeys；
+- discoveredFactKeys；
+- metrics；
+- 剩余谋划次数。
+
+Canon 消费回执：
+- canonConsumedResultIds；
+- lastCanonBridgeTurnNumber。
 ```
 
 恢复是镜像修复：
 
 ```text
+metrics 必须从全部权威结果完整重算，不能保留缺失或幽灵指标；
 不增加 StoryRun.version；
 不创建新玩家行动；
-不重复创建 StoryEvent；
+不重复创建结果根事件或消费回执；
 不恢复已经消耗的筹码；
-不额外赠送当日次数。
+不额外赠送当日次数；
+已进入 Canon 的结果不能再次注入。
 ```
 
 ## 7. ActionGuard 当前上下文
@@ -194,6 +206,16 @@ stage = {}；
 ```
 
 作为正式产品上下文。
+
+人物交谈和 AI_REACTION 筹码的模型上下文还必须使用世界包声明的：
+
+```text
+publicGoal；
+informationStyle；
+当前人物 allowedFactKeys 允许的已确认事实。
+```
+
+不得把玩家知道但目标人物依法不知道的调查事实发送给模型。
 
 ## 8. 当前真实验收门
 
@@ -236,7 +258,8 @@ pnpm test:config
 ActionGuard 拒绝不扣次数；
 日终与次日额度；
 主线继续；
-已确认谋划在后续主线中被标记为 Canon 已消费。
+已确认谋划在后续主线中被标记为 Canon 已消费；
+开场白阶段完成谋划后先展示结果，再回到“进入局势”。
 ```
 
 ### 真实 PostgreSQL
@@ -250,7 +273,8 @@ Confirm 原子提交；
 两个动作争抢最后 revision 只有一个成功；
 同一筹码争抢只有一个成功；
 API 重启后状态一致；
-旧 stateJson 可以从 StoryEvent 恢复；
+旧 stateJson 可以从结果根事件恢复；
+Canon 消费状态可以从私有消费回执恢复且不会再次注入；
 无新表和 migration。
 ```
 
@@ -268,11 +292,13 @@ API 重启后状态一致；
 
 ```text
 runId；sceneKey；maneuverType；targetRoleKey；
-模型；Provider Request ID；逻辑调用数；HTTP attempts；
+实际响应模型；Provider Request ID；逻辑调用数；HTTP attempts；
 输入/输出 token；耗时；估算成本；
 玩家可见结果；AiTask 状态；fallbackReason；
 提交前后 version 和谋划次数。
 ```
+
+事件根和 `AiTask.resultJson` 必须都能追溯 `providerRequestId` 与 `providerModelName`，且不得保存密钥或完整敏感 Prompt。
 
 ## 9. 仍不属于工程 Definition of Done 的人工验证
 
@@ -298,10 +324,12 @@ ActionGuard 拒绝后是否能成功改写。
 Preview 零副作用且零模型调用；
 Confirm 单次原子落账；
 人物交谈/筹码最多一次逻辑模型调用；
+人物回应只使用目标人物依法可知的事实；
 调查零模型调用；
 一次性筹码持久消费；
 ActionGuard 使用真实上下文；
 已确认谋划进入下一次主线 Canon；
+Canon 消费可由私有回执恢复，且同一结果不重复注入；
 旧状态可由 StoryEvent 恢复；
 真实浏览器、PostgreSQL、模型与完整工程门均有当前 SHA 的 PASS 证据；
 main/release 未修改、未推送、未合并。
