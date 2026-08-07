@@ -11,7 +11,21 @@ const API_BASE = String(
   || "http://127.0.0.1:3104/api",
 ).replace(/\/$/, "");
 const STAMP = Date.now();
-const EMAIL = `mw-openovel-v4-${STAMP}@example.test`;
+const FORMAL_ACCEPTANCE = ["1", "true", "yes", "on"].includes(
+  String(process.env.FORMAL_ACCEPTANCE || "").trim().toLowerCase(),
+);
+const ACCEPTANCE_NAMESPACE = String(
+  process.env.ACCEPTANCE_DATA_NAMESPACE || "",
+).trim().toLowerCase();
+if (
+  FORMAL_ACCEPTANCE
+  && !/^omw-dkl-[a-z0-9][a-z0-9-]{5,95}$/u.test(ACCEPTANCE_NAMESPACE)
+) {
+  throw new Error("V4_DATABASE_SMOKE_FORMAL_NAMESPACE_INVALID");
+}
+const EMAIL = FORMAL_ACCEPTANCE
+  ? `${ACCEPTANCE_NAMESPACE}-v4-db-${STAMP}@example.test`
+  : `mw-openovel-v4-${STAMP}@example.test`;
 const PASSWORD = "OpenNovelV4Smoke2026!";
 const MAIL_SINKS = [...new Set([
   process.env.AUTH_MAIL_SINK_FILE ? resolve(process.env.AUTH_MAIL_SINK_FILE) : "",
@@ -190,6 +204,7 @@ async function main() {
     const report = {
       status: "PASS",
       apiBase: API_BASE,
+      syntheticEmail: EMAIL,
       runId,
       engineVersion: stored.engineVersion,
       turnNumber: runtimeReadback.turnNumber,
