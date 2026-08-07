@@ -149,10 +149,16 @@ export function renderLeverageHand(view) {
 }
 
 function fallbackPanel(view) {
-  const remaining = Number(view?.maneuverState?.maneuverOpportunitiesRemaining || 0);
-  const reason = remaining > 0 ? "主动谋划配置正在加载" : "今日谋划机会已用完";
+  const rawRemaining = view?.maneuverState?.maneuverOpportunitiesRemaining;
+  const hasAuthoritativeQuota = rawRemaining !== null
+    && rawRemaining !== undefined
+    && Number.isFinite(Number(rawRemaining));
+  const remaining = hasAuthoritativeQuota ? number(rawRemaining) : 0;
+  const reason = hasAuthoritativeQuota && remaining <= 0
+    ? "今日谋划机会已用完"
+    : "主动谋划暂不可用，请刷新页面后重试";
   const section = { enabled: false, usedToday: false, count: 0, disabledReason: reason, options: [] };
-  return { enabled: false, disabledReason: reason, quota: { perDay: 2, remaining, usedToday: 2 - remaining, usedTypesToday: [] }, contact: section, investigate: section, leverage: section, custom: { enabled: false, usedToday: false, disabledReason: reason, maxLength: 200 } };
+  return { enabled: false, disabledReason: reason, quota: { perDay: 2, remaining, usedToday: Math.max(0, 2 - remaining), usedTypesToday: [] }, contact: section, investigate: section, leverage: section, custom: { enabled: false, usedToday: false, disabledReason: reason, maxLength: 200 } };
 }
 
 function number(value) { return Math.max(0, Number(value) || 0); }
