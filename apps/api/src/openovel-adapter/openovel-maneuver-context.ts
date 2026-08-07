@@ -28,8 +28,9 @@ export function hydrateOpenNovelManeuverStateFromEvents(input: {
 }) {
   const root = record(input.stateJson);
   const prior = record(root.openovelManeuver);
+  const priorResults = array(prior.results);
   const rawResults = uniqueById([
-    ...array(prior.results),
+    ...priorResults,
     ...input.eventPayloads.map(extractEventResult).filter(Boolean),
   ]);
   const candidateStateJson = {
@@ -47,10 +48,30 @@ export function hydrateOpenNovelManeuverStateFromEvents(input: {
   if (!Object.keys(record(prior.metrics)).length && state.results.length) {
     state.metrics = recomputeMetrics(state.results);
   }
+  const recoveredEventCount = Math.max(0, rawResults.length - priorResults.length);
+  const needsPersistence = recoveredEventCount > 0
+    || prior.schemaVersion !== state.schemaVersion
+    || !Array.isArray(prior.results)
+    || !Array.isArray(prior.usedTypesToday)
+    || !Array.isArray(prior.usedLeverageKeys)
+    || !Array.isArray(prior.discoveredFactKeys)
+    || !Array.isArray(prior.canonConsumedResultIds)
+    || Number(prior.usageDay) !== state.usageDay
+    || String(prior.sceneKey || "") !== state.sceneKey
+    || Number(prior.maneuversUsedToday) !== state.maneuversUsedToday
+    || Number(prior.maneuverOpportunitiesRemaining) !== state.maneuverOpportunitiesRemaining
+    || Number(prior.totalManeuversUsed) !== state.totalManeuversUsed
+    || !sameStringSet(prior.usedTypesToday, state.usedTypesToday)
+    || !sameStringSet(prior.usedLeverageKeys, state.usedLeverageKeys)
+    || !sameStringSet(prior.discoveredFactKeys, state.discoveredFactKeys)
+    || !sameStringSet(prior.canonConsumedResultIds, state.canonConsumedResultIds)
+    || !sameNumericRecord(prior.metrics, state.metrics)
+    || normalizeNullableInteger(prior.lastCanonBridgeTurnNumber) !== state.lastCanonBridgeTurnNumber;
   return {
     state,
     stateJson: withOpenNovelManeuverState(root, state),
-    recoveredEventCount: Math.max(0, rawResults.length - array(prior.results).length),
+    recoveredEventCount,
+    needsPersistence,
   };
 }
 
@@ -70,7 +91,7 @@ export function compileConfirmedManeuverContext(input: {
     .filter((result) => !consumed.has(result.id) && result.turnNumber <= input.turnNumber)
     .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
   if (!pending.length) return null;
-  const selected = pending.slice(-Math.max(1, Math.min(12, Number(input.maxResults || 8))));
+  const selected = pending.slice(0, Math.max(1, Math.min(12, Number(input.maxResults || 8))));
   const visibleFacts = uniqueFacts(selected);
   return {
     schemaVersion: OPENOVEL_CONFIRMED_MANEUVER_CONTEXT_SCHEMA,
@@ -201,6 +222,29 @@ function recomputeMetrics(results: OpenNovelManeuverResult[]) {
     }
   }
   return metrics;
+}
+
+function sameStringSet(value: unknown, expected: string[]) {
+  if (!Array.isArray(value)) return false;
+  const actual = unique(value.map(String)).sort();
+  return actual.length === expected.length
+    && actual.every((item, index) => item === [...expected].sort()[index]);
+}
+
+function sameNumericRecord(value: unknown, expected: Record<string, number>) {
+  const actual = record(value);
+  const actualKeys = Object.keys(actual).sort();
+  const expectedKeys = Object.keys(expected).sort();
+  return actualKeys.length === expectedKeys.length
+    && actualKeys.every((key, index) => (
+      key === expectedKeys[index]
+      && Number(actual[key]) === Number(expected[key])
+    ));
+}
+
+function normalizeNullableInteger(value: unknown) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
 function clampMetric(value: number) {
