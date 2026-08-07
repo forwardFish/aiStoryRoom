@@ -1,0 +1,87 @@
+name: Dynamic Kernel Architecture Repair Retry
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/dynamic-kernel-architecture-retry.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  retry-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Execute checked-in architecture transformation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/dynamic-kernel-architecture-repair.yml').read_text()
+          start_marker = "          python - <<'PY'\n"
+          start = workflow.index(start_marker) + len(start_marker)
+          end = workflow.index("\n          PY\n", start)
+          lines = workflow[start:end].splitlines()
+          script = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in lines
+          ) + "\n"
+          Path('/tmp/dynamic-kernel-architecture-repair.py').write_text(script)
+          PY
+          python /tmp/dynamic-kernel-architecture-repair.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts')
+          text = path.read_text()
+          text = text.replace(
+              'const coveredPaths = collectOwnedObligationPaths(pkg, kernel);',
+              'const ownedObligationPaths = collectOwnedObligationPaths(pkg, kernel);',
+              1,
+          )
+          text = text.replace(
+              'coveredPaths.has(rule.statePath)',
+              'ownedObligationPaths.has(rule.statePath)',
+          )
+          path.write_text(text)
+          PY
+      - name: Run Templates gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/templates typecheck
+          pnpm --filter @ai-story/templates test:runtime-contract
+          pnpm --filter @ai-story/templates test:story-package
+          pnpm --filter @ai-story/templates build
+      - name: Commit repaired runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts \
+            packages/templates/src/story-package/dynamic-kernel-lite-settlement.ts
+          if git diff --cached --quiet; then
+            echo "Architecture source already current"
+          else
+            git commit -m "refactor(kernel-lite): separate committed settlement and planning"
+            git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
+          fi
