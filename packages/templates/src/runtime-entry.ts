@@ -16,6 +16,7 @@ import {
 import {
   buildCommittedLegacyFallbackWorkingSet,
   packageForDynamicCapabilityAction,
+  packageForDynamicCapabilitySettlement,
   projectFinalizedPartOneSelectionState,
   settleDynamicPartOneAction,
   type DynamicPartOneSettlementExecutionOptions,
@@ -204,7 +205,7 @@ export const settlePartOneAction = (
   const capabilityAction = isDynamicCapabilityAction(action);
   const settlement = capabilityAction
     ? runtimeFacade.settlePartOneAction(
-      packageForDynamicCapabilityAction(
+      packageForDynamicCapabilitySettlement(
         pkg,
         state,
         turnNumber,
