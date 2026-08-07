@@ -29,7 +29,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context="dynamic-kernel-lite/followup-repair" \
-            -f description="Follow-up architecture repair retry running" \
+            -f description="Follow-up architecture repair running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
       - uses: actions/checkout@v4
         with:
@@ -52,13 +52,13 @@ jobs:
             > "${RUNNER_TEMP}/followup.patch.gz.b64"
           actual_b64="$(sha256sum "${RUNNER_TEMP}/followup.patch.gz.b64" | cut -d' ' -f1)"
           echo "base64_sha256=${actual_b64}"
-          test "${actual_b64}" = "3f67b893abbc8b63d0ace3cc286fb0bb16d078c21523a540c63d102a49a05d63"
+          test "${actual_b64}" = "30fa3f9cd5ba63151a44207afb9c998a9b17f95a46a97a6d393cd73f163e67ff"
           base64 --decode "${RUNNER_TEMP}/followup.patch.gz.b64" \
             | gzip --decompress \
             > "${RUNNER_TEMP}/followup.patch"
           actual_patch="$(sha256sum "${RUNNER_TEMP}/followup.patch" | cut -d' ' -f1)"
           echo "patch_sha256=${actual_patch}"
-          test "${actual_patch}" = "f5b21a509007fa1e069d69be823864ad37d88491d8f053822795591d7050d2f0"
+          test "${actual_patch}" = "cf21f3aaabd702ef8d3914d95e32443ff89ec9cd1d40ca6af11556f5b138cd07"
           git apply --check "${RUNNER_TEMP}/followup.patch"
           git apply "${RUNNER_TEMP}/followup.patch"
           git diff --check
@@ -125,6 +125,8 @@ jobs:
             packages/templates/src/runtime-contract/kernel-selector-lite.ts \
             packages/templates/tests/kernel-selector-lite.test.ts \
             apps/api/src/solo-story-engine/context-compiler.ts \
+            apps/openovel-runtime/src/sangtian-decisions-base.ts \
+            apps/openovel-runtime/src/sangtian-decisions.ts \
             apps/openovel-runtime/tests/sangtian-dynamic-kernel-production.spec.ts
           git rm -f \
             .github/repair/dynamic-kernel-followup.patch.gz.b64 \
