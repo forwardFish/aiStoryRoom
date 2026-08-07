@@ -14,6 +14,7 @@ import {
 } from "../src/story-package/part-one-runtime-engine.js";
 import { loadPlayablePartOneRuntimePackage } from "../src/story-package/playable-part-one-runtime.js";
 import type {
+  PartOneAffordanceTemplate,
   PartOneRuntimePackage,
   PartOneState,
 } from "../src/story-package/part-one-runtime-types.js";
@@ -49,6 +50,18 @@ function continuationState(pkg: PartOneRuntimePackage) {
   return state;
 }
 
+function asTemplate(
+  affordance: ReturnType<typeof buildDynamicPartOneRuntimeWorkingSet>["decisionAffordances"][number],
+): PartOneAffordanceTemplate {
+  const {
+    decisionKernelId: _decisionKernelId,
+    decisionPointId: _decisionPointId,
+    target: _target,
+    ...template
+  } = affordance;
+  return structuredClone(template);
+}
+
 test("a Floor continuation affordance settles without forcing the base Kernel option list", () => {
   const pkg = packageUnderTest();
   const state = continuationState(pkg);
@@ -79,4 +92,79 @@ test("the observe-only capability scaffold leaves a Floor continuation package u
   const pkg = packageUnderTest();
   const state = continuationState(pkg);
   assert.equal(packageForDynamicCapabilityAction(pkg, state, 9), pkg);
+});
+
+test("a committed continuation pin wins after the authored continuation index advances", () => {
+  const pkg = packageUnderTest();
+  const state = continuationState(pkg);
+  const committed = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 8);
+  const floorId = committed.nextDecisionPressure?.sourceFloorAssetId;
+  assert.ok(floorId);
+
+  const authored = structuredClone(pkg);
+  const floor = authored.assets.find((asset) => asset.assetId === floorId);
+  assert.ok(floor);
+  const options = committed.decisionAffordances.map(asTemplate);
+  floor.payload.continuationDecisions = [
+    {
+      continuationDecisionId: committed.decisionPoint.decisionPointId,
+      basedOnDecisionKernelId: committed.decisionPoint.decisionKernelId,
+      worldPressure: structuredClone(committed.nextDecisionPressure!),
+      options,
+    },
+    {
+      continuationDecisionId: "CONT-AUTHORED-NEXT",
+      basedOnDecisionKernelId: committed.decisionPoint.decisionKernelId,
+      worldPressure: {
+        ...structuredClone(committed.nextDecisionPressure!),
+        pressureId: "PRESSURE-AUTHORED-NEXT",
+      },
+      options,
+    },
+  ];
+
+  const advanced = structuredClone(state);
+  advanced.turnNumber += 1;
+  advanced.sectionTurnNumber = Number(advanced.sectionTurnNumber) + 1;
+  const unpinned = buildDynamicPartOneRuntimeWorkingSet(
+    authored,
+    advanced,
+    9,
+  );
+  assert.equal(
+    unpinned.decisionPoint.decisionPointId,
+    "CONT-AUTHORED-NEXT",
+  );
+
+  const recovered = buildDynamicPartOneRuntimeWorkingSet(
+    authored,
+    advanced,
+    9,
+    {
+      mode: "DYNAMIC_LITE",
+      pin: {
+        decisionKernelId: committed.decisionPoint.decisionKernelId,
+        decisionPointId: committed.decisionPoint.decisionPointId,
+        affordanceIds: committed.decisionAffordances.map(
+          (affordance) => affordance.affordanceTemplateId,
+        ),
+      },
+    },
+  );
+  assert.equal(
+    recovered.decisionPoint.decisionPointId,
+    committed.decisionPoint.decisionPointId,
+  );
+  assert.equal(
+    recovered.decisionPoint.decisionKernelId,
+    committed.decisionPoint.decisionKernelId,
+  );
+  assert.deepEqual(
+    recovered.decisionAffordances.map(
+      (affordance) => affordance.affordanceTemplateId,
+    ),
+    committed.decisionAffordances.map(
+      (affordance) => affordance.affordanceTemplateId,
+    ),
+  );
 });
