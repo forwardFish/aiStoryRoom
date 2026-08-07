@@ -11,6 +11,7 @@ test "$(sha256sum "${RUNNER_TEMP}/followup.patch" | cut -d' ' -f1)" = \
 git apply --check "${RUNNER_TEMP}/followup.patch"
 git apply "${RUNNER_TEMP}/followup.patch"
 python .github/repair/apply-dynamic-kernel-final-repair.py
+python .github/repair/apply-dynamic-kernel-context-balance.py
 python .github/repair/apply-dynamic-kernel-continuity-repair.py
 python .github/repair/apply-dynamic-kernel-sequence-compat-repair.py
 git diff --check
