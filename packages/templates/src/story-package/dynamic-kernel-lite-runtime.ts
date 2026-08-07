@@ -17,7 +17,9 @@ import {
 } from "./part-one-runtime-engine.js";
 import type {
   PartOneActionSettlement,
+  PartOneAffordanceTemplate,
   PartOneCommittedEvent,
+  PartOneContinuationDecisionTemplate,
   PartOneRuntimeAffordance,
   PartOneRuntimeAsset,
   PartOneRuntimePackage,
@@ -82,20 +84,42 @@ type Evaluation = {
   previews: Preview[];
   candidate: KernelSelectorLiteCandidate<Preview>;
 };
+type WorkingSetProjection = {
+  state: PartOneState;
+  workingSet: PartOneRuntimeWorkingSet;
+};
 
-const ACTIVE_PENDING = new Set(["PENDING", "DUE", "DEFERRED_WITH_REASON", "TRANSFORMED"]);
-const RESOLVED_ARCS = new Set(["RESOLVED", "CLOSED", "COMPLETE", "COMPLETED"]);
-const IGNORED_PATHS = new Set([
-  "turnNumber", "sectionTurnNumber", "lastCommittedEventId", "completedKernelIds",
-  "scene", "durableState", "pendingConsequences", "partCompletionStatus",
+const ACTIVE_PENDING = new Set([
+  "PENDING",
+  "DUE",
+  "DEFERRED_WITH_REASON",
+  "TRANSFORMED",
 ]);
+const RESOLVED_ARCS = new Set([
+  "RESOLVED",
+  "CLOSED",
+  "COMPLETE",
+  "COMPLETED",
+]);
+const IGNORED_PATHS = new Set([
+  "turnNumber",
+  "sectionTurnNumber",
+  "lastCommittedEventId",
+  "completedKernelIds",
+  "scene",
+  "durableState",
+  "pendingConsequences",
+  "partCompletionStatus",
+]);
+const CONTINUATION_EXHAUSTED = "PART_ONE_RUNTIME_CONTINUATION_EXHAUSTED";
 
 /**
  * Select and materialize one existing Decision Kernel from authoritative state.
- * This module owns selection, preview signatures and recovery traces only.
- * Formal settlement is intentionally centralized in
- * dynamic-kernel-lite-settlement.ts so production and tests cannot drift onto
- * separate causal writers.
+ * Primary Dynamic, Legacy Fallback and Floor Continuation are mutually
+ * exclusive paths. Floor Continuation remains authored-affordance based; when
+ * an old section has no explicit continuation entry, the runtime compiles a
+ * deterministic entry from the section's structural Floor links instead of
+ * guessing from prose or silently reopening a Primary Kernel.
  */
 export function buildDynamicPartOneRuntimeWorkingSet(
   pkg: PartOneRuntimePackage,
@@ -112,18 +136,12 @@ export function buildDynamicPartOneRuntimeWorkingSet(
     );
   }
   if (options.pin) {
-    return pinnedWorkingSet(pkg, state, turnNumber, options.pin, fingerprint);
-  }
-  if (options.mode === "LEGACY_FIXED") {
-    const legacy = buildLegacyWorkingSet(pkg, state, turnNumber);
-    return traced(
-      legacy,
-      baseTrace(
-        isContinuation(legacy) ? "CONTINUATION" : "LEGACY_FIXED",
-        section,
-        state,
-        fingerprint,
-      ),
+    return pinnedWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      options.pin,
+      fingerprint,
     );
   }
 
@@ -132,9 +150,22 @@ export function buildDynamicPartOneRuntimeWorkingSet(
     (id) => !completed.has(id),
   );
   if (!unresolved.length) {
-    return traced(
-      buildLegacyWorkingSet(pkg, state, turnNumber),
-      baseTrace("CONTINUATION", section, state, fingerprint),
+    return buildContinuationWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      null,
+      fingerprint,
+    );
+  }
+  if (options.mode === "LEGACY_FIXED") {
+    return legacyFallbackWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      section,
+      fingerprint,
+      "LEGACY_FIXED",
     );
   }
 
@@ -150,12 +181,15 @@ export function buildDynamicPartOneRuntimeWorkingSet(
     fingerprint,
   );
   if (!selection.selected?.pair) {
-    const fallback = buildLegacyWorkingSet(pkg, state, turnNumber);
-    return traced(fallback, {
-      ...selectionTrace(selection, section, state, fallback),
-      mode: "LEGACY_FALLBACK",
-      fallbackReason: "NO_ELIGIBLE_DYNAMIC_KERNEL",
-    });
+    return legacyFallbackWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      section,
+      fingerprint,
+      "LEGACY_FALLBACK",
+      selection,
+    );
   }
 
   const evaluation = evaluated.find(
@@ -180,7 +214,70 @@ export function buildDynamicPartOneRuntimeWorkingSet(
 }
 
 export function isDynamicCapabilityAction(action: PartOneIncomingAction) {
-  return String(action.actionText || "").startsWith("\u2063OMW_CAPABILITY_V1:");
+  return String(action.actionText || "")
+    .startsWith("\u2063OMW_CAPABILITY_V1:");
+}
+
+/**
+ * Make one or more already-selected WorkingSets visible to the frozen engine.
+ * This is the sole package-projection path used by formal Settlement and
+ * capability scaffolding. It never changes authoritative state or assets in
+ * place; it only reorders existing Primary options or injects deterministic
+ * Floor continuation templates into a cloned package.
+ */
+export function forcePackageForDynamicWorkingSets(
+  pkg: PartOneRuntimePackage,
+  projections: WorkingSetProjection[],
+): PartOneRuntimePackage {
+  let projected = clone(pkg);
+  const primaryBySection = new Map<string, string[]>();
+  const affordanceIdsByKernel = new Map<string, string[]>();
+
+  for (const projection of projections) {
+    const { state, workingSet } = projection;
+    if (isContinuation(workingSet)) {
+      projected = injectContinuationForWorkingSet(
+        projected,
+        state,
+        workingSet,
+      );
+      continue;
+    }
+    const sectionId = state.sectionId;
+    const preferred = primaryBySection.get(sectionId) || [];
+    if (!preferred.includes(workingSet.decisionPoint.decisionKernelId)) {
+      preferred.push(workingSet.decisionPoint.decisionKernelId);
+    }
+    primaryBySection.set(sectionId, preferred);
+    affordanceIdsByKernel.set(
+      workingSet.decisionPoint.decisionKernelId,
+      workingSet.decisionAffordances.map(
+        (affordance) => affordance.affordanceTemplateId,
+      ),
+    );
+  }
+
+  projected.sections = projected.sections.map((section) => {
+    const preferred = primaryBySection.get(section.sectionId);
+    if (!preferred?.length) return section;
+    return {
+      ...section,
+      activeDecisionKernelIds: [
+        ...preferred,
+        ...section.activeDecisionKernelIds.filter(
+          (id) => !preferred.includes(id),
+        ),
+      ],
+    };
+  });
+  projected.assets = projected.assets.map((asset) => {
+    const ids = affordanceIdsByKernel.get(asset.assetId);
+    if (!ids?.length || asset.assetType !== "DECISION_KERNEL") {
+      return asset;
+    }
+    return reorderKernelOptions(asset, ids);
+  });
+  return projected;
 }
 
 function pinnedWorkingSet(
@@ -192,16 +289,12 @@ function pinnedWorkingSet(
 ): DynamicPartOneRuntimeWorkingSet {
   const section = requireSection(pkg, state.sectionId);
   if (pin.decisionPointId !== pin.decisionKernelId) {
-    const legacy = buildLegacyWorkingSet(pkg, state, turnNumber);
-    if (
-      legacy.decisionPoint.decisionKernelId !== pin.decisionKernelId
-      || legacy.decisionPoint.decisionPointId !== pin.decisionPointId
-    ) {
-      throw new Error("PART_ONE_PINNED_DECISION_POINT_NOT_FOUND");
-    }
-    return traced(
-      legacy,
-      baseTrace("CONTINUATION", section, state, fingerprint),
+    return buildContinuationWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      pin,
+      fingerprint,
     );
   }
   if (!section.activeDecisionKernelIds.includes(pin.decisionKernelId)) {
@@ -227,7 +320,10 @@ function pinnedWorkingSet(
     if (!selected?.pair) {
       throw new Error("PART_ONE_PINNED_AFFORDANCE_PREVIEW_REJECTED");
     }
-    ids = [selected.pair.left.affordanceId, selected.pair.right.affordanceId];
+    ids = [
+      selected.pair.left.affordanceId,
+      selected.pair.right.affordanceId,
+    ];
   }
   const affordances = selectAffordances(evaluation, ids);
   const hashes = ids.map((id) => evaluation.previews.find(
@@ -282,6 +378,135 @@ function pinnedWorkingSet(
   });
 }
 
+function buildContinuationWorkingSet(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  turnNumber: number,
+  pin: PartOneDecisionPin | null,
+  fingerprint: string,
+): DynamicPartOneRuntimeWorkingSet {
+  const section = requireSection(pkg, state.sectionId);
+  try {
+    const authored = buildLegacyWorkingSet(pkg, state, turnNumber);
+    if (!isContinuation(authored)) {
+      throw new Error("PART_ONE_CONTINUATION_PRIMARY_PATH_COLLISION");
+    }
+    assertContinuationPin(authored, pin);
+    return traced(
+      authored,
+      continuationTrace(authored, section, state, fingerprint, pin),
+    );
+  } catch (error) {
+    if (!String(error instanceof Error ? error.message : error)
+      .startsWith(CONTINUATION_EXHAUSTED)) {
+      throw error;
+    }
+  }
+
+  const synthesized = synthesizeContinuationPackage(
+    pkg,
+    state,
+    pin,
+  );
+  const workingSet = buildLegacyWorkingSet(
+    synthesized,
+    state,
+    turnNumber,
+  );
+  if (!isContinuation(workingSet)) {
+    throw new Error("PART_ONE_SYNTHETIC_CONTINUATION_NOT_SELECTED");
+  }
+  assertContinuationPin(workingSet, pin);
+  return traced(
+    workingSet,
+    continuationTrace(workingSet, section, state, fingerprint, pin),
+  );
+}
+
+function continuationTrace(
+  workingSet: PartOneRuntimeWorkingSet,
+  section: PartOneSectionContract,
+  state: PartOneState,
+  fingerprint: string,
+  pin: PartOneDecisionPin | null,
+): KernelSelectionTrace {
+  const actualIds = workingSet.decisionAffordances.map(
+    (item) => item.affordanceTemplateId,
+  );
+  if (pin?.affordanceIds?.length && !sameStringArray(
+    actualIds,
+    pin.affordanceIds,
+  )) {
+    throw new Error("PART_ONE_PINNED_CONTINUATION_AFFORDANCE_MISMATCH");
+  }
+  return {
+    ...baseTrace("CONTINUATION", section, state, fingerprint),
+    selectedKernelId: workingSet.decisionPoint.decisionKernelId,
+    selectedDecisionPointId: workingSet.decisionPoint.decisionPointId,
+    selectedAffordanceIds: actualIds,
+  };
+}
+
+function assertContinuationPin(
+  workingSet: PartOneRuntimeWorkingSet,
+  pin: PartOneDecisionPin | null,
+) {
+  if (!pin) return;
+  if (
+    workingSet.decisionPoint.decisionKernelId !== pin.decisionKernelId
+    || workingSet.decisionPoint.decisionPointId !== pin.decisionPointId
+  ) {
+    throw new Error("PART_ONE_PINNED_DECISION_POINT_NOT_FOUND");
+  }
+}
+
+function legacyFallbackWorkingSet(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  turnNumber: number,
+  section: PartOneSectionContract,
+  fingerprint: string,
+  mode: "LEGACY_FIXED" | "LEGACY_FALLBACK",
+  selection: KernelSelectorLiteResult<Preview> | null = null,
+): DynamicPartOneRuntimeWorkingSet {
+  const completed = new Set(state.completedKernelIds || []);
+  const failures: string[] = [];
+  for (const kernelId of section.activeDecisionKernelIds) {
+    if (completed.has(kernelId)) continue;
+    try {
+      const workingSet = buildLegacyWorkingSet(
+        forcePrimaryPackage(pkg, section.sectionId, kernelId, null, false),
+        state,
+        turnNumber,
+      );
+      const trace = selection
+        ? selectionTrace(selection, section, state, workingSet)
+        : baseTrace(mode, section, state, fingerprint);
+      return traced(workingSet, {
+        ...trace,
+        mode,
+        fallbackReason: mode === "LEGACY_FALLBACK"
+          ? "NO_ELIGIBLE_DYNAMIC_KERNEL"
+          : undefined,
+      });
+    } catch (error) {
+      failures.push(`${kernelId}:${normalizeErrorCode(error)}`);
+    }
+  }
+  if (!section.activeDecisionKernelIds.some((id) => !completed.has(id))) {
+    return buildContinuationWorkingSet(
+      pkg,
+      state,
+      turnNumber,
+      null,
+      fingerprint,
+    );
+  }
+  throw new Error(
+    `PART_ONE_DYNAMIC_LEGACY_FALLBACK_UNAVAILABLE:${failures.join(",")}`,
+  );
+}
+
 function evaluateKernelSafely(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
@@ -300,7 +525,8 @@ function evaluateKernelSafely(
       candidate: {
         kernelId,
         completed: Boolean(state.completedKernelIds?.includes(kernelId)),
-        allowedInCurrentScope: section.activeDecisionKernelIds.includes(kernelId),
+        allowedInCurrentScope:
+          section.activeDecisionKernelIds.includes(kernelId),
         structurallyResolved: false,
         unmetMustEstablishCount: 0,
         unmetExitGateCount: 0,
@@ -328,6 +554,9 @@ function evaluateKernel(
   const options = Array.isArray(kernel.payload.options)
     ? kernel.payload.options
     : [];
+  if (!options.length) {
+    throw new Error(`PART_ONE_RUNTIME_KERNEL_OPTIONS_MISSING:${kernelId}`);
+  }
   const authoredOrder = new Map(options.map(
     (option, index) => [option.affordanceTemplateId, index],
   ));
@@ -375,12 +604,14 @@ function evaluateKernel(
   const previews: Preview[] = [];
   for (const affordance of affordances) {
     try {
+      const previewPackage = buildPreviewPackage(
+        pkg,
+        state,
+        kernelId,
+        affordance.affordanceTemplateId,
+      );
       const preview = settleLegacyAction(
-        forcePackage(pkg, [{
-          sectionId: section.sectionId,
-          kernelId,
-          affordanceId: affordance.affordanceTemplateId,
-        }]),
+        previewPackage,
         state,
         incomingForAffordance(affordance),
         turnNumber + 1,
@@ -403,11 +634,12 @@ function evaluateKernel(
     }
   }
 
-  const coveredPaths = new Set([
-    ...kernel.stateDependencies,
-    ...options.flatMap((option) => option.stateEffects || []),
-    ...options.flatMap((option) => Object.keys(option.statePatch || {})),
-  ]);
+  const coveredPaths = requirementCoveragePaths(
+    pkg,
+    section,
+    kernel,
+    options,
+  );
   const mustRules = uniqueRules(section.mustEstablish).filter(
     (rule) => coveredPaths.has(rule.statePath),
   );
@@ -423,9 +655,7 @@ function evaluateKernel(
   const pending = linkedPending(pkg, state, kernel);
   const nextTurn = turnNumber + 1;
   const present = new Set(state.scene?.presentActorRefs || []);
-  if (options.length < 2) {
-    rejectionCodes.push("KERNEL_OPTIONS_MISSING");
-  }
+  if (options.length < 2) rejectionCodes.push("KERNEL_OPTIONS_MISSING");
   if (affordances.length !== options.length) {
     rejectionCodes.push("AFFORDANCE_MATERIALIZATION_FAILED");
   }
@@ -477,6 +707,30 @@ function evaluateKernel(
   };
 }
 
+function requirementCoveragePaths(
+  pkg: PartOneRuntimePackage,
+  section: PartOneSectionContract,
+  kernel: PartOneRuntimeAsset,
+  options: PartOneAffordanceTemplate[],
+) {
+  const linkedRequirements = pkg.requirements.filter((requirement) => (
+    requirement.sectionIds.includes(section.sectionId)
+    && (
+      requirement.decisionKernelIds.includes(kernel.assetId)
+      || kernel.requirementIds.includes(requirement.requirementId)
+    )
+  ));
+  const requirementPaths = linkedRequirements.flatMap((requirement) => (
+    asStringArray(requirement.stateEffects)
+  ));
+  if (requirementPaths.length) return new Set(requirementPaths);
+  return new Set([
+    ...kernel.stateDependencies,
+    ...options.flatMap((option) => option.stateEffects || []),
+    ...options.flatMap((option) => Object.keys(option.statePatch || {})),
+  ]);
+}
+
 function materializeAffordance(
   pkg: PartOneRuntimePackage,
   state: PartOneState,
@@ -485,11 +739,13 @@ function materializeAffordance(
   affordanceId: string,
 ) {
   const workingSet = buildLegacyWorkingSet(
-    forcePackage(pkg, [{
-      sectionId: state.sectionId,
+    forcePrimaryPackage(
+      pkg,
+      state.sectionId,
       kernelId,
-      affordanceId,
-    }]),
+      [affordanceId],
+      true,
+    ),
     state,
     turnNumber,
   );
@@ -499,6 +755,28 @@ function materializeAffordance(
       (item) => item.affordanceTemplateId === affordanceId,
     ) || null,
   };
+}
+
+function buildPreviewPackage(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  kernelId: string,
+  affordanceId: string,
+) {
+  const isolated = forcePrimaryPackage(
+    pkg,
+    state.sectionId,
+    kernelId,
+    [affordanceId],
+    true,
+  );
+  return synthesizeContinuationPackage(
+    isolated,
+    state,
+    null,
+    Number(state.sectionTurnNumber || 0),
+    kernelId,
+  );
 }
 
 function outcomeSignature(
@@ -558,70 +836,333 @@ function hasMaterialOutcome(
       !== settlement.proposedState.partCompletionStatus;
 }
 
-function forcePackage(
+function synthesizeContinuationPackage(
   pkg: PartOneRuntimePackage,
-  requests: Array<{
-    sectionId: string;
-    kernelId: string;
-    affordanceId: string | null;
-  }>,
+  state: PartOneState,
+  pin: PartOneDecisionPin | null,
+  explicitIndex?: number,
+  explicitKernelId?: string,
 ): PartOneRuntimePackage {
-  const kernelsBySection = new Map<string, string[]>();
-  const affordanceByKernel = new Map<string, string>();
-  for (const request of requests) {
-    const ids = kernelsBySection.get(request.sectionId) || [];
-    if (!ids.includes(request.kernelId)) ids.push(request.kernelId);
-    kernelsBySection.set(request.sectionId, ids);
-    if (request.affordanceId) {
-      affordanceByKernel.set(request.kernelId, request.affordanceId);
-    }
+  const section = requireSection(pkg, state.sectionId);
+  const index = explicitIndex ?? Math.max(
+    0,
+    Number(state.sectionTurnNumber || 0)
+      - section.activeDecisionKernelIds.length,
+  );
+  const floor = selectFloorAsset(pkg, section);
+  const baseKernel = selectContinuationBaseKernel(
+    pkg,
+    section,
+    floor,
+    pin?.decisionKernelId || explicitKernelId || null,
+  );
+  const selectedOptions = selectContinuationOptions(
+    baseKernel,
+    pin?.affordanceIds || null,
+  );
+  const continuationId = pin?.decisionPointId
+    || `CONT-${stableSha256({
+      sectionId: section.sectionId,
+      floorId: floor.assetId,
+      index,
+      kernelId: baseKernel.assetId,
+    }).slice(0, 20)}`;
+  const template: PartOneContinuationDecisionTemplate = {
+    continuationDecisionId: continuationId,
+    basedOnDecisionKernelId: baseKernel.assetId,
+    worldPressure: {
+      pressureId: `PRESSURE-${stableSha256({
+        floorId: floor.assetId,
+        index,
+      }).slice(0, 20)}`,
+      summary: floorPressureSummary(floor),
+      sourceFloorAssetId: floor.assetId,
+    },
+    options: selectedOptions,
+  };
+  const existing = Array.isArray(floor.payload.continuationDecisions)
+    ? clone(floor.payload.continuationDecisions)
+    : [];
+  while (existing.length <= index) {
+    const fillIndex = existing.length;
+    existing.push({
+      ...clone(template),
+      continuationDecisionId: fillIndex === index
+        ? continuationId
+        : `CONT-${stableSha256({
+          sectionId: section.sectionId,
+          floorId: floor.assetId,
+          index: fillIndex,
+          kernelId: baseKernel.assetId,
+        }).slice(0, 20)}`,
+    });
   }
-  return {
-    ...pkg,
-    sections: pkg.sections.map((section) => {
-      const preferred = kernelsBySection.get(section.sectionId);
-      return !preferred?.length
-        ? section
-        : {
-          ...section,
-          activeDecisionKernelIds: [
-            ...preferred,
-            ...section.activeDecisionKernelIds.filter(
-              (id) => !preferred.includes(id),
-            ),
-          ],
-        };
-    }),
-    assets: pkg.assets.map((asset) => {
-      const affordanceId = affordanceByKernel.get(asset.assetId);
-      if (
-        !affordanceId
-        || asset.assetType !== "DECISION_KERNEL"
-      ) {
-        return asset;
-      }
-      const assetOptions = Array.isArray(asset.payload.options)
-        ? asset.payload.options
-        : [];
-      const selected = assetOptions.find(
-        (option) => option.affordanceTemplateId === affordanceId,
-      );
-      if (!selected) {
-        throw new Error(
-          `PART_ONE_DYNAMIC_AFFORDANCE_NOT_FOUND:${affordanceId}`,
-        );
-      }
-      return {
+  existing[index] = template;
+
+  const projected = clone(pkg);
+  projected.sections = projected.sections.map((candidate) => (
+    candidate.sectionId === section.sectionId
+      ? { ...candidate, floorObligationIds: [floor.assetId] }
+      : candidate
+  ));
+  const floorExists = projected.assets.some(
+    (asset) => asset.assetId === floor.assetId,
+  );
+  projected.assets = projected.assets.map((asset) => (
+    asset.assetId === floor.assetId
+      ? {
         ...asset,
         payload: {
           ...asset.payload,
-          options: [
-            selected,
-            ...assetOptions.filter((option) => option !== selected),
-          ],
+          continuationDecisions: existing,
         },
-      };
-    }),
+      }
+      : asset
+  ));
+  if (!floorExists) {
+    projected.assets.push({
+      ...floor,
+      payload: {
+        ...floor.payload,
+        continuationDecisions: existing,
+      },
+    });
+  }
+  return projected;
+}
+
+function injectContinuationForWorkingSet(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  workingSet: PartOneRuntimeWorkingSet,
+) {
+  const pin: PartOneDecisionPin = {
+    decisionKernelId: workingSet.decisionPoint.decisionKernelId,
+    decisionPointId: workingSet.decisionPoint.decisionPointId,
+    affordanceIds: workingSet.decisionAffordances.map(
+      (affordance) => affordance.affordanceTemplateId,
+    ),
+  };
+  return synthesizeContinuationPackage(pkg, state, pin);
+}
+
+function selectFloorAsset(
+  pkg: PartOneRuntimePackage,
+  section: PartOneSectionContract,
+): PartOneRuntimeAsset {
+  for (const floorId of section.floorObligationIds) {
+    const floor = pkg.assets.find((asset) => asset.assetId === floorId);
+    if (floor) return floor;
+  }
+  const floorId = `FLOOR-${stableSha256(section.sectionId).slice(0, 20)}`;
+  return {
+    schemaVersion: "runtime-story-asset-v1",
+    assetId: floorId,
+    assetType: "SECTION_FLOOR_OBLIGATION",
+    partIds: [section.partId],
+    sectionIds: [section.sectionId],
+    requirementIds: [...section.requiredRequirementIds],
+    decisionKernelIds: [...section.activeDecisionKernelIds],
+    causalArcIds: [...section.activeCausalArcIds],
+    actorRefs: [...section.foregroundActorRefs],
+    stateDependencies: [],
+    visibilityRules: [],
+    sourceClaimIds: [],
+    adaptationDecisionIds: [],
+    retrievalTags: ["SECTION_FLOOR_OBLIGATION"],
+    payload: {},
+  };
+}
+
+function selectContinuationBaseKernel(
+  pkg: PartOneRuntimePackage,
+  section: PartOneSectionContract,
+  floor: PartOneRuntimeAsset,
+  preferredKernelId: string | null,
+) {
+  if (preferredKernelId) {
+    const preferred = requireKernel(pkg, preferredKernelId);
+    if (!section.activeDecisionKernelIds.includes(preferred.assetId)) {
+      throw new Error("PART_ONE_PINNED_KERNEL_NOT_IN_SECTION");
+    }
+    requireTwoContinuationOptions(preferred, null);
+    return preferred;
+  }
+  const floorRequirements = new Set(floor.requirementIds);
+  const floorArcs = new Set(floor.causalArcIds);
+  const candidates = section.activeDecisionKernelIds
+    .map((kernelId) => requireKernel(pkg, kernelId))
+    .filter((kernel) => (
+      Array.isArray(kernel.payload.options)
+      && kernel.payload.options.length >= 2
+    ))
+    .map((kernel) => ({
+      kernel,
+      score:
+        (floor.decisionKernelIds.includes(kernel.assetId) ? 100 : 0)
+        + kernel.requirementIds.filter((id) => floorRequirements.has(id)).length * 10
+        + kernel.causalArcIds.filter((id) => floorArcs.has(id)).length * 5,
+    }))
+    .sort((left, right) => (
+      right.score - left.score
+      || left.kernel.assetId.localeCompare(right.kernel.assetId)
+    ));
+  const selected = candidates[0]?.kernel;
+  if (!selected) {
+    throw new Error("PART_ONE_FLOOR_CONTINUATION_KERNEL_UNAVAILABLE");
+  }
+  return selected;
+}
+
+function selectContinuationOptions(
+  kernel: PartOneRuntimeAsset,
+  pinnedIds: string[] | null,
+): PartOneAffordanceTemplate[] {
+  const options = Array.isArray(kernel.payload.options)
+    ? kernel.payload.options
+    : [];
+  if (pinnedIds?.length) {
+    const ids = [...new Set(pinnedIds)];
+    if (ids.length !== 2) {
+      throw new Error("PART_ONE_PINNED_CONTINUATION_AFFORDANCE_COUNT_INVALID");
+    }
+    const selected = ids.map((id) => options.find(
+      (option) => option.affordanceTemplateId === id,
+    ));
+    if (selected.some((option) => !option)) {
+      throw new Error("PART_ONE_PINNED_CONTINUATION_AFFORDANCE_NOT_FOUND");
+    }
+    return selected as PartOneAffordanceTemplate[];
+  }
+  return requireTwoContinuationOptions(kernel, options);
+}
+
+function requireTwoContinuationOptions(
+  kernel: PartOneRuntimeAsset,
+  supplied: PartOneAffordanceTemplate[] | null,
+) {
+  const options = supplied || (
+    Array.isArray(kernel.payload.options) ? kernel.payload.options : []
+  );
+  const pairs: Array<{
+    left: PartOneAffordanceTemplate;
+    right: PartOneAffordanceTemplate;
+    distance: number;
+    leftIndex: number;
+    rightIndex: number;
+  }> = [];
+  for (let leftIndex = 0; leftIndex < options.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < options.length; rightIndex += 1) {
+      const left = options[leftIndex]!;
+      const right = options[rightIndex]!;
+      const distance = rawOptionDistance(left, right);
+      if (distance > 0) {
+        pairs.push({ left, right, distance, leftIndex, rightIndex });
+      }
+    }
+  }
+  const selected = pairs.sort((left, right) => (
+    right.distance - left.distance
+    || left.leftIndex - right.leftIndex
+    || left.rightIndex - right.rightIndex
+  ))[0];
+  if (!selected) {
+    throw new Error(
+      `PART_ONE_FLOOR_CONTINUATION_OPTIONS_UNAVAILABLE:${kernel.assetId}`,
+    );
+  }
+  return [selected.left, selected.right];
+}
+
+function rawOptionDistance(
+  left: PartOneAffordanceTemplate,
+  right: PartOneAffordanceTemplate,
+) {
+  const features = (option: PartOneAffordanceTemplate) => new Set([
+    ...option.stateEffects.map((path) => `path:${path}`),
+    ...Object.entries(option.statePatch || {}).map(
+      ([path, value]) => `patch:${path}=${stableCanonicalJson(value)}`,
+    ),
+    ...(option.durableEffects || []).map(
+      (effect) => `durable:${stableCanonicalJson(effect)}`,
+    ),
+    `pending:${String(option.createsPendingConsequence)}`,
+  ]);
+  const leftFeatures = features(left);
+  const rightFeatures = features(right);
+  let distance = 0;
+  for (const value of leftFeatures) {
+    if (!rightFeatures.has(value)) distance += 1;
+  }
+  for (const value of rightFeatures) {
+    if (!leftFeatures.has(value)) distance += 1;
+  }
+  return distance;
+}
+
+function floorPressureSummary(floor: PartOneRuntimeAsset) {
+  for (const key of ["summary", "dramaticPurpose", "obligation"]) {
+    const value = floor.payload[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return `The unresolved obligation ${floor.assetId} remains active.`;
+}
+
+function forcePrimaryPackage(
+  pkg: PartOneRuntimePackage,
+  sectionId: string,
+  kernelId: string,
+  affordanceIds: string[] | null,
+  restrictToKernel: boolean,
+): PartOneRuntimePackage {
+  const projected = clone(pkg);
+  projected.sections = projected.sections.map((section) => {
+    if (section.sectionId !== sectionId) return section;
+    return {
+      ...section,
+      activeDecisionKernelIds: restrictToKernel
+        ? [kernelId]
+        : [
+          kernelId,
+          ...section.activeDecisionKernelIds.filter((id) => id !== kernelId),
+        ],
+    };
+  });
+  if (affordanceIds?.length) {
+    projected.assets = projected.assets.map((asset) => (
+      asset.assetId === kernelId && asset.assetType === "DECISION_KERNEL"
+        ? reorderKernelOptions(asset, affordanceIds)
+        : asset
+    ));
+  }
+  return projected;
+}
+
+function reorderKernelOptions(
+  asset: PartOneRuntimeAsset,
+  affordanceIds: string[],
+) {
+  const authored = Array.isArray(asset.payload.options)
+    ? asset.payload.options
+    : [];
+  const ids = [...new Set(affordanceIds)];
+  const selected = ids.map((id) => authored.find(
+    (option) => option.affordanceTemplateId === id,
+  ));
+  if (selected.some((option) => !option)) {
+    throw new Error(
+      `PART_ONE_DYNAMIC_AFFORDANCE_NOT_FOUND:${ids.join(",")}`,
+    );
+  }
+  const remaining = authored.filter(
+    (option) => !ids.includes(option.affordanceTemplateId),
+  );
+  const reordered = selected.length === 1
+    ? [selected[0]!, ...remaining]
+    : [selected[0]!, ...remaining, selected[1]!];
+  return {
+    ...asset,
+    payload: { ...asset.payload, options: reordered },
   };
 }
 
@@ -800,7 +1341,8 @@ function requireKernel(
   kernelId: string,
 ) {
   const kernel = pkg.assets.find(
-    (item) => item.assetId === kernelId && item.assetType === "DECISION_KERNEL",
+    (item) => item.assetId === kernelId
+      && item.assetType === "DECISION_KERNEL",
   );
   if (!kernel) {
     throw new Error(`PART_ONE_RUNTIME_KERNEL_MISSING:${kernelId}`);
@@ -820,8 +1362,19 @@ function getPath(value: unknown, path: string) {
   ), value);
 }
 
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
 function deepEqual(left: unknown, right: unknown) {
   return stableCanonicalJson(left) === stableCanonicalJson(right);
+}
+
+function sameStringArray(left: string[], right: string[]) {
+  return left.length === right.length
+    && left.every((value, index) => value === right[index]);
 }
 
 function normalizeErrorCode(error: unknown) {
@@ -832,4 +1385,8 @@ function normalizeErrorCode(error: unknown) {
     .replace(/[^A-Za-z0-9_]+/gu, "_")
     .toUpperCase()
     .slice(0, 96) || "UNKNOWN_ERROR";
+}
+
+function clone<T>(value: T): T {
+  return structuredClone(value);
 }
