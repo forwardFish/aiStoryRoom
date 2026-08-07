@@ -17,7 +17,7 @@ const actor = {
 };
 
 const maneuverPackage: OpenNovelManeuverPackage = {
-  packageVersion: "neutral-narrative-context-v1",
+  packageVersion: "openovel_maneuver_package_v1",
   worldId: "neutral_narrative_context",
   calendar: {
     expectedTurns: 1,
@@ -81,6 +81,7 @@ const plan: OpenNovelManeuverPlan = {
   playerMessage: "What can the signal log actually prove?",
 };
 
+const hiddenCanonSentinel = "PRIVATE_PROTAGONIST_MEMORY_MUST_NOT_REACH_TARGET";
 const runtimeRun: OpenNovelPublicRun = {
   runId: "neutral-run",
   worldId: maneuverPackage.worldId,
@@ -88,8 +89,8 @@ const runtimeRun: OpenNovelPublicRun = {
   runtimeMode: "OPENOVEL_V1",
   turnNumber: 0,
   status: "READY",
-  canon: "A repeated pulse appears in the public log.",
-  recentCanon: "The team is deciding whether the pulse is evidence or noise.",
+  canon: hiddenCanonSentinel,
+  recentCanon: hiddenCanonSentinel,
   options: [{ id: "observe", label: "Review the log" }],
   updatedAt: "2026-08-07T00:00:00.000Z",
 };
@@ -143,13 +144,20 @@ test("maneuver narrative context includes persona fields and only explicitly all
   });
 
   assert.deepEqual(built.context.target, actor);
+  assert.deepEqual(built.context.scene, {
+    sceneKey: "phase_alpha",
+    whyRelevant: "Owns the current signal log",
+  });
   assert.equal(built.context.playerMessage, plan.playerMessage);
   assert.deepEqual(
     built.context.visibleFacts.map((fact) => fact.factKey),
     ["allowed_fact"],
   );
-  assert.equal(JSON.stringify(built.context).includes("hidden_fact"), false);
-  assert.equal(JSON.stringify(built.context).includes("statePatch"), true);
+  const serialized = JSON.stringify(built.context);
+  assert.equal(serialized.includes("hidden_fact"), false);
+  assert.equal(serialized.includes(hiddenCanonSentinel), false);
+  assert.equal(serialized.includes("recentCanon"), false);
+  assert.equal(serialized.includes("statePatch"), true);
   assert.deepEqual(built.context.immutableRuleResult.statePatchKeys, ["trust"]);
   assert.equal(built.targetName, "Analyst");
 });

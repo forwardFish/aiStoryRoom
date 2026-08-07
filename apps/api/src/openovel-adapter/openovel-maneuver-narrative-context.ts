@@ -8,7 +8,10 @@ import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
 
 export type OpenNovelManeuverNarrativeContext = {
   task: "character_response" | "leverage_character_response";
-  sceneKey: string;
+  scene: {
+    sceneKey: string;
+    whyRelevant: string;
+  };
   maneuverType: OpenNovelManeuverPlan["maneuverType"];
   target: null | {
     roleKey: string;
@@ -27,7 +30,6 @@ export type OpenNovelManeuverNarrativeContext = {
     factKey: string;
     content: string;
   }>;
-  recentCanon: string;
   immutableRuleResult: {
     statePatchKeys: string[];
     factKeys: string[];
@@ -61,7 +63,10 @@ export function buildOpenNovelManeuverNarrativeContext(input: {
     task: input.plan.maneuverType === "contact"
       ? "character_response"
       : "leverage_character_response",
-    sceneKey: input.plan.sceneKey,
+    scene: {
+      sceneKey: input.plan.sceneKey,
+      whyRelevant: contact?.relevance || "",
+    },
     maneuverType: input.plan.maneuverType,
     target: target ? {
       roleKey: target.roleKey,
@@ -79,7 +84,6 @@ export function buildOpenNovelManeuverNarrativeContext(input: {
       description: leverage.description,
     } : null,
     visibleFacts,
-    recentCanon: String(input.runtimeRun.recentCanon || "").slice(-2_000),
     immutableRuleResult: {
       statePatchKeys: Object.keys(input.plan.statePatch),
       factKeys: [...input.plan.factKeys],
