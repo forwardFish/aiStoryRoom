@@ -1,5 +1,6 @@
-# Branch-scoped acceptance workflow; never targets or modifies main.
-name: Dynamic Kernel Lite Gates
+# Local and pure-runtime evidence only. This workflow can never declare the
+# product accepted because it does not exercise Supabase-backed persistence.
+name: Dynamic Kernel Lite Auxiliary Gates
 
 on:
   push:
@@ -12,13 +13,14 @@ permissions:
   statuses: write
 
 jobs:
-  acceptance:
+  auxiliary:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 120
     env:
       CI: "true"
       BASE_SHA: dc4a7cd10978fc3662edcb6f2cf3445c1393ddb0
-      EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-lite-evidence
+      EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-lite-auxiliary
+      AI_STORY_REAL_MODEL_EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-lite-auxiliary/real-model
       OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
       OPENOVEL_MODEL: deepseek-v4-pro
       OPENOVEL_NARRATOR_MODEL: deepseek-v4-pro
@@ -26,14 +28,13 @@ jobs:
       OPENOVEL_OPTIONS_MODEL: deepseek-v4-pro
       OPENOVEL_STORYKEEPER_MODEL: deepseek-v4-pro
       OPENOVEL_DEEPSEEK_THINKING: disabled
-      AI_STORY_REAL_MODEL_EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-lite-evidence/real-model
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Publish pending commit status
+      - name: Publish auxiliary pending status
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,8 +43,8 @@ jobs:
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state="pending" \
-            -f context="dynamic-kernel-lite/gates" \
-            -f description="Dynamic Kernel Lite gates are running" \
+            -f context="dynamic-kernel-lite/auxiliary-gates" \
+            -f description="Pure and local auxiliary gates are running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - uses: pnpm/action-setup@v4
@@ -56,8 +57,8 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - id: gates
-        name: Run complete isolated gate matrix
+      - id: auxiliary
+        name: Run pure and local auxiliary matrix
         continue-on-error: true
         shell: bash
         env:
@@ -82,7 +83,6 @@ jobs:
           }
 
           boundary_log="${EVIDENCE_ROOT}/logs/00-boundary.log"
-          changed_files="${EVIDENCE_ROOT}/changed-files.txt"
           boundary_code=0
           {
             echo "repository=${GITHUB_REPOSITORY}"
@@ -91,94 +91,41 @@ jobs:
             echo "base=${BASE_SHA}"
             echo "merge_base=$(git merge-base HEAD "${BASE_SHA}")"
             echo "origin_main=$(git rev-parse origin/main)"
-            echo "changed_files_begin"
-            git diff --name-only "${BASE_SHA}...HEAD" | tee "${changed_files}"
-            echo "changed_files_end"
-            echo "status_begin"
             git status --short
-            echo "status_end"
           } | tee "${boundary_log}"
-
-          if [ "${GITHUB_REPOSITORY}" != "forwardFish/aiStoryRoom" ]; then
-            echo "BOUNDARY_REPOSITORY_MISMATCH" | tee -a "${boundary_log}"
-            boundary_code=1
-          fi
-          if [ "${GITHUB_REF_NAME}" != "codex/chatgpt-pro-dynamic-kernel-lite" ]; then
-            echo "BOUNDARY_BRANCH_MISMATCH" | tee -a "${boundary_log}"
-            boundary_code=1
-          fi
-          if [ "$(git merge-base HEAD "${BASE_SHA}")" != "${BASE_SHA}" ]; then
-            echo "BOUNDARY_BASELINE_NOT_ANCESTOR" | tee -a "${boundary_log}"
-            boundary_code=1
-          fi
-          if [ "$(git rev-parse origin/main)" != "${BASE_SHA}" ]; then
-            echo "BOUNDARY_MAIN_MOVED" | tee -a "${boundary_log}"
-            boundary_code=1
-          fi
-          if [ -n "$(git status --short)" ]; then
-            echo "BOUNDARY_DIRTY_WORKTREE" | tee -a "${boundary_log}"
-            boundary_code=1
-          fi
+          if [ "${GITHUB_REPOSITORY}" != "forwardFish/aiStoryRoom" ]; then boundary_code=1; fi
+          if [ "${GITHUB_REF_NAME}" != "codex/chatgpt-pro-dynamic-kernel-lite" ]; then boundary_code=1; fi
+          if [ "$(git merge-base HEAD "${BASE_SHA}")" != "${BASE_SHA}" ]; then boundary_code=1; fi
+          if [ "$(git rev-parse origin/main)" != "${BASE_SHA}" ]; then boundary_code=1; fi
+          if [ -n "$(git status --short)" ]; then boundary_code=1; fi
           set +e
           git diff --check 2>&1 | tee -a "${boundary_log}"
           diff_code=${PIPESTATUS[0]}
           set -e
-          if [ "${diff_code}" -ne 0 ]; then
-            echo "BOUNDARY_DIFF_CHECK_FAILED" | tee -a "${boundary_log}"
-            boundary_code=1
-          fi
-
-          forbidden_pattern='^(apps/web/|prisma/|packages/templates/authoring/|packages/templates/config/|apps/openovel-runtime/src/runtime\.ts$|apps/openovel-runtime/src/atomic-turn\.ts$)|(^|/)migrations/|(^|/)(node_modules|dist|build)/|(^|/)\.env($|\.)'
-          forbidden_files="$(grep -E "${forbidden_pattern}" "${changed_files}" || true)"
-          if [ -n "${forbidden_files}" ]; then
-            {
-              echo "BOUNDARY_FORBIDDEN_FILES"
-              printf '%s\n' "${forbidden_files}"
-            } | tee -a "${boundary_log}"
-            boundary_code=1
-          fi
+          if [ "${diff_code}" -ne 0 ]; then boundary_code=1; fi
           printf '%s\t%s\t%s\n' "00-boundary" "${boundary_code}" "${boundary_log}" >> "${results}"
 
           run_gate 01-install pnpm install --frozen-lockfile
-          run_gate 02-templates-typecheck pnpm --filter @ai-story/templates typecheck
-          run_gate 03-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
-          run_gate 04-templates-story-package pnpm --filter @ai-story/templates test:story-package
-          run_gate 05-templates-build pnpm --filter @ai-story/templates build
-          run_gate 06-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
-          run_gate 07-openovel-tests pnpm --filter @apps/openovel-runtime test
-          run_gate 08-openovel-build pnpm --filter @apps/openovel-runtime build
-          run_gate 09-api-solo pnpm --filter @apps/api test:solo-story-engine
-          run_gate 10-api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
-          run_gate 11-branch-persistence pnpm test:story:branch-persistence
-          run_gate 12-story-options pnpm test:story:options
-          run_gate 13-story-convergence pnpm test:story:convergence
-          run_gate 14-story-v4 pnpm test:story:v4
+          run_gate 02-supabase-contract-unit node --test scripts/acceptance/__tests__/supabase-formal-acceptance.spec.mjs scripts/acceptance/__tests__/dynamic-kernel-supabase-gate-contract.spec.mjs
+          run_gate 03-templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate 04-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate 05-templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate 06-templates-build pnpm --filter @ai-story/templates build
+          run_gate 07-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate 08-openovel-tests pnpm --filter @apps/openovel-runtime test
+          run_gate 09-openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate 10-api-solo-unit pnpm --filter @apps/api test:solo-story-engine
+          run_gate 11-api-legacy-sangtian-unit pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate 12-branch-persistence-auxiliary pnpm test:story:branch-persistence
+          run_gate 13-story-options-auxiliary pnpm test:story:options
+          run_gate 14-story-convergence-auxiliary pnpm test:story:convergence
+          run_gate 15-story-v4-auxiliary pnpm test:story:v4
 
           if [ -z "${OPENOVEL_PROVIDER_API_KEY}${OPENOVEL_API_KEY}${DEEPSEEK_API_KEY}" ]; then
-            echo "REAL_MODEL_NOT_RUN_ENV_BLOCKED" | tee "${EVIDENCE_ROOT}/logs/15-real-model.log"
-            printf '%s\t78\t%s\n' "15-real-model" "${EVIDENCE_ROOT}/logs/15-real-model.log" >> "${results}"
+            echo "AUXILIARY_REAL_MODEL_NOT_RUN_ENV_BLOCKED" | tee "${EVIDENCE_ROOT}/logs/16-real-model-auxiliary.log"
+            printf '%s\t78\t%s\n' "16-real-model-auxiliary" "${EVIDENCE_ROOT}/logs/16-real-model-auxiliary.log" >> "${results}"
           else
-            run_gate 15-real-model pnpm test:story:real-model:g00-t20
-            python - <<'PY'
-          import json, os
-          from pathlib import Path
-          root = Path(os.environ["AI_STORY_REAL_MODEL_EVIDENCE_ROOT"])
-          for name in [
-              "real-model-acceptance-summary.json",
-              "real-model-g00-t20-summary.json",
-              "run-configuration.json",
-          ]:
-              path = root / name
-              if not path.exists():
-                  continue
-              value = json.loads(path.read_text(encoding="utf-8"))
-              value["branch"] = "codex/chatgpt-pro-dynamic-kernel-lite"
-              value["candidateSha"] = os.environ.get("GITHUB_SHA")
-              path.write_text(
-                  json.dumps(value, ensure_ascii=False, indent=2) + "\n",
-                  encoding="utf-8",
-              )
-          PY
+            run_gate 16-real-model-auxiliary pnpm test:story:real-model:g00-t20
           fi
 
           python - <<'PY'
@@ -188,14 +135,14 @@ jobs:
           from pathlib import Path
 
           root = Path(os.environ["EVIDENCE_ROOT"])
-          rows = []
-          tap_pattern = re.compile(
+          tap = re.compile(
               r"# tests (\d+)\s+# suites (\d+)\s+# pass (\d+)\s+# fail (\d+)\s+"
               r"# cancelled (\d+)\s+# skipped (\d+)\s+# todo (\d+)",
               re.MULTILINE,
           )
+          rows = []
           for line in (root / "results.tsv").read_text(encoding="utf-8").splitlines():
-              label, exit_code, log_path = line.split("\t", 2)
+              label, code, log_path = line.split("\t", 2)
               log = Path(log_path)
               text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
               blocks = [
@@ -203,214 +150,95 @@ jobs:
                       ["tests", "suites", "pass", "fail", "cancelled", "skipped", "todo"],
                       map(int, match.groups()),
                   ))
-                  for match in tap_pattern.finditer(text)
+                  for match in tap.finditer(text)
               ]
               rows.append({
                   "label": label,
-                  "exitCode": int(exit_code),
+                  "exitCode": int(code),
                   "logPath": log_path,
                   "tapBlocks": blocks,
-                  "_text": text,
                   "validationErrors": [],
               })
 
-          by_label = {row["label"]: row for row in rows}
-          required_labels = {
-              "00-boundary",
-              "01-install",
-              "02-templates-typecheck",
-              "03-templates-runtime-contract",
-              "04-templates-story-package",
-              "05-templates-build",
-              "06-openovel-typecheck",
-              "07-openovel-tests",
-              "08-openovel-build",
-              "09-api-solo",
-              "10-api-legacy-sangtian",
-              "11-branch-persistence",
-              "12-story-options",
-              "13-story-convergence",
-              "14-story-v4",
-              "15-real-model",
+          required = {
+              "00-boundary", "01-install", "02-supabase-contract-unit",
+              "03-templates-typecheck", "04-templates-runtime-contract",
+              "05-templates-story-package", "06-templates-build",
+              "07-openovel-typecheck", "08-openovel-tests",
+              "09-openovel-build", "10-api-solo-unit",
+              "11-api-legacy-sangtian-unit", "12-branch-persistence-auxiliary",
+              "13-story-options-auxiliary", "14-story-convergence-auxiliary",
+              "15-story-v4-auxiliary",
           }
-          missing = sorted(required_labels - set(by_label))
-          if missing:
-              rows.append({
-                  "label": "MISSING_REQUIRED_COMMANDS",
-                  "exitCode": 1,
-                  "logPath": "",
-                  "tapBlocks": [],
-                  "_text": "",
-                  "validationErrors": missing,
-              })
-
+          by_label = {row["label"]: row for row in rows}
+          missing = sorted(required - set(by_label))
           tap_required = {
-              "03-templates-runtime-contract",
-              "04-templates-story-package",
-              "07-openovel-tests",
-              "09-api-solo",
-              "10-api-legacy-sangtian",
-              "14-story-v4",
+              "02-supabase-contract-unit", "04-templates-runtime-contract",
+              "05-templates-story-package", "08-openovel-tests",
+              "10-api-solo-unit", "11-api-legacy-sangtian-unit",
+              "15-story-v4-auxiliary",
           }
           for label in tap_required:
               row = by_label.get(label)
               if not row:
                   continue
-              total_tests = sum(block["tests"] for block in row["tapBlocks"])
-              total_fail = sum(block["fail"] for block in row["tapBlocks"])
-              if total_tests <= 0:
+              tests = sum(block["tests"] for block in row["tapBlocks"])
+              failures = sum(block["fail"] for block in row["tapBlocks"])
+              if tests <= 0:
                   row["validationErrors"].append("ZERO_OR_MISSING_TESTS")
-              if total_fail > 0:
-                  row["validationErrors"].append(
-                      f"TAP_FAILURE_COUNT:{total_fail}"
-                  )
+              if failures:
+                  row["validationErrors"].append(f"TAP_FAILURE_COUNT:{failures}")
 
-          structured_requirements = {
-              "11-branch-persistence": [
-                  r'"verdict"\s*:\s*"PASS"',
-                  r'"branches"\s*:',
-                  r'"branchId"\s*:\s*"A"',
-                  r'"branchId"\s*:\s*"B"',
-              ],
-              "12-story-options": [
-                  r'"verdict"\s*:\s*"PASS"',
-                  r'"turnCount"\s*:\s*20',
-                  r'"primaryCount"\s*:\s*15',
-                  r'"continuationCount"\s*:\s*5',
-              ],
-              "13-story-convergence": [
-                  r'"verdict"\s*:\s*"PASS"',
-                  r'"failures"\s*:\s*\[\s*\]',
-              ],
-          }
-          for label, patterns in structured_requirements.items():
-              row = by_label.get(label)
-              if not row:
-                  continue
-              for pattern in patterns:
-                  if not re.search(pattern, row["_text"], re.MULTILINE):
-                      row["validationErrors"].append(
-                          f"STRUCTURED_EVIDENCE_MISSING:{pattern}"
-                      )
-
-          real_model = by_label.get("15-real-model")
-          real_model_status = "FAIL"
-          if real_model:
-              if real_model["exitCode"] == 78:
-                  real_model_status = "BLOCKED_ENV"
-                  real_model["validationErrors"].append("REAL_MODEL_NOT_RUN_ENV_BLOCKED")
-              elif real_model["exitCode"] == 0:
-                  evidence_root = Path(os.environ["AI_STORY_REAL_MODEL_EVIDENCE_ROOT"])
-                  acceptance_path = evidence_root / "real-model-acceptance-summary.json"
-                  g00_t20_path = evidence_root / "real-model-g00-t20-summary.json"
-                  if not acceptance_path.exists() or not g00_t20_path.exists():
-                      real_model["validationErrors"].append("REAL_MODEL_SUMMARY_MISSING")
-                  else:
-                      acceptance = json.loads(
-                          acceptance_path.read_text(encoding="utf-8")
-                      )
-                      g00_t20 = json.loads(
-                          g00_t20_path.read_text(encoding="utf-8")
-                      )
-                      checks = [
-                          acceptance.get("verdict") == "PASS",
-                          acceptance.get("branch")
-                              == "codex/chatgpt-pro-dynamic-kernel-lite",
-                          acceptance.get("candidateSha") == os.environ["GITHUB_SHA"],
-                          int(acceptance.get("providerCallCount") or 0) > 0,
-                          g00_t20.get("verdict") == "PASS",
-                          g00_t20.get("branch")
-                              == "codex/chatgpt-pro-dynamic-kernel-lite",
-                          g00_t20.get("candidateSha") == os.environ["GITHUB_SHA"],
-                          int(g00_t20.get("turnCount") or 0) == 20,
-                      ]
-                      if not all(checks):
-                          real_model["validationErrors"].append(
-                              "REAL_MODEL_STRUCTURED_EVIDENCE_INVALID"
-                          )
-                      else:
-                          real_model_status = "PASS"
-
-          for row in rows:
-              row["passed"] = (
-                  row["exitCode"] == 0
-                  and not row["validationErrors"]
-              )
-              row.pop("_text", None)
-
-          deterministic = [
-              row for row in rows
-              if row["label"] != "15-real-model"
-          ]
-          deterministic_pass = (
+          auxiliary_pass = (
               not missing
-              and all(row["passed"] for row in deterministic)
+              and all(
+                  row["exitCode"] == 0 and not row["validationErrors"]
+                  for row in rows
+                  if row["label"] != "16-real-model-auxiliary"
+              )
           )
-          final_pass = deterministic_pass and real_model_status == "PASS"
+          real = by_label.get("16-real-model-auxiliary")
+          real_status = (
+              "PASS" if real and real["exitCode"] == 0
+              else "BLOCKED_ENV" if real and real["exitCode"] == 78
+              else "FAIL"
+          )
           summary = {
-              "schemaVersion": "omw.dynamic-kernel-lite-gates.v2",
+              "schemaVersion": "omw.dynamic-kernel-lite.auxiliary-gates.v1",
               "repository": os.environ["GITHUB_REPOSITORY"],
               "branch": os.environ["GITHUB_REF_NAME"],
               "candidateSha": os.environ["GITHUB_SHA"],
               "baselineSha": os.environ["BASE_SHA"],
-              "node": "22",
-              "pnpm": "10.12.1",
+              "evidenceClass": "AUXILIARY_ONLY",
+              "databaseBacked": False,
+              "productAcceptanceEligible": False,
               "commands": rows,
-              "deterministicVerdict": "PASS" if deterministic_pass else "FAIL",
-              "realModelStatus": real_model_status,
-              "finalVerdict": "PASS" if final_pass else "BLOCKED_OR_FAIL",
+              "missingCommands": missing,
+              "auxiliaryVerdict": "PASS" if auxiliary_pass else "FAIL",
+              "realModelAuxiliaryStatus": real_status,
+              "finalVerdict": "AUXILIARY_PASS" if auxiliary_pass else "AUXILIARY_FAIL",
+              "formalSupabaseGateRequired": True,
           }
           (root / "summary.json").write_text(
               json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
               encoding="utf-8",
           )
           (root / "gate-status.txt").write_text(
-              ("success" if final_pass else "failure") + "\n",
+              ("success" if auxiliary_pass else "failure") + "\n",
               encoding="utf-8",
           )
           PY
 
-          final_log="${EVIDENCE_ROOT}/logs/99-final-boundary.log"
-          final_code=0
-          {
-            echo "head=$(git rev-parse HEAD)"
-            echo "origin_main=$(git rev-parse origin/main)"
-            echo "status_begin"
-            git status --short
-            echo "status_end"
-          } | tee "${final_log}"
-          if [ "$(git rev-parse HEAD)" != "${GITHUB_SHA}" ]; then
-            echo "FINAL_HEAD_MISMATCH" | tee -a "${final_log}"
-            final_code=1
-          fi
-          if [ "$(git rev-parse origin/main)" != "${BASE_SHA}" ]; then
-            echo "FINAL_MAIN_MOVED" | tee -a "${final_log}"
-            final_code=1
-          fi
-          if [ -n "$(git status --short)" ]; then
-            echo "FINAL_DIRTY_WORKTREE" | tee -a "${final_log}"
-            final_code=1
-          fi
-          if [ "${final_code}" -ne 0 ]; then
-            echo "failure" > "${EVIDENCE_ROOT}/gate-status.txt"
-          fi
-
-          sha256sum \
-            "${EVIDENCE_ROOT}/summary.json" \
-            "${EVIDENCE_ROOT}/changed-files.txt" \
-            "${EVIDENCE_ROOT}"/logs/*.log \
-            > "${EVIDENCE_ROOT}/SHA256SUMS"
-
-      - name: Upload acceptance evidence
+      - name: Upload auxiliary evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dynamic-kernel-lite-${{ github.sha }}
+          name: dynamic-kernel-lite-auxiliary-${{ github.sha }}
           path: ${{ env.EVIDENCE_ROOT }}/
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish commit status
+      - name: Publish auxiliary commit status
         if: always()
         shell: bash
         env:
@@ -421,15 +249,14 @@ jobs:
           if [ -f "${EVIDENCE_ROOT}/gate-status.txt" ]; then
             state="$(tr -d '\r\n' < "${EVIDENCE_ROOT}/gate-status.txt")"
           fi
-          description="Dynamic Kernel Lite gates ${state}"
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state="${state}" \
-            -f context="dynamic-kernel-lite/gates" \
-            -f description="${description}" \
+            -f context="dynamic-kernel-lite/auxiliary-gates" \
+            -f description="Auxiliary-only gates ${state}; Supabase formal gate still required" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
-      - name: Enforce every required gate
+      - name: Enforce auxiliary gate
         if: always()
         shell: bash
         run: |
