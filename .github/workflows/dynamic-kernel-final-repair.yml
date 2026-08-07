@@ -1,0 +1,286 @@
+name: Dynamic Kernel Final Generic Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/dynamic-kernel-final-repair.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EVIDENCE_ROOT: /tmp/dynamic-kernel-final-repair
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=pending \
+            -f context="dynamic-kernel-lite/final-repair" \
+            -f description="Final generic repair and deterministic matrix running" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Apply verified v2 payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          tr -d '[:space:]' < .github/repair/dynamic-kernel-followup.patch.gz.b64 \
+            | base64 --decode | gzip --decompress > "${RUNNER_TEMP}/followup.patch"
+          test "$(sha256sum "${RUNNER_TEMP}/followup.patch" | cut -d' ' -f1)" = \
+            "cf21f3aaabd702ef8d3914d95e32443ff89ec9cd1d40ca6af11556f5b138cd07"
+          git apply --check "${RUNNER_TEMP}/followup.patch"
+          git apply "${RUNNER_TEMP}/followup.patch"
+      - name: Apply final world-agnostic corrections
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          runtime = Path("packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts")
+          text = runtime.read_text(encoding="utf-8")
+          pattern = re.compile(
+              r"function requirementCoveragePaths\([\s\S]*?\n}\n\nfunction materializeAffordance\(",
+              re.MULTILINE,
+          )
+          replacement = '''function requirementCoveragePaths(
+            pkg: PartOneRuntimePackage,
+            section: PartOneSectionContract,
+            kernel: PartOneRuntimeAsset,
+            options: PartOneAffordanceTemplate[],
+            previews: Preview[],
+          ) {
+            const directPaths = new Set([
+              ...kernel.stateDependencies,
+              ...options.flatMap((option) => option.stateEffects || []),
+              ...options.flatMap((option) => Object.keys(option.statePatch || {})),
+              ...previews.flatMap((preview) => preview.changedStatePaths),
+            ]);
+            const linkedRequirements = pkg.requirements.filter((requirement) => (
+              requirement.sectionIds.includes(section.sectionId)
+              && (
+                requirement.decisionKernelIds.includes(kernel.assetId)
+                || kernel.requirementIds.includes(requirement.requirementId)
+              )
+            ));
+            const exclusiveRequirementPaths = linkedRequirements
+              .filter((requirement) => {
+                const owners = new Set([
+                  ...requirement.decisionKernelIds.filter((kernelId) => (
+                    section.activeDecisionKernelIds.includes(kernelId)
+                  )),
+                  ...section.activeDecisionKernelIds.filter((kernelId) => {
+                    const candidate = pkg.assets.find((asset) => (
+                      asset.assetId === kernelId
+                      && asset.assetType === "DECISION_KERNEL"
+                    ));
+                    return Boolean(
+                      candidate?.requirementIds.includes(
+                        requirement.requirementId,
+                      ),
+                    );
+                  }),
+                ]);
+                return owners.size === 1 && owners.has(kernel.assetId);
+              })
+              .flatMap((requirement) => asStringArray(requirement.stateEffects));
+            return new Set([
+              ...directPaths,
+              ...exclusiveRequirementPaths,
+            ]);
+          }
+
+          function materializeAffordance('''
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f"requirementCoveragePaths replacement count={count}")
+          runtime.write_text(text, encoding="utf-8")
+
+          compiler = Path("apps/api/src/solo-story-engine/context-compiler.ts")
+          text = compiler.read_text(encoding="utf-8")
+          pattern = re.compile(
+              r"function partOneSettlementPromptProjection\([\s\S]*?\n}\n\nfunction partOnePromptProjection\(",
+              re.MULTILINE,
+          )
+          replacement = '''function partOneSettlementPromptProjection(
+            item: import("@ai-story/templates").PartOneCommittedEvent,
+          ) {
+            const plan = item.narrativePlan;
+            const nextBeat = plan.nextStoryBeat;
+            return {
+              eventId: item.eventId,
+              turnNumber: item.turnNumber,
+              sectionIdBefore: item.sectionIdBefore,
+              sectionIdAfter: item.sectionIdAfter,
+              actionSource: item.actionSource,
+              actionText: item.actionText,
+              authoritativeObservableFacts: item.authoritativeObservableFacts,
+              authoritativeNpcReactions: item.authoritativeNpcReactions.map(
+                (reaction) => ({
+                  actorRefs: reaction.actorRefs,
+                  action: reaction.action,
+                }),
+              ),
+              sceneBefore: item.sceneBefore,
+              sceneAfter: item.sceneAfter,
+              authoritativeWorldMoves: item.authoritativeWorldMoves.map(
+                (move) => ({
+                  sourceType: move.sourceType,
+                  actorRefs: move.actorRefs,
+                  action: move.action,
+                  resultCeiling: move.resultCeiling,
+                }),
+              ),
+              sectionTransitioned: item.sectionTransitioned,
+              narrativePlan: {
+                sceneStart: plan.sceneStart,
+                sceneEnd: plan.sceneEnd,
+                sceneStartActorLabels: plan.sceneStartActorLabels,
+                sceneEndActorLabels: plan.sceneEndActorLabels,
+                transitionAllowed: plan.transitionAllowed,
+                authorizedActorArrivals: plan.authorizedActorArrivals,
+                authorizedActorDepartures: plan.authorizedActorDepartures,
+                dramaticTask: plan.dramaticTask,
+                actionAlreadyOccurred: plan.actionAlreadyOccurred,
+                playerSpeechMode: plan.playerSpeechMode,
+                authorizedPlayerSpeech: plan.authorizedPlayerSpeech,
+                settledActionNarrative: plan.settledActionNarrative,
+                confirmedEffects: plan.confirmedEffects,
+                unresolvedFacts: plan.unresolvedFacts,
+                sceneBlocking: plan.sceneBlocking,
+                incidentalTextureAllowances: plan.incidentalTextureAllowances,
+                sceneBeats: plan.sceneBeats,
+                requiredEndChange: plan.requiredEndChange,
+                narrativeCeiling: plan.narrativeCeiling,
+                nextStoryBeat: {
+                  presentMoves: nextBeat.presentMoves,
+                  playerOutcome: nextBeat.playerOutcome,
+                  npcOrWorldPressure: nextBeat.npcOrWorldPressure,
+                  visibleConsequence: nextBeat.visibleConsequence,
+                  stopCondition: nextBeat.stopCondition,
+                  playerVisibleFallback: nextBeat.playerVisibleFallback,
+                },
+              },
+            };
+          }
+
+          function partOnePromptProjection('''
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f"partOneSettlementPromptProjection replacement count={count}")
+          compiler.write_text(text, encoding="utf-8")
+          PY
+          git diff --check
+          git diff --stat | tee "${EVIDENCE_ROOT}/logs/00-diff.log"
+      - name: Install frozen workspace
+        run: pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
+      - name: Run complete deterministic matrix
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          results="${EVIDENCE_ROOT}/results.tsv"
+          : > "${results}"
+          failed=0
+          run_gate() {
+            local label="$1"
+            shift
+            local log="${EVIDENCE_ROOT}/logs/${label}.log"
+            set +e
+            "$@" 2>&1 | tee "${log}"
+            local code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
+            if [ "${code}" -ne 0 ]; then failed=1; fi
+          }
+          run_gate 02-templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate 03-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate 04-templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate 05-templates-build pnpm --filter @ai-story/templates build
+          run_gate 06-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate 07-openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate 08-openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate 09-prisma-generate pnpm db:generate
+          run_gate 10-api-solo pnpm --filter @apps/api test:solo-story-engine
+          run_gate 11-api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate 12-branch-persistence pnpm test:story:branch-persistence
+          run_gate 13-story-options pnpm test:story:options
+          run_gate 14-story-convergence pnpm test:story:convergence
+          run_gate 15-story-v4 pnpm test:story:v4
+          printf '%s\n' "$([ "${failed}" -eq 0 ] && echo pass || echo fail)" \
+            > "${EVIDENCE_ROOT}/status.txt"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-kernel-final-repair-${{ github.sha }}
+          path: /tmp/dynamic-kernel-final-repair/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Commit only a green repair
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            packages/templates/src/runtime-contract/kernel-selector-lite.ts \
+            packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts \
+            packages/templates/tests/kernel-selector-lite.test.ts \
+            apps/api/src/solo-story-engine/context-compiler.ts \
+            apps/openovel-runtime/src/sangtian-decisions-base.ts \
+            apps/openovel-runtime/src/sangtian-decisions.ts \
+            apps/openovel-runtime/tests/sangtian-dynamic-kernel-production.spec.ts
+          git rm -f --ignore-unmatch \
+            .github/repair/dynamic-kernel-followup.patch.gz.b64 \
+            .github/workflows/dynamic-kernel-apply-followup-repair.yml \
+            .github/workflows/dynamic-kernel-final-deterministic-gates.yml \
+            .github/workflows/dynamic-kernel-architecture-debug.yml \
+            .github/workflows/dynamic-kernel-diagnostics.yml \
+            .github/workflows/dynamic-kernel-final-repair.yml
+          git diff --cached --check
+          git commit -m "fix(kernel-lite): preserve direct obligations and prompt boundaries"
+          git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
+      - name: Publish result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=failure
+          description="Final generic repair failed deterministic gates"
+          if [ -f "${EVIDENCE_ROOT}/status.txt" ] \
+            && [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass ]; then
+            state=success
+            description="Final generic repair passed deterministic gates"
+          fi
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="${state}" \
+            -f context="dynamic-kernel-lite/final-repair" \
+            -f description="${description}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
