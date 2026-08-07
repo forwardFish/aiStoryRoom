@@ -1,0 +1,116 @@
+name: Dynamic Kernel Final Deterministic Gates
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  deterministic-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-final-gates
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=pending \
+            -f context="dynamic-kernel-lite/final-deterministic" \
+            -f description="Final deterministic matrix running" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install frozen workspace
+        shell: bash
+        run: |
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/00-install.log"
+      - id: matrix
+        name: Run all deterministic gates
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          results="${EVIDENCE_ROOT}/results.tsv"
+          : > "${results}"
+          failed=0
+          run_gate() {
+            local label="$1"
+            shift
+            local log="${EVIDENCE_ROOT}/logs/${label}.log"
+            set +e
+            "$@" 2>&1 | tee "${log}"
+            local code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
+            if [ "${code}" -ne 0 ]; then failed=1; fi
+          }
+          run_gate 01-templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate 02-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate 03-templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate 04-templates-build pnpm --filter @ai-story/templates build
+          run_gate 05-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate 06-openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate 07-openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate 08-api-solo pnpm --filter @apps/api test:solo-story-engine
+          run_gate 09-api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate 10-branch-persistence pnpm test:story:branch-persistence
+          run_gate 11-story-options pnpm test:story:options
+          run_gate 12-story-convergence pnpm test:story:convergence
+          run_gate 13-story-v4 pnpm test:story:v4
+          exit "${failed}"
+      - name: Upload deterministic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-kernel-final-deterministic-${{ github.sha }}
+          path: ${{ env.EVIDENCE_ROOT }}/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Publish success status
+        if: steps.matrix.outcome == 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=success \
+            -f context="dynamic-kernel-lite/final-deterministic" \
+            -f description="Final deterministic matrix passed" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - name: Publish failure status
+        if: steps.matrix.outcome != 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=failure \
+            -f context="dynamic-kernel-lite/final-deterministic" \
+            -f description="Final deterministic matrix failed" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - name: Enforce deterministic result
+        if: always()
+        shell: bash
+        run: test "${{ steps.matrix.outcome }}" = success
