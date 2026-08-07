@@ -28,7 +28,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context="dynamic-kernel-lite/candidate-trace" \
-            -f description="Structural candidate trace running" \
+            -f description="Structural candidate traces running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
       - uses: actions/checkout@v4
         with:
@@ -52,69 +52,14 @@ jobs:
           git apply "${RUNNER_TEMP}/followup.patch"
           python .github/repair/apply-dynamic-kernel-final-repair.py
           python .github/repair/apply-dynamic-kernel-continuity-repair.py
+          python .github/repair/apply-dynamic-kernel-sequence-compat-repair.py
           pnpm install --frozen-lockfile
-      - name: Capture opening candidate trace
+      - name: Capture three-turn candidate trace
         shell: bash
         run: |
           set -euo pipefail
-          cat > .tmp-dynamic-kernel-trace.ts <<'TS'
-          import { resolve } from "node:path";
-          import {
-            loadPlayablePartOneRuntimePackage,
-          } from "./packages/templates/src/story-package/playable-part-one-runtime";
-          import {
-            createInitialPartOneState,
-          } from "./packages/templates/src/story-package/part-one-runtime-engine";
-          import {
-            settleDynamicPartOneAction,
-          } from "./packages/templates/src/story-package/dynamic-kernel-lite-settlement";
-
-          const pkg = loadPlayablePartOneRuntimePackage(
-            "sangtian",
-            resolve("packages/templates/config"),
-          ).package;
-          const initial = createInitialPartOneState(pkg);
-          const settlement = settleDynamicPartOneAction(
-            pkg,
-            initial,
-            {
-              source: "RECOMMENDED",
-              decisionId: "opening_d1",
-              actionText: "opening_d1",
-            },
-            1,
-          );
-          const trace = settlement.event.nextKernelSelection;
-          console.log(JSON.stringify({
-            state: {
-              sectionId: settlement.proposedState.sectionId,
-              completedKernelIds: settlement.proposedState.completedKernelIds,
-              review: settlement.proposedState.review,
-              reform: settlement.proposedState.reform,
-              responsibility: settlement.proposedState.responsibility,
-              pendingConsequences: settlement.proposedState.pendingConsequences,
-            },
-            nextDecisionPoint: settlement.event.nextDecisionPoint,
-            selected: trace && {
-              mode: trace.mode,
-              kernelId: trace.selectedKernelId,
-              affordanceIds: trace.selectedAffordanceIds,
-            },
-            candidates: trace?.candidates,
-            kernelStructures: pkg.assets
-              .filter((asset) => asset.assetType === "DECISION_KERNEL")
-              .filter((asset) => asset.sectionIds.includes("SEC-P1-01"))
-              .map((asset) => ({
-                kernelId: asset.assetId,
-                requirementIds: asset.requirementIds,
-                causalArcIds: asset.causalArcIds,
-                stateDependencies: asset.stateDependencies,
-              })),
-          }, null, 2));
-          TS
-          pnpm exec tsx .tmp-dynamic-kernel-trace.ts \
-            | tee "${EVIDENCE_ROOT}/opening-candidate-trace.json"
-          rm -f .tmp-dynamic-kernel-trace.ts
+          pnpm exec tsx .github/repair/trace-dynamic-kernel-three-turns.ts \
+            | tee "${EVIDENCE_ROOT}/three-turn-candidate-trace.json"
       - name: Upload trace evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -133,5 +78,5 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
             -f context="dynamic-kernel-lite/candidate-trace" \
-            -f description="Structural candidate trace uploaded" \
+            -f description="Structural candidate traces uploaded" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
