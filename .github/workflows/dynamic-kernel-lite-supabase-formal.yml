@@ -24,10 +24,13 @@ jobs:
       NODE_ENV: test
       DATABASE_TARGET: external
       MVP_STORY_STORAGE: prisma
-      DATABASE_URL: ${{ secrets.SUPABASE_ACCEPTANCE_DATABASE_URL || secrets.SUPABASE_DATABASE_URL }}
-      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_ACCEPTANCE_DATABASE_URL || secrets.SUPABASE_DATABASE_URL }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCEPTANCE_PROJECT_REF || secrets.SUPABASE_PROJECT_REF }}
-      ACCEPTANCE_SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCEPTANCE_PROJECT_REF || secrets.SUPABASE_PROJECT_REF }}
+      # Deliberately no fallback to generic DATABASE_URL / SUPABASE_DATABASE_URL
+      # secrets: those may belong to production or another environment. Formal
+      # acceptance must use a separately approved synthetic-only Supabase target.
+      DATABASE_URL: ${{ secrets.SUPABASE_ACCEPTANCE_DATABASE_URL }}
+      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_ACCEPTANCE_DATABASE_URL }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCEPTANCE_PROJECT_REF }}
+      ACCEPTANCE_SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCEPTANCE_PROJECT_REF }}
       SUPABASE_ACCEPTANCE_SCHEMA: ${{ secrets.SUPABASE_ACCEPTANCE_SCHEMA }}
       ACCEPTANCE_SUPABASE_SCHEMA_CONFIRMED_SYNTHETIC_ONLY: ${{ secrets.SUPABASE_ACCEPTANCE_SCHEMA_CONFIRMED_SYNTHETIC_ONLY }}
       ACCEPTANCE_ALLOW_SYNTHETIC_WRITES: "true"
@@ -86,6 +89,21 @@ jobs:
             echo "SUPABASE_FORMAL_MIGRATION_COMMAND_FORBIDDEN"
             exit 1
           fi
+          # A blank dedicated secret blocks formal acceptance; it must never
+          # downgrade to local PostgreSQL, Docker, an in-memory store or a
+          # generic Supabase secret whose environment is unknown.
+          test -n "${DATABASE_URL}" || {
+            echo "SUPABASE_ACCEPTANCE_DATABASE_URL_MISSING"
+            exit 78
+          }
+          test -n "${ACCEPTANCE_SUPABASE_PROJECT_REF}" || {
+            echo "SUPABASE_ACCEPTANCE_PROJECT_REF_MISSING"
+            exit 78
+          }
+          test -n "${SUPABASE_ACCEPTANCE_SCHEMA}" || {
+            echo "SUPABASE_ACCEPTANCE_SCHEMA_MISSING"
+            exit 78
+          }
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
