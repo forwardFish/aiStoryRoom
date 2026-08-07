@@ -15,6 +15,7 @@ on:
   push:
     branches:
       - agent/causal-mvp
+      - codex/chatgpt-pro-maneuver-evidence-v1
 
 permissions:
   contents: read
@@ -22,7 +23,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
