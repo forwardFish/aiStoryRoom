@@ -109,9 +109,9 @@ export class OpenNovelManeuverAwareAdapterService extends OpenNovelAdapterServic
       turnNumber: runtimeRun.turnNumber,
       maneuverPackage,
     });
-    if (recovered.recoveredEventCount <= 0) return;
-    // Do not bump the public maneuver version: this repairs a missing mirror
-    // from an already-committed event and creates no new player action.
+    if (!recovered.needsPersistence) return;
+    // Do not bump the public maneuver version: this repairs a missing or
+    // incomplete mirror from already-committed events and creates no action.
     await this.recoveryPrisma.storyRun.updateMany({
       where: { id: runId, version: run.version },
       data: { stateJson: recovered.stateJson as any },
