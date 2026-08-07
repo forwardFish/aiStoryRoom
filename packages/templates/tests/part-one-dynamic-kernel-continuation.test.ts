@@ -15,6 +15,7 @@ import {
 import { loadPlayablePartOneRuntimePackage } from "../src/story-package/playable-part-one-runtime.js";
 import type {
   PartOneAffordanceTemplate,
+  PartOneRuntimeAffordance,
   PartOneRuntimePackage,
   PartOneState,
 } from "../src/story-package/part-one-runtime-types.js";
@@ -51,7 +52,7 @@ function continuationState(pkg: PartOneRuntimePackage) {
 }
 
 function asTemplate(
-  affordance: ReturnType<typeof buildDynamicPartOneRuntimeWorkingSet>["decisionAffordances"][number],
+  affordance: PartOneRuntimeAffordance,
 ): PartOneAffordanceTemplate {
   const {
     decisionKernelId: _decisionKernelId,
