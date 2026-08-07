@@ -154,10 +154,7 @@ export function packageForDynamicCapabilityAction(
         ? { mode: "DYNAMIC_LITE", pin: currentPin }
         : {},
     );
-  return forcePackageForDynamicWorkingSets(
-    pkg,
-    [{ state, workingSet: current }],
-  );
+  return forcePackageForProvisionalSettlement(pkg, state, current);
 }
 
 export function buildCommittedLegacyFallbackWorkingSet(
