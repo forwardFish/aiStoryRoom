@@ -71,7 +71,12 @@ export function installOpenNovelManeuverStoragePatch() {
       this.__openNovelManeuverKeys.delete(fingerprint);
       throw error;
     }
-    this.projection = requireManeuverProjection(response.gameProjection);
+    // A successful Preview is zero-side-effect and intentionally does not
+    // perform a second GET /game. Keep the current projection unless a newer
+    // compatible backend explicitly includes one.
+    this.projection = response.gameProjection
+      ? requireManeuverProjection(response.gameProjection)
+      : requireManeuverProjection(this.projection);
     const nextView = augmentManeuverView(
       adaptProjection(this.projection),
       this.projection,
