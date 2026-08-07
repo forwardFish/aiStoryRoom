@@ -1,5 +1,6 @@
 name: Dynamic Kernel Structural Candidate Trace
 
+# Re-run after adding structured Pending Rule routing evidence.
 on:
   push:
     branches:
