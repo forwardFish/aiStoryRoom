@@ -1,0 +1,406 @@
+name: Dynamic Kernel Final Generic Repair V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/dynamic-kernel-final-repair-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EVIDENCE_ROOT: /tmp/dynamic-kernel-final-repair-v2
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=pending \
+            -f context="dynamic-kernel-lite/final-repair-v2" \
+            -f description="Robust final generic repair running" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Apply verified v2 payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          tr -d '[:space:]' < .github/repair/dynamic-kernel-followup.patch.gz.b64 \
+            | base64 --decode | gzip --decompress > "${RUNNER_TEMP}/followup.patch"
+          test "$(sha256sum "${RUNNER_TEMP}/followup.patch" | cut -d' ' -f1)" = \
+            "cf21f3aaabd702ef8d3914d95e32443ff89ec9cd1d40ca6af11556f5b138cd07"
+          git apply --check "${RUNNER_TEMP}/followup.patch"
+          git apply "${RUNNER_TEMP}/followup.patch"
+      - name: Apply generic obligation and prompt-boundary fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_between(text: str, start_marker: str, end_marker: str, replacement: str) -> str:
+              start = text.find(start_marker)
+              if start < 0:
+                  raise SystemExit(f"start marker missing: {start_marker}")
+              end = text.find(end_marker, start)
+              if end < 0:
+                  raise SystemExit(f"end marker missing: {end_marker}")
+              return text[:start] + replacement.rstrip() + "\n\n" + text[end:]
+
+          core = Path("packages/templates/src/runtime-contract/kernel-selector-lite.ts")
+          text = core.read_text(encoding="utf-8")
+          weight_needle = '  PRESENT_PRESSURE_ACTOR: 4,\n'
+          if 'EXCLUSIVE_OBLIGATION' not in text:
+              if weight_needle not in text:
+                  raise SystemExit("selector weight insertion point missing")
+              text = text.replace(
+                  weight_needle,
+                  weight_needle + '  EXCLUSIVE_OBLIGATION: 15,\n',
+                  1,
+              )
+          field_needle = '  availablePressureActorCount: number;\n'
+          if 'exclusiveObligationCount?: number;' not in text:
+              if field_needle not in text:
+                  raise SystemExit("candidate field insertion point missing")
+              text = text.replace(
+                  field_needle,
+                  field_needle + '  exclusiveObligationCount?: number;\n',
+                  1,
+              )
+          score = '''export function scoreKernelCandidate(candidate: KernelSelectorLiteCandidate): number {
+            return candidate.duePressureCount * KERNEL_SELECTOR_LITE_WEIGHTS.DUE_PRESSURE
+              + candidate.unmetExitGateCount * KERNEL_SELECTOR_LITE_WEIGHTS.UNMET_EXIT_GATE
+              + candidate.unmetMustEstablishCount * KERNEL_SELECTOR_LITE_WEIGHTS.UNMET_MUST_ESTABLISH
+              + candidate.pendingPressureCount * KERNEL_SELECTOR_LITE_WEIGHTS.PENDING_PRESSURE
+              + candidate.activeArcCount * KERNEL_SELECTOR_LITE_WEIGHTS.ACTIVE_ARC
+              + Math.min(candidate.availablePressureActorCount, 3)
+                * KERNEL_SELECTOR_LITE_WEIGHTS.PRESENT_PRESSURE_ACTOR
+              + (candidate.exclusiveObligationCount || 0)
+                * KERNEL_SELECTOR_LITE_WEIGHTS.EXCLUSIVE_OBLIGATION;
+          }'''
+          text = replace_between(
+              text,
+              'export function scoreKernelCandidate(',
+              'export function selectKernelLite(',
+              score,
+          )
+          core.write_text(text, encoding="utf-8")
+
+          runtime = Path("packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts")
+          text = runtime.read_text(encoding="utf-8")
+          old_call = '''  const coveredPaths = obligationOwnershipPaths(
+            pkg,
+            section,
+            kernel,
+          );
+          const mustRules = uniqueRules(section.mustEstablish).filter(
+            (rule) => coveredPaths.has(rule.statePath),
+          );
+          const exitRules = uniqueRules(section.exitGates).filter(
+            (rule) => coveredPaths.has(rule.statePath),
+          );'''
+          new_call = '''  const obligationOwnership = resolveObligationOwnership(
+            pkg,
+            section,
+            kernel,
+            options,
+            previews,
+          );
+          const mustRules = uniqueRules(section.mustEstablish).filter(
+            (rule) => obligationOwnership.paths.has(rule.statePath),
+          );
+          const exitRules = uniqueRules(section.exitGates).filter(
+            (rule) => obligationOwnership.paths.has(rule.statePath),
+          );'''
+          if old_call not in text:
+              raise SystemExit("obligation ownership call site missing")
+          text = text.replace(old_call, new_call, 1)
+          actor_field = '''      availablePressureActorCount: candidateWorkingSet.decisionPoint.actorRefs
+            .filter((actorId) => present.has(actorId)).length,
+          validAffordances: previews.map((preview) => ({'''
+          actor_replacement = '''      availablePressureActorCount: candidateWorkingSet.decisionPoint.actorRefs
+            .filter((actorId) => present.has(actorId)).length,
+          exclusiveObligationCount: [...unmetMust, ...unmetExit]
+            .filter((rule) => (
+              obligationOwnership.exclusivePaths.has(rule.statePath)
+            )).length,
+          validAffordances: previews.map((preview) => ({'''
+          if actor_field not in text:
+              raise SystemExit("exclusive obligation candidate insertion point missing")
+          text = text.replace(actor_field, actor_replacement, 1)
+          ownership = '''/**
+           * Direct Settlement evidence proves that a Kernel can affect a rule.
+           * Requirement metadata contributes mainline ownership only when one
+           * active Kernel owns that Requirement in the current Section. Shared
+           * Requirements therefore cannot copy every obligation onto every
+           * candidate, while unique authored responsibility remains explicit.
+           */
+          function resolveObligationOwnership(
+            pkg: PartOneRuntimePackage,
+            section: PartOneSectionContract,
+            kernel: PartOneRuntimeAsset,
+            options: PartOneAffordanceTemplate[],
+            previews: Preview[],
+          ) {
+            const directPaths = new Set([
+              ...kernel.stateDependencies,
+              ...options.flatMap((option) => option.stateEffects || []),
+              ...options.flatMap((option) => Object.keys(option.statePatch || {})),
+              ...previews.flatMap((preview) => preview.changedStatePaths),
+            ]);
+            const exclusivePaths = new Set<string>();
+            for (const requirement of pkg.requirements) {
+              if (!requirement.sectionIds.includes(section.sectionId)) continue;
+              const owners = new Set([
+                ...requirement.decisionKernelIds.filter((kernelId) => (
+                  section.activeDecisionKernelIds.includes(kernelId)
+                )),
+                ...section.activeDecisionKernelIds.filter((kernelId) => {
+                  const candidate = pkg.assets.find((asset) => (
+                    asset.assetId === kernelId
+                    && asset.assetType === "DECISION_KERNEL"
+                  ));
+                  return Boolean(
+                    candidate?.requirementIds.includes(
+                      requirement.requirementId,
+                    ),
+                  );
+                }),
+              ]);
+              if (owners.size !== 1 || !owners.has(kernel.assetId)) continue;
+              for (const path of asStringArray(requirement.stateEffects)) {
+                exclusivePaths.add(path);
+              }
+            }
+            return {
+              paths: new Set([...directPaths, ...exclusivePaths]),
+              exclusivePaths,
+            };
+          }'''
+          text = replace_between(
+              text,
+              'function obligationOwnershipPaths(',
+              'function materializeAffordance(',
+              ownership,
+          )
+          runtime.write_text(text, encoding="utf-8")
+
+          compiler = Path("apps/api/src/solo-story-engine/context-compiler.ts")
+          text = compiler.read_text(encoding="utf-8")
+          projection = '''function partOneSettlementPromptProjection(
+            item: import("@ai-story/templates").PartOneCommittedEvent,
+          ) {
+            const plan = item.narrativePlan;
+            const nextBeat = plan.nextStoryBeat;
+            const scene = (value: typeof item.sceneBefore) => ({
+              sceneId: value.sceneId,
+              timeLabel: value.timeLabel,
+              locationLabel: value.locationLabel,
+              presentActorRefs: value.presentActorRefs,
+              documentStates: value.documentStates,
+              objectStates: value.objectStates,
+            });
+            return {
+              eventId: item.eventId,
+              turnNumber: item.turnNumber,
+              sectionIdBefore: item.sectionIdBefore,
+              sectionIdAfter: item.sectionIdAfter,
+              actionSource: item.actionSource,
+              actionText: item.actionText,
+              authoritativeObservableFacts: item.authoritativeObservableFacts,
+              authoritativeNpcReactions: item.authoritativeNpcReactions.map(
+                (reaction) => ({
+                  actorRefs: reaction.actorRefs,
+                  action: reaction.action,
+                }),
+              ),
+              sceneBefore: scene(item.sceneBefore),
+              sceneAfter: scene(item.sceneAfter),
+              authoritativeWorldMoves: item.authoritativeWorldMoves.map(
+                (move) => ({
+                  sourceType: move.sourceType,
+                  actorRefs: move.actorRefs,
+                  action: move.action,
+                  resultCeiling: move.resultCeiling,
+                }),
+              ),
+              sectionTransitioned: item.sectionTransitioned,
+              narrativePlan: {
+                sceneStart: scene(plan.sceneStart),
+                sceneEnd: scene(plan.sceneEnd),
+                sceneStartActorLabels: plan.sceneStartActorLabels,
+                sceneEndActorLabels: plan.sceneEndActorLabels,
+                transitionAllowed: plan.transitionAllowed,
+                authorizedActorArrivals: plan.authorizedActorArrivals,
+                authorizedActorDepartures: plan.authorizedActorDepartures,
+                dramaticTask: plan.dramaticTask,
+                actionAlreadyOccurred: plan.actionAlreadyOccurred,
+                playerSpeechMode: plan.playerSpeechMode,
+                authorizedPlayerSpeech: plan.authorizedPlayerSpeech,
+                settledActionNarrative: plan.settledActionNarrative,
+                confirmedEffects: plan.confirmedEffects,
+                unresolvedFacts: plan.unresolvedFacts,
+                sceneBlocking: plan.sceneBlocking,
+                incidentalTextureAllowances: plan.incidentalTextureAllowances,
+                sceneBeats: plan.sceneBeats,
+                requiredEndChange: plan.requiredEndChange,
+                narrativeCeiling: plan.narrativeCeiling,
+                nextStoryBeat: {
+                  presentMoves: nextBeat.presentMoves,
+                  playerOutcome: nextBeat.playerOutcome,
+                  npcOrWorldPressure: nextBeat.npcOrWorldPressure,
+                  visibleConsequence: nextBeat.visibleConsequence,
+                  stopCondition: nextBeat.stopCondition,
+                  playerVisibleFallback: nextBeat.playerVisibleFallback,
+                },
+              },
+            };
+          }'''
+          text = replace_between(
+              text,
+              'function partOneSettlementPromptProjection(',
+              'function partOnePromptProjection(',
+              projection,
+          )
+          compiler.write_text(text, encoding="utf-8")
+
+          tests = Path("packages/templates/tests/kernel-selector-lite.test.ts")
+          text = tests.read_text(encoding="utf-8")
+          if 'exclusive obligation ownership outranks otherwise equal shared capability' not in text:
+              marker = 'test("duplicate outcomes are traced and cannot form a valid option pair", () => {'
+              index = text.find(marker)
+              if index < 0:
+                  raise SystemExit("selector test insertion point missing")
+              test_case = '''test("exclusive obligation ownership outranks otherwise equal shared capability", () => {
+            const [base] = neutralCandidates();
+            assert.ok(base);
+            const shared = structuredClone(base);
+            shared.kernelId = "kernel.shared-capability";
+            const exclusive = structuredClone(base);
+            exclusive.kernelId = "kernel.exclusive-obligation";
+            exclusive.exclusiveObligationCount = 1;
+            const normal = selectKernelLite([shared, exclusive], "STATE-OWNERSHIP");
+            const reversed = selectKernelLite([exclusive, shared], "STATE-OWNERSHIP");
+            assert.equal(normal.selected?.kernelId, exclusive.kernelId);
+            assert.equal(reversed.selected?.kernelId, exclusive.kernelId);
+          });
+
+          '''
+              text = text[:index] + test_case + text[index:]
+          tests.write_text(text, encoding="utf-8")
+          PY
+          git diff --check
+          git diff --stat | tee "${EVIDENCE_ROOT}/logs/00-diff.log"
+      - name: Install frozen workspace
+        run: pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
+      - name: Run complete deterministic matrix
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          results="${EVIDENCE_ROOT}/results.tsv"
+          : > "${results}"
+          failed=0
+          run_gate() {
+            local label="$1"
+            shift
+            local log="${EVIDENCE_ROOT}/logs/${label}.log"
+            set +e
+            "$@" 2>&1 | tee "${log}"
+            local code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
+            if [ "${code}" -ne 0 ]; then failed=1; fi
+          }
+          run_gate 02-templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate 03-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate 04-templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate 05-templates-build pnpm --filter @ai-story/templates build
+          run_gate 06-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate 07-openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate 08-openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate 09-prisma-generate pnpm db:generate
+          run_gate 10-api-solo pnpm --filter @apps/api test:solo-story-engine
+          run_gate 11-api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate 12-branch-persistence pnpm test:story:branch-persistence
+          run_gate 13-story-options pnpm test:story:options
+          run_gate 14-story-convergence pnpm test:story:convergence
+          run_gate 15-story-v4 pnpm test:story:v4
+          printf '%s\n' "$([ "${failed}" -eq 0 ] && echo pass || echo fail)" \
+            > "${EVIDENCE_ROOT}/status.txt"
+      - name: Upload deterministic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-kernel-final-repair-v2-${{ github.sha }}
+          path: /tmp/dynamic-kernel-final-repair-v2/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Commit only a green repair
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            packages/templates/src/runtime-contract/kernel-selector-lite.ts \
+            packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts \
+            packages/templates/tests/kernel-selector-lite.test.ts \
+            apps/api/src/solo-story-engine/context-compiler.ts \
+            apps/openovel-runtime/src/sangtian-decisions-base.ts \
+            apps/openovel-runtime/src/sangtian-decisions.ts \
+            apps/openovel-runtime/tests/sangtian-dynamic-kernel-production.spec.ts
+          git rm -f --ignore-unmatch \
+            .github/repair/dynamic-kernel-followup.patch.gz.b64 \
+            .github/workflows/dynamic-kernel-apply-followup-repair.yml \
+            .github/workflows/dynamic-kernel-final-deterministic-gates.yml \
+            .github/workflows/dynamic-kernel-architecture-debug.yml \
+            .github/workflows/dynamic-kernel-diagnostics.yml \
+            .github/workflows/dynamic-kernel-final-repair.yml \
+            .github/workflows/dynamic-kernel-final-repair-v2.yml
+          git diff --cached --check
+          git commit -m "fix(kernel-lite): preserve direct obligations and prompt boundaries"
+          git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
+      - name: Publish result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=failure
+          description="Final generic repair V2 failed deterministic gates"
+          if [ -f "${EVIDENCE_ROOT}/status.txt" ] \
+            && [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass ]; then
+            state=success
+            description="Final generic repair V2 passed deterministic gates"
+          fi
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="${state}" \
+            -f context="dynamic-kernel-lite/final-repair-v2" \
+            -f description="${description}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
