@@ -1,13 +1,12 @@
-name: Dynamic Kernel Deterministic Repair Probe
+name: Dynamic Kernel Templates Repair Gate
 
 on:
   push:
     branches:
       - codex/chatgpt-pro-dynamic-kernel-lite
     paths:
-      - packages/templates/**
-      - apps/openovel-runtime/**
-      - .github/workflows/dynamic-kernel-lockfile-repair.yml
+      - "packages/templates/**"
+      - ".github/workflows/dynamic-kernel-lockfile-repair.yml"
   workflow_dispatch:
 
 permissions:
@@ -15,11 +14,9 @@ permissions:
   statuses: write
 
 jobs:
-  repair-probe:
+  templates-repair:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    env:
-      EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-repair-probe
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,11 +26,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -f state=pending \
-            -f context="dynamic-kernel-lite/repair-probe" \
-            -f description="Targeted deterministic repair probe running" \
+            -f state="pending" \
+            -f context="dynamic-kernel-lite/templates-repair" \
+            -f description="Templates repair gate is running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
       - uses: pnpm/action-setup@v4
         with:
@@ -43,78 +41,32 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - id: probe
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "${EVIDENCE_ROOT}/logs"
-          : > "${EVIDENCE_ROOT}/results.tsv"
-          run_gate() {
-            label="$1"; shift
-            log="${EVIDENCE_ROOT}/logs/${label}.log"
-            set +e
-            "$@" 2>&1 | tee "${log}"
-            code=${PIPESTATUS[0]}
-            set -e
-            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${EVIDENCE_ROOT}/results.tsv"
-          }
-          run_gate 00-install pnpm install --frozen-lockfile
-          run_gate 01-templates-typecheck pnpm --filter @ai-story/templates typecheck
-          run_gate 02-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
-          run_gate 03-templates-story-package pnpm --filter @ai-story/templates test:story-package
-          run_gate 04-templates-build pnpm --filter @ai-story/templates build
-          python - <<'PY'
-          import json, os, re
-          from pathlib import Path
-          root=Path(os.environ['EVIDENCE_ROOT'])
-          pattern=re.compile(r'# tests (\d+).*?# pass (\d+).*?# fail (\d+).*?# skipped (\d+).*?# todo (\d+)', re.S)
-          rows=[]
-          for raw in (root/'results.tsv').read_text().splitlines():
-              label, code, log_path=raw.split('\t',2)
-              text=Path(log_path).read_text(errors='replace')
-              matches=list(pattern.finditer(text))
-              rows.append({
-                'label':label,'exitCode':int(code),
-                'tests':sum(int(m.group(1)) for m in matches),
-                'pass':sum(int(m.group(2)) for m in matches),
-                'fail':sum(int(m.group(3)) for m in matches),
-                'skip':sum(int(m.group(4)) for m in matches),
-                'todo':sum(int(m.group(5)) for m in matches),
-                'logPath':log_path,
-              })
-          verdict='PASS' if all(row['exitCode']==0 for row in rows) else 'FAIL'
-          (root/'summary.json').write_text(json.dumps({
-            'candidateSha':os.environ['GITHUB_SHA'],
-            'databaseUsed':False,
-            'supabaseUsed':False,
-            'commands':rows,
-            'verdict':verdict,
-          },indent=2)+'\n')
-          (root/'status.txt').write_text(verdict.lower()+'\n')
-          PY
-      - name: Upload repair evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dynamic-kernel-repair-probe-${{ github.sha }}
-          path: ${{ env.EVIDENCE_ROOT }}/
-          if-no-files-found: error
-          retention-days: 7
-      - name: Publish final status
-        if: always()
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ai-story/templates typecheck
+      - run: pnpm --filter @ai-story/templates test:runtime-contract
+      - run: pnpm --filter @ai-story/templates test:story-package
+      - run: pnpm --filter @ai-story/templates build
+      - name: Publish success status
+        if: success()
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          state=failure
-          if [ -f "${EVIDENCE_ROOT}/status.txt" ] && [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass ]; then state=success; fi
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -f state="${state}" \
-            -f context="dynamic-kernel-lite/repair-probe" \
-            -f description="Targeted deterministic repair probe ${state}" \
+            -f state="success" \
+            -f context="dynamic-kernel-lite/templates-repair" \
+            -f description="Templates repair gate passed" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-      - name: Enforce probe
-        if: always()
-        run: test -f "${EVIDENCE_ROOT}/status.txt" && test "$(cat "${EVIDENCE_ROOT}/status.txt")" = pass
+      - name: Publish failure status
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="failure" \
+            -f context="dynamic-kernel-lite/templates-repair" \
+            -f description="Templates repair gate failed" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
