@@ -28,8 +28,17 @@ test("formal acceptance is Supabase-only and cannot execute migration commands",
     source("scripts/e2e/v4-database-smoke.ts"),
   ]);
   assert.match(workflow, /dynamic-kernel-lite\/supabase-formal/u);
-  assert.match(workflow, /SUPABASE_ACCEPTANCE_DATABASE_URL/u);
+  assert.match(workflow, /secrets\.SUPABASE_ACCEPTANCE_DATABASE_URL/u);
+  assert.match(workflow, /secrets\.SUPABASE_ACCEPTANCE_PROJECT_REF/u);
   assert.match(workflow, /ACCEPTANCE_SUPABASE_SCHEMA_CONFIRMED_SYNTHETIC_ONLY/u);
+  assert.match(workflow, /SUPABASE_ACCEPTANCE_DATABASE_URL_MISSING/u);
+  assert.match(workflow, /SUPABASE_ACCEPTANCE_PROJECT_REF_MISSING/u);
+  assert.match(workflow, /SUPABASE_ACCEPTANCE_SCHEMA_MISSING/u);
+  assert.doesNotMatch(
+    workflow,
+    /secrets\.SUPABASE_DATABASE_URL|secrets\.SUPABASE_PROJECT_REF/u,
+    "formal acceptance must never fall back to an environment-ambiguous Supabase secret",
+  );
   assert.match(runner, /04-supabase-run-turn-idempotency/u);
   assert.match(runner, /05-supabase-real-page-flow/u);
   assert.match(runner, /v4-database-smoke\.ts/u);
