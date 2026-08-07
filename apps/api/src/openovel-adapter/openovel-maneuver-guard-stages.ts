@@ -33,10 +33,7 @@ export function compileGuardStages(
   const scenes = sceneKeys
     .map((sceneKey) => maneuverPackage.scene(sceneKey))
     .filter((scene): scene is NonNullable<typeof scene> => Boolean(scene));
-  const actors = unique([
-    ...game.roles.map((role) => role.roleKey),
-    ...scenes.flatMap((scene) => scene.contacts.map((contact) => contact.roleKey)),
-  ]);
+  const playableRoleKeys = unique(game.roles.map((role) => role.roleKey));
   const stateKeys = unique([
     ...Object.keys(maneuverPackage.customPlan.statePatch),
     ...scenes.flatMap((scene) => scene.contacts.flatMap((contact) => Object.keys(contact.statePatch))),
@@ -86,7 +83,7 @@ export function compileGuardStages(
       stageKey: sceneKey,
       stageNumber: usageDay,
       title: sceneKey,
-      playableRoleKeys: actors,
+      playableRoleKeys,
       systemRoleKey: game.worldActor?.actorKey || "openovel_system",
       commonContest: {
         contestKey: `openovel:${maneuverPackage.worldId}:${sceneKey}`,
