@@ -19,6 +19,8 @@ import { WorldModuleRegistry } from "./world-module-registry.js";
 import { MultiplayerWorldRuntime } from "./multiplayer-runtime.js";
 import templates from "@ai-story/templates";
 import { caesarSoloWorldModule } from "./caesar-solo-world.js";
+import { buildB0NarrativeInputV1 } from "./b0-narrative-runtime.js";
+import { B0NarrativeRuntimeV1, FileB0NarrativeJobRepositoryV1, ProviderB0NarrativeGeneratorV1 } from "./b0-narrative-service.js";
 
 const {
   caesarRuntimeFixture,
@@ -83,6 +85,10 @@ const mirror = mirrorTransport.configured
   : mirrorTransport;
 const storykeeper = new StorykeeperDrain(workspace, provider);
 const multiplayer = new MultiplayerWorldRuntime(runtimeRoot(), worldModules);
+const b0Narrative = new B0NarrativeRuntimeV1(
+  new FileB0NarrativeJobRepositoryV1(runtimeRoot()),
+  new ProviderB0NarrativeGeneratorV1(provider),
+);
 const runtime = new OpenNovelRuntime(
   workspace,
   provider,
@@ -110,6 +116,24 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === "GET" && url.pathname === "/internal/openovel/providers") {
       return json(response, 200, provider.describe());
+    }
+    if (request.method === "POST" && url.pathname === "/internal/openovel/b0/narratives") {
+      const body = await bodyJson(request);
+      const input = buildB0NarrativeInputV1({
+        manifest: body.manifest,
+        publicationPlan: body.publicationPlan,
+        recipientActorId: String(body.recipientActorId || ""),
+        appliedWorldSequence: Number(body.appliedWorldSequence),
+        guidance: body.guidance,
+        actorLabels: body.actorLabels,
+      });
+      await b0Narrative.enqueue(input);
+      const result = await b0Narrative.process({
+        jobKey: input.jobKey,
+        workerId: `openovel-http-${process.pid}`,
+        currentGuidanceVersion: input.guidanceVersion,
+      });
+      return json(response, 200, result);
     }
     if (request.method === "POST" && url.pathname === "/internal/openovel/shared-runs") {
       const body = await bodyJson(request);
