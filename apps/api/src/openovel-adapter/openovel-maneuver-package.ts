@@ -51,6 +51,13 @@ export interface OpenNovelManeuverSceneDefinition {
   customEnabled: boolean;
 }
 
+export interface OpenNovelTechnologyBoundary {
+  forbiddenTerms: readonly string[];
+  reason: string;
+  replacement: string;
+  rewriteSuffix?: string;
+}
+
 /** One authoritative entry per OpenNovel turn. Repeated scene keys are valid. */
 export interface OpenNovelManeuverCalendarEntry {
   sceneKey: string;
@@ -76,6 +83,8 @@ export interface OpenNovelManeuverPackage {
     statePatch: Readonly<Record<string, number>>;
     factKeys: readonly string[];
     traces: readonly string[];
+    /** null/undefined means this world has no technology-era restriction. */
+    technologyBoundary?: OpenNovelTechnologyBoundary | null;
     fallbackNarrative(customText: string): string;
   };
   scene(sceneKey: string): OpenNovelManeuverSceneDefinition | null;
@@ -155,6 +164,13 @@ function validatePackage(pkg: OpenNovelManeuverPackage) {
   }
   if (!Number.isInteger(pkg.customPlan.maxLength) || pkg.customPlan.maxLength < 1) {
     throw new Error(`OPENOVEL_MANEUVER_PACKAGE_CUSTOM_LIMIT_INVALID:${pkg.worldId}`);
+  }
+  const technologyBoundary = pkg.customPlan.technologyBoundary;
+  if (technologyBoundary) {
+    const terms = [...new Set(technologyBoundary.forbiddenTerms.map((term) => String(term).trim()).filter(Boolean))];
+    if (!terms.length || !technologyBoundary.reason.trim() || !technologyBoundary.replacement.trim()) {
+      throw new Error(`OPENOVEL_MANEUVER_PACKAGE_TECHNOLOGY_BOUNDARY_INVALID:${pkg.worldId}`);
+    }
   }
 
   const validatedSceneKeys = new Set<string>();
