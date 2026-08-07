@@ -1,11 +1,11 @@
-type ConfirmedManeuverRuntimeContext = {
+export type RuntimeConfirmedManeuverContextV1 = {
   schemaVersion: "openovel_confirmed_maneuver_context_v1";
   instruction: string;
   preparedAtTurnNumber: number;
   sourceResultIds: string[];
   summaries: Array<{
     resultId: string;
-    decisionForm: string;
+    decisionForm: "CONVERSATION" | "INVESTIGATION" | "LEVERAGE" | "CUSTOM_PLAN";
     title: string;
     content: string;
     sceneKey: string;
@@ -20,7 +20,7 @@ type ConfirmedManeuverRuntimeContext = {
 };
 
 type StagedContext = {
-  context: ConfirmedManeuverRuntimeContext;
+  context: RuntimeConfirmedManeuverContextV1;
   expiresAt: number;
 };
 
@@ -30,7 +30,7 @@ const TTL_MS = 2 * 60_000;
 export function stageConfirmedManeuverRuntimeContext(input: {
   runId: string;
   stateRevision: number;
-  context: ConfirmedManeuverRuntimeContext;
+  context: RuntimeConfirmedManeuverContextV1;
 }) {
   prune();
   staged.set(key(input.runId, input.stateRevision), {
@@ -58,16 +58,16 @@ export function clearConfirmedManeuverRuntimeContext(
 }
 
 export function renderConfirmedManeuverRuntimeContext(
-  context: ConfirmedManeuverRuntimeContext,
+  context: RuntimeConfirmedManeuverContextV1,
 ) {
   const summaries = context.summaries
-    .map((item) => `- [${item.decisionForm}] ${item.title}：${item.content}`)
+    .map((item) => `- [${item.decisionForm}] ${compact(item.title, 160)}：${compact(item.content, 900)}`)
     .join("\n");
   const facts = context.visibleFacts.length
-    ? `\n玩家已经掌握的确认事实：\n${context.visibleFacts.map((item) => `- ${item.content}`).join("\n")}`
+    ? `\n玩家已经掌握的确认事实：\n${context.visibleFacts.map((item) => `- ${compact(item.content, 700)}`).join("\n")}`
     : "";
   const consumed = context.consumedLeverageKeys.length
-    ? `\n已经打出并消耗的筹码：${context.consumedLeverageKeys.join("、")}`
+    ? `\n已经打出并消耗的筹码：${context.consumedLeverageKeys.map((item) => compact(item, 120)).join("、")}`
     : "";
   return [
     "## 已确认的主动谋划上下文",
@@ -76,6 +76,10 @@ export function renderConfirmedManeuverRuntimeContext(
     facts,
     consumed,
   ].filter(Boolean).join("\n");
+}
+
+function compact(value: unknown, maxLength: number) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
 }
 
 function key(runId: string, revision: number) {
