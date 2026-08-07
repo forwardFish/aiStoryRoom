@@ -35,7 +35,7 @@ function fixture(overrides: Json = {}) {
           version: 7,
           projectionVersion: 5,
           configJson: { schemaVersion: "b0-window-config-v1" },
-          participants: [{ roleId: "role.a", ready: true }],
+          participants: [{ roleId: "role.a", mainStatus: "B0_COMPLETED" }],
           resolutionWorkflow: { status: "B0_COMMITTED" },
           createdAt: now,
           updatedAt: now,
@@ -56,6 +56,9 @@ function fixture(overrides: Json = {}) {
           attempt: 1,
           maxAttempts: 4,
           windowId: "window.1",
+          roleId: "role.a",
+          lastError: "provider timeout",
+          createdAt: now,
           updatedAt: now,
         }];
       },
@@ -91,7 +94,7 @@ function fixture(overrides: Json = {}) {
   };
   const service = new B0SettlementPipelineService(
     prisma as any,
-   {} as any,
+    {} as any,
     windows as any,
     {} as any,
   );
@@ -101,11 +104,13 @@ function fixture(overrides: Json = {}) {
 test("C8 diagnostics is read-only and reports window, task, narrative and world sequence state", async () => {
   const { service, calls } = fixture();
   const result = await service.diagnostics("run.1");
-  assert.equal(result.runId, "run.1");
-  assert.equal(result.worldSequence, 11);
+  assert.equal(result.run.id, "run.1");
+  assert.equal(result.run.worldSequence, 11);
   assert.equal(result.windows.length, 1);
   assert.equal(result.tasks.length, 1);
-  assert.equal(result.narrativeCount, 1);
+  assert.equal(result.metrics.narrativeCount, 1);
+  assert.equal(result.metrics.completedWindowCount, 1);
+  assert.equal(result.windows[0].readyCount, 1);
   assert.equal(calls.some((entry) => /\.update|\.create|\.delete/.test(entry.method)), false);
 });
 
