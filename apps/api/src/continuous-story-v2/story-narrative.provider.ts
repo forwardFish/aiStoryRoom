@@ -159,7 +159,6 @@ export class StoryNarrativeProvider implements StoryModelClientV2 {
           flushing: false,
           timer: setTimeout(() => void this.flushAgentDecisionBatch(batchKey), config.aiBatchMaxWaitMs)
         };
-        batch.timer.unref?.();
         this.pendingAgentBatches.set(batchKey, batch);
       }
       batch.items.push({ input, resolve, reject });

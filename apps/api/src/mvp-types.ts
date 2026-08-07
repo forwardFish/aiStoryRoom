@@ -1,4 +1,5 @@
 export type MvpScalar = string | number | boolean | null;
+export type MvpManeuverType = "contact" | "investigate" | "leverage" | "custom";
 
 export interface MvpStoryEvent {
   id: string;
@@ -51,6 +52,17 @@ export interface MvpRunState {
   updatedAt: string;
 }
 
+export interface MvpManeuverState {
+  maneuverOpportunitiesPerDay: number;
+  maneuversUsedToday: number;
+  maneuverOpportunitiesRemaining: number;
+  totalManeuversUsed: number;
+  usedLeverageKeys: string[];
+  usageDay?: number;
+  usedTypesToday?: MvpManeuverType[];
+  discoveredFactKeys?: string[];
+}
+
 export interface MvpView {
   run: MvpRunState;
   player: Record<string, unknown>;
@@ -68,6 +80,10 @@ export interface MvpView {
   criticalEvent?: Record<string, any> | null;
   pendingCriticalEvents?: Array<Record<string, any>>;
   maneuverPanel?: Record<string, any>;
+  leverageHand?: {
+    availableCount: number;
+    items: Array<{ leverageKey: string; label: string; description: string }>;
+  };
   situationRecord?: Record<string, any>;
   situationRecordOpen?: boolean;
   changeSummary?: Record<string, any> | null;
@@ -94,13 +110,7 @@ export interface MvpView {
       lastFallbackReason: string | null;
     };
   };
-  maneuverState: {
-    maneuverOpportunitiesPerDay: number;
-    maneuversUsedToday: number;
-    maneuverOpportunitiesRemaining: number;
-    totalManeuversUsed: number;
-    usedLeverageKeys: string[];
-  };
+  maneuverState: MvpManeuverState;
 }
 
 export interface MvpMutationInput {
@@ -116,6 +126,9 @@ export interface MvpNarrativeProvider {
     maxAttempts: number;
     inputTokens?: number;
     outputTokens?: number;
+    requestId?: string | null;
+    modelName?: string | null;
   };
   generateDecisionCandidate(context: Record<string, unknown>): Promise<unknown>;
+  generateManeuverCandidate?(context: Record<string, unknown>): Promise<unknown>;
 }

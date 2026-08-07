@@ -7,3 +7,4 @@ export * from "./story-v2.schemas";
 export * from "./command.schemas";
 export * from "./event.schemas";
 export * from "./credit-control.schemas";
+export * from "./openovel-maneuver-context.schemas";

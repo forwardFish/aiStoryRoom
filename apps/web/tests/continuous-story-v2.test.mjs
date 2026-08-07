@@ -258,186 +258,25 @@ test("one decision resolves immediately and reveals its result plus the next rea
   app.destroy(); dom.window.close();
 });
 
-const maneuverScenarios = [
-  {
-    name: "人物交谈",
-    decisionForm: "CONVERSATION",
-    act: async ({ dom, root, app, requests }) => {
-      root.querySelector('[data-maneuver-type="contact"]').click();
-      root.querySelector('[data-maneuver-contact="xunfu"]').click();
-      assert.equal(requests.length, 0, "选择交谈人物不能自动提交行动");
-      const textarea = root.querySelector("#maneuverCustomText");
-      textarea.value = "问清巡抚何时得知田契副本被封存，以及消息由谁送到";
-      textarea.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-      await app.submitManeuver();
-    },
-    assertIntent: (body) => {
-      assert.equal(body.intent.target.type, "ROLE");
-      assert.match(body.intent.method, /单独召见|自行陈述|逐项核对/);
-    }
-  },
-  {
-    name: "派遣调查",
-    decisionForm: "INVESTIGATION",
-    act: async ({ root, app, requests }) => {
-      root.querySelector('[data-maneuver-type="investigate"]').click();
-      root.querySelector('[data-maneuver-investigation="inspect_land_register"]').click();
-      assert.equal(requests.length, 0, "选择调查方向不能自动提交行动");
-      await app.submitManeuver();
-    },
-    assertIntent: (body) => {
-      assert.match(body.intent.objective, /核清/);
-      assert.match(body.intent.method, /原件|经手人|时间记录/);
-    }
-  },
-  {
-    name: "使用筹码",
-    decisionForm: "LEVERAGE",
-    act: async ({ dom, root, app, requests }) => {
-      root.querySelector('[data-maneuver-type="leverage"]').click();
-      root.querySelector('[data-maneuver-leverage="governor_seal"]').click();
-      assert.equal(requests.length, 0, "选择筹码不能自动消耗或提交行动");
-      const textarea = root.querySelector("#maneuverCustomText");
-      textarea.value = "要求商会会首交出对应账页，并说明最后一名经手人";
-      textarea.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-      await app.submitManeuver();
-    },
-    assertIntent: (body) => {
-      assert.deepEqual(body.intent.leverageKeys, ["governor_seal"]);
-      assert.match(body.intent.method, /总督关防|原始凭据/);
-    }
-  },
-  {
-    name: "自拟谋划",
-    decisionForm: "CUSTOM_PLAN",
-    act: async ({ dom, root, app }) => {
-      root.querySelector('[data-maneuver-type="custom"]').click();
-      const textarea = root.querySelector("#maneuverCustomText");
-      textarea.value = "先让两个经手人分开候问，再核对第三笔入库日期和各自签押";
-      textarea.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-      await app.submitManeuver();
-    },
-    assertIntent: (body) => {
-      assert.match(body.intent.objective, /两个经手人分开候问/);
-      assert.match(body.customAction, /第三笔入库日期/);
-    }
-  }
-];
-
-const incompleteManeuverScenarios = [
-  { name: "人物交谈", select: (root) => root.querySelector('[data-maneuver-type="contact"]').click(), message: /请先选择|请写下/ },
-  { name: "派遣调查", select: (root) => root.querySelector('[data-maneuver-type="investigate"]').click(), message: /调查方向/ },
-  { name: "使用筹码", select: (root) => root.querySelector('[data-maneuver-type="leverage"]').click(), message: /筹码/ },
-  { name: "自拟谋划", select: (root) => root.querySelector('[data-maneuver-type="custom"]').click(), message: /写下.*推进/ }
-];
-
-for (const scenario of incompleteManeuverScenarios) {
-  test(`${scenario.name}信息未填写完整时在本地阻止提交，不调用推演`, async () => {
-    const initial = projection();
-    const requests = [];
-    const { dom, root, app } = await bootOldPage(initial, async (input, init = {}) => {
-      requests.push({ input: String(input), method: init.method || "GET" });
-      return json(initial);
-    });
-    enterSituation(root);
-    scenario.select(root);
-    await app.submitManeuver();
-
-    assert.equal(requests.length, 0);
-    assert.ok(root.querySelector('[data-testid="maneuver-guard"]'));
-    assert.match(root.textContent, scenario.message);
-    app.destroy();
-    dom.window.close();
+test("legacy Continuous Story V2 projections keep the four-action surface fail-closed", async () => {
+  const initial = projection();
+  const requests = [];
+  const { dom, root, app } = await bootOldPage(initial, async (input, init = {}) => {
+    requests.push({ input: String(input), method: init.method || "GET" });
+    return json(initial);
   });
-}
+  enterSituation(root);
 
-for (const scenario of maneuverScenarios) {
-  test(`${scenario.name}是一种完整决策：单独推演并自动产生下一剧情`, async () => {
-    const initial = projection();
-    const resultText = `${scenario.name}之后，原先互相矛盾的说法第一次留下了可以当面对照的具体记录。`;
-    const nextStory = `${scenario.name}的回报送到总督案前时，巡抚已派人守在城南粮仓门口；来人还带回一张写有第三笔入库时辰的原始收条。`;
-    const nextDecisionLabels = [
-      `拿新收条与巡抚当面对质，追问第三笔入库为何迟了一个时辰`,
-      `先保护送来收条的差役，再暗查巡抚派到粮仓门口的人`
-    ];
-    const next = projection({
-      worldSequence: 2,
-      currentTurn: {
-        ...initial.currentTurn,
-        id: `turn-next-${scenario.decisionForm.toLowerCase()}`,
-        revision: 1,
-        stageIndex: 2,
-        turnIndex: 2,
-        baseWorldSequence: 2,
-        title: `${scenario.name}带回了新的矛盾证据`,
-        narrative: nextStory,
-        framing: "这张新收条已经改变了局势，你准备先控制证据还是先控制人？",
-        decisions: nextDecisionLabels.map((label, index) => ({
-          id: `next-${scenario.decisionForm.toLowerCase()}-${index + 1}`,
-          label,
-          description: index === 0 ? "当面对质可以抢先固定口供，但会让巡抚立刻知道证据已经到手。" : "保护证人可以保住线索，但巡抚的人可能趁机改动粮仓记录。",
-          intentDraft: {
-            objective: index === 0 ? "用新收条核清第三笔入库时辰" : "保护差役并查清巡抚派人的目的",
-            target: index === 0 ? { type: "ROLE", id: "r2", label: "浙江巡抚" } : { type: "PUBLIC_FRAME", id: "stage:2", label: "当前粮仓局势" },
-            method: label,
-            leverageKeys: [],
-            visibility: "LIMITED",
-            riskTolerance: "MEDIUM",
-            fallback: null,
-            condition: null
-          }
-        }))
-      },
-      timeline: [{
-        id: `result-${scenario.decisionForm.toLowerCase()}`,
-        kind: "RESULT",
-        title: `${scenario.name}的结果`,
-        content: resultText,
-        worldSequence: 2,
-        createdAt: new Date().toISOString(),
-        decisionForm: scenario.decisionForm
-      }]
-    });
-    const requests = [];
-    const fetchImpl = async (input, init = {}) => {
-      const path = new URL(String(input), "http://game.test").pathname;
-      const body = init.body ? JSON.parse(init.body) : null;
-      requests.push({ path, body });
-      if (path.endsWith("/turns/turn-1/decision")) {
-        return json({ accepted: true, resolution: { id: `resolution-${scenario.decisionForm.toLowerCase()}`, resultNarrative: resultText, nextHook: nextStory }, gameProjection: next });
-      }
-      return json(next);
-    };
-    const { dom, root, app } = await bootOldPage(initial, fetchImpl);
-    enterSituation(root);
-    const wait = () => waitForTest(() => requests.some((request) => request.path.endsWith("/turns/turn-1/decision")) && Boolean(root.querySelector('[data-testid="result-narrative"]')));
-    await scenario.act({ dom, root, app, wait, requests });
-
-    const decisionRequests = requests.filter((request) => request.path.endsWith("/turns/turn-1/decision"));
-    assert.equal(decisionRequests.length, 1, `${scenario.name}只能触发一次独立提交，不能重复请求推演`);
-    const submitted = decisionRequests[0];
-    assert.ok(submitted, `${scenario.name}必须提交到当前角色的独立决策端点`);
-    assert.equal(submitted.path, "/api/v4/rooms/room-v2/game/turns/turn-1/decision");
-    assert.equal(submitted.body.decisionForm, scenario.decisionForm);
-    assert.equal(submitted.body.candidateId, undefined);
-    assert.ok(submitted.body.customAction.length >= 6);
-    assert.ok(submitted.body.intent.objective.length >= 6);
-    assert.ok(submitted.body.intent.method.length >= 6);
-    scenario.assertIntent(submitted.body);
-    assert.match(root.textContent, new RegExp(resultText.slice(0, 12)));
-    assert.match(root.textContent, new RegExp(nextStory.slice(0, 12)));
-    assert.equal(root.querySelector('[data-testid="decision-zone"]'), null);
-
-    root.querySelector("#continueStoryBtn").click();
-    assert.ok(root.querySelector('[data-testid="decision-zone"]'));
-    assert.match(root.textContent, new RegExp(nextDecisionLabels[0].slice(0, 16)));
-    assert.match(root.textContent, new RegExp(nextDecisionLabels[1].slice(0, 16)));
-    assert.doesNotMatch(root.textContent, /先封存两册粮账，让经手人分别写下数字来源/);
-    assert.equal(app.getState().view.activeDecision.messageId, `turn-next-${scenario.decisionForm.toLowerCase()}`);
-    app.destroy();
-    dom.window.close();
-  });
-}
+  const actions = [...root.querySelectorAll("[data-maneuver-type]")];
+  assert.equal(actions.length, 4);
+  assert.ok(actions.every((button) => button.disabled));
+  assert.equal(root.querySelector("#maneuverSubmit"), null);
+  assert.equal(root.querySelector("[data-maneuver-contact]"), null);
+  assert.equal(root.querySelector("#maneuverCustomText"), null);
+  assert.equal(requests.length, 0);
+  app.destroy();
+  dom.window.close();
+});
 
 async function waitForTest(predicate, timeout = 1_000) {
   const deadline = Date.now() + timeout;

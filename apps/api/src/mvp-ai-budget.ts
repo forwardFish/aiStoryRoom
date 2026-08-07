@@ -67,7 +67,17 @@ export function checkMvpAiBudget(budget: MvpAiBudget, maxAttempts = 1): MvpAiBud
   return { allowed: !reason, reason, plannedCalls, plannedInputTokens, plannedOutputTokens, plannedCostMinor };
 }
 
-export function recordMvpAiBudgetUse(budget: MvpAiBudget, check: MvpAiBudgetCheck, usage: { attempts?: number; inputTokens?: number; outputTokens?: number } = {}) {
+export function recordMvpAiBudgetUse(
+  budget: MvpAiBudget,
+  check: MvpAiBudgetCheck,
+  usage: {
+    attempts?: number;
+    inputTokens?: number;
+    outputTokens?: number;
+    requestId?: string | null;
+    modelName?: string | null;
+  } = {},
+) {
   const attempts = Math.max(1, Math.floor(Number(usage.attempts) || check.plannedCalls));
   const inputTokens = Math.max(0, Math.floor(Number(usage.inputTokens) || check.plannedInputTokens));
   const outputTokens = Math.max(0, Math.floor(Number(usage.outputTokens) || check.plannedOutputTokens));
@@ -75,7 +85,14 @@ export function recordMvpAiBudgetUse(budget: MvpAiBudget, check: MvpAiBudgetChec
   budget.calls += attempts;
   budget.totalTokens += inputTokens + outputTokens;
   budget.totalCostMinor += costMinor;
-  return { attempts, inputTokens, outputTokens, costMinor };
+  return {
+    attempts,
+    inputTokens,
+    outputTokens,
+    costMinor,
+    providerRequestId: String(usage.requestId || "").trim() || null,
+    providerModelName: String(usage.modelName || "").trim() || null,
+  };
 }
 
 export function exhaustMvpAiBudget(budget: MvpAiBudget, reason: string) {

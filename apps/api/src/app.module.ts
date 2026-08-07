@@ -21,22 +21,36 @@ import { SoloStoryEngineModule } from "./solo-story-engine/solo-story-engine.mod
 import { MetricsController } from "./observability/metrics.controller";
 import { OpenNovelAdapterController } from "./openovel-adapter/openovel-adapter.controller";
 import { OpenNovelAdapterService } from "./openovel-adapter/openovel-adapter.service";
+import { OpenNovelManeuverAwareAdapterService } from "./openovel-adapter/openovel-maneuver-aware-adapter.service";
 import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.controller";
 import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
 import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
+import { OpenNovelManeuverController } from "./openovel-adapter/openovel-maneuver.controller";
+import { OpenNovelManeuverPreviewService } from "./openovel-adapter/openovel-maneuver-preview.service";
+import { OpenNovelManeuverService } from "./openovel-adapter/openovel-maneuver.service";
+import { installFourManeuverRuntime } from "./mvp-four-maneuver-runtime";
+import { installFourManeuverResolution } from "./mvp-four-maneuver-resolution";
+
+installFourManeuverRuntime();
+installFourManeuverResolution();
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
-  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController],
+  controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController, OpenNovelManeuverController],
   providers: [
     StoryService,
     StoryTaskOutboxService,
     RoomsService,
     PresenceHeartbeatRateLimitGuard,
-    OpenNovelAdapterService,
+    {
+      provide: OpenNovelAdapterService,
+      useClass: OpenNovelManeuverAwareAdapterService,
+    },
     OpenNovelRuntimeClient,
-    OpenNovelSharedService
+    OpenNovelSharedService,
+    OpenNovelManeuverService,
+    OpenNovelManeuverPreviewService
   ]
 })
 export class AppModule {}
