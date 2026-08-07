@@ -27,11 +27,11 @@ export class OpenNovelManeuverController {
     @Param("roomId") roomId: string,
     @Body() body: OpenNovelManeuverCommand,
   ) {
-    const result = await this.maneuvers.preview(user, roomId, body);
-    return {
-      ...result,
-      gameProjection: await this.adapter.game(user, roomId),
-    };
+    // Preview is contractually zero-side-effect. Do not call adapter.game()
+    // here: the maneuver-aware projection path may repair a legacy stateJson
+    // mirror. The browser retains its unchanged authoritative projection until
+    // Confirm succeeds or it explicitly refreshes.
+    return this.maneuvers.preview(user, roomId, body);
   }
 
   @Post(":roomId/game/maneuvers/confirm")
