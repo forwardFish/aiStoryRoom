@@ -4,6 +4,7 @@ import {
   getManeuverSceneConfig,
   INITIAL_MVP_LEVERAGE_KEYS,
 } from "../world-maneuver-packages/sangtian-maneuver.data";
+import { installOpenNovelManeuverGuardStages } from "./openovel-maneuver-guard-stages";
 import {
   defineOpenNovelManeuverPackage,
   type OpenNovelContactDefinition,
@@ -87,3 +88,5 @@ export const sangtianOpenNovelManeuverPackage = defineOpenNovelManeuverPackage({
     consumedLeverageLabel: "筹码已消耗",
   },
 });
+
+installOpenNovelManeuverGuardStages(sangtianOpenNovelManeuverPackage);
