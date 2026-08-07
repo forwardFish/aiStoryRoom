@@ -4,6 +4,7 @@ import {
 } from "../runtime-contract/kernel-selector-lite.js";
 import {
   buildDynamicPartOneRuntimeWorkingSet,
+  forcePackageForDynamicWorkingSets,
   type DynamicPartOneActionSettlement,
   type DynamicPartOneCommittedEvent,
   type DynamicPartOneRuntimeWorkingSet,
@@ -17,8 +18,8 @@ import {
 } from "./part-one-runtime-engine.js";
 import type {
   PartOneActionSettlement,
+  PartOneRuntimeAsset,
   PartOneRuntimePackage,
-  PartOneRuntimeWorkingSet,
   PartOneState,
 } from "./part-one-runtime-types.js";
 
@@ -27,18 +28,9 @@ export type DynamicPartOneSettlementExecutionOptions = {
   currentWorkingSetOverride?: DynamicPartOneRuntimeWorkingSet | null;
 };
 
-type ForcedSelectionRequest = {
-  sectionId: string;
-  kernelId: string;
-  affordanceIds: string[];
-};
-
 /**
  * Project the exact state that the existing finalizer will commit after all
- * authorized due consequences have been surfaced in the current turn. Dynamic
- * selection must run on this state rather than on the intermediate DUE ledger;
- * otherwise a pressure that has already been paid can incorrectly choose the
- * next Kernel and the committed trace fingerprint will not match recovery.
+ * authorized due consequences have been surfaced in the current turn.
  */
 export function projectFinalizedPartOneSelectionState(
   settlement: Pick<PartOneActionSettlement, "proposedState" | "event">,
@@ -55,13 +47,11 @@ export function projectFinalizedPartOneSelectionState(
 }
 
 /**
- * Coordinate Dynamic Kernel Lite with the frozen fact Settlement.
- *
- * The frozen engine remains the only causal writer. This layer only makes the
- * current authored decision and the already-selected next decision visible to
- * that engine. Floor continuations are reconstructed by the frozen engine from
- * sectionTurnNumber because their affordances do not live on the base Kernel
- * asset.
+ * The frozen engine remains the only causal writer. This coordinator projects
+ * the exact committed current WorkingSet and the exact selected next
+ * WorkingSet into an immutable package clone. Primary Dynamic, Legacy Fallback
+ * and Floor Continuation therefore share one formal Settlement path without
+ * asking the frozen engine to infer a decision surface from array position.
  */
 export function settleDynamicPartOneAction(
   pkg: PartOneRuntimePackage,
@@ -70,24 +60,27 @@ export function settleDynamicPartOneAction(
   turnNumber: number,
   options: DynamicPartOneSettlementExecutionOptions = {},
 ): DynamicPartOneActionSettlement {
-  const current = options.currentWorkingSetOverride
-    ? validateCurrentWorkingSetOverride(
-      pkg,
-      state,
-      turnNumber,
-      options.currentWorkingSetOverride,
-    )
-    : buildDynamicPartOneRuntimeWorkingSet(
-      pkg,
-      state,
-      Math.max(0, turnNumber - 1),
-      options.currentPin
-        ? { mode: "DYNAMIC_LITE", pin: options.currentPin }
-        : {},
-    );
   const opening = Boolean(action.decisionId?.startsWith("opening_"));
+  const current = opening
+    ? null
+    : options.currentWorkingSetOverride
+      ? validateCurrentWorkingSetOverride(
+        pkg,
+        state,
+        turnNumber,
+        options.currentWorkingSetOverride,
+      )
+      : buildDynamicPartOneRuntimeWorkingSet(
+        pkg,
+        state,
+        Math.max(0, turnNumber - 1),
+        options.currentPin
+          ? { mode: "DYNAMIC_LITE", pin: options.currentPin }
+          : {},
+      );
+
   if (!opening && action.affordanceTemplateId) {
-    const bound = current.decisionAffordances.some((candidate) => (
+    const bound = current!.decisionAffordances.some((candidate) => (
       candidate.affordanceTemplateId === action.affordanceTemplateId
       && candidate.decisionKernelId === action.decisionKernelId
       && candidate.actionText === action.actionText
@@ -97,23 +90,11 @@ export function settleDynamicPartOneAction(
     }
   }
 
-  const currentKernelId = opening
-    ? "DK-P1-REVIEW-INITIATION"
-    : action.decisionKernelId || current.decisionPoint.decisionKernelId;
-  const currentAffordanceId = opening
-    ? null
-    : action.affordanceTemplateId || null;
-  const currentIsContinuation = !opening && isContinuation(current);
-  const currentRequests: ForcedSelectionRequest[] = currentIsContinuation
-    ? []
-    : [{
-      sectionId: state.sectionId,
-      kernelId: currentKernelId,
-      affordanceIds: currentAffordanceId ? [currentAffordanceId] : [],
-    }];
-
+  const provisionalPackage = current
+    ? forcePackageForDynamicWorkingSets(pkg, [{ state, workingSet: current }])
+    : pkg;
   const provisional = settleLegacyAction(
-    forcePackage(pkg, currentRequests),
+    provisionalPackage,
     state,
     action,
     turnNumber,
@@ -124,15 +105,14 @@ export function settleDynamicPartOneAction(
     selectionState,
     turnNumber,
   );
-  const nextRequest: ForcedSelectionRequest = {
-    sectionId: selectionState.sectionId,
-    kernelId: next.decisionPoint.decisionKernelId,
-    affordanceIds: isContinuation(next)
-      ? []
-      : [...next.kernelSelection.selectedAffordanceIds],
-  };
+  const projections = current
+    ? [
+      { state, workingSet: current },
+      { state: selectionState, workingSet: next },
+    ]
+    : [{ state: selectionState, workingSet: next }];
   const finalized = settleLegacyAction(
-    forcePackage(pkg, [...currentRequests, nextRequest]),
+    forcePackageForDynamicWorkingSets(pkg, projections),
     state,
     action,
     turnNumber,
@@ -154,12 +134,9 @@ export function settleDynamicPartOneAction(
 }
 
 /**
- * The observe-only capability facade needs one authored affordance as a
- * scaffold. A Floor continuation already reconstructs its own option list and
- * therefore must receive the unmodified package. A committed WorkingSet
- * override is authoritative and is validated before use; an explicit Pin must
- * pass strict Dynamic recovery and is never silently converted to a Legacy
- * fallback.
+ * Observe-only capability actions use the same exact committed WorkingSet as
+ * display, binding and authored Settlement. Continuations are projected as
+ * explicit Floor entries rather than being re-derived from sectionTurnNumber.
  */
 export function packageForDynamicCapabilityAction(
   pkg: PartOneRuntimePackage,
@@ -175,35 +152,24 @@ export function packageForDynamicCapabilityAction(
       turnNumber,
       currentWorkingSetOverride,
     )
-    : currentPin
-      ? buildDynamicPartOneRuntimeWorkingSet(
-        pkg,
-        state,
-        Math.max(0, turnNumber - 1),
-        { mode: "DYNAMIC_LITE", pin: currentPin },
-      )
-      : buildDynamicPartOneRuntimeWorkingSet(
-        pkg,
-        state,
-        Math.max(0, turnNumber - 1),
-      );
-  if (isContinuation(current)) return pkg;
-  return forcePackage(pkg, [{
-    sectionId: state.sectionId,
-    kernelId: current.decisionPoint.decisionKernelId,
-    affordanceIds: current.decisionAffordances[0]
-      ? [current.decisionAffordances[0].affordanceTemplateId]
-      : [],
-  }]);
+    : buildDynamicPartOneRuntimeWorkingSet(
+      pkg,
+      state,
+      Math.max(0, turnNumber - 1),
+      currentPin
+        ? { mode: "DYNAMIC_LITE", pin: currentPin }
+        : {},
+    );
+  return forcePackageForDynamicWorkingSets(
+    pkg,
+    [{ state, workingSet: current }],
+  );
 }
 
 /**
- * A committed Legacy fallback is already the canonical decision surface. It
- * may exist precisely because its authored options could not produce two
- * valid Dynamic previews, so ordinary pinned recovery must not demand that
- * those options pass the Dynamic preview gate a second time. Rebuild only the
- * exact committed Kernel and Affordance pair; all non-fallback pins keep the
- * stricter Dynamic recovery path.
+ * A committed Legacy fallback may have no valid Dynamic Outcome pair. Recover
+ * the exact authored pair without reapplying the Dynamic diversity gate; all
+ * semantic and state-integrity checks remain fail-closed.
  */
 export function buildCommittedLegacyFallbackWorkingSet(
   pkg: PartOneRuntimePackage,
@@ -238,11 +204,12 @@ export function buildCommittedLegacyFallbackWorkingSet(
   }
 
   const workingSet = buildLegacyWorkingSet(
-    forcePackage(pkg, [{
-      sectionId: state.sectionId,
-      kernelId: trace.selectedKernelId,
-      affordanceIds: [...trace.selectedAffordanceIds],
-    }]),
+    forceFallbackPackage(
+      pkg,
+      state.sectionId,
+      trace.selectedKernelId,
+      trace.selectedAffordanceIds,
+    ),
     state,
     turnNumber,
   );
@@ -299,13 +266,6 @@ function validateCurrentWorkingSetOverride(
   return clone(workingSet);
 }
 
-/**
- * The provisional pass exists only to expose the resulting authoritative state
- * to the selector. Reordering the next Kernel or its option surface must never
- * change the player action's causal result. The final pass may legitimately
- * produce different narrative pressure text, so scene.situation and narrative
- * plans are excluded; every durable or material state field remains covered.
- */
 function assertProvisionalCausalStateStable(
   provisional: PartOneActionSettlement,
   finalized: PartOneActionSettlement,
@@ -344,79 +304,58 @@ function causalSettlementSnapshot(settlement: PartOneActionSettlement) {
   };
 }
 
-function forcePackage(
+function forceFallbackPackage(
   pkg: PartOneRuntimePackage,
-  requests: ForcedSelectionRequest[],
+  sectionId: string,
+  kernelId: string,
+  affordanceIds: string[],
 ): PartOneRuntimePackage {
-  const kernelsBySection = new Map<string, string[]>();
-  const affordancesByKernel = new Map<string, string[]>();
-  for (const request of requests) {
-    const ids = kernelsBySection.get(request.sectionId) || [];
-    if (!ids.includes(request.kernelId)) ids.push(request.kernelId);
-    kernelsBySection.set(request.sectionId, ids);
-    if (request.affordanceIds.length) {
-      affordancesByKernel.set(
-        request.kernelId,
-        [...new Set(request.affordanceIds)],
-      );
-    }
-  }
-
-  return {
-    ...pkg,
-    sections: pkg.sections.map((section) => {
-      const preferred = kernelsBySection.get(section.sectionId);
-      return !preferred?.length
-        ? section
-        : {
-          ...section,
-          activeDecisionKernelIds: [
-            ...preferred,
-            ...section.activeDecisionKernelIds.filter(
-              (id) => !preferred.includes(id),
-            ),
-          ],
-        };
-    }),
-    assets: pkg.assets.map((asset) => {
-      const affordanceIds = affordancesByKernel.get(asset.assetId);
-      if (
-        !affordanceIds?.length
-        || asset.assetType !== "DECISION_KERNEL"
-      ) {
-        return asset;
+  const projected = clone(pkg);
+  projected.sections = projected.sections.map((section) => (
+    section.sectionId === sectionId
+      ? {
+        ...section,
+        activeDecisionKernelIds: [
+          kernelId,
+          ...section.activeDecisionKernelIds.filter((id) => id !== kernelId),
+        ],
       }
-      const authored = Array.isArray(asset.payload.options)
-        ? asset.payload.options
-        : [];
-      const selected = affordanceIds.map((affordanceId) => {
-        const option = authored.find((candidate) => (
-          candidate.affordanceTemplateId === affordanceId
-        ));
-        if (!option) {
-          throw new Error(
-            `PART_ONE_DYNAMIC_AFFORDANCE_NOT_FOUND:${affordanceId}`,
-          );
-        }
-        return option;
-      });
-      const remaining = authored.filter((option) => (
-        !affordanceIds.includes(option.affordanceTemplateId)
-      ));
-      const reordered = selected.length === 1
-        ? [selected[0]!, ...remaining]
-        : [selected[0]!, ...remaining, selected[1]!];
-      return {
-        ...asset,
-        payload: { ...asset.payload, options: reordered },
-      };
-    }),
-  };
+      : section
+  ));
+  projected.assets = projected.assets.map((asset) => (
+    asset.assetId === kernelId && asset.assetType === "DECISION_KERNEL"
+      ? reorderOptions(asset, affordanceIds)
+      : asset
+  ));
+  return projected;
 }
 
-function isContinuation(workingSet: PartOneRuntimeWorkingSet) {
-  return workingSet.decisionPoint.decisionPointId
-    !== workingSet.decisionPoint.decisionKernelId;
+function reorderOptions(
+  asset: PartOneRuntimeAsset,
+  affordanceIds: string[],
+) {
+  const authored = Array.isArray(asset.payload.options)
+    ? asset.payload.options
+    : [];
+  const ids = [...new Set(affordanceIds)];
+  const selected = ids.map((id) => authored.find(
+    (option) => option.affordanceTemplateId === id,
+  ));
+  if (selected.some((option) => !option)) {
+    throw new Error(
+      `PART_ONE_DYNAMIC_AFFORDANCE_NOT_FOUND:${ids.join(",")}`,
+    );
+  }
+  const remaining = authored.filter(
+    (option) => !ids.includes(option.affordanceTemplateId),
+  );
+  return {
+    ...asset,
+    payload: {
+      ...asset.payload,
+      options: [selected[0]!, ...remaining, selected[1]!],
+    },
+  };
 }
 
 function sameStringArray(left: string[], right: string[]) {
@@ -425,5 +364,5 @@ function sameStringArray(left: string[], right: string[]) {
 }
 
 function clone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+  return structuredClone(value);
 }
