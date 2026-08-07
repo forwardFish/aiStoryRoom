@@ -16,6 +16,7 @@
     "test:runtime-contract": "node --import tsx --test tests/runtime-contract.test.ts tests/settlement.test.ts tests/settlement.adversarial.test.ts tests/settlement.audience-adversarial.test.ts tests/settlement.round3-adversarial.test.ts tests/projection.test.ts tests/kernel-selector-lite.test.ts"
   },
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "typescript": "^5.9.3"
   }
 }
