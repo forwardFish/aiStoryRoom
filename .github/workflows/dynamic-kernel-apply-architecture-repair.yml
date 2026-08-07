@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - codex/chatgpt-pro-dynamic-kernel-lite
-    paths:
-      - .github/workflows/dynamic-kernel-apply-architecture-repair.yml
   workflow_dispatch:
 
 permissions:
@@ -13,13 +11,9 @@ permissions:
   statuses: write
 
 jobs:
-  templates-architecture-repair:
+  repair:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    env:
-      EVIDENCE_ROOT: ${{ runner.temp }}/dynamic-kernel-architecture-repair
-      EXPECTED_B64_SHA256: 9b54af0102fc38abe925af44e56cda7e283efe9ce85c100563bd0b828d76ceb6
-      EXPECTED_PATCH_SHA256: b28fc457e2e0c0774662147c728de1d50325cb160a716e2b51406bec26741900
     steps:
       - name: Publish pending status
         shell: bash
@@ -47,95 +41,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "${EVIDENCE_ROOT}/logs"
           cat .github/repair/dynamic-kernel-architecture.patch.gz.b64.* \
             | tr -d '[:space:]' \
             > "${RUNNER_TEMP}/architecture.patch.gz.b64"
-          echo "${EXPECTED_B64_SHA256}  ${RUNNER_TEMP}/architecture.patch.gz.b64" \
-            | sha256sum --check
+          test "$(sha256sum "${RUNNER_TEMP}/architecture.patch.gz.b64" | cut -d' ' -f1)" = \
+            "9b54af0102fc38abe925af44e56cda7e283efe9ce85c100563bd0b828d76ceb6"
           base64 --decode "${RUNNER_TEMP}/architecture.patch.gz.b64" \
             | gzip --decompress \
             > "${RUNNER_TEMP}/architecture.patch"
-          echo "${EXPECTED_PATCH_SHA256}  ${RUNNER_TEMP}/architecture.patch" \
-            | sha256sum --check
+          test "$(sha256sum "${RUNNER_TEMP}/architecture.patch" | cut -d' ' -f1)" = \
+            "b28fc457e2e0c0774662147c728de1d50325cb160a716e2b51406bec26741900"
           git apply --check "${RUNNER_TEMP}/architecture.patch"
           git apply "${RUNNER_TEMP}/architecture.patch"
           git diff --check
-          git diff --stat | tee "${EVIDENCE_ROOT}/logs/00-applied-diff.log"
+          git diff --stat
       - name: Install frozen workspace
-        shell: bash
-        run: pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
-      - id: gates
-        name: Run Templates deterministic gates
-        shell: bash
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          results="${EVIDENCE_ROOT}/results.tsv"
-          : > "${results}"
-          run_gate() {
-            local label="$1"
-            shift
-            local log="${EVIDENCE_ROOT}/logs/${label}.log"
-            set +e
-            "$@" 2>&1 | tee "${log}"
-            local code=${PIPESTATUS[0]}
-            set -e
-            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
-          }
-          run_gate 02-templates-typecheck pnpm --filter @ai-story/templates typecheck
-          run_gate 03-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
-          run_gate 04-templates-story-package pnpm --filter @ai-story/templates test:story-package
-          run_gate 05-templates-build pnpm --filter @ai-story/templates build
-          python - <<'PY'
-          import json, os, re
-          from pathlib import Path
-          root = Path(os.environ['EVIDENCE_ROOT'])
-          tap = re.compile(r'# tests (\d+).*?# pass (\d+).*?# fail (\d+).*?# (?:cancelled|canceled) (\d+).*?# skipped (\d+).*?# todo (\d+)', re.S)
-          rows = []
-          for raw in (root / 'results.tsv').read_text().splitlines():
-              label, code, log_path = raw.split('\t', 2)
-              text = Path(log_path).read_text(errors='replace')
-              matches = list(tap.finditer(text))
-              rows.append({
-                  'label': label,
-                  'exitCode': int(code),
-                  'tests': sum(int(m.group(1)) for m in matches),
-                  'pass': sum(int(m.group(2)) for m in matches),
-                  'fail': sum(int(m.group(3)) for m in matches),
-                  'cancelled': sum(int(m.group(4)) for m in matches),
-                  'skip': sum(int(m.group(5)) for m in matches),
-                  'todo': sum(int(m.group(6)) for m in matches),
-                  'logPath': log_path,
-              })
-          verdict = 'PASS' if all(row['exitCode'] == 0 for row in rows) else 'FAIL'
-          summary = {
-              'schemaVersion': 'omw.dynamic-kernel-architecture-repair.v1',
-              'inputSha': os.environ['GITHUB_SHA'],
-              'databaseUsed': False,
-              'supabaseUsed': False,
-              'deepSeekUsed': False,
-              'commands': rows,
-              'verdict': verdict,
-          }
-          (root / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
-          (root / 'status.txt').write_text(verdict.lower() + '\n')
-          PY
-      - name: Upload Templates evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dynamic-kernel-architecture-templates-${{ github.sha }}
-          path: ${{ env.EVIDENCE_ROOT }}/
-          if-no-files-found: error
-          retention-days: 7
-      - name: Commit architecture repair after green Templates gates
-        if: always()
+        run: pnpm install --frozen-lockfile
+      - name: Templates typecheck
+        run: pnpm --filter @ai-story/templates typecheck
+      - name: Templates runtime contract
+        run: pnpm --filter @ai-story/templates test:runtime-contract
+      - name: Templates story package
+        run: pnpm --filter @ai-story/templates test:story-package
+      - name: Templates build
+        run: pnpm --filter @ai-story/templates build
+      - name: Commit architecture repair
         shell: bash
         run: |
           set -euo pipefail
-          test -f "${EVIDENCE_ROOT}/status.txt"
-          test "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
@@ -154,22 +87,26 @@ jobs:
           git diff --cached --check
           git commit -m "refactor(kernel-lite): separate settlement from next-turn planning"
           git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
-      - name: Publish final status
-        if: always()
+      - name: Publish success status
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          state=failure
-          description="Architecture repair Templates gates failed"
-          if [ -f "${EVIDENCE_ROOT}/status.txt" ] \
-            && [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass ]; then
-            state=success
-            description="Architecture repair Templates gates passed"
-          fi
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -f state="${state}" \
+            -f state=success \
             -f context="dynamic-kernel-lite/architecture-templates" \
-            -f description="${description}" \
+            -f description="Architecture repair Templates gates passed" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - name: Publish failure status
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=failure \
+            -f context="dynamic-kernel-lite/architecture-templates" \
+            -f description="Architecture repair Templates gates failed" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
