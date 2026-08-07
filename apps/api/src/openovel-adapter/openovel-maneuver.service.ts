@@ -37,6 +37,7 @@ import {
 } from "./openovel-maneuver";
 import type { OpenNovelManeuverPackage } from "./openovel-maneuver-package";
 import { openNovelManeuverPackages } from "./openovel-maneuver-packages";
+import { buildOpenNovelManeuverNarrativeContext } from "./openovel-maneuver-narrative-context";
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const MANEUVER_EVENT_TYPE = "openovel_maneuver_result";
@@ -53,6 +54,8 @@ type NarrativeResolution = {
     outputTokens: number;
     costMinor: number;
     elapsedMs: number;
+    providerRequestId: string | null;
+    providerModelName: string | null;
   };
   aiBudget: MvpAiBudget;
   errorMessage: string | null;
@@ -142,6 +145,8 @@ export class OpenNovelManeuverService {
       fallbackUsed: narrative.fallbackUsed,
       fallbackReason: narrative.fallbackReason,
       provider: narrative.provider,
+      providerRequestId: narrative.tokenUsage.providerRequestId,
+      providerModelName: narrative.tokenUsage.providerModelName,
       tokenUsage: narrative.tokenUsage,
       maneuverPackageVersion: maneuverPackage.packageVersion,
       maneuverWorldId: maneuverPackage.worldId,
@@ -265,6 +270,8 @@ async function resolveNarrative(
       outputTokens: 0,
       costMinor: 0,
       elapsedMs: 0,
+      providerRequestId: null,
+      providerModelName: null,
     },
     aiBudget: budget,
     errorMessage: null,
@@ -293,42 +300,19 @@ async function resolveNarrative(
     };
   }
 
-  const target = plan.targetRoleKey
-    ? maneuverPackage.actor(plan.targetRoleKey)
-    : null;
-  const leverage = plan.consumedLeverageKey
-    ? maneuverPackage.leverage(plan.consumedLeverageKey)
-    : null;
+  const built = buildOpenNovelManeuverNarrativeContext({
+    plan,
+    state,
+    runtimeRun,
+    maneuverPackage,
+  });
   try {
-    const candidate = await provider.generateManeuverCandidate({
-      task: plan.maneuverType === "contact"
-        ? "character_response"
-        : "leverage_character_response",
-      sceneKey: plan.sceneKey,
-      maneuverType: plan.maneuverType,
-      target: target ? {
-        roleKey: target.roleKey,
-        displayName: target.displayName,
-        publicIdentity: target.publicIdentity,
-      } : null,
-      playerMessage: plan.maneuverType === "contact" ? plan.playerMessage : "",
-      leverage: leverage ? {
-        leverageKey: leverage.leverageKey,
-        label: leverage.label,
-        description: leverage.description,
-      } : null,
-      recentCanon: String(runtimeRun.recentCanon || "").slice(-2_000),
-      immutableRuleResult: {
-        statePatchKeys: Object.keys(plan.statePatch),
-        factKeys: plan.factKeys,
-        traces: plan.traces,
-      },
-    });
+    const candidate = await provider.generateManeuverCandidate(built.context);
     const normalized = normalizeNarrative(
       candidate,
       plan,
-      target?.displayName || "对方",
-      leverage?.label || "",
+      built.targetName,
+      built.leverageLabel,
       maneuverPackage.surfaces.consumedLeverageLabel,
     );
     const usage = recordMvpAiBudgetUse(budget, budgetCheck, provider.lastCall || {});
@@ -417,6 +401,8 @@ function aiTaskData(input: {
   const resultJson = {
     fallbackUsed: input.narrative.fallbackUsed,
     fallbackReason: input.narrative.fallbackReason,
+    providerRequestId: input.narrative.tokenUsage.providerRequestId,
+    providerModelName: input.narrative.tokenUsage.providerModelName,
     tokenUsage: input.narrative.tokenUsage,
     output: {
       title: input.narrative.title,
@@ -429,7 +415,7 @@ function aiTaskData(input: {
     taskType: "resolve_maneuver_narrative",
     modelType: input.narrative.provider,
     provider: input.narrative.provider,
-    modelName: input.narrative.provider,
+    modelName: input.narrative.tokenUsage.providerModelName || input.narrative.provider,
     status: input.narrative.fallbackUsed ? "fallback" : "completed",
     inputJson: {
       worldId: input.maneuverPackage.worldId,

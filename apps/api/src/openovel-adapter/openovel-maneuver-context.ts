@@ -45,9 +45,10 @@ export function hydrateOpenNovelManeuverStateFromEvents(input: {
     input.turnNumber,
     input.maneuverPackage,
   );
-  if (!Object.keys(record(prior.metrics)).length && state.results.length) {
-    state.metrics = recomputeMetrics(state.results);
-  }
+  // Maneuver metrics are a deterministic read model of committed root events.
+  // Recompute the complete record even when only one key is missing or corrupt;
+  // otherwise a partially damaged legacy snapshot can retain phantom values.
+  state.metrics = recomputeMetrics(state.results);
   const recoveredEventCount = Math.max(0, rawResults.length - priorResults.length);
   const needsPersistence = recoveredEventCount > 0
     || prior.schemaVersion !== state.schemaVersion
