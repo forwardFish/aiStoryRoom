@@ -301,6 +301,13 @@ async function stopServices() {
 }
 
 async function writeSummary(status, error = null) {
+  const commandPassed = (label) => commands.some(
+    (command) => command.label === label && command.passed,
+  );
+  const persistencePassed = commandPassed("04-supabase-run-turn-idempotency")
+    && v4DatabaseEvidence?.status === "PASS";
+  const pageFlowPassed = commandPassed("05-supabase-real-page-flow")
+    && browserEvidence?.status === "PASS";
   const summary = {
     schemaVersion: "omw.dynamic-kernel-lite.supabase-formal.v1",
     status,
@@ -312,11 +319,14 @@ async function writeSummary(status, error = null) {
     acceptanceNamespace: contract?.namespace
       || process.env.ACCEPTANCE_DATA_NAMESPACE
       || null,
-    databaseBacked: true,
-    runRoomTurnPersistenceCovered: true,
-    idempotencyCovered: true,
-    atomicCommitCovered: true,
-    realPageFlowCovered: true,
+    databaseBacked: Boolean(contract?.connected),
+    runRoomTurnPersistenceCovered: persistencePassed,
+    idempotencyCovered: persistencePassed
+      && Number(v4DatabaseEvidence?.idempotentReplayPreservedWorldSequence) === 1,
+    atomicCommitCovered: persistencePassed
+      && pageFlowPassed
+      && Number(browserEvidence?.committedEventCount) === 1,
+    realPageFlowCovered: pageFlowPassed,
     migrationsExecuted: false,
     onlineConfigurationModified: false,
     realUserDataAccessed: false,
