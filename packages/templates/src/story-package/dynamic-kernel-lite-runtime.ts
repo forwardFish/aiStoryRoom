@@ -76,6 +76,7 @@ export type DynamicPartOneActionSettlement = Omit<PartOneActionSettlement, "even
 type Preview = {
   affordance: PartOneRuntimeAffordance;
   signature: AffordanceOutcomeSignature;
+  changedStatePaths: string[];
 };
 type Evaluation = {
   kernelId: string;
@@ -621,7 +622,12 @@ function evaluateKernel(
         affordance.affordanceTemplateId,
       );
       if (hasMaterialOutcome(signature, preview)) {
-        previews.push({ affordance, signature });
+        previews.push({
+          affordance,
+          signature,
+          changedStatePaths: [...new Set(preview.event.changedStatePaths)]
+            .filter((path) => !IGNORED_PATHS.has(path)),
+        });
       } else {
         rejectionCodes.push(
           `NO_MATERIAL_OUTCOME:${affordance.affordanceTemplateId}`,
@@ -639,6 +645,7 @@ function evaluateKernel(
     section,
     kernel,
     options,
+    previews,
   );
   const mustRules = uniqueRules(section.mustEstablish).filter(
     (rule) => coveredPaths.has(rule.statePath),
@@ -712,6 +719,7 @@ function requirementCoveragePaths(
   section: PartOneSectionContract,
   kernel: PartOneRuntimeAsset,
   options: PartOneAffordanceTemplate[],
+  previews: Preview[],
 ) {
   const linkedRequirements = pkg.requirements.filter((requirement) => (
     requirement.sectionIds.includes(section.sectionId)
@@ -723,11 +731,12 @@ function requirementCoveragePaths(
   const requirementPaths = linkedRequirements.flatMap((requirement) => (
     asStringArray(requirement.stateEffects)
   ));
-  if (requirementPaths.length) return new Set(requirementPaths);
   return new Set([
+    ...requirementPaths,
     ...kernel.stateDependencies,
     ...options.flatMap((option) => option.stateEffects || []),
     ...options.flatMap((option) => Object.keys(option.statePatch || {})),
+    ...previews.flatMap((preview) => preview.changedStatePaths),
   ]);
 }
 
