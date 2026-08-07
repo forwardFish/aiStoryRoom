@@ -1,5 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { actionConflict, actionRejected } from "./runtime-errors.js";
+import {
+  stageConfirmedManeuverRuntimeContext,
+} from "./confirmed-maneuver-context.js";
 import type { BoundOption, OpenNovelOption } from "./types.js";
 
 const CONFIRMED_MANEUVER_TAG = "OPENOVEL_SERVER_CONFIRMED_MANEUVERS_V1";
@@ -54,9 +57,14 @@ export class DefaultActionGateway implements ActionGatewayModule {
       if (!validSignature(decorated.payloadJson, decorated.signature)) {
         throw actionRejected("SERVER_CONTEXT_INVALID");
       }
-      if (decorated.preparedAtTurnNumber !== input.currentStateRevision) {
+      if (decorated.context.preparedAtTurnNumber !== input.currentStateRevision) {
         throw actionConflict("SERVER_CONTEXT_STALE");
       }
+      stageConfirmedManeuverRuntimeContext({
+        runId: input.runId,
+        stateRevision: input.currentStateRevision,
+        context: decorated.context,
+      });
     }
     if (
       input.expectedStateRevision !== undefined
@@ -66,10 +74,9 @@ export class DefaultActionGateway implements ActionGatewayModule {
     }
     return {
       runId: input.runId,
-      // The runtime keeps the server-authenticated context attached so the
-      // context compiler and narrator can consume it. Player-facing matching
-      // always uses only playerAction below.
-      action: decorated ? rawAction : playerAction,
+      // The authoritative context is staged separately. Every downstream
+      // action, settlement and audit surface receives the player's real text.
+      action: playerAction,
       stateRevision: input.currentStateRevision,
     };
   }
@@ -80,16 +87,10 @@ export class DefaultActionGateway implements ActionGatewayModule {
     action: string,
   ): OpenNovelOption | null {
     if (!bound) return null;
-    const playerAction = parseConfirmedManeuverAction(action)?.playerAction || action;
     const match = options.find((option) => option.id === bound.id && option.label === bound.label);
-    if (!match || match.label !== playerAction) return null;
+    if (!match || match.label !== action) return null;
     return match;
   }
-}
-
-export function playerActionFromRuntimeAction(value: unknown) {
-  const raw = String(value || "").trim();
-  return parseConfirmedManeuverAction(raw)?.playerAction || raw;
 }
 
 function parseConfirmedManeuverAction(raw: string) {
@@ -118,9 +119,50 @@ function parseConfirmedManeuverAction(raw: string) {
   if (!Array.isArray(source.sourceResultIds) || source.sourceResultIds.length < 1) return null;
   if (!source.sourceResultIds.every((item: unknown) => typeof item === "string" && item.trim())) return null;
   if (!Array.isArray(source.summaries) || !Array.isArray(source.visibleFacts)) return null;
+  if (!Array.isArray(source.consumedLeverageKeys)) return null;
   const preparedAtTurnNumber = Number(source.preparedAtTurnNumber);
   if (!Number.isInteger(preparedAtTurnNumber) || preparedAtTurnNumber < 0) return null;
-  return { playerAction, signature, payloadJson, preparedAtTurnNumber };
+  if (!String(source.instruction || "").trim()) return null;
+  const summaries = source.summaries.map((item: unknown) => record(item));
+  if (!summaries.every((item) => (
+    String(item.resultId || "").trim()
+    && String(item.decisionForm || "").trim()
+    && String(item.title || "").trim()
+    && String(item.content || "").trim()
+    && String(item.sceneKey || "").trim()
+    && Number.isInteger(Number(item.turnNumber))
+  ))) return null;
+  const visibleFacts = source.visibleFacts.map((item: unknown) => record(item));
+  if (!visibleFacts.every((item) => (
+    String(item.factKey || "").trim()
+    && String(item.content || "").trim()
+    && String(item.sourceResultId || "").trim()
+  ))) return null;
+  return {
+    playerAction,
+    signature,
+    payloadJson,
+    context: {
+      schemaVersion: "openovel_confirmed_maneuver_context_v1" as const,
+      instruction: String(source.instruction),
+      preparedAtTurnNumber,
+      sourceResultIds: source.sourceResultIds.map(String),
+      summaries: summaries.map((item) => ({
+        resultId: String(item.resultId),
+        decisionForm: String(item.decisionForm),
+        title: String(item.title),
+        content: String(item.content),
+        sceneKey: String(item.sceneKey),
+        turnNumber: Number(item.turnNumber),
+      })),
+      visibleFacts: visibleFacts.map((item) => ({
+        factKey: String(item.factKey),
+        content: String(item.content),
+        sourceResultId: String(item.sourceResultId),
+      })),
+      consumedLeverageKeys: source.consumedLeverageKeys.map(String),
+    },
+  };
 }
 
 function validSignature(payloadJson: string, supplied: string) {

@@ -2,6 +2,10 @@ import {
   activateContextCards,
   compileForegroundContext,
 } from "./foreground.js";
+import {
+  renderConfirmedManeuverRuntimeContext,
+  takeConfirmedManeuverRuntimeContext,
+} from "./confirmed-maneuver-context.js";
 import type { WorkspacePaths } from "./paths.js";
 import type { CompiledForegroundContext, StorySnapshot } from "./types.js";
 
@@ -41,10 +45,31 @@ export class DefaultContextCompiler implements ContextCompilerModule {
       input.snapshot.foregroundGuidance,
     );
     const snapshot = await input.refreshSnapshot();
+    const compiled = await compileForegroundContext(input.paths, snapshot);
+    const confirmed = takeConfirmedManeuverRuntimeContext(
+      snapshot.metadata.runId,
+      snapshot.metadata.turnNumber,
+    );
+    if (!confirmed) {
+      return { activatedCardSlugs, snapshot, compiled };
+    }
+    const contextText = renderConfirmedManeuverRuntimeContext(confirmed);
     return {
       activatedCardSlugs,
       snapshot,
-      compiled: await compileForegroundContext(input.paths, snapshot),
+      compiled: {
+        ...compiled,
+        foregroundGuidance: appendSection(compiled.foregroundGuidance, contextText),
+        durableMemory: appendSection(compiled.durableMemory, contextText),
+        report: {
+          ...compiled.report,
+          usedChars: compiled.report.usedChars + contextText.length,
+          budgets: {
+            ...compiled.report.budgets,
+            confirmedManeuverContext: contextText.length,
+          },
+        },
+      },
     };
   }
 
@@ -54,4 +79,8 @@ export class DefaultContextCompiler implements ContextCompilerModule {
   }) {
     return compileForegroundContext(input.paths, input.snapshot);
   }
+}
+
+function appendSection(current: string, addition: string) {
+  return [String(current || "").trim(), addition.trim()].filter(Boolean).join("\n\n");
 }
