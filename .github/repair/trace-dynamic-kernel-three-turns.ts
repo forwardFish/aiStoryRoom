@@ -97,18 +97,13 @@ const responsibilitySettlement = settleDynamicPartOneAction(
   { currentWorkingSetOverride: responsibility.workingSet },
 );
 const trace = responsibilitySettlement.event.nextKernelSelection;
+const pendingRuleIds = new Set(
+  responsibilitySettlement.proposedState.pendingConsequences.map(
+    (item) => item.ruleAssetId,
+  ),
+);
 
 console.log(JSON.stringify({
-  opening: {
-    changedStatePaths: opening.event.changedStatePaths,
-    completedKernelIds: opening.proposedState.completedKernelIds,
-    next: opening.event.nextKernelSelection,
-  },
-  execution: {
-    changedStatePaths: executionSettlement.event.changedStatePaths,
-    completedKernelIds: executionSettlement.proposedState.completedKernelIds,
-    next: executionSettlement.event.nextKernelSelection,
-  },
   responsibility: {
     changedStatePaths: responsibilitySettlement.event.changedStatePaths,
     sectionId: responsibilitySettlement.proposedState.sectionId,
@@ -118,6 +113,16 @@ console.log(JSON.stringify({
     witness: responsibilitySettlement.proposedState.witness,
     responsibility: responsibilitySettlement.proposedState.responsibility,
     pendingConsequences: responsibilitySettlement.proposedState.pendingConsequences,
+    pendingRules: pkg.assets
+      .filter((asset) => pendingRuleIds.has(asset.assetId))
+      .map((asset) => ({
+        ruleAssetId: asset.assetId,
+        sectionIds: asset.sectionIds,
+        requirementIds: asset.requirementIds,
+        decisionKernelIds: asset.decisionKernelIds,
+        causalArcIds: asset.causalArcIds,
+        actorRefs: asset.actorRefs,
+      })),
     nextDecisionPoint: responsibilitySettlement.event.nextDecisionPoint,
     next: trace,
   },
@@ -128,6 +133,7 @@ console.log(JSON.stringify({
       kernelId: asset.assetId,
       requirementIds: asset.requirementIds,
       causalArcIds: asset.causalArcIds,
+      actorRefs: asset.actorRefs,
       stateDependencies: asset.stateDependencies,
     })),
 }, null, 2));
