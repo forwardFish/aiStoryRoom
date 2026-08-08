@@ -2,6 +2,7 @@ from pathlib import Path
 
 path = Path("apps/openovel-runtime/tests/openovel-first.spec.ts")
 text = path.read_text(encoding="utf-8")
+
 old = '''    const authoredT02Delta = buildCausalDelta({
       turnId: "T02",
       action: limitedTrial.label,
@@ -54,4 +55,33 @@ new = '''    const publishedT02Delta = buildCausalDelta({
     const secondResult = await runtime.processAction({'''
 if old not in text:
     raise SystemExit("settlement-authority regression target missing")
-path.write_text(text.replace(old, new, 1), encoding="utf-8")
+text = text.replace(old, new, 1)
+
+old = '''    assert.ok(jointSignaturePrepared);
+    const settledResponseTicket = jointSignaturePrepared.beatManifest.tickets.find(
+      (ticket) => ticket.slot === "WORLD_PRESSURE",
+    );'''
+new = '''    assert.ok(jointSignaturePrepared);
+    assert.ok(jointSignaturePrepared.selectedOption);
+    const settledResponseTicket = jointSignaturePrepared.beatManifest.tickets.find(
+      (ticket) => ticket.slot === "WORLD_PRESSURE",
+    );'''
+if old not in text:
+    raise SystemExit("prepared joint-signature assertion target missing")
+text = text.replace(old, new, 1)
+
+old = '''    const jointSignatureContext = renderRuntimeNarratorCausalDelta(buildRuntimeCausalDelta({
+      turnId: "T03",
+      action: jointSignature.label,
+      selectedOption: jointSignature,
+    }));'''
+new = '''    const jointSignatureContext = renderRuntimeNarratorCausalDelta(buildRuntimeCausalDelta({
+      turnId: "T03",
+      action: jointSignature.label,
+      selectedOption: jointSignaturePrepared.selectedOption,
+    }));'''
+if old not in text:
+    raise SystemExit("prepared joint-signature contract target missing")
+text = text.replace(old, new, 1)
+
+path.write_text(text, encoding="utf-8")
