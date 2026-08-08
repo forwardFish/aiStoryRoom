@@ -447,7 +447,7 @@ function mergePlayerVisibleFallback(
   if (!playerResult || !worldPressure || !decisionStop) {
     throw new Error("PLAYER_VISIBLE_FALLBACK_BINDING_INVALID");
   }
-  return {
+  const merged: PlayerVisibleFallbackSurface = {
     ...(planned || {}),
     ...(authored || {}),
     PLAYER_RESULT: playerResult,
@@ -456,6 +456,38 @@ function mergePlayerVisibleFallback(
     // carry an older decision into a newly selected continuation Kernel.
     DECISION_STOP: decisionStop,
   };
+  // Settlement also exclusively owns scene movement. An authored surface from
+  // an older sequence cannot introduce a transition absent from the current
+  // planner projection.
+  const sceneTransition = String(planned?.SCENE_TRANSITION || "").trim();
+  if (sceneTransition) merged.SCENE_TRANSITION = sceneTransition;
+  else delete merged.SCENE_TRANSITION;
+  return merged;
+}
+
+function projectFallbackSlotsToManifest(
+  fallback: PlayerVisibleFallbackSurface,
+  manifest: BeatManifest,
+): PlayerVisibleFallbackSurface {
+  const projected: Partial<Record<
+    (typeof narrativeSlotIds)[number],
+    string
+  >> = {};
+  for (const slot of narrativeSlotIds) {
+    const tickets = manifest.tickets.filter((ticket) => ticket.slot === slot);
+    if (!tickets.length) continue;
+    const protectedTexts = [...new Set(tickets
+      .filter((ticket) => ticket.expressionOwner === "PROTECTED")
+      .map((ticket) => String(ticket.protectedText || "").trim())
+      .filter(Boolean))];
+    if (protectedTexts.length > 1) {
+      throw new Error(`FALLBACK_PROTECTED_TEXT_CONFLICT:${slot}`);
+    }
+    const text = protectedTexts[0]
+      || String(fallback[slot] || "").trim();
+    if (text) projected[slot] = text;
+  }
+  return projected as PlayerVisibleFallbackSurface;
 }
 
 function narratorSceneProjection(
@@ -686,10 +718,14 @@ async function planSangtianNextBeat(
         ),
       ],
     };
+    const projectedFallbackSlots = projectFallbackSlotsToManifest(
+      fallbackSlots,
+      beatManifest,
+    );
     const surfaceSourceRef = beatContract.sourceRef || `part-one-event:${event.eventId}`;
     const surfaceProvenance = Object.fromEntries(
       narrativeSlotIds
-        .filter((slot) => fallbackSlots[slot])
+        .filter((slot) => projectedFallbackSlots[slot])
         .map((slot) => [slot, {
           surfaceSource: "STORY_PACKAGE" as const,
           sourceRef: surfaceSourceRef,
@@ -702,7 +738,7 @@ async function planSangtianNextBeat(
       schemaVersion: SCENE_DRAFT_SCHEMA,
       draftId: `${event.eventId}.fallback`,
       owner: "FALLBACK",
-      slots: fallbackSlots,
+      slots: projectedFallbackSlots,
       surfaceProvenance,
     }, beatManifest);
     return {

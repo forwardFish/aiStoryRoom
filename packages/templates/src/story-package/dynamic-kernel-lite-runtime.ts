@@ -665,6 +665,7 @@ function evaluateKernelSafely(
         pendingPressureCount: 0,
         activeArcCount: 0,
         availablePressureActorCount: 0,
+        recentRequirementContinuityCount: 0,
         validAffordances: [],
         rejectionCodes: [
           `KERNEL_EVALUATION_FAILED:${normalizeErrorCode(error)}`,
@@ -785,6 +786,11 @@ function evaluateKernel(
   const pending = linkedPending(pkg, state, kernel);
   const nextTurn = turnNumber + 1;
   const present = new Set(state.scene?.presentActorRefs || []);
+  const recentRequirementContinuity = countRecentRequirementContinuity(
+    pkg,
+    state,
+    kernel,
+  );
   if (options.length < 2) rejectionCodes.push("KERNEL_OPTIONS_MISSING");
   if (affordances.length !== options.length) {
     rejectionCodes.push("AFFORDANCE_MATERIALIZATION_FAILED");
@@ -824,6 +830,7 @@ function evaluateKernel(
       )).length,
       availablePressureActorCount: candidateWorkingSet.decisionPoint.actorRefs
         .filter((actorId) => present.has(actorId)).length,
+      recentRequirementContinuityCount: recentRequirementContinuity,
       validAffordances: previews.map((preview) => ({
         affordanceId: preview.affordance.affordanceTemplateId,
         sourceOrder: authoredOrder.get(
@@ -835,6 +842,29 @@ function evaluateKernel(
       rejectionCodes,
     },
   };
+}
+
+/**
+ * Preserve direct causal continuity without consulting prose, authored array
+ * position or story-specific IDs. `completedKernelIds` is append-only; its
+ * final entry is therefore the most recently settled structured decision.
+ */
+function countRecentRequirementContinuity(
+  pkg: PartOneRuntimePackage,
+  state: PartOneState,
+  kernel: PartOneRuntimeAsset,
+) {
+  const recentKernelId = [...(state.completedKernelIds || [])].at(-1);
+  if (!recentKernelId) return 0;
+  const recentKernel = pkg.assets.find((asset) => (
+    asset.assetType === "DECISION_KERNEL"
+    && asset.assetId === recentKernelId
+  ));
+  if (!recentKernel) return 0;
+  const recentRequirements = new Set(recentKernel.requirementIds);
+  return kernel.requirementIds.filter(
+    (requirementId) => recentRequirements.has(requirementId),
+  ).length;
 }
 
 /**

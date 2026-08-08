@@ -237,8 +237,10 @@ test("committed option recovery, equivalent free text and click settlement use o
 
     assert.ok(freePrepared);
     assert.ok(clickPrepared);
-    const resolution = freePrepared.audit.intentResolution
-      as Record<string, unknown>;
+    const resolution = freePrepared.audit.intentResolution as Record<
+      string,
+      unknown
+    >;
     assert.equal(resolution.moduleStatus, "BOUND_AFFORDANCE");
     assert.equal(resolution.intentType, "AFFORDANCE_EQUIVALENT");
     assert.equal(resolution.matchedAffordanceId, target.id);
@@ -271,6 +273,69 @@ test("committed option recovery, equivalent free text and click settlement use o
         .nextKernelSelection,
     );
     assert.equal(fixture.modelCalls(), 0);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("an authored fallback cannot project a scene transition rejected by Settlement", async () => {
+  const pkg = packageUnderTest();
+  const opening = settleDynamicPartOneAction(
+    pkg,
+    templatesPackage.createInitialPartOneState(pkg),
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d1",
+      actionText: "opening_d1",
+    },
+    1,
+  );
+  const state = structuredClone(opening.proposedState);
+  const eventId = "EVENT-FALLBACK-SCENE-AUTHORITY";
+  state.lastCommittedEventId = eventId;
+  const responsibility = templatesPackage.buildPartOneRuntimeWorkingSet(
+    pkg,
+    state,
+    1,
+    {
+      mode: "DYNAMIC_LITE",
+      pin: {
+        decisionKernelId: "DK-P1-RESPONSIBILITY-RECORD",
+        decisionPointId: "DK-P1-RESPONSIBILITY-RECORD",
+      },
+    },
+  );
+  const event = {
+    eventId,
+    turnNumber: state.turnNumber,
+    sectionIdAfter: state.sectionId,
+    nextDecisionPoint: responsibility.decisionPoint,
+    nextKernelSelection: responsibility.kernelSelection,
+  };
+  const fixture = await workspaceFixture(state, event);
+  try {
+    const options = await currentSangtianOptions(
+      fixture.workspace,
+      "run.fallback-scene-authority",
+    );
+    assert.ok(options);
+    fixture.setPreviousOptions(options);
+    const selected = options.find(
+      (option) => option.id === "DK-P1-RESPONSIBILITY-RECORD-OPT-02",
+    );
+    assert.ok(selected);
+    const prepared = await sangtianDecisionAdapter.prepare(
+      fixture.workspace,
+      {
+        runId: "run.fallback-scene-authority",
+        turnNumber: 2,
+        action: selected.label,
+        selectedOption: selected,
+      },
+    );
+    assert.ok(prepared);
+    assert.equal(prepared.beatManifest.transition.transitionRequired, false);
+    assert.equal(prepared.fallbackDraft.slots.SCENE_TRANSITION, undefined);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }

@@ -8,8 +8,10 @@ import {
   settleDynamicPartOneAction,
 } from "../src/story-package/dynamic-kernel-lite-settlement.js";
 import {
+  completePartOneActionSettlement,
   createInitialPartOneState,
   partOneSceneForSection,
+  settlePartOneCurrentAction,
 } from "../src/story-package/part-one-runtime-engine.js";
 import { loadPlayablePartOneRuntimePackage } from "../src/story-package/playable-part-one-runtime.js";
 import type {
@@ -113,6 +115,62 @@ test("selection trace revision follows the authoritative turn rather than a lagg
   state.durableState.revision = 2;
   const workingSet = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 7);
   assert.equal(workingSet.kernelSelection.stateRevision, 7);
+});
+
+test("reaction WorkingSet cannot be overwritten by the final next-decision WorkingSet", () => {
+  const pkg = packageUnderTest();
+  const initial = createInitialPartOneState(pkg);
+  const current = settlePartOneCurrentAction(
+    pkg,
+    initial,
+    {
+      source: "RECOMMENDED",
+      decisionId: "opening_d1",
+      actionText: "opening_d1",
+    },
+    1,
+  );
+  const reactionWorkingSet = buildDynamicPartOneRuntimeWorkingSet(
+    pkg,
+    current.proposedState,
+    1,
+    {
+      pin: {
+        decisionKernelId: "DK-P1-EXECUTION-SCOPE",
+        decisionPointId: "DK-P1-EXECUTION-SCOPE",
+      },
+    },
+  );
+  const nextWorkingSet = buildDynamicPartOneRuntimeWorkingSet(
+    pkg,
+    current.proposedState,
+    1,
+    {
+      pin: {
+        decisionKernelId: "DK-P1-RESPONSIBILITY-RECORD",
+        decisionPointId: "DK-P1-RESPONSIBILITY-RECORD",
+      },
+    },
+  );
+  assert.notEqual(
+    reactionWorkingSet.decisionPoint.prompt,
+    nextWorkingSet.decisionPoint.prompt,
+  );
+
+  const settlement = completePartOneActionSettlement(
+    pkg,
+    current,
+    nextWorkingSet,
+    reactionWorkingSet,
+  );
+  assert.equal(
+    settlement.event.authoritativeNpcReactions[0]?.action,
+    reactionWorkingSet.decisionPoint.prompt,
+  );
+  assert.equal(
+    settlement.event.nextDecisionPoint.decisionPointId,
+    nextWorkingSet.decisionPoint.decisionPointId,
+  );
 });
 
 test("one malformed candidate is isolated instead of aborting another valid dynamic kernel", () => {

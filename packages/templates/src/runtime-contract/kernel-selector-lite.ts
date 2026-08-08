@@ -9,6 +9,7 @@ export const KERNEL_SELECTOR_LITE_WEIGHTS = {
   PENDING_PRESSURE: 20,
   ACTIVE_ARC: 10,
   PRESENT_PRESSURE_ACTOR: 4,
+  RECENT_REQUIREMENT_CONTINUITY: 20,
 } as const;
 
 const RUNTIME_IDENTITY_KEYS = new Set([
@@ -63,6 +64,8 @@ export type KernelSelectorLiteCandidate<TPayload = unknown> = {
   pendingPressureCount: number;
   activeArcCount: number;
   availablePressureActorCount: number;
+  /** Shared structured Requirements with the most recently settled Kernel. */
+  recentRequirementContinuityCount?: number;
   validAffordances: Array<KernelSelectorLiteAffordance<TPayload>>;
   rejectionCodes: string[];
 };
@@ -213,7 +216,9 @@ export function scoreKernelCandidate(candidate: KernelSelectorLiteCandidate): nu
     + candidate.pendingPressureCount * KERNEL_SELECTOR_LITE_WEIGHTS.PENDING_PRESSURE
     + candidate.activeArcCount * KERNEL_SELECTOR_LITE_WEIGHTS.ACTIVE_ARC
     + Math.min(candidate.availablePressureActorCount, 3)
-      * KERNEL_SELECTOR_LITE_WEIGHTS.PRESENT_PRESSURE_ACTOR;
+      * KERNEL_SELECTOR_LITE_WEIGHTS.PRESENT_PRESSURE_ACTOR
+    + (candidate.recentRequirementContinuityCount || 0)
+      * KERNEL_SELECTOR_LITE_WEIGHTS.RECENT_REQUIREMENT_CONTINUITY;
 }
 
 export function selectKernelLite<TPayload>(

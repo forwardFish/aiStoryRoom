@@ -204,6 +204,23 @@ test("runtime-generated transfer and event identities cannot manufacture Outcome
   );
 });
 
+test("recent structured Requirement continuity outranks a later outcome-distance tie", () => {
+  const [base] = neutralCandidates();
+  assert.ok(base);
+  const direct = structuredClone(base);
+  direct.kernelId = "kernel.direct-continuation";
+  direct.recentRequirementContinuityCount = 2;
+
+  const adjacent = structuredClone(base);
+  adjacent.kernelId = "kernel.adjacent-conflict";
+  adjacent.recentRequirementContinuityCount = 1;
+
+  const normal = selectKernelLite([adjacent, direct], "STATE-CONTINUITY");
+  const reversed = selectKernelLite([direct, adjacent], "STATE-CONTINUITY");
+  assert.equal(normal.selected?.kernelId, direct.kernelId);
+  assert.equal(reversed.selected?.kernelId, direct.kernelId);
+});
+
 test("duplicate outcomes are traced and cannot form a valid option pair", () => {
   const duplicate = outcome("action.first", "state:access=OPEN");
   const result = selectKernelLite([{

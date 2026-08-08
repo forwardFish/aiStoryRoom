@@ -98,17 +98,19 @@ export function settleDynamicPartOneAction(
     state,
     Math.max(0, turnNumber - 1),
   );
-  let plan = planNextTurn(
+  const reactionPlan = planNextTurn(
     pkg,
     causal.proposedState,
     turnNumber,
     recoverySurface,
   );
+  let plan = reactionPlan;
   let settlement = completeWithRecoverablePlan(
     pkg,
     causal,
     plan,
     recoverySurface,
+    reactionPlan,
   );
 
   const finalizedSelectionState = projectFinalizedPartOneSelectionState(
@@ -129,6 +131,7 @@ export function settleDynamicPartOneAction(
       causal,
       plan,
       recoverySurface,
+      reactionPlan,
     );
   }
 
@@ -152,12 +155,14 @@ function completeWithRecoverablePlan(
   causal: PartOneCurrentActionSettlement,
   plan: NextTurnPlan,
   recoverySurface: DynamicPartOneRuntimeWorkingSet,
+  reactionPlan: NextTurnPlan,
 ) {
   try {
     return completePartOneActionSettlement(
       pkg,
       causal,
       plan.workingSet,
+      reactionPlan.workingSet,
     );
   } catch (error) {
     if (plan.status === "RECOVERED") throw error;
@@ -172,7 +177,17 @@ function completeWithRecoverablePlan(
     plan.workingSet = recovered;
     plan.status = "RECOVERED";
     plan.failureCode = failureCode;
-    return completePartOneActionSettlement(pkg, causal, recovered);
+    if (plan === reactionPlan) {
+      reactionPlan.workingSet = recovered;
+      reactionPlan.status = "RECOVERED";
+      reactionPlan.failureCode = failureCode;
+    }
+    return completePartOneActionSettlement(
+      pkg,
+      causal,
+      recovered,
+      reactionPlan.workingSet,
+    );
   }
 }
 

@@ -2384,18 +2384,40 @@ test("authored decision state machine keeps curated choices across three committ
       (option) => option.id === "DK-P1-EXECUTION-SCOPE-OPT-01",
     );
     assert.ok(limitedTrial);
-    const authoredT02Delta = buildCausalDelta({
+    const publishedT02Delta = buildCausalDelta({
       turnId: "T02",
       action: limitedTrial.label,
       selectedOption: limitedTrial,
     });
     assert.equal(
+      publishedT02Delta.beatContract,
+      null,
+      "the published next WorkingSet is a decision surface, not current-action causal authority",
+    );
+    const limitedTrialPrepared = await sangtianDecisionAdapter.prepare(
+      workspace,
+      {
+        runId,
+        turnNumber: 2,
+        action: limitedTrial.label,
+        selectedOption: limitedTrial,
+      },
+    );
+    assert.ok(limitedTrialPrepared);
+    assert.ok(limitedTrialPrepared.selectedOption);
+    const settledT02Delta = buildCausalDelta({
+      turnId: "T02",
+      action: limitedTrial.label,
+      selectedOption: limitedTrialPrepared.selectedOption,
+    });
+    assert.ok(settledT02Delta.beatContract);
+    assert.equal(
       validateRequiredNarrativeFacts(
         String(provider.script.narrator[0] || ""),
-        authoredT02Delta,
+        settledT02Delta,
       ).some((warning) => warning.code === "MISSING_REQUIRED_DURABLE_RESULT"),
       true,
-      "the old free-running narration is invalid because it omits the server-selected next beat",
+      "the old free-running narration remains invalid against the settled current-action contract",
     );
     const secondResult = await runtime.processAction({
       runId,
@@ -2426,6 +2448,7 @@ test("authored decision state machine keeps curated choices across three committ
       selectedOption: jointSignature,
     });
     assert.ok(jointSignaturePrepared);
+    assert.ok(jointSignaturePrepared.selectedOption);
     const settledResponseTicket = jointSignaturePrepared.beatManifest.tickets.find(
       (ticket) => ticket.slot === "WORLD_PRESSURE",
     );
@@ -2437,7 +2460,7 @@ test("authored decision state machine keeps curated choices across three committ
     const jointSignatureContext = renderRuntimeNarratorCausalDelta(buildRuntimeCausalDelta({
       turnId: "T03",
       action: jointSignature.label,
-      selectedOption: jointSignature,
+      selectedOption: jointSignaturePrepared.selectedOption,
     }));
     assert.match(
       jointSignatureContext,

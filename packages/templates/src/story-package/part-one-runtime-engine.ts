@@ -519,6 +519,7 @@ export function completePartOneActionSettlement(
   pkg: PartOneRuntimePackage,
   current: PartOneCurrentActionSettlement,
   nextWorkingSet: PartOneRuntimeWorkingSet,
+  reactionWorkingSet: PartOneRuntimeWorkingSet = nextWorkingSet,
 ): PartOneActionSettlement {
   if (
     nextWorkingSet.packageHash !== pkg.immutableHash
@@ -526,6 +527,13 @@ export function completePartOneActionSettlement(
     || nextWorkingSet.turnNumber !== current.turnNumber
   ) {
     throw new Error("PART_ONE_NEXT_DECISION_SURFACE_MISMATCH");
+  }
+  if (
+    reactionWorkingSet.packageHash !== pkg.immutableHash
+    || reactionWorkingSet.section.sectionId !== current.proposedState.sectionId
+    || reactionWorkingSet.turnNumber !== current.turnNumber
+  ) {
+    throw new Error("PART_ONE_REACTION_SURFACE_MISMATCH");
   }
 
   const proposedState = clone(current.proposedState);
@@ -540,11 +548,11 @@ export function completePartOneActionSettlement(
   const authoritativeNpcReactions = buildAuthoritativeNpcReactions({
     eventId: current.eventId,
     sceneAfter,
-    nextWorkingSet,
+    reactionWorkingSet,
   });
   const authoritativeWorldMoves = buildAuthoritativeWorldMoves({
     dueConsequences: current.dueConsequences,
-    nextWorkingSet,
+    reactionWorkingSet,
     sectionTransitioned: current.sectionTransitioned,
     sectionBefore: current.sectionBefore,
     sectionAfter: current.sectionAfter,
@@ -1226,7 +1234,7 @@ function fallbackPayoffBeat(
 
 function buildAuthoritativeWorldMoves(input: {
   dueConsequences: PartOnePendingConsequenceState[];
-  nextWorkingSet: PartOneRuntimeWorkingSet;
+  reactionWorkingSet: PartOneRuntimeWorkingSet;
   sectionTransitioned: boolean;
   sectionBefore: string;
   sectionAfter: string;
@@ -1305,7 +1313,7 @@ function buildAuthoritativeWorldMoves(input: {
       };
     }
   }
-  const pressure = input.nextWorkingSet.nextDecisionPressure;
+  const pressure = input.reactionWorkingSet.nextDecisionPressure;
   const pressureActors = pressure
     ? [...(PRESSURE_WORLD_MOVE_ACTORS[pressure.pressureId] || [])]
     : [];
@@ -1701,15 +1709,21 @@ function buildNextStoryBeat(input: {
   // never carry an older stop point across a newly inserted continuation
   // decision. Bind the final slot to the selected decision point instead of
   // inferring compatibility from natural-language wording.
-  const playerVisibleFallback = {
-    ...(input.playerVisibleFallback || {
-      PLAYER_RESULT: playerOutcome,
-      ...(transitionMove?.action
-        ? { SCENE_TRANSITION: transitionMove.action }
-        : {}),
-      WORLD_PRESSURE: worldPressure
-    }),
-    DECISION_STOP: decisionStop
+  const authoredFallback = input.playerVisibleFallback || null;
+  const playerVisibleFallback: PartOnePlayerVisibleFallback = {
+    PLAYER_RESULT: String(
+      authoredFallback?.PLAYER_RESULT || playerOutcome,
+    ).trim(),
+    ...(authoredFallback?.IMMEDIATE_REACTION
+      ? { IMMEDIATE_REACTION: authoredFallback.IMMEDIATE_REACTION }
+      : {}),
+    ...(transitionMove?.action
+      ? { SCENE_TRANSITION: transitionMove.action }
+      : {}),
+    WORLD_PRESSURE: String(
+      authoredFallback?.WORLD_PRESSURE || worldPressure,
+    ).trim(),
+    DECISION_STOP: decisionStop,
   };
   const actorLabelsByRef = Object.fromEntries(
     input.sceneAfter.presentActorRefs.map((actorRef) => [actorRef, runtimeTargetFor(actorRef).label])
@@ -2497,18 +2511,18 @@ function buildAuthoritativeObservableFacts(
 function buildAuthoritativeNpcReactions(input: {
   eventId: string;
   sceneAfter: PartOneSceneState;
-  nextWorkingSet: PartOneRuntimeWorkingSet;
+  reactionWorkingSet: PartOneRuntimeWorkingSet;
 }): PartOneCommittedEvent["authoritativeNpcReactions"] {
-  // Continuation pressures are already emitted as authoritative world moves.
-  // Emitting the same pressure as an NPC reaction would duplicate the scene
-  // stop. A terminal handoff is player navigation, not an NPC action.
+  // Current reaction expression is frozen before any finalized-state replan.
+  // The final next WorkingSet owns only the next Decision Point.
   if (
-    input.nextWorkingSet.nextDecisionPressure
-    || input.nextWorkingSet.decisionPoint.decisionPointId === "PART-02-HANDOFF-PREVIEW"
+    input.reactionWorkingSet.nextDecisionPressure
+    || input.reactionWorkingSet.decisionPoint.decisionPointId
+      === "PART-02-HANDOFF-PREVIEW"
   ) {
     return [];
   }
-  const point = input.nextWorkingSet.decisionPoint;
+  const point = input.reactionWorkingSet.decisionPoint;
   const presentActors = new Set(input.sceneAfter.presentActorRefs);
   const actorRefs = point.actorRefs.filter((actorRef) => presentActors.has(actorRef));
   if (!actorRefs.length) {
