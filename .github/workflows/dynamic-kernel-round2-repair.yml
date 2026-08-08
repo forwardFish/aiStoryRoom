@@ -1,0 +1,203 @@
+name: Dynamic Kernel Round 2 Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/dynamic-kernel-round2-repair.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  repair-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      EVIDENCE_ROOT: /tmp/dynamic-kernel-round2
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=pending \
+            -f context="dynamic-kernel-lite/round2-repair" \
+            -f description="Requirement continuity and scene authority repair running" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Apply product repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          python .github/repair/dynamic-kernel-round2-repair.py
+          git diff --check
+          git diff --stat | tee "${EVIDENCE_ROOT}/logs/00-repair-diff.log"
+          git diff --binary > "${EVIDENCE_ROOT}/repair.patch"
+      - name: Install frozen workspace
+        shell: bash
+        run: pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
+      - name: Run focused and complete deterministic matrix
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          results="${EVIDENCE_ROOT}/results.tsv"
+          : > "${results}"
+          failed=0
+          run_gate() {
+            local label="$1"
+            shift
+            local log="${EVIDENCE_ROOT}/logs/${label}.log"
+            set +e
+            "$@" 2>&1 | tee "${log}"
+            local code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
+            if [ "${code}" -ne 0 ]; then failed=1; fi
+          }
+
+          run_gate 02-story-v4 pnpm test:story:v4
+          if [ "${failed}" -eq 0 ]; then
+            run_gate 03-templates-typecheck pnpm --filter @ai-story/templates typecheck
+            run_gate 04-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+            run_gate 05-templates-story-package pnpm --filter @ai-story/templates test:story-package
+            run_gate 06-templates-build pnpm --filter @ai-story/templates build
+            run_gate 07-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+            run_gate 08-openovel-test pnpm --filter @apps/openovel-runtime test
+            run_gate 09-openovel-build pnpm --filter @apps/openovel-runtime build
+            run_gate 10-prisma-generate pnpm db:generate
+            run_gate 11-api-solo pnpm --filter @apps/api test:solo-story-engine
+            run_gate 12-api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+            run_gate 13-branch-persistence pnpm test:story:branch-persistence
+            run_gate 14-story-options pnpm test:story:options
+            run_gate 15-story-convergence pnpm test:story:convergence
+          fi
+
+          if [ "${failed}" -eq 0 ]; then
+            printf 'pass\n' > "${EVIDENCE_ROOT}/status.txt"
+          else
+            printf 'fail\n' > "${EVIDENCE_ROOT}/status.txt"
+          fi
+      - name: Summarize deterministic evidence
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          root = Path(os.environ["EVIDENCE_ROOT"])
+          rows = []
+          tap = {
+              "tests": re.compile(r"^# tests (\d+)$", re.MULTILINE),
+              "pass": re.compile(r"^# pass (\d+)$", re.MULTILINE),
+              "fail": re.compile(r"^# fail (\d+)$", re.MULTILINE),
+              "skip": re.compile(r"^# skipped (\d+)$", re.MULTILINE),
+              "todo": re.compile(r"^# todo (\d+)$", re.MULTILINE),
+          }
+          results = root / "results.tsv"
+          if results.exists():
+              for line in results.read_text().splitlines():
+                  label, code, log_path = line.split("\t", 2)
+                  text = Path(log_path).read_text(errors="replace") if Path(log_path).exists() else ""
+                  row = {"label": label, "exitCode": int(code), "logPath": log_path}
+                  for key, pattern in tap.items():
+                      values = pattern.findall(text)
+                      row[key] = int(values[-1]) if values else None
+                  rows.append(row)
+          summary = {
+              "inputSha": os.environ["GITHUB_SHA"],
+              "status": (root / "status.txt").read_text().strip()
+                  if (root / "status.txt").exists() else "missing",
+              "commands": rows,
+              "totals": {
+                  key: sum(row[key] or 0 for row in rows)
+                  for key in ["tests", "pass", "fail", "skip", "todo"]
+              },
+          }
+          (root / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+          PY
+      - name: Commit tested product tree and remove repair scaffolding
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "${EVIDENCE_ROOT}/status.txt"
+          test "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            packages/templates/src/runtime-contract/kernel-selector-lite.ts \
+            packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts \
+            packages/templates/src/story-package/dynamic-kernel-lite-settlement.ts \
+            packages/templates/src/story-package/part-one-runtime-engine.ts \
+            packages/templates/tests/kernel-selector-lite.test.ts \
+            packages/templates/tests/part-one-dynamic-kernel-lite.test.ts \
+            apps/openovel-runtime/src/sangtian-decisions-base.ts \
+            apps/openovel-runtime/tests/sangtian-dynamic-kernel-production.spec.ts
+          mapfile -t repair_files < <(git ls-files '.github/repair/*dynamic-kernel*')
+          if [ "${#repair_files[@]}" -gt 0 ]; then
+            git rm -f -- "${repair_files[@]}"
+          fi
+          mapfile -t workflow_files < <(git ls-files '.github/workflows/dynamic-kernel-*')
+          if [ "${#workflow_files[@]}" -gt 0 ]; then
+            git rm -f -- "${workflow_files[@]}"
+          fi
+          git rm -f --ignore-unmatch docs/.architecture-probe-marker
+          git diff --cached --check
+          git commit -m "fix(kernel-lite): preserve causal routing and scene authority"
+          final_sha="$(git rev-parse HEAD)"
+          printf '%s\n' "${final_sha}" > "${EVIDENCE_ROOT}/final-sha.txt"
+          git show --stat --oneline --decorate HEAD \
+            > "${EVIDENCE_ROOT}/final-commit.txt"
+          git status --short > "${EVIDENCE_ROOT}/post-commit-status.txt"
+          test ! -s "${EVIDENCE_ROOT}/post-commit-status.txt"
+      - name: Upload deterministic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-kernel-round2-${{ github.sha }}
+          path: /tmp/dynamic-kernel-round2/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Push tested product commit
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "${EVIDENCE_ROOT}/final-sha.txt"
+          git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
+      - name: Publish final status
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=failure
+          description="Round-two deterministic repair failed"
+          if [ -f "${EVIDENCE_ROOT}/final-sha.txt" ]; then
+            state=success
+            description="Round-two deterministic repair passed and was pushed"
+          fi
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="${state}" \
+            -f context="dynamic-kernel-lite/round2-repair" \
+            -f description="${description}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
