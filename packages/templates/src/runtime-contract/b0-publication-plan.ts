@@ -6,7 +6,7 @@ import type {
   B0StateMutationV1,
   B0StructuredResultV1,
 } from "@ai-story/shared";
-import { validateB0SettlementResolutionV1 } from "../../../shared/dist/index.js";
+import { validateB0SettlementResolutionV1 } from "@ai-story/shared";
 import { hashResolutionPayload } from "./b0-batch-settlement";
 import { hashCanonicalB0Value } from "./b0-settlement";
 import {

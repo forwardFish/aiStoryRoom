@@ -6,7 +6,7 @@ import type {
   B0SettlementModeV1,
   B0WindowStatusV1,
 } from "@ai-story/shared";
-import { validateB0RoomRulesetV1 } from "../../../shared/dist/index.js";
+import { validateB0RoomRulesetV1 } from "@ai-story/shared";
 
 const WINDOW_TRANSITIONS: Readonly<Record<B0WindowStatusV1, readonly B0WindowStatusV1[]>> = Object.freeze({
   OPEN: ["LOCKED", "ABORTED"],

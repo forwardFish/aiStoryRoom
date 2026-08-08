@@ -20,7 +20,7 @@ import {
   validateB0SettlementBatchV1,
   validateB0SettlementResolutionV1,
   validateB0SettlementSnapshotV1,
-} from "../../../shared/dist/index.js";
+} from "@ai-story/shared";
 import { hashB0RoomRulesetV1, hashCanonicalB0Value } from "./b0-settlement";
 
 export type CaptureB0SnapshotInputV1 = {
