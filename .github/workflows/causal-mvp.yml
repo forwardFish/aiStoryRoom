@@ -1,31 +1,28 @@
-name: Causal MVP
+name: B0 Candidate Engineering Gates
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/causal-mvp.yml"
-      - "apps/api/**"
-      - "apps/web/**"
-      - "apps/openovel-runtime/**"
-      - "packages/shared/**"
-      - "packages/templates/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
   push:
     branches:
-      - agent/causal-mvp
       - codex/chatgpt-pro-maneuver-evidence-v1
 
 permissions:
   contents: read
 
+concurrency:
+  group: b0-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  verify:
+  focused-contracts:
+    name: Focused B0 contracts
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Verify exact push checkout
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -33,57 +30,133 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm db:generate
-      - run: pnpm --filter @ai-story/shared typecheck
-      - run: pnpm --filter @ai-story/templates typecheck
-      - run: pnpm --filter @ai-story/templates test:b0-contract
-      - run: pnpm --filter @ai-story/templates test:b0-batch
-      - run: pnpm --filter @ai-story/templates test:b0-multi
-      - run: pnpm --filter @ai-story/templates test:b0-audience
-      - run: pnpm --filter @ai-story/shared build
-      - run: pnpm --filter @ai-story/templates build
-      - run: pnpm --filter @apps/openovel-runtime test:b0-runtime
-      - run: pnpm --filter @apps/openovel-runtime typecheck
-      - run: pnpm --filter @apps/api test:b0-batch
-      - run: pnpm --filter @apps/api test:b0-window
-      - run: pnpm --filter @apps/api test:b0-player-window
-      - run: pnpm --filter @apps/api test:b0-pipeline
-      - run: pnpm --filter @apps/api test:b0-ops
-      - run: pnpm --filter @apps/api typecheck
-      - run: pnpm --filter @apps/web typecheck
-      - run: pnpm --filter @apps/web test:b0-window
-      - name: Use Node 24 for the repository's browser regression mode
-        uses: actions/setup-node@v4
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      - name: Shared typecheck
+        run: pnpm --filter @ai-story/shared typecheck
+      - name: Templates typecheck
+        run: pnpm --filter @ai-story/templates typecheck
+      - name: B0 contract
+        run: pnpm --filter @ai-story/templates test:b0-contract
+      - name: B0 batch
+        run: pnpm --filter @ai-story/templates test:b0-batch
+      - name: B0 multi-role
+        run: pnpm --filter @ai-story/templates test:b0-multi
+      - name: B0 typed audience
+        run: pnpm --filter @ai-story/templates test:b0-audience
+      - name: Shared build
+        run: pnpm --filter @ai-story/shared build
+      - name: Templates build
+        run: pnpm --filter @ai-story/templates build
+      - name: OpenNovel B0 runtime
+        run: pnpm --filter @apps/openovel-runtime test:b0-runtime
+      - name: OpenNovel typecheck
+        run: pnpm --filter @apps/openovel-runtime typecheck
+      - name: API B0 commit
+        run: pnpm --filter @apps/api test:b0-batch
+      - name: API B0 window coordinator
+        run: pnpm --filter @apps/api test:b0-window
+      - name: API B0 player window
+        run: pnpm --filter @apps/api test:b0-player-window
+      - name: API B0 worker and outbox
+        run: pnpm --filter @apps/api test:b0-pipeline
+      - name: API B0 operations
+        run: pnpm --filter @apps/api test:b0-ops
+      - name: API typecheck
+        run: pnpm --filter @apps/api typecheck
+      - name: Web typecheck
+        run: pnpm --filter @apps/web typecheck
+      - name: Web B0 window
+        run: pnpm --filter @apps/web test:b0-window
+
+  full-api-story-build:
+    name: API, Story V4, Maneuver and builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
         with:
-          node-version: 24
-      - name: Full Web regression
-        run: |
-          set -o pipefail
-          pnpm --filter @apps/web test 2>&1 | tee /tmp/b0-web-regression.log
-      - name: Upload Web regression log
-        if: always()
-        uses: actions/upload-artifact@v4
+          ref: ${{ github.sha }}
+      - name: Verify exact push checkout
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: pnpm/action-setup@v4
         with:
-          name: b0-web-regression-${{ github.sha }}
-          path: /tmp/b0-web-regression.log
-          if-no-files-found: error
-          retention-days: 14
-      - name: Restore Node 22 for the aggregate gate
-        if: always()
-        uses: actions/setup-node@v4
+          version: 10
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Aggregate regression
-        if: always()
-        run: |
-          set -o pipefail
-          pnpm test:causal 2>&1 | tee /tmp/b0-aggregate-regression.log
-      - name: Upload aggregate regression log
-        if: always()
-        uses: actions/upload-artifact@v4
+          cache: pnpm
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      - name: Root typecheck
+        run: pnpm typecheck
+      - name: Full API regression
+        run: pnpm --filter @apps/api test
+      - name: Story V4 contracts and runtime
+        run: pnpm test:story:v4
+      - name: Maneuver acceptance matrix
+        run: pnpm test:maneuver
+      - name: OpenNovel build
+        run: pnpm --filter @apps/openovel-runtime build
+      - name: Web build
+        run: pnpm --filter @apps/web build
+      - name: Root build
+        run: pnpm build
+
+  full-web:
+    name: Full Web regression on Node 24
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
         with:
-          name: b0-aggregate-regression-${{ github.sha }}
-          path: /tmp/b0-aggregate-regression.log
-          if-no-files-found: error
-          retention-days: 14
+          ref: ${{ github.sha }}
+      - name: Verify exact push checkout
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      - name: Web typecheck
+        run: pnpm --filter @apps/web typecheck
+      - name: Web B0 window
+        run: pnpm --filter @apps/web test:b0-window
+      - name: Full Web regression
+        run: pnpm --filter @apps/web test
+      - name: Web build
+        run: pnpm --filter @apps/web build
+
+  causal-aggregate:
+    name: Causal aggregate on Node 24
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Verify exact push checkout
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      - name: Causal aggregate
+        run: pnpm test:causal
