@@ -1,0 +1,92 @@
+name: B0 One-Shot Shared Module Boundary Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: b0-one-shot-module-boundary-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Replace sibling dist imports with the workspace package boundary
+        id: repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              Path("packages/templates/src/runtime-contract/b0-settlement.ts"): (
+                  'import { validateB0RoomRulesetV1 } from "../../../shared/dist/index.js";',
+                  'import { validateB0RoomRulesetV1 } from "@ai-story/shared";',
+              ),
+              Path("packages/templates/src/runtime-contract/b0-batch-settlement.ts"): (
+                  '} from "../../../shared/dist/index.js";',
+                  '} from "@ai-story/shared";',
+              ),
+              Path("packages/templates/src/runtime-contract/b0-publication-plan.ts"): (
+                  'import { validateB0SettlementResolutionV1 } from "../../../shared/dist/index.js";',
+                  'import { validateB0SettlementResolutionV1 } from "@ai-story/shared";',
+              ),
+          }
+
+          changed = []
+          for path, (old, new) in replacements.items():
+              source = path.read_text(encoding="utf-8")
+              if old in source:
+                  if source.count(old) != 1:
+                      raise SystemExit(f"expected exactly one match in {path}")
+                  path.write_text(source.replace(old, new), encoding="utf-8")
+                  changed.append(str(path))
+              elif new not in source:
+                  raise SystemExit(f"neither old nor expected new import found in {path}")
+
+          leftovers = []
+          for path in Path("packages/templates/src").rglob("*.ts"):
+              if "../../../shared/dist/index.js" in path.read_text(encoding="utf-8"):
+                  leftovers.append(str(path))
+          if leftovers:
+              raise SystemExit("sibling dist imports remain: " + ", ".join(leftovers))
+
+          Path("/tmp/b0-repair-changed").write_text("\n".join(changed), encoding="utf-8")
+          PY
+          if [ -s /tmp/b0-repair-changed ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            cat /tmp/b0-repair-changed
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Module boundary is already repaired."
+          fi
+      - name: Commit the exact repair as a normal fast-forward
+        if: steps.repair.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          remote_sha="$(git rev-parse "origin/$GITHUB_REF_NAME")"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "Ref moved; refusing to commit a stale repair." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/templates/src/runtime-contract/b0-settlement.ts \
+                  packages/templates/src/runtime-contract/b0-batch-settlement.ts \
+                  packages/templates/src/runtime-contract/b0-publication-plan.ts
+          git diff --cached --check
+          git commit -m "fix(b0): use shared workspace package at runtime"
+          git push origin "HEAD:$GITHUB_REF_NAME"
