@@ -127,7 +127,7 @@ test("ordinary player actions clear any residual context for the same run and re
   const gateway = new DefaultActionGateway();
   gateway.validate({
     runId: "neutral-run-plain",
-    rawAction: decoratedAction("First action"),
+    rawAction: decoratedAction("First action", 3),
     currentStateRevision: 3,
   });
   gateway.validate({
