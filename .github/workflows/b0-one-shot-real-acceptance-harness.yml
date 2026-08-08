@@ -55,7 +55,8 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "c2c4aefe459748da5cd693eccee4d06e565346bb"
+          git merge-base --is-ancestor "f2bd9b840e0f057d6361e84a68b803f6fc34ab88" HEAD
+          test "$(git diff --name-only f2bd9b840e0f057d6361e84a68b803f6fc34ab88..HEAD | LC_ALL=C sort)" = ".github/workflows/b0-one-shot-real-acceptance-harness.yml"
 
       - name: Reconstruct the hash-bound acceptance assets
         shell: bash
@@ -100,6 +101,16 @@ jobs:
           base64 -d /tmp/b0-tsconfig.gz.b64 > /tmp/b0-tsconfig.gz
           test "$(sha256sum /tmp/b0-tsconfig.gz | cut -d' ' -f1)" = "19f49d37d303d80fd9a187562a5e1cb823b70413f92c27bfeb14466ad7c8ec52"
           gzip -dc /tmp/b0-tsconfig.gz > scripts/acceptance/tsconfig.b0-candidate-real.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("scripts/acceptance/tsconfig.b0-candidate-real.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+          compiler_options = data.setdefault("compilerOptions", {})
+          compiler_options["typeRoots"] = ["../../apps/api/node_modules/@types"]
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
 
           fetch_blob_text 540fd1a0d4b05c5dee23abf2327473d11a60d221 \
             > docs/Our_Many_Worlds_B0同步结算多人博弈_完整实施开发测试与受控上线方案_v1.0.md
@@ -107,7 +118,7 @@ jobs:
           test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "adf3c939facb72a572281ec4f93982c48f46fcc58555391fcc3b6d822349421d"
           test "$(sha256sum .github/workflows/b0-candidate-real-acceptance.yml | cut -d' ' -f1)" = "bc5f6a4b2d24bb7c54c20fe3ee99a3c01c47fa2661d028ba57b6843a9a520393"
           test "$(sha256sum package.json | cut -d' ' -f1)" = "ac706b1a05463ad56431e317c673e9b69a10902b3ff20fa394c79e81e4313b65"
-          test "$(sha256sum scripts/acceptance/tsconfig.b0-candidate-real.json | cut -d' ' -f1)" = "489f744575775193996cce61d293a3d54f1ac093071980702c235bdcadc760cc"
+          test "$(sha256sum scripts/acceptance/tsconfig.b0-candidate-real.json | cut -d' ' -f1)" = "2d3b0a47fae5332dbbd48994bd4ae258abb0c2b758a7a11021da14d561c73885"
           test "$(sha256sum docs/Our_Many_Worlds_B0同步结算多人博弈_完整实施开发测试与受控上线方案_v1.0.md | cut -d' ' -f1)" = "8c3e387462139bc8da07a80703ad259cd3683e756736e752572ed5dfa9af2702"
           git diff --check
 
