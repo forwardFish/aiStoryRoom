@@ -1034,7 +1034,17 @@ test("is not imported by API or web player paths", () => {
   for (const root of roots) {
     for (const file of walk(root)) {
       if (!/\.(?:ts|js|mjs)$/.test(file)) continue;
-      assert.equal(readFileSync(file, "utf8").includes("openovel-runtime"), false, file);
+      const source = readFileSync(file, "utf8");
+      const specifierPattern = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s*)["']([^"']+)["']/gmu;
+      for (const match of source.matchAll(specifierPattern)) {
+        const specifier = (match[1] ?? "").replaceAll("\\", "/");
+        const importsCompilerPackage =
+          specifier === "@ai-story/openovel-runtime" ||
+          specifier.startsWith("@ai-story/openovel-runtime/") ||
+          specifier === "openovel-runtime" ||
+          /(?:^|\/)packages\/openovel-runtime(?:\/|$)/u.test(specifier);
+        assert.equal(importsCompilerPackage, false, `${file}: ${specifier}`);
+      }
     }
   }
 });
