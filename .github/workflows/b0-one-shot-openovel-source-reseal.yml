@@ -7,16 +7,30 @@ on:
 
 permissions:
   contents: write
+  statuses: write
 
 concurrency:
   group: openovel-one-shot-source-reseal
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   reseal:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Publish reseal run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "openovel/reseal",
+              description: `source evidence reseal running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
@@ -42,49 +56,53 @@ jobs:
           import json
           from pathlib import Path
 
+          expected_actual = "87df165c22e22335e49dd1ea80654e9d2ae731e3034ffc2d95e9cfdf513493df"
+          old = "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238"
           authoring_path = Path("packages/openovel-runtime/data/sangtian/evidence-authoring.json")
           test_path = Path("packages/openovel-runtime/tests/evidence.spec.ts")
+          manifest_path = Path("packages/openovel-runtime/generated/source-evidence/manifest.json")
+          review_path = Path("packages/openovel-runtime/reviews/sangtian-evidence-review.json")
+          bible_path = Path("packages/openovel-runtime/generated/world-bible/world-bible.json")
           authoring = json.loads(authoring_path.read_text(encoding="utf-8"))
           source_path = Path(authoring["source"]["path"])
           source_bytes = source_path.read_bytes()
           actual = hashlib.sha256(source_bytes).hexdigest()
-          expected = authoring["source"]["sha256"]
-          if actual != "87df165c22e22335e49dd1ea80654e9d2ae731e3034ffc2d95e9cfdf513493df":
+          if actual != expected_actual:
               raise SystemExit(f"canonical source bytes changed unexpectedly: {actual}")
           line_count = len(source_bytes.decode("utf-8").splitlines())
-          if line_count != 30547:
-              raise SystemExit(f"canonical source line count changed unexpectedly: {line_count}")
-          if authoring["source"]["expectedChapterCount"] != 39:
-              raise SystemExit("canonical source chapter contract changed unexpectedly")
+          chapter_contract = authoring["source"]["expectedChapterCount"]
+          if chapter_contract != 39:
+              raise SystemExit(f"canonical chapter contract changed unexpectedly: {chapter_contract}")
 
           test_source = test_path.read_text(encoding="utf-8")
-          needs_reseal = expected != actual or actual not in test_source
+          current_values = [
+              authoring["source"]["sha256"],
+              json.loads(manifest_path.read_text(encoding="utf-8"))["source"]["sha256"],
+              json.loads(review_path.read_text(encoding="utf-8"))["sourceSha256"],
+              json.loads(bible_path.read_text(encoding="utf-8"))["sourceEvidence"]["sourceSha256"],
+          ]
+          needs_reseal = any(value != actual for value in current_values) or actual not in test_source
           if needs_reseal:
               authoring["source"]["sha256"] = actual
               authoring_path.write_text(json.dumps(authoring, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-              old_literal = "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238"
-              if old_literal not in test_source and actual not in test_source:
-                  raise SystemExit("evidence test source hash assertion is neither old nor current")
-              test_path.write_text(test_source.replace(old_literal, actual), encoding="utf-8")
+              if actual not in test_source:
+                  if old not in test_source:
+                      raise SystemExit("evidence test source hash assertion is neither old nor current")
+                  test_path.write_text(test_source.replace(old, actual), encoding="utf-8")
 
-          Path("/tmp/openovel-source-diagnostics.json").write_text(
-              json.dumps({
-                  "sourcePath": str(source_path),
-                  "gitBlobSha": "8f7594e64ee62c4114b967b635d3426c630ddb2e",
-                  "previousSha256": expected,
-                  "actualSha256": actual,
-                  "lineCount": line_count,
-                  "expectedChapterCount": authoring["source"]["expectedChapterCount"],
-                  "needsReseal": needs_reseal,
-              }, ensure_ascii=False, indent=2) + "\n",
-              encoding="utf-8",
-          )
-          print(Path("/tmp/openovel-source-diagnostics.json").read_text(encoding="utf-8"))
-          with Path("/tmp/openovel-needs-reseal").open("w", encoding="utf-8") as handle:
-              handle.write("true" if needs_reseal else "false")
+          print(json.dumps({
+              "sourcePath": str(source_path),
+              "gitBlobSha": "8f7594e64ee62c4114b967b635d3426c630ddb2e",
+              "previousValues": current_values,
+              "actualSha256": actual,
+              "lineCount": line_count,
+              "expectedChapterCount": chapter_contract,
+              "needsReseal": needs_reseal,
+          }, ensure_ascii=False, indent=2))
+          Path("/tmp/openovel-needs-reseal").write_text("true" if needs_reseal else "false", encoding="utf-8")
           PY
           echo "changed=$(cat /tmp/openovel-needs-reseal)" >> "$GITHUB_OUTPUT"
-      - name: Rebuild all source-derived evidence assets
+      - name: Rebuild every source-derived evidence asset
         if: steps.prepare.outputs.changed == 'true'
         run: |
           set -euo pipefail
@@ -144,3 +162,20 @@ jobs:
           fi
           git commit -m "fix(openovel): reseal evidence to canonical source bytes"
           git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Publish reseal outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "openovel/reseal",
+              description: `${success ? "reseal passed" : "reseal failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
