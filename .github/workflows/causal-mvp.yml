@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - codex/chatgpt-pro-maneuver-evidence-v1
+    paths-ignore:
+      - "docs/auto-execute/evidence/b0/ci/**"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: b0-candidate-${{ github.ref }}
@@ -160,3 +162,63 @@ jobs:
         run: pnpm db:generate
       - name: Causal aggregate
         run: pnpm test:causal
+
+  record-outcome:
+    name: Record exact push outcome
+    if: always()
+    needs:
+      - focused-contracts
+      - full-api-story-build
+      - full-web
+      - causal-aggregate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Persist run pointer when this SHA is still live
+        env:
+          FOCUSED_RESULT: ${{ needs.focused-contracts.result }}
+          FULL_API_STORY_BUILD_RESULT: ${{ needs.full-api-story-build.result }}
+          FULL_WEB_RESULT: ${{ needs.full-web.result }}
+          CAUSAL_AGGREGATE_RESULT: ${{ needs.causal-aggregate.result }}
+        run: |
+          set -euo pipefail
+          git fetch origin "${GITHUB_REF_NAME}"
+          remote_sha="$(git rev-parse "origin/${GITHUB_REF_NAME}")"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "Not recording stale run: remote=$remote_sha run=$GITHUB_SHA"
+            exit 0
+          fi
+          status=PASS
+          for result in "$FOCUSED_RESULT" "$FULL_API_STORY_BUILD_RESULT" "$FULL_WEB_RESULT" "$CAUSAL_AGGREGATE_RESULT"; do
+            if [ "$result" != success ]; then status=FAIL; fi
+          done
+          created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          destination="docs/auto-execute/evidence/b0/ci/${GITHUB_SHA}.json"
+          mkdir -p "$(dirname "$destination")"
+          cat > "$destination" <<JSON
+          {
+            "schemaVersion": 1,
+            "status": "$status",
+            "event": "$GITHUB_EVENT_NAME",
+            "ref": "$GITHUB_REF",
+            "testedCodeSha": "$GITHUB_SHA",
+            "workflow": "$GITHUB_WORKFLOW",
+            "runId": $GITHUB_RUN_ID,
+            "runAttempt": $GITHUB_RUN_ATTEMPT,
+            "createdAt": "$created_at",
+            "jobs": {
+              "focusedContracts": "$FOCUSED_RESULT",
+              "fullApiStoryBuild": "$FULL_API_STORY_BUILD_RESULT",
+              "fullWeb": "$FULL_WEB_RESULT",
+              "causalAggregate": "$CAUSAL_AGGREGATE_RESULT"
+            }
+          }
+          JSON
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$destination"
+          git commit -m "docs(b0): record engineering gates for ${GITHUB_SHA} [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
