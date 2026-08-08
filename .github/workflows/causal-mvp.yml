@@ -58,7 +58,17 @@ jobs:
         with:
           node-version: 24
       - name: Full Web regression
-        run: pnpm --filter @apps/web test
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/web test 2>&1 | tee /tmp/b0-web-regression.log
+      - name: Upload Web regression log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-web-regression-${{ github.sha }}
+          path: /tmp/b0-web-regression.log
+          if-no-files-found: error
+          retention-days: 14
       - name: Restore Node 22 for the aggregate gate
         if: always()
         uses: actions/setup-node@v4
@@ -66,4 +76,14 @@ jobs:
           node-version: 22
       - name: Aggregate regression
         if: always()
-        run: pnpm test:causal
+        run: |
+          set -o pipefail
+          pnpm test:causal 2>&1 | tee /tmp/b0-aggregate-regression.log
+      - name: Upload aggregate regression log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-aggregate-regression-${{ github.sha }}
+          path: /tmp/b0-aggregate-regression.log
+          if-no-files-found: error
+          retention-days: 14
