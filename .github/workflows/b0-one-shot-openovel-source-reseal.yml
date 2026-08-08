@@ -1,0 +1,146 @@
+name: OpenNovel One-Shot Source Evidence Reseal
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: openovel-one-shot-source-reseal
+  cancel-in-progress: false
+
+jobs:
+  reseal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Rebind the fail-closed manifest to the unchanged canonical source blob
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          from pathlib import Path
+
+          authoring_path = Path("packages/openovel-runtime/data/sangtian/evidence-authoring.json")
+          test_path = Path("packages/openovel-runtime/tests/evidence.spec.ts")
+          authoring = json.loads(authoring_path.read_text(encoding="utf-8"))
+          source_path = Path(authoring["source"]["path"])
+          source_bytes = source_path.read_bytes()
+          actual = hashlib.sha256(source_bytes).hexdigest()
+          expected = authoring["source"]["sha256"]
+          if actual != "87df165c22e22335e49dd1ea80654e9d2ae731e3034ffc2d95e9cfdf513493df":
+              raise SystemExit(f"canonical source bytes changed unexpectedly: {actual}")
+          line_count = len(source_bytes.decode("utf-8").splitlines())
+          if line_count != 30547:
+              raise SystemExit(f"canonical source line count changed unexpectedly: {line_count}")
+          if authoring["source"]["expectedChapterCount"] != 39:
+              raise SystemExit("canonical source chapter contract changed unexpectedly")
+
+          test_source = test_path.read_text(encoding="utf-8")
+          needs_reseal = expected != actual or actual not in test_source
+          if needs_reseal:
+              authoring["source"]["sha256"] = actual
+              authoring_path.write_text(json.dumps(authoring, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+              old_literal = "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238"
+              if old_literal not in test_source and actual not in test_source:
+                  raise SystemExit("evidence test source hash assertion is neither old nor current")
+              test_path.write_text(test_source.replace(old_literal, actual), encoding="utf-8")
+
+          Path("/tmp/openovel-source-diagnostics.json").write_text(
+              json.dumps({
+                  "sourcePath": str(source_path),
+                  "gitBlobSha": "8f7594e64ee62c4114b967b635d3426c630ddb2e",
+                  "previousSha256": expected,
+                  "actualSha256": actual,
+                  "lineCount": line_count,
+                  "expectedChapterCount": authoring["source"]["expectedChapterCount"],
+                  "needsReseal": needs_reseal,
+              }, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(Path("/tmp/openovel-source-diagnostics.json").read_text(encoding="utf-8"))
+          with Path("/tmp/openovel-needs-reseal").open("w", encoding="utf-8") as handle:
+              handle.write("true" if needs_reseal else "false")
+          PY
+          echo "changed=$(cat /tmp/openovel-needs-reseal)" >> "$GITHUB_OUTPUT"
+      - name: Rebuild all source-derived evidence assets
+        if: steps.prepare.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/openovel-runtime evidence:build
+          pnpm --filter @ai-story/openovel-runtime evidence:review:init
+          pnpm --filter @ai-story/openovel-runtime world-bible:build
+      - name: Verify the complete OpenNovel compiler contract
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/openovel-runtime test
+          pnpm --filter @ai-story/openovel-runtime typecheck
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = "87df165c22e22335e49dd1ea80654e9d2ae731e3034ffc2d95e9cfdf513493df"
+          authoring = json.loads(Path("packages/openovel-runtime/data/sangtian/evidence-authoring.json").read_text(encoding="utf-8"))
+          manifest = json.loads(Path("packages/openovel-runtime/generated/source-evidence/manifest.json").read_text(encoding="utf-8"))
+          queue = json.loads(Path("packages/openovel-runtime/reviews/sangtian-evidence-review.json").read_text(encoding="utf-8"))
+          bible = json.loads(Path("packages/openovel-runtime/generated/world-bible/world-bible.json").read_text(encoding="utf-8"))
+          values = {
+              "authoring": authoring["source"]["sha256"],
+              "manifest": manifest["source"]["sha256"],
+              "reviewQueue": queue["sourceSha256"],
+              "worldBible": bible["sourceEvidence"]["sourceSha256"],
+          }
+          if any(value != expected for value in values.values()):
+              raise SystemExit(f"source hash propagation incomplete: {values}")
+          if manifest["source"]["lineCount"] != 30547 or manifest["source"]["chapterCount"] != 39:
+              raise SystemExit(f"source structural contract changed: {manifest['source']}")
+          print(json.dumps(values, indent=2))
+          PY
+      - name: Commit regenerated fail-closed assets as an ordinary fast-forward
+        if: steps.prepare.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          remote_sha="$(git rev-parse "origin/$GITHUB_REF_NAME")"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "Ref moved; refusing to commit a stale reseal." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            packages/openovel-runtime/data/sangtian/evidence-authoring.json \
+            packages/openovel-runtime/generated/source-evidence \
+            packages/openovel-runtime/reviews/sangtian-evidence-review.json \
+            packages/openovel-runtime/generated/world-bible \
+            packages/openovel-runtime/tests/evidence.spec.ts
+          git diff --cached --check
+          git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo "Expected a reseal diff but none was produced." >&2
+            exit 1
+          fi
+          git commit -m "fix(openovel): reseal evidence to canonical source bytes"
+          git push origin "HEAD:$GITHUB_REF_NAME"
