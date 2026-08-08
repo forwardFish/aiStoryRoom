@@ -26,7 +26,7 @@ test("user-facing surfaces use the Our Many Worlds brand and tagline", async () 
   assert.match(standardHeader, /<strong>Our Many Worlds<\/strong>/);
   assert.match(standardHeader, /<small>Real players\. Living worlds\.<\/small>/);
   assert.match(credits, /<standard-page-header back-href="\/" dynamic-return>/);
-  assert.match(worlds, /Explore Worlds \| Our Many Worlds/);
+  assert.match(worlds, /<title>AI Story Worlds to Play Solo or Multiplayer \| Our Many Worlds<\/title>/);
   assert.match(roleSelect, /renderRoomSelectionPage/);
   assert.doesNotMatch(roleSelectionView, /mw-room-brand|<strong>Our Many Worlds<\/strong>/);
 
