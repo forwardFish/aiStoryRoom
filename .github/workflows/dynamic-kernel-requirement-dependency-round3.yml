@@ -1,5 +1,6 @@
 name: Dynamic Kernel Requirement Dependency Round 3
 
+# Retry after making the generated transition regression order-independent.
 on:
   push:
     branches:
