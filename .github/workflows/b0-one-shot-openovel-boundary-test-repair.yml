@@ -1,0 +1,125 @@
+name: OpenNovel One-Shot Compiler Boundary Test Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: openovel-one-shot-boundary-test-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Publish repair run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "openovel/boundary-test-repair",
+              description: `boundary test repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Replace substring scan with module-specifier boundary validation
+        id: patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("packages/openovel-runtime/tests/context.spec.ts")
+          source = path.read_text(encoding="utf-8")
+          old = '''test("is not imported by API or web player paths", () => {
+            const { paths } = setup();
+            const roots = [join(paths.repoRoot, "apps", "api", "src"), join(paths.repoRoot, "apps", "web", "src")];
+            for (const root of roots) {
+              for (const file of walk(root)) {
+                if (!/\\.(?:ts|js|mjs)$/.test(file)) continue;
+                assert.equal(readFileSync(file, "utf8").includes("openovel-runtime"), false, file);
+              }
+            }
+          });'''
+          new = '''test("is not imported by API or web player paths", () => {
+            const { paths } = setup();
+            const roots = [join(paths.repoRoot, "apps", "api", "src"), join(paths.repoRoot, "apps", "web", "src")];
+            for (const root of roots) {
+              for (const file of walk(root)) {
+                if (!/\\.(?:ts|js|mjs)$/.test(file)) continue;
+                const source = readFileSync(file, "utf8");
+                const specifierPattern = /(?:\\bfrom\\s*|\\bimport\\s*\\(\\s*|\\brequire\\s*\\(\\s*|^\\s*import\\s*)["']([^"']+)["']/gmu;
+                for (const match of source.matchAll(specifierPattern)) {
+                  const specifier = (match[1] ?? "").replaceAll("\\\\", "/");
+                  const importsCompilerPackage =
+                    specifier === "@ai-story/openovel-runtime" ||
+                    specifier.startsWith("@ai-story/openovel-runtime/") ||
+                    specifier === "openovel-runtime" ||
+                    /(?:^|\\/)packages\\/openovel-runtime(?:\\/|$)/u.test(specifier);
+                  assert.equal(importsCompilerPackage, false, `${file}: ${specifier}`);
+                }
+              }
+            }
+          });'''
+          if old in source:
+              if source.count(old) != 1:
+                  raise SystemExit("expected exactly one legacy boundary test block")
+              path.write_text(source.replace(old, new), encoding="utf-8")
+              changed = True
+          elif new in source:
+              changed = False
+          else:
+              raise SystemExit("boundary test block does not match the expected old or repaired form")
+          Path("/tmp/openovel-boundary-test-changed").write_text("true" if changed else "false", encoding="utf-8")
+          print(f"changed={changed}")
+          PY
+          echo "changed=$(cat /tmp/openovel-boundary-test-changed)" >> "$GITHUB_OUTPUT"
+      - name: Commit the exact test repair as an ordinary fast-forward
+        if: steps.patch.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          remote_sha="$(git rev-parse "origin/$GITHUB_REF_NAME")"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "Ref moved; refusing to commit a stale boundary-test repair." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/openovel-runtime/tests/context.spec.ts
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m "test(openovel): validate compiler imports by module specifier"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Publish repair outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "openovel/boundary-test-repair",
+              description: `${success ? "repair passed" : "repair failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
