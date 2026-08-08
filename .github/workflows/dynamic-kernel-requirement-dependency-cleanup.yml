@@ -1,0 +1,58 @@
+name: Dynamic Kernel Requirement Dependency Cleanup
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/dynamic-kernel-requirement-dependency-cleanup.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove temporary architecture experiment files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mapfile -t repair_files < <(git ls-files '.github/repair/*dynamic-kernel*')
+          if [ "${#repair_files[@]}" -gt 0 ]; then
+            git rm -f -- "${repair_files[@]}"
+          fi
+          mapfile -t workflow_files < <(git ls-files '.github/workflows/dynamic-kernel-*')
+          if [ "${#workflow_files[@]}" -gt 0 ]; then
+            git rm -f -- "${workflow_files[@]}"
+          fi
+          git rm -f --ignore-unmatch docs/.architecture-probe-marker
+          git diff --cached --check
+          git commit -m "chore(kernel-lite): remove failed dependency experiment scaffolding"
+          git diff --exit-code \
+            623e4e25a39f038c1b5354b744ff9aac64010cd9 HEAD
+          git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
+
+      - name: Publish cleanup status
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=success
+          description="Temporary dependency experiment files removed"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="${state}" \
+            -f context="dynamic-kernel-lite/requirement-dependency-cleanup" \
+            -f description="${description}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
