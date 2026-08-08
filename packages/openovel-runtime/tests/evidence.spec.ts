@@ -13,7 +13,7 @@ test("compiles the canonical source into a deterministic line-addressed evidence
   const first = compileEvidencePackage(paths.repoRoot);
   const second = compileEvidencePackage(paths.repoRoot);
   assert.deepEqual(second, first);
-  assert.equal(first.manifest.source.sha256, "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238");
+  assert.equal(first.manifest.source.sha256, "87df165c22e22335e49dd1ea80654e9d2ae731e3034ffc2d95e9cfdf513493df");
   assert.equal(first.chapterIndex.length, 39);
   assert.equal(first.manifest.source.lineCount, 30547);
   assert.equal(first.claims.length, 10);
