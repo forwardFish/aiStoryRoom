@@ -5,10 +5,10 @@ on:
     branches:
       - codex/chatgpt-pro-maneuver-evidence-v1
     paths-ignore:
-      - "docs/auto-execute/evidence/b0/ci/**"
+      - "docs/auto-execute/evidence/b0/**"
 
 permissions:
-  contents: write
+  contents: read
   statuses: write
 
 concurrency:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   source-snapshot:
-    name: Exact candidate source snapshot
+    name: Exact candidate code snapshot
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -31,7 +31,7 @@ jobs:
               sha: context.sha,
               state: "pending",
               context: "b0/exact-push",
-              description: `run ${context.runId}`,
+              description: `engineering gates running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
       - uses: actions/checkout@v4
@@ -40,58 +40,85 @@ jobs:
           fetch-depth: 1
       - name: Verify exact push checkout
         run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - name: Create exact source archive
-        run: git archive --format=zip --output="b0-candidate-${GITHUB_SHA}.zip" HEAD
-      - name: Upload exact source archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: b0-candidate-source-${{ github.sha }}
-          path: b0-candidate-${{ github.sha }}.zip
-          if-no-files-found: error
-          retention-days: 7
-
-  publish-run-pointer:
-    name: Publish exact push run pointer
-    needs: source-snapshot
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
-      - name: Publish run pointer only while this SHA is live
+      - name: Create downloadable code-only archive and manifest
+        shell: bash
         run: |
           set -euo pipefail
-          git fetch origin "${GITHUB_REF_NAME}"
-          remote_sha="$(git rev-parse "origin/${GITHUB_REF_NAME}")"
-          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
-            echo "Not publishing stale run pointer: remote=$remote_sha run=$GITHUB_SHA"
-            exit 0
-          fi
-          created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          destination="docs/auto-execute/evidence/b0/ci/live-run.json"
-          mkdir -p "$(dirname "$destination")"
-          cat > "$destination" <<JSON
-          {
-            "schemaVersion": 1,
-            "status": "RUNNING",
-            "event": "$GITHUB_EVENT_NAME",
-            "ref": "$GITHUB_REF",
-            "testedCodeSha": "$GITHUB_SHA",
-            "workflow": "$GITHUB_WORKFLOW",
-            "runId": $GITHUB_RUN_ID,
-            "runAttempt": $GITHUB_RUN_ATTEMPT,
-            "sourceArtifactName": "b0-candidate-source-${GITHUB_SHA}",
-            "createdAt": "$created_at",
-            "jobs": {}
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import zipfile
+          from pathlib import Path
+
+          sha = os.environ["GITHUB_SHA"]
+          archive = Path(f"b0-candidate-code-{sha}.zip")
+          manifest_path = Path(f"b0-candidate-code-{sha}.manifest.json")
+          roots = (".github/", "api/", "apps/", "packages/", "prisma/", "scripts/", "third_party/")
+          extensions = {
+              ".cjs", ".css", ".graphql", ".html", ".js", ".json", ".md", ".mjs",
+              ".prisma", ".ps1", ".sh", ".sql", ".toml", ".ts", ".tsx", ".txt",
+              ".xml", ".yaml", ".yml",
           }
-          JSON
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$destination"
-          git commit -m "docs(b0): publish engineering run ${GITHUB_RUN_ID} [skip ci]"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          root_names = {
+              ".dockerignore", ".env.example", ".gitattributes", ".gitignore", ".vercelignore",
+              "AGENTS.md", "README.md", "docker-compose.yml", "harness.yml", "package.json",
+              "pnpm-lock.yaml", "pnpm-workspace.yaml", "railway.toml", "tsconfig.base.json", "vercel.json",
+          }
+          required_docs = (
+              "docs/Our_Many_Worlds_B0同步结算多人博弈_完整实施开发测试与受控上线方案_v1.0.md",
+              "docs/b0/",
+              "docs/auto-execute/evidence/b0/",
+          )
+          tracked = subprocess.check_output(["git", "ls-files"], text=True, encoding="utf-8").splitlines()
+          selected: list[str] = []
+          excluded_large: list[dict[str, object]] = []
+          for name in tracked:
+              path = Path(name)
+              in_scope = name in root_names or name.startswith(roots) or name == required_docs[0] or name.startswith(required_docs[1:])
+              if not in_scope:
+                  continue
+              if name not in root_names and path.suffix.lower() not in extensions:
+                  continue
+              size = path.stat().st_size
+              if size > 20 * 1024 * 1024:
+                  excluded_large.append({"path": name, "sizeBytes": size})
+                  continue
+              selected.append(name)
+          selected.sort()
+          if not selected:
+              raise SystemExit("code-only source selection is empty")
+          with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as output:
+              for name in selected:
+                  output.write(name, arcname=name)
+          digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          manifest = {
+              "schemaVersion": 1,
+              "testedCodeSha": sha,
+              "archive": archive.name,
+              "archiveSizeBytes": archive.stat().st_size,
+              "archiveSha256": digest,
+              "trackedFileCount": len(tracked),
+              "archivedFileCount": len(selected),
+              "excludedLargeFiles": excluded_large,
+          }
+          manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(manifest, ensure_ascii=False, indent=2))
+          if archive.stat().st_size >= 500 * 1024 * 1024:
+              raise SystemExit("code-only source archive is too large for connector retrieval")
+          PY
+      - name: Upload exact code archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-candidate-code-${{ github.sha }}
+          path: |
+            b0-candidate-code-${{ github.sha }}.zip
+            b0-candidate-code-${{ github.sha }}.manifest.json
+          if-no-files-found: error
+          retention-days: 7
 
   focused-contracts:
     name: Focused B0 contracts
@@ -132,7 +159,7 @@ jobs:
         run: pnpm --filter @ai-story/templates build
       - name: OpenNovel B0 runtime
         run: pnpm --filter @apps/openovel-runtime test:b0-runtime
-      - name: OpenNovel typecheck
+      - name: OpenNovel runtime typecheck
         run: pnpm --filter @apps/openovel-runtime typecheck
       - name: API B0 commit
         run: pnpm --filter @apps/api test:b0-batch
@@ -154,7 +181,7 @@ jobs:
   full-api-story-build:
     name: API, Story V4, Maneuver and builds
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -176,11 +203,17 @@ jobs:
         run: pnpm typecheck
       - name: Full API regression
         run: pnpm --filter @apps/api test
+      - name: OpenNovel compiler full regression
+        run: pnpm --filter @ai-story/openovel-runtime test
+      - name: OpenNovel compiler typecheck
+        run: pnpm --filter @ai-story/openovel-runtime typecheck
       - name: Story V4 contracts and runtime
         run: pnpm test:story:v4
       - name: Maneuver acceptance matrix
         run: pnpm test:maneuver
-      - name: OpenNovel build
+      - name: API build
+        run: pnpm --filter @apps/api build
+      - name: OpenNovel runtime build
         run: pnpm --filter @apps/openovel-runtime build
       - name: Web build
         run: pnpm --filter @apps/web build
@@ -190,7 +223,7 @@ jobs:
   full-web:
     name: Full Web regression on Node 24
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -220,7 +253,7 @@ jobs:
   causal-aggregate:
     name: Causal aggregate on Node 24
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -246,73 +279,39 @@ jobs:
     if: always()
     needs:
       - source-snapshot
-      - publish-run-pointer
       - focused-contracts
       - full-api-story-build
       - full-web
       - causal-aggregate
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
-      - name: Persist exact run result on the docs-only child
+      - name: Publish final commit status
+        uses: actions/github-script@v7
         env:
           SOURCE_RESULT: ${{ needs.source-snapshot.result }}
-          POINTER_RESULT: ${{ needs.publish-run-pointer.result }}
           FOCUSED_RESULT: ${{ needs.focused-contracts.result }}
           FULL_API_STORY_BUILD_RESULT: ${{ needs.full-api-story-build.result }}
           FULL_WEB_RESULT: ${{ needs.full-web.result }}
           CAUSAL_AGGREGATE_RESULT: ${{ needs.causal-aggregate.result }}
-        run: |
-          set -euo pipefail
-          git fetch origin "${GITHUB_REF_NAME}"
-          git checkout --detach "origin/${GITHUB_REF_NAME}"
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" HEAD; then
-            echo "Remote no longer descends from tested SHA $GITHUB_SHA"
-            exit 0
-          fi
-          unexpected="$(git diff --name-only "$GITHUB_SHA"..HEAD | grep -Ev '^docs/auto-execute/evidence/b0/ci/(live-run\.json|[0-9a-f]{40}\.json)$' || true)"
-          if [ -n "$unexpected" ]; then
-            echo "Remote contains non-CI changes after tested SHA:"
-            echo "$unexpected"
-            exit 0
-          fi
-          status=PASS
-          for result in "$SOURCE_RESULT" "$POINTER_RESULT" "$FOCUSED_RESULT" "$FULL_API_STORY_BUILD_RESULT" "$FULL_WEB_RESULT" "$CAUSAL_AGGREGATE_RESULT"; do
-            if [ "$result" != success ]; then status=FAIL; fi
-          done
-          created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          live="docs/auto-execute/evidence/b0/ci/live-run.json"
-          final="docs/auto-execute/evidence/b0/ci/${GITHUB_SHA}.json"
-          mkdir -p "$(dirname "$live")"
-          cat > "$final" <<JSON
-          {
-            "schemaVersion": 1,
-            "status": "$status",
-            "event": "$GITHUB_EVENT_NAME",
-            "ref": "$GITHUB_REF",
-            "testedCodeSha": "$GITHUB_SHA",
-            "workflow": "$GITHUB_WORKFLOW",
-            "runId": $GITHUB_RUN_ID,
-            "runAttempt": $GITHUB_RUN_ATTEMPT,
-            "sourceArtifactName": "b0-candidate-source-${GITHUB_SHA}",
-            "createdAt": "$created_at",
-            "jobs": {
-              "sourceSnapshot": "$SOURCE_RESULT",
-              "publishRunPointer": "$POINTER_RESULT",
-              "focusedContracts": "$FOCUSED_RESULT",
-              "fullApiStoryBuild": "$FULL_API_STORY_BUILD_RESULT",
-              "fullWeb": "$FULL_WEB_RESULT",
-              "causalAggregate": "$CAUSAL_AGGREGATE_RESULT"
-            }
-          }
-          JSON
-          cp "$final" "$live"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$final" "$live"
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "docs(b0): record engineering gates for ${GITHUB_SHA} [skip ci]"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+        with:
+          script: |
+            const results = {
+              source: process.env.SOURCE_RESULT,
+              focused: process.env.FOCUSED_RESULT,
+              apiStoryBuild: process.env.FULL_API_STORY_BUILD_RESULT,
+              web: process.env.FULL_WEB_RESULT,
+              causal: process.env.CAUSAL_AGGREGATE_RESULT,
+            };
+            const success = Object.values(results).every((value) => value === "success");
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/exact-push",
+              description: success ? `all engineering gates passed in ${context.runId}` : `engineering gates failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            core.summary.addHeading("B0 exact-push results").addCodeBlock(JSON.stringify({ sha: context.sha, runId: context.runId, results }, null, 2), "json").write();
+            if (!success) core.setFailed(`One or more B0 engineering jobs failed: ${JSON.stringify(results)}`);
