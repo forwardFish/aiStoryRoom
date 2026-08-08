@@ -10,7 +10,7 @@ test("C8 admin controller exposes only bounded recovery and read-only diagnostic
     replayWindow: async (windowId: string) => { calls.push(`replay:${windowId}`); return { windowId, matches: true }; },
     retryTask: async (taskId: string) => { calls.push(`retry:${taskId}`); return { taskId, status: "pending" }; },
     pauseRun: async (runId: string, paused: boolean) => { calls.push(`pause:${runId}:${paused}`); return { runId, paused }; },
-    abortWindow: async (windowId: string) => { calls.push(habort:${windowId}`); return { windowId, status: "ABORTED" }; },
+    abortWindow: async (windowId: string) => { calls.push(`abort:${windowId}`); return { windowId, status: "ABORTED" }; },
   };
   const controller = new B0OpsController(pipeline as any);
 
