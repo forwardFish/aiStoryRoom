@@ -135,7 +135,20 @@ jobs:
           B0_ACCEPTANCE_SELF_CHECK=1 \
             pnpm test:b0:real-acceptance
 
-      - name: Commit the verified harness as an ordinary fast-forward
+      - name: Upload the verified acceptance assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-real-acceptance-harness-${{ github.sha }}
+          path: |
+            .github/workflows/b0-candidate-real-acceptance.yml
+            docs/Our_Many_Worlds_B0同步结算多人博弈_完整实施开发测试与受控上线方案_v1.0.md
+            package.json
+            scripts/acceptance/b0-candidate-real-flow.ts
+            scripts/acceptance/tsconfig.b0-candidate-real.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Commit the verified non-workflow assets as an ordinary fast-forward
         shell: bash
         run: |
           set -euo pipefail
@@ -146,17 +159,14 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add \
-            .github/workflows/b0-candidate-real-acceptance.yml \
             docs/Our_Many_Worlds_B0同步结算多人博弈_完整实施开发测试与受控上线方案_v1.0.md \
             package.json \
             scripts/acceptance/b0-candidate-real-flow.ts \
             scripts/acceptance/tsconfig.b0-candidate-real.json
-          git rm .github/workflows/b0-one-shot-real-acceptance-harness.yml
           git diff --cached --check
 
           cat > /tmp/expected-paths <<'EOF'
-          .github/workflows/b0-candidate-real-acceptance.yml
-          .github/workflows/b0-one-shot-real-acceptance-harness.yml
+          docs/Our_Many_Worlds_B0同步结算多人博弈_完整实施开发测试与受控上线方案_v1.0.md
           package.json
           scripts/acceptance/b0-candidate-real-flow.ts
           scripts/acceptance/tsconfig.b0-candidate-real.json
@@ -165,7 +175,7 @@ jobs:
           LC_ALL=C sort -o /tmp/expected-paths /tmp/expected-paths
           diff -u /tmp/expected-paths /tmp/actual-paths
 
-          git commit -m "test(b0): add real Supabase and browser acceptance"
+          git commit -m "test(b0): add real acceptance harness assets"
           git push origin "HEAD:$GITHUB_REF_NAME"
 
       - name: Publish install outcome
