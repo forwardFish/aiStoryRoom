@@ -22,6 +22,7 @@ import {
   validateB0SettlementSnapshotV1,
 } from "@ai-story/shared";
 import { hashB0RoomRulesetV1, hashCanonicalB0Value } from "./b0-settlement";
+import { extractB0AudienceResolverMapsV1 } from "./b0-audience.resolve";
 
 export type CaptureB0SnapshotInputV1 = {
   id: string;
@@ -200,7 +201,7 @@ function settleDeterministic(input: SettleB0BatchInputV1, conservative: boolean)
   );
   const causalEdges = buildCausalEdges(input.batch.id, all, relations, statusByIntent, worldDelta);
   const intentOutcomes = buildOutcomes(input.batch.id, all, statusByIntent, causalEdges);
-  const structuredResults = buildPersonalResults(input.batch.id, all, intentOutcomes, worldDelta);
+  const structuredResults = buildStructuredResults(input.batch.id, all, intentOutcomes, worldDelta, input.snapshot);
   const withoutHash: Omit<B0SettlementResolutionV1, "resolutionHash"> = {
     schemaVersion: "b0-settlement-resolution-v1",
     batchId: input.batch.id,
@@ -484,23 +485,86 @@ function buildOutcomes(
   });
 }
 
-function buildPersonalResults(
+function buildStructuredResults(
   batchId: string,
   intents: B0ActionContractV1[],
   outcomes: B0IntentOutcomeV1[],
   mutations: B0StateMutationV1[],
+  snapshot: B0SettlementSnapshotV1,
 ): B0StructuredResultV1[] {
+  const orderedIntents = stableActions(intents);
+  const intentById = new Map(orderedIntents.map((entry) => [entry.id, entry]));
   const byIntent = new Map(outcomes.map((entry) => [entry.intentId, entry]));
-  return stableActions(intents).map((intent) => ({
+  const actorIds = snapshotActorIds(snapshot);
+  const detectedByIntent = extractB0AudienceResolverMapsV1(snapshot).detectedIntentActors ?? {};
+  const crossResults: B0StructuredResultV1[] = [];
+  const crossOwnedMutationIds = new Set<string>();
+
+  for (const mutation of stableMutations(mutations)) {
+    if (mutation.entityType !== "ACTOR" || !actorIds.has(mutation.entityId)) continue;
+    const targetActorId = mutation.entityId;
+    const externalOrigins = mutation.originIntentIds
+      .map((intentId) => intentById.get(intentId))
+      .filter((intent): intent is B0ActionContractV1 => intent !== undefined && intent.actorId !== targetActorId);
+    if (!externalOrigins.length || !externalOrigins.every((intent) => intentTargetsActor(intent, targetActorId))) continue;
+    if (!externalOrigins.every((intent) => canRecipientObserveImpact(intent, targetActorId, detectedByIntent))) continue;
+
+    const originIntentIds = externalOrigins.map((entry) => entry.id).sort();
+    const originActorIds = [...new Set(externalOrigins.map((entry) => entry.actorId))].sort();
+    crossOwnedMutationIds.add(mutation.mutationId);
+    crossResults.push({
+      resultId: stableId("result", batchId, mutation.mutationId, "cross", targetActorId),
+      resultKind: "CROSS_PLAYER_IMPACT",
+      originIntentIds,
+      originActorIds,
+      targetActorIds: [targetActorId],
+      summary: "The committed settlement changed your position in the shared situation.",
+      durableMutationIds: [mutation.mutationId],
+      audience: { type: "ACTOR_ONLY", actorRef: targetActorId },
+    });
+  }
+
+  const personalResults: B0StructuredResultV1[] = orderedIntents.map((intent) => ({
     resultId: stableId("result", batchId, intent.id, "personal"),
     resultKind: "PERSONAL_OUTCOME",
     originIntentIds: [intent.id],
     originActorIds: [intent.actorId],
     targetActorIds: [intent.actorId],
     summary: (byIntent.get(intent.id) as B0IntentOutcomeV1).summary,
-    durableMutationIds: mutations.filter((entry) => entry.originIntentIds.includes(intent.id)).map((entry) => entry.mutationId).sort(),
+    durableMutationIds: mutations
+      .filter((entry) => entry.originIntentIds.includes(intent.id) && !crossOwnedMutationIds.has(entry.mutationId))
+      .map((entry) => entry.mutationId)
+      .sort(),
     audience: { type: "ACTOR_ONLY", actorRef: intent.actorId },
   }));
+
+  return [...personalResults, ...crossResults].sort((left, right) => left.resultId.localeCompare(right.resultId));
+}
+
+function snapshotActorIds(snapshot: B0SettlementSnapshotV1): Set<string> {
+  const actorIds = new Set<string>();
+  for (const raw of [...snapshot.actorStates, ...snapshot.roleBindings]) {
+    const value = record(raw);
+    const actorId = firstString(value, ["actorId", "id", "roleId"]);
+    if (actorId) actorIds.add(actorId);
+  }
+  return actorIds;
+}
+
+function intentTargetsActor(intent: B0ActionContractV1, actorId: string): boolean {
+  return intent.targetRefs.some((entry) => entry.type === "ACTOR" && entry.id === actorId);
+}
+
+function canRecipientObserveImpact(
+  intent: B0ActionContractV1,
+  recipientActorId: string,
+  detectedByIntent: Readonly<Record<string, readonly string[]>>,
+): boolean {
+  if (intent.visibilityIntent.type === "PUBLIC") return true;
+  if (intent.visibilityIntent.type === "PRIVATE") {
+    return (intent.visibilityIntent.declaredRecipientRefs ?? []).includes(recipientActorId);
+  }
+  return (detectedByIntent[intent.id] ?? []).includes(recipientActorId);
 }
 
 export function buildB0BatchCommitManifestV1(input: BuildB0CommitManifestInputV1): B0BatchCommitManifestV1 {
