@@ -57,15 +57,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Existing full Web regression (known baseline failures remain visible)
-        id: full_web_regression
-        continue-on-error: true
+      - name: Full Web regression
         run: pnpm --filter @apps/web test
-      - name: Restore Node 22 for the existing aggregate gate
+      - name: Restore Node 22 for the aggregate gate
         if: always()
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Existing aggregate regression (known Solo baseline failures remain visible)
+      - name: Aggregate regression
         if: always()
         run: pnpm test:causal
