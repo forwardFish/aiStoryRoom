@@ -15,6 +15,70 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  source-snapshot:
+    name: Exact candidate source snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Verify exact push checkout
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Create exact source archive
+        run: git archive --format=zip --output="b0-candidate-${GITHUB_SHA}.zip" HEAD
+      - name: Upload exact source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-candidate-source-${{ github.sha }}
+          path: b0-candidate-${{ github.sha }}.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-run-pointer:
+    name: Publish exact push run pointer
+    needs: source-snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Publish run pointer only while this SHA is live
+        run: |
+          set -euo pipefail
+          git fetch origin "${GITHUB_REF_NAME}"
+          remote_sha="$(git rev-parse "origin/${GITHUB_REF_NAME}")"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "Not publishing stale run pointer: remote=$remote_sha run=$GITHUB_SHA"
+            exit 0
+          fi
+          created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          destination="docs/auto-execute/evidence/b0/ci/live-run.json"
+          mkdir -p "$(dirname "$destination")"
+          cat > "$destination" <<JSON
+          {
+            "schemaVersion": 1,
+            "status": "RUNNING",
+            "event": "$GITHUB_EVENT_NAME",
+            "ref": "$GITHUB_REF",
+            "testedCodeSha": "$GITHUB_SHA",
+            "workflow": "$GITHUB_WORKFLOW",
+            "runId": $GITHUB_RUN_ID,
+            "runAttempt": $GITHUB_RUN_ATTEMPT,
+            "sourceArtifactName": "b0-candidate-source-${GITHUB_SHA}",
+            "createdAt": "$created_at",
+            "jobs": {}
+          }
+          JSON
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$destination"
+          git commit -m "docs(b0): publish engineering run ${GITHUB_RUN_ID} [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
   focused-contracts:
     name: Focused B0 contracts
     runs-on: ubuntu-latest
@@ -167,6 +231,8 @@ jobs:
     name: Record exact push outcome
     if: always()
     needs:
+      - source-snapshot
+      - publish-run-pointer
       - focused-contracts
       - full-api-story-build
       - full-web
@@ -177,8 +243,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
-      - name: Persist run pointer when this SHA is still live
+      - name: Persist exact run result on the docs-only child
         env:
+          SOURCE_RESULT: ${{ needs.source-snapshot.result }}
+          POINTER_RESULT: ${{ needs.publish-run-pointer.result }}
           FOCUSED_RESULT: ${{ needs.focused-contracts.result }}
           FULL_API_STORY_BUILD_RESULT: ${{ needs.full-api-story-build.result }}
           FULL_WEB_RESULT: ${{ needs.full-web.result }}
@@ -186,19 +254,26 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin "${GITHUB_REF_NAME}"
-          remote_sha="$(git rev-parse "origin/${GITHUB_REF_NAME}")"
-          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
-            echo "Not recording stale run: remote=$remote_sha run=$GITHUB_SHA"
+          git checkout --detach "origin/${GITHUB_REF_NAME}"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" HEAD; then
+            echo "Remote no longer descends from tested SHA $GITHUB_SHA"
+            exit 0
+          fi
+          unexpected="$(git diff --name-only "$GITHUB_SHA"..HEAD | grep -Ev '^docs/auto-execute/evidence/b0/ci/(live-run\.json|[0-9a-f]{40}\.json)$' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Remote contains non-CI changes after tested SHA:"
+            echo "$unexpected"
             exit 0
           fi
           status=PASS
-          for result in "$FOCUSED_RESULT" "$FULL_API_STORY_BUILD_RESULT" "$FULL_WEB_RESULT" "$CAUSAL_AGGREGATE_RESULT"; do
+          for result in "$SOURCE_RESULT" "$POINTER_RESULT" "$FOCUSED_RESULT" "$FULL_API_STORY_BUILD_RESULT" "$FULL_WEB_RESULT" "$CAUSAL_AGGREGATE_RESULT"; do
             if [ "$result" != success ]; then status=FAIL; fi
           done
           created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          destination="docs/auto-execute/evidence/b0/ci/${GITHUB_SHA}.json"
-          mkdir -p "$(dirname "$destination")"
-          cat > "$destination" <<JSON
+          live="docs/auto-execute/evidence/b0/ci/live-run.json"
+          final="docs/auto-execute/evidence/b0/ci/${GITHUB_SHA}.json"
+          mkdir -p "$(dirname "$live")"
+          cat > "$final" <<JSON
           {
             "schemaVersion": 1,
             "status": "$status",
@@ -208,8 +283,11 @@ jobs:
             "workflow": "$GITHUB_WORKFLOW",
             "runId": $GITHUB_RUN_ID,
             "runAttempt": $GITHUB_RUN_ATTEMPT,
+            "sourceArtifactName": "b0-candidate-source-${GITHUB_SHA}",
             "createdAt": "$created_at",
             "jobs": {
+              "sourceSnapshot": "$SOURCE_RESULT",
+              "publishRunPointer": "$POINTER_RESULT",
               "focusedContracts": "$FOCUSED_RESULT",
               "fullApiStoryBuild": "$FULL_API_STORY_BUILD_RESULT",
               "fullWeb": "$FULL_WEB_RESULT",
@@ -217,8 +295,10 @@ jobs:
             }
           }
           JSON
+          cp "$final" "$live"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$destination"
+          git add "$final" "$live"
+          if git diff --cached --quiet; then exit 0; fi
           git commit -m "docs(b0): record engineering gates for ${GITHUB_SHA} [skip ci]"
           git push origin "HEAD:${GITHUB_REF_NAME}"
