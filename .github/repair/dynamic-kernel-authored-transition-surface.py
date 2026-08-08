@@ -54,8 +54,12 @@ path.write_text(text, encoding="utf-8")
 
 path = Path("packages/templates/tests/part-one-dynamic-kernel-lite.test.ts")
 text = path.read_text(encoding="utf-8")
-marker = '''test("dependency selection is invariant to Requirement, dependency and active Kernel ordering", () => {'''
-insert = '''test("an authorized section change preserves the authored transition surface while rebinding the dynamic stop", () => {
+name = (
+    "an authorized section change preserves the authored transition surface "
+    "while rebinding the dynamic stop"
+)
+if name not in text:
+    test_case = '''test("an authorized section change preserves the authored transition surface while rebinding the dynamic stop", () => {
   const pkg = packageUnderTest();
   const state = createInitialPartOneState(pkg);
   state.completedKernelIds = [
@@ -106,10 +110,6 @@ insert = '''test("an authorized section change preserves the authored transition
       .playerVisibleFallback.DECISION_STOP,
     settlement.event.nextDecisionPoint.prompt,
   );
-});
-
-'''
-if marker not in text:
-    raise SystemExit("transition surface regression insertion point missing")
-text = text.replace(marker, insert + marker, 1)
+});'''
+    text = text.rstrip() + "\n\n" + test_case + "\n"
 path.write_text(text.rstrip() + "\n", encoding="utf-8")
