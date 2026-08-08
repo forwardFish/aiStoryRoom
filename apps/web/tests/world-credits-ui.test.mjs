@@ -83,7 +83,7 @@ test("all public disclosure entry points explain the active-action charging sche
   assert.match(rooms, /Create Room · \$\{runCreateCredits\} Credits/);
   assert.match(rooms, /This world uses its legacy unlock policy/);
   assert.match(rooms, /does not use the 20-Credit active-action fee/);
-  assert.match(home, /Reading, AI-controlled actions, system progress, retries, and failed generations cost 0 Credits/);
+  assert.match(home, /Reading, AI-controlled actions, system-driven progress, retries, and failed generations cost 0 Credits/);
   assert.match(terms, /becomes final only after the requested run or action is successfully published/);
   assert.match(terms, /not for the number of AI-provider calls, tokens, retries, or internal processing steps/);
 });
