@@ -1,6 +1,6 @@
 name: Dynamic Kernel Requirement Dependency Round 3
 
-# Retry after making the generated transition regression order-independent.
+# Retry after bounding current-settlement context and fixing the generated regression fixture.
 on:
   push:
     branches:
@@ -71,6 +71,7 @@ jobs:
           python .github/repair/dynamic-kernel-dependency-runtime-semantics.py
           python .github/repair/dynamic-kernel-dependency-predecessor-kernels.py
           python .github/repair/dynamic-kernel-authored-transition-surface.py
+          python .github/repair/dynamic-kernel-context-projection.py
           SANGTIAN_SKIP_SOURCE_WRITES=1 \
           SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
           SANGTIAN_RUNTIME_PACKAGE_PATH="${GITHUB_WORKSPACE}/packages/templates/config/sangtian/story-package/part-one-runtime.json" \
@@ -97,7 +98,9 @@ jobs:
             packages/templates/config/sangtian/story-package/part-one-runtime.json \
             scripts/story-decomposition/lib/requirement-dependency.mjs \
             scripts/story-decomposition/build-sangtian-part-one-authoring.mjs \
-            scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+            scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
+            apps/api/src/solo-story-engine/types.ts \
+            apps/api/src/solo-story-engine/context-compiler.ts
           mapfile -t repair_files < <(git ls-files '.github/repair/*dynamic-kernel*')
           if [ "${#repair_files[@]}" -gt 0 ]; then
             git rm -f -- "${repair_files[@]}"
