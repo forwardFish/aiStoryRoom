@@ -1,0 +1,96 @@
+name: Dynamic Kernel Requirement Dependency Round 3 Final
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/dynamic-kernel-requirement-dependency-round3-final.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  repair-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EVIDENCE_ROOT: /tmp/dynamic-kernel-requirement-dependency-round3-final
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=pending \
+            -f context="dynamic-kernel-lite/requirement-dependency-r3-final" \
+            -f description="Exact-SHA dependency architecture final runner active" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frozen workspace
+        shell: bash
+        run: |
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          pnpm install --frozen-lockfile 2>&1 \
+            | tee "${EVIDENCE_ROOT}/logs/00-install.log"
+
+      - name: Build candidate and run all deterministic gates
+        shell: bash
+        run: bash .github/repair/run-dynamic-kernel-requirement-round3-final.sh
+
+      - name: Upload exact-SHA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-kernel-requirement-dependency-r3-final-${{ github.sha }}
+          path: /tmp/dynamic-kernel-requirement-dependency-round3-final/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Push exact tested candidate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "${EVIDENCE_ROOT}/status.txt"
+          test "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass
+          test "$(git rev-parse HEAD)" = "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/tested-sha.txt")"
+          git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/final-sha.txt"
+
+      - name: Publish final status
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=failure
+          description="Dependency architecture exact-SHA gates failed"
+          if [ -f "${EVIDENCE_ROOT}/final-sha.txt" ]; then
+            state=success
+            description="Dependency architecture exact SHA passed and was pushed"
+          fi
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="${state}" \
+            -f context="dynamic-kernel-lite/requirement-dependency-r3-final" \
+            -f description="${description}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
