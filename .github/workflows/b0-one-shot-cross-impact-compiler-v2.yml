@@ -1,0 +1,117 @@
+name: B0 One-Shot Cross Impact Compiler Repair V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-cross-impact-compiler-v2.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-cross-impact-compiler-v2
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Publish exact run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/cross-impact-one-shot",
+              description: `cross-impact repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Verify exact branch tip and source baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(sha256sum packages/templates/src/runtime-contract/b0-batch-settlement.ts | cut -d' ' -f1)" = "aa2b2db3d6d82433c0d4732016f12ef51c35841a6a5fad416393a5cd8645cdb0"
+          test "$(sha256sum packages/templates/tests/b0-multi-intent-settlement.test.ts | cut -d' ' -f1)" = "60273fd8a0f2e14dbad5f43cf8b80330783d8983d89c2205c47aea277b20218f"
+      - name: Recover and apply the hash-bound patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import re
+          from pathlib import Path
+
+          source = Path('.github/workflows/b0-one-shot-cross-impact-compiler.yml').read_text(encoding='utf-8')
+          match = re.search(r"PATCH64'\n(?P<body>.*?)\n\s*PATCH64\n", source, re.S)
+          if not match:
+              raise SystemExit('embedded patch payload is missing')
+          payload = ''.join(match.group('body').split())
+          Path('/tmp/b0-cross-impact.patch').write_bytes(base64.b64decode(payload, validate=True))
+          PY
+          test "$(sha256sum /tmp/b0-cross-impact.patch | cut -d' ' -f1)" = "97b4985ae97fded6db79f99d3fe8ddf8ded91e766c2333a45319bc2ead664c03"
+          git apply --check /tmp/b0-cross-impact.patch
+          git apply /tmp/b0-cross-impact.patch
+          test "$(sha256sum packages/templates/src/runtime-contract/b0-batch-settlement.ts | cut -d' ' -f1)" = "7b7065ff77fc23b23b6a7c3ac28e125770cb7a488dd0be9404ac0aacd90e813a"
+          test "$(sha256sum packages/templates/tests/b0-multi-intent-settlement.test.ts | cut -d' ' -f1)" = "0adb76af40ef11fb4f73a09e0d18262f63685caf65cf9cd481fccd853558bea3"
+          git diff --check
+      - name: Frozen install and complete affected verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter @ai-story/templates typecheck
+          pnpm --filter @ai-story/templates test:b0-batch
+          pnpm --filter @ai-story/templates test:b0-multi
+          pnpm --filter @ai-story/templates test:b0-audience
+          pnpm --filter @ai-story/templates test:runtime-contract
+      - name: Commit the product fix as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/templates/src/runtime-contract/b0-batch-settlement.ts packages/templates/tests/b0-multi-intent-settlement.test.ts
+          git rm .github/workflows/b0-one-shot-cross-impact-compiler.yml .github/workflows/b0-one-shot-cross-impact-compiler-v2.yml
+          git diff --cached --check
+          git commit -m "fix(b0): publish authorized cross-player impacts"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Publish repair outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/cross-impact-one-shot",
+              description: `${success ? "cross-impact repair passed" : "cross-impact repair failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
