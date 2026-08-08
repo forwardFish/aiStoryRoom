@@ -1,5 +1,6 @@
 name: Dynamic Kernel Requirement Dependency Round 1
 
+# Re-run after normalizing the generated regression test file ending.
 on:
   push:
     branches:
@@ -66,6 +67,7 @@ jobs:
             "a1bc1185636751d4aa4056a1a3dc45d0ffd46085b56cd4f82e5a98378c8eb884"
           python "${RUNNER_TEMP}/dynamic-kernel-requirement-dependency.py" \
             2>&1 | tee "${EVIDENCE_ROOT}/logs/01-apply-repair.log"
+          python .github/repair/dynamic-kernel-requirement-dependency-round1-format.py
           SANGTIAN_SKIP_SOURCE_WRITES=1 \
           SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
           SANGTIAN_RUNTIME_PACKAGE_PATH="${GITHUB_WORKSPACE}/packages/templates/config/sangtian/story-package/part-one-runtime.json" \
@@ -188,6 +190,7 @@ jobs:
             scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
           git rm -f \
             .github/repair/dynamic-kernel-requirement-dependency.py.gz.b64 \
+            .github/repair/dynamic-kernel-requirement-dependency-round1-format.py \
             .github/workflows/dynamic-kernel-requirement-dependency-round1.yml
           git diff --cached --check
           git commit -m "feat(kernel-lite): add validated requirement dependencies"
