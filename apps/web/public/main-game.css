@@ -264,9 +264,11 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .critical-actions button { border: 0; border-radius: 22px; background: linear-gradient(90deg, #5c3af0, #8456f4); } .critical-actions button:first-child { border: 1px solid #e0ddfa; background: #faf9ff; color: #6a54d7; }
 .critical-modal { position: relative; width: min(710px, calc(100vw - 48px)); height: 426px; min-height: 0; box-sizing: border-box; padding: 42px 66px 30px; text-align: center; }.critical-close { position: absolute; top: 20px; right: 24px; width: 32px; height: 32px; padding: 0; border: 0; background: transparent; color: #53608f; font-size: 34px; line-height: 1; }.critical-kicker { display: inline-flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 700; letter-spacing: .02em; text-transform: none; }.critical-kicker::before { content: "ϟ"; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #eeeaff; color: #714af4; font-size: 28px; }.critical-modal h2 { margin: 34px 0 44px; font-family: "Songti SC", STSong, SimSun, serif; font-size: 35px; }.critical-modal p { max-width: 500px; margin: 0 auto; font-family: "Songti SC", STSong, SimSun, serif; font-size: 18px; line-height: 1.8; text-align: center; white-space: pre-line; }.critical-actions { justify-content: center; gap: 24px; margin-top: 43px; }.critical-actions button { min-width: 252px; min-height: 62px; border-radius: 13px; font-size: 21px; }
 .critical-deferred { border-color: #ddd9fb; border-radius: 10px; background: rgba(255,255,255,.97); color: #5d55a1; box-shadow: 0 8px 22px rgba(76, 66, 170, .16); }
-.opening-narrative { position: relative; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 28px 60px; background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.34)), var(--game-scene-background, url('/assets/game/sangtian/background.png')) center bottom / cover no-repeat; text-align: center; scrollbar-color: rgba(102, 79, 224, .38) transparent; scrollbar-width: thin; }
-.opening-narrative::-webkit-scrollbar { width: 8px; }
-.opening-narrative::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: rgba(102, 79, 224, .38); background-clip: padding-box; }
+.opening-narrative { position: relative; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 28px 60px; background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.34)), var(--game-scene-background, url('/assets/game/sangtian/background.png')) center bottom / cover no-repeat; text-align: center; scrollbar-color: rgba(102, 79, 224, .68) rgba(102, 79, 224, .08); scrollbar-width: auto; }
+.opening-narrative::-webkit-scrollbar { width: 12px; }
+.opening-narrative::-webkit-scrollbar-track { border-radius: 999px; background: rgba(102, 79, 224, .08); }
+.opening-narrative::-webkit-scrollbar-thumb { min-height: 54px; border: 3px solid transparent; border-radius: 999px; background: rgba(102, 79, 224, .68); background-clip: padding-box; }
+.opening-narrative::-webkit-scrollbar-thumb:hover { background: rgba(83, 57, 213, .86); background-clip: padding-box; }
 .causal-center:has(.opening-narrative) { grid-template-rows: minmax(0, 1fr) auto; }
 .causal-center:has(.decision-narrative) { grid-template-rows: minmax(0, 1fr) 445px; }
 .causal-center:has(.result-narrative) { grid-template-rows: minmax(0, 1fr) 330px; }
@@ -1061,11 +1063,14 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .causal-shell:has(.v2-current-situation-summary) .result-copy h1 {
   letter-spacing: .08em;
 }
-.causal-shell:has(.v2-current-situation-summary) .opening-copy p:first-child,
-.causal-shell:has(.v2-current-situation-summary) .opening-copy p:nth-child(2) {
-  color: #7f86a6;
-  font-size: 16px;
-  letter-spacing: .1em;
+.opening-copy > .opening-stream-copy,
+.causal-shell:has(.v2-current-situation-summary) .opening-copy > .opening-stream-copy {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+  text-align: left;
   text-indent: 0;
 }
 .causal-shell:has(.v2-current-situation-summary) .opening-copy i { background: linear-gradient(90deg, transparent, rgba(103, 72, 239, .43), transparent); }

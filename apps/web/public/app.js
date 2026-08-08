@@ -1,9 +1,11 @@
 import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js?v=20260721-story-access-error-v4";
 import { renderTransitionScreen } from "./transition-screen.js";
-import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260805-play-again-v2";
+import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260806-play-again-v3";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
+const STORY_STREAM_CHARACTER_DELAY_MS = 38;
+const STORY_STREAM_PUNCTUATION_DELAY_MS = 140;
 
 export function createStoryApp({
   root,
@@ -40,6 +42,7 @@ export function createStoryApp({
     playAgainOpen: false,
     resultStream: null,
     resultScroll: { top: 0, follow: true },
+    openingScroll: { top: 0, follow: true },
     panelScroll: { left: 0, right: 0 },
     openingStream: null
   };
@@ -385,6 +388,7 @@ export function createStoryApp({
   function startOpeningStream(view) {
     stopOpeningStream();
     const text = openingNarrativeText(view);
+    state.openingScroll = { top: 0, follow: true };
     state.openingStream = { text, index: 0, visibleText: "", done: text.length === 0 };
     if (state.openingStream.done) {
       scheduleOpeningAdvance();
@@ -492,6 +496,23 @@ export function createStoryApp({
     panel.scrollTop = state.resultScroll.follow ? maxScroll : Math.min(state.resultScroll.top, maxScroll);
   }
 
+  function rememberOpeningScroll() {
+    const panel = root.querySelector("[data-testid=\"role-opening\"]");
+    if (!panel) return;
+    const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
+    state.openingScroll = {
+      top: panel.scrollTop,
+      follow: panel.scrollTop >= maxScroll - 8
+    };
+  }
+
+  function restoreOpeningScroll() {
+    const panel = root.querySelector("[data-testid=\"role-opening\"]");
+    if (!panel) return;
+    const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
+    panel.scrollTop = state.openingScroll.follow ? maxScroll : Math.min(state.openingScroll.top, maxScroll);
+  }
+
   function rememberPanelScroll() {
     state.panelScroll.left = root.querySelector(".causal-left")?.scrollTop || 0;
     state.panelScroll.right = root.querySelector(".causal-right")?.scrollTop || 0;
@@ -506,6 +527,7 @@ export function createStoryApp({
 
   function render() {
     rememberResultScroll();
+    rememberOpeningScroll();
     rememberPanelScroll();
     root.className = "causal-player-root";
     if (state.loading) {
@@ -566,6 +588,7 @@ export function createStoryApp({
     bindEvents();
     if (state.playAgainOpen) root.querySelector("#playAgainCancelBtn")?.focus?.();
     restoreResultScroll();
+    restoreOpeningScroll();
     restorePanelScroll();
     root.querySelector(".result-stream-status")?.remove();
     const stream = root.querySelector("#messageStream");
@@ -580,6 +603,14 @@ export function createStoryApp({
       const panel = event.currentTarget;
       const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
       state.resultScroll = {
+        top: panel.scrollTop,
+        follow: panel.scrollTop >= maxScroll - 8
+      };
+    });
+    root.querySelector("[data-testid=\"role-opening\"]")?.addEventListener("scroll", (event) => {
+      const panel = event.currentTarget;
+      const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
+      state.openingScroll = {
         top: panel.scrollTop,
         follow: panel.scrollTop >= maxScroll - 8
       };
@@ -927,12 +958,10 @@ function renderContinuousV2Context(view) {
 }
 
 function renderOpeningNarrative(view, state = {}) {
-  const en = isEnglish(view);
-  const title = view.run?.title || (en ? "Caesar: The Last Spring of the Republic" : "桑田诏：嘉靖财政危局");
   const stream = state.openingStream;
   const narrative = stream ? stream.visibleText : openingNarrativeText(view);
   return `<section class="opening-narrative" data-testid="role-opening">
-    <div class="opening-copy"><p>${en ? "ROME, 44 BC" : "嘉靖三十五年五月初八"}</p><p>${esc(view.presentation?.locationLabel || (en ? "Rome · The Senate" : "杭州 · 总督府"))}</p><i></i><h1>${esc(title)}</h1><i></i><p class="opening-stream-copy" aria-live="polite">${lineBreaks(narrative || "……")}${stream && !stream.done ? `<span class="result-caret" aria-hidden="true">▋</span>` : ""}</p></div>
+    <div class="opening-copy"><p class="opening-stream-copy" aria-live="polite">${lineBreaks(narrative || "……")}${stream && !stream.done ? `<span class="result-caret" aria-hidden="true">▋</span>` : ""}</p></div>
   </section>`;
 }
 
@@ -964,7 +993,8 @@ function renderResultNarrative(view, state = {}) {
   const stream = state.resultStream;
   const narrative = stream ? stream.visibleText : resultNarrativeText(view);
   const continueMarkup = stream?.done ? `<div class="result-continue"><button id="continueStoryBtn" type="button">继续</button></div>` : "";
-  return `<section class="result-narrative" data-testid="result-narrative"><div class="result-copy"><h1>${esc(stream?.title || card.decisionTitle || "巡抚素色入府")}</h1><p class="result-stream-copy" aria-live="polite">${lineBreaks(narrative || "……")}${stream && !stream.done ? `<span class="result-caret" aria-hidden="true">▋</span>` : ""}</p></div>${continueMarkup}</section>`;
+  const title = String(stream?.title || card.decisionTitle || "").trim();
+  return `<section class="result-narrative" data-testid="result-narrative"><div class="result-copy">${title ? `<h1>${esc(title)}</h1>` : ""}<p class="result-stream-copy" aria-live="polite">${lineBreaks(narrative || "……")}${stream && !stream.done ? `<span class="result-caret" aria-hidden="true">▋</span>` : ""}</p></div>${continueMarkup}</section>`;
 }
 
 function renderDayEndNarrative(view, state = {}) {
@@ -1486,7 +1516,9 @@ function streamDelay(text, index, browserWindow) {
   const previous = String(text || "")[Math.max(0, index - 1)] || "";
   const multiplier = Number(browserWindow?.__STORY_STREAM_DELAY_MULTIPLIER__ ?? 1);
   const safeMultiplier = Number.isFinite(multiplier) && multiplier >= 0 ? multiplier : 1;
-  return (/[。！？；：，、,.!?;:]/.test(previous) ? 220 : 88) * safeMultiplier;
+  return (/[。！？；：，、,.!?;:]/.test(previous)
+    ? STORY_STREAM_PUNCTUATION_DELAY_MS
+    : STORY_STREAM_CHARACTER_DELAY_MS) * safeMultiplier;
 }
 
 function lineBreaks(value) {

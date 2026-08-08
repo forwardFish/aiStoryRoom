@@ -3,27 +3,91 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Explore playable and upcoming living story worlds in Our Many Worlds." />
-    <title>Explore Worlds | Our Many Worlds</title>
+    <meta name="description" content="Explore AI story worlds built for solo and multiplayer play. Take a private role, pursue your own goals, and change one shared world with every decision." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <link rel="canonical" href="https://ourmanyworlds.com/worlds" />
+    <meta property="og:site_name" content="Our Many Worlds" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ourmanyworlds.com/worlds" />
+    <meta property="og:title" content="AI Story Worlds to Play Solo or Multiplayer | Our Many Worlds" />
+    <meta property="og:description" content="Choose a world, take a private role, and make decisions that change other players and the shared outcome." />
+    <meta property="og:image" content="https://ourmanyworlds.com/assets/brand/many-worlds-logo.png" />
+    <meta property="og:image:alt" content="Our Many Worlds logo" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AI Story Worlds to Play Solo or Multiplayer | Our Many Worlds" />
+    <meta name="twitter:description" content="Different roles, private goals, and one shared world shaped by every decision." />
+    <meta name="twitter:image" content="https://ourmanyworlds.com/assets/brand/many-worlds-logo.png" />
+    <title>AI Story Worlds to Play Solo or Multiplayer | Our Many Worlds</title>
     <link rel="icon" type="image/png" href="/assets/brand/many-worlds-logo.png?v=20260717" />
     <link rel="stylesheet" href="/worlds.css?v=20260717-2" />
     <link rel="stylesheet" href="/typography.css?v=20260717-1" />
     <link rel="stylesheet" href="/back-link.css?v=20260718-1" />
     <link rel="stylesheet" href="/standard-page-header.css?v=20260720-1" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "AI Story Worlds",
+        "url": "https://ourmanyworlds.com/worlds",
+        "description": "Shared AI story worlds with private roles, asymmetric information, solo play, and multiplayer decisions.",
+        "isPartOf": { "@id": "https://ourmanyworlds.com/#website" },
+        "mainEntity": {
+          "@type": "ItemList",
+          "numberOfItems": 2,
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "url": "https://ourmanyworlds.com/worlds/caesar",
+              "name": "Caesar: The Last Spring of the Republic"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "url": "https://ourmanyworlds.com/worlds/sangtian",
+              "name": "Sangtian Edict: The Jiajing Fiscal Crisis"
+            }
+          ]
+        }
+      }
+    </script>
   </head>
   <body class="mw-type-marketing">
     <standard-page-header back-href="/"></standard-page-header>
     <main class="worlds-lobby" data-testid="worlds-lobby-root">
       <header class="worlds-heading">
         <h1>Explore Worlds</h1>
-        <p>Choose a world, take a role, and shape what happens next.</p>
+        <p>Choose a world, take a private role, and shape what happens to everyone inside it. Play Solo or invite friends into different perspectives of the same crisis.</p>
       </header>
 
       <section class="worlds-grid" aria-label="Story worlds" data-world-catalog>
-        <noscript>Enable JavaScript to load the current world catalog.</noscript>
+        <a class="world-card is-playable" data-world-id="sangtian" href="/worlds/sangtian" aria-label="View Sangtian Edict: The Jiajing Fiscal Crisis">
+          <div class="world-card-art"><img src="/assets/game/sangtian/cover.png" alt="Sangtian Edict: The Jiajing Fiscal Crisis" /><span class="world-category">History &amp; Power</span></div>
+          <div class="world-card-body"><h2>Sangtian Edict: The Jiajing Fiscal Crisis</h2><p>A grain-price crisis, a court edict, and seven days to decide what to protect.</p><div class="world-card-footer"><div class="world-meta"><span>1–6 Roles</span><span>40–60 Minutes</span></div><span class="world-playable"><i></i>Playable</span><span class="view-world">View World</span></div></div>
+        </a>
+        <a class="world-card is-playable" data-world-id="caesar" href="/worlds/caesar" aria-label="View Caesar: The Last Spring of the Republic">
+          <div class="world-card-art"><img src="/assets/game/caesar/cover.png" alt="Caesar: The Last Spring of the Republic" /><span class="world-category">History &amp; Power</span></div>
+          <div class="world-card-body"><h2>Caesar: The Last Spring of the Republic</h2><p>Caesar trusts you. The conspirators need you. Rome will judge whatever survives.</p><div class="world-card-footer"><div class="world-meta"><span>1–6 Roles</span><span>40–60 Minutes</span></div><span class="world-playable"><i></i>Playable</span><span class="view-world">View World</span></div></div>
+        </a>
+        <article class="world-card is-coming" data-world-id="last-night-shift" aria-disabled="true">
+          <div class="world-card-art"><img src="/assets/game/last-night-shift/cover.png" alt="The Last Night Shift" /><span class="world-category">Mystery</span><span class="world-coming-badge">Coming Soon</span></div>
+          <div class="world-card-body"><h2>The Last Night Shift</h2><p>One night, one crew, and too many things that do not add up.</p><div class="world-card-footer"><div class="world-meta"><span>4–6 Roles</span><span>60–90 Minutes</span></div><span class="coming-label">Coming Soon</span></div></div>
+        </article>
+        <article class="world-card is-coming" data-world-id="ninety-days-left" aria-disabled="true">
+          <div class="world-card-art"><img src="/assets/game/ninety-days-left/cover.png" alt="Ninety Days Left" /><span class="world-category">Crisis &amp; Survival</span><span class="world-coming-badge">Coming Soon</span></div>
+          <div class="world-card-body"><h2>Ninety Days Left</h2><p>A shrinking runway, mounting pressure, and ninety days to hold the line.</p><div class="world-card-footer"><div class="world-meta"><span>4–6 Roles</span><span>60–90 Minutes</span></div><span class="coming-label">Coming Soon</span></div></div>
+        </article>
+        <article class="world-card is-coming" data-world-id="inheritance-table" aria-disabled="true">
+          <div class="world-card-art"><img src="/assets/game/inheritance-table/cover.png" alt="The Inheritance Table" /><span class="world-category">Relationships</span><span class="world-coming-badge">Coming Soon</span></div>
+          <div class="world-card-body"><h2>The Inheritance Table</h2><p>A family gathering becomes a negotiation over loyalty, memory, and control.</p><div class="world-card-footer"><div class="world-meta"><span>3–5 Roles</span><span>60–90 Minutes</span></div><span class="coming-label">Coming Soon</span></div></div>
+        </article>
+        <article class="world-card is-coming" data-world-id="blackout-protocol" aria-disabled="true">
+          <div class="world-card-art"><img src="/assets/game/blackout-protocol/cover.png" alt="Blackout Protocol" /><span class="world-category">Speculative Futures</span><span class="world-coming-badge">Coming Soon</span></div>
+          <div class="world-card-body"><h2>Blackout Protocol</h2><p>A citywide systems failure forces every decision into the open.</p><div class="world-card-footer"><div class="world-meta"><span>4–6 Roles</span><span>60–90 Minutes</span></div><span class="coming-label">Coming Soon</span></div></div>
+        </article>
       </section>
     </main>
     <script type="module" src="/standard-page-header.js?v=20260720-1"></script>
-    <script type="module" src="/worlds.js?v=20260719-catalog1"></script>
+    <script type="module" src="/worlds.js?v=20260807-seo1"></script>
   </body>
 </html>

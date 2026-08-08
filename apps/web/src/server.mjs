@@ -21,6 +21,9 @@ const types = {
   ".css": "text/css; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -48,10 +51,41 @@ const pageRoutes = new Map([
   ["/reset-password", "/reset-password.html"],
   ["/join", "/platform.html"],
   ["/worlds", "/worlds.html"],
+  ["/worlds/caesar", "/worlds-caesar.html"],
+  ["/worlds/sangtian", "/worlds-sangtian.html"],
   ["/rooms", "/platform.html"],
   ["/rooms/fixture-caesar-waiting", "/platform.html"],
   ["/game/result", "/platform.html"]
 ]);
+
+const indexableWorldPaths = new Set(["/worlds/caesar", "/worlds/sangtian"]);
+const noIndexPrefixes = [
+  "/account",
+  "/admin",
+  "/auth",
+  "/game",
+  "/join",
+  "/reset-password",
+  "/role-select",
+  "/rooms",
+  "/shared/result",
+  "/trio",
+  "/credits/status",
+  "/credits/cancel",
+  "/credits/failed",
+  "/platform.html"
+];
+
+function shouldNoIndex(pathname) {
+  if (/^\/worlds\/[^/]+$/.test(pathname) && !indexableWorldPaths.has(pathname)) return true;
+  return noIndexPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function searchHeaders(pathname) {
+  return shouldNoIndex(pathname)
+    ? { "x-robots-tag": "noindex, nofollow, noarchive" }
+    : {};
+}
 
 const pngFiles = (relativeRoot) => readdirSync(relativeRoot, { withFileTypes: true })
   .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".png"))
@@ -103,6 +137,10 @@ export const server = createServer((req, res) => {
   const url = new URL(requestTarget, `http://${req.headers.host || "localhost"}`);
   const legacyRedirects = new Map([
     ["/home", "/"],
+    ["/home.html", "/"],
+    ["/worlds.html", "/worlds"],
+    ["/worlds-caesar.html", "/worlds/caesar"],
+    ["/worlds-sangtian.html", "/worlds/sangtian"],
     ["/credits.html", "/credits"],
     ["/credits-success.html", "/credits/status"],
     ["/join.html", "/join"],
@@ -154,7 +192,7 @@ export const server = createServer((req, res) => {
   const normalizedPathname = url.pathname.replace(/\/$/, "") || "/";
   let requested = pageRoutes.get(normalizedPathname) || url.pathname;
   if (/^\/worlds\/[^/]+$/.test(normalizedPathname) || /^\/rooms\/[^/]+$/.test(normalizedPathname)) {
-    requested = "/platform.html";
+    requested = pageRoutes.get(normalizedPathname) || "/platform.html";
   }
   if (requested.startsWith("/ui/2/")) {
     const uiPath = normalize(join(uiRoot, decodeURIComponent(requested.replace("/ui/2/", ""))));
@@ -166,13 +204,14 @@ export const server = createServer((req, res) => {
   }
   const safePath = normalize(join(root, decodeURIComponent(requested)));
   if (!safePath.startsWith(root) || !existsSync(safePath)) {
-    res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    res.writeHead(404, { "content-type": "text/plain; charset=utf-8", ...searchHeaders(url.pathname) });
     res.end("Not found");
     return;
   }
   res.writeHead(200, {
     "content-type": types[extname(safePath)] || "application/octet-stream",
-    "cache-control": [".html", ".js", ".css"].includes(extname(safePath)) ? "no-cache" : "public, max-age=3600"
+    "cache-control": [".html", ".js", ".css"].includes(extname(safePath)) ? "no-cache" : "public, max-age=3600",
+    ...searchHeaders(normalizedPathname)
   });
   createReadStream(safePath).pipe(res);
 }).listen(port, "0.0.0.0", () => {

@@ -1,0 +1,29 @@
+# Our Many Worlds
+
+> Our Many Worlds is an AI shared-world social strategy game. Every role enters the same crisis with different goals, private information, relationships, resources, and leverage. Players can talk, investigate, bargain, use leverage, or make a move in their own words. AI resolves human and AI-controlled actions into one evolving world, so each decision can change what other players know, believe, and are able to do.
+
+## Canonical pages
+
+- Home: https://ourmanyworlds.com/
+- Explore worlds: https://ourmanyworlds.com/worlds
+- Caesar: The Last Spring of the Republic: https://ourmanyworlds.com/worlds/caesar
+- Sangtian Edict: The Jiajing Fiscal Crisis: https://ourmanyworlds.com/worlds/sangtian
+- World Credits: https://ourmanyworlds.com/credits
+
+## Core experience
+
+- Solo or multiplayer browser play.
+- Different goals, secrets, and limited points of view for every role.
+- Shared consequences: one player's move can change another player's options.
+- Four core actions: talk, investigate, use leverage, and make a custom move.
+- AI acts as world simulator, unfilled-role performer, and narrator of consequences.
+- Designed worlds have rules and constraints; outcomes are not predetermined.
+
+## Terminology
+
+Preferred category description: AI shared-world social strategy game.
+Related descriptions: AI multiplayer story game, multiplayer interactive story game, historical roleplay game, asymmetric-information story game, solo AI story game.
+
+## Contact
+
+support@ourmanyworlds.com
