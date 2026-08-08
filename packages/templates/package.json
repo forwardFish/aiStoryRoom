@@ -20,6 +20,9 @@
     "test:b0-multi": "pnpm --filter @ai-story/shared build && node --import tsx --test tests/b0-multi-intent-settlement.test.ts",
     "test:b0-audience": "pnpm --filter @ai-story/shared build && node --import tsx --test tests/b0-audience.test.ts"
   },
+  "dependencies": {
+    "@ai-story/shared": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.9.3"
   }
