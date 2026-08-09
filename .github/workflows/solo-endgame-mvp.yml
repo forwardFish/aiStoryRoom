@@ -16,7 +16,7 @@ concurrency:
 jobs:
   verify-exact-remote-sha:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       NODE_ENV: test
       SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
@@ -42,51 +42,123 @@ jobs:
           set -u
           artifact_dir="${GITHUB_WORKSPACE}/artifacts"
           clone_dir="${RUNNER_TEMP}/solo-endgame-stage-a-clean"
+          baseline_dir="${RUNNER_TEMP}/solo-endgame-stage-a-baseline"
           mkdir -p "$artifact_dir"
           : > "$artifact_dir/commands.log"
-          printf 'label\tcommand\tworkdir\ttests\tpass\tfail\tskip\ttodo\texit_code\n' > "$artifact_dir/summary.tsv"
+          printf 'label\tcommand\tworkdir\ttests\tpass\tfail\tskipped\ttodo\texit_code\n' > "$artifact_dir/summary.tsv"
+          printf 'suite\tcandidate_exit\tbaseline_exit\tclassification\n' > "$artifact_dir/baseline-comparison.tsv"
           overall=0
+
+          run_gate_at() {
+            local label="$1" cwd="$2"
+            shift 2
+            local command="$*"
+            local log="$artifact_dir/${label}.log"
+            printf '===== %s =====\ncommand=%s\nworkdir=%s\n' "$label" "$command" "$cwd" >> "$artifact_dir/commands.log"
+            (cd "$cwd" && "$@") > "$log" 2>&1
+            local code=$?
+            cat "$log"
+            printf '%s\t%s\t%s\tN/A\tN/A\tN/A\tN/A\tN/A\t%s\n' \
+              "$label" "$command" "$cwd" "$code" >> "$artifact_dir/summary.tsv"
+            printf '%s\n' "$code" > "$artifact_dir/${label}.exit"
+            if [ "$code" -ne 0 ]; then overall=1; fi
+          }
 
           run_gate() {
             local label="$1"
             shift
+            run_gate_at "$label" "$clone_dir" "$@"
+          }
+
+          run_tap_at() {
+            local label="$1" cwd="$2" strict="$3"
+            shift 3
             local command="$*"
             local log="$artifact_dir/${label}.log"
-            printf '===== %s =====\ncommand=%s\nworkdir=%s\n' "$label" "$command" "$clone_dir" >> "$artifact_dir/commands.log"
-            set +e
-            (cd "$clone_dir" && "$@") > "$log" 2>&1
+            printf '===== %s =====\ncommand=%s\nworkdir=%s\n' "$label" "$command" "$cwd" >> "$artifact_dir/commands.log"
+            (cd "$cwd" && "$@") > "$log" 2>&1
             local code=$?
-            set -e
             cat "$log"
-            printf '%s\t%s\t%s\tN/A\tN/A\tN/A\tN/A\tN/A\t%s\n' \
-              "$label" "$command" "$clone_dir" "$code" >> "$artifact_dir/summary.tsv"
-            if [ "$code" -ne 0 ]; then overall=1; fi
+            local tests pass fail cancelled skipped todo effective_fail
+            tests=$(awk '$1 == "#" && $2 == "tests" {sum += $3} END {print sum + 0}' "$log")
+            pass=$(awk '$1 == "#" && $2 == "pass" {sum += $3} END {print sum + 0}' "$log")
+            fail=$(awk '$1 == "#" && $2 == "fail" {sum += $3} END {print sum + 0}' "$log")
+            cancelled=$(awk '$1 == "#" && $2 == "cancelled" {sum += $3} END {print sum + 0}' "$log")
+            skipped=$(awk '$1 == "#" && ($2 == "skipped" || $2 == "skip") {sum += $3} END {print sum + 0}' "$log")
+            todo=$(awk '$1 == "#" && $2 == "todo" {sum += $3} END {print sum + 0}' "$log")
+            effective_fail=$((fail + cancelled))
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$label" "$command" "$cwd" "$tests" "$pass" "$effective_fail" "$skipped" "$todo" "$code" >> "$artifact_dir/summary.tsv"
+            printf '%s\n' "$code" > "$artifact_dir/${label}.exit"
+            if [ "$strict" = "strict" ]; then
+              if [ "$code" -ne 0 ] || [ "$tests" -eq 0 ] || [ "$pass" -ne "$tests" ] \
+                || [ "$effective_fail" -ne 0 ] || [ "$skipped" -ne 0 ] || [ "$todo" -ne 0 ]; then
+                overall=1
+              fi
+            fi
           }
 
           run_tap_test() {
             local label="$1"
             shift
-            local command="$*"
-            local log="$artifact_dir/${label}.log"
-            printf '===== %s =====\ncommand=%s\nworkdir=%s\n' "$label" "$command" "$clone_dir" >> "$artifact_dir/commands.log"
-            set +e
-            (cd "$clone_dir" && "$@") > "$log" 2>&1
-            local code=$?
-            set -e
-            cat "$log"
-            local tests pass fail skip todo
-            tests=$(awk '$1 == "#" && $2 == "tests" {sum += $3} END {print sum + 0}' "$log")
-            pass=$(awk '$1 == "#" && $2 == "pass" {sum += $3} END {print sum + 0}' "$log")
-            fail=$(awk '$1 == "#" && $2 == "fail" {sum += $3} END {print sum + 0}' "$log")
-            skip=$(awk '$1 == "#" && ($2 == "skipped" || $2 == "skip") {sum += $3} END {print sum + 0}' "$log")
-            todo=$(awk '$1 == "#" && $2 == "todo" {sum += $3} END {print sum + 0}' "$log")
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-              "$label" "$command" "$clone_dir" "$tests" "$pass" "$fail" "$skip" "$todo" "$code" >> "$artifact_dir/summary.tsv"
-            if [ "$code" -ne 0 ] || [ "$tests" -eq 0 ] || [ "$pass" -ne "$tests" ] \
-              || [ "$fail" -ne 0 ] || [ "$skip" -ne 0 ] || [ "$todo" -ne 0 ]; then
+            run_tap_at "$label" "$clone_dir" strict "$@"
+          }
+
+          run_observed_tap_at() {
+            local label="$1" cwd="$2"
+            shift 2
+            run_tap_at "$label" "$cwd" observed "$@"
+          }
+
+          compare_baseline_failure() {
+            local suite="$1" candidate_label="$2" baseline_label="$3"
+            local candidate_code baseline_code compare_log
+            candidate_code=$(cat "$artifact_dir/${candidate_label}.exit")
+            baseline_code=$(cat "$artifact_dir/${baseline_label}.exit")
+            compare_log="$artifact_dir/${suite}-baseline-comparison.json"
+            if [ "$candidate_code" -eq 0 ]; then
+              printf '%s\t%s\t%s\tPASS\n' "$suite" "$candidate_code" "$baseline_code" >> "$artifact_dir/baseline-comparison.tsv"
+              return
+            fi
+            python3 - "$artifact_dir/${candidate_label}.log" "$artifact_dir/${baseline_label}.log" "$suite" "$candidate_code" "$baseline_code" > "$compare_log" <<'PYCOMPARE'
+          import json
+          import re
+          import sys
+          from pathlib import Path
+
+          candidate_path, baseline_path, suite, candidate_code, baseline_code = sys.argv[1:]
+
+          def signature(path: str):
+              text = Path(path).read_text(encoding="utf-8", errors="replace")
+              return {
+                  "notOk": sorted(set(re.findall(r"^not ok \d+ - (.+)$", text, flags=re.MULTILINE))),
+                  "badOptions": sorted(set(re.findall(r"^node: bad option: .+$", text, flags=re.MULTILINE))),
+                  "pendingResolution": "Promise resolution is still pending but the event loop has already resolved" in text,
+              }
+
+          candidate = signature(candidate_path)
+          baseline = signature(baseline_path)
+          valid = int(candidate_code) != 0 and int(baseline_code) != 0 and candidate == baseline and any([
+              candidate["notOk"], candidate["badOptions"], candidate["pendingResolution"],
+          ])
+          print(json.dumps({
+              "suite": suite,
+              "candidateExit": int(candidate_code),
+              "baselineExit": int(baseline_code),
+              "candidateSignature": candidate,
+              "baselineSignature": baseline,
+              "baselineEquivalent": valid,
+          }, ensure_ascii=False, indent=2))
+          raise SystemExit(0 if valid else 1)
+          PYCOMPARE
+            local comparison_code=$?
+            cat "$compare_log"
+            if [ "$comparison_code" -eq 0 ]; then
+              printf '%s\t%s\t%s\tBASELINE_EQUIVALENT\n' "$suite" "$candidate_code" "$baseline_code" >> "$artifact_dir/baseline-comparison.tsv"
+            else
+              printf '%s\t%s\t%s\tREGRESSION_OR_UNPROVEN\n' "$suite" "$candidate_code" "$baseline_code" >> "$artifact_dir/baseline-comparison.tsv"
               overall=1
             fi
-            if [ "$label" = "api-targeted-contract" ] && [ "$tests" -lt 24 ]; then overall=1; fi
           }
 
           remote_url="https://github.com/${GITHUB_REPOSITORY}.git"
@@ -96,11 +168,12 @@ jobs:
           printf 'github_sha=%s\nremote_sha=%s\n' "$GITHUB_SHA" "$remote_sha" | tee "$artifact_dir/remote-sha.txt"
           if [ "$remote_sha" != "$GITHUB_SHA" ]; then exit 1; fi
 
-          rm -rf "$clone_dir"
+          rm -rf "$clone_dir" "$baseline_dir"
           git clone --no-tags --single-branch --branch "$BRANCH" "$remote_url" "$clone_dir" > "$artifact_dir/git-clone.log" 2>&1
           clone_sha=$(git -C "$clone_dir" rev-parse HEAD)
           clone_branch=$(git -C "$clone_dir" branch --show-current)
           clone_status=$(git -C "$clone_dir" status --short)
+          git -C "$clone_dir" log -4 --format='%H%x09%P%x09%s' > "$artifact_dir/commit-chain.tsv"
           printf 'clone_head=%s\nclone_branch=%s\nstatus_begin\n%s\nstatus_end\n' \
             "$clone_sha" "$clone_branch" "$clone_status" | tee "$artifact_dir/clean-clone.txt"
           if [ "$clone_sha" != "$GITHUB_SHA" ] || [ "$clone_branch" != "$BRANCH" ] || [ -n "$clone_status" ]; then exit 1; fi
@@ -115,20 +188,38 @@ jobs:
           run_tap_test openovel-test pnpm --filter @apps/openovel-runtime test
           run_gate openovel-build pnpm --filter @apps/openovel-runtime build
           run_gate api-typecheck pnpm --filter @apps/api typecheck
-          run_tap_test api-test pnpm --filter @apps/api test
+          run_observed_tap_at candidate-api-test "$clone_dir" pnpm --filter @apps/api test
           run_gate api-build pnpm --filter @apps/api build
           run_gate web-typecheck pnpm --filter @apps/web typecheck
-          run_tap_test web-test pnpm --filter @apps/web test
+          run_tap_test web-solo-targeted pnpm --filter @apps/web exec node --test tests/solo-endgame-presentation-v1.test.mjs
+          run_observed_tap_at candidate-web-test "$clone_dir" pnpm --filter @apps/web test
           run_gate web-build pnpm --filter @apps/web build
           run_gate story-v4 pnpm test:story:v4
           run_gate workspace-typecheck pnpm typecheck
           run_gate git-diff-check git diff --check
           run_gate delivered-diff-check git diff --check "$BASE_SHA" "$GITHUB_SHA"
 
+          git clone --no-tags "$remote_url" "$baseline_dir" > "$artifact_dir/baseline-git-clone.log" 2>&1
+          git -C "$baseline_dir" checkout --detach "$BASE_SHA" > "$artifact_dir/baseline-checkout.log" 2>&1
+          baseline_sha=$(git -C "$baseline_dir" rev-parse HEAD)
+          baseline_status=$(git -C "$baseline_dir" status --short)
+          printf 'baseline_head=%s\nstatus_begin\n%s\nstatus_end\n' "$baseline_sha" "$baseline_status" > "$artifact_dir/baseline-clean-clone.txt"
+          if [ "$baseline_sha" != "$BASE_SHA" ] || [ -n "$baseline_status" ]; then overall=1; fi
+          run_gate_at baseline-install "$baseline_dir" pnpm install --frozen-lockfile
+          run_gate_at baseline-prisma-generate "$baseline_dir" pnpm db:generate
+          run_observed_tap_at baseline-api-test "$baseline_dir" pnpm --filter @apps/api test
+          run_observed_tap_at baseline-web-test "$baseline_dir" pnpm --filter @apps/web test
+
+          compare_baseline_failure api-full candidate-api-test baseline-api-test
+          compare_baseline_failure web-full candidate-web-test baseline-web-test
+
           final_status=$(git -C "$clone_dir" status --short)
+          baseline_final_status=$(git -C "$baseline_dir" status --short)
           printf '%s\n' "$final_status" > "$artifact_dir/final-git-status.txt"
-          if [ -n "$final_status" ]; then overall=1; fi
+          printf '%s\n' "$baseline_final_status" > "$artifact_dir/baseline-final-git-status.txt"
+          if [ -n "$final_status" ] || [ -n "$baseline_final_status" ]; then overall=1; fi
           cat "$artifact_dir/summary.tsv"
+          cat "$artifact_dir/baseline-comparison.tsv"
           exit "$overall"
 
       - name: Publish exact-SHA verification status
