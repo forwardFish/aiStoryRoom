@@ -60,10 +60,13 @@ test("the additive vocabulary preserves current non-B0 action contracts", () => 
   ]);
 });
 
-test("concurrent lazy initialization uses unique-key upserts instead of check-then-create races", () => {
-  assert.match(PIPELINE, /roleControl\.upsert\(\{[\s\S]*?runId_roleId/);
+test("concurrent lazy initialization uses one-statement conflict-safe inserts", () => {
+  assert.match(PIPELINE, /roleControl\.createMany\(\{[\s\S]*?skipDuplicates: true/);
+  assert.doesNotMatch(PIPELINE, /roleControl\.upsert\(\{[\s\S]*?B0_INITIAL_ROLE_BINDING/);
   assert.doesNotMatch(PIPELINE, /roleControl\.create\(\{[\s\S]*?B0_INITIAL_ROLE_BINDING/);
-  assert.match(PIPELINE, /sceneNode\.upsert\(\{[\s\S]*?runId_chapterIndex_nodeIndex/);
+  assert.match(PIPELINE, /sceneNode\.createMany\(\{[\s\S]*?skipDuplicates: true/);
+  assert.match(PIPELINE, /sceneNode\.findUnique\(\{[\s\S]*?runId_chapterIndex_nodeIndex/);
+  assert.doesNotMatch(PIPELINE, /sceneNode\.upsert\(\{[\s\S]*?Shared situation/);
   assert.doesNotMatch(PIPELINE, /sceneNode\.create\(\{[\s\S]*?Shared situation/);
 });
 

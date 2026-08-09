@@ -352,7 +352,6 @@ export class B0SettlementPipelineService {
       where: { id: runId },
       include: {
         roles: { orderBy: { id: "asc" } },
-        roleControls: { orderBy: { roleId: "asc" } },
         nodes: { orderBy: { nodeIndex: "desc" }, take: 1 },
       },
     });
@@ -385,25 +384,23 @@ export class B0SettlementPipelineService {
       });
     }
 
-    const controlsByRole = new Map(run.roleControls.map((control) => [control.roleId, control]));
-    for (const role of run.roles) {
-      if (controlsByRole.has(role.id)) continue;
-      const control = await this.prisma.roleControl.upsert({
-        where: { runId_roleId: { runId, roleId: role.id } },
-        update: {},
-        create: {
-          runId,
-          roleId: role.id,
-          mode: role.isAiControlled ? "AI_ACTIVE" : "HUMAN_ACTIVE",
-          epoch: 1,
-          reason: "B0_INITIAL_ROLE_BINDING",
-          policyVersion: "b0-role-control-v1",
-        },
-      });
-      controlsByRole.set(role.id, control);
-    }
     const expectedActorIds = run.roles.map((role) => role.id).sort();
     if (!expectedActorIds.length) throw hard("ACTOR_NOT_EXPECTED", "A B0 run requires at least one role.");
+
+    // Prisma may emulate an empty-update upsert as SELECT + INSERT, which can
+    // still surface P2002 under simultaneous /game projections. PostgreSQL's
+    // INSERT .. ON CONFLICT DO NOTHING is the authoritative lazy initializer.
+    await this.prisma.roleControl.createMany({
+      data: run.roles.map((role) => ({
+        runId,
+        roleId: role.id,
+        mode: role.isAiControlled ? "AI_ACTIVE" : "HUMAN_ACTIVE",
+        epoch: 1,
+        reason: "B0_INITIAL_ROLE_BINDING",
+        policyVersion: "b0-role-control-v1",
+      })),
+      skipDuplicates: true,
+    });
 
     const ordinal = b0Windows.length + 1;
     const node = await this.nodeForWindow({
@@ -819,20 +816,23 @@ export class B0SettlementPipelineService {
     }
     const chapterIndex = Math.max(1, input.currentChapter);
     const nodeIndex = Math.max(1, input.latestNodeIndex + 1);
-    return this.prisma.sceneNode.upsert({
-      where: { runId_chapterIndex_nodeIndex: { runId: input.runId, chapterIndex, nodeIndex } },
-      update: {},
-      create: {
-        runId: input.runId,
-        chapterIndex,
-        nodeIndex,
+    const uniqueNode = { runId: input.runId, chapterIndex, nodeIndex };
+    await this.prisma.sceneNode.createMany({
+      data: [{
+        ...uniqueNode,
         title: `Shared situation ${input.ordinal}`,
         publicNarration: "A new shared situation opens. Every role may negotiate, investigate, and commit one primary plan before the deadline.",
         nodeGoal: "Commit one bounded primary plan to the synchronized settlement.",
         actionOptionsJson: [] as Prisma.InputJsonValue,
         status: "open_for_actions",
-      },
+      }],
+      skipDuplicates: true,
     });
+    const node = await this.prisma.sceneNode.findUnique({
+      where: { runId_chapterIndex_nodeIndex: uniqueNode },
+    });
+    if (!node) throw hard("B0_NODE_INITIALIZATION_FAILED", "The synchronized window node could not be initialized.");
+    return node;
   }
 
   private async finalizeRun(runId: string, totalWindows: number) {
