@@ -9,6 +9,10 @@ import {
   stableClone,
 } from "./openovel-maneuver-preview-confirm-contract.mjs";
 import {
+  ensureMainDecisionSurface,
+  submitObservedMainDecision,
+} from "./openovel-maneuver-acceptance-guards.mjs";
+import {
   click,
   doubleClick,
   evaluate,
@@ -247,38 +251,68 @@ export function createManeuverAcceptanceHarness({
   }
 
   async function submitMainTurn(ordinal) {
-    await waitSelector(cdp, "#submitDecision", 60_000);
-    const before = await projection();
-    await evaluate(cdp, `(() => {
-      const option = document.querySelector('input[name="decision"]');
-      if (option) option.click();
-      const submit = document.querySelector('#submitDecision');
-      if (!submit) throw new Error('submitDecision missing');
-      submit.click();
-      return true;
-    })()`);
-    await waitUntil(
-      async () => Number((await projection()).worldSequence) === Number(before.worldSequence) + 1,
-      120_000,
-      `main turn ${ordinal} did not commit`,
-    );
+    await submitObservedMainDecision({
+      label: `main turn ${ordinal}`,
+      inspect: () => waitForMainDecisionEntry(`main turn ${ordinal}`),
+      clickOpeningGate: () => click(cdp, "#beginStoryBtn"),
+      waitForDecision: () => waitUntil(async () => {
+        const state = await readMainDecisionSurface();
+        if (state.fatal) throw new Error(state.fatal);
+        return state.submit && state.decisionCount > 0 ? state : false;
+      }, 60_000, `main turn ${ordinal} opening gate did not expose the central decision`),
+      readWorldSequence: async () => Number((await projection()).worldSequence),
+      submitDecision: async () => {
+        const submitted = await evaluate(cdp, `(() => {
+          const option = document.querySelector('input[name="decision"]');
+          if (!option) throw new Error('main decision option missing');
+          const submit = document.querySelector('#submitDecision');
+          if (!submit) throw new Error('submitDecision missing');
+          if (submit.disabled) throw new Error('submitDecision disabled');
+          option.click();
+          if (!option.checked) throw new Error('main decision option was not selected');
+          submit.click();
+          return true;
+        })()`);
+        return submitted === true;
+      },
+      waitForWorldSequence: (expected) => waitUntil(async () => {
+        const sequence = Number((await projection()).worldSequence);
+        return sequence === expected ? sequence : false;
+      }, 120_000, `main turn ${ordinal} did not commit`),
+    });
     await waitSelector(cdp, "#continueStoryBtn", 120_000);
     await continueResult();
   }
 
+  async function readMainDecisionSurface() {
+    return evaluate(cdp, `({
+      begin: Boolean(document.querySelector('#beginStoryBtn')),
+      submit: Boolean(document.querySelector('#submitDecision')),
+      decisionCount: document.querySelectorAll('input[name="decision"]').length,
+      fatal: document.querySelector('[data-testid="fatal-error"]')?.innerText || ''
+    })`);
+  }
+
+  async function waitForMainDecisionEntry(label) {
+    return waitUntil(async () => {
+      const state = await readMainDecisionSurface();
+      if (state.fatal) throw new Error(state.fatal);
+      return state.begin || (state.submit && state.decisionCount > 0) ? state : false;
+    }, 60_000, `${label}: opening gate or complete main-decision surface did not appear`);
+  }
+
   async function continueResult() {
     await click(cdp, "#continueStoryBtn");
-    const state = await waitUntil(async () => {
-      const value = await evaluate(cdp, `({
-        submit: Boolean(document.querySelector('#submitDecision')),
-        begin: Boolean(document.querySelector('#beginStoryBtn')),
-        fatal: document.querySelector('[data-testid="fatal-error"]')?.innerText || ''
-      })`);
-      if (value.fatal) throw new Error(value.fatal);
-      return value.submit || value.begin ? value : false;
-    }, 60_000, "Continue did not restore the main-story decision surface");
-    if (state.begin) await click(cdp, "#beginStoryBtn");
-    await waitSelector(cdp, "#submitDecision", 60_000);
+    await ensureMainDecisionSurface({
+      label: "Continue result",
+      inspect: () => waitForMainDecisionEntry("Continue result"),
+      clickOpeningGate: () => click(cdp, "#beginStoryBtn"),
+      waitForDecision: () => waitUntil(async () => {
+        const state = await readMainDecisionSurface();
+        if (state.fatal) throw new Error(state.fatal);
+        return state.submit && state.decisionCount > 0 ? state : false;
+      }, 60_000, "Continue did not restore decision inputs and #submitDecision"),
+    });
   }
 
   async function enterScene() {
