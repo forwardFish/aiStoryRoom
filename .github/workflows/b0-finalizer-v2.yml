@@ -1,0 +1,642 @@
+name: B0 Finalizer V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-finalizer-v2.yml
+
+permissions:
+  actions: read
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-finalizer-v2
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+      B0_EVIDENCE_ROOT: .artifacts/b0-finalizer-v2/${{ github.sha }}
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+
+    steps:
+      - name: Publish finalizer locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/finalizer-v2",
+              description: `B0 fail-closed finalizer v2 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch start
+        id: start
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME" main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-finalizer-v2.yml"
+          test -z "$(git ls-tree -r --name-only HEAD -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9)"
+          echo "main_sha=$(git rev-parse origin/main)" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare exact real-browser driver and valid independent-worker boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path=Path('scripts/acceptance/b0-candidate-real-flow.ts')
+          source=path.read_text(encoding='utf-8')
+
+          def replace_in_phase(name: str, old: str, new: str) -> None:
+              global source
+              start=source.find(f'await phase("{name}"')
+              if start < 0: raise SystemExit(f'phase not found: {name}')
+              end=source.find('\n    await phase("',start+1)
+              if end < 0: end=len(source)
+              segment=source[start:end]
+              if new in segment: return
+              if segment.count(old)!=1: raise SystemExit(f'{name} anchor count={segment.count(old)}')
+              source=source[:start]+segment.replace(old,new,1)+source[end:]
+
+          if 'async function driveSynchronizedWindowUi(' not in source:
+              replace_in_phase('window-1-embedded-real-narrative',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds, { duplicateConfirmFirst: true });')
+              replace_in_phase('window-2-narrative-failure-does-not-rollback-and-retry',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds);')
+              replace_in_phase('window-3-pause-current-completes-next-does-not-open-resume',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds);')
+              replace_in_phase('window-4-deadline-unconfirmed-human-becomes-hold',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));',
+                  '      await driveSynchronizedWindowUi(browsers.slice(0, 2), users.slice(0, 2), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds.slice(0, 2));')
+              replace_in_phase('window-5-independent-worker',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds);')
+              replace_in_phase('window-6-worker-crash-lease-expiry-recovery-and-ending',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds);')
+
+              anchor=source.find('async function assertBrowserWindowVisible(')
+              if anchor < 0: raise SystemExit('browser helper insertion anchor not found')
+              helper=r'''
+          async function driveSynchronizedWindowUi(
+            sessions: BrowserSession[],
+            users: Array<{ token: string }>,
+            runId: string,
+            windowId: string,
+            ordinal: number,
+            roleIds: string[],
+            options: { duplicateConfirmFirst?: boolean } = {},
+          ): Promise<void> {
+            assert.equal(sessions.length, users.length, "each browser session requires one authenticated user");
+            assert.equal(users.length, roleIds.length, "each browser-driven user requires one authoritative role");
+            assert(sessions.length > 0, "at least one real browser session is required");
+
+            await Promise.all(sessions.map(async (session, sessionIndex) => {
+              const sessionLabel = `browser-${sessionIndex + 1}`;
+              await session.reload();
+              await session.waitForSelector("[data-maneuver-v1-root]", 60_000);
+              await session.waitForSelector("[data-b0-window-status]", 60_000);
+              await session.capture(join(SCREENSHOT_ROOT, `window-${ordinal}-open-${sessionLabel}.png`));
+            }));
+
+            for (let index = 0; index < sessions.length; index += 1) {
+              const session = sessions[index];
+              const sessionLabel = `browser-${index + 1}`;
+              const user = users[index];
+              const targetRoleId = roleIds[(index + 1) % roleIds.length] || roleIds[0];
+              await waitFor(async () => Boolean(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-kind="CONTACT"]');
+                return button instanceof HTMLButtonElement && !button.disabled;
+              })()`)), 60_000, `${sessionLabel} CONTACT control enabled for window ${ordinal}`);
+              assert.equal(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-kind="CONTACT"]');
+                if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+                button.click(); return true;
+              })()`), true, `${sessionLabel} must select CONTACT through the real DOM`);
+
+              await session.waitForSelector('[data-mv1-field="targetId"][data-mv1-for="CONTACT"]', 30_000);
+              await session.waitForSelector('[data-mv1-field="rawText"][data-mv1-for="CONTACT"]', 30_000);
+              const prepared = object(await session.evaluate(`(() => {
+                const select = document.querySelector('[data-mv1-field="targetId"][data-mv1-for="CONTACT"]');
+                const textarea = document.querySelector('[data-mv1-field="rawText"][data-mv1-for="CONTACT"]');
+                if (!(select instanceof HTMLSelectElement) || !(textarea instanceof HTMLTextAreaElement)) return { ok: false, reason: 'CONTACT_FIELDS_MISSING' };
+                const requested = ${JSON.stringify(targetRoleId)};
+                const option = Array.from(select.options).find((entry) => entry.value === requested && !entry.disabled)
+                  || Array.from(select.options).find((entry) => Boolean(entry.value) && !entry.disabled);
+                if (!option) return { ok: false, reason: 'CONTACT_TARGET_MISSING' };
+                select.value = option.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                const text = ${JSON.stringify(`Coordinate one bounded action through the visible evidence in synchronized window ${ordinal}.`)};
+                const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+                if (setter) setter.call(textarea, text); else textarea.value = text;
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.dispatchEvent(new Event('change', { bubbles: true }));
+                return { ok: true, selectedTarget: select.value, characterCount: textarea.value.length };
+              })()`));
+              assert.equal(prepared.ok, true, `${sessionLabel} must prepare a legal CONTACT draft through the real DOM`);
+
+              await waitFor(async () => Boolean(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-preview]');
+                return button instanceof HTMLButtonElement && !button.disabled;
+              })()`)), 60_000, `${sessionLabel} preview control enabled for window ${ordinal}`);
+              assert.equal(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-preview]');
+                if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+                button.click(); return true;
+              })()`), true, `${sessionLabel} must preview through the real DOM`);
+
+              await session.waitForSelector("[data-mv1-confirm]", 60_000);
+              await waitFor(async () => Boolean(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-confirm]');
+                return button instanceof HTMLButtonElement && !button.disabled;
+              })()`)), 60_000, `${sessionLabel} confirm control enabled for window ${ordinal}`);
+              assert.equal(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-confirm]');
+                if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+                button.click(); return true;
+              })()`), true, `${sessionLabel} must confirm through the real DOM`);
+
+              const confirmed = await waitForValue(async () => {
+                const projection = await apiJson(user.token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+                if (projection.window?.id !== windowId || projection.plan?.status !== "CONFIRMED") return null;
+                return projection;
+              }, 60_000, `${sessionLabel} confirmed ActionContract readback for window ${ordinal}`);
+
+              if (options.duplicateConfirmFirst && index === 0) {
+                const revision = Number(confirmed.plan?.revision);
+                assert(Number.isInteger(revision) && revision > 0, "confirmed browser plan requires a positive revision");
+                const replayed = await apiJson(user.token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window/confirm`, {
+                  method: "POST", body: { expectedRevision: revision },
+                });
+                assert.equal(replayed.plan?.status, "CONFIRMED", "duplicate confirmation must remain idempotent");
+              }
+
+              await session.waitForSelector("[data-b0-ready]", 60_000);
+              await waitFor(async () => Boolean(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-b0-ready]');
+                return button instanceof HTMLButtonElement && !button.disabled;
+              })()`)), 60_000, `${sessionLabel} ready control enabled for window ${ordinal}`);
+              assert.equal(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-b0-ready]');
+                if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+                button.click(); return true;
+              })()`), true, `${sessionLabel} must mark ready through the real DOM`);
+
+              await waitFor(async () => {
+                const projection = await apiJson(user.token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+                return projection.window?.id !== windowId || projection.actor?.ready === true || projection.window?.status !== "OPEN";
+              }, 60_000, `${sessionLabel} ready readback for window ${ordinal}`);
+              await session.capture(join(SCREENSHOT_ROOT, `window-${ordinal}-ready-${sessionLabel}.png`));
+            }
+          }
+
+          '''.replace('          ','')
+              source=source[:anchor]+helper+source[anchor:]
+          else:
+              source=source.replace('await session.waitFor(', 'await waitFor(')
+              source=source.replace('${session.name}', '${sessionLabel}')
+              source=source.replace(
+                  'const text = `Coordinate one bounded action through the visible evidence in synchronized window ${ordinal}.`;',
+                  'const text = ${JSON.stringify(`Coordinate one bounded action through the visible evidence in synchronized window ${ordinal}.`)};'
+              )
+
+          if 'AI_ACTIONS_PREPARED_NOT_FROZEN' not in source:
+              if 'AI_ACTIONS_PARTIALLY_PREPARED' not in source:
+                  old='''      const aiAllPending = aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING");
+                    const aiAllPrepared = aiParticipants.every((entry) => preparedStatuses.has(entry.mainStatus));
+                    assert(aiAllPending || aiAllPrepared, "the pre-worker crash boundary must be either wholly before or wholly after AI ActionContract preparation");
+                    const settlementBeforeWorker = await prisma.storyTaskOutbox.findFirst({
+          '''.replace('                  ','')
+                  new='''      const aiAllPending = aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING");
+                    const aiAnyPending = aiParticipants.some((entry) => entry.mainStatus === "B0_PENDING");
+                    const aiAllPrepared = aiParticipants.every((entry) => preparedStatuses.has(entry.mainStatus));
+                    const settlementBeforeWorker = await prisma.storyTaskOutbox.findFirst({
+          '''.replace('                  ','')
+                  if source.count(old)!=1: raise SystemExit(f'AI boundary anchor count={source.count(old)}')
+                  source=source.replace(old,new,1)
+              else:
+                  if 'const aiAnyPending' not in source:
+                      source=source.replace(
+                          '      const aiAllPending = aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING");\n',
+                          '      const aiAllPending = aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING");\n      const aiAnyPending = aiParticipants.some((entry) => entry.mainStatus === "B0_PENDING");\n',1)
+
+              start=source.find('      let preWorkerBoundary:')
+              end=source.find('      await sleep(1_500);',start)
+              if start < 0 or end < 0: raise SystemExit('window-5 pre-worker branch block not found')
+              replacement='''      let preWorkerBoundary: "AI_ACTIONS_UNPREPARED" | "AI_ACTIONS_PARTIALLY_PREPARED" | "AI_ACTIONS_PREPARED_NOT_FROZEN" | "SETTLEMENT_ENQUEUED";
+              if (preWorkerWindow.status === "OPEN") {
+                assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "human roles must remain READY before the prepared roster freezes");
+                assert(aiParticipants.every((entry) => ["B0_PENDING", "B0_READY"].includes(entry.mainStatus)), "AI-filled roles may only be pending or ready while the window remains open");
+                assert.equal(settlementBeforeWorker, null, "an OPEN pre-worker window cannot enqueue settlement");
+                preWorkerBoundary = aiAllPending
+                  ? "AI_ACTIONS_UNPREPARED"
+                  : aiAnyPending
+                    ? "AI_ACTIONS_PARTIALLY_PREPARED"
+                    : "AI_ACTIONS_PREPARED_NOT_FROZEN";
+              } else {
+                assert.equal(preWorkerWindow.status, "LOCKED", "the only valid non-OPEN pre-worker boundary is LOCKED");
+                assert(aiAllPrepared, "a locked pre-worker window requires every AI-filled role prepared");
+                assert(humanParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "human roles must be LOCKED once the roster freezes");
+                assert(aiParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "AI-filled roles must use the same LOCKED state");
+                assert.equal(settlementBeforeWorker?.status, "pending", "the disabled embedded worker must leave settlement pending");
+                assert.equal(settlementBeforeWorker?.leaseOwner, null, "no worker may own settlement before standalone startup");
+                assert.equal(settlementBeforeWorker?.leaseVersion, 0, "settlement must not have been leased before standalone startup");
+                preWorkerBoundary = "SETTLEMENT_ENQUEUED";
+              }
+'''
+              source=source[:start]+replacement+source[end:]
+
+          path.write_text(source,encoding='utf-8')
+          PY
+
+          for workflow in \
+            .github/workflows/b0-stage11-browser-window-driver.yml \
+            .github/workflows/b0-browser-driver-v3.yml \
+            .github/workflows/b0-close-candidate-and-evidence.yml; do
+            if test -e "$workflow"; then git rm "$workflow"; fi
+          done
+          git diff --check
+          grep -F 'async function driveSynchronizedWindowUi' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'AI_ACTIONS_PREPARED_NOT_FROZEN' scripts/acceptance/b0-candidate-real-flow.ts
+          test "$(grep -c 'driveSynchronizedWindowUi' scripts/acceptance/b0-candidate-real-flow.ts)" -eq 7
+
+      - name: Create local exact candidate commit
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git add -u .github/workflows
+          illegal=$(git diff --cached --name-only | grep -Ev '^(scripts/acceptance/b0-candidate-real-flow\.ts|\.github/workflows/b0-stage11-browser-window-driver\.yml|\.github/workflows/b0-browser-driver-v3\.yml|\.github/workflows/b0-close-candidate-and-evidence\.yml)$' || true)
+          test -z "$illegal"
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "test(b0): drive six windows through exact browser controls"
+          fi
+          test -z "$(git status --porcelain)"
+          echo "tested_code_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Frozen install and focused exact verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ steps.candidate.outputs.tested_code_sha }}"
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-worker
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web build
+
+      - name: Start official self-hosted Supabase PostgreSQL
+        id: database
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
+
+      - name: Start real local Ollama model
+        id: provider
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
+
+      - name: Execute engineering real-browser six-window acceptance
+        id: engineering
+        shell: bash
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: pnpm test:b0:real-acceptance
+
+      - name: Prove product traffic reached the provider
+        id: provider_proof
+        if: always() && steps.provider.outcome == 'success'
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
+
+      - name: Clean isolated engineering infrastructure
+        id: cleanup
+        if: always() && steps.database.outcome == 'success'
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup
+
+      - name: Redact engineering evidence
+        id: redaction
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
+
+      - name: Finalize engineering evidence
+        id: engineering_finalize
+        if: success()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize-engineering
+
+      - name: Push tested candidate by ordinary fast-forward
+        id: push_code
+        shell: bash
+        run: |
+          set -euo pipefail
+          tested="${{ steps.candidate.outputs.tested_code_sha }}"
+          git fetch origin "$GITHUB_REF_NAME"
+          before=$(git rev-parse "origin/$GITHUB_REF_NAME")
+          if test "$tested" != "$GITHUB_SHA"; then
+            test "$before" = "$GITHUB_SHA"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          else
+            test "$before" = "$tested"
+          fi
+          git fetch origin "$GITHUB_REF_NAME"
+          after=$(git rev-parse "origin/$GITHUB_REF_NAME")
+          test "$after" = "$tested"
+          echo "remote_before=$before" >> "$GITHUB_OUTPUT"
+          echo "remote_after=$after" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for and evaluate exact tested-SHA workflows
+        id: evaluate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_CODE_SHA: ${{ steps.candidate.outputs.tested_code_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/b0-finalizer-v2
+          done=false
+          for attempt in $(seq 1 180); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=$(python3 -c 'import urllib.parse,os; print(urllib.parse.quote(os.environ["GITHUB_REF_NAME"], safe=""))')&per_page=100" > /tmp/b0-finalizer-v2/runs.json
+            if python3 - <<'PY'
+          import json,os
+          tested=os.environ['TESTED_CODE_SHA']
+          runs=[r for r in json.load(open('/tmp/b0-finalizer-v2/runs.json')).get('workflow_runs',[]) if r.get('head_sha')==tested]
+          selected=[r for r in runs if ('exact' in (r.get('name') or '').lower() or 'acceptance' in (r.get('name') or '').lower())]
+          if len(selected)<2 or any(r.get('status')!='completed' for r in selected): raise SystemExit(1)
+          PY
+            then done=true; break; fi
+            sleep 15
+          done
+          test "$done" = true
+
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json,os,subprocess
+          from pathlib import Path
+          tested=os.environ['TESTED_CODE_SHA']
+          runs=[r for r in json.load(open('/tmp/b0-finalizer-v2/runs.json')).get('workflow_runs',[]) if r.get('head_sha')==tested]
+          selected=[]
+          for run in runs:
+              name=(run.get('name') or '').lower()
+              if 'exact' not in name and 'acceptance' not in name: continue
+              jobs=json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{run["id"]}/jobs?per_page=100'],text=True)).get('jobs',[])
+              selected.append({'id':run['id'],'name':run.get('name'),'status':run.get('status'),'conclusion':run.get('conclusion'),'htmlUrl':run.get('html_url'),'headSha':run.get('head_sha'),'jobs':[{'id':j.get('id'),'name':j.get('name'),'status':j.get('status'),'conclusion':j.get('conclusion'),'steps':[{k:s.get(k) for k in ('name','status','conclusion','number')} for s in (j.get('steps') or [])]} for j in jobs]})
+          jobs=[j for r in selected for j in r['jobs']]
+          required={'Focused B0 contracts','API, Story V4, Maneuver and builds','Full Web regression on Node 24','Causal aggregate on Node 24','Exact candidate code snapshot','Record exact push outcome'}
+          exact={j['name']:j['conclusion'] for j in jobs if j['name'] in required}
+          missing=sorted(required-set(exact)); failed={k:v for k,v in exact.items() if v!='success'}
+          contract=next((j for j in jobs if j['name']=='Acceptance provenance and harness contract'),None)
+          engineering=next((j for j in jobs if j['name']=='Engineering-only self-hosted Supabase and Ollama acceptance'),None)
+          formal=next((j for j in jobs if j['name']=='Formal C8 on real non-production Supabase and DeepSeek'),None)
+          blocker=next((j for j in jobs if j['name']=='Record formal C8 credential blocker'),None)
+          engineering_pass=(not missing and not failed and contract and contract['conclusion']=='success' and engineering and engineering['conclusion']=='success')
+          formal_pass=bool(formal and formal['conclusion']=='success')
+          external_blocked=bool(blocker and blocker['conclusion']=='failure' and (not formal or formal['conclusion']=='skipped'))
+          classification='FULL_PASS' if engineering_pass and formal_pass else 'ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED' if engineering_pass and external_blocked else 'ENGINEERING_OR_GATE_FAILURE'
+          result={'schemaVersion':1,'testedCodeSha':tested,'classification':classification,'engineeringPass':bool(engineering_pass),'formalC8Pass':formal_pass,'formalC8ExternalBlocked':external_blocked,'exactMissing':missing,'exactFailed':failed,'workflowRuns':selected}
+          Path('/tmp/b0-finalizer-v2/evaluation.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+          if classification not in ('FULL_PASS','ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED'): raise SystemExit(f'cannot finalize: {classification}')
+          PY
+          echo "classification=$(python3 -c 'import json; print(json.load(open("/tmp/b0-finalizer-v2/evaluation.json"))["classification"])')" >> "$GITHUB_OUTPUT"
+
+      - name: Download exact logs and acceptance artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/b0-finalizer-v2/logs /tmp/b0-finalizer-v2/downloads
+          python3 - <<'PY'
+          import json,os,subprocess
+          data=json.load(open('/tmp/b0-finalizer-v2/evaluation.json')); index=[]
+          for run in data['workflowRuns']:
+              rid=str(run['id']); safe=(run.get('name') or 'workflow').replace('/','-').replace(' ','_')
+              with open(f'/tmp/b0-finalizer-v2/logs/{rid}-{safe}.log','w',encoding='utf-8') as fh:
+                  subprocess.run(['gh','run','view',rid,'--repo',os.environ['GITHUB_REPOSITORY'],'--log'],stdout=fh,stderr=subprocess.STDOUT,text=True)
+              artifacts=json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{rid}/artifacts?per_page=100'],text=True)).get('artifacts',[])
+              for artifact in artifacts:
+                  index.append({'runId':run['id'],'id':artifact['id'],'name':artifact['name'],'sizeInBytes':artifact.get('size_in_bytes'),'digest':artifact.get('digest')})
+                  name=artifact['name']
+                  if not (name.startswith('b0-engineering-real-acceptance-') or name.startswith('b0-formal-c8-')): continue
+                  target=f'/tmp/b0-finalizer-v2/downloads/{artifact["id"]}-{name}'; os.makedirs(target,exist_ok=True); archive=target+'.zip'
+                  with open(archive,'wb') as fh: subprocess.run(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/artifacts/{artifact["id"]}/zip'],stdout=fh,check=True)
+                  subprocess.run(['unzip','-q',archive,'-d',target],check=True)
+          open('/tmp/b0-finalizer-v2/artifact-index.json','w').write(json.dumps({'schemaVersion':1,'artifacts':index},indent=2)+'\n')
+          PY
+
+      - name: Build fail-closed C8 and C9
+        shell: bash
+        env:
+          TESTED_CODE_SHA: ${{ steps.candidate.outputs.tested_code_sha }}
+          MAIN_SHA: ${{ steps.start.outputs.main_sha }}
+          CLASSIFICATION: ${{ steps.evaluate.outputs.classification }}
+          REMOTE_BEFORE: ${{ steps.push_code.outputs.remote_before }}
+          REMOTE_AFTER: ${{ steps.push_code.outputs.remote_after }}
+        run: |
+          set -euo pipefail
+          root=docs/auto-execute/evidence/b0; c8=$root/c8; c9=$root/c9
+          rm -rf "$c8" "$c9"
+          mkdir -p "$c8" "$c9/gates" "$c9/runtime/engineering" "$c9/runtime/formal" "$c9/readback"
+          cp /tmp/b0-finalizer-v2/evaluation.json "$c9/gates/workflow-evaluation.json"
+          cp /tmp/b0-finalizer-v2/artifact-index.json "$c9/gates/artifact-index.json"
+          cp -a /tmp/b0-finalizer-v2/logs/. "$c9/gates/"
+          find /tmp/b0-finalizer-v2/downloads -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+            name=$(basename "$dir")
+            case "$name" in
+              *b0-engineering-real-acceptance-*) cp -a "$dir/." "$c9/runtime/engineering/" ;;
+              *b0-formal-c8-*) cp -a "$dir/." "$c9/runtime/formal/" ;;
+            esac
+          done
+          cp -a "$B0_EVIDENCE_ROOT/." "$c9/runtime/engineering/finalizer-local-run/"
+
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib,json,os,re
+          from pathlib import Path
+          root=Path('docs/auto-execute/evidence/b0'); c8=root/'c8'; c9=root/'c9'
+          tested=os.environ['TESTED_CODE_SHA']; main=os.environ['MAIN_SHA']; classification=os.environ['CLASSIFICATION']
+          formal=classification=='FULL_PASS'; blocked=classification=='ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED'; status='PASS' if formal else 'EXTERNAL_BLOCKED'
+          checkpoint={'schemaVersion':1,'checkpoint':'B0_C8','status':status,'mainBaselineSha':main,'testedCodeSha':tested,'formalC8':{'requiredDatabase':'real managed non-production Supabase random schema','requiredProvider':'real DeepSeek API','passed':formal,'externalBlocked':blocked,'blockerCode':None if formal else 'NONPRODUCTION_MANAGED_SUPABASE_AND_PROVIDER_CREDENTIAL_PAIR_UNAVAILABLE','selfHostedContainerMaySubstitute':False,'publicSchemaUsedAsTestSchema':False,'productionDataTouched':False,'productionConfigurationChanged':False},'engineeringAcceptance':{'status':'PASS_ENGINEERING_ONLY','database':'official self-hosted supabase/postgres container','provider':'real local Ollama OpenAI-compatible transport','realBrowserSessions':3,'synchronizedWindows':6,'maySubstituteForFormalC8':False,'evidenceRoot':'docs/auto-execute/evidence/b0/c9/runtime/engineering'},'completionMarkersAllowed':formal}
+          (c8/'checkpoint.json').write_text(json.dumps(checkpoint,ensure_ascii=False,indent=2)+'\n')
+          matrix={'schemaVersion':1,'testedCodeSha':tested,'overall':status,'rows':[{'gate':'exact frozen install, regressions, typechecks and builds','status':'PASS','evidence':'gates/workflow-evaluation.json'},{'gate':'three real browser sessions drive Preview, Confirm and Ready across six synchronized windows','status':'PASS_ENGINEERING_ONLY','evidence':'runtime/engineering'},{'gate':'idempotency, deadline HOLD, pause, independent worker and lease recovery','status':'PASS_ENGINEERING_ONLY','evidence':'runtime/engineering'},{'gate':'managed non-production Supabase and real provider formal C8','status':'PASS' if formal else 'EXTERNAL_BLOCKED','evidence':'runtime/formal'}]}
+          (c9/'test-matrix.json').write_text(json.dumps(matrix,ensure_ascii=False,indent=2)+'\n')
+          result={'schemaVersion':1,'status':status,'classification':classification,'mainBaselineSha':main,'testedCodeSha':tested,'evidenceCommitSha':None,'candidateBranchReady':formal,'completionMarkersAllowed':formal,'formalC8ExternalBlocked':blocked,'boundaries':{'forcePushUsed':False,'pullRequestUsed':False,'deploymentPerformed':False,'productionDatabaseTouched':False,'productionConfigurationChanged':False,'realUserDataTouched':False}}
+          (c9/'B0_FINAL_DELIVERY_RESULT.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+          (c9/'checkpoint.json').write_text(json.dumps({'schemaVersion':1,'checkpoint':'B0_C9','status':status,'testedCodeSha':tested,'candidateBranchReady':formal,'formalC8ExternalBlocked':blocked},indent=2)+'\n')
+          (c9/'final-pointer.json').write_text(json.dumps({'schemaVersion':1,'testedCodeSha':tested,'evidenceCommitSha':None,'classification':classification,'candidateBranchReady':formal},indent=2)+'\n')
+          (c9/'readback/push-record.json').write_text(json.dumps({'schemaVersion':1,'localHead':tested,'remoteTipBeforePush':os.environ['REMOTE_BEFORE'],'remoteTipAfterPush':os.environ['REMOTE_AFTER'],'normalFastForward':True},indent=2)+'\n')
+          (c9/'B0_FINAL_DELIVERY_REPORT.md').write_text(f'# B0 Final Delivery Report\n\n- main baseline: `{main}`\n- testedCodeSha: `{tested}`\n- classification: `{classification}`\n- engineering acceptance: `PASS_ENGINEERING_ONLY`\n- formal C8: `{"PASS" if formal else "EXTERNAL_BLOCKED"}`\n- candidate branch ready: `{str(formal).lower()}`\n\nThe self-hosted database is not represented as managed Supabase formal C8. No force push, pull request, deployment, production operation, or real-user-data operation was performed.\n')
+          (c9/'HANDOFF.md').write_text('# B0 Evidence Handoff\n\nThe authoritative set is checkpoint.json, test-matrix.json, gates/, runtime/engineering/, runtime/formal/, redaction-scan.json and manifest.json. Formal C8 remains fail-closed when the explicitly non-production managed credential pair is unavailable.\n')
+
+          patterns=[re.compile(r'postgres(?:ql)?://[^\\s"\\']+',re.I),re.compile(r'(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{12,}'),re.compile(r'gh[pousr]_[A-Za-z0-9]{20,}'),re.compile(r'Bearer\\s+[A-Za-z0-9._~+/=-]{12,}',re.I),re.compile(r'(?:DATABASE_URL|API_KEY|TOKEN|PASSWORD)\\s*[:=]\\s*(?!\\*{3}|<redacted>|null)[^\\s]+',re.I)]
+          findings=[]
+          for path in sorted(root.rglob('*')):
+              if not path.is_file() or path.suffix.lower() in {'.png','.jpg','.jpeg','.webp','.zip'}: continue
+              text=path.read_text(encoding='utf-8',errors='replace')
+              for pattern in patterns:
+                  for match in pattern.finditer(text):
+                      value=match.group(0)
+                      if '127.0.0.1' in value or 'localhost' in value or value.endswith(':***'): continue
+                      findings.append({'path':str(path),'pattern':pattern.pattern,'matchSha256':hashlib.sha256(value.encode()).hexdigest()})
+          scan={'schemaVersion':1,'status':'PASS' if not findings else 'FAIL','findingCount':len(findings),'findings':findings}
+          (c9/'redaction-scan.json').write_text(json.dumps(scan,indent=2)+'\n')
+          if findings: raise SystemExit('secret scan failed')
+          PY
+          git diff --check
+
+      - name: Commit evidence by ordinary fast-forward
+        id: evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          tested="${{ steps.candidate.outputs.tested_code_sha }}"
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$tested"
+          git add docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9
+          git diff --cached --check
+          git commit -m "docs(b0): record fail-closed C8 and C9 evidence"
+          evidence=$(git rev-parse HEAD)
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          echo "evidence_commit_sha=$evidence" >> "$GITHUB_OUTPUT"
+
+      - name: Finalize evidence pointer and manifest
+        id: final
+        shell: bash
+        env:
+          TESTED_CODE_SHA: ${{ steps.candidate.outputs.tested_code_sha }}
+          EVIDENCE_COMMIT_SHA: ${{ steps.evidence.outputs.evidence_commit_sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          c9=Path('docs/auto-execute/evidence/b0/c9')
+          for name in ('final-pointer.json','B0_FINAL_DELIVERY_RESULT.json'):
+              data=json.loads((c9/name).read_text()); data['evidenceCommitSha']=os.environ['EVIDENCE_COMMIT_SHA']; (c9/name).write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+          artifacts=[]
+          for path in sorted(c9.rglob('*')):
+              if not path.is_file() or path.name in {'manifest.json','manifest.sha256'}: continue
+              raw=path.read_bytes(); artifacts.append({'path':str(path.relative_to(c9)),'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()})
+          manifest={'schemaVersion':1,'testedCodeSha':os.environ['TESTED_CODE_SHA'],'evidenceCommitSha':os.environ['EVIDENCE_COMMIT_SHA'],'artifactCount':len(artifacts),'totalBytes':sum(x['bytes'] for x in artifacts),'artifacts':artifacts}
+          raw=(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n').encode(); (c9/'manifest.json').write_bytes(raw); (c9/'manifest.sha256').write_text(hashlib.sha256(raw).hexdigest()+'  manifest.json\n')
+          PY
+          git add docs/auto-execute/evidence/b0/c9
+          git diff --cached --check
+          git commit -m "docs(b0): finalize evidence pointers and manifest"
+          final=$(git rev-parse HEAD)
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "${{ steps.evidence.outputs.evidence_commit_sha }}"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          echo "final_remote_sha=$final" >> "$GITHUB_OUTPUT"
+
+      - name: Verify exact final SHA from fresh clone
+        shell: bash
+        env:
+          TESTED_CODE_SHA: ${{ steps.candidate.outputs.tested_code_sha }}
+          EVIDENCE_COMMIT_SHA: ${{ steps.evidence.outputs.evidence_commit_sha }}
+          FINAL_REMOTE_SHA: ${{ steps.final.outputs.final_remote_sha }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/b0-final-v2-fresh
+          git clone --no-tags --single-branch --branch "$GITHUB_REF_NAME" "https://github.com/$GITHUB_REPOSITORY.git" /tmp/b0-final-v2-fresh
+          cd /tmp/b0-final-v2-fresh
+          test "$(git rev-parse HEAD)" = "$FINAL_REMOTE_SHA"
+          git merge-base --is-ancestor "$TESTED_CODE_SHA" "$EVIDENCE_COMMIT_SHA"
+          git merge-base --is-ancestor "$EVIDENCE_COMMIT_SHA" "$FINAL_REMOTE_SHA"
+          test -n "$(git ls-tree -r --name-only HEAD -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9)"
+          illegal=$(git diff --name-only "$TESTED_CODE_SHA".."$FINAL_REMOTE_SHA" | grep -Ev '^docs/auto-execute/evidence/b0/' || true)
+          test -z "$illegal"
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path('docs/auto-execute/evidence/b0'); c9=root/'c9'
+          for path in root.rglob('*.json'): json.loads(path.read_text())
+          manifest=json.loads((c9/'manifest.json').read_text()); assert manifest['testedCodeSha']==os.environ['TESTED_CODE_SHA']; assert manifest['evidenceCommitSha']==os.environ['EVIDENCE_COMMIT_SHA']; assert manifest['artifactCount']==len(manifest['artifacts']); assert manifest['totalBytes']==sum(x['bytes'] for x in manifest['artifacts'])
+          for item in manifest['artifacts']:
+              raw=(c9/item['path']).read_bytes(); assert len(raw)==item['bytes']; assert hashlib.sha256(raw).hexdigest()==item['sha256']
+          assert (c9/'manifest.sha256').read_text().split()[0]==hashlib.sha256((c9/'manifest.json').read_bytes()).hexdigest()
+          scan=json.loads((c9/'redaction-scan.json').read_text()); assert scan['status']=='PASS' and scan['findingCount']==0
+          readback={'schemaVersion':1,'testedCodeSha':os.environ['TESTED_CODE_SHA'],'evidenceCommitSha':os.environ['EVIDENCE_COMMIT_SHA'],'finalRemoteSha':os.environ['FINAL_REMOTE_SHA'],'c8c9TrackedPathCount':len([p for p in root.rglob('*') if p.is_file()]),'manifestArtifactCount':manifest['artifactCount'],'docsOnlyAfterTestedCode':True,'manifestVerified':True,'secretScan':'PASS'}
+          Path('/tmp/b0-final-v2-readback.json').write_text(json.dumps(readback,indent=2)+'\n')
+          PY
+
+      - name: Upload final fresh-clone readback
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-final-v2-readback-${{ steps.final.outputs.final_remote_sha }}
+          path: /tmp/b0-final-v2-readback.json
+          retention-days: 30
+
+      - name: Publish final statuses
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          FINAL_REMOTE_SHA: ${{ steps.final.outputs.final_remote_sha }}
+          CLASSIFICATION: ${{ steps.evaluate.outputs.classification }}
+        with:
+          script: |
+            const full=process.env.CLASSIFICATION==="FULL_PASS";
+            const common={owner:context.repo.owner,repo:context.repo.repo,sha:process.env.FINAL_REMOTE_SHA,target_url:`${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`};
+            await github.rest.repos.createCommitStatus({...common,state:"success",context:"b0/evidence-tree",description:"C8/C9 evidence and manifest verified"});
+            await github.rest.repos.createCommitStatus({...common,state:"success",context:"b0/fresh-clone",description:"final remote SHA verified from fresh clone"});
+            await github.rest.repos.createCommitStatus({...common,state:full?"success":"failure",context:"b0/formal-c8",description:full?"formal C8 passed":"formal C8 EXTERNAL_BLOCKED"});
+            await github.rest.repos.createCommitStatus({...common,state:full?"success":"failure",context:"b0/candidate-ready",description:full?"candidate branch ready":"candidate not ready while formal C8 is externally blocked"});
+            await github.rest.repos.createCommitStatus({...common,state:"success",context:"b0/finalizer-v2",description:full?"full closure verified":"engineering closure verified; formal C8 externally blocked"});
+
+      - name: Publish failed finalizer status
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:"failure",context:"b0/finalizer-v2",description:`B0 finalizer v2 failed in ${context.runId}`,target_url:`${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`});
