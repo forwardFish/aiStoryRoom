@@ -1,4 +1,36 @@
 const SUPABASE_HOST_SUFFIXES = [".supabase.com", ".supabase.co"];
+const LOCAL_FAVICON_404_TEXT = "Failed to load resource: the server responded with a status of 404 (Not Found)";
+
+export function isAllowedLocalFavicon404ConsoleItem(item, webOrigin) {
+  if (item?.kind !== "log" || item?.type !== "error") return false;
+  if (String(item.text || "").trim() !== LOCAL_FAVICON_404_TEXT) return false;
+
+  let expectedOrigin;
+  let resourceUrl;
+  try {
+    expectedOrigin = new URL(String(webOrigin || "")).origin;
+    resourceUrl = new URL(String(item.url || ""));
+  } catch {
+    return false;
+  }
+
+  return resourceUrl.origin === expectedOrigin
+    && resourceUrl.pathname === "/favicon.ico"
+    && resourceUrl.search === ""
+    && resourceUrl.hash === "";
+}
+
+export function classifyBrowserConsoleItems(items, webOrigin) {
+  return (Array.isArray(items) ? items : []).map((item) => {
+    if (!isAllowedLocalFavicon404ConsoleItem(item, webOrigin)) return item;
+    return {
+      ...item,
+      type: "ignored",
+      originalType: item.type,
+      acceptanceReason: "local-favicon-404",
+    };
+  });
+}
 
 export function isSupabaseDatabaseHostname(value) {
   const hostname = String(value || "").trim().toLowerCase().replace(/\.$/, "");
