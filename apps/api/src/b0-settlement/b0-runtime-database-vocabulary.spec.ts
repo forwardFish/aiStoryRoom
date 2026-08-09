@@ -75,6 +75,12 @@ test("generated HOLD rows use a precise durable actor provenance", () => {
   assert.doesNotMatch(COORDINATOR, /SYSTEM_OR_ACTOR/);
 });
 
+test("ActionWindow lazy initialization retries only the nodeId winner race", () => {
+  assert.match(COORDINATOR, /code !== "P2002"[\s\S]*?modelName[\s\S]*?ActionWindow/);
+  assert.match(COORDINATOR, /fields\.length === 1[\s\S]*?fields\[0\] === "nodeId"/);
+  assert.doesNotMatch(COORDINATOR, /return code === "P2002"/);
+});
+
 test("migration covers the exact B0 persistence surfaces", () => {
   for (const token of [
     "B0_SETTLEMENT_REQUESTED", "B0_PUBLISH_STRUCTURED_RESULTS", "B0_NARRATIVE_GENERATION", "B0_WINDOW_EVENT",

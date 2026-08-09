@@ -722,6 +722,15 @@ function domain(code: string, message: string): ConflictException {
 }
 
 function retryable(error: unknown): boolean {
-  const code = String((error as any)?.code || "");
-  return code === "P2034" || code === "40001" || code === "40P01";
+  const candidate = error as any;
+  const code = String(candidate?.code || "");
+  if (code === "P2034" || code === "40001" || code === "40P01") return true;
+  if (code !== "P2002" || String(candidate?.meta?.modelName || "") !== "ActionWindow") return false;
+  const target = candidate?.meta?.target;
+  const fields = Array.isArray(target)
+    ? target.map((entry: unknown) => String(entry))
+    : typeof target === "string"
+      ? [target]
+      : [];
+  return fields.length === 1 && (fields[0] === "nodeId" || fields[0].endsWith("_nodeId_key"));
 }
