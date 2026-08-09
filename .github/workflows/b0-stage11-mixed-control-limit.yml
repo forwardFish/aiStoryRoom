@@ -1,0 +1,149 @@
+name: B0 Stage 11 Mixed-Control Settlement Limit Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage11-mixed-control-limit.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage11-mixed-control-limit
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage11-mixed-control-limit",
+              description: `mixed-control settlement limit repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Verify exact branch tip and source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "a354c1b6fa0376897741b8dd3cfb5323ec5fdb13"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-mixed-control-limit.yml"
+          test "$(git hash-object packages/templates/src/runtime-contract/b0-batch-settlement.ts)" = "3279cb1d25e107573b3ac72c56c38cf722b82f67"
+          test "$(git hash-object packages/templates/tests/b0-multi-intent-settlement.test.ts)" = "206191c8b20dfa20caaff6b998362bdf53d425ff"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts)" = "818b3d2f8ae796f37136ade25d63dc1661290933"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts)" = "d97828d66df9f5262d6e3e7657f2f67054e34fa2"
+
+      - name: Apply the hash-bound mixed-control patch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/60830c4b8061f12097d60790fd686c4534e429a2" --jq .content \
+            | tr -d '\n' \
+            | base64 -d > /tmp/b0-stage11.patch.gz.b64
+          test "$(wc -c < /tmp/b0-stage11.patch.gz.b64 | tr -d ' ')" = "3680"
+          test "$(sha256sum /tmp/b0-stage11.patch.gz.b64 | cut -d' ' -f1)" = "dbd30925bf5b137bcee9221a57dd290d8016ddd74b2988a6ee557e9bab7357ca"
+          base64 -d /tmp/b0-stage11.patch.gz.b64 > /tmp/b0-stage11.patch.gz
+          test "$(wc -c < /tmp/b0-stage11.patch.gz | tr -d ' ')" = "2758"
+          test "$(sha256sum /tmp/b0-stage11.patch.gz | cut -d' ' -f1)" = "46c7175a9f0a8c1723c267979be48dc235cb62e7907a45f16485890a7205deac"
+          gzip -dc /tmp/b0-stage11.patch.gz > /tmp/b0-stage11.patch
+          test "$(wc -c < /tmp/b0-stage11.patch | tr -d ' ')" = "8079"
+          test "$(sha256sum /tmp/b0-stage11.patch | cut -d' ' -f1)" = "91da75d566bd8f5834d1a701355d7bc6822074fb4204f45b5bafb9c5afee62c2"
+          git apply --check /tmp/b0-stage11.patch
+          git apply /tmp/b0-stage11.patch
+          git diff --check
+          grep -F 'const humanIntentCount = countHumanControlledIntents(snapshot, intents);' packages/templates/src/runtime-contract/b0-batch-settlement.ts
+          grep -F 'maxHumanPlayers: Math.max(1, actorCount)' apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+
+      - name: Frozen install and focused verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @ai-story/templates typecheck
+          pnpm --filter @ai-story/templates test:b0-multi
+          pnpm --filter @ai-story/templates test:b0-batch
+          pnpm --filter @ai-story/templates test:runtime-contract
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-batch
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-ops
+
+      - name: Commit the completed repair as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            packages/templates/src/runtime-contract/b0-batch-settlement.ts \
+            packages/templates/tests/b0-multi-intent-settlement.test.ts \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts \
+            apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          git rm .github/workflows/b0-stage11-mixed-control-limit.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage11-mixed-control-limit.yml
+          apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          packages/templates/src/runtime-contract/b0-batch-settlement.ts
+          packages/templates/tests/b0-multi-intent-settlement.test.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): separate human and AI settlement limits"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage11-mixed-control-limit",
+              description: `mixed-control settlement limit repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 stage 11 mixed-control settlement limit repair failed");
