@@ -695,7 +695,7 @@ export class B0SettlementPipelineService {
         visibility: delivery.visibility.toLowerCase(),
         payloadJson: payload,
         dedupeKey: delivery.idempotencyKey,
-        audienceType: delivery.visibility,
+        audienceType: "ROLE",
         audienceRoleIdsJson: [delivery.recipientActorId] as Prisma.InputJsonValue,
       },
     });

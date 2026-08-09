@@ -102,6 +102,56 @@ function fixture(overrides: Json = {}) {
   return { service, prisma, calls };
 }
 
+test("B0 structured delivery persists recipient routing with the durable ROLE audience vocabulary", async () => {
+  const capture: { persisted?: Json } = {};
+  const { service } = fixture({
+    storyRole: {
+      findUnique: async () => ({ id: "role.b", runId: "run.1", roleKey: "role-b" }),
+    },
+    storyRun: {
+      findUnique: async () => ({ currentDay: 3 }),
+    },
+    storyEvent: {
+      upsert: async (input: Json) => {
+        capture.persisted = input;
+        return { id: "event.1" };
+      },
+    },
+    storyPlayer: {
+      findMany: async () => [],
+    },
+  });
+
+  await (service as any).persistStructuredDelivery({
+    schemaVersion: "b0-publication-delivery-v1",
+    idempotencyKey: "b0-publication:batch.1:result.1:role.b",
+    batchId: "batch.1",
+    runId: "run.1",
+    windowId: "window.1",
+    resultId: "result.1",
+    resultKind: "CROSS_PLAYER_IMPACT",
+    recipientActorId: "role.b",
+    visibility: "TARGETED",
+    sourceDisclosure: "HIDDEN",
+    originActorIds: [],
+    targetActorIds: ["role.b"],
+    summary: "Another committed plan changed this role's position.",
+    outcomeStatus: null,
+    changes: [],
+    explanation: {
+      schemaVersion: "b0-causal-explanation-card-v1",
+      resultId: "result.1",
+      reasons: [{ kind: "OTHER_PLAN", summary: "Another committed plan changed your position." }],
+    },
+  });
+
+  assert.ok(capture.persisted);
+  const create = capture.persisted.create as Json;
+  assert.equal(create.visibility, "targeted");
+  assert.equal(create.audienceType, "ROLE");
+  assert.deepEqual(create.audienceRoleIdsJson, ["role.b"]);
+});
+
 test("C8 diagnostics is read-only and reports window, task, narrative and world sequence state", async () => {
   const { service, calls } = fixture();
   const result = await service.diagnostics("run.1");
