@@ -3,10 +3,77 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import {
   assertSupabaseTestDatabaseUrl,
+  classifyBrowserConsoleItems,
   ensureMainDecisionSurface,
+  isAllowedLocalFavicon404ConsoleItem,
   isSupabaseDatabaseHostname,
   submitObservedMainDecision,
 } from "./openovel-maneuver-acceptance-guards.mjs";
+
+const LOCAL_WEB_ORIGIN = "http://127.0.0.1:20761";
+const LOCAL_FAVICON_404_TEXT = "Failed to load resource: the server responded with a status of 404 (Not Found)";
+
+function resourceError(url, text = LOCAL_FAVICON_404_TEXT) {
+  return { kind: "log", type: "error", text, url };
+}
+
+test("classifies only the exact local Web-origin favicon 404 as ignorable", () => {
+  const item = resourceError(`${LOCAL_WEB_ORIGIN}/favicon.ico`);
+  assert.equal(isAllowedLocalFavicon404ConsoleItem(item, LOCAL_WEB_ORIGIN), true);
+  assert.deepEqual(classifyBrowserConsoleItems([item], LOCAL_WEB_ORIGIN), [{
+    ...item,
+    type: "ignored",
+    originalType: "error",
+    acceptanceReason: "local-favicon-404",
+  }]);
+});
+
+test("keeps API, JavaScript, and CSS 404 console errors fatal", () => {
+  const items = [
+    resourceError(`${LOCAL_WEB_ORIGIN}/api/v4/rooms/run-1/game`),
+    resourceError(`${LOCAL_WEB_ORIGIN}/app.js`),
+    resourceError(`${LOCAL_WEB_ORIGIN}/main-game.css`),
+  ];
+  assert.equal(items.every((item) => !isAllowedLocalFavicon404ConsoleItem(item, LOCAL_WEB_ORIGIN)), true);
+  assert.deepEqual(classifyBrowserConsoleItems(items, LOCAL_WEB_ORIGIN), items);
+});
+
+test("keeps external, wrong-port, and query-string favicon 404 errors fatal", () => {
+  const items = [
+    resourceError("https://example.com/favicon.ico"),
+    resourceError("http://127.0.0.1:20762/favicon.ico"),
+    resourceError(`${LOCAL_WEB_ORIGIN}/favicon.ico?v=1`),
+  ];
+  assert.equal(items.every((item) => !isAllowedLocalFavicon404ConsoleItem(item, LOCAL_WEB_ORIGIN)), true);
+  assert.deepEqual(classifyBrowserConsoleItems(items, LOCAL_WEB_ORIGIN), items);
+});
+
+test("keeps favicon 500 errors fatal", () => {
+  const item = resourceError(
+    `${LOCAL_WEB_ORIGIN}/favicon.ico`,
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+  );
+  assert.equal(isAllowedLocalFavicon404ConsoleItem(item, LOCAL_WEB_ORIGIN), false);
+  assert.deepEqual(classifyBrowserConsoleItems([item], LOCAL_WEB_ORIGIN), [item]);
+});
+
+test("keeps browser exceptions and console.error calls fatal even when they mention favicon", () => {
+  const items = [
+    {
+      kind: "exception",
+      type: "error",
+      text: LOCAL_FAVICON_404_TEXT,
+      url: `${LOCAL_WEB_ORIGIN}/favicon.ico`,
+    },
+    {
+      kind: "console",
+      type: "error",
+      values: [LOCAL_FAVICON_404_TEXT, `${LOCAL_WEB_ORIGIN}/favicon.ico`],
+    },
+  ];
+  assert.equal(items.every((item) => !isAllowedLocalFavicon404ConsoleItem(item, LOCAL_WEB_ORIGIN)), true);
+  assert.deepEqual(classifyBrowserConsoleItems(items, LOCAL_WEB_ORIGIN), items);
+});
 
 test("accepts the project Supabase pooler hostname", () => {
   assert.deepEqual(
@@ -147,9 +214,13 @@ test("acceptance sources guard Supabase before services or Prisma and submit onl
   const core = await readFile(new URL("./openovel-maneuver-live-browser-core.mjs", import.meta.url), "utf8");
   const browser = await readFile(new URL("./openovel-maneuver-r2-4-browser.mjs", import.meta.url), "utf8");
   const harness = await readFile(new URL("./openovel-maneuver-r2-4-browser-harness.mjs", import.meta.url), "utf8");
+  const cdp = await readFile(new URL("./openovel-maneuver-r2-4-browser-cdp.mjs", import.meta.url), "utf8");
 
   assert.ok(core.indexOf("assertSupabaseTestDatabaseUrl(DATABASE_URL)") < core.indexOf("const dirs ="));
   assert.ok(browser.indexOf("assertSupabaseTestDatabaseUrl(DATABASE_URL)") < browser.indexOf("new PrismaClient()"));
+  assert.match(cdp, /classifyBrowserConsoleItems/);
+  assert.match(cdp, /const console = \(\) => classifyBrowserConsoleItems\(consoleItems, webOrigin\)/);
+  assert.match(cdp, /const rawConsole = \(\) => consoleItems/);
   assert.match(harness, /submitObservedMainDecision\(\{/);
   assert.match(harness, /decisionCount: document\.querySelectorAll\('input\[name="decision"\]'\)\.length/);
   assert.match(harness, /if \(!option\) throw new Error\('main decision option missing'\)/);

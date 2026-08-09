@@ -5,6 +5,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { resolveChromeBinary } from "./chrome-binary-resolver.mjs";
+import { classifyBrowserConsoleItems } from "./openovel-maneuver-acceptance-guards.mjs";
 import { classifyManeuverRequest } from "./openovel-maneuver-preview-confirm-contract.mjs";
 
 export class CdpClient {
@@ -191,7 +192,10 @@ export async function screenshot(client, file) {
   await writeFile(file, Buffer.from(result.data, "base64"));
 }
 
-export function captureBrowserEvidence(client) {
+export function captureBrowserEvidence(
+  client,
+  webOrigin = String(process.env.OPENOVEL_R2_4_WEB_BASE || "http://127.0.0.1:4173").replace(/\/+$/, ""),
+) {
   const requests = new Map();
   const consoleItems = [];
   client.on("Network.requestWillBeSent", (event) => {
@@ -235,7 +239,9 @@ export function captureBrowserEvidence(client) {
   }));
   const network = () => [...requests.values()];
   const maneuverRequests = () => network().filter((item) => item.method === "POST" && classifyManeuverRequest(item.url));
-  return { network, maneuverRequests, console: () => consoleItems };
+  const console = () => classifyBrowserConsoleItems(consoleItems, webOrigin);
+  const rawConsole = () => consoleItems;
+  return { network, maneuverRequests, console, rawConsole };
 }
 
 export async function waitForManeuverRequestDelta(evidence, startIndex, expected) {
