@@ -35,7 +35,7 @@ test("busy maneuver state disables action cards and the active workbench", () =>
   const html = renderFourManeuverPanel(projection(), state({ busy: true }));
 
   assert.match(html, /aria-busy="true"/);
-  assert.match(html, /正在处理主动谋划/);
+  assert.match(html, /AI正在推演局势/);
   assert.equal((html.match(/data-maneuver-type=/g) || []).length, 4);
   assert.equal((html.match(/data-maneuver-type=[^>]+disabled/g) || []).length, 4);
   assert.match(html, /id="customManeuverText"[^>]+disabled/);

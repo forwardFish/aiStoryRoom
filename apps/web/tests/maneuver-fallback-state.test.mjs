@@ -27,13 +27,13 @@ test("missing maneuver projection fails closed with an actionable message instea
   assert.equal((html.match(/ disabled/g) || []).length >= 4, true);
 });
 
-test("authoritative exhausted quota keeps the specific daily-limit reason", () => {
+test("authoritative exhausted quota keeps the canonical daily-limit reason", () => {
   const html = renderFourManeuverPanel({
     maneuverState: {
       maneuverOpportunitiesRemaining: 0,
     },
   }, state());
 
-  assert.equal(html.includes("今日谋划机会已用完"), true);
+  assert.equal(html.includes("今日机会已用完"), true);
   assert.equal(html.includes("请刷新页面后重试"), false);
 });
