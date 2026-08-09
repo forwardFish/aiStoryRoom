@@ -228,6 +228,10 @@ test("C7 real game controller previews and confirms through B0 without invoking 
     fetchImpl,
   });
   await controller.boot();
+  assert.deepEqual(calls.slice(0, 2).map(({ url }) => url.split("?")[0]), [
+    "/api/v4/rooms/run.one/b0/window",
+    "/api/v4/rooms/run.one/maneuvers/projection",
+  ]);
   const textarea = win.document.querySelector('[data-mv1-for="CONTACT"][data-mv1-field="rawText"]');
   textarea.value = "Ask for bounded support.";
   textarea.dispatchEvent(new win.Event("input", { bubbles: true }));

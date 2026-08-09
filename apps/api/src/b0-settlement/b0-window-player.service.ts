@@ -16,7 +16,10 @@ import {
   ManeuverPreviewTokenCodecV1,
   type ManeuverPreviewTokenPayloadV1,
 } from "../maneuver-v1/maneuver-v1.core";
-import { readManeuverContextV1 } from "../maneuver-v1/maneuver-v1.prisma-read";
+import {
+  readB0ManeuverContextV1,
+  type B0AuthoritativeManeuverContextV1,
+} from "../maneuver-v1/maneuver-v1.prisma-read";
 import { ManeuverV1Service } from "../maneuver-v1/maneuver-v1.service";
 import {
   buildB0PublicationPlanV1,
@@ -60,8 +63,8 @@ export class B0WindowPlayerService {
 
   async projection(user: AuthenticatedUser, runId: string): Promise<B0PlayerWindowProjectionV1> {
     try {
-      const context = await readManeuverContextV1(this.prisma, user.id, runId);
-      const window = await this.findCurrentWindow(runId);
+      const context = await this.requiredB0Context(user.id, runId);
+      const window = await this.findCurrentWindow(runId, context.b0WindowId);
       return await this.buildProjection(window, context.roleId);
     } catch (error) {
       throw playerHttpError(error);
@@ -73,8 +76,8 @@ export class B0WindowPlayerService {
       const request = exactObject(body, ["draft", "expectedStateRevision", "expectedRevision", "clientRequestId"], "preview");
       const expectedRevision = revision(request.expectedRevision, "expectedRevision");
       const clientRequestId = identifier(request.clientRequestId, "clientRequestId");
-      const context = await readManeuverContextV1(this.prisma, user.id, runId);
-      const window = await this.findCurrentWindow(runId);
+      const context = await this.requiredB0Context(user.id, runId);
+      const window = await this.findCurrentWindow(runId, context.b0WindowId);
       const currentProjection = await this.coordinator.projection(window.id, context.roleId);
       if (currentProjection.actorReady) {
         throw domain("READY_STATE_LOCKS_DRAFT", "Cancel ready before editing this plan.");
@@ -82,10 +85,10 @@ export class B0WindowPlayerService {
       if (currentProjection.window.status !== "OPEN") {
         throw domain("WINDOW_NOT_OPEN", `The settlement window is ${currentProjection.window.status}.`);
       }
-      const preview = await this.maneuvers.preview(user, runId, {
+      const preview = await this.maneuvers.previewWithContext(user, runId, {
         draft: request.draft,
         expectedStateRevision: request.expectedStateRevision,
-      });
+      }, context);
       if (preview.decision !== "READY" || !preview.previewToken || !preview.presentation) {
         return {
           ...preview,
@@ -125,8 +128,8 @@ export class B0WindowPlayerService {
   async confirm(user: AuthenticatedUser, runId: string, body: unknown): Promise<B0PlayerWindowProjectionV1> {
     try {
       const request = exactObject(body, ["expectedRevision"], "confirm");
-      const context = await readManeuverContextV1(this.prisma, user.id, runId);
-      const window = await this.findCurrentWindow(runId);
+      const context = await this.requiredB0Context(user.id, runId);
+      const window = await this.findCurrentWindow(runId, context.b0WindowId);
       const projection = await this.coordinator.projection(window.id, context.roleId);
       if (projection.actorReady) throw domain("READY_STATE_LOCKS_DRAFT", "Cancel ready before confirming another plan revision.");
       await this.coordinator.confirmDraft({
@@ -145,8 +148,8 @@ export class B0WindowPlayerService {
   async ready(user: AuthenticatedUser, runId: string, body: unknown): Promise<B0PlayerWindowProjectionV1> {
     try {
       const request = exactObject(body, ["expectedReadyRevision", "hold"], "ready");
-      const context = await readManeuverContextV1(this.prisma, user.id, runId);
-      const window = await this.findCurrentWindow(runId);
+      const context = await this.requiredB0Context(user.id, runId);
+      const window = await this.findCurrentWindow(runId, context.b0WindowId);
       const projection = await this.coordinator.projection(window.id, context.roleId);
       if (!projection.lastConfirmed && request.hold !== true) {
         throw domain("READY_REQUIRES_CONFIRMED_OR_HOLD", "Confirm a plan or explicitly choose Hold before becoming ready.");
@@ -167,8 +170,8 @@ export class B0WindowPlayerService {
   async unready(user: AuthenticatedUser, runId: string, body: unknown): Promise<B0PlayerWindowProjectionV1> {
     try {
       const request = exactObject(body, ["expectedReadyRevision"], "unready");
-      const context = await readManeuverContextV1(this.prisma, user.id, runId);
-      const window = await this.findCurrentWindow(runId);
+      const context = await this.requiredB0Context(user.id, runId);
+      const window = await this.findCurrentWindow(runId, context.b0WindowId);
       await this.coordinator.unready({
         windowId: window.id,
         actorId: context.roleId,
@@ -182,9 +185,25 @@ export class B0WindowPlayerService {
     }
   }
 
-  private async findCurrentWindow(runId: string) {
+  private async requiredB0Context(userId: string, runId: string): Promise<B0AuthoritativeManeuverContextV1> {
+    const context = await readB0ManeuverContextV1(this.prisma, userId, runId);
+    if (!context) {
+      throw new NotFoundException({
+        code: "B0_WINDOW_NOT_AVAILABLE",
+        message: "This room does not currently have a B0 settlement window.",
+        recoverable: false,
+      });
+    }
+    return context;
+  }
+
+  private async findCurrentWindow(runId: string, windowId?: string) {
     const windows = await this.prisma.actionWindow.findMany({
-      where: { runId, status: { in: [...ACTIVE_WINDOW_STATUSES] } },
+      where: {
+        runId,
+        ...(windowId ? { id: windowId } : {}),
+        status: { in: [...ACTIVE_WINDOW_STATUSES] },
+      },
       include: {
         participants: true,
         node: true,
@@ -303,7 +322,7 @@ export class B0WindowPlayerService {
 function assertPreviewOwnership(
   payload: ManeuverPreviewTokenPayloadV1,
   userId: string,
-  context: Awaited<ReturnType<typeof readManeuverContextV1>>,
+  context: B0AuthoritativeManeuverContextV1,
 ): void {
   if (payload.userId !== userId
     || payload.runId !== context.runId

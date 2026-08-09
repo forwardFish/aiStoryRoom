@@ -184,6 +184,30 @@ export class ManeuverEngineV1 {
     const expectedStateRevision = revision(input?.expectedStateRevision, "expectedStateRevision");
     const draft = validateManeuverDraftV1(input?.draft);
     const context = await this.store.readContext(userId, runId);
+    return this.previewPrepared(userId, runId, expectedStateRevision, draft, context);
+  }
+
+  async previewWithContext(
+    userId: string,
+    runId: string,
+    input: { draft: unknown; expectedStateRevision: unknown },
+    context: AuthoritativeManeuverContextV1,
+  ): Promise<ManeuverPreviewEnvelopeV1> {
+    const expectedStateRevision = revision(input?.expectedStateRevision, "expectedStateRevision");
+    const draft = validateManeuverDraftV1(input?.draft);
+    return this.previewPrepared(userId, runId, expectedStateRevision, draft, context);
+  }
+
+  private previewPrepared(
+    userId: string,
+    runId: string,
+    expectedStateRevision: number,
+    draft: ManeuverDraftV1,
+    context: AuthoritativeManeuverContextV1,
+  ): ManeuverPreviewEnvelopeV1 {
+    if (context.userId !== userId || context.runId !== runId) {
+      throw new ManeuverDomainErrorV1("PREVIEW_TAMPERED", "The authoritative preview context does not belong to this player.", 403, false);
+    }
     assertWindowOpen(context);
     if (context.stateRevision !== expectedStateRevision) {
       throw new ManeuverDomainErrorV1("REVISION_CONFLICT", "The situation changed. Refresh before previewing.", 409);

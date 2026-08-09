@@ -33,6 +33,14 @@ type FallbackFactRowV1 = {
   sourceActionIdsJson?: unknown;
 };
 
+const ACTIVE_B0_WINDOW_STATUSES = [
+  "OPEN", "LOCKED", "SETTLING", "COMMITTED", "PUBLISHING", "COMPLETED", "FAILED_RETRYABLE", "FAILED_HARD",
+] as const;
+
+export type B0AuthoritativeManeuverContextV1 = AuthoritativeManeuverContextV1 & {
+  b0WindowId: string;
+};
+
 export async function readManeuverContextV1(
   db: DatabaseClient,
   userId: string,
@@ -135,27 +143,7 @@ export async function readManeuverContextV1(
     roles: contactRoles,
     facts: confirmedFacts,
   });
-  const contacts = parsed.compilerContext.contacts.length
-    ? parsed.compilerContext.contacts
-    : fallback.contacts;
-  const useConfiguredInvestigations = parsed.compilerContext.traces.length > 0
-    && parsed.investigationOutcomes.length > 0;
-  const traces = useConfiguredInvestigations
-    ? parsed.compilerContext.traces
-    : fallback.traces;
-  const investigationOutcomes = useConfiguredInvestigations
-    ? parsed.investigationOutcomes
-    : fallback.investigationOutcomes;
-  const compilerContext: ManeuverCompilerContextV1 = {
-    ...parsed.compilerContext,
-    contacts,
-    traces,
-    legalTargetIds: uniqueStrings([
-      ...parsed.compilerContext.legalTargetIds,
-      ...contacts.map((contact) => contact.id),
-      ...traces.map((trace) => trace.traceId),
-    ]),
-  };
+  const { compilerContext, investigationOutcomes } = mergeCompilerContext(parsed, fallback);
 
   return {
     runId,
@@ -175,12 +163,121 @@ export async function readManeuverContextV1(
   };
 }
 
+export async function readB0ManeuverContextV1(
+  db: DatabaseClient,
+  userId: string,
+  runId: string,
+): Promise<B0AuthoritativeManeuverContextV1 | null> {
+  const windows = await (db as any).actionWindow.findMany({
+    where: { runId, status: { in: [...ACTIVE_B0_WINDOW_STATUSES] } },
+    select: {
+      id: true,
+      runId: true,
+      nodeId: true,
+      status: true,
+      openingSnapshotVersion: true,
+      projectionVersion: true,
+      version: true,
+      configJson: true,
+      node: { select: { chapterIndex: true } },
+      participants: { select: { roleId: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 12,
+  });
+  const window = windows.find((entry: any) => optionalRecord(entry.configJson)?.schemaVersion === "b0-window-config-v1");
+  if (!window) return null;
+
+  const [run, player] = await Promise.all([
+    (db as any).storyRun.findUnique({
+      where: { id: runId },
+      select: { id: true, currentChapter: true, worldSequence: true, status: true },
+    }),
+    (db as any).storyPlayer.findFirst({
+      where: { runId, userId, playerType: "human", status: "active" },
+      select: { id: true, roleId: true },
+    }),
+  ]);
+  if (!run) throw domain("RUN_NOT_FOUND", "The story run was not found.", 404, false);
+  if (!player?.roleId) throw domain("ROLE_CONTROL_REQUIRED", "Choose and control a role before using a maneuver.", 403, false);
+  if (!window.participants.some((entry: any) => entry.roleId === player.roleId)) {
+    throw domain("ROLE_CONTROL_REQUIRED", "The current role is not part of this synchronized window.", 403, false);
+  }
+
+  const control = await (db as any).roleControl.findFirst({
+    where: { runId, roleId: player.roleId },
+    select: { epoch: true, mode: true, humanPlayerId: true },
+  });
+  if (!control || control.mode !== "HUMAN_ACTIVE" || control.humanPlayerId !== player.id) {
+    throw domain("ROLE_CONTROL_REQUIRED", "The current user no longer controls this role.", 403, false);
+  }
+
+  const [roleAssets, contactRoles, confirmedFacts] = await Promise.all([
+    (db as any).roleAsset.findMany({
+      where: { runId, ownerRoleId: player.roleId, status: "ACTIVE", quantity: { gt: 0 } },
+      select: { id: true, assetKey: true, stateJson: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    (db as any).storyRole.findMany({
+      where: { runId, id: { not: player.roleId } },
+      select: { id: true, roleName: true, identity: true, publicInfo: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    (db as any).canonFact.findMany({
+      where: { runId, status: "confirmed" },
+      select: {
+        factKey: true,
+        content: true,
+        visibility: true,
+        knownByRoleIdsJson: true,
+        sourceEventIdsJson: true,
+        sourceActionIdsJson: true,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+
+  const stateRevision = Number(run.worldSequence || 0);
+  const turnRevision = Number(window.version || 1);
+  const parsed = parseManeuverContextV1({}, roleAssets, {
+    roleId: player.roleId,
+    stateRevision,
+    turnRevision,
+  });
+  const fallback = deriveFallbackManeuverContextV1({
+    roleId: player.roleId,
+    visibleFactKeys: [],
+    roles: contactRoles,
+    facts: confirmedFacts,
+  });
+  const { compilerContext, investigationOutcomes } = mergeCompilerContext(parsed, fallback);
+
+  return {
+    b0WindowId: window.id,
+    runId,
+    userId,
+    roleId: player.roleId,
+    actorTurnId: `b0-window:${window.id}`,
+    nodeId: window.nodeId,
+    stageIndex: Number(window.node?.chapterIndex || run.currentChapter || 1),
+    stateRevision,
+    turnRevision,
+    controlEpoch: Number(control.epoch || 0),
+    windowState: run.status === "playing" && window.status === "OPEN" ? "OPEN" : "CLOSED",
+    mainlineLocked: window.status !== "OPEN",
+    usedSlots: [],
+    compilerContext,
+    investigationOutcomes,
+  };
+}
+
 export async function readManeuverProjectionV1(
   db: DatabaseClient,
   userId: string,
   runId: string,
 ): Promise<ManeuverProjectionV1> {
-  const context = await readManeuverContextV1(db, userId, runId);
+  const context = await readB0ManeuverContextV1(db, userId, runId)
+    ?? await readManeuverContextV1(db, userId, runId);
   const [actions, incomingRows, evidenceRows] = await Promise.all([
     (db as any).playerAction.findMany({
       where: {
@@ -321,6 +418,36 @@ export function deriveFallbackManeuverContextV1(input: {
     });
   }
   return { contacts, traces, investigationOutcomes };
+}
+
+function mergeCompilerContext(
+  parsed: ReturnType<typeof parseManeuverContextV1>,
+  fallback: ReturnType<typeof deriveFallbackManeuverContextV1>,
+): { compilerContext: ManeuverCompilerContextV1; investigationOutcomes: InvestigationOutcomeDefinitionV1[] } {
+  const contacts = parsed.compilerContext.contacts.length
+    ? parsed.compilerContext.contacts
+    : fallback.contacts;
+  const useConfiguredInvestigations = parsed.compilerContext.traces.length > 0
+    && parsed.investigationOutcomes.length > 0;
+  const traces = useConfiguredInvestigations
+    ? parsed.compilerContext.traces
+    : fallback.traces;
+  const investigationOutcomes = useConfiguredInvestigations
+    ? parsed.investigationOutcomes
+    : fallback.investigationOutcomes;
+  return {
+    compilerContext: {
+      ...parsed.compilerContext,
+      contacts,
+      traces,
+      legalTargetIds: uniqueStrings([
+        ...parsed.compilerContext.legalTargetIds,
+        ...contacts.map((contact) => contact.id),
+        ...traces.map((trace) => trace.traceId),
+      ]),
+    },
+    investigationOutcomes,
+  };
 }
 
 function sourceKindForFact(fact: FallbackFactRowV1): ObservableTraceV1["sourceKind"] {

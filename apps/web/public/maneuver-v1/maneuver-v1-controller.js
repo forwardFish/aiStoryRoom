@@ -59,8 +59,8 @@ export function createManeuverV1Controller({ root, window: win, runId, fetchImpl
   }
 
   async function refresh({ suppressError = false } = {}) {
-    const projection = await refreshManeuver({ suppressError });
     await refreshB0({ suppressError, renderAfter: false });
+    const projection = await refreshManeuver({ suppressError });
     render();
     return projection;
   }

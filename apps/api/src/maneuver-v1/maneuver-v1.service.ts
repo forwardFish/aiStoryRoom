@@ -4,6 +4,7 @@ import {
   ManeuverDomainErrorV1,
   ManeuverEngineV1,
   ManeuverPreviewTokenCodecV1,
+  type AuthoritativeManeuverContextV1,
 } from "./maneuver-v1.core";
 import { ManeuverV1PrismaStore } from "./maneuver-v1.prisma-store";
 
@@ -41,6 +42,23 @@ export class ManeuverV1Service {
         draft: input.draft,
         expectedStateRevision: input.expectedStateRevision,
       });
+    } catch (error) {
+      throw httpError(error);
+    }
+  }
+
+  async previewWithContext(
+    user: AuthenticatedUser,
+    runId: string,
+    body: unknown,
+    context: AuthoritativeManeuverContextV1,
+  ) {
+    try {
+      const input = object(body);
+      return await this.engine().previewWithContext(user.id, runId, {
+        draft: input.draft,
+        expectedStateRevision: input.expectedStateRevision,
+      }, context);
     } catch (error) {
       throw httpError(error);
     }

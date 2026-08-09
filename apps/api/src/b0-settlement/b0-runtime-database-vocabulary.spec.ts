@@ -11,6 +11,8 @@ const MIGRATION = readFileSync(
 const PIPELINE = readFileSync(join(ROOT, "apps", "api", "src", "b0-settlement", "b0-settlement-pipeline.service.ts"), "utf8");
 const COORDINATOR = readFileSync(join(ROOT, "apps", "api", "src", "b0-settlement", "b0-window-coordinator.prisma.ts"), "utf8");
 const COMMIT = readFileSync(join(ROOT, "apps", "api", "src", "b0-settlement", "b0-settlement-commit.prisma.ts"), "utf8");
+const PLAYER_WINDOW = readFileSync(join(ROOT, "apps", "api", "src", "b0-settlement", "b0-window-player.service.ts"), "utf8");
+const MANEUVER_READ = readFileSync(join(ROOT, "apps", "api", "src", "maneuver-v1", "maneuver-v1.prisma-read.ts"), "utf8");
 
 function constraintBody(name: string): string {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -89,6 +91,14 @@ test("ActionWindow lazy initialization retries only the nodeId winner race", () 
   assert.match(COORDINATOR, /code !== "P2002"[\s\S]*?modelName[\s\S]*?ActionWindow/);
   assert.match(COORDINATOR, /fields\.length === 1[\s\S]*?fields\[0\] === "nodeId"/);
   assert.doesNotMatch(COORDINATOR, /return code === "P2002"/);
+});
+
+test("B0 player routes use ActionWindow authority instead of requiring legacy ActorTurn", () => {
+  assert.match(PLAYER_WINDOW, /readB0ManeuverContextV1/);
+  assert.match(PLAYER_WINDOW, /previewWithContext/);
+  assert.doesNotMatch(PLAYER_WINDOW, /readManeuverContextV1/);
+  assert.match(MANEUVER_READ, /actorTurnId: `b0-window:\$\{window\.id\}`/);
+  assert.match(MANEUVER_READ, /windowState: run\.status === "playing" && window\.status === "OPEN"/);
 });
 
 test("migration covers the exact B0 persistence surfaces", () => {

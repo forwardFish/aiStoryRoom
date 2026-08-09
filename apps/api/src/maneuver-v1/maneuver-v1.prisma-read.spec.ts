@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { deriveFallbackManeuverContextV1, readManeuverProjectionV1 } from "./maneuver-v1.prisma-read";
+import {
+  deriveFallbackManeuverContextV1,
+  readB0ManeuverContextV1,
+  readManeuverProjectionV1,
+} from "./maneuver-v1.prisma-read";
 
 const publicFact = {
   factKey: "fact.record.changed",
@@ -52,6 +56,7 @@ function fakeDb() {
     storyRun: { findUnique: async () => ({ id: "run.1", currentNodeId: "node.1", currentChapter: 1, worldSequence: 4, status: "playing" }) },
     storyPlayer: { findFirst: async () => ({ id: "player.viewer", roleId: "role.viewer" }) },
     roleControl: { findFirst: async () => ({ epoch: 1, mode: "HUMAN_ACTIVE", humanPlayerId: "player.viewer" }) },
+    actionWindow: { findMany: async () => [] },
     actorTurn: { findFirst: async () => ({ id: "turn.1", stageIndex: 1, status: "OPEN", revision: 2, contextJson: { generationStatus: "READY" }, visibleFactKeysJson: [publicFact.factKey] }) },
     decisionSubmission: { findUnique: async () => null },
     playerAction: { findMany: async () => [] },
@@ -66,5 +71,48 @@ test("projection remains usable when an existing actor turn has no maneuver-spec
   assert.equal(projection.remaining, 2);
   assert.deepEqual(projection.contacts.map((entry) => entry.id), ["role.contact"]);
   assert.equal(projection.traces.length, 1);
+  assert.equal(JSON.stringify(projection).includes(privateFact.content), false);
+});
+
+
+function fakeB0Db() {
+  return {
+    actionWindow: { findMany: async () => [{
+      id: "window.b0.one",
+      runId: "run.1",
+      nodeId: "node.b0.one",
+      status: "OPEN",
+      openingSnapshotVersion: 4,
+      projectionVersion: 1,
+      version: 1,
+      configJson: { schemaVersion: "b0-window-config-v1" },
+      node: { chapterIndex: 1 },
+      participants: [{ roleId: "role.viewer" }, { roleId: "role.contact" }],
+    }] },
+    storyRun: { findUnique: async () => ({ id: "run.1", currentChapter: 1, worldSequence: 4, status: "playing" }) },
+    storyPlayer: { findFirst: async () => ({ id: "player.viewer", roleId: "role.viewer" }) },
+    roleControl: { findFirst: async () => ({ epoch: 3, mode: "HUMAN_ACTIVE", humanPlayerId: "player.viewer" }) },
+    actorTurn: { findFirst: async () => { throw new Error("B0 projection must not read ActorTurn"); } },
+    decisionSubmission: { findUnique: async () => { throw new Error("B0 projection must not read DecisionSubmission"); } },
+    playerAction: { findMany: async () => [] },
+    roleAsset: { findMany: async () => [] },
+    storyRole: { findMany: async () => [{ id: "role.contact", roleName: "Records Officer", identity: "Officer", publicInfo: "Maintains records." }] },
+    canonFact: { findMany: async () => [publicFact, privateFact] },
+  };
+}
+
+test("B0 projection derives an authoritative compiler context from ActionWindow without ActorTurn", async () => {
+  const context = await readB0ManeuverContextV1(fakeB0Db() as never, "user.viewer", "run.1");
+  assert.ok(context);
+  assert.equal(context.b0WindowId, "window.b0.one");
+  assert.equal(context.actorTurnId, "b0-window:window.b0.one");
+  assert.equal(context.turnRevision, 1);
+  assert.equal(context.controlEpoch, 3);
+  assert.deepEqual(context.compilerContext.contacts.map((entry) => entry.id), ["role.contact"]);
+
+  const projection = await readManeuverProjectionV1(fakeB0Db() as never, "user.viewer", "run.1");
+  assert.equal(projection.windowState, "OPEN");
+  assert.equal(projection.stateRevision, 4);
+  assert.equal(projection.turnRevision, 1);
   assert.equal(JSON.stringify(projection).includes(privateFact.content), false);
 });

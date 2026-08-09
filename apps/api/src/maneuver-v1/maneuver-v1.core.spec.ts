@@ -69,6 +69,7 @@ class MemoryStore implements ManeuverStoreV1, ManeuverTransactionV1 {
   context: AuthoritativeManeuverContextV1;
   actions = new Map<string, ManeuverCommittedActionV1>();
   writeCount = 0;
+  readCount = 0;
   private queue: Promise<void> = Promise.resolve();
 
   constructor(initial: AuthoritativeManeuverContextV1) {
@@ -76,6 +77,7 @@ class MemoryStore implements ManeuverStoreV1, ManeuverTransactionV1 {
   }
 
   async readContext(userId: string, runId: string) {
+    this.readCount += 1;
     assert.equal(userId, this.context.userId);
     assert.equal(runId, this.context.runId);
     return structuredClone(this.context);
@@ -132,6 +134,23 @@ const contactDraft = {
   rawText: "Ask for the signed handoff record.",
   expectedTurnRevision: 3,
 };
+
+test("context-bound preview uses the same compiler and token path without a legacy ActorTurn store read", async () => {
+  const supplied = context({
+  actorTurnId: "b0-window:window.one",
+  turnRevision: 1,
+  compilerContext: { ...compilerContext(), turnRevision: 1 },
+});
+  const store = new MemoryStore(context());
+  const result = await engine(store).previewWithContext("user.alpha", "run.alpha", {
+    draft: { ...contactDraft, expectedTurnRevision: 1 },
+    expectedStateRevision: 7,
+  }, supplied);
+  assert.equal(result.decision, "READY");
+  assert.equal(result.remaining, 2);
+  assert.equal(store.readCount, 0);
+  assert.equal(store.writeCount, 0);
+});
 
 test("preview is side-effect free and keeps authoritative 2/2", async () => {
   const store = new MemoryStore(context());
