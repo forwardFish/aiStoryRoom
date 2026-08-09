@@ -66,6 +66,22 @@ function providerHarness() {
   return { provider, persisted, providerCalls: () => providerCalls };
 }
 
+/**
+ * Production deliberately unrefs the short batching timer so it cannot keep a
+ * shutting-down API process alive. A node:test file has no HTTP server handle,
+ * so keep one explicit refed handle only while awaiting that public Promise.
+ * This preserves the production shutdown contract without weakening batching
+ * assertions or replacing the real timer with a mock.
+ */
+async function withEventLoopAnchor<T>(work: () => Promise<T>): Promise<T> {
+  const anchor = setInterval(() => undefined, 1_000);
+  try {
+    return await work();
+  } finally {
+    clearInterval(anchor);
+  }
+}
+
 test("V2 coalesces multiple AI roles in one run into one provider request", async () => {
   const previous = { enabled: process.env.AI_BATCHING_ENABLED, wait: process.env.AI_BATCH_MAX_WAIT_MS, size: process.env.AI_BATCH_MAX_SIZE };
   process.env.AI_BATCHING_ENABLED = "true";
@@ -73,10 +89,10 @@ test("V2 coalesces multiple AI roles in one run into one provider request", asyn
   process.env.AI_BATCH_MAX_SIZE = "6";
   try {
     const harness = providerHarness();
-    const [first, second] = await Promise.all([
+    const [first, second] = await withEventLoopAnchor(() => Promise.all([
       harness.provider.decideAgent(decisionInput("turn-1")),
       harness.provider.decideAgent(decisionInput("turn-2"))
-    ]);
+    ]));
     assert.equal(harness.providerCalls(), 1);
     assert.equal(first.candidateId, "turn-1-a");
     assert.equal(second.candidateId, "turn-2-a");
@@ -96,7 +112,7 @@ test("V2 micro-batch releases a lone AI role without waiting for other humans", 
   try {
     const harness = providerHarness();
     const started = Date.now();
-    const result = await harness.provider.decideAgent(decisionInput("turn-solo-ai"));
+    const result = await withEventLoopAnchor(() => harness.provider.decideAgent(decisionInput("turn-solo-ai")));
     assert.equal(result.candidateId, "turn-solo-ai-a");
     assert.equal(harness.providerCalls(), 1);
     assert.ok(Date.now() - started < 250, "micro-batch must stay below the configured 250ms ceiling");
