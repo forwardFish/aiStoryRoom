@@ -13,7 +13,16 @@ const LOG_ROOT = join(EVIDENCE_ROOT, "logs");
 const SCREENSHOT_ROOT = join(EVIDENCE_ROOT, "screenshots");
 const TESTED_CODE_SHA = required("GITHUB_SHA");
 const DATABASE_URL = required("DATABASE_URL");
-const DEEPSEEK_API_KEY = required("DEEPSEEK_API_KEY");
+const OPENOVEL_PROVIDER_BASE_URL = required("OPENOVEL_PROVIDER_BASE_URL");
+const OPENOVEL_API_KEY = required("OPENOVEL_API_KEY");
+const OPENOVEL_MODEL = required("OPENOVEL_MODEL");
+const DATABASE_PROVENANCE = required("B0_DATABASE_PROVENANCE");
+const DATABASE_IMAGE = required("B0_DATABASE_IMAGE");
+const DATABASE_IMAGE_DIGEST = required("B0_DATABASE_IMAGE_DIGEST");
+const PROVIDER_PROVENANCE = required("B0_PROVIDER_PROVENANCE");
+const PROVIDER_IMAGE = required("B0_PROVIDER_IMAGE");
+const PROVIDER_IMAGE_DIGEST = required("B0_PROVIDER_IMAGE_DIGEST");
+const PROVIDER_MODEL_DIGEST = required("B0_PROVIDER_MODEL_DIGEST");
 const CHROME_PATH = discoverChrome();
 const API_PORT = integerEnv("B0_API_PORT", 33102);
 const WEB_PORT = integerEnv("B0_WEB_PORT", 35178);
@@ -26,7 +35,7 @@ const OPENOVEL_RUNTIME_ROOT = join(ROOT, ".runtime", `b0-acceptance-${STAMP}`);
 const AUTH_TOKEN_SECRET = randomBytes(48).toString("base64url");
 const OPENOVEL_INTERNAL_TOKEN = randomBytes(48).toString("base64url");
 const MANEUVER_PREVIEW_SECRET = randomBytes(48).toString("base64url");
-const SAFE_SECRET_VALUES = [DATABASE_URL, DEEPSEEK_API_KEY, AUTH_TOKEN_SECRET, OPENOVEL_INTERNAL_TOKEN, MANEUVER_PREVIEW_SECRET];
+const SAFE_SECRET_VALUES = [DATABASE_URL, OPENOVEL_API_KEY, AUTH_TOKEN_SECRET, OPENOVEL_INTERNAL_TOKEN, MANEUVER_PREVIEW_SECRET];
 const processes = new Map<string, ManagedProcess>();
 const processStartCounts = new Map<string, number>();
 const evidence: Record<string, unknown> = {
@@ -41,7 +50,25 @@ const evidence: Record<string, unknown> = {
     webPort: WEB_PORT,
     runtimePort: RUNTIME_PORT,
     databaseKind: safeDatabaseKind(DATABASE_URL),
-    narrativeProvider: { host: "api.deepseek.com", mode: "live-provider-only", fallbackAllowed: false },
+    databaseProvenance: {
+      kind: DATABASE_PROVENANCE,
+      image: DATABASE_IMAGE,
+      imageDigest: DATABASE_IMAGE_DIGEST,
+      selfHostedOfficialSupabase: true,
+      supabaseCloudUsed: false,
+      publicSchemaUsed: false,
+    },
+    narrativeProvider: {
+      ...safeProviderKind(OPENOVEL_PROVIDER_BASE_URL),
+      provenance: PROVIDER_PROVENANCE,
+      image: PROVIDER_IMAGE,
+      imageDigest: PROVIDER_IMAGE_DIGEST,
+      model: OPENOVEL_MODEL,
+      modelDigest: PROVIDER_MODEL_DIGEST,
+      mode: "live-provider-only",
+      fallbackAllowed: false,
+      deterministicProvider: false,
+    },
     schema: new URL(DATABASE_URL).searchParams.get("schema"),
   },
   phases: [],
@@ -52,6 +79,7 @@ process.env.AUTH_TOKEN_SECRET = AUTH_TOKEN_SECRET;
 async function main() {
   await Promise.all([RAW_ROOT, LOG_ROOT, SCREENSHOT_ROOT].map((path) => mkdir(path, { recursive: true })));
   assertIsolatedSchema(DATABASE_URL);
+  assertAcceptanceProvenance();
   const prisma = new PrismaClient({ datasources: { db: { url: DATABASE_URL } } });
   const browsers: BrowserSession[] = [];
   let terminalError: unknown;
@@ -575,11 +603,17 @@ function childEnvironment(adminUserId: string) {
     OPENOVEL_RUNTIME_URL: RUNTIME_BASE,
     OPENOVEL_PROJECT_ROOT: ROOT,
     OPENOVEL_RUNTIME_ROOT,
-    OPENOVEL_PROVIDER_BASE_URL: "https://api.deepseek.com",
-    OPENOVEL_API_KEY: "",
+    OPENOVEL_PROVIDER_BASE_URL,
+    OPENOVEL_API_KEY,
+    OPENOVEL_MODEL,
+    OPENOVEL_NARRATOR_MODEL: OPENOVEL_MODEL,
+    OPENOVEL_REVIEWER_MODEL: OPENOVEL_MODEL,
+    OPENOVEL_OPTIONS_MODEL: OPENOVEL_MODEL,
+    OPENOVEL_STORYKEEPER_MODEL: OPENOVEL_MODEL,
+    OPENOVEL_DEEPSEEK_THINKING: "disabled",
     SOLO_STORY_API_KEY: "",
-    DEEPSEEK_API_KEY,
-    OPENOVEL_PROVIDER_TIMEOUT_MS: "180000",
+    DEEPSEEK_API_KEY: "",
+    OPENOVEL_PROVIDER_TIMEOUT_MS: "300000",
     MANEUVER_PREVIEW_SECRET,
     MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED: "false",
     ROLE_AGENT_PROVIDER: "rules",
@@ -833,7 +867,7 @@ async function walk(root: string): Promise<string[]> {
 
 function markdownReport(value: Record<string, unknown>) {
   const phases = array(value.phases);
-  return `# B0 C9 Real Acceptance Report\n\n- Status: **${String(value.status || "UNKNOWN")}**\n- Tested code SHA: \`${TESTED_CODE_SHA}\`\n- Started: ${String(value.startedAt)}\n- Completed: ${String(value.completedAt || "") }\n- Database: isolated random Supabase schema; credentials are not persisted.\n- Runtime: real Nest API, static Web server, OpenNovel runtime, embedded and independent worker processes.\n- Browser: three isolated Chromium profiles, including desktop and 390px narrow viewport.\n\n## Phases\n\n${phases.map((phase) => `- ${object(phase).status === "PASS" ? "✅" : "❌"} ${object(phase).name}`).join("\n")}\n\n## Trust boundary\n\nThis report records only sanitized identifiers, hashes, counts, status transitions, DOM summaries, network status metadata, and screenshots. Database URLs, provider keys, session cookies, bearer tokens, and internal shared tokens are excluded and scrubbed from process logs.\n`;
+  return `# B0 C9 Real Acceptance Report\n\n- Status: **${String(value.status || "UNKNOWN")}**\n- Tested code SHA: \`${TESTED_CODE_SHA}\`\n- Started: ${String(value.startedAt)}\n- Completed: ${String(value.completedAt || "") }\n- Database: official self-hosted Supabase PostgreSQL image ${DATABASE_IMAGE} in an isolated random schema; Supabase Cloud and the public schema were not used.\n- Narrative provider: real ${PROVIDER_PROVENANCE} model ${OPENOVEL_MODEL} over OpenAI-compatible HTTP; deterministic/mock providers and fallback are prohibited.\n- Runtime: real Nest API, static Web server, OpenNovel runtime, embedded and independent worker processes.\n- Browser: three isolated Chromium profiles, including desktop and 390px narrow viewport.\n\n## Phases\n\n${phases.map((phase) => `- ${object(phase).status === "PASS" ? "✅" : "❌"} ${object(phase).name}`).join("\n")}\n\n## Trust boundary\n\nThis report records only sanitized identifiers, hashes, counts, status transitions, DOM summaries, network status metadata, and screenshots. Database URLs, provider keys, session cookies, bearer tokens, and internal shared tokens are excluded and scrubbed from process logs.\n`;
 }
 
 
@@ -897,12 +931,40 @@ function assertIsolatedSchema(urlValue: string) {
   if (!/^(?:cs_accept_b0_|b0_accept_)[a-z0-9_]{8,}$/i.test(schema)) throw new Error("DATABASE_URL must target a dedicated random B0 acceptance schema");
   if (schema.toLowerCase() === "public") throw new Error("The public schema is forbidden for B0 acceptance");
 }
-function safeDatabaseKind(urlValue: string) { const url = new URL(urlValue); return { protocol: url.protocol.replace(":", ""), provider: url.hostname.includes("supabase") ? "supabase" : "postgres", hostHash: hashText(url.hostname).slice(0, 16) }; }
+function safeDatabaseKind(urlValue: string) {
+  const url = new URL(urlValue);
+  return {
+    protocol: url.protocol.replace(":", ""),
+    provider: DATABASE_PROVENANCE,
+    hostHash: hashText(url.hostname).slice(0, 16),
+    selfHostedOfficialSupabase: DATABASE_PROVENANCE === "official-supabase-postgres-container",
+  };
+}
+function safeProviderKind(urlValue: string) {
+  const url = new URL(urlValue);
+  return {
+    protocol: url.protocol.replace(":", ""),
+    hostHash: hashText(url.hostname).slice(0, 16),
+    local: url.hostname === "127.0.0.1" || url.hostname === "localhost",
+  };
+}
+function assertAcceptanceProvenance() {
+  if (DATABASE_PROVENANCE !== "official-supabase-postgres-container") throw new Error("B0 acceptance requires the official self-hosted Supabase PostgreSQL container provenance");
+  if (!DATABASE_IMAGE.startsWith("supabase/postgres:")) throw new Error("B0_DATABASE_IMAGE must identify the official supabase/postgres image");
+  if (!DATABASE_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_DATABASE_IMAGE_DIGEST must be a sha256 digest");
+  if (PROVIDER_PROVENANCE !== "ollama-openai-compatible-local") throw new Error("B0 acceptance requires a real local Ollama provider provenance");
+  if (!PROVIDER_IMAGE.startsWith("ollama/ollama:")) throw new Error("B0_PROVIDER_IMAGE must identify the official ollama/ollama image");
+  if (!PROVIDER_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_IMAGE_DIGEST must be a sha256 digest");
+  if (!PROVIDER_MODEL_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_MODEL_DIGEST must be a sha256 digest");
+  const providerUrl = new URL(OPENOVEL_PROVIDER_BASE_URL);
+  if (providerUrl.hostname !== "127.0.0.1" && providerUrl.hostname !== "localhost") throw new Error("B0 real provider must be bound to the isolated local acceptance runner");
+}
 function dedupeNetwork(rows: Array<{ method: string; url: string; status: number; type: string }>) { const seen = new Set<string>(); return rows.filter((entry) => { const key = `${entry.url}|${entry.status}|${entry.type}`; if (seen.has(key)) return false; seen.add(key); return true; }).slice(-80); }
 async function writeJson(path: string, value: unknown) { await mkdir(dirname(path), { recursive: true }); await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8"); }
 
 if (process.env.B0_ACCEPTANCE_SELF_CHECK === "1") {
   assertIsolatedSchema(DATABASE_URL);
+  assertAcceptanceProvenance();
   console.log("B0_ACCEPTANCE_SELF_CHECK_OK");
 } else {
   main().catch((error) => {
