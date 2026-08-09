@@ -27,25 +27,38 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context="dynamic-kernel-lite/source-export" \
-            -f description="Source export running" \
+            -f description="Focused source export running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Export current source and historical implementation scripts
+      - name: Export focused source and historical implementation scripts
         shell: bash
         run: |
           set -euo pipefail
           root="${RUNNER_TEMP}/requirement-dependency-source"
-          mkdir -p "${root}/repository" "${root}/historical"
-          rsync -a \
-            --exclude='.git/' \
-            --exclude='node_modules/' \
-            --exclude='dist/' \
-            --exclude='.next/' \
-            ./ "${root}/repository/"
+          repo="${root}/repository"
+          mkdir -p "${repo}" "${root}/historical"
+          for file in package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json; do
+            if [ -f "${file}" ]; then cp -a "${file}" "${repo}/"; fi
+          done
+          for dir in \
+            packages/templates \
+            apps/openovel-runtime \
+            apps/api \
+            scripts/story-decomposition; do
+            mkdir -p "${repo}/$(dirname "${dir}")"
+            rsync -a \
+              --exclude='node_modules/' \
+              --exclude='dist/' \
+              --exclude='.next/' \
+              --exclude='.turbo/' \
+              --exclude='coverage/' \
+              --exclude='artifacts/' \
+              "${dir}/" "${repo}/${dir}/"
+          done
           historical=40908fd7583ea4006f328903d4b65c660670ad38
           for path in \
             .github/repair/dynamic-kernel-requirement-dependency.py.gz.b64 \
@@ -58,6 +71,7 @@ jobs:
           done
           git rev-parse HEAD > "${root}/source-sha.txt"
           git rev-parse HEAD^{tree} > "${root}/source-tree.txt"
+          du -sh "${root}"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -72,11 +86,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          state=success
-          description="Source export uploaded"
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -f state="${state}" \
+            -f state=success \
             -f context="dynamic-kernel-lite/source-export" \
-            -f description="${description}" \
+            -f description="Focused source export uploaded" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
