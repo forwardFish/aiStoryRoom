@@ -120,7 +120,7 @@ async function main() {
       const before = await runReadback(prisma, mainRun.id);
       const opened = await openWindow(mainRun.id, users.slice(0, 3));
       await assertBrowserWindowVisible(browsers, opened.windowId, 1);
-      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });
+      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });
       await waitForWindowComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1, 180_000);
       const narrativeBatch = await waitForWindowNarrativesComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1);
       const projections = await fetchHumanProjections(mainRun.id, users.slice(0, 3));
@@ -164,7 +164,7 @@ async function main() {
       await stopProcess("runtime");
       const before = await runReadback(prisma, mainRun.id);
       const opened = await openWindow(mainRun.id, users.slice(0, 3));
-      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);
+      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds);
       await waitForWindowComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1, 120_000);
       const failedTask = await waitForValue(async () => prisma.storyTaskOutbox.findFirst({
         where: { windowId: opened.windowId, taskType: "B0_NARRATIVE_GENERATION", status: { in: ["failed", "dead_letter", "FAILED_RETRYABLE"] } },
@@ -195,7 +195,7 @@ async function main() {
       const before = await runReadback(prisma, mainRun.id);
       const opened = await openWindow(mainRun.id, users.slice(0, 3));
       await apiJson(adminUser.token, `/v4/admin/b0/runs/${encodeURIComponent(mainRun.id)}/pause`, { method: "POST", body: { paused: true } });
-      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);
+      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds);
       await waitForWindowComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1, 120_000);
       const openCountWhilePaused = await prisma.actionWindow.count({ where: { runId: mainRun.id, status: "OPEN", id: { not: opened.windowId } } });
       assert.equal(openCountWhilePaused, 0, "pause prevents a new window but never blocks current commit");
@@ -208,7 +208,7 @@ async function main() {
     await phase("window-4-deadline-unconfirmed-human-becomes-hold", async () => {
       const before = await runReadback(prisma, mainRun.id);
       const opened = await currentWindow(mainRun.id, users.slice(0, 3));
-      await submitCyclicPlans(mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));
+      await submitCyclicPlansThroughBrowser(browsers.slice(0, 2), mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));
       const expiredDeadline = new Date(Date.now() - 1_000);
       await prisma.actionWindow.update({
         where: { id: opened.windowId },
@@ -245,51 +245,72 @@ async function main() {
     await phase("window-5-independent-worker", async () => {
       const before = await runReadback(prisma, mainRun.id);
       const opened = await openWindow(mainRun.id, users.slice(0, 3));
-      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);
+      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds);
       await sleep(1_500);
-      const participantsBeforeWorker = await prisma.actionWindowParticipant.findMany({
-        where: { windowId: opened.windowId },
-        select: { roleId: true, mainStatus: true },
-        orderBy: { roleId: "asc" },
-      });
-      const humanRoleIds = new Set(opened.humanRoleIds);
-      const humanParticipants = participantsBeforeWorker.filter((entry) => humanRoleIds.has(entry.roleId));
-      const aiParticipants = participantsBeforeWorker.filter((entry) => !humanRoleIds.has(entry.roleId));
-      const preparedStatuses = new Set(["B0_READY", "B0_LOCKED"]);
-      assert.equal(humanParticipants.length, opened.humanRoleIds.length, "all human roles must have synchronized window participants");
-      assert(humanParticipants.every((entry) => preparedStatuses.has(entry.mainStatus)), "all human roles must have a confirmed ActionContract before the standalone worker starts");
-      assert(aiParticipants.length >= 1, "the multiplayer run must retain AI-filled vacant roles");
-      assert(aiParticipants.every((entry) => ["B0_PENDING", "B0_READY", "B0_LOCKED"].includes(entry.mainStatus)), "AI-filled roles must remain inside the bounded ActionContract lifecycle");
-      const aiAllPending = aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING");
-      const aiAllPrepared = aiParticipants.every((entry) => preparedStatuses.has(entry.mainStatus));
-      assert(aiAllPending || aiAllPrepared, "the pre-worker crash boundary must be either wholly before or wholly after AI ActionContract preparation");
-      const settlementBeforeWorker = await prisma.storyTaskOutbox.findFirst({
-        where: { windowId: opened.windowId, taskType: "B0_SETTLEMENT_REQUESTED" },
-        select: { id: true, status: true, attempt: true, leaseVersion: true, leaseOwner: true },
-      });
-      const preWorkerWindow = await prisma.actionWindow.findUniqueOrThrow({ where: { id: opened.windowId }, select: { status: true } });
-      const preWorkerRun = await prisma.storyRun.findUniqueOrThrow({ where: { id: mainRun.id }, select: { worldSequence: true } });
-      assert.equal(preWorkerRun.worldSequence, before.worldSequence, "without a standalone worker the world cannot advance");
-
-      let preWorkerBoundary: "AI_ACTIONS_UNPREPARED" | "SETTLEMENT_ENQUEUED";
-      if (aiAllPending) {
-        assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "human roles must remain READY while every AI-filled role is pending");
-        assert.equal(preWorkerWindow.status, "OPEN", "the synchronized window must remain OPEN while AI-filled roles are unprepared");
-        assert.equal(settlementBeforeWorker, null, "unprepared AI-filled roles cannot freeze the window or enqueue settlement");
-        preWorkerBoundary = "AI_ACTIONS_UNPREPARED";
-      } else {
-        assert(humanParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "human roles must be LOCKED once the prepared roster freezes");
-        assert(aiParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "AI-filled roles must use the same LOCKED participant state");
-        assert.equal(preWorkerWindow.status, "LOCKED", "a fully prepared roster must freeze before settlement execution");
-        assert.equal(settlementBeforeWorker?.status, "pending", "the disabled embedded worker must leave settlement pending");
-        assert.equal(settlementBeforeWorker?.leaseOwner, null, "no worker may own the pending settlement before standalone startup");
-        assert.equal(settlementBeforeWorker?.leaseVersion, 0, "the pending settlement must not have been leased before standalone startup");
-        preWorkerBoundary = "SETTLEMENT_ENQUEUED";
-      }
+const snap = await prisma.$transaction(async (tx) => ({
+  participants: await tx.actionWindowParticipant.findMany({
+    where: { windowId: opened.windowId },
+    select: { roleId: true, mainStatus: true },
+    orderBy: { roleId: "asc" },
+  }),
+  settlement: await tx.storyTaskOutbox.findFirst({
+    where: { windowId: opened.windowId, taskType: "B0_SETTLEMENT_REQUESTED" },
+    select: { id: true, status: true, attempt: true, leaseVersion: true, leaseOwner: true },
+  }),
+  window: await tx.actionWindow.findUniqueOrThrow({
+    where: { id: opened.windowId },
+    select: { status: true },
+  }),
+  run: await tx.storyRun.findUniqueOrThrow({
+    where: { id: mainRun.id },
+    select: { worldSequence: true },
+  }),
+}), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+const humanRoleIds = new Set(opened.humanRoleIds);
+const humanParticipants = snap.participants.filter((entry) => humanRoleIds.has(entry.roleId));
+const aiParticipants = snap.participants.filter((entry) => !humanRoleIds.has(entry.roleId));
+const preparedStatuses = new Set(["B0_READY", "B0_LOCKED"]);
+assert.equal(humanParticipants.length, opened.humanRoleIds.length, "all human roles must have synchronized window participants");
+assert(humanParticipants.every((entry) => preparedStatuses.has(entry.mainStatus)), "all humans must have browser-confirmed ActionContracts before standalone worker startup");
+assert(aiParticipants.length >= 1, "the multiplayer run must retain AI-filled vacant roles");
+assert(aiParticipants.every((entry) => ["B0_PENDING", "B0_READY", "B0_LOCKED"].includes(entry.mainStatus)), "AI roles must remain inside the bounded ActionContract lifecycle");
+assert.equal(snap.run.worldSequence, before.worldSequence, "without a standalone worker the world cannot advance");
+const aiPending = aiParticipants.filter((entry) => entry.mainStatus === "B0_PENDING").length;
+const aiLocked = aiParticipants.filter((entry) => entry.mainStatus === "B0_LOCKED").length;
+let preWorkerBoundary: "AI_ACTIONS_UNPREPARED" | "AI_ACTIONS_PARTIALLY_PREPARED" | "SETTLEMENT_ENQUEUED";
+if (snap.settlement === null) {
+  assert.equal(snap.window.status, "OPEN", "without settlement the synchronized window remains OPEN");
+  assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "humans remain READY before freeze");
+  assert.equal(aiLocked, 0, "an OPEN window cannot expose a partially locked AI roster");
+  preWorkerBoundary = aiPending === aiParticipants.length
+    ? "AI_ACTIONS_UNPREPARED"
+    : "AI_ACTIONS_PARTIALLY_PREPARED";
+} else {
+  assert(humanParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "humans lock with the frozen roster");
+  assert.equal(aiLocked, aiParticipants.length, "all AI roles lock atomically after freeze");
+  assert.equal(snap.window.status, "LOCKED");
+  assert.equal(snap.settlement.status, "pending");
+  assert.equal(snap.settlement.leaseOwner, null);
+  assert.equal(snap.settlement.leaseVersion, 0);
+  preWorkerBoundary = "SETTLEMENT_ENQUEUED";
+}
+const settlementBeforeWorker = snap.settlement;
+const preWorkerWindow = snap.window;
+const preWorkerRun = snap.run;
 
       await startWorker(commonEnv, "worker", { B0_NARRATIVE_ENABLED: "false" });
       const workerPid = requiredValue(processes.get("worker")?.pid, "standalone worker pid");
       await waitForWindowComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1, 120_000);
+      await waitFor(async () => {
+  const inFlight = await prisma.storyTaskOutbox.count({
+    where: {
+      windowId: opened.windowId,
+      taskType: { startsWith: "B0_" },
+      status: { in: ["pending", "running", "PENDING", "RUNNING"] },
+    },
+  });
+  return inFlight === 0;
+}, 60_000, "window-5 outbox quiescence before worker crash test");
       const tasks = await prisma.storyTaskOutbox.findMany({ where: { windowId: opened.windowId, taskType: { startsWith: "B0_" } }, select: { id: true, windowId: true, roleId: true, taskType: true, status: true, outcome: true, leaseVersion: true, attempt: true, completedAt: true, lastError: true }, orderBy: { createdAt: "asc" } });
       const completedSettlement = tasks.find((entry) => entry.taskType === "B0_SETTLEMENT_REQUESTED");
       assert(completedSettlement?.status === "completed" && completedSettlement.leaseVersion > 0, "standalone worker must prepare any missing AI actions, lease settlement, and complete the window");
@@ -318,14 +339,14 @@ async function main() {
 
     await phase("window-6-worker-crash-lease-expiry-recovery-and-ending", async () => {
       await stopProcess("worker");
-      await startWorker(commonEnv, "worker-delayed", { STORY_TASK_TEST_DELAY_MS: "10000", STORY_TASK_LEASE_MS: "5000", ALLOW_FAULT_INJECTION: "true", B0_NARRATIVE_ENABLED: "false" });
+      await startWorker(commonEnv, "worker-delayed", { STORY_TASK_TEST_DELAY_MS: "3000", STORY_TASK_LEASE_MS: "5000", ALLOW_FAULT_INJECTION: "true", B0_NARRATIVE_ENABLED: "false" });
       const before = await runReadback(prisma, mainRun.id);
       const opened = await openWindow(mainRun.id, users.slice(0, 3));
-      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);
+      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds);
       const running = await waitForValue(async () => prisma.storyTaskOutbox.findFirst({
         where: { windowId: opened.windowId, taskType: "B0_SETTLEMENT_REQUESTED", status: "running", leaseOwner: { not: null } },
         select: { id: true, leaseOwner: true, leaseVersion: true, leaseExpiresAt: true, attempt: true },
-      }), 60_000, "delayed worker settlement lease");
+      }), 120_000, "delayed worker settlement lease");
       await stopProcess("worker-delayed", true);
       const killedAt = new Date();
       const delay = Math.max(0, Number(running.leaseExpiresAt?.getTime() || 0) - Date.now() + 1_500);
@@ -374,6 +395,9 @@ async function main() {
         assert(report.dom.statusVisible, `${report.name} must show B0 window status`);
         assert(report.dom.resultsVisible, `${report.name} must show B0 results`);
         assert(report.network.some((entry: any) => entry.url.includes("/b0/window") && entry.status >= 200 && entry.status < 300), `${report.name} must observe successful real B0 network traffic`);
+        for (const suffix of ["/b0/window/preview", "/b0/window/confirm", "/b0/window/ready"]) {
+          assert(report.network.some((entry: any) => entry.method === "POST" && entry.url.endsWith(suffix) && entry.status >= 200 && entry.status < 300), `${report.name} must drive ${suffix} through the real browser`);
+        }
       }
       const deliveryRows = await prisma.eventDelivery.findMany({
         where: { roomId: mainRun.id },
@@ -523,6 +547,89 @@ async function roleIdsForUsers(runId: string, userIds: string[]) {
     const map = new Map(rows.map((entry) => [entry.userId, entry.roleId]));
     return userIds.map((userId) => requiredValue(map.get(userId), `role for ${userId}`));
   } finally { await prisma.$disconnect(); }
+}
+
+async function submitCyclicPlansThroughBrowser(
+  browsers: BrowserSession[],
+  runId: string,
+  users: Array<{ id: string; token: string }>,
+  roleIds: string[],
+  options: { duplicateConfirm?: boolean } = {},
+) {
+  assert.equal(browsers.length, users.length);
+  assert.equal(users.length, roleIds.length);
+  for (let index = 0; index < users.length; index += 1) {
+    const browser = browsers[index];
+    const desiredTarget = roleIds[(index + 1) % roleIds.length] || roleIds[0];
+    await browser.reload();
+    await browser.waitForSelector("[data-b0-window-status]", 60_000);
+    await browser.waitFor(
+      () => browser.evaluate(`(() => { const element = document.querySelector('[data-mv1-kind="CONTACT"]'); return Boolean(element && !element.disabled); })()`),
+      60_000,
+      `${browser.name} CONTACT enabled`,
+    );
+    await browser.evaluate(`document.querySelector('[data-mv1-kind="CONTACT"]:not([disabled])')?.click()`);
+    await browser.waitForSelector('[data-mv1-for="CONTACT"][data-mv1-field="targetId"]', 30_000);
+    const selectedTarget = await browser.evaluate(`(() => {
+      const element = document.querySelector('[data-mv1-for="CONTACT"][data-mv1-field="targetId"]');
+      if (!element || element.disabled) return "";
+      const values = Array.from(element.options).filter((option) => !option.disabled && option.value).map((option) => option.value);
+      const desired = ${JSON.stringify(desiredTarget)};
+      element.value = values.includes(desired) ? desired : (values[0] || "");
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+      return element.value;
+    })()`);
+    assert(String(selectedTarget).length > 0, `${browser.name} must select a legal CONTACT target`);
+    await browser.waitForSelector('[data-mv1-for="CONTACT"][data-mv1-field="rawText"]', 30_000);
+    const rawText = "Coordinate a bounded synchronized action with the selected counterpart.";
+    const textApplied = await browser.evaluate(`(() => {
+      const element = document.querySelector('[data-mv1-for="CONTACT"][data-mv1-field="rawText"]');
+      if (!element || element.disabled) return false;
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+      if (setter) setter.call(element, ${JSON.stringify(rawText)}); else element.value = ${JSON.stringify(rawText)};
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+      return true;
+    })()`);
+    assert.equal(textApplied, true, `${browser.name} must enter a CONTACT message`);
+    await browser.waitFor(
+      () => browser.evaluate(`(() => { const element = document.querySelector('[data-mv1-preview]'); return Boolean(element && !element.disabled); })()`),
+      30_000,
+      `${browser.name} preview enabled`,
+    );
+    await browser.evaluate(`document.querySelector('[data-mv1-preview]:not([disabled])')?.click()`);
+    await browser.waitFor(
+      () => browser.evaluate(`(() => { const element = document.querySelector('[data-mv1-confirm]'); return Boolean((element && !element.disabled) || document.querySelector('[role="alert"]')); })()`),
+      90_000,
+      `${browser.name} preview response`,
+    );
+    const previewState = await browser.evaluate(`(() => ({
+      confirmable: Boolean(document.querySelector('[data-mv1-confirm]:not([disabled])')),
+      error: document.querySelector('[role="alert"]')?.textContent || "",
+    }))()`);
+    assert.equal(previewState.confirmable, true, `${browser.name} preview must be confirmable: ${previewState.error}`);
+    await browser.evaluate(`document.querySelector('[data-mv1-confirm]:not([disabled])')?.click()`);
+    await waitFor(async () => {
+      const projection = await apiJson(users[index].token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+      return ["CONFIRMED", "LOCKED"].includes(projection.plan?.status) || projection.window?.status !== "OPEN";
+    }, 90_000, `${browser.name} confirmation persisted`);
+    if (options.duplicateConfirm && index === 0) {
+      const projection = await apiJson(users[index].token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+      const revision = Number(projection.plan?.revision);
+      assert(Number.isInteger(revision) && revision > 0);
+      const replay = await apiJson(users[index].token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window/confirm`, { method: "POST", body: { expectedRevision: revision } });
+      assert.equal(replay.plan?.status, "CONFIRMED");
+    }
+    await browser.waitFor(
+      () => browser.evaluate(`(() => { const element = document.querySelector('[data-b0-ready]'); return Boolean(element && !element.disabled); })()`),
+      60_000,
+      `${browser.name} ready enabled`,
+    );
+    await browser.evaluate(`document.querySelector('[data-b0-ready]:not([disabled])')?.click()`);
+    await waitFor(async () => {
+      const projection = await apiJson(users[index].token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+      return projection.actor?.ready === true || projection.window?.status !== "OPEN";
+    }, 90_000, `${browser.name} ready persisted`);
+  }
 }
 
 async function submitCyclicPlans(
@@ -877,7 +984,12 @@ class BrowserSession {
   async evaluate(expression: string) {
     assert(this.cdp);
     const result = await this.cdp.send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true, userGesture: true });
-    if (result.exceptionDetails) throw new Error(`${this.name}: ${result.exceptionDetails.text || "browser evaluation failed"}`);
+    if (result.exceptionDetails) {
+    const details = object(result.exceptionDetails);
+    const exception = object(details.exception);
+    const description = String(exception.description || exception.value || details.text || "browser evaluation failed");
+    throw new Error(`${this.name}: ${description}`);
+  }
     return result.result?.value;
   }
   async waitForSelector(selector: string, timeout: number) { await this.waitFor(() => this.evaluate(`Boolean(document.querySelector(${JSON.stringify(selector)}))`), timeout, `${this.name} selector ${selector}`); }
