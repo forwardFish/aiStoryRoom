@@ -1,4 +1,4 @@
-name: B0 Candidate Real Supabase and Browser Acceptance
+name: B0 Candidate Engineering and Formal Supabase Acceptance
 
 on:
   push:
@@ -8,26 +8,26 @@ on:
       - "docs/auto-execute/evidence/b0/**"
 
 permissions:
+  actions: read
   contents: write
   statuses: write
 
 concurrency:
-  group: b0-real-acceptance-${{ github.ref }}
-  cancel-in-progress: true
+  group: b0-acceptance-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  B0_DATABASE_ALIASES_CHECKED: SUPABASE_DATABASE_URL|TEST_DATABASE_URL|SUPABASE_TEST_DATABASE_URL|TEST_SUPABASE_DATABASE_URL|DATABASE_URL_TEST|PREVIEW_DATABASE_URL|STAGING_DATABASE_URL
+  B0_PROVIDER_ALIASES_CHECKED: DEEPSEEK_API_KEY|OPENOVEL_DEEPSEEK_API_KEY|LLM_API_KEY|AI_API_KEY
+  B0_PROBE_ENVIRONMENTS: ourmanyworlds.com / test|stellar-encouragement / test|Preview
 
 jobs:
-  real-acceptance:
-    name: Real Supabase, API, Web, Worker and browser acceptance
+  acceptance-contract:
+    name: Acceptance provenance and harness contract
     runs-on: ubuntu-latest
-    timeout-minutes: 240
-    env:
-      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
-      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
-      B0_PROVIDER_MODEL: qwen2.5:1.5b
-      B0_EVIDENCE_ROOT: docs/auto-execute/evidence/b0/c9/runtime
-      B0_PROJECT_ROOT: ${{ github.workspace }}
+    timeout-minutes: 45
     steps:
-      - name: Publish exact run locator
+      - name: Publish contract locator
         uses: actions/github-script@v7
         with:
           script: |
@@ -36,16 +36,14 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/real-acceptance",
-              description: `real Supabase/browser acceptance running in ${context.runId}`,
+              context: "b0/acceptance-contract",
+              description: `acceptance contract running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 2
-
       - name: Verify exact candidate checkout
         shell: bash
         run: |
@@ -53,91 +51,606 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(sha256sum scripts/acceptance/b0-selfhosted-real-acceptance.sh | cut -d' ' -f1)" = "9b146e454697b9ef68e122a2fc33b601e0e32434268bcc08d92d2cecf96a3930"
-          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "0dd15674e3d7dc52667b217ae48c988a64c01354a0ca232898152d24716ded95"
-
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
-      - name: Frozen install and Prisma generation
+      - name: Frozen install, Prisma generation and driver typecheck
         shell: bash
         run: |
           set -euo pipefail
           pnpm install --frozen-lockfile
           pnpm db:generate
           pnpm typecheck:b0:real-acceptance
-
-      - name: Build exact runtime binaries
+      - name: Syntax and static boundary tests
         shell: bash
         run: |
           set -euo pipefail
+          bash -n scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          bash -n scripts/acceptance/b0-formal-supabase-acceptance.sh
+          node --check scripts/acceptance/b0-formal-db-admin.mjs
+          node --check scripts/acceptance/b0-formal-provider-probe.mjs
+          B0_DATABASE_IMAGE='supabase/postgres:15.14.1.157-mmlb_amd64' \
+          B0_PROVIDER_IMAGE='ollama/ollama:0.32.5' \
+            scripts/acceptance/b0-selfhosted-real-acceptance.sh self-check
+          scripts/acceptance/b0-formal-supabase-acceptance.sh self-check
+          node --test scripts/acceptance/__tests__/b0-formal-acceptance-boundary.spec.mjs
+      - name: Dual-tier driver self-check
+        shell: bash
+        run: |
+          set -euo pipefail
+          zeros="sha256:$(printf '0%.0s' $(seq 1 64))"
+          GITHUB_SHA="$GITHUB_SHA" \
+          DATABASE_URL='postgresql://postgres:secret@127.0.0.1:55432/postgres?schema=cs_accept_b0_contract123&connection_limit=3&sslmode=disable' \
+          OPENOVEL_PROVIDER_BASE_URL='http://127.0.0.1:11434/v1' \
+          OPENOVEL_API_KEY='engineering-self-check' \
+          OPENOVEL_MODEL='qwen2.5:1.5b' \
+          B0_ACCEPTANCE_TIER='engineering-selfhosted' \
+          B0_ACCEPTANCE_ENVIRONMENT='github-hosted-isolated-engineering' \
+          B0_DATABASE_PROVENANCE='official-supabase-postgres-container' \
+          B0_DATABASE_IMAGE='supabase/postgres:15.14.1.157-mmlb_amd64' \
+          B0_DATABASE_IMAGE_DIGEST="$zeros" \
+          B0_PROVIDER_PROVENANCE='ollama-openai-compatible-local' \
+          B0_PROVIDER_IMAGE='ollama/ollama:0.32.5' \
+          B0_PROVIDER_IMAGE_DIGEST="$zeros" \
+          B0_PROVIDER_MODEL_DIGEST="$zeros" \
+          B0_ACCEPTANCE_SELF_CHECK=1 \
+            pnpm test:b0:real-acceptance
+          GITHUB_SHA="$GITHUB_SHA" \
+          DATABASE_URL='postgresql://postgres:secret@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?schema=cs_accept_b0_contract123&connection_limit=3&sslmode=require' \
+          OPENOVEL_PROVIDER_BASE_URL='https://api.deepseek.com' \
+          OPENOVEL_API_KEY='formal-self-check' \
+          OPENOVEL_MODEL='deepseek-chat' \
+          B0_ACCEPTANCE_TIER='formal-c8' \
+          B0_ACCEPTANCE_ENVIRONMENT='ourmanyworlds.com / test' \
+          B0_DATABASE_SECRET_NAME='SUPABASE_DATABASE_URL' \
+          B0_PROVIDER_SECRET_NAME='DEEPSEEK_API_KEY' \
+          B0_DATABASE_PROVENANCE='supabase-cloud-nonproduction-random-schema' \
+          B0_PROVIDER_PROVENANCE='deepseek-api-real' \
+          B0_PROVIDER_MODEL_DIGEST="$zeros" \
+          B0_ACCEPTANCE_SELF_CHECK=1 \
+            pnpm test:b0:real-acceptance
+      - name: Publish contract outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/acceptance-contract",
+              description: `acceptance contract ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 acceptance contract failed");
+
+  engineering-selfhosted:
+    name: Engineering-only self-hosted Supabase and Ollama acceptance
+    needs: acceptance-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+      B0_EVIDENCE_ROOT: .artifacts/b0-engineering/${{ github.sha }}
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Publish engineering acceptance locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/engineering-real-acceptance",
+              description: `engineering acceptance running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+      - name: Verify exact candidate checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Frozen install and build exact runtime binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
           pnpm --filter @ai-story/shared build
           pnpm --filter @ai-story/templates build
           pnpm --filter @apps/api build
           pnpm --filter @apps/openovel-runtime build
           pnpm --filter @apps/web typecheck
           pnpm --filter @apps/web build
-
-      - name: Start official self-hosted Supabase PostgreSQL in a random schema
+      - name: Start official self-hosted Supabase PostgreSQL in a random engineering schema
         id: database
         shell: bash
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
-
-      - name: Start a real Ollama model with OpenAI-compatible transport
+      - name: Start a real local Ollama model
         id: provider
         shell: bash
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
-
-      - name: Execute the real six-window acceptance
+      - name: Execute the engineering six-window acceptance
         id: acceptance
         shell: bash
         env:
           GITHUB_SHA: ${{ github.sha }}
           CHROME_PATH: /usr/bin/google-chrome
         run: pnpm test:b0:real-acceptance
-
-      - name: Prove product traffic reached the real model
+      - name: Prove product traffic reached the engineering model
         id: provider_proof
-        if: always()
+        if: always() && steps.provider.outcome == 'success'
         shell: bash
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
-
-      - name: Verify public-schema isolation and clean all acceptance infrastructure
+      - name: Clean engineering infrastructure and verify public-schema isolation
         id: cleanup
-        if: always()
+        if: always() && steps.database.outcome == 'success'
         shell: bash
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup
-
-      - name: Redact and scan evidence
+      - name: Redact and scan engineering evidence
         id: redaction
         if: always()
         shell: bash
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
-
-      - name: Finalize C8 checkpoint and evidence hashes
+      - name: Finalize engineering-only evidence
         id: finalize
         if: success()
         shell: bash
-        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize
-
-      - name: Upload sanitized acceptance evidence
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize-engineering
+      - name: Upload engineering-only evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: b0-real-acceptance-${{ github.sha }}
+          name: b0-engineering-real-acceptance-${{ github.sha }}
+          path: .artifacts/b0-engineering/${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Publish engineering acceptance outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          ACCEPTANCE_OUTCOME: ${{ steps.acceptance.outcome }}
+          PROVIDER_OUTCOME: ${{ steps.provider_proof.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+          REDACTION_OUTCOME: ${{ steps.redaction.outcome }}
+          FINALIZE_OUTCOME: ${{ steps.finalize.outcome }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success"
+              && process.env.ACCEPTANCE_OUTCOME === "success"
+              && process.env.PROVIDER_OUTCOME === "success"
+              && process.env.CLEANUP_OUTCOME === "success"
+              && process.env.REDACTION_OUTCOME === "success"
+              && process.env.FINALIZE_OUTCOME === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/engineering-real-acceptance",
+              description: `engineering acceptance ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("Engineering self-hosted acceptance did not close");
+
+  probe-ourmanyworlds-test:
+    name: Probe ourmanyworlds test credential names
+    needs: acceptance-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: "ourmanyworlds.com / test"
+    outputs:
+      ready: ${{ steps.probe.outputs.ready }}
+      database_alias: ${{ steps.probe.outputs.database_alias }}
+      provider_alias: ${{ steps.probe.outputs.provider_alias }}
+    steps:
+      - name: Probe credential presence without printing values
+        id: probe
+        shell: bash
+        env: &credential_aliases
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          SUPABASE_TEST_DATABASE_URL: ${{ secrets.SUPABASE_TEST_DATABASE_URL }}
+          TEST_SUPABASE_DATABASE_URL: ${{ secrets.TEST_SUPABASE_DATABASE_URL }}
+          DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
+          PREVIEW_DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENOVEL_DEEPSEEK_API_KEY: ${{ secrets.OPENOVEL_DEEPSEEK_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        run: &probe_script |
+          set -euo pipefail
+          choose_alias() {
+            local name
+            for name in "$@"; do
+              if [ -n "${!name:-}" ]; then
+                printf '%s' "$name"
+                return 0
+              fi
+            done
+            return 1
+          }
+          database_alias="$(choose_alias SUPABASE_DATABASE_URL TEST_DATABASE_URL SUPABASE_TEST_DATABASE_URL TEST_SUPABASE_DATABASE_URL DATABASE_URL_TEST PREVIEW_DATABASE_URL STAGING_DATABASE_URL || true)"
+          provider_alias="$(choose_alias DEEPSEEK_API_KEY OPENOVEL_DEEPSEEK_API_KEY LLM_API_KEY AI_API_KEY || true)"
+          ready=false
+          if [ -n "$database_alias" ] && [ -n "$provider_alias" ]; then ready=true; fi
+          printf 'ready=%s\n' "$ready" >> "$GITHUB_OUTPUT"
+          printf 'database_alias=%s\n' "$database_alias" >> "$GITHUB_OUTPUT"
+          printf 'provider_alias=%s\n' "$provider_alias" >> "$GITHUB_OUTPUT"
+          echo "Credential presence probe completed without exposing values."
+
+  probe-stellar-test:
+    name: Probe stellar test credential names
+    needs: acceptance-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: "stellar-encouragement / test"
+    outputs:
+      ready: ${{ steps.probe.outputs.ready }}
+      database_alias: ${{ steps.probe.outputs.database_alias }}
+      provider_alias: ${{ steps.probe.outputs.provider_alias }}
+    steps:
+      - name: Probe credential presence without printing values
+        id: probe
+        shell: bash
+        env: *credential_aliases
+        run: *probe_script
+
+  probe-preview:
+    name: Probe Preview credential names
+    needs: acceptance-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: "Preview"
+    outputs:
+      ready: ${{ steps.probe.outputs.ready }}
+      database_alias: ${{ steps.probe.outputs.database_alias }}
+      provider_alias: ${{ steps.probe.outputs.provider_alias }}
+    steps:
+      - name: Probe credential presence without printing values
+        id: probe
+        shell: bash
+        env: *credential_aliases
+        run: *probe_script
+
+  select-formal-environment:
+    name: Select the first complete non-production credential pair
+    if: always()
+    needs:
+      - probe-ourmanyworlds-test
+      - probe-stellar-test
+      - probe-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      ready: ${{ steps.select.outputs.ready }}
+      environment: ${{ steps.select.outputs.environment }}
+      database_alias: ${{ steps.select.outputs.database_alias }}
+      provider_alias: ${{ steps.select.outputs.provider_alias }}
+      probe_results: ${{ steps.select.outputs.probe_results }}
+    steps:
+      - name: Select only an explicitly non-production environment
+        id: select
+        shell: bash
+        env:
+          OMW_RESULT: ${{ needs.probe-ourmanyworlds-test.result }}
+          OMW_READY: ${{ needs.probe-ourmanyworlds-test.outputs.ready }}
+          OMW_DB: ${{ needs.probe-ourmanyworlds-test.outputs.database_alias }}
+          OMW_PROVIDER: ${{ needs.probe-ourmanyworlds-test.outputs.provider_alias }}
+          STELLAR_RESULT: ${{ needs.probe-stellar-test.result }}
+          STELLAR_READY: ${{ needs.probe-stellar-test.outputs.ready }}
+          STELLAR_DB: ${{ needs.probe-stellar-test.outputs.database_alias }}
+          STELLAR_PROVIDER: ${{ needs.probe-stellar-test.outputs.provider_alias }}
+          PREVIEW_RESULT: ${{ needs.probe-preview.result }}
+          PREVIEW_READY: ${{ needs.probe-preview.outputs.ready }}
+          PREVIEW_DB: ${{ needs.probe-preview.outputs.database_alias }}
+          PREVIEW_PROVIDER: ${{ needs.probe-preview.outputs.provider_alias }}
+        run: |
+          set -euo pipefail
+          ready=false
+          environment=""
+          database_alias=""
+          provider_alias=""
+          if [ "$OMW_RESULT" = success ] && [ "$OMW_READY" = true ]; then
+            ready=true
+            environment='ourmanyworlds.com / test'
+            database_alias="$OMW_DB"
+            provider_alias="$OMW_PROVIDER"
+          elif [ "$STELLAR_RESULT" = success ] && [ "$STELLAR_READY" = true ]; then
+            ready=true
+            environment='stellar-encouragement / test'
+            database_alias="$STELLAR_DB"
+            provider_alias="$STELLAR_PROVIDER"
+          elif [ "$PREVIEW_RESULT" = success ] && [ "$PREVIEW_READY" = true ]; then
+            ready=true
+            environment='Preview'
+            database_alias="$PREVIEW_DB"
+            provider_alias="$PREVIEW_PROVIDER"
+          fi
+          printf 'ready=%s\n' "$ready" >> "$GITHUB_OUTPUT"
+          printf 'environment=%s\n' "$environment" >> "$GITHUB_OUTPUT"
+          printf 'database_alias=%s\n' "$database_alias" >> "$GITHUB_OUTPUT"
+          printf 'provider_alias=%s\n' "$provider_alias" >> "$GITHUB_OUTPUT"
+          printf 'probe_results=ourmanyworlds:%s,stellar:%s,preview:%s\n' "$OMW_RESULT" "$STELLAR_RESULT" "$PREVIEW_RESULT" >> "$GITHUB_OUTPUT"
+
+  formal-credential-blocker:
+    name: Record formal C8 credential blocker
+    if: always() && needs.select-formal-environment.outputs.ready != 'true'
+    needs: select-formal-environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      B0_BLOCKER_ROOT: .artifacts/b0-formal-blocker/${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Generate sanitized fail-closed blocker evidence
+        shell: bash
+        run: scripts/acceptance/b0-formal-supabase-acceptance.sh blocker
+      - name: Upload formal credential blocker
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-formal-c8-credential-blocker-${{ github.sha }}
+          path: .artifacts/b0-formal-blocker/${{ github.sha }}/formal-c8-credential-blocker.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish formal C8 blocked status
+        uses: actions/github-script@v7
+        env:
+          PROBE_RESULTS: ${{ needs.select-formal-environment.outputs.probe_results }}
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "failure",
+              context: "b0/formal-c8",
+              description: `formal C8 blocked: no complete non-production credential pair (${process.env.PROBE_RESULTS})`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+      - name: Fail closed
+        shell: bash
+        run: |
+          echo "Formal C8 cannot run without a complete non-production Supabase and DeepSeek credential pair." >&2
+          exit 1
+
+  wait-engineering-gates:
+    name: Require all exact-SHA engineering gates before formal C8
+    if: needs.select-formal-environment.outputs.ready == 'true'
+    needs: select-formal-environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 130
+    steps:
+      - name: Publish formal gate wait locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/formal-c8-gates",
+              description: `waiting for exact-SHA engineering gates in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+      - name: Wait for b0/exact-push on this exact SHA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 240); do
+            state="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/status" --jq '[.statuses[] | select(.context == "b0/exact-push")][0].state // ""')"
+            case "$state" in
+              success) echo "Exact-SHA engineering gates passed."; exit 0 ;;
+              failure|error) echo "Exact-SHA engineering gates failed." >&2; exit 1 ;;
+              *) sleep 30 ;;
+            esac
+          done
+          echo "Timed out waiting for b0/exact-push on $GITHUB_SHA" >&2
+          exit 1
+      - name: Publish formal gate wait outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/formal-c8-gates",
+              description: `formal C8 exact-SHA gates ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("Formal C8 exact-SHA gate prerequisite failed");
+
+  formal-c8:
+    name: Formal C8 on real non-production Supabase and DeepSeek
+    if: needs.select-formal-environment.outputs.ready == 'true' && needs.wait-engineering-gates.result == 'success'
+    needs:
+      - select-formal-environment
+      - wait-engineering-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    environment:
+      name: ${{ needs.select-formal-environment.outputs.environment }}
+    env:
+      B0_ACCEPTANCE_TIER: formal-c8
+      B0_EVIDENCE_ROOT: docs/auto-execute/evidence/b0/c9/runtime
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      SUPABASE_TEST_DATABASE_URL: ${{ secrets.SUPABASE_TEST_DATABASE_URL }}
+      TEST_SUPABASE_DATABASE_URL: ${{ secrets.TEST_SUPABASE_DATABASE_URL }}
+      DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
+      PREVIEW_DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+      STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      OPENOVEL_DEEPSEEK_API_KEY: ${{ secrets.OPENOVEL_DEEPSEEK_API_KEY }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      AI_API_KEY: ${{ secrets.AI_API_KEY }}
+    steps:
+      - name: Publish formal C8 locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/formal-c8",
+              description: `formal C8 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+      - name: Verify exact candidate checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+      - name: Bind only the selected non-production secret aliases
+        id: credentials
+        shell: bash
+        env:
+          SELECTED_DATABASE_ALIAS: ${{ needs.select-formal-environment.outputs.database_alias }}
+          SELECTED_PROVIDER_ALIAS: ${{ needs.select-formal-environment.outputs.provider_alias }}
+          SELECTED_ENVIRONMENT: ${{ needs.select-formal-environment.outputs.environment }}
+        run: |
+          set -euo pipefail
+          case "|$B0_DATABASE_ALIASES_CHECKED|" in *"|$SELECTED_DATABASE_ALIAS|"*) ;; *) echo "Unapproved database alias" >&2; exit 1 ;; esac
+          case "|$B0_PROVIDER_ALIASES_CHECKED|" in *"|$SELECTED_PROVIDER_ALIAS|"*) ;; *) echo "Unapproved provider alias" >&2; exit 1 ;; esac
+          database_value="${!SELECTED_DATABASE_ALIAS:-}"
+          provider_value="${!SELECTED_PROVIDER_ALIAS:-}"
+          test -n "$database_value"
+          test -n "$provider_value"
+          echo "::add-mask::$database_value"
+          echo "::add-mask::$provider_value"
+          {
+            echo "B0_FORMAL_DATABASE_URL=$database_value"
+            echo "B0_FORMAL_PROVIDER_API_KEY=$provider_value"
+            echo "B0_DATABASE_SECRET_NAME=$SELECTED_DATABASE_ALIAS"
+            echo "B0_PROVIDER_SECRET_NAME=$SELECTED_PROVIDER_ALIAS"
+            echo "B0_ACCEPTANCE_ENVIRONMENT=$SELECTED_ENVIRONMENT"
+            echo "B0_FORMAL_PROVIDER_MODEL=deepseek-chat"
+          } >> "$GITHUB_ENV"
+          for alias in SUPABASE_DATABASE_URL TEST_DATABASE_URL SUPABASE_TEST_DATABASE_URL TEST_SUPABASE_DATABASE_URL DATABASE_URL_TEST PREVIEW_DATABASE_URL STAGING_DATABASE_URL DEEPSEEK_API_KEY OPENOVEL_DEEPSEEK_API_KEY LLM_API_KEY AI_API_KEY; do
+            echo "$alias=" >> "$GITHUB_ENV"
+          done
+          echo "Selected non-production credential aliases without exposing values."
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Frozen install and build exact runtime binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web build
+      - name: Prepare a random schema on the real non-production Supabase project
+        id: database
+        shell: bash
+        run: scripts/acceptance/b0-formal-supabase-acceptance.sh prepare-database
+      - name: Apply migrations only to the random schema
+        shell: bash
+        run: pnpm prisma migrate deploy
+      - name: Read back migrated random schema and unchanged public schema
+        shell: bash
+        run: scripts/acceptance/b0-formal-supabase-acceptance.sh verify-database
+      - name: Probe the real DeepSeek provider without persisting credentials
+        id: provider
+        shell: bash
+        run: scripts/acceptance/b0-formal-supabase-acceptance.sh prepare-provider
+      - name: Execute real API, Web, three-session six-window and recovery acceptance
+        id: acceptance
+        shell: bash
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          CHROME_PATH: /usr/bin/google-chrome
+        run: pnpm test:b0:real-acceptance
+      - name: Verify public-schema isolation and drop only the random schema
+        id: cleanup
+        if: always() && steps.database.outcome == 'success'
+        shell: bash
+        run: scripts/acceptance/b0-formal-supabase-acceptance.sh cleanup
+      - name: Redact and scan formal evidence
+        id: redaction
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-formal-supabase-acceptance.sh redact
+      - name: Finalize formal C8 checkpoint
+        id: finalize
+        if: success()
+        shell: bash
+        run: scripts/acceptance/b0-formal-supabase-acceptance.sh finalize
+      - name: Upload sanitized formal C8 runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-formal-c8-${{ github.sha }}
           path: |
             docs/auto-execute/evidence/b0/c8/checkpoint.json
             docs/auto-execute/evidence/b0/c9/runtime
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Commit passing C8 and runtime evidence as docs only
+      - name: Commit passing formal C8 runtime evidence as docs only
         id: evidence_commit
         if: success()
         shell: bash
@@ -146,7 +659,7 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           remote_sha="$(git rev-parse "origin/$GITHUB_REF_NAME")"
           if [ "$remote_sha" != "$GITHUB_SHA" ]; then
-            echo "Candidate ref moved; refusing to publish stale evidence." >&2
+            echo "Candidate ref moved; refusing to publish stale formal evidence." >&2
             exit 1
           fi
           git config user.name "github-actions[bot]"
@@ -155,28 +668,25 @@ jobs:
           git diff --cached --check
           test -n "$(git diff --cached --name-only)"
           if git diff --cached --name-only | grep -Ev '^docs/auto-execute/evidence/b0/'; then
-            echo "Evidence commit contains non-evidence files." >&2
+            echo "Formal evidence commit contains non-evidence files." >&2
             exit 1
           fi
-          git commit -m "test(b0): record real Supabase and browser evidence"
+          git commit -m "test(b0): record formal non-production Supabase evidence"
           git push origin "HEAD:$GITHUB_REF_NAME"
-
-      - name: Publish real acceptance outcome
+      - name: Publish formal C8 outcome
         if: always()
         uses: actions/github-script@v7
         env:
+          JOB_STATUS: ${{ job.status }}
           ACCEPTANCE_OUTCOME: ${{ steps.acceptance.outcome }}
-          PROVIDER_OUTCOME: ${{ steps.provider_proof.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
           REDACTION_OUTCOME: ${{ steps.redaction.outcome }}
           FINALIZE_OUTCOME: ${{ steps.finalize.outcome }}
           EVIDENCE_COMMIT_OUTCOME: ${{ steps.evidence_commit.outcome }}
-          JOB_STATUS: ${{ job.status }}
         with:
           script: |
             const success = process.env.JOB_STATUS === "success"
               && process.env.ACCEPTANCE_OUTCOME === "success"
-              && process.env.PROVIDER_OUTCOME === "success"
               && process.env.CLEANUP_OUTCOME === "success"
               && process.env.REDACTION_OUTCOME === "success"
               && process.env.FINALIZE_OUTCOME === "success"
@@ -186,10 +696,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: success ? "success" : "failure",
-              context: "b0/real-acceptance",
-              description: `${success ? "real acceptance passed" : "real acceptance failed"} in ${context.runId}`,
+              context: "b0/formal-c8",
+              description: `formal C8 ${success ? "passed" : "failed"} in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            if (!success) {
-              core.setFailed(`B0 real acceptance did not close: acceptance=${process.env.ACCEPTANCE_OUTCOME}, provider=${process.env.PROVIDER_OUTCOME}, cleanup=${process.env.CLEANUP_OUTCOME}, redaction=${process.env.REDACTION_OUTCOME}, finalize=${process.env.FINALIZE_OUTCOME}, evidence=${process.env.EVIDENCE_COMMIT_OUTCOME}, job=${process.env.JOB_STATUS}`);
-            }
+            if (!success) core.setFailed("Formal C8 did not close");

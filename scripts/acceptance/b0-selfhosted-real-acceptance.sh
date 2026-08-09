@@ -423,7 +423,7 @@ database_path.write_text(json.dumps(database, ensure_ascii=False, indent=2) + "\
 PY
 }
 
-finalize() {
+finalize_engineering() {
   ensure_evidence_root
   required GITHUB_SHA
   required GITHUB_RUN_ID
@@ -442,23 +442,31 @@ database = json.loads((root / "database-provenance.json").read_text(encoding="ut
 provider = json.loads((root / "provider-provenance.json").read_text(encoding="utf-8"))
 cleanup = json.loads((root / "schema-cleanup.json").read_text(encoding="utf-8"))
 if result.get("status") != "PASS":
-    raise SystemExit("real acceptance result is not PASS")
-if database.get("status") != "PASS" or provider.get("status") != "PASS" or cleanup.get("status") != "PASS":
-    raise SystemExit("database, provider, or cleanup provenance is not PASS")
+    raise SystemExit("engineering acceptance result is not PASS")
+if result.get("environment", {}).get("acceptanceTier") != "engineering-selfhosted":
+    raise SystemExit("self-hosted acceptance result is not marked engineering-selfhosted")
+if database.get("provenance") != "official-supabase-postgres-container":
+    raise SystemExit("engineering database provenance is invalid")
+if database.get("supabaseCloudUsed") is not False:
+    raise SystemExit("engineering evidence cannot claim Supabase Cloud")
+if provider.get("provenance") != "ollama-openai-compatible-local":
+    raise SystemExit("engineering provider provenance is invalid")
 if provider.get("deterministicProvider") is not False or provider.get("fallbackAllowed") is not False:
-    raise SystemExit("provider proof violates real-model constraints")
+    raise SystemExit("engineering provider proof violates real-model constraints")
 if cleanup.get("publicSchemaUnchanged") is not True or cleanup.get("publicSchemaUsed") is not False:
-    raise SystemExit("public schema isolation proof failed")
+    raise SystemExit("engineering public schema isolation proof failed")
 
-c8 = root.parent.parent / "c8"
-c8.mkdir(parents=True, exist_ok=True)
 checkpoint = {
     "schemaVersion": 1,
-    "checkpoint": "B0_C8_REAL_OPERATIONS_VALIDATED",
+    "checkpoint": "B0_ENGINEERING_SELFHOSTED_ACCEPTANCE",
     "status": "PASS",
     "testedCodeSha": os.environ["GITHUB_SHA"],
     "workflowRunId": os.environ["GITHUB_RUN_ID"],
     "workflowRunAttempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+    "acceptanceTier": "engineering-selfhosted",
+    "formalC8Eligible": False,
+    "formalC8Claimed": False,
+    "supabaseCloudUsed": False,
     "database": {
         key: database[key]
         for key in (
@@ -473,19 +481,9 @@ checkpoint = {
             "postWarmupProductRequestCount", "deterministicProvider", "fallbackAllowed",
         )
     },
-    "validated": [
-        "single-human real flow with AI seats on the same ActionContract",
-        "one run, three roles, three isolated browser sessions, six synchronous windows and ending",
-        "worldSequence advances exactly once per completed window",
-        "settlement, commit, publication, confirmation and outbox replay are idempotent",
-        "typed audience, EventDelivery, NarrativeEntry and cross-role privacy",
-        "real narrative success and failure without world rollback",
-        "pause and resume, deadline HOLD, bounded retry, leases, safe abort and crash recovery",
-        "real /game desktop and 390px narrow browser journeys",
-    ],
-    "evidenceRoot": str(root).replace("\\", "/"),
+    "note": "This is engineering evidence only. It must never be used as the formal C8 Supabase-project checkpoint.",
 }
-(c8 / "checkpoint.json").write_text(
+(root / "engineering-checkpoint.json").write_text(
     json.dumps(checkpoint, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
 )
@@ -500,6 +498,9 @@ for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "arti
     })
 catalog = {
     "schemaVersion": 1,
+    "status": "PASS",
+    "acceptanceTier": "engineering-selfhosted",
+    "formalC8Eligible": False,
     "testedCodeSha": os.environ["GITHUB_SHA"],
     "workflowRunId": os.environ["GITHUB_RUN_ID"],
     "generatedAt": datetime.now(timezone.utc).isoformat(),
@@ -565,6 +566,10 @@ self_check() {
     ollama/ollama:*) ;;
     *) exit 1 ;;
   esac
+  if grep -Eq '"checkpoint"[[:space:]]*:[[:space:]]*"B0_C8_' "$0"; then
+    echo "Self-hosted engineering script must not emit a formal C8 checkpoint" >&2
+    exit 1
+  fi
   echo B0_SELFHOSTED_REAL_ACCEPTANCE_SELF_CHECK_OK
 }
 
@@ -573,11 +578,11 @@ case "$command_name" in
   prepare-provider) prepare_provider ;;
   provider-proof) provider_proof ;;
   cleanup) cleanup ;;
-  finalize) finalize ;;
+  finalize-engineering) finalize_engineering ;;
   redact) redact ;;
   self-check) self_check ;;
   *)
-    echo "Usage: $0 {prepare-database|prepare-provider|provider-proof|cleanup|finalize|redact|self-check}" >&2
+    echo "Usage: $0 {prepare-database|prepare-provider|provider-proof|cleanup|finalize-engineering|redact|self-check}" >&2
     exit 2
     ;;
 esac
