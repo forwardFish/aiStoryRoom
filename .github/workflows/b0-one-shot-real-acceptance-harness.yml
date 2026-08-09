@@ -55,8 +55,8 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          git merge-base --is-ancestor "f2bd9b840e0f057d6361e84a68b803f6fc34ab88" HEAD
-          test "$(git diff --name-only f2bd9b840e0f057d6361e84a68b803f6fc34ab88..HEAD | LC_ALL=C sort)" = ".github/workflows/b0-one-shot-real-acceptance-harness.yml"
+          test "$(git rev-parse HEAD^)" = "f8a347fb5af2f4a878d7fe16094d301092753672"
+          test "$(git diff --name-only HEAD^..HEAD | LC_ALL=C sort)" = ".github/workflows/b0-one-shot-real-acceptance-harness.yml"
 
       - name: Reconstruct the hash-bound acceptance assets
         shell: bash
