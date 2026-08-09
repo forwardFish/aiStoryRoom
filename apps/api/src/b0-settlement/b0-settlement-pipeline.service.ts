@@ -372,6 +372,7 @@ export class B0SettlementPipelineService {
     const active = [...b0Windows].reverse().find((window) =>
       ACTIVE_B0_WINDOW_STATUSES.includes(window.status as typeof ACTIVE_B0_WINDOW_STATUSES[number]));
     if (active) return mapStoredWindow(active);
+    if (b0RunPaused(run.stateJson)) return null;
 
     const priorConfig = b0Windows.length
       ? assertB0WindowConfigV1(b0Windows[b0Windows.length - 1].configJson)
@@ -990,12 +991,18 @@ export function b0ExceptionCode(error: unknown): string {
   }
 }
 
-function b0RunEnabled(strategyVersion: string, stateValue: unknown): boolean {
+export function b0RunEnabled(strategyVersion: string, stateValue: unknown): boolean {
   if (process.env.B0_ENABLED === "false") return false;
   if (B0_STRATEGY_VERSIONS.has(strategyVersion)) return true;
   const state = jsonRecord(stateValue);
   const b0 = jsonRecord(state?.b0);
-  return b0?.enabled === true && b0?.paused !== true;
+  return b0?.enabled === true;
+}
+
+export function b0RunPaused(stateValue: unknown): boolean {
+  const state = jsonRecord(stateValue);
+  const b0 = jsonRecord(state?.b0);
+  return b0?.paused === true;
 }
 
 function aiIntent(window: B0SettlementWindowV1, actorId: string, now: string): B0ActionContractV1 {

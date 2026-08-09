@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { ConflictException } from "@nestjs/common";
 import test from "node:test";
-import { B0SettlementPipelineService, b0ExceptionCode } from "./b0-settlement-pipeline.service";
+import { B0SettlementPipelineService, b0ExceptionCode, b0RunEnabled, b0RunPaused } from "./b0-settlement-pipeline.service";
 
 type Json = Record<string, any>;
 
@@ -235,6 +235,14 @@ test("C8 retry rejects non-B0 task vocabulary", async () => {
     },
   });
   await assert.rejects(() => service.retryTask("task.legacy"));
+});
+
+test("C8 pause preserves an active B0 window while preventing successor creation", () => {
+  assert.equal(b0RunEnabled("b0_windowed_v1", { b0: { paused: true } }), true);
+  assert.equal(b0RunEnabled("legacy_v1", { b0: { enabled: true, paused: true } }), true);
+  assert.equal(b0RunPaused({ b0: { enabled: true, paused: true } }), true);
+  assert.equal(b0RunPaused({ b0: { enabled: true, paused: false } }), false);
+  assert.equal(b0RunPaused({}), false);
 });
 
 test("C8 pause is stored only in the run-scoped B0 control state", async () => {
