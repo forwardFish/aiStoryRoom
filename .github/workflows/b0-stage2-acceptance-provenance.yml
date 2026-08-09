@@ -1,0 +1,346 @@
+name: B0 Stage 2 Acceptance Provenance Boundary
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage2-acceptance-provenance.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage2-acceptance-provenance
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage2-provenance-boundary",
+              description: `stage 2 provenance boundary running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch tip and immutable input
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage2-acceptance-provenance.yml"
+          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "0dd15674e3d7dc52667b217ae48c988a64c01354a0ca232898152d24716ded95"
+
+      - name: Add explicit engineering and formal C8 provenance modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
+          source = path.read_text(encoding="utf-8")
+
+          def replace_once(old: str, new: str) -> None:
+              global source
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f"expected one occurrence, found {count}: {old[:120]!r}")
+              source = source.replace(old, new, 1)
+
+          replace_once(
+              '''const TESTED_CODE_SHA = required("GITHUB_SHA");
+          const DATABASE_URL = required("DATABASE_URL");
+          const OPENOVEL_PROVIDER_BASE_URL = required("OPENOVEL_PROVIDER_BASE_URL");
+          const OPENOVEL_API_KEY = required("OPENOVEL_API_KEY");
+          const OPENOVEL_MODEL = required("OPENOVEL_MODEL");
+          const DATABASE_PROVENANCE = required("B0_DATABASE_PROVENANCE");
+          const DATABASE_IMAGE = required("B0_DATABASE_IMAGE");
+          const DATABASE_IMAGE_DIGEST = required("B0_DATABASE_IMAGE_DIGEST");
+          const PROVIDER_PROVENANCE = required("B0_PROVIDER_PROVENANCE");
+          const PROVIDER_IMAGE = required("B0_PROVIDER_IMAGE");
+          const PROVIDER_IMAGE_DIGEST = required("B0_PROVIDER_IMAGE_DIGEST");
+          const PROVIDER_MODEL_DIGEST = required("B0_PROVIDER_MODEL_DIGEST");'''.replace("          ", ""),
+              '''const TESTED_CODE_SHA = required("GITHUB_SHA");
+          const ACCEPTANCE_TIER = required("B0_ACCEPTANCE_TIER");
+          const ACCEPTANCE_ENVIRONMENT = optional("B0_ACCEPTANCE_ENVIRONMENT");
+          const DATABASE_SECRET_NAME = optional("B0_DATABASE_SECRET_NAME");
+          const PROVIDER_SECRET_NAME = optional("B0_PROVIDER_SECRET_NAME");
+          const DATABASE_URL = required("DATABASE_URL");
+          const OPENOVEL_PROVIDER_BASE_URL = required("OPENOVEL_PROVIDER_BASE_URL");
+          const OPENOVEL_API_KEY = required("OPENOVEL_API_KEY");
+          const OPENOVEL_MODEL = required("OPENOVEL_MODEL");
+          const DATABASE_PROVENANCE = required("B0_DATABASE_PROVENANCE");
+          const DATABASE_IMAGE = optional("B0_DATABASE_IMAGE");
+          const DATABASE_IMAGE_DIGEST = optional("B0_DATABASE_IMAGE_DIGEST");
+          const PROVIDER_PROVENANCE = required("B0_PROVIDER_PROVENANCE");
+          const PROVIDER_IMAGE = optional("B0_PROVIDER_IMAGE");
+          const PROVIDER_IMAGE_DIGEST = optional("B0_PROVIDER_IMAGE_DIGEST");
+          const PROVIDER_MODEL_DIGEST = required("B0_PROVIDER_MODEL_DIGEST");'''.replace("          ", ""),
+          )
+
+          replace_once(
+              '''    databaseKind: safeDatabaseKind(DATABASE_URL),
+              databaseProvenance: {
+                kind: DATABASE_PROVENANCE,
+                image: DATABASE_IMAGE,
+                imageDigest: DATABASE_IMAGE_DIGEST,
+                selfHostedOfficialSupabase: true,
+                supabaseCloudUsed: false,
+                publicSchemaUsed: false,
+              },
+              narrativeProvider: {
+                ...safeProviderKind(OPENOVEL_PROVIDER_BASE_URL),
+                provenance: PROVIDER_PROVENANCE,
+                image: PROVIDER_IMAGE,
+                imageDigest: PROVIDER_IMAGE_DIGEST,
+                model: OPENOVEL_MODEL,
+                modelDigest: PROVIDER_MODEL_DIGEST,
+                mode: "live-provider-only",
+                fallbackAllowed: false,
+                deterministicProvider: false,
+              },'''.replace("              ", ""),
+              '''    acceptanceTier: ACCEPTANCE_TIER,
+              acceptanceEnvironment: ACCEPTANCE_ENVIRONMENT || null,
+              databaseKind: safeDatabaseKind(DATABASE_URL),
+              databaseProvenance: {
+                kind: DATABASE_PROVENANCE,
+                environment: ACCEPTANCE_ENVIRONMENT || null,
+                secretName: DATABASE_SECRET_NAME || null,
+                image: DATABASE_IMAGE || null,
+                imageDigest: DATABASE_IMAGE_DIGEST || null,
+                selfHostedOfficialSupabase: ACCEPTANCE_TIER === "engineering-selfhosted",
+                supabaseCloudUsed: ACCEPTANCE_TIER === "formal-c8",
+                publicSchemaUsed: false,
+              },
+              narrativeProvider: {
+                ...safeProviderKind(OPENOVEL_PROVIDER_BASE_URL),
+                provenance: PROVIDER_PROVENANCE,
+                secretName: PROVIDER_SECRET_NAME || null,
+                image: PROVIDER_IMAGE || null,
+                imageDigest: PROVIDER_IMAGE_DIGEST || null,
+                model: OPENOVEL_MODEL,
+                modelDigest: PROVIDER_MODEL_DIGEST,
+                mode: "live-provider-only",
+                fallbackAllowed: false,
+                deterministicProvider: false,
+              },'''.replace("              ", ""),
+          )
+
+          report_start = source.index('function markdownReport(value: Record<string, unknown>) {')
+          report_end = source.index('\n\n\nfunction issueAcceptanceToken', report_start)
+          report = r'''function markdownReport(value: Record<string, unknown>) {
+            const phases = array(value.phases);
+            const databaseDescription = ACCEPTANCE_TIER === "formal-c8"
+              ? `real non-production Supabase project bound through GitHub environment ${ACCEPTANCE_ENVIRONMENT} and random isolated schema`
+              : `official self-hosted Supabase PostgreSQL image ${DATABASE_IMAGE} in a random isolated engineering schema`;
+            const providerDescription = ACCEPTANCE_TIER === "formal-c8"
+              ? `real DeepSeek API model ${OPENOVEL_MODEL}`
+              : `real local Ollama model ${OPENOVEL_MODEL} from image ${PROVIDER_IMAGE}`;
+            return `# B0 C9 Real Acceptance Report\n\n- Status: **${String(value.status || "UNKNOWN")}**\n- Tested code SHA: \`${TESTED_CODE_SHA}\`\n- Acceptance tier: \`${ACCEPTANCE_TIER}\`\n- Started: ${String(value.startedAt)}\n- Completed: ${String(value.completedAt || "") }\n- Database: ${databaseDescription}; the public schema was not used or modified.\n- Narrative provider: ${providerDescription} over OpenAI-compatible HTTP; deterministic/mock providers and fallback are prohibited.\n- Runtime: real Nest API, static Web server, OpenNovel runtime, embedded and independent worker processes.\n- Browser: three isolated Chromium profiles, including desktop and 390px narrow viewport.\n\n## Phases\n\n${phases.map((phase) => `- ${object(phase).status === "PASS" ? "✅" : "❌"} ${object(phase).name}`).join("\n")}\n\n## Trust boundary\n\nThis report records only sanitized identifiers, hashes, counts, status transitions, DOM summaries, network status metadata, and screenshots. Database URLs, provider keys, session cookies, bearer tokens, and internal shared tokens are excluded and scrubbed from process logs.\n`;
+          }'''.replace("          ", "")
+          source = source[:report_start] + report + source[report_end:]
+
+          replace_once(
+              'function required(name: string) { const value = String(process.env[name] || "").trim(); if (!value) throw new Error(`${name} is required`); return value; }\nfunction integerEnv',
+              'function required(name: string) { const value = String(process.env[name] || "").trim(); if (!value) throw new Error(`${name} is required`); return value; }\nfunction optional(name: string) { return String(process.env[name] || "").trim(); }\nfunction integerEnv',
+          )
+
+          replace_once(
+              '''function safeDatabaseKind(urlValue: string) {
+                const url = new URL(urlValue);
+                return {
+                  protocol: url.protocol.replace(":", ""),
+                  provider: DATABASE_PROVENANCE,
+                  hostHash: hashText(url.hostname).slice(0, 16),
+                  selfHostedOfficialSupabase: DATABASE_PROVENANCE === "official-supabase-postgres-container",
+                };
+              }'''.replace("              ", ""),
+              '''function safeDatabaseKind(urlValue: string) {
+                const url = new URL(urlValue);
+                return {
+                  protocol: url.protocol.replace(":", ""),
+                  provider: DATABASE_PROVENANCE,
+                  hostHash: hashText(url.hostname).slice(0, 16),
+                  selfHostedOfficialSupabase: ACCEPTANCE_TIER === "engineering-selfhosted",
+                  supabaseCloudNonProduction: ACCEPTANCE_TIER === "formal-c8",
+                };
+              }'''.replace("              ", ""),
+          )
+
+          assertion_start = source.index('function assertAcceptanceProvenance() {')
+          assertion_end = source.index('\nfunction dedupeNetwork', assertion_start)
+          assertion = r'''function assertAcceptanceProvenance() {
+            const databaseUrl = new URL(DATABASE_URL);
+            const providerUrl = new URL(OPENOVEL_PROVIDER_BASE_URL);
+            const databaseHost = databaseUrl.hostname.toLowerCase();
+            const providerHost = providerUrl.hostname.toLowerCase();
+            const localHosts = new Set(["127.0.0.1", "localhost", "::1"]);
+
+            if (!PROVIDER_MODEL_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_MODEL_DIGEST must be a sha256 digest");
+
+            if (ACCEPTANCE_TIER === "engineering-selfhosted") {
+              if (DATABASE_PROVENANCE !== "official-supabase-postgres-container") throw new Error("Engineering acceptance requires the official self-hosted Supabase PostgreSQL container provenance");
+              if (!DATABASE_IMAGE.startsWith("supabase/postgres:")) throw new Error("B0_DATABASE_IMAGE must identify the official supabase/postgres image");
+              if (!DATABASE_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_DATABASE_IMAGE_DIGEST must be a sha256 digest");
+              if (!localHosts.has(databaseHost)) throw new Error("Engineering database must be isolated on the local runner");
+              if (PROVIDER_PROVENANCE !== "ollama-openai-compatible-local") throw new Error("Engineering acceptance requires a real local Ollama provider provenance");
+              if (!PROVIDER_IMAGE.startsWith("ollama/ollama:")) throw new Error("B0_PROVIDER_IMAGE must identify the official ollama/ollama image");
+              if (!PROVIDER_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_IMAGE_DIGEST must be a sha256 digest");
+              if (!localHosts.has(providerHost)) throw new Error("Engineering provider must be bound to the isolated local runner");
+              return;
+            }
+
+            if (ACCEPTANCE_TIER === "formal-c8") {
+              if (DATABASE_PROVENANCE !== "supabase-cloud-nonproduction-random-schema") throw new Error("Formal C8 requires a real non-production Supabase project with a random isolated schema");
+              if (!/(?:^|\.)supabase\.(?:co|com)$/.test(databaseHost)) throw new Error("Formal C8 DATABASE_URL must target a Supabase-managed host");
+              if (localHosts.has(databaseHost)) throw new Error("Formal C8 cannot use a local PostgreSQL or Supabase container");
+              if (!/(?:test|testing|staging|stage|preview)/i.test(ACCEPTANCE_ENVIRONMENT)) throw new Error("Formal C8 must bind through an explicitly non-production GitHub environment");
+              if (!DATABASE_SECRET_NAME) throw new Error("Formal C8 must record the non-production database secret name");
+              if (DATABASE_IMAGE || DATABASE_IMAGE_DIGEST) throw new Error("Formal C8 must not claim a container image as its database provenance");
+              if (PROVIDER_PROVENANCE !== "deepseek-api-real") throw new Error("Formal C8 requires the real DeepSeek API provider provenance");
+              if (providerUrl.protocol !== "https:") throw new Error("Formal C8 provider transport must use HTTPS");
+              if (providerHost !== "api.deepseek.com") throw new Error("Formal C8 provider must target the official DeepSeek API host");
+              if (!PROVIDER_SECRET_NAME) throw new Error("Formal C8 must record the provider secret name");
+              if (PROVIDER_IMAGE || PROVIDER_IMAGE_DIGEST) throw new Error("Formal C8 must not claim a local provider image");
+              return;
+            }
+
+            throw new Error(`Unsupported B0_ACCEPTANCE_TIER: ${ACCEPTANCE_TIER}`);
+          }'''.replace("          ", "")
+          source = source[:assertion_start] + assertion + source[assertion_end:]
+
+          path.write_text(source, encoding="utf-8")
+          PY
+          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "20d1fd8fdaa038c366192238b2bb0af9bf9b30ea0cc543755b0a365e261d45b4"
+          git diff --check
+
+      - name: Frozen install and compile the acceptance driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+
+      - name: Prove both provenance modes fail closed and self-check correctly
+        shell: bash
+        run: |
+          set -euo pipefail
+          zeros="sha256:$(printf '0%.0s' $(seq 1 64))"
+          GITHUB_SHA="$GITHUB_SHA" \
+          DATABASE_URL='postgresql://postgres:secret@127.0.0.1:55432/postgres?schema=cs_accept_b0_selfcheck123&connection_limit=3&sslmode=disable' \
+          OPENOVEL_PROVIDER_BASE_URL='http://127.0.0.1:11434/v1' \
+          OPENOVEL_API_KEY='engineering-self-check' \
+          OPENOVEL_MODEL='qwen2.5:1.5b' \
+          B0_ACCEPTANCE_TIER='engineering-selfhosted' \
+          B0_ACCEPTANCE_ENVIRONMENT='github-hosted-isolated-engineering' \
+          B0_DATABASE_PROVENANCE='official-supabase-postgres-container' \
+          B0_DATABASE_IMAGE='supabase/postgres:15.14.1.157-mmlb_amd64' \
+          B0_DATABASE_IMAGE_DIGEST="$zeros" \
+          B0_PROVIDER_PROVENANCE='ollama-openai-compatible-local' \
+          B0_PROVIDER_IMAGE='ollama/ollama:0.32.5' \
+          B0_PROVIDER_IMAGE_DIGEST="$zeros" \
+          B0_PROVIDER_MODEL_DIGEST="$zeros" \
+          B0_ACCEPTANCE_SELF_CHECK=1 \
+            pnpm test:b0:real-acceptance
+
+          GITHUB_SHA="$GITHUB_SHA" \
+          DATABASE_URL='postgresql://postgres:secret@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?schema=cs_accept_b0_selfcheck123&connection_limit=3&sslmode=require' \
+          OPENOVEL_PROVIDER_BASE_URL='https://api.deepseek.com' \
+          OPENOVEL_API_KEY='formal-self-check' \
+          OPENOVEL_MODEL='deepseek-chat' \
+          B0_ACCEPTANCE_TIER='formal-c8' \
+          B0_ACCEPTANCE_ENVIRONMENT='ourmanyworlds.com / test' \
+          B0_DATABASE_SECRET_NAME='SUPABASE_DATABASE_URL' \
+          B0_PROVIDER_SECRET_NAME='DEEPSEEK_API_KEY' \
+          B0_DATABASE_PROVENANCE='supabase-cloud-nonproduction-random-schema' \
+          B0_PROVIDER_PROVENANCE='deepseek-api-real' \
+          B0_PROVIDER_MODEL_DIGEST="$zeros" \
+          B0_ACCEPTANCE_SELF_CHECK=1 \
+            pnpm test:b0:real-acceptance
+
+          if GITHUB_SHA="$GITHUB_SHA" \
+            DATABASE_URL='postgresql://postgres:secret@127.0.0.1:55432/postgres?schema=cs_accept_b0_selfcheck123' \
+            OPENOVEL_PROVIDER_BASE_URL='https://api.deepseek.com' \
+            OPENOVEL_API_KEY='formal-self-check' \
+            OPENOVEL_MODEL='deepseek-chat' \
+            B0_ACCEPTANCE_TIER='formal-c8' \
+            B0_ACCEPTANCE_ENVIRONMENT='ourmanyworlds.com / test' \
+            B0_DATABASE_SECRET_NAME='SUPABASE_DATABASE_URL' \
+            B0_PROVIDER_SECRET_NAME='DEEPSEEK_API_KEY' \
+            B0_DATABASE_PROVENANCE='supabase-cloud-nonproduction-random-schema' \
+            B0_PROVIDER_PROVENANCE='deepseek-api-real' \
+            B0_PROVIDER_MODEL_DIGEST="$zeros" \
+            B0_ACCEPTANCE_SELF_CHECK=1 \
+              pnpm test:b0:real-acceptance; then
+            echo 'Formal C8 incorrectly accepted a local database.' >&2
+            exit 1
+          fi
+
+      - name: Commit stage 2 as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git rm .github/workflows/b0-stage2-acceptance-provenance.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage2-acceptance-provenance.yml
+          scripts/acceptance/b0-candidate-real-flow.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "test(b0): separate formal C8 from engineering provenance"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage2-provenance-boundary",
+              description: `stage 2 provenance boundary ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("Stage 2 provenance boundary failed");
