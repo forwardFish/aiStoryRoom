@@ -1,0 +1,130 @@
+name: A-Emotion verified remote delivery
+
+on:
+  push:
+    branches:
+      - "tmp/aemotion-remote-delivery-20260809"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: aemotion-remote-delivery-20260809
+  cancel-in-progress: false
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_BRANCH: codex/chatgpt-pro-main-game-final-v1
+      EXPECTED_PARENT: 1a478cb7c854fa68b5b1f5baeea42bb663247fa7
+      EXPECTED_M1_TREE: f0429805da585b2eb2147374eb50e379c99d5999
+      EXPECTED_FINAL_TREE: 5d004717a8e2bf686fc7956edc5ae7e546565ae8
+      ARCHIVE_SHA256: 9035d3c02a93102c03771d585af85058f264d151244d80ec36d50475db0ac1a1
+      M1_PATCH_SHA256: 8db99b7db2760b1374f4efded1c2f1b95b28e2cf1d8edc66f44967ec6bfa8312
+      M2_M6_PATCH_SHA256: 73789e4fd513e91fa9f27ce2feb54f17fed46382c6fa083fb59a1ac08175ee7b
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check out exact target branch
+        uses: actions/checkout@v4
+        with:
+          ref: codex/chatgpt-pro-main-game-final-v1
+          fetch-depth: 0
+
+      - name: Reconstruct and verify exact patch archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          import urllib.request
+
+          shas = [
+              "5d8025e869696a11d4b1896c87002db0eb297331",
+              "8ceb7859131eb7dfdd40474a9454aa91f664311d",
+              "9eba6faced55de551e235c36af0be0bb17099a69",
+              "9cedc1f15cc1d3798dabb755c4f8e26e56d2325c",
+              "dd6419f67c3af69500dd7681ee7f701336d49fcc",
+              "3115d9b702a45b09a4af9af1a9267b16853ef7c6",
+              "103e508be0742280ebb2980ecd4fc5cdca09bbe5",
+              "bc921f0608e2c2d1826e2f17e949435d3a9fd248",
+              "fe4f96def9a512479ce0c16df9e4ad10c47ba251",
+              "5ef28b8e1d24141dacae22a12ab4bb3ed870e6cc",
+              "5cdf748db031113e83b46b6d707acdea396d76b5",
+              "397ab0446d0cfbaef638d88d05eb7810c0752398",
+              "2f6f3d535e4091f2c71b39421eeff2f624044120",
+              "d7142b5ecfb2f568016dd4ae16304525c2a685ae",
+              "5c2b1fd84ca279e42636343d76dd0e5831cffa76",
+              "36df35472557f6c8074af55769b2e4288f5e9155",
+              "a476af360fd9407b10b70cb2d917f0f3c1e4158b",
+              "a4b5a1f304d382321628b9e3eca722270bb46c48",
+              "c5c83554f09b9a373bc60ea843d7213da5611b5a",
+          ]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GITHUB_TOKEN"]
+          output = "/tmp/aemotion-patches.tar.xz"
+          with open(output, "wb") as handle:
+              for sha in shas:
+                  request = urllib.request.Request(
+                      f"https://api.github.com/repos/{repo}/git/blobs/{sha}",
+                      headers={
+                          "Authorization": f"Bearer {token}",
+                          "Accept": "application/vnd.github+json",
+                          "X-GitHub-Api-Version": "2022-11-28",
+                      },
+                  )
+                  with urllib.request.urlopen(request) as response:
+                      payload = json.load(response)
+                  handle.write(base64.b64decode(payload["content"]))
+          PY
+          printf '%s  %s\n' "$ARCHIVE_SHA256" /tmp/aemotion-patches.tar.xz | sha256sum --check --strict
+          rm -rf /tmp/aemotion-patches
+          mkdir -p /tmp/aemotion-patches
+          tar -xJf /tmp/aemotion-patches.tar.xz -C /tmp/aemotion-patches
+          printf '%s  %s\n' "$M1_PATCH_SHA256" /tmp/aemotion-patches/m1.patch | sha256sum --check --strict
+          printf '%s  %s\n' "$M2_M6_PATCH_SHA256" /tmp/aemotion-patches/m2m6.patch | sha256sum --check --strict
+
+      - name: Apply, commit, and push M1 and M2-M6
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config core.autocrlf false
+          git config core.safecrlf false
+
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_PARENT"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_PARENT"
+          test -z "$(git status --porcelain)"
+
+          rm -f "主游戏最终版/M0_仓库审计与M1接入点冻结报告.md"
+          git apply --check --binary /tmp/aemotion-patches/m1.patch
+          git apply --binary /tmp/aemotion-patches/m1.patch
+          git add -A
+          test "$(git write-tree)" = "$EXPECTED_M1_TREE"
+          git commit -m "feat(a-emotion): add M1 cross-impact vertical slice"
+          M1_SHA="$(git rev-parse HEAD)"
+
+          git apply --check --binary /tmp/aemotion-patches/m2m6.patch
+          git apply --binary /tmp/aemotion-patches/m2m6.patch
+          git add -A
+          test "$(git write-tree)" = "$EXPECTED_FINAL_TREE"
+          git commit -m "feat(a-emotion): complete M2-M6 interaction lifecycle"
+          FINAL_SHA="$(git rev-parse HEAD)"
+
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          printf 'M1_SHA=%s\nFINAL_SHA=%s\n' "$M1_SHA" "$FINAL_SHA" >> "$GITHUB_ENV"
+
+      - name: Record successful delivery and clean temporary resources
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh issue close 41 --repo "$GITHUB_REPOSITORY" --comment "Remote delivery completed. M1 commit: $M1_SHA. M2-M6 commit: $FINAL_SHA. Final tree: $EXPECTED_FINAL_TREE. No main modification, deployment, or Supabase migration was performed."
+          git push origin --delete tmp/aemotion-remote-delivery-20260809 || true
