@@ -1,5 +1,5 @@
-import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260806-opening-sequence-v1";
-import { clearManeuverDraft } from "./maneuver-four-ui.js?v=20260806-mvp-four-v2";
+import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260809-remaining-count-v1";
+import { clearManeuverDraft } from "./maneuver-four-ui.js?v=20260809-remaining-count-v1";
 
 export function createContinuousStoryV2App({ root, window: win, runId, initialProjection, fetchImpl }) {
   if (!root || !runId || typeof fetchImpl !== "function") throw new TypeError("continuous story v2 requires root, runId and fetch");
@@ -21,7 +21,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     const previous = win.__AI_STORY_DISABLE_AUTO_BOOT__;
     win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
     try {
-      return await import("./app.js?v=20260806-comfortable-reading-v1");
+      return await import("./app.js?v=20260809-remaining-count-v1");
     } finally {
       if (previous === undefined) delete win.__AI_STORY_DISABLE_AUTO_BOOT__;
       else win.__AI_STORY_DISABLE_AUTO_BOOT__ = previous;
@@ -64,7 +64,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
 
   function installManeuverPreviewFlow() {
     maneuverCaptureHandler = (event) => {
-      const button = event.target?.closest?.("#maneuverSubmit, #maneuverConfirm, #maneuverPreviewCancel, #continueStoryBtn");
+      const button = event.target?.closest?.("#maneuverSubmit, #continueStoryBtn");
       if (!button || !root.contains(button)) return;
       if (button.id === "continueStoryBtn") {
         const state = storyApp?.getState();
@@ -79,83 +79,26 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       }
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (button.id === "maneuverSubmit") void previewCurrentManeuver();
-      else if (button.id === "maneuverConfirm") void confirmCurrentManeuver();
-      else cancelManeuverPreview();
+      void submitCurrentManeuver();
     };
     root.addEventListener("click", maneuverCaptureHandler, true);
   }
 
-  async function previewCurrentManeuver() {
+  async function submitCurrentManeuver() {
     const state = storyApp?.getState();
     if (!state || state.busy) return;
-    const activeType = state.activeManeuverType;
-    const draftSnapshot = clone(state.maneuverDrafts);
+    const shouldResumeOpening = state.showOpening === true;
+    if (shouldResumeOpening) state.showOpening = false;
     await storyApp.submitManeuver();
     const nextState = storyApp.getState();
-    const preview = nextState.view?.maneuverPreview;
-    if (!preview) return;
-    nextState.maneuverDrafts = draftSnapshot;
-    nextState.activeManeuverType = activeType;
-    nextState.maneuverPreview = preview;
-    nextState.maneuverGuard = null;
-    storyApp.render();
-  }
-
-  async function confirmCurrentManeuver() {
-    const state = storyApp?.getState();
-    const preview = state?.maneuverPreview || state?.view?.maneuverPreview;
-    if (!state || !preview || state.busy) return;
-    state.busy = true;
-    state.error = "";
-    state.maneuverGuard = null;
-    storyApp.render();
-    try {
-      const result = await storage.confirmManeuver(state.view, preview);
-      if (result?.accepted === false) {
-        state.maneuverGuard = {
-          reason: result.reason || "这项谋划暂时不能确认。",
-          suggestedRewrite: result.suggestedRewrite || "",
-        };
-        return;
-      }
-      state.maneuverPreview = null;
-      if (state.view) delete state.view.maneuverPreview;
-      clearManeuverDraft(state, preview.maneuverType);
-
-      // The main renderer treats an unfinished prologue as a lifecycle state,
-      // not as an action result. Suspend that state only while the newly
-      // confirmed maneuver result is presented, then restore it when the
-      // player presses Continue. This does not advance the OpenNovel turn.
-      const shouldResumeOpening = state.showOpening === true;
-      if (shouldResumeOpening) state.showOpening = false;
-      state.busy = false;
-      await storyApp.refresh({ silent: true });
-      const refreshedState = storyApp.getState();
-      if (shouldResumeOpening && refreshedState.resultStream?.kind === "maneuver") {
-        resumeOpeningAfterManeuverResult = true;
-      } else if (shouldResumeOpening) {
-        refreshedState.showOpening = true;
-      }
-    } catch (error) {
-      state.error = error?.message || "主动谋划确认失败。";
-      if (["MANEUVER_PREVIEW_STALE", "MANEUVER_PREVIEW_EXPIRED", "VERSION_CONFLICT"].includes(String(error?.code || ""))) {
-        state.maneuverPreview = null;
-        if (state.view) delete state.view.maneuverPreview;
-      }
-    } finally {
-      state.busy = false;
+    if (shouldResumeOpening && nextState.resultStream?.kind === "maneuver") {
+      resumeOpeningAfterManeuverResult = true;
+      return;
+    }
+    if (shouldResumeOpening) {
+      nextState.showOpening = true;
       storyApp.render();
     }
-  }
-
-  function cancelManeuverPreview() {
-    const state = storyApp?.getState();
-    if (!state || state.busy) return;
-    state.maneuverPreview = null;
-    if (state.view) delete state.view.maneuverPreview;
-    state.maneuverGuard = null;
-    storyApp.render();
   }
 
   function renderCreditChrome() {
@@ -297,9 +240,7 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
     },
     refresh,
     submitDecision: () => storyApp?.submitDecision(),
-    submitManeuver: previewCurrentManeuver,
-    confirmManeuver: confirmCurrentManeuver,
-    cancelManeuverPreview,
+    submitManeuver: submitCurrentManeuver,
     handoff: () => changeControl("handoff"),
     reclaim: () => changeControl("reclaim"),
     loadResult: () => storage.loadResult(),

@@ -103,7 +103,7 @@ test("OpenNovel view receives authoritative maneuver panel instead of the loadin
   assert.equal(view.leverageHand.availableCount, 3);
 });
 
-test("four OpenNovel forms preview without side effects and confirm through the dedicated endpoint", async () => {
+test("four OpenNovel forms submit once and return the real result without a preview step", async () => {
   const cases = [
     ["contact", { maneuverType: "contact", targetRoleKey: "county_magistrate", messageText: "原册是否完整？" }, { targetRoleKey: "county_magistrate", messageText: "原册是否完整？" }],
     ["investigate", { maneuverType: "investigate", intentKey: "inspect_first_register_timing" }, { intentKey: "inspect_first_register_timing" }],
@@ -113,34 +113,12 @@ test("four OpenNovel forms preview without side effects and confirm through the 
   for (const [type, draft, expected] of cases) {
     const requests = [];
     const current = projection();
-    const token = `signed-preview-token-${type}`;
     const storage = new ContinuousStoryV2LegacyStorage({
       runId: current.room.id,
       initialProjection: current,
       fetchImpl: async (url, init = {}) => {
         const body = init.body ? JSON.parse(init.body) : null;
         requests.push({ url: String(url), body });
-        if (String(url).endsWith("/preview")) {
-          return json({
-            accepted: true,
-            previewed: true,
-            previewToken: token,
-            preview: {
-              previewId: `preview-${type}`,
-              maneuverType: type,
-              decisionForm: "CUSTOM_PLAN",
-              sceneKey: "d1_1",
-              usageDay: 1,
-              title: "确认主动谋划",
-              summary: "服务端已理解这次行动。",
-              targetLabel: null,
-              costLabel: "确认后才消耗一次谋划。",
-              confirmLabel: "确认执行",
-              expiresAt: new Date(Date.now() + 60_000).toISOString(),
-            },
-            gameProjection: current,
-          });
-        }
         return json({
           accepted: true,
           replayed: false,
@@ -151,40 +129,31 @@ test("four OpenNovel forms preview without side effects and confirm through the 
       },
     });
     const before = await storage.restoreOrCreate();
-    const previewed = await storage.submitManeuver(before, draft);
+    const submitted = await storage.submitManeuver(before, draft);
     assert.equal(requests.length, 1);
-    assert.equal(requests[0].url, "/api/v4/rooms/solo_ovl_web/game/maneuvers/preview");
+    assert.equal(requests[0].url, "/api/v4/rooms/solo_ovl_web/game/maneuvers");
     assert.equal(requests[0].body.version, 11);
     assert.equal(requests[0].body.maneuverType, type);
     assert.match(requests[0].body.idempotencyKey, /^openovel-maneuver-/);
     for (const [key, value] of Object.entries(expected)) assert.equal(requests[0].body[key], value);
     if (type !== "contact") assert.equal("messageText" in requests[0].body, false);
     if (type !== "custom") assert.equal("customText" in requests[0].body, false);
-    assert.equal(previewed.run.version, 11, "preview must not update the run version");
-    assert.equal(previewed.v2Projection.currentTurn.id, "T01");
-    assert.equal(previewed.messages.filter((item) => item.type === "maneuver_result").length, 0);
-    assert.equal(previewed.maneuverPreview.previewToken, token);
-
-    const confirmed = await storage.confirmManeuver(previewed, previewed.maneuverPreview);
-    assert.equal(requests.length, 2);
-    assert.equal(requests[1].url, "/api/v4/rooms/solo_ovl_web/game/maneuvers/confirm");
-    assert.deepEqual(requests[1].body, { previewToken: token });
-    assert.equal(confirmed.run.version, 12);
-    assert.equal(confirmed.v2Projection.currentTurn.id, "T01", "maneuver must not advance the main OpenNovel turn");
-    assert.equal(confirmed.messages.at(-1).type, "maneuver_result");
-    assert.equal(confirmed.maneuverPanel[type].enabled, false);
+    assert.equal(submitted.run.version, 12);
+    assert.equal(submitted.v2Projection.currentTurn.id, "T01", "maneuver must not advance the main OpenNovel turn");
+    assert.equal(submitted.messages.at(-1).type, "maneuver_result");
+    assert.equal(submitted.maneuverPanel[type].enabled, false);
+    assert.equal("maneuverPreview" in submitted, false);
   }
 });
 
-test("preview response preserves the authoritative projection and does not invent a result", async () => {
+test("a rejected direct submit preserves the authoritative projection and does not invent a result", async () => {
   const current = projection();
   const storage = new ContinuousStoryV2LegacyStorage({
     runId: current.room.id,
     initialProjection: current,
     fetchImpl: async () => json({
-      accepted: true,
-      previewToken: "signed-preview-token",
-      preview: { previewId: "p1", title: "确认", summary: "仅确认输入", confirmLabel: "确认", maneuverType: "custom" },
+      accepted: false,
+      reason: "当前阶段不能执行这项行动。",
       gameProjection: current,
     }),
   });
@@ -193,6 +162,7 @@ test("preview response preserves the authoritative projection and does not inven
   assert.equal(after.run.version, before.run.version);
   assert.equal(after.messages.length, before.messages.length);
   assert.equal(after.maneuverState.maneuverOpportunitiesRemaining, 2);
+  assert.equal(after.accepted, false);
 });
 
 test("maneuverRequest never invents client-side options", () => {

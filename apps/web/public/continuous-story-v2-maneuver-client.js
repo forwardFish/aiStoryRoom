@@ -1,7 +1,7 @@
 import {
   ContinuousStoryV2LegacyStorage,
   adaptProjection,
-} from "./continuous-story-v2-legacy-storage.js?v=20260806-opening-sequence-v1";
+} from "./continuous-story-v2-legacy-storage.js?v=20260809-remaining-count-v1";
 
 const PATCH_MARK = Symbol.for("our-many-worlds:openovel-maneuver-web-v2");
 
@@ -61,7 +61,7 @@ export function installOpenNovelManeuverStoragePatch() {
     let response;
     try {
       response = await this.request(
-        `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/maneuvers/preview`,
+        `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/maneuvers`,
         {
           method: "POST",
           body: JSON.stringify({ ...command, idempotencyKey }),
@@ -71,18 +71,17 @@ export function installOpenNovelManeuverStoragePatch() {
       this.__openNovelManeuverKeys.delete(fingerprint);
       throw error;
     }
-    // A successful Preview is zero-side-effect and intentionally does not
-    // perform a second GET /game. Keep the current projection unless a newer
-    // compatible backend explicitly includes one.
-    this.projection = response.gameProjection
-      ? requireManeuverProjection(response.gameProjection)
-      : requireManeuverProjection(this.projection);
+    this.projection = requireManeuverProjection(response.gameProjection);
+    const type = String(response.result?.maneuverType || command.maneuverType);
     const nextView = augmentManeuverView(
-      adaptProjection(this.projection),
+      adaptProjection(this.projection, {
+        resolution: response.resolution || null,
+        decisionForm: decisionForm(type),
+      }),
       this.projection,
     );
+    this.__openNovelManeuverKeys.delete(fingerprint);
     if (response.accepted === false) {
-      this.__openNovelManeuverKeys.delete(fingerprint);
       return {
         ...nextView,
         accepted: false,
@@ -90,64 +89,9 @@ export function installOpenNovelManeuverStoragePatch() {
         suggestedRewrite: response.suggestedRewrite || "",
       };
     }
-    return {
-      ...nextView,
-      accepted: true,
-      previewed: true,
-      maneuverPreview: {
-        ...clone(response.preview),
-        previewToken: String(response.previewToken || ""),
-        maneuverType: command.maneuverType,
-        command: clone(command),
-        fingerprint,
-      },
-    };
+    return nextView;
   };
 
-  proto.confirmManeuver = async function(_view, preview = {}) {
-    if (!isOpenNovelManeuverProjection(this.projection)) {
-      throw requestError("MANEUVER_PROJECTION_REQUIRED", "主动谋划配置尚未加载。");
-    }
-    const previewToken = String(preview.previewToken || preview || "").trim();
-    if (!previewToken) {
-      throw requestError("MANEUVER_PREVIEW_REQUIRED", "请先生成服务端预演。");
-    }
-    const fingerprint = String(preview.fingerprint || "");
-    try {
-      const response = await this.request(
-        `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/maneuvers/confirm`,
-        {
-          method: "POST",
-          body: JSON.stringify({ previewToken }),
-        },
-      );
-      this.projection = requireManeuverProjection(response.gameProjection);
-      const type = String(response.result?.maneuverType || preview.maneuverType || "custom");
-      const nextView = augmentManeuverView(
-        adaptProjection(this.projection, {
-          resolution: response.resolution || null,
-          decisionForm: decisionForm(type),
-        }),
-        this.projection,
-      );
-      if (response.accepted === false) {
-        return {
-          ...nextView,
-          accepted: false,
-          reason: response.reason || "这项谋划暂时无法确认。",
-          suggestedRewrite: response.suggestedRewrite || "",
-        };
-      }
-      return nextView;
-    } finally {
-      if (fingerprint) this.__openNovelManeuverKeys?.delete(fingerprint);
-    }
-  };
-
-  proto.discardManeuverPreview = function(preview = {}) {
-    const fingerprint = String(preview.fingerprint || "");
-    if (fingerprint) this.__openNovelManeuverKeys?.delete(fingerprint);
-  };
 }
 
 export function augmentManeuverView(view, projection) {
@@ -264,4 +208,4 @@ function clone(value) {
 installOpenNovelManeuverStoragePatch();
 
 export { ContinuousStoryV2LegacyStorage };
-export { createContinuousStoryV2App } from "./continuous-story-v2-client.js?v=20260806-comfortable-reading-v1";
+export { createContinuousStoryV2App } from "./continuous-story-v2-client.js?v=20260809-remaining-count-v1";

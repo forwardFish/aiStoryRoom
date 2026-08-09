@@ -1,6 +1,5 @@
 import {
   Body,
-  ConflictException,
   Controller,
   Inject,
   Param,
@@ -21,37 +20,16 @@ export class OpenNovelManeuverController {
     @Inject(OpenNovelAdapterService) private readonly adapter: OpenNovelAdapterService,
   ) {}
 
-  @Post(":roomId/game/maneuvers/preview")
-  async preview(
+  @Post(":roomId/game/maneuvers")
+  async submit(
     @CurrentUser() user: AuthenticatedUser,
     @Param("roomId") roomId: string,
     @Body() body: OpenNovelManeuverCommand,
   ) {
-    // Preview is contractually zero-side-effect. Do not call adapter.game()
-    // here: the maneuver-aware projection path may repair a legacy stateJson
-    // mirror. The browser retains its unchanged authoritative projection until
-    // Confirm succeeds or it explicitly refreshes.
-    return this.maneuvers.preview(user, roomId, body);
-  }
-
-  @Post(":roomId/game/maneuvers/confirm")
-  async confirm(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param("roomId") roomId: string,
-    @Body() body: { previewToken?: unknown },
-  ) {
-    const result: any = await this.maneuvers.confirm(user, roomId, body.previewToken);
+    const result: any = await this.maneuvers.submit(user, roomId, body);
     return {
       ...result,
       gameProjection: await this.adapter.game(user, roomId),
     };
-  }
-
-  @Post(":roomId/game/maneuvers")
-  directSubmitRemoved() {
-    throw new ConflictException({
-      code: "MANEUVER_PREVIEW_REQUIRED",
-      message: "Create a server-authoritative maneuver preview before confirmation.",
-    });
   }
 }

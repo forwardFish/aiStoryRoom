@@ -192,7 +192,7 @@ async function waitForOpeningReady(root) {
   return waitForSelector(root, "#beginStoryBtn", 2_000);
 }
 
-test("confirmed maneuver result interrupts an unfinished prologue, then returns to opening lifecycle", async () => {
+test("direct maneuver result interrupts an unfinished prologue, then returns to opening lifecycle", async () => {
   const dom = new JSDOM("<!doctype html><main id=app></main>", {
     url: "http://game.test/game?runId=solo_ovl_opening_result",
     pretendToBeVisual: true,
@@ -201,32 +201,14 @@ test("confirmed maneuver result interrupts an unfinished prologue, then returns 
   const root = dom.window.document.getElementById("app");
   let current = projection();
   const requests = [];
+  let releaseManeuver;
+  const maneuverGate = new Promise((resolve) => { releaseManeuver = resolve; });
   const fetchImpl = async (url, init = {}) => {
     const path = String(url);
     const body = init.body ? JSON.parse(init.body) : null;
     requests.push({ path, method: init.method || "GET", body });
-    if (path.endsWith("/maneuvers/preview")) {
-      return json({
-        accepted: true,
-        previewed: true,
-        previewToken: "signed-opening-contact-preview",
-        preview: {
-          previewId: "opening-contact-preview",
-          maneuverType: "contact",
-          decisionForm: "CONVERSATION",
-          sceneKey: "d1_1",
-          usageDay: 1,
-          title: "准备与卢象升交谈",
-          summary: body.messageText,
-          targetLabel: "卢象升",
-          costLabel: "确认后消耗 1 次主动谋划。",
-          confirmLabel: "确认发送给卢象升",
-          expiresAt: new Date(Date.now() + 60_000).toISOString(),
-        },
-        gameProjection: current,
-      });
-    }
-    if (path.endsWith("/maneuvers/confirm")) {
+    if (/\/game\/maneuvers$/.test(path)) {
+      await maneuverGate;
       current = confirmedProjection();
       return json({
         accepted: true,
@@ -264,14 +246,16 @@ test("confirmed maneuver result interrupts an unfinished prologue, then returns 
     message.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
     root.querySelector("#maneuverSubmit").click();
 
-    const confirm = await waitForSelector(root, "#maneuverConfirm");
-    assert.match(root.textContent, /准备与卢象升交谈/);
-    assert.equal(current.maneuverVersion, 1, "preview must not mutate authority");
-    confirm.click();
+    await waitForSelector(root, '[data-testid="ai-simulating"]');
+    assert.match(root.textContent, /卢象升正在回应/);
+    assert.match(root.textContent, /真实回应/);
+    assert.doesNotMatch(root.textContent, /AI is shaping the consequences/);
+    releaseManeuver();
 
     const continueButton = await waitForSelector(root, "#continueStoryBtn");
     assert.match(root.textContent, /清流县令的谨慎回应/);
     assert.match(root.textContent, /原册大体还在/);
+    assert.doesNotMatch(root.textContent, /正文已经加载/);
     assert.equal(root.querySelector("#beginStoryBtn"), null, "confirmed result must outrank the unfinished prologue");
 
     const stateAfterConfirm = app.getState();
@@ -290,9 +274,9 @@ test("confirmed maneuver result interrupts an unfinished prologue, then returns 
     await waitForSelector(root, "#submitDecision");
     assert.match(root.textContent, /第一项主线决策/);
 
-    assert.equal(requests.filter((item) => item.path.endsWith("/maneuvers/preview")).length, 1);
-    assert.equal(requests.filter((item) => item.path.endsWith("/maneuvers/confirm")).length, 1);
-    assert.equal(requests.filter((item) => /\/game\/maneuvers$/.test(item.path)).length, 0);
+    assert.equal(requests.filter((item) => item.path.endsWith("/maneuvers/preview")).length, 0);
+    assert.equal(requests.filter((item) => item.path.endsWith("/maneuvers/confirm")).length, 0);
+    assert.equal(requests.filter((item) => /\/game\/maneuvers$/.test(item.path)).length, 1);
   } finally {
     app.destroy();
     dom.window.close();

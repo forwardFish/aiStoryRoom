@@ -65,47 +65,34 @@ function json(value, status = 200) {
   });
 }
 
-test("Confirm rejection remains visible and releases the preview idempotency key", async () => {
+test("direct submission rejection remains visible and releases the idempotency key", async () => {
   const current = projection();
+  const requests = [];
   const storage = new ContinuousStoryV2LegacyStorage({
     runId: current.room.id,
     initialProjection: current,
     fetchImpl: async (url) => {
-      if (String(url).endsWith("/preview")) {
-        return json({
-          accepted: true,
-          previewToken: "signed-preview-token",
-          preview: {
-            previewId: "preview-rejection",
-            maneuverType: "custom",
-            title: "Confirm",
-            summary: "One bounded action",
-            confirmLabel: "Confirm",
-          },
-          gameProjection: current,
-        });
-      }
+      requests.push(String(url));
       return json({
         accepted: false,
-        reason: "The context changed after preview.",
-        suggestedRewrite: "Preview again.",
+        reason: "The context changed before execution.",
+        suggestedRewrite: "Choose an available action.",
         gameProjection: current,
       });
     },
   });
 
   const before = await storage.restoreOrCreate();
-  const previewed = await storage.submitManeuver(before, {
+  const rejected = await storage.submitManeuver(before, {
     maneuverType: "custom",
     customText: "Verify the route log",
   });
-  assert.equal(storage.__openNovelManeuverKeys.size, 1);
-
-  const rejected = await storage.confirmManeuver(previewed, previewed.maneuverPreview);
 
   assert.equal(rejected.accepted, false);
-  assert.equal(rejected.reason, "The context changed after preview.");
-  assert.equal(rejected.suggestedRewrite, "Preview again.");
+  assert.equal(rejected.reason, "The context changed before execution.");
+  assert.equal(rejected.suggestedRewrite, "Choose an available action.");
   assert.equal(storage.__openNovelManeuverKeys.size, 0);
   assert.equal(rejected.run.version, 3);
+  assert.equal(requests.length, 1);
+  assert.match(requests[0], /\/game\/maneuvers$/);
 });

@@ -99,6 +99,21 @@ export class OpenNovelManeuverPreviewService {
     };
   }
 
+  /**
+   * Execute one player maneuver as a single product action. The existing
+   * signed plan is kept as an internal validation boundary, but it is never
+   * exposed as a player-facing preview or a second confirmation step.
+   */
+  async submit(
+    user: AuthenticatedUser,
+    runId: string,
+    rawCommand: OpenNovelManeuverCommand,
+  ) {
+    const planned = await this.preview(user, runId, rawCommand);
+    if (planned.accepted === false) return planned;
+    return this.confirm(user, runId, planned.previewToken);
+  }
+
   async confirm(
     user: AuthenticatedUser,
     runId: string,

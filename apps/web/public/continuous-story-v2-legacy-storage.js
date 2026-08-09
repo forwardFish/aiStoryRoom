@@ -159,7 +159,7 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
     const latestResult = entry.kind === "RESULT" && entry.id === results.at(-1)?.id;
     const entryDecisionForm = normalizeDecisionForm(entry.decisionForm || (latestResult ? decisionForm : null));
     const maneuverResult = entry.kind === "RESULT" && isManeuverDecisionForm(entryDecisionForm);
-    const nextStory = latestResult && turn?.narrative && !containsStory(entry.content, turn.narrative)
+    const nextStory = latestResult && !maneuverResult && turn?.narrative && !containsStory(entry.content, turn.narrative)
       ? `\n\n${turn.narrative}`
       : "";
     return {
@@ -180,12 +180,16 @@ export function adaptProjection(projection, { resolution = null, decisionForm = 
   // second result would make the old renderer select the shorter rules summary
   // and hide the full narrative that already passed the story quality gate.
   if (resolution?.resultNarrative && results.length === 0) {
+    const fallbackDecisionForm = normalizeDecisionForm(decisionForm);
+    const fallbackManeuverResult = isManeuverDecisionForm(fallbackDecisionForm);
     messages.push({
       id: resolution.id || `resolution-${p.worldSequence}`,
-      type: isManeuverDecisionForm(normalizeDecisionForm(decisionForm)) ? "maneuver_result" : "decision_result",
-      label: isManeuverDecisionForm(normalizeDecisionForm(decisionForm)) ? maneuverLabel(normalizeDecisionForm(decisionForm)) : "你的行动结果",
+      type: fallbackManeuverResult ? "maneuver_result" : "decision_result",
+      label: fallbackManeuverResult ? maneuverLabel(fallbackDecisionForm) : "你的行动结果",
       title: "行动之后",
-      body: [resolution.resultNarrative, turn?.narrative].filter(Boolean).join("\n\n"),
+      body: fallbackManeuverResult
+        ? resolution.resultNarrative
+        : [resolution.resultNarrative, turn?.narrative].filter(Boolean).join("\n\n"),
       day: turn?.stageIndex || 7,
       time: `世界事件 ${p.worldSequence}`,
       visibility: "player_visible"

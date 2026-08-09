@@ -35,14 +35,14 @@ test("busy maneuver state disables action cards and the active workbench", () =>
   const html = renderFourManeuverPanel(projection(), state({ busy: true }));
 
   assert.match(html, /aria-busy="true"/);
-  assert.match(html, /AI正在推演局势/);
+  assert.match(html, /正在处理主动谋划/);
   assert.equal((html.match(/data-maneuver-type=/g) || []).length, 4);
   assert.equal((html.match(/data-maneuver-type=[^>]+disabled/g) || []).length, 4);
   assert.match(html, /id="customManeuverText"[^>]+disabled/);
   assert.match(html, /id="maneuverSubmit"[^>]+disabled/);
 });
 
-test("busy Preview disables both return and confirm buttons", () => {
+test("a stale Preview value never restores the retired preview card", () => {
   const html = renderFourManeuverPanel(projection(), state({
     busy: true,
     activeManeuverType: null,
@@ -55,7 +55,6 @@ test("busy Preview disables both return and confirm buttons", () => {
     },
   }));
 
-  assert.match(html, /正在确认，请勿重复操作/);
-  assert.match(html, /id="maneuverPreviewCancel"[^>]+disabled/);
-  assert.match(html, /id="maneuverConfirm"[^>]+disabled/);
+  assert.doesNotMatch(html, /预演|预览|确认主动谋划/);
+  assert.doesNotMatch(html, /id="maneuverPreviewCancel"|id="maneuverConfirm"/);
 });
