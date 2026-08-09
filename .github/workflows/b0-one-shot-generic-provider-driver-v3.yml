@@ -1,4 +1,4 @@
-name: B0 One-Shot Generic Real Provider Driver Patch V3
+name: B0 One-Shot Self-Hosted Real Acceptance Script Install
 
 on:
   push:
@@ -12,11 +12,11 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-one-shot-generic-real-provider-driver-v3
+  group: b0-one-shot-selfhosted-acceptance-script
   cancel-in-progress: false
 
 jobs:
-  install-driver:
+  install-script:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -29,8 +29,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/generic-provider-driver-patch-v3",
-              description: `hash-bound driver install running in ${context.runId}`,
+              context: "b0/selfhosted-acceptance-script-install",
+              description: `self-hosted acceptance script install running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -56,9 +56,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
           test "$(git diff --name-only HEAD^..HEAD | LC_ALL=C sort)" = ".github/workflows/b0-one-shot-generic-provider-driver-v3.yml"
-          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "adf3c939facb72a572281ec4f93982c48f46fcc58555391fcc3b6d822349421d"
+          test ! -e scripts/acceptance/b0-selfhosted-real-acceptance.sh
 
-      - name: Reconstruct the immutable patched driver
+      - name: Reconstruct the immutable acceptance infrastructure script
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,63 +69,36 @@ jobs:
               | tr -d '\n' \
               | base64 -d
           }
-          : > /tmp/b0-driver.gz.b64
+          : > /tmp/b0-selfhosted-real-acceptance.sh.gz.b64
           for blob in \
-            6b7908fc009065396ad3e18f1bcb7aad7d5131d5 \
-            9e727b750ff376c516d752bea8113cd23789ef96 \
-            7205565598aa0a050e783fe8a7f126e8aecba1c4 \
-            be2d7d50f7b46ab6f575772204321096e8f1e081 \
-            240087531aaa173db093db163cc7f55bac9bb737 \
-            d0c3630d9de89c65b9d42027f0ba3d597ae7bd2d
+            159b4a6ce2e9b0c80edd48b84694d6f80002d480 \
+            59238e2be46518168e383ad6a9ddbbee48ce9e8b \
+            f09abf1e729cb5319a1b4f551a96095d8ac0ff8d \
+            26068b9e6af2f03ca3804b4b09eddccd9b317f86
           do
-            fetch_blob_text "$blob" >> /tmp/b0-driver.gz.b64
+            fetch_blob_text "$blob" >> /tmp/b0-selfhosted-real-acceptance.sh.gz.b64
           done
-          test "$(wc -c < /tmp/b0-driver.gz.b64 | tr -d ' ')" = "22204"
-          base64 -d /tmp/b0-driver.gz.b64 > /tmp/b0-driver.gz
-          test "$(sha256sum /tmp/b0-driver.gz | cut -d' ' -f1)" = "a9be86c700251745226d1360e05d837e68842d69cccc6165fa163bec173be7f8"
-          gzip -dc /tmp/b0-driver.gz > scripts/acceptance/b0-candidate-real-flow.ts
-          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "04fcd2a6a54ea92970c5b75078516bb448bcd360264cffadc1922b9235ee84d3"
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
-          source = path.read_text(encoding="utf-8")
-          replacements = {
-              'image `${DATABASE_IMAGE}`': 'image ${DATABASE_IMAGE}',
-              'real `${PROVIDER_PROVENANCE}` model `${OPENOVEL_MODEL}`': 'real ${PROVIDER_PROVENANCE} model ${OPENOVEL_MODEL}',
-          }
-          for old, new in replacements.items():
-              if source.count(old) != 1:
-                  raise SystemExit(f"expected one report interpolation: {old}")
-              source = source.replace(old, new)
-          path.write_text(source, encoding="utf-8")
-          PY
-          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "0dd15674e3d7dc52667b217ae48c988a64c01354a0ca232898152d24716ded95"
+          test "$(wc -c < /tmp/b0-selfhosted-real-acceptance.sh.gz.b64 | tr -d ' ')" = "7800"
+          base64 -d /tmp/b0-selfhosted-real-acceptance.sh.gz.b64 > /tmp/b0-selfhosted-real-acceptance.sh.gz
+          test "$(sha256sum /tmp/b0-selfhosted-real-acceptance.sh.gz | cut -d' ' -f1)" = "1cc16cfdcaeeb96701a6637c336400df4d3269e4f0a50679182a98047f807d93"
+          gzip -dc /tmp/b0-selfhosted-real-acceptance.sh.gz > scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          test "$(sha256sum scripts/acceptance/b0-selfhosted-real-acceptance.sh | cut -d' ' -f1)" = "9b146e454697b9ef68e122a2fc33b601e0e32434268bcc08d92d2cecf96a3930"
+          chmod +x scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          bash -n scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          B0_DATABASE_IMAGE='supabase/postgres:15.14.1.157-mmlb_amd64' \
+          B0_PROVIDER_IMAGE='ollama/ollama:0.32.5' \
+            scripts/acceptance/b0-selfhosted-real-acceptance.sh self-check
           git diff --check
 
-      - name: Frozen install, Prisma generation, typecheck and provenance self-check
+      - name: Frozen install and Prisma generation
         shell: bash
         run: |
           set -euo pipefail
           pnpm install --frozen-lockfile
           pnpm db:generate
           pnpm typecheck:b0:real-acceptance
-          GITHUB_SHA="$GITHUB_SHA" \
-          DATABASE_URL='postgresql://postgres:secret@127.0.0.1:55432/postgres?schema=cs_accept_b0_selfcheck123&connection_limit=3&sslmode=disable' \
-          OPENOVEL_PROVIDER_BASE_URL='http://127.0.0.1:11435/v1' \
-          OPENOVEL_API_KEY='ollama-self-check' \
-          OPENOVEL_MODEL='qwen2.5:1.5b' \
-          B0_DATABASE_PROVENANCE='official-supabase-postgres-container' \
-          B0_DATABASE_IMAGE='supabase/postgres:15.14.1.157-mmlb_amd64' \
-          B0_DATABASE_IMAGE_DIGEST='sha256:0000000000000000000000000000000000000000000000000000000000000000' \
-          B0_PROVIDER_PROVENANCE='ollama-openai-compatible-local' \
-          B0_PROVIDER_IMAGE='ollama/ollama:0.32.5' \
-          B0_PROVIDER_IMAGE_DIGEST='sha256:0000000000000000000000000000000000000000000000000000000000000000' \
-          B0_PROVIDER_MODEL_DIGEST='sha256:0000000000000000000000000000000000000000000000000000000000000000' \
-          B0_ACCEPTANCE_SELF_CHECK=1 \
-            pnpm test:b0:real-acceptance
 
-      - name: Commit the verified driver as an ordinary fast-forward
+      - name: Commit only the verified infrastructure script as an ordinary fast-forward
         shell: bash
         run: |
           set -euo pipefail
@@ -133,13 +106,13 @@ jobs:
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git add scripts/acceptance/b0-selfhosted-real-acceptance.sh
           git diff --cached --check
-          test "$(git diff --cached --name-only)" = "scripts/acceptance/b0-candidate-real-flow.ts"
-          git commit -m "test(b0): support explicit real acceptance providers"
+          test "$(git diff --cached --name-only)" = "scripts/acceptance/b0-selfhosted-real-acceptance.sh"
+          git commit -m "test(b0): add self-hosted real acceptance infrastructure"
           git push origin "HEAD:$GITHUB_REF_NAME"
 
-      - name: Publish patch outcome
+      - name: Publish install outcome
         if: always()
         uses: actions/github-script@v7
         env:
@@ -152,7 +125,7 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: success ? "success" : "failure",
-              context: "b0/generic-provider-driver-patch-v3",
-              description: `hash-bound driver install ${success ? "passed" : "failed"} in ${context.runId}`,
+              context: "b0/selfhosted-acceptance-script-install",
+              description: `self-hosted acceptance script install ${success ? "passed" : "failed"} in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
