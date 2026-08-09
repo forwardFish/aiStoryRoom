@@ -1,4 +1,4 @@
-name: Solo Endgame MVP
+name: Solo Endgame Stage A Exact Remote Verification
 
 on:
   push:
@@ -7,25 +7,21 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
-  group: solo-endgame-mvp-${{ github.ref }}
+  group: solo-endgame-stage-a-exact-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  verify:
+  verify-exact-remote-sha:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
+      NODE_ENV: test
       SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
       DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
-      NODE_ENV: test
     steps:
-      - name: Check out exact branch commit
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -35,71 +31,160 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm db:generate
-
-      - name: Run stage verification
+      - name: Clone exact remote SHA and run Stage A gates
+        id: verify
         shell: bash
+        env:
+          BRANCH: codex/chatgpt-pro-main-game-final-v1
+          BASE_SHA: 91128ab93455a61e53157b9d6072e36800e2cd42
         run: |
           set -uo pipefail
-          mkdir -p artifacts scripts/test-reports
-          : > artifacts/solo-endgame-commands.log
-          : > artifacts/solo-endgame-summary.tsv
+          artifact_dir="${GITHUB_WORKSPACE}/artifacts"
+          clone_dir="${RUNNER_TEMP}/solo-endgame-stage-a-clean"
+          mkdir -p "$artifact_dir"
+          : > "$artifact_dir/commands.log"
+          printf 'label\tcommand\tworkdir\ttests\tpass\tfail\tskip\ttodo\texit_code\n' > "$artifact_dir/summary.tsv"
           overall=0
 
-          run_cmd() {
-            local label="$1"
-            shift
-            echo "===== ${label} =====" | tee -a artifacts/solo-endgame-commands.log
-            set +e
-            "$@" 2>&1 | tee -a artifacts/solo-endgame-commands.log
-            local code=${PIPESTATUS[0]}
-            set -e
-            printf '%s\t%s\n' "$label" "$code" | tee -a artifacts/solo-endgame-summary.tsv
+          record_gate() {
+            local label="$1" command="$2" cwd="$3" code="$4"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$label" "$command" "$cwd" "N/A" "N/A" "N/A" "N/A" "N/A" "$code" \
+              >> "$artifact_dir/summary.tsv"
             if [ "$code" -ne 0 ]; then overall=1; fi
           }
 
-          set -e
-          subject="$(git log -1 --pretty=%s)"
-          echo "commit=${GITHUB_SHA}" | tee -a artifacts/solo-endgame-commands.log
-          echo "subject=${subject}" | tee -a artifacts/solo-endgame-commands.log
+          run_gate() {
+            local label="$1"
+            shift
+            local command="$*"
+            local log="$artifact_dir/${label}.log"
+            echo "===== ${label} =====" | tee -a "$artifact_dir/commands.log"
+            echo "command=${command}" | tee -a "$artifact_dir/commands.log"
+            echo "workdir=${clone_dir}" | tee -a "$artifact_dir/commands.log"
+            set +e
+            (cd "$clone_dir" && "$@") 2>&1 | tee "$log"
+            local code=${PIPESTATUS[0]}
+            set -e
+            record_gate "$label" "$command" "$clone_dir" "$code"
+          }
 
-          run_cmd "shared:typecheck" pnpm --filter @ai-story/shared typecheck
-          run_cmd "shared:endgame-contract" pnpm --filter @ai-story/shared test:endgame
-          run_cmd "openovel:typecheck" pnpm --filter @apps/openovel-runtime typecheck
-          run_cmd "openovel:test" pnpm --filter @apps/openovel-runtime test
-          run_cmd "openovel:build" pnpm --filter @apps/openovel-runtime build
+          run_tap_test() {
+            local label="$1"
+            shift
+            local command="$*"
+            local log="$artifact_dir/${label}.log"
+            echo "===== ${label} =====" | tee -a "$artifact_dir/commands.log"
+            echo "command=${command}" | tee -a "$artifact_dir/commands.log"
+            echo "workdir=${clone_dir}" | tee -a "$artifact_dir/commands.log"
+            set +e
+            (cd "$clone_dir" && "$@") 2>&1 | tee "$log"
+            local code=${PIPESTATUS[0]}
+            set -e
+            local tests pass fail skip todo
+            tests=$(awk '$1 == "#" && $2 == "tests" {sum += $3} END {print sum + 0}' "$log")
+            pass=$(awk '$1 == "#" && $2 == "pass" {sum += $3} END {print sum + 0}' "$log")
+            fail=$(awk '$1 == "#" && $2 == "fail" {sum += $3} END {print sum + 0}' "$log")
+            skip=$(awk '$1 == "#" && ($2 == "skipped" || $2 == "skip") {sum += $3} END {print sum + 0}' "$log")
+            todo=$(awk '$1 == "#" && $2 == "todo" {sum += $3} END {print sum + 0}' "$log")
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$label" "$command" "$clone_dir" "$tests" "$pass" "$fail" "$skip" "$todo" "$code" \
+              >> "$artifact_dir/summary.tsv"
+            if [ "$code" -ne 0 ] || [ "$tests" -eq 0 ] || [ "$pass" -ne "$tests" ] \
+              || [ "$fail" -ne 0 ] || [ "$skip" -ne 0 ] || [ "$todo" -ne 0 ]; then
+              overall=1
+            fi
+            if [ "$label" = "api-targeted-contract" ] && [ "$tests" -lt 20 ]; then
+              overall=1
+            fi
+          }
 
-          if [[ "$subject" == feat\(api\):* || "$subject" == fix\(api\):* || "$subject" == test\(solo-endgame\):* ]]; then
-            run_cmd "api:test" pnpm --filter @apps/api test
-            run_cmd "api:build" pnpm --filter @apps/api build
+          remote_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          raw_remote=$(git ls-remote "$remote_url" "refs/heads/${BRANCH}")
+          remote_sha=$(printf '%s' "$raw_remote" | awk '{print $1}')
+          printf '%s\n' "$raw_remote" | tee "$artifact_dir/ls-remote.txt"
+          printf 'github_sha=%s\nremote_sha=%s\n' "$GITHUB_SHA" "$remote_sha" \
+            | tee "$artifact_dir/remote-sha.txt"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "REMOTE_SHA_MISMATCH" | tee -a "$artifact_dir/commands.log"
+            exit 1
           fi
 
-          if [[ "$subject" == feat\(web\):* || "$subject" == test\(solo-endgame\):* ]]; then
-            run_cmd "web:test" pnpm --filter @apps/web test
-            run_cmd "web:build" pnpm --filter @apps/web build
+          rm -rf "$clone_dir"
+          git clone --no-tags --single-branch --branch "$BRANCH" "$remote_url" "$clone_dir" \
+            2>&1 | tee "$artifact_dir/git-clone.log"
+          clone_sha=$(git -C "$clone_dir" rev-parse HEAD)
+          clone_branch=$(git -C "$clone_dir" branch --show-current)
+          clone_status=$(git -C "$clone_dir" status --short)
+          printf 'clone_head=%s\nclone_branch=%s\nstatus_begin\n%s\nstatus_end\n' \
+            "$clone_sha" "$clone_branch" "$clone_status" | tee "$artifact_dir/clean-clone.txt"
+          if [ "$clone_sha" != "$GITHUB_SHA" ] || [ "$clone_branch" != "$BRANCH" ] \
+            || [ -n "$clone_status" ]; then
+            echo "CLEAN_CLONE_INVARIANT_FAILED" | tee -a "$artifact_dir/commands.log"
+            exit 1
           fi
 
-          if [[ "$subject" == test\(solo-endgame\):* ]]; then
-            run_cmd "story:v4" pnpm test:story:v4
-            run_cmd "workspace:typecheck" pnpm typecheck
-            run_cmd "solo-endgame:e2e" pnpm --filter @apps/web test:solo-endgame:mvp
+          run_gate install pnpm install --frozen-lockfile
+          run_gate prisma-generate pnpm db:generate
+          run_tap_test api-targeted-contract pnpm --filter @apps/api exec node --import tsx --test \
+            src/openovel-adapter/solo-ending-result-production-contract.spec.ts \
+            src/openovel-adapter/solo-ending-result.spec.ts
+          run_gate openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_tap_test openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate api-typecheck pnpm --filter @apps/api typecheck
+          run_tap_test api-test pnpm --filter @apps/api test
+          run_gate api-build pnpm --filter @apps/api build
+          run_gate web-typecheck pnpm --filter @apps/web typecheck
+          run_gate web-build pnpm --filter @apps/web build
+          run_gate workspace-typecheck pnpm typecheck
+          run_gate git-diff-check git diff --check
+          run_gate delivered-diff-check git diff --check "$BASE_SHA" "$GITHUB_SHA"
+
+          final_status=$(git -C "$clone_dir" status --short)
+          printf '%s\n' "$final_status" > "$artifact_dir/final-git-status.txt"
+          if [ -n "$final_status" ]; then
+            echo "FINAL_WORKTREE_NOT_CLEAN" | tee -a "$artifact_dir/commands.log"
+            overall=1
           fi
 
+          cat "$artifact_dir/summary.tsv"
           exit "$overall"
 
-      - name: Upload exact command and product evidence
+      - name: Publish exact-SHA verification status
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+        run: |
+          set -euo pipefail
+          state=failure
+          description="Stage A exact remote clean-clone verification failed"
+          if [ "$VERIFY_OUTCOME" = "success" ]; then
+            state=success
+            description="Stage A exact remote clean-clone verification passed"
+          fi
+          payload=$(jq -n \
+            --arg state "$state" \
+            --arg target_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --arg description "$description" \
+            --arg context "solo-endgame-stage-a/clean-clone" \
+            '{state:$state,target_url:$target_url,description:$description,context:$context}')
+          curl --fail-with-body --silent --show-error --location \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            --data "$payload"
+
+      - name: Upload exact remote verification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: solo-endgame-${{ github.sha }}
-          path: |
-            artifacts/
-            scripts/test-reports/solo-endgame-mvp-*/
-          if-no-files-found: warn
+          name: solo-endgame-stage-a-exact-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
           retention-days: 14
