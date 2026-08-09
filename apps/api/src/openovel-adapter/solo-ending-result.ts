@@ -17,6 +17,7 @@ export type SoloResultActionRecord = {
   id: string;
   runId: string;
   userId: string | null;
+  roleId: string | null;
   status: string;
   method: string;
   immediateJson: unknown;
@@ -35,7 +36,7 @@ export type SoloResultRunRecord = {
   updatedAt: Date | string;
   players: Array<{
     userId: string | null;
-    role: null | { roleKey: string; roleName: string; personalGoal: string };
+    role: null | { id: string; roleKey: string; roleName: string; personalGoal: string };
   }>;
 };
 
@@ -57,35 +58,43 @@ export type OpenNovelResultV2 = RawOpenNovelResult & {
   presentation: EndgamePresentationV1;
 };
 
-type EvidenceVisibility = "PUBLIC" | "PLAYER";
-type EvidenceCause = {
+export type SoloPlayerEndingEvidenceVisibilityV1 = "PUBLIC" | "PLAYER";
+
+/**
+ * Persisted player-safe cause contract written by the authoritative Runtime.
+ * `committed` and `authorized` are intentionally absent: those decisions are
+ * derived by the API from the authenticated viewer, run membership, bound role,
+ * authoritative Runtime Ending, source visibility and committed PlayerAction.
+ */
+export type SoloPlayerEndingEvidenceCauseV1 = {
   sourceTurnId: string;
   sourceRevision: number;
   sourceEventId: string;
   authority: SoloEndingEvidenceAuthority;
-  visibility: EvidenceVisibility;
+  visibility: SoloPlayerEndingEvidenceVisibilityV1;
   criterion: string;
-  actionTitle: string | null;
   factText: string;
   direction: EndgameCauseDirectionV1;
 };
-type EvidenceReveal = {
+
+export type SoloPlayerEndingEvidenceRevealV1 = {
   sourceTurnId: string;
   sourceRevision: number;
   sourceEventId: string;
   authority: SoloEndingEvidenceAuthority;
-  visibility: EvidenceVisibility;
+  visibility: SoloPlayerEndingEvidenceVisibilityV1;
   title: string;
   text: string;
 };
-type EvidenceEnvelope = {
+
+export type SoloPlayerEndingEvidenceEnvelopeV1 = {
   schemaVersion: "openovel_player_ending_evidence_v1";
   endingKey: string;
   scope: "STORY" | "PART";
   sourceTurnId: string;
   sourceRevision: number;
-  causes: EvidenceCause[];
-  reveal: EvidenceReveal | null;
+  causes: SoloPlayerEndingEvidenceCauseV1[];
+  reveal: SoloPlayerEndingEvidenceRevealV1 | null;
 };
 
 const AUTHORITIES = new Set<SoloEndingEvidenceAuthority>([
@@ -96,7 +105,7 @@ const AUTHORITIES = new Set<SoloEndingEvidenceAuthority>([
   "PLAYER_CANON",
 ]);
 const DIRECTIONS = new Set<EndgameCauseDirectionV1>(["HELPED", "HURT", "DECISIVE"]);
-const VISIBILITIES = new Set<EvidenceVisibility>(["PUBLIC", "PLAYER"]);
+const VISIBILITIES = new Set<SoloPlayerEndingEvidenceVisibilityV1>(["PUBLIC", "PLAYER"]);
 
 export class SoloResultNotReadyError extends Error {
   readonly code = "SOLO_RESULT_NOT_READY";
@@ -139,6 +148,7 @@ export function compileOpenNovelResultV2(input: {
     actions: input.actions,
     runId: input.run.id,
     viewerUserId: input.viewerUserId,
+    viewerRoleId: role.id,
     roleName: role.roleName,
     ending: authoritativeEnding,
   });
@@ -149,6 +159,7 @@ export function compileOpenNovelResultV2(input: {
       actions: input.actions,
       runId: input.run.id,
       viewerUserId: input.viewerUserId,
+      viewerRoleId: role.id,
       ending: authoritativeEnding,
     }),
     replay: replay(input.run, role.roleKey, input.supportedRoleKeys, input.nextPart),
@@ -204,6 +215,7 @@ export function extractCommittedSoloEndingEvidence(input: {
   actions: readonly SoloResultActionRecord[];
   runId: string;
   viewerUserId: string;
+  viewerRoleId: string;
   roleName: string;
   ending: SoloEndingSource;
 }): SoloEndingEvidenceCandidate[] {
@@ -213,12 +225,14 @@ export function extractCommittedSoloEndingEvidence(input: {
     input.actions,
     input.runId,
     input.viewerUserId,
+    input.viewerRoleId,
   );
   const usedActions = new Set<string>();
   const output: SoloEndingEvidenceCandidate[] = [];
   for (const cause of envelope.causes) {
     const action = actionByTurn.get(turnKey(cause.sourceTurnId, cause.sourceRevision));
     if (!action || usedActions.has(action.id)) continue;
+    if (!evidenceVisibleToViewer(cause.visibility, action, input.viewerRoleId)) continue;
     const actionTitle = playerActionTitle(action);
     if (!actionTitle) continue;
     usedActions.add(action.id);
@@ -242,6 +256,7 @@ export function extractAuthorizedSoloEndingReveal(input: {
   actions: readonly SoloResultActionRecord[];
   runId: string;
   viewerUserId: string;
+  viewerRoleId: string;
   ending: SoloEndingSource;
 }): SoloEndingRevealCandidate[] {
   const reveal = endingEvidence(input.ending)?.reveal;
@@ -250,8 +265,9 @@ export function extractAuthorizedSoloEndingReveal(input: {
     input.actions,
     input.runId,
     input.viewerUserId,
+    input.viewerRoleId,
   ).get(turnKey(reveal.sourceTurnId, reveal.sourceRevision));
-  if (!action) return [];
+  if (!action || !evidenceVisibleToViewer(reveal.visibility, action, input.viewerRoleId)) return [];
   return [{
     committed: true,
     authorized: true,
@@ -261,7 +277,7 @@ export function extractAuthorizedSoloEndingReveal(input: {
   }];
 }
 
-function endingEvidence(ending: SoloEndingSource): EvidenceEnvelope | null {
+function endingEvidence(ending: SoloEndingSource): SoloPlayerEndingEvidenceEnvelopeV1 | null {
   const root = record((ending as SoloEndingSource & { playerEvidence?: unknown }).playerEvidence);
   if (!root || root.schemaVersion !== "openovel_player_ending_evidence_v1") return null;
   if (root.endingKey !== ending.endingKey
@@ -279,21 +295,20 @@ function endingEvidence(ending: SoloEndingSource): EvidenceEnvelope | null {
     scope: ending.scope,
     sourceTurnId: ending.sourceTurnId,
     sourceRevision: ending.sourceRevision,
-    causes: causes as EvidenceCause[],
+    causes: causes as SoloPlayerEndingEvidenceCauseV1[],
     reveal,
   };
 }
 
-function parseCause(value: unknown): EvidenceCause | null {
+function parseCause(value: unknown): SoloPlayerEndingEvidenceCauseV1 | null {
   const row = record(value);
   if (!row) return null;
   const sourceTurnId = text(row.sourceTurnId);
   const sourceRevision = positiveInteger(row.sourceRevision);
   const sourceEventId = text(row.sourceEventId);
   const authority = text(row.authority) as SoloEndingEvidenceAuthority;
-  const visibility = text(row.visibility) as EvidenceVisibility;
+  const visibility = text(row.visibility) as SoloPlayerEndingEvidenceVisibilityV1;
   const criterion = text(row.criterion);
-  const actionTitle = text(row.actionTitle) || null;
   const factText = text(row.factText);
   const direction = text(row.direction) as EndgameCauseDirectionV1;
   if (!sourceTurnId
@@ -312,20 +327,19 @@ function parseCause(value: unknown): EvidenceCause | null {
     authority,
     visibility,
     criterion,
-    actionTitle,
     factText,
     direction,
   };
 }
 
-function parseReveal(value: unknown): EvidenceReveal | null {
+function parseReveal(value: unknown): SoloPlayerEndingEvidenceRevealV1 | null {
   const row = record(value);
   if (!row) return null;
   const sourceTurnId = text(row.sourceTurnId);
   const sourceRevision = positiveInteger(row.sourceRevision);
   const sourceEventId = text(row.sourceEventId);
   const authority = text(row.authority) as SoloEndingEvidenceAuthority;
-  const visibility = text(row.visibility) as EvidenceVisibility;
+  const visibility = text(row.visibility) as SoloPlayerEndingEvidenceVisibilityV1;
   const title = text(row.title);
   const body = text(row.text);
   if (!sourceTurnId
@@ -351,11 +365,13 @@ function uniqueCommittedActionByTurn(
   actions: readonly SoloResultActionRecord[],
   runId: string,
   viewerUserId: string,
+  viewerRoleId: string,
 ) {
   const candidates = new Map<string, SoloResultActionRecord[]>();
   for (const action of actions) {
     if (action.runId !== runId
       || action.userId !== viewerUserId
+      || action.roleId !== viewerRoleId
       || action.status !== "resolved") continue;
     const result = record(action.resolvedJson);
     const sourceTurnId = text(result?.turnId);
@@ -373,6 +389,19 @@ function uniqueCommittedActionByTurn(
   return unique;
 }
 
+function evidenceVisibleToViewer(
+  visibility: SoloPlayerEndingEvidenceVisibilityV1,
+  action: SoloResultActionRecord,
+  viewerRoleId: string,
+) {
+  // PUBLIC is available to an authenticated run member. PLAYER additionally
+  // requires the source action to belong to the viewer's bound role. The
+  // source event reference itself is trusted only because the envelope came
+  // from the authoritative Runtime Ending for this exact run and role.
+  return visibility === "PUBLIC"
+    || (visibility === "PLAYER" && action.roleId === viewerRoleId);
+}
+
 function playerActionTitle(action: SoloResultActionRecord) {
   const bound = record(record(action.immediateJson)?.boundOption);
   return firstText([
@@ -382,19 +411,18 @@ function playerActionTitle(action: SoloResultActionRecord) {
 }
 
 function assertEndingReady(
-  run: SoloResultRunRecord,
+  _run: SoloResultRunRecord,
   ending: SoloEndingSource,
   completedNodes: number | undefined,
 ) {
   if (!new Set(["PART", "STORY"]).has(ending.scope)) {
     throw new SoloResultNotReadyError("ENDING_SCOPE_INVALID");
   }
-  if (run.templateKey === "sangtian"
-    && (ending.scope !== "PART"
-      || ending.sourceTurnId !== "T20"
-      || ending.sourceRevision !== 20
-      || completedNodes !== 20)) {
-    throw new SoloResultNotReadyError("SANGTIAN_FINAL_REVISION_INVALID");
+  const sourceTurnNumber = turnNumber(ending.sourceTurnId);
+  if (!sourceTurnNumber
+    || sourceTurnNumber !== ending.sourceRevision
+    || completedNodes !== ending.sourceRevision) {
+    throw new SoloResultNotReadyError("ENDING_SOURCE_REVISION_INVALID");
   }
 }
 

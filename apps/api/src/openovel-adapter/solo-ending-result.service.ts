@@ -39,7 +39,9 @@ export class SoloEndingResultService {
     if (run.engineVersion !== OPENOVEL_ENGINE_VERSION) return payload;
     const runtimeRun = await this.runtime.getRun(runId);
     assertAuthoritativeResultReady(run, payload, runtimeRun);
-    const actions = await this.resolvedActions(runId, user.id);
+    const role = run.players[0]?.role;
+    if (!role) throw resultNotReady("VIEWER_ROLE_MISSING");
+    const actions = await this.resolvedActions(runId, user.id, role.id);
     try {
       return compileOpenNovelResultV2({
         raw: payload,
@@ -73,7 +75,7 @@ export class SoloEndingResultService {
     const run = await this.authorizedRun(user, runId);
     if (run.engineVersion !== OPENOVEL_ENGINE_VERSION) return null;
     const runtimeRun = await this.runtime.getRun(runId);
-    if (runtimeRun.status !== "COMPLETED") return null;
+    if (terminalRuntimeReason(run, runtimeRun, false) !== null) return null;
     if (runtimeRun.ending) return null;
 
     return compileLegacyOpenNovelResult({
@@ -121,11 +123,13 @@ export class SoloEndingResultService {
   private async resolvedActions(
     runId: string,
     userId: string,
+    roleId: string,
   ): Promise<SoloResultActionRecord[]> {
     return this.prisma.playerAction.findMany({
       where: {
         runId,
         userId,
+        roleId,
         status: "resolved",
         actorKind: "HUMAN",
       },
@@ -134,6 +138,7 @@ export class SoloEndingResultService {
         id: true,
         runId: true,
         userId: true,
+        roleId: true,
         status: true,
         method: true,
         immediateJson: true,
@@ -150,19 +155,12 @@ function assertAuthoritativeResultReady(
   raw: RawOpenNovelResult,
   runtimeRun: OpenNovelPublicRun,
 ) {
-  const role = run.players[0]?.role;
-  const runtimeEnding = runtimeRun.ending;
-  if (
-    runtimeRun.runId !== run.id
-    || runtimeRun.worldId !== run.templateKey
-    || runtimeRun.roleId !== role?.roleKey
-    || runtimeRun.status !== "COMPLETED"
-    || runtimeRun.turnNumber !== 20
-    || !runtimeEnding
-  ) throw resultNotReady("RUNTIME_NOT_AUTHORITATIVELY_COMPLETED");
+  const terminalReason = terminalRuntimeReason(run, runtimeRun, true);
+  if (terminalReason) throw resultNotReady(terminalReason);
+  const runtimeEnding = runtimeRun.ending!;
   if (
     raw.room.id !== run.id
-    || raw.completedNodes !== 20
+    || raw.completedNodes !== runtimeRun.turnNumber
     || raw.ending.endingKey !== runtimeEnding.endingKey
     || raw.ending.scope !== runtimeEnding.scope
     || raw.ending.sourceTurnId !== runtimeEnding.sourceTurnId
@@ -173,11 +171,61 @@ function assertAuthoritativeResultReady(
     || JSON.stringify(raw.ending.aftermath) !== JSON.stringify(runtimeEnding.aftermath)
   ) throw resultNotReady("RESULT_ENDING_MISMATCH");
   if (
-    runtimeEnding.sourceTurnId !== "T20"
-    || runtimeEnding.sourceRevision !== 20
+    runtimeEnding.sourceRevision !== runtimeRun.turnNumber
+    || turnNumber(runtimeEnding.sourceTurnId) !== runtimeRun.turnNumber
     || !new Set(["PART", "STORY"]).has(runtimeEnding.scope)
-    || (run.templateKey === "sangtian" && runtimeEnding.scope !== "PART")
   ) throw resultNotReady("ENDING_SOURCE_NOT_READY");
+}
+
+function terminalRuntimeReason(
+  run: SoloResultRunRecord,
+  runtimeRun: OpenNovelPublicRun,
+  requireEnding: boolean,
+): string | null {
+  const role = run.players[0]?.role;
+  if (
+    runtimeRun.runId !== run.id
+    || runtimeRun.worldId !== run.templateKey
+    || run.status !== "chapter_generated"
+    || run.selectedRoleKey !== role?.roleKey
+    || runtimeRun.roleId !== role?.roleKey
+    || runtimeRun.status !== "COMPLETED"
+    || !Number.isInteger(runtimeRun.turnNumber)
+    || runtimeRun.turnNumber <= 0
+    || (requireEnding && !runtimeRun.ending)
+  ) return "RUNTIME_NOT_AUTHORITATIVELY_COMPLETED";
+
+  // A terminal runtime cannot expose any still-submittable choice. `options` is
+  // the canonical current contract; the optional structural fields protect the
+  // Result boundary if a future runtime adds an explicit next-decision object.
+  if (!Array.isArray(runtimeRun.options)
+    || runtimeRun.options.length > 0
+    || runtimeHasNextDecision(runtimeRun)) {
+    return "RUNTIME_HAS_ACTIVE_DECISION";
+  }
+  return null;
+}
+
+function runtimeHasNextDecision(runtimeRun: OpenNovelPublicRun) {
+  const candidate = runtimeRun as OpenNovelPublicRun & {
+    nextDecision?: unknown;
+    nextDecisionPoint?: unknown;
+    nextDecisionPointId?: unknown;
+    activeDecision?: unknown;
+  };
+  return [
+    candidate.nextDecision,
+    candidate.nextDecisionPoint,
+    candidate.nextDecisionPointId,
+    candidate.activeDecision,
+  ].some((value) => value !== undefined && value !== null && value !== "");
+}
+
+function turnNumber(value: unknown) {
+  const match = /^T(\d+)$/.exec(String(value || ""));
+  if (!match) return null;
+  const number = Number(match[1]);
+  return Number.isInteger(number) && number > 0 ? number : null;
 }
 
 function resultNotReady(reason: string) {
