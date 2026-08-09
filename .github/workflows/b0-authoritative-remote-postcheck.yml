@@ -1,0 +1,252 @@
+name: B0 Authoritative Remote Postcheck
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-authoritative-remote-postcheck.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-authoritative-remote-postcheck
+  cancel-in-progress: false
+
+jobs:
+  postcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Publish postcheck locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/authoritative-postcheck",
+              description: `authoritative remote postcheck running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact candidate tip and classify remote tree
+        id: classify
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-authoritative-remote-postcheck.yml"
+
+          mkdir -p docs/auto-execute/evidence/b0/c9/readback
+          python3 - <<'PY'
+          import hashlib, json, os, subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root=Path('docs/auto-execute/evidence/b0')
+          c8=root/'c8'
+          c9=root/'c9'
+          result_path=c9/'B0_FINAL_DELIVERY_RESULT.json'
+          result=json.loads(result_path.read_text()) if result_path.exists() else {
+              'status':'MISSING',
+              'code':'B0_FINAL_DELIVERY_RESULT_MISSING',
+          }
+          status=result.get('status')
+          complete=status == 'PASS'
+          tested=''
+          evidence=''
+          failures=[]
+
+          pointer_path=c9/'final-pointer.json'
+          checkpoint8_path=c8/'checkpoint.json'
+          checkpoint9_path=c9/'checkpoint.json'
+          manifest_path=c9/'manifest.json'
+          matrix_path=c9/'test-matrix.json'
+
+          if complete:
+              required=[checkpoint8_path,checkpoint9_path,pointer_path,manifest_path,c9/'manifest.json.sha256',matrix_path,
+                        c9/'HANDOFF.md',c9/'B0_FINAL_DELIVERY_REPORT.md',c9/'recovery-audit.json',c9/'redaction-scan.json']
+              missing=[str(path) for path in required if not path.exists()]
+              if missing: failures.append('missing required files: '+','.join(missing))
+              if checkpoint8_path.exists():
+                  checkpoint8=json.loads(checkpoint8_path.read_text())
+                  tested=str(checkpoint8.get('testedCodeSha') or '')
+                  if checkpoint8.get('status') != 'PASS' or checkpoint8.get('acceptanceTier') != 'formal-c8':
+                      failures.append('C8 checkpoint is not formal PASS')
+                  if checkpoint8.get('selfHostedContainerUsedForFormalC8') is not False:
+                      failures.append('C8 checkpoint claims a self-hosted container')
+              if checkpoint9_path.exists():
+                  checkpoint9=json.loads(checkpoint9_path.read_text())
+                  if checkpoint9.get('status') != 'PASS': failures.append('C9 checkpoint is not PASS')
+              if pointer_path.exists():
+                  pointer=json.loads(pointer_path.read_text())
+                  tested=tested or str(pointer.get('testedCodeSha') or '')
+                  evidence=str(pointer.get('evidenceCommitSha') or '')
+              if len(tested) != 40: failures.append('testedCodeSha is invalid')
+              if len(evidence) != 40: failures.append('evidenceCommitSha is invalid')
+              if len(tested) == 40:
+                  try: subprocess.run(['git','cat-file','-e',tested+'^{commit}'],check=True)
+                  except: failures.append('testedCodeSha object is missing')
+              if len(evidence) == 40:
+                  try: subprocess.run(['git','cat-file','-e',evidence+'^{commit}'],check=True)
+                  except: failures.append('evidenceCommitSha object is missing')
+              if len(tested)==40 and len(evidence)==40:
+                  if subprocess.run(['git','merge-base','--is-ancestor',tested,evidence]).returncode != 0:
+                      failures.append('testedCodeSha is not ancestor of evidenceCommitSha')
+                  changed=subprocess.check_output(['git','diff','--name-only',f'{tested}..HEAD^'],text=True).splitlines()
+                  non_docs=[path for path in changed if not path.startswith('docs/')]
+                  if non_docs: failures.append('non-doc paths after testedCodeSha: '+','.join(non_docs))
+              if manifest_path.exists():
+                  manifest=json.loads(manifest_path.read_text())
+                  for row in manifest.get('files',[]):
+                      path=Path(row['path'])
+                      if not path.exists():
+                          failures.append('manifest path missing: '+row['path']); continue
+                      data=path.read_bytes()
+                      if len(data) != row.get('sizeBytes') or hashlib.sha256(data).hexdigest() != row.get('sha256'):
+                          failures.append('manifest mismatch: '+row['path'])
+              if matrix_path.exists():
+                  matrix=json.loads(matrix_path.read_text())
+                  if matrix.get('status') != 'PASS': failures.append('test matrix is not PASS')
+              complete=not failures
+
+          tree_count=int(subprocess.check_output([
+              'bash','-lc','git ls-tree -r --name-only HEAD^ -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9 | wc -l'
+          ],text=True).strip())
+          payload={
+              'schemaVersion':1,
+              'status':'PASS' if complete else 'INCOMPLETE',
+              'sourceBranchTip':subprocess.check_output(['git','rev-parse','HEAD^'],text=True).strip(),
+              'postcheckTriggerSha':os.environ['GITHUB_SHA'],
+              'testedCodeSha':tested or None,
+              'evidenceCommitSha':evidence or None,
+              'deliveryResultStatus':status,
+              'deliveryResultCode':result.get('code'),
+              'c8c9TrackedPathCount':tree_count,
+              'failures':failures,
+              'generatedAt':datetime.now(timezone.utc).isoformat(),
+              'completionMarkersAllowed':complete,
+          }
+          path=c9/'readback'/'authoritative-remote-postcheck.json'
+          path.write_text(json.dumps(payload,indent=2)+'\n')
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as handle:
+              handle.write(f"complete={'true' if complete else 'false'}\n")
+              handle.write(f"tested_sha={tested}\n")
+              handle.write(f"evidence_sha={evidence}\n")
+              handle.write(f"tree_count={tree_count}\n")
+          PY
+
+      - name: Commit remote postcheck as ordinary fast-forward
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/auto-execute/evidence/b0/c9/readback/authoritative-remote-postcheck.json
+          git rm .github/workflows/b0-authoritative-remote-postcheck.yml
+          git diff --cached --check
+          if [ "${{ steps.classify.outputs.complete }}" = true ]; then
+            git commit -m "test(b0): confirm authoritative remote evidence"
+          else
+            git commit -m "test(b0): confirm authoritative incomplete state"
+          fi
+          final_sha="$(git rev-parse HEAD)"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          echo "final_sha=$final_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Fresh clone final remote proof
+        shell: bash
+        env:
+          COMPLETE: ${{ steps.classify.outputs.complete }}
+          TESTED_SHA: ${{ steps.classify.outputs.tested_sha }}
+          EVIDENCE_SHA: ${{ steps.classify.outputs.evidence_sha }}
+          FINAL_SHA: ${{ steps.commit.outputs.final_sha }}
+          TREE_COUNT: ${{ steps.classify.outputs.tree_count }}
+        run: |
+          set -euo pipefail
+          live="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | awk '{print $1}')"
+          test "$live" = "$FINAL_SHA"
+          rm -rf /tmp/b0-postcheck-fresh
+          git clone -q --filter=blob:none --branch "$GITHUB_REF_NAME" "https://github.com/$GITHUB_REPOSITORY.git" /tmp/b0-postcheck-fresh
+          actual_count="$(git -C /tmp/b0-postcheck-fresh ls-tree -r --name-only "$FINAL_SHA" -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9 | wc -l | tr -d ' ')"
+          test "$actual_count" -ge "$TREE_COUNT"
+          if [ "$COMPLETE" = true ]; then
+            git -C /tmp/b0-postcheck-fresh cat-file -e "$TESTED_SHA^{commit}"
+            git -C /tmp/b0-postcheck-fresh cat-file -e "$EVIDENCE_SHA^{commit}"
+            git -C /tmp/b0-postcheck-fresh merge-base --is-ancestor "$TESTED_SHA" "$EVIDENCE_SHA"
+            git -C /tmp/b0-postcheck-fresh merge-base --is-ancestor "$EVIDENCE_SHA" "$FINAL_SHA"
+            non_docs="$(git -C /tmp/b0-postcheck-fresh diff --name-only "$TESTED_SHA..$FINAL_SHA" | grep -Ev '^docs/' || true)"
+            test -z "$non_docs"
+          fi
+          COMPLETE="$COMPLETE" LIVE="$live" ACTUAL_COUNT="$actual_count" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload={
+              'schemaVersion':1,
+              'status':'PASS' if os.environ['COMPLETE']=='true' else 'INCOMPLETE',
+              'testedCodeSha':os.environ.get('TESTED_SHA') or None,
+              'evidenceCommitSha':os.environ.get('EVIDENCE_SHA') or None,
+              'finalRemoteSha':os.environ['FINAL_SHA'],
+              'lsRemoteTip':os.environ['LIVE'],
+              'lsRemoteMatchesFinal':os.environ['LIVE']==os.environ['FINAL_SHA'],
+              'c8c9TrackedPathCount':int(os.environ['ACTUAL_COUNT']),
+              'testedToFinalOnlyDocs':True if os.environ['COMPLETE']=='true' else None,
+          }
+          Path('/tmp/b0-authoritative-postcheck-readback.json').write_text(json.dumps(payload,indent=2)+'\n')
+          print(json.dumps(payload,indent=2))
+          PY
+
+      - name: Publish final tip status
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          COMPLETE: ${{ steps.classify.outputs.complete }}
+          FINAL_SHA: ${{ steps.commit.outputs.final_sha }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const complete = process.env.COMPLETE === "true" && process.env.JOB_STATUS === "success";
+            if (process.env.FINAL_SHA) {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: process.env.FINAL_SHA,
+                state: complete ? "success" : "failure",
+                context: "b0/final-readback",
+                description: complete ? "authoritative remote evidence passed" : "authoritative remote state remains incomplete",
+                target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              });
+            }
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: complete ? "success" : "failure",
+              context: "b0/authoritative-postcheck",
+              description: `authoritative postcheck ${complete ? "passed" : "incomplete"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!complete) core.setFailed('Authoritative remote postcheck confirmed an incomplete state');
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b0-authoritative-postcheck-${{ steps.commit.outputs.final_sha }}
+          path: /tmp/b0-authoritative-postcheck-readback.json
+          if-no-files-found: warn
+          retention-days: 14
