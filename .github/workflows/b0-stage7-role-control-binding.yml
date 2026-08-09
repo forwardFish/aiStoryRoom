@@ -55,10 +55,10 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "7e19f430412e30be62ec89aa4848adc9a87fe1d4"
+          test "$(git rev-parse HEAD^)" = "c03e305b8b587315808ce43d0a75aa75c60d32da"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage7-role-control-binding.yml"
           test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts | cut -d' ' -f1)" = "9124a5e8783daafa32b8d3ece8ab7ec337e81040f73fdaeb71f5d956185d4b64"
-          test "$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)" = "c09f8f255a69d369c236cd126028180aa27f3a3bfbb7668856584791f382d23d"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)" = "b94284b2b5e529a8d902ed6288a1bb4ab8bfc41b42d59be191bbafa5e1a5592a"
 
       - name: Bind B0 controls from the durable active human roster
         shell: bash
@@ -165,8 +165,8 @@ jobs:
           spec_sha="$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)"
           echo "pipeline_sha256=$pipeline_sha"
           echo "spec_sha256=$spec_sha"
-          test "$pipeline_sha" = "1f23c93def31dc29c1e25aa933ecb08c5c3011bc0301d3ef5eb210c8be6c5a5a"
-          test "$spec_sha" = "0df7e0a762f0fd312c6d6d8271870d49983b2d437eaee669bfa1369fb5541bd1"
+          test "$pipeline_sha" = "9e593d094dc7cecf30b2156c93c616f977bd8b75051de09d381b87966b9c168b"
+          test "$spec_sha" = "fa98ce8f833684432dde3a31059d957b0dc6830cee5b8487a8632e6485e7916b"
           git diff --check
 
       - name: Frozen install and focused verification
