@@ -209,7 +209,14 @@ async function main() {
       const before = await runReadback(prisma, mainRun.id);
       const opened = await currentWindow(mainRun.id, users.slice(0, 3));
       await submitCyclicPlans(mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));
-      await prisma.actionWindow.update({ where: { id: opened.windowId }, data: { mainClosesAt: new Date(Date.now() - 1_000) } });
+      const expiredDeadline = new Date(Date.now() - 1_000);
+      await prisma.actionWindow.update({
+        where: { id: opened.windowId },
+        data: {
+          mainOpenedAt: new Date(expiredDeadline.getTime() - 60_000),
+          mainClosesAt: expiredDeadline,
+        },
+      });
       const recovered = await apiJson(adminUser.token, "/v4/admin/b0/recover", { method: "POST", body: {} });
       assert(array(recovered).some((entry) => object(entry).windowId === opened.windowId), "authoritative deadline recovery must freeze the intended window");
       await waitForWindowComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1, 120_000);
