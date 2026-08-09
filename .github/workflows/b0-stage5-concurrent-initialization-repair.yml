@@ -1,0 +1,139 @@
+name: B0 Stage 5 Concurrent Initialization Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage5-concurrent-initialization-repair.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage5-concurrent-initialization-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage5-concurrent-initialization-repair",
+              description: `stage 5 concurrent initialization repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact candidate parent and source baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "30b11c3aeed43ff5014ed06dd9ba1e17bd8665ee"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage5-concurrent-initialization-repair.yml"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts | cut -d' ' -f1)" = "652a16cea4481f68cbdc3046671ce0526588579720c332b243e8f67c668aa3b2"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)" = "ed5fca203ccbd795eb25fbe834adcee04660417ee4cc4cfcb6cf35673e392e33"
+
+      - name: Decode and apply hash-bound conflict-safe initialization patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/b0-stage5-concurrent-init.patch.gz.b64 <<'B0_STAGE5_PATCH'
+          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
+          B0_STAGE5_PATCH
+          tr -d '[:space:]' < /tmp/b0-stage5-concurrent-init.patch.gz.b64 > /tmp/b0-stage5-concurrent-init.patch.gz.b64.clean
+          test "$(wc -c < /tmp/b0-stage5-concurrent-init.patch.gz.b64.clean | tr -d ' ')" = "2096"
+          test "$(sha256sum /tmp/b0-stage5-concurrent-init.patch.gz.b64.clean | cut -d' ' -f1)" = "1078be211dc5182dde126440ab1fef95ab2f1c9ea42287f23dfc212fdd50edeb"
+          base64 -d /tmp/b0-stage5-concurrent-init.patch.gz.b64.clean > /tmp/b0-stage5-concurrent-init.patch.gz
+          test "$(wc -c < /tmp/b0-stage5-concurrent-init.patch.gz | tr -d ' ')" = "1570"
+          test "$(sha256sum /tmp/b0-stage5-concurrent-init.patch.gz | cut -d' ' -f1)" = "4d05e01061f028b7510ff2ba868f9fb65ee2031aed28df5c43dd957e9296d46c"
+          gzip -dc /tmp/b0-stage5-concurrent-init.patch.gz > /tmp/b0-stage5-concurrent-init.patch
+          test "$(wc -c < /tmp/b0-stage5-concurrent-init.patch | tr -d ' ')" = "4452"
+          test "$(sha256sum /tmp/b0-stage5-concurrent-init.patch | cut -d' ' -f1)" = "22a69aff38f13e5ffcfe15c26a22a05cacda80cf87904dd87a296de09df33dc3"
+          git apply --check /tmp/b0-stage5-concurrent-init.patch
+          git apply /tmp/b0-stage5-concurrent-init.patch
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts | cut -d' ' -f1)" = "9124a5e8783daafa32b8d3ece8ab7ec337e81040f73fdaeb71f5d956185d4b64"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)" = "7a6798b6e78aab1855cc83e6efcbd643815934dae7515bb737c1124440a5cdc3"
+          git diff --check
+
+      - name: Frozen install, Prisma generation and affected gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-batch
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-ops
+
+      - name: Commit verified stage 5 as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts \
+            apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          git rm .github/workflows/b0-stage5-concurrent-initialization-repair.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'PATHS'
+          .github/workflows/b0-stage5-concurrent-initialization-repair.yml
+          apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          PATHS
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): make lazy initialization conflict-safe"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage5-concurrent-initialization-repair",
+              description: `stage 5 concurrent initialization repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("Stage 5 concurrent initialization repair failed");
