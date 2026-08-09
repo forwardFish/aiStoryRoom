@@ -1,0 +1,142 @@
+name: B0 Stage 14 Worker AI Recovery Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage14-worker-ai-recovery.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage14-worker-ai-recovery
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage14-worker-ai-recovery",
+              description: `worker AI recovery repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch tip and source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "dce1acf4ac21aa078e535559223b3a271f1bff3e"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage14-worker-ai-recovery.yml"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts)" = "e04c1a1da35f65a79050117041cdabd0bc48a762"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts)" = "ff2dac5c911e9d14dba1d5bdaef2d1ad9b854afb"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts | cut -d' ' -f1)" = "2e19c138250fab2d19ce1e6f09955ca31604551725f4a080617aa0f418bba9c9"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts | cut -d' ' -f1)" = "525d6432806ef513692e6295d8f39abb1e4167c200d772b2d3e237ea134c3a27"
+
+      - name: Apply the hash-bound worker AI recovery patch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/8eba7da354aadcc8f566c9b628c588d432dbe8f2" --jq .content \
+            | tr -d '\n' \
+            | base64 -d > /tmp/b0-stage14.patch.gz.b64
+          test "$(wc -c < /tmp/b0-stage14.patch.gz.b64 | tr -d ' ')" = "3964"
+          test "$(sha256sum /tmp/b0-stage14.patch.gz.b64 | cut -d' ' -f1)" = "2bcc8b0ad4abb9968ae8c539405689414d99d51ae804a9f66c5be8c4c442286f"
+          base64 -d /tmp/b0-stage14.patch.gz.b64 > /tmp/b0-stage14.patch.gz
+          test "$(wc -c < /tmp/b0-stage14.patch.gz | tr -d ' ')" = "2971"
+          test "$(sha256sum /tmp/b0-stage14.patch.gz | cut -d' ' -f1)" = "63521d3fde7bebc212d933c9a292fe1c6080f88c7ac2dea8575608f31791196c"
+          gzip -dc /tmp/b0-stage14.patch.gz > /tmp/b0-stage14.patch
+          test "$(wc -c < /tmp/b0-stage14.patch | tr -d ' ')" = "11319"
+          test "$(sha256sum /tmp/b0-stage14.patch | cut -d' ' -f1)" = "79fb6f0327796c3bf9657c302091cb30153cd99a256b8bca5ff5e57972df5951"
+          git apply --check /tmp/b0-stage14.patch
+          git apply /tmp/b0-stage14.patch
+          git diff --check
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts | cut -d' ' -f1)" = "c7f1495edcd6033ac41a814d4b41bf2af7f59c48335106597d31267ac5394ddd"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts | cut -d' ' -f1)" = "bccf9d73074bb511f19d8a733b3bf9f35ac96bc7664ec7907a6c9b5cbfb81230"
+
+      - name: Frozen install and focused verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api build
+
+      - name: Commit completed stage as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts
+          git rm .github/workflows/b0-stage14-worker-ai-recovery.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage14-worker-ai-recovery.yml
+          apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): recover AI plans in standalone worker"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage14-worker-ai-recovery",
+              description: `worker AI recovery repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 stage 14 worker AI recovery repair failed");
