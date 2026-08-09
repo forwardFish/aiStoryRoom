@@ -972,7 +972,7 @@ function defaultRuleset(actorCount: number): B0RoomRulesetV1 {
     settlementMode: "WINDOWED",
     totalWindows: boundedInteger(process.env.B0_TOTAL_WINDOWS, 6, 1, 20),
     windowDurationSeconds: boundedInteger(process.env.B0_WINDOW_DURATION_SECONDS, 300, 5, 86_400),
-    maxHumanPlayers: Math.max(1, Math.min(5, actorCount)),
+    maxHumanPlayers: Math.max(1, actorCount),
   });
 }
 

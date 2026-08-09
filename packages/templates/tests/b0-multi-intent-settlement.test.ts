@@ -295,3 +295,110 @@ test("C5 detected covert effects produce a hidden-source cross-player impact", (
   assert.equal(delivery?.sourceDisclosure, "HIDDEN");
   assert.deepEqual(delivery?.originActorIds, []);
 });
+
+function mixedControlHold(actorId: string, index: number): B0ActionContractV1 {
+  const timestamp = `2026-08-06T00:0${index}:00.000Z`;
+  return {
+    schemaVersion: "b0-action-contract-v1",
+    id: `intent.mixed.${index}`,
+    windowId: "window.mixed",
+    roomId: "run.mixed",
+    runId: "run.mixed",
+    actorId,
+    baseWorldSequence: 1,
+    revision: 1,
+    kind: "HOLD",
+    rawPlayerText: "Hold position.",
+    normalizedSummary: "The actor holds position without a proactive world change.",
+    targetRefs: [],
+    primaryEffect: { effectTypeId: "hold.position", direction: "PROTECT", requestedMagnitude: "MINOR" },
+    method: { methodTypeId: "hold.no_action", description: "Preserve the current position." },
+    resourceCommitments: [],
+    evidenceRefs: [],
+    capabilityRefs: [],
+    propositionRefs: [],
+    visibilityIntent: { type: "PRIVATE", declaredRecipientRefs: [actorId] },
+    reactionPolicy: "NONE",
+    requestedTiming: "CURRENT_WINDOW",
+    riskTags: [],
+    compilerVersion: "b0-hold-v1",
+    validationVersion: "b0-contract-v1",
+    clientRequestId: `mixed:${index}`,
+    status: "LOCKED",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    confirmedAt: null,
+    lockedAt: "2026-08-06T00:05:00.000Z",
+  };
+}
+
+function mixedControlSettlement(humanCount: number, missingModeAt = -1) {
+  const actorIds = ["actor.a", "actor.b", "actor.c", "actor.d", "actor.e", "actor.f"];
+  const mixedRuleset = createB0RoomRulesetV1({
+    rulesetVersion: "b0-mixed-control-v1",
+    settlementMode: "WINDOWED",
+    totalWindows: 6,
+    windowDurationSeconds: 300,
+    maxHumanPlayers: 3,
+  });
+  const captured = captureB0SettlementSnapshotV1({
+    id: `snapshot.mixed.${humanCount}`,
+    windowId: "window.mixed",
+    roomId: "run.mixed",
+    runId: "run.mixed",
+    baseWorldSequence: 1,
+    ruleset: mixedRuleset,
+    worldState: {},
+    actorStates: actorIds.map((actorId) => ({ actorId })),
+    roleBindings: actorIds.map((actorId, index) => ({
+      actorId,
+      roleId: actorId,
+      ...(index === missingModeAt ? {} : { mode: index < humanCount ? "HUMAN_ACTIVE" : "AI_ACTIVE" }),
+    })),
+    knowledgeState: {},
+    relationshipState: {},
+    resourceState: {},
+    activeCapabilities: [],
+    dueSystemIntents: [],
+    createdAt: "2026-08-06T00:05:00.000Z",
+  });
+  const intents = actorIds.map(mixedControlHold);
+  const batch = prepareB0SettlementBatchV1({
+    id: `batch.mixed.${humanCount}`,
+    snapshot: captured,
+    intents,
+    createdAt: "2026-08-06T00:05:01.000Z",
+  });
+  return { mixedRuleset, captured, batch, intents };
+}
+
+test("AI-filled roles do not consume the room's human-player settlement limit", () => {
+  const input = mixedControlSettlement(3);
+  assert.doesNotThrow(() => settleB0BatchV1({
+    ruleset: input.mixedRuleset,
+    snapshot: input.captured,
+    batch: input.batch,
+    intents: input.intents,
+  }));
+});
+
+test("the human-player limit remains fail-closed for mixed-control batches", () => {
+  const input = mixedControlSettlement(4);
+  assert.throws(() => settleB0BatchV1({
+    ruleset: input.mixedRuleset,
+    snapshot: input.captured,
+    batch: input.batch,
+    intents: input.intents,
+  }), /Batch exceeds the room actor limit/);
+});
+
+
+test("missing control metadata cannot disguise an extra human intent as AI", () => {
+  const input = mixedControlSettlement(3, 5);
+  assert.throws(() => settleB0BatchV1({
+    ruleset: input.mixedRuleset,
+    snapshot: input.captured,
+    batch: input.batch,
+    intents: input.intents,
+  }), /Batch exceeds the room actor limit/);
+});

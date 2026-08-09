@@ -631,9 +631,30 @@ function assertSharedContext(
     if (actors.has(intent.actorId)) throw new B0SettlementErrorV1("ACTOR_INTENT_LIMIT_EXCEEDED", `Actor ${intent.actorId} has multiple primary intents.`);
     actors.add(intent.actorId);
   }
-  if (intents.length > ruleset.maxHumanPlayers) throw new B0SettlementErrorV1("BATCH_ACTOR_LIMIT_EXCEEDED", "Batch exceeds the room actor limit.");
+  const humanIntentCount = countHumanControlledIntents(snapshot, intents);
+  if (humanIntentCount > ruleset.maxHumanPlayers) {
+    throw new B0SettlementErrorV1("BATCH_ACTOR_LIMIT_EXCEEDED", "Batch exceeds the room actor limit.");
+  }
   if (batch.lockedIntentIds.join("|") !== intents.map((entry) => entry.id).join("|")) throw new B0SettlementErrorV1("BATCH_INTENT_SET_MISMATCH", "Locked intents do not match the batch.");
   if (batch.dueSystemIntentIds.join("|") !== due.map((entry) => entry.id).join("|")) throw new B0SettlementErrorV1("BATCH_SYSTEM_INTENT_SET_MISMATCH", "System intents do not match the batch.");
+}
+
+function countHumanControlledIntents(snapshot: B0SettlementSnapshotV1, intents: B0ActionContractV1[]): number {
+  const modesByActor = new Map<string, Set<string>>();
+  visit(snapshot.roleBindings, (binding) => {
+    const actorId = firstString(binding, ["actorId", "roleId"]);
+    const mode = firstString(binding, ["mode", "controlMode"]);
+    if (!actorId || !mode) return;
+    const modes = modesByActor.get(actorId) ?? new Set<string>();
+    modes.add(mode);
+    modesByActor.set(actorId, modes);
+  });
+  return intents.reduce((count, intent) => {
+    const modes = modesByActor.get(intent.actorId);
+    if (!modes || modes.size !== 1) return count + 1;
+    const [mode] = [...modes];
+    return mode === "AI_ACTIVE" || mode === "SYSTEM" ? count : count + 1;
+  }, 0);
 }
 
 type Owned = { owners: Set<string>; quantity: number | null };

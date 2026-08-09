@@ -101,6 +101,11 @@ test("B0 player routes use ActionWindow authority instead of requiring legacy Ac
   assert.match(MANEUVER_READ, /windowState: run\.status === "playing" && window\.status === "OPEN"/);
 });
 
+test("B0 default rulesets preserve six-role room capacity instead of capping at five", () => {
+  assert.match(PIPELINE, /maxHumanPlayers: Math\.max\(1, actorCount\)/);
+  assert.doesNotMatch(PIPELINE, /Math\.min\(5, actorCount\)/);
+});
+
 test("migration covers the exact B0 persistence surfaces", () => {
   for (const token of [
     "B0_SETTLEMENT_REQUESTED", "B0_PUBLISH_STRUCTURED_RESULTS", "B0_NARRATIVE_GENERATION", "B0_WINDOW_EVENT",
