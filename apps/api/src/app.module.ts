@@ -26,6 +26,9 @@ import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.co
 import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
 import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
+import { IntegritySoloEndingResultService } from "./openovel-adapter/integrity-solo-ending-result.service";
+import { OpenNovelTurnReplayClient } from "./openovel-adapter/openovel-turn-replay.client";
+import { ReconciledOpenNovelAdapterService } from "./openovel-adapter/reconciled-openovel-adapter.service";
 import { SoloEndingResultInterceptor } from "./openovel-adapter/solo-ending-result.interceptor";
 import { SoloEndingResultService } from "./openovel-adapter/solo-ending-result.service";
 
@@ -37,10 +40,17 @@ import { SoloEndingResultService } from "./openovel-adapter/solo-ending-result.s
     StoryTaskOutboxService,
     RoomsService,
     PresenceHeartbeatRateLimitGuard,
-    OpenNovelAdapterService,
+    {
+      provide: OpenNovelAdapterService,
+      useClass: ReconciledOpenNovelAdapterService,
+    },
     OpenNovelRuntimeClient,
+    OpenNovelTurnReplayClient,
     OpenNovelSharedService,
-    SoloEndingResultService,
+    {
+      provide: SoloEndingResultService,
+      useClass: IntegritySoloEndingResultService,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: SoloEndingResultInterceptor,
