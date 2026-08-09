@@ -1,0 +1,90 @@
+name: A-Emotion M1-M6 exact rebuild and delivery
+
+on:
+  push:
+    branches:
+      - "tmp/aemotion-m1-m6-from-3f595d5-20260809"
+
+permissions:
+  contents: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: aemotion-m1-m6-from-3f595d5
+  cancel-in-progress: false
+
+jobs:
+  rebuild-test-bundle-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      BASE_SHA: 3f595d5c11b80ed493b374dc151c53f4210b2e2c
+      BASE_TREE: 348489a63547ae3fe28cfc0de4f82b377847a8ca
+      TARGET_BRANCH: codex/chatgpt-pro-main-game-final-v1
+      CANDIDATE_REF: refs/heads/aemotion-m1-m6-candidate
+      ISSUE_NUMBER: "41"
+      ARCHIVE_SHA256: 9035d3c02a93102c03771d585af85058f264d151244d80ec36d50475db0ac1a1
+      M1_PATCH_SHA256: 8db99b7db2760b1374f4efded1c2f1b95b28e2cf1d8edc66f44967ec6bfa8312
+      M2_M6_PATCH_SHA256: 73789e4fd513e91fa9f27ce2feb54f17fed46382c6fa083fb59a1ac08175ee7b
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NODE_ENV: test
+    steps:
+      - name: Check out delivery carrier
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decode verified delivery helper and switch to frozen baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .github/scripts/aemotion-m1-m6-delivery.sh.gz.b64 | gzip -dc > /tmp/aemotion-m1-m6-delivery.sh
+          chmod +x /tmp/aemotion-m1-m6-delivery.sh
+          printf '%s  %s\n' '878fc9726c89480309716605f40ca0e007d64d28387e265d28799f83df7ad02f' /tmp/aemotion-m1-m6-delivery.sh | sha256sum --check --strict
+          git checkout --detach "$BASE_SHA"
+          git clean -fd
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Rebuild, test, bundle, verify and fast-forward push
+        shell: bash
+        run: /tmp/aemotion-m1-m6-delivery.sh
+
+      - name: Upload requested delivery files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AEmotion-M1-M6-from-3f595d5
+          path: |
+            delivery/AEmotion-M1-M6-from-3f595d5.bundle
+            delivery/AEmotion-M1-M6-from-3f595d5-format-patch.zip
+            delivery/AEmotion-M1-M6-from-3f595d5-report.md
+            delivery/artifact-sha256.txt
+            delivery/artifact-bytes.tsv
+            delivery/final-commit-chain.tsv
+            delivery/logs/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Report workflow result
+        if: always()
+        shell: bash
+        run: |
+          set +u
+          status="${{ job.status }}"
+          body="AEMOTION_M1_M6_RUN_RESULT status=${status} run_id=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} baseline=${BASE_SHA} remote_head=${REMOTE_HEAD:-unavailable} remote_tree=${REMOTE_TREE:-unavailable} artifact=AEmotion-M1-M6-from-3f595d5"
+          if [ -f delivery/artifact-sha256.txt ]; then
+            body="${body}\n\n$(cat delivery/artifact-bytes.tsv 2>/dev/null || true)\n\n$(cat delivery/artifact-sha256.txt 2>/dev/null || true)"
+          fi
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$body"
