@@ -55,7 +55,7 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "99ac28afaa2f2c13b1fd49873bcf89dca694d86a"
+          test "$(git rev-parse HEAD^)" = "0a3eb7e5cc52f2a531efb3ef9c1bdf4db577eb09"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage6-window-init-race.yml"
           test "$(sha256sum apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts | cut -d' ' -f1)" = "9a5a0017a9a4b8efff07530c246445d57ceaa3da7cd268fa6bd5a121faa7e113"
           test "$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)" = "7a6798b6e78aab1855cc83e6efcbd643815934dae7515bb737c1124440a5cdc3"
@@ -115,7 +115,7 @@ jobs:
           echo "coordinator_sha256=$coordinator_sha"
           echo "spec_sha256=$spec_sha"
           test "$coordinator_sha" = "c9d15ce01a19d4d74364b6d0ada76540df773831cbdd6c16c4fc869772167175"
-          test "$spec_sha" = "c09f8f255a69d369c236cd126028180aa27f3a3bfbb7668856584791f382d23d"
+          test "$spec_sha" = "b94284b2b5e529a8d902ed6288a1bb4ab8bfc41b42d59be191bbafa5e1a5592a"
           git diff --check
 
       - name: Frozen install and focused verification
