@@ -1,0 +1,206 @@
+name: B0 Stage 8 Active Window Conflict Recovery Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage8-active-window-conflict.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage8-active-window-conflict
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage8-active-window-conflict",
+              description: `active-window conflict recovery repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch tip and immutable inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "3d8f5cde24d1d79e43220f1ec973a68b0d993833"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage8-active-window-conflict.yml"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts)" = "aef1a5dec8fd82e14c49834a619e7b488f2116c5"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts)" = "f8770446daff336d59ffdc1e3d2e793b9d7acde3"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts)" = "e1a0ad9d6c645d0962c4a2f6541a039fc27fd833"
+
+      - name: Recover the winner window from Nest domain conflicts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          service = Path("apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts")
+          source = service.read_text(encoding="utf-8")
+          old = '      if (String((error as any)?.code ?? "") !== "WINDOW_ALREADY_ACTIVE") throw error;'
+          new = '      if (b0ExceptionCode(error) !== "WINDOW_ALREADY_ACTIVE") throw error;'
+          if source.count(old) != 1:
+              raise SystemExit(f"active-window catch anchor count={source.count(old)}")
+          source = source.replace(old, new, 1)
+          anchor = '''function b0RunEnabled(strategyVersion: string, stateValue: unknown): boolean {
+          '''.replace("          ", "")
+          helper = '''export function b0ExceptionCode(error: unknown): string {
+            const candidate = error as any;
+            const direct = String(candidate?.code ?? "").trim();
+            if (direct) return direct;
+            if (typeof candidate?.getResponse !== "function") return "";
+            try {
+              const response = candidate.getResponse();
+              if (!response || typeof response !== "object" || Array.isArray(response)) return "";
+              return String((response as Record<string, unknown>).code ?? "").trim();
+            } catch {
+              return "";
+            }
+          }
+
+          '''.replace("          ", "")
+          if source.count(anchor) != 1:
+              raise SystemExit(f"helper insertion anchor count={source.count(anchor)}")
+          service.write_text(source.replace(anchor, helper + anchor, 1), encoding="utf-8")
+
+          ops = Path("apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts")
+          source = ops.read_text(encoding="utf-8")
+          source = source.replace(
+              'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { B0SettlementPipelineService } from "./b0-settlement-pipeline.service";',
+              'import assert from "node:assert/strict";\nimport { ConflictException } from "@nestjs/common";\nimport test from "node:test";\nimport { B0SettlementPipelineService, b0ExceptionCode } from "./b0-settlement-pipeline.service";',
+              1,
+          )
+          test_anchor = '''test("C8 deadline recovery delegates to the authoritative window coordinator", async () => {
+            const { service, calls } = fixture();
+            const result = await service.recover(new Date("2026-08-07T00:00:00.000Z"));
+            assert.deepEqual(result, { recovered: 1 });
+            assert.equal(calls.some((entry) => entry.method === "windows.recoverExpired"), true);
+          });
+          '''.replace("          ", "")
+          test_case = '''
+          test("concurrent B0 lazy creation recognizes the Nest WINDOW_ALREADY_ACTIVE response code", () => {
+            const active = new ConflictException({
+              code: "WINDOW_ALREADY_ACTIVE",
+              message: "another request created the synchronized window",
+            });
+            assert.equal(b0ExceptionCode(active), "WINDOW_ALREADY_ACTIVE");
+            assert.equal(b0ExceptionCode({ code: "P2002" }), "P2002");
+            assert.equal(b0ExceptionCode(new ConflictException({ code: "OTHER_CONFLICT", message: "other" })), "OTHER_CONFLICT");
+            assert.equal(b0ExceptionCode(new Error("WINDOW_ALREADY_ACTIVE")), "");
+          });
+          '''.replace("          ", "")
+          if source.count(test_anchor) != 1:
+              raise SystemExit(f"ops test anchor count={source.count(test_anchor)}")
+          ops.write_text(source.replace(test_anchor, test_anchor + test_case, 1), encoding="utf-8")
+
+          vocabulary = Path("apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts")
+          source = vocabulary.read_text(encoding="utf-8")
+          marker = '''test("migration covers the exact B0 persistence surfaces", () => {
+          '''.replace("          ", "")
+          static_test = '''test("concurrent active-window recovery reads Nest domain response codes", () => {
+            assert.match(PIPELINE, /if \(b0ExceptionCode\(error\) !== "WINDOW_ALREADY_ACTIVE"\) throw error/);
+            assert.match(PIPELINE, /typeof candidate\?\.getResponse !== "function"/);
+            assert.match(PIPELINE, /candidate\.getResponse\(\)/);
+            assert.doesNotMatch(PIPELINE, /String\(\(error as any\)\?\.code[^\n]+WINDOW_ALREADY_ACTIVE/);
+          });
+
+          '''.replace("          ", "")
+          if source.count(marker) != 1:
+              raise SystemExit(f"vocabulary marker count={source.count(marker)}")
+          vocabulary.write_text(source.replace(marker, static_test + marker, 1), encoding="utf-8")
+          PY
+          git diff --check
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts)" != "aef1a5dec8fd82e14c49834a619e7b488f2116c5"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts)" != "f8770446daff336d59ffdc1e3d2e793b9d7acde3"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts)" != "e1a0ad9d6c645d0962c4a2f6541a039fc27fd833"
+
+      - name: Frozen install and focused verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api exec node --import tsx --test src/b0-settlement/b0-settlement-pipeline.ops.spec.ts
+          pnpm --filter @apps/api exec node --import tsx --test src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-ops
+
+      - name: Commit the completed repair as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts \
+            apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          git rm .github/workflows/b0-stage8-active-window-conflict.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage8-active-window-conflict.yml
+          apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): recover concurrent active window winner"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage8-active-window-conflict",
+              description: `active-window conflict recovery repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 stage 8 active-window conflict repair failed");
