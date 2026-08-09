@@ -1,4 +1,4 @@
-name: Requirement Dependency Source Export
+name: Requirement Dependency Dependency Export
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   export:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Publish export status
         shell: bash
@@ -26,59 +26,46 @@ jobs:
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
-            -f context="dynamic-kernel-lite/source-export" \
-            -f description="Focused source export running" \
+            -f context="dynamic-kernel-lite/dependency-export" \
+            -f description="Dependency export running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Export focused source and historical implementation scripts
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frozen workspace and pack dependencies
         shell: bash
         run: |
           set -euo pipefail
-          root="${RUNNER_TEMP}/requirement-dependency-source"
-          repo="${root}/repository"
-          mkdir -p "${repo}" "${root}/historical"
-          for file in package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json; do
-            if [ -f "${file}" ]; then cp -a "${file}" "${repo}/"; fi
-          done
-          for dir in \
-            packages/templates \
-            apps/openovel-runtime \
-            apps/api \
-            scripts/story-decomposition; do
-            mkdir -p "${repo}/$(dirname "${dir}")"
-            rsync -a \
-              --exclude='node_modules/' \
-              --exclude='dist/' \
-              --exclude='.next/' \
-              --exclude='.turbo/' \
-              --exclude='coverage/' \
-              --exclude='artifacts/' \
-              "${dir}/" "${repo}/${dir}/"
-          done
-          historical=40908fd7583ea4006f328903d4b65c660670ad38
-          for path in \
-            .github/repair/dynamic-kernel-requirement-dependency.py.gz.b64 \
-            .github/repair/dynamic-kernel-requirement-dependency-round1-format.py \
-            .github/repair/dynamic-kernel-dependency-runtime-semantics.py \
-            .github/repair/dynamic-kernel-dependency-predecessor-kernels.py \
-            .github/repair/dynamic-kernel-authored-transition-surface.py \
-            .github/repair/dynamic-kernel-context-budget.py; do
-            git show "${historical}:${path}" > "${root}/historical/$(basename "${path}")"
-          done
+          pnpm install --frozen-lockfile
+          root="${RUNNER_TEMP}/requirement-dependency-deps"
+          mkdir -p "${root}"
+          tar --zstd -cf "${root}/workspace-deps.tar.zst" \
+            node_modules \
+            packages/openovel-runtime \
+            packages/templates/node_modules \
+            apps/openovel-runtime/node_modules \
+            apps/api/node_modules
           git rev-parse HEAD > "${root}/source-sha.txt"
-          git rev-parse HEAD^{tree} > "${root}/source-tree.txt"
-          du -sh "${root}"
+          du -sh "${root}/workspace-deps.tar.zst"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: requirement-dependency-source-${{ github.sha }}
-          path: ${{ runner.temp }}/requirement-dependency-source/
+          name: requirement-dependency-deps-${{ github.sha }}
+          path: ${{ runner.temp }}/requirement-dependency-deps/
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 2
 
       - name: Publish export completion
         if: always()
@@ -89,6 +76,6 @@ jobs:
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
-            -f context="dynamic-kernel-lite/source-export" \
-            -f description="Focused source export uploaded" \
+            -f context="dynamic-kernel-lite/dependency-export" \
+            -f description="Dependency export uploaded" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
