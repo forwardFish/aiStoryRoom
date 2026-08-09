@@ -1,7 +1,7 @@
 import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-storage.js?v=20260721-story-access-error-v4";
 import { renderTransitionScreen } from "./transition-screen.js";
 import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260806-play-again-v3";
-import { bindManeuverInputs, buildManeuverCommand, clearManeuverDraft, emptyManeuverDrafts, prepareManeuverDraft, renderFourManeuverPanel, renderLeverageHand, validateManeuverCommand } from "./maneuver-four-ui.js?v=20260806-mvp-four-v1";
+import { bindManeuverInputs, buildManeuverCommand, clearManeuverDraft, emptyManeuverDrafts, prepareManeuverDraft, renderFourManeuverPanel, renderLeverageHand, validateManeuverCommand } from "./maneuver-four-ui.js?v=20260809-remaining-count-v1";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
@@ -36,6 +36,7 @@ export function createStoryApp({
     activeManeuverType: null,
     maneuverDrafts: emptyManeuverDrafts(),
     maneuverGuard: null,
+    pendingManeuver: null,
     historyOpen: false,
     historyFilter: "all",
     showOpening: showOpeningByDefault,
@@ -164,6 +165,7 @@ export function createStoryApp({
     state.maneuverGuard = null;
     state.error = "";
     state.notice = "";
+    state.pendingManeuver = pendingManeuverFor(command, state.view);
     state.busy = true;
     render();
     try {
@@ -192,6 +194,7 @@ export function createStoryApp({
       }
     } finally {
       state.busy = false;
+      state.pendingManeuver = null;
       render();
     }
   }
@@ -753,7 +756,7 @@ function renderTopbar(view, state) {
       <div class="top-day">${en ? `${esc(stageLabel)} ${number(run.currentDay)}` : `第 ${number(run.currentDay)} 天`} · ${esc(run.currentTime || (en ? "Story in motion" : "局势推演中"))}</div>
       <div class="top-countdown">${en ? `Until ${esc(finaleLabel)}:` : "距离御前裁决："}<b>${Number(run.currentDay) >= FINAL_DAY ? 0 : remaining}</b>${en ? " scenes" : " 天"}</div>
       <span class="status-chip">${en ? "Key Decisions" : "主线决策"}&nbsp; <b>${activePromptForView(view) ? progress.completed + 1 : progress.completed} / ${progress.required || 2}</b></span>
-      <span class="status-chip maneuver-chip">${roomSession ? `${en ? "Players" : "三人局"}&nbsp; <b>${roomSession.submittedRoleIds.length} / ${roomSession.room.players.filter((player) => player.roleId).length}</b>` : `${en ? "Maneuvers" : "谋划"}&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)} / ${Number(maneuver.maneuverOpportunitiesPerDay ?? 2)}</b>`}<i></i><i></i></span>
+      <span class="status-chip maneuver-chip">${roomSession ? `${en ? "Players" : "三人局"}&nbsp; <b>${roomSession.submittedRoleIds.length} / ${roomSession.room.players.filter((player) => player.roleId).length}</b>` : `${en ? "Maneuvers Left" : "剩余谋划"}&nbsp; <b>${Number(maneuver.maneuverOpportunitiesRemaining ?? 2)}</b>`}</span>
     </div>
     <div class="top-utility-cluster"><div class="top-actions"><button id="historyBtn" type="button">▣&nbsp; ${en ? "History" : "历史回顾"}</button><button id="resetBtn" type="button" ${state.busy ? "disabled" : ""}>⚙&nbsp; ${en ? (roomSession ? "Room" : "Settings") : (roomSession ? "房间" : "设置")}</button></div></div>
   </header>`;
@@ -889,7 +892,7 @@ function renderEnglishManeuverPanel(view, state) {
   const objectives = array(view.player?.goals).slice(0, 2);
   return `<section class="maneuver-panel" data-testid="maneuver-panel">
     <div class="maneuver-heading"><h2>Maneuver Board</h2><button class="help-dot" type="button" title="A maneuver cannot replace a key decision">?</button></div>
-    <section class="maneuver-usage"><span>Maneuvers This Act</span><b>${Number(maneuver.maneuverOpportunitiesRemaining)} / ${Number(maneuver.maneuverOpportunitiesPerDay)}</b><div class="opportunity-dots" aria-label="Remaining opportunities"><i class="${Number(maneuver.maneuverOpportunitiesRemaining) < 2 ? "spent" : ""}"></i><i class="${Number(maneuver.maneuverOpportunitiesRemaining) < 1 ? "spent" : ""}"></i></div><small>Unused opportunities do not carry over</small></section>
+    <section class="maneuver-usage"><span>Maneuvers Left</span><b>${Number(maneuver.maneuverOpportunitiesRemaining)}</b><small>Unused opportunities do not carry over</small></section>
     <div class="maneuver-type-grid" aria-label="Choose a maneuver type">${types.map(([key, label]) => `<button type="button" class="${draft.maneuverType === key ? "active" : ""}" data-maneuver-type="${key}" aria-pressed="${draft.maneuverType === key}" ${disabled ? "disabled" : ""}>${label}</button>`).join("")}</div>
     <div class="maneuver-active-label">Current: ${activeType}</div>${workbench}
     <details class="maneuver-progress"><summary>In Progress <span>${objectives.length}</span></summary>${objectives.map((goal, index) => `<div class="progress-row"><span>${esc(goal)}</span><b>${index + 1} / ${objectives.length || 1}</b></div>`).join("")}</details>
@@ -932,9 +935,41 @@ function renderDecisionNarrative() {
 }
 
 function renderSimulation(view, state) {
+  if (state.pendingManeuver) {
+    const pending = state.pendingManeuver;
+    return `<section class="simulation-stage" data-testid="ai-simulating"><div class="simulation-copy"><span>${esc(pending.kicker)}</span><h1>${esc(pending.title)}</h1><p>${esc(pending.description)}</p><div class="simulation-seal">WORLD<br/>IN MOTION</div><h2>${esc(pending.status)}</h2><small>${esc(pending.note)}</small></div></section>`;
+  }
   const prompt = activePromptForView(view);
   const selected = array(prompt?.options).find((item) => item.optionKey === state.selectedOption || item.key === state.selectedOption);
   return `<section class="simulation-stage" data-testid="ai-simulating"><div class="simulation-copy"><span>Your decision</span><h1>${esc(selected?.title || "Writing your action into the world")}</h1><p>Your action is entering the causal chain of relationships, resources, and future events.</p><div class="simulation-seal">WORLD<br/>IN MOTION</div><h2>AI is shaping the consequences...</h2><small>The outcome will change what happens next.</small></div></section>`;
+}
+
+function pendingManeuverFor(command, view) {
+  const type = String(command?.maneuverType || "");
+  if (type === "contact") {
+    const target = array(view?.maneuverPanel?.contact?.options)
+      .find((item) => item?.roleKey === command.targetRoleKey);
+    const name = String(target?.displayName || "对方").trim();
+    return {
+      kicker: "人物交谈",
+      title: `${name}正在回应……`,
+      description: "你的话已经送达，正在生成这个人物的真实回应。",
+      status: "请稍候",
+      note: "回应返回后会直接发生，不是预演。"
+    };
+  }
+  const content = {
+    investigate: ["派遣调查", "正在执行调查……", "调查人员正在按照你选择的方向行动。"],
+    leverage: ["使用筹码", "正在落实筹码……", "筹码已经打出，正在结算对方的真实反应。"],
+    custom: ["自拟谋划", "正在处理谋划……", "你的行动已经提交，正在结算实际结果。"]
+  }[type] || ["主动谋划", "正在处理主动谋划……", "你的行动已经提交，正在结算实际结果。"];
+  return {
+    kicker: content[0],
+    title: content[1],
+    description: content[2],
+    status: "请稍候",
+    note: "结果返回后会直接发生，不是预演。"
+  };
 }
 
 function renderResultNarrative(view, state = {}) {

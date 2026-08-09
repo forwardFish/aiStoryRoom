@@ -110,7 +110,7 @@ test("entry availability follows the authoritative panel and canonical reason pr
 
   assert.equal(
     resolveManeuverEntry(authoritative, state({ busy: true }), "contact").disabledReason,
-    "AI正在推演局势……",
+    "正在处理主动谋划",
   );
   assert.equal(
     resolveManeuverEntry(authoritative, state(), "contact").disabledReason,
@@ -192,10 +192,10 @@ test("entry quantities always match the candidates rendered in each workbench", 
   const current = { maneuverPanel: optionPanel() };
   const currentState = state();
   const closed = renderFourManeuverPanel(current, currentState);
-  assert.match(closed, /人物交谈[\s\S]*2 人/);
-  assert.match(closed, /派遣调查[\s\S]*1 项/);
-  assert.match(closed, /使用筹码[\s\S]*1 张/);
-  assert.doesNotMatch(closed, /99 人|9 项|7 张/);
+  assert.match(closed, /data-maneuver-type="contact" data-option-count="2"/);
+  assert.match(closed, /data-maneuver-type="investigate" data-option-count="1"/);
+  assert.match(closed, /data-maneuver-type="leverage" data-option-count="1"/);
+  assert.doesNotMatch(closed, /data-option-count="99"|data-option-count="9"|data-option-count="7"/);
 
   currentState.activeManeuverType = "contact";
   const contacts = renderFourManeuverPanel(current, currentState);
@@ -243,7 +243,7 @@ test("disabled entries cannot switch workbenches while enabled entries only swit
   assert.equal(rendered, 0, "opening an entry does not submit or render through an action callback");
 });
 
-test("contact workbench shows only projected public fields and reveals editor after selection", () => {
+test("contact workbench keeps the established layout and uses only projected public fields", () => {
   const current = { maneuverPanel: optionPanel() };
   const currentState = state({ activeManeuverType: "contact" });
 
@@ -253,16 +253,17 @@ test("contact workbench shows only projected public fields and reveals editor af
   assert.match(beforeSelection, /当前值得联系的原因甲/);
   assert.match(beforeSelection, /portrait-a/);
   assert.doesNotMatch(beforeSelection, /预计回应|暴露风险|接触方式|证据权限/);
-  assert.equal(beforeSelection.includes("id=\"contactMessageText\""), false);
-  assert.match(beforeSelection, /选择人物后发送/);
+  assert.equal(beforeSelection.includes("id=\"contactMessageText\""), true);
+  assert.match(beforeSelection, /开始交谈/);
+  assert.match(beforeSelection, /class="contact-row/);
 
   currentState.maneuverDrafts.contact.targetRoleKey = "actor-a";
   currentState.maneuverDrafts.contact.messageText = "请说明当前记录。";
   const selected = renderFourManeuverPanel(current, currentState);
   assert.match(selected, /id="contactMessageText"/);
   assert.match(selected, /请说明当前记录。/);
-  assert.match(selected, /发送给人物甲/);
-  assert.equal((selected.match(/class="maneuver-option-card selected"/g) || []).length, 1);
+  assert.match(selected, /开始与人物甲交谈/);
+  assert.equal((selected.match(/class="contact-row selected"/g) || []).length, 1);
 });
 
 test("contact validation and command building preserve the real messageText", () => {
@@ -295,7 +296,7 @@ test("other workbenches use only projected resources and action-specific copy", 
   const investigate = renderFourManeuverPanel(current, currentState);
   assert.match(investigate, /调查甲/);
   assert.match(investigate, /当前异常甲/);
-  assert.match(investigate, />开始调查</);
+  assert.match(investigate, />派遣调查</);
   assert.doesNotMatch(investigate, /textarea/);
 
   currentState.activeManeuverType = "leverage";
@@ -303,7 +304,7 @@ test("other workbenches use only projected resources and action-specific copy", 
   const leverage = renderFourManeuverPanel(current, currentState);
   assert.match(leverage, /筹码甲/);
   assert.match(leverage, /一次性秘密筹码/);
-  assert.match(leverage, /使用并消耗“筹码甲”/);
+  assert.match(leverage, /使用“筹码甲”/);
   assert.doesNotMatch(leverage, /textarea/);
 
   currentState.activeManeuverType = "custom";
@@ -348,7 +349,7 @@ test("latest projection replaces stale selections while preserving user text", (
 
   assert.equal(currentState.maneuverDrafts.contact.targetRoleKey, "");
   assert.equal(currentState.maneuverDrafts.contact.messageText, "这段草稿必须保留。");
-  assert.match(html, /1 人/);
+  assert.match(html, /data-maneuver-type="contact" data-option-count="1"/);
   assert.match(html, /人物丙/);
   assert.doesNotMatch(html, /人物甲|人物乙/);
 

@@ -7,10 +7,10 @@ export async function bootGamePage({
   root = document.getElementById("app"),
   window: win = globalThis.window,
   fetchImpl = win?.fetch?.bind(win),
-  loadContinuousStoryV2 = () => import("./continuous-story-v2-maneuver-client.js?v=20260806-openovel-maneuver-v1"),
+  loadContinuousStoryV2 = () => import("./continuous-story-v2-maneuver-client.js?v=20260809-remaining-count-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
-  loadSolo = () => import("./app.js?v=20260806-comfortable-reading-v1"),
+  loadSolo = () => import("./app.js?v=20260809-remaining-count-v1"),
   navigate = (url) => win?.location?.assign?.(url)
 } = {}) {
   if (!root) throw new TypeError("game root is required");

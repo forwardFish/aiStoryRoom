@@ -59,8 +59,25 @@ async function flush() { await new Promise((resolve) => setTimeout(resolve, 0));
 test("default panel keeps four actions visible and no workbench open", async () => {
   const { root } = await appWithStorage();
   assert.equal(root.querySelectorAll("[data-maneuver-type]").length, 4);
+  assert.ok(root.querySelector(".maneuver-type-grid"), "the established two-column maneuver layout must remain in use");
+  assert.equal(root.querySelector(".maneuver-action-list"), null);
   assert.equal(root.querySelector(".maneuver-workbench"), null);
+  assert.equal(root.querySelector(".maneuver-usage span").textContent, "剩余谋划");
+  assert.equal(root.querySelector(".maneuver-usage b").textContent, "2");
+  assert.equal(root.querySelector(".maneuver-usage").textContent.includes("/ 2"), false);
+  assert.equal(root.querySelector(".maneuver-usage .opportunity-dots"), null);
   assert.match(root.textContent, /主动谋划/);
+});
+
+test("contact workbench lists only authoritative scene contacts and submits directly", async () => {
+  const { root } = await appWithStorage();
+  root.querySelector('[data-maneuver-type="contact"]').click();
+  const contacts = [...root.querySelectorAll("[data-contact-role]")];
+  assert.deepEqual(contacts.map((item) => item.dataset.contactRole), ["county_magistrate", "merchant"]);
+  assert.equal(root.textContent.includes("巡抚"), false);
+  assert.match(root.textContent, /开始交谈/);
+  assert.equal(root.textContent.includes("预演"), false);
+  assert.ok(root.querySelector(".contact-row"));
 });
 
 test("contact sends messageText without an AI preview step", async () => {
@@ -128,7 +145,9 @@ test("two different maneuver types exhaust the daily quota and disable every act
 
   assert.equal(storage.calls.length, 2);
   assert.equal(root.querySelectorAll('[data-maneuver-type][disabled]').length, 4);
-  assert.equal(root.textContent.includes("今日谋划0 / 2"), true);
+  assert.equal(root.textContent.includes("剩余谋划0"), true);
+  assert.equal(root.querySelector(".maneuver-usage b").textContent, "0");
+  assert.equal(root.querySelector(".maneuver-usage .opportunity-dots"), null);
 });
 
 test("double-clicking a submit button creates only one maneuver request", async () => {

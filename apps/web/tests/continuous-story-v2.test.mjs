@@ -349,7 +349,10 @@ test("refresh automatically reveals a published maneuver result with its decisio
   await app.refresh();
   assert.equal(app.getState().resultStream?.kind, "maneuver");
   assert.match(root.textContent, /被撕下的存根/);
-  assert.match(root.textContent, /日期却相差三日/);
+  assert.doesNotMatch(root.textContent, /日期却相差三日/);
+  root.querySelector("#continueStoryBtn")?.click();
+  assert.ok(root.querySelector('[data-testid="decision-zone"]'));
+  assert.match(root.textContent, /幕僚带回两份不同日期的仓单/);
   app.destroy(); dom.window.close();
 });
 test("TURN_MOVED refreshes the authoritative database projection instead of showing a stale conflict", async () => {

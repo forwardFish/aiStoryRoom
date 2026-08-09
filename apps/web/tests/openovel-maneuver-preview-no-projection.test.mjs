@@ -91,42 +91,30 @@ function json(value) {
   });
 }
 
-test("zero-side-effect Preview reuses the current projection when the API omits gameProjection", async () => {
+test("direct maneuver submission rejects a response without an authoritative gameProjection", async () => {
   const current = projection();
+  const requests = [];
   const storage = new ContinuousStoryV2LegacyStorage({
     runId: current.room.id,
     initialProjection: current,
-    fetchImpl: async () => json({
-      accepted: true,
-      previewed: true,
-      maneuverVersion: 11,
-      previewToken: "signed-preview-token",
-      preview: {
-        previewId: "preview-no-projection",
-        maneuverType: "contact",
-        decisionForm: "CONVERSATION",
-        sceneKey: "d1_1",
-        usageDay: 1,
-        title: "准备与卢象升交谈",
-        summary: "原册是否完整？",
-        targetLabel: "卢象升",
-        costLabel: "确认后消耗 1 次主动谋划。",
-        confirmLabel: "确认发送给卢象升",
-        expiresAt: "2026-08-07T00:05:00.000Z",
-      },
-    }),
+    fetchImpl: async (url, init) => {
+      requests.push({ url: String(url), body: JSON.parse(String(init?.body || "{}")) });
+      return json({ accepted: true, resolution: { kind: "contact" } });
+    },
   });
 
   const before = await storage.restoreOrCreate();
-  const after = await storage.submitManeuver(before, {
-    maneuverType: "contact",
-    targetRoleKey: "county_magistrate",
-    messageText: "原册是否完整？",
-  });
+  await assert.rejects(
+    storage.submitManeuver(before, {
+      maneuverType: "contact",
+      targetRoleKey: "county_magistrate",
+      messageText: "原册是否完整？",
+    }),
+    (error) => error?.code === "MANEUVER_PROJECTION_INVALID",
+  );
 
-  assert.equal(after.run.version, 11);
-  assert.equal(after.v2Projection.currentTurn.id, "T01");
-  assert.equal(after.maneuverState.maneuverOpportunitiesRemaining, 2);
-  assert.equal(after.messages.filter((item) => item.type === "maneuver_result").length, 0);
-  assert.equal(after.maneuverPreview.previewToken, "signed-preview-token");
+  assert.equal(requests.length, 1);
+  assert.match(requests[0].url, /\/game\/maneuvers$/);
+  assert.equal(requests[0].url.includes("/preview"), false);
+  assert.equal(requests[0].url.includes("/confirm"), false);
 });
