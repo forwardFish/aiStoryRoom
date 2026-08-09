@@ -1,0 +1,281 @@
+name: B0 Candidate Real Supabase and Browser Acceptance
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths-ignore:
+      - "docs/auto-execute/evidence/b0/**"
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-real-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-acceptance:
+    name: Real Supabase, API, Web, Worker and browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      B0_EVIDENCE_ROOT: docs/auto-execute/evidence/b0/c9/runtime
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Publish exact run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/real-acceptance",
+              description: `real Supabase/browser acceptance running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify exact candidate checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+
+      - name: Fail closed unless real acceptance secrets are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_DATABASE_URL:-}" || { echo "SUPABASE_DATABASE_URL secret is required" >&2; exit 1; }
+          test -n "${DEEPSEEK_API_KEY:-}" || { echo "DEEPSEEK_API_KEY secret is required" >&2; exit 1; }
+          case "$SUPABASE_DATABASE_URL" in
+            *supabase*) ;;
+            *) echo "B0 real acceptance requires a Supabase PostgreSQL URL" >&2; exit 1 ;;
+          esac
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Typecheck the real acceptance driver
+        run: pnpm typecheck:b0:real-acceptance
+
+      - name: Build exact runtime binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web build
+
+      - name: Bind an independent random Supabase schema
+        id: database
+        shell: bash
+        run: |
+          set -euo pipefail
+          schema="cs_accept_b0_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_$(openssl rand -hex 4)"
+          export B0_SCHEMA="$schema"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+          raw = os.environ["SUPABASE_DATABASE_URL"].strip()
+          schema = os.environ["B0_SCHEMA"]
+          split = urlsplit(raw)
+          query = [(key, value) for key, value in parse_qsl(split.query, keep_blank_values=True)
+                   if key.lower() not in {"schema", "connection_limit", "sslmode"}]
+          query.extend([("sslmode", "disable"), ("schema", schema), ("connection_limit", "3")])
+          runtime = urlunsplit((split.scheme, split.netloc, split.path, urlencode(query), split.fragment))
+          print(f"::add-mask::{runtime}")
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"DATABASE_URL={runtime}\n")
+              handle.write(f"B0_ACCEPTANCE_SCHEMA={schema}\n")
+              handle.write(f"MANY_WORLDS_DB_SCHEMA={schema}\n")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"schema={schema}\n")
+          PY
+          echo "Random isolated schema prepared; credentials remain masked."
+
+      - name: Apply migrations only to the random schema
+        run: pnpm prisma migrate deploy
+
+      - name: Execute the real six-window acceptance
+        id: acceptance
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          CHROME_PATH: /usr/bin/google-chrome
+        run: pnpm test:b0:real-acceptance
+
+      - name: Drop the random acceptance schema
+        id: cleanup
+        if: always() && env.DATABASE_URL != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const { createHash } = require("node:crypto");
+          const { mkdirSync, writeFileSync } = require("node:fs");
+          const { PrismaClient } = require("@prisma/client");
+          const schema = String(process.env.B0_ACCEPTANCE_SCHEMA || "");
+          if (!/^cs_accept_b0_[a-z0-9_]{8,}$/i.test(schema) || schema.toLowerCase() === "public") {
+            throw new Error("Refusing to clean an invalid or non-isolated schema");
+          }
+          const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
+          (async () => {
+            try {
+              await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+              const root = process.env.B0_EVIDENCE_ROOT;
+              mkdirSync(root, { recursive: true });
+              writeFileSync(`${root}/schema-cleanup.json`, JSON.stringify({
+                schemaVersion: 1,
+                status: "PASS",
+                schemaName: schema,
+                schemaNameSha256: createHash("sha256").update(schema).digest("hex"),
+                publicSchemaUsed: false,
+                droppedAt: new Date().toISOString()
+              }, null, 2) + "\n");
+            } finally {
+              await prisma.$disconnect();
+            }
+          })().catch((error) => { console.error(error.message); process.exitCode = 1; });
+          NODE
+
+      - name: Finalize C8 checkpoint and evidence hashes
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["B0_EVIDENCE_ROOT"])
+          result = json.loads((root / "acceptance-result.json").read_text(encoding="utf-8"))
+          if result.get("status") != "PASS":
+              raise SystemExit("real acceptance result is not PASS")
+          c8 = root.parent.parent / "c8"
+          c8.mkdir(parents=True, exist_ok=True)
+          checkpoint = {
+              "schemaVersion": 1,
+              "checkpoint": "B0_C8_REAL_OPERATIONS_VALIDATED",
+              "status": "PASS",
+              "testedCodeSha": os.environ["GITHUB_SHA"],
+              "workflowRunId": os.environ["GITHUB_RUN_ID"],
+              "workflowRunAttempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "randomTestSchema": os.environ["B0_ACCEPTANCE_SCHEMA"],
+              "productionPublicSchemaUsed": False,
+              "validated": [
+                  "bounded admin diagnostics and recovery",
+                  "pause and resume",
+                  "deadline freeze with HOLD",
+                  "safe abort of an uncommitted window",
+                  "embedded and independent workers",
+                  "lease expiry and crash recovery",
+                  "narrative retry without world rollback"
+              ],
+              "evidenceRoot": str(root).replace("\\", "/"),
+          }
+          (c8 / "checkpoint.json").write_text(json.dumps(checkpoint, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          files = []
+          for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "artifact-catalog.json"):
+              data = path.read_bytes()
+              files.append({
+                  "path": str(path).replace("\\", "/"),
+                  "sizeBytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest(),
+              })
+          catalog = {
+              "schemaVersion": 1,
+              "testedCodeSha": os.environ["GITHUB_SHA"],
+              "workflowRunId": os.environ["GITHUB_RUN_ID"],
+              "generatedAt": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+              "files": files,
+          }
+          (root / "artifact-catalog.json").write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload sanitized acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-real-acceptance-${{ github.sha }}
+          path: |
+            docs/auto-execute/evidence/b0/c8/checkpoint.json
+            docs/auto-execute/evidence/b0/c9/runtime
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Commit passing C8 and runtime evidence as docs only
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          remote_sha="$(git rev-parse "origin/$GITHUB_REF_NAME")"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "Candidate ref moved; refusing to publish stale evidence." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/auto-execute/evidence/b0/c8/checkpoint.json docs/auto-execute/evidence/b0/c9/runtime
+          git diff --cached --check
+          test -n "$(git diff --cached --name-only)"
+          if git diff --cached --name-only | grep -Ev '^docs/auto-execute/evidence/b0/'; then
+            echo "Evidence commit contains non-evidence files." >&2
+            exit 1
+          fi
+          git commit -m "test(b0): record real Supabase and browser evidence"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish real acceptance outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          ACCEPTANCE_OUTCOME: ${{ steps.acceptance.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success"
+              && process.env.ACCEPTANCE_OUTCOME === "success"
+              && process.env.CLEANUP_OUTCOME === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/real-acceptance",
+              description: `${success ? "real acceptance passed" : "real acceptance failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed(`B0 real acceptance did not close: acceptance=${process.env.ACCEPTANCE_OUTCOME}, cleanup=${process.env.CLEANUP_OUTCOME}, job=${process.env.JOB_STATUS}`);
