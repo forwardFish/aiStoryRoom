@@ -1,0 +1,53 @@
+name: Requirement Dependency Source Export
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/requirement-dependency-source-export.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Export current source and historical implementation scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="${RUNNER_TEMP}/requirement-dependency-source"
+          mkdir -p "${root}/repository" "${root}/historical"
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='node_modules/' \
+            --exclude='dist/' \
+            --exclude='.next/' \
+            ./ "${root}/repository/"
+          historical=40908fd7583ea4006f328903d4b65c660670ad38
+          for path in \
+            .github/repair/dynamic-kernel-requirement-dependency.py.gz.b64 \
+            .github/repair/dynamic-kernel-requirement-dependency-round1-format.py \
+            .github/repair/dynamic-kernel-dependency-runtime-semantics.py \
+            .github/repair/dynamic-kernel-dependency-predecessor-kernels.py \
+            .github/repair/dynamic-kernel-authored-transition-surface.py \
+            .github/repair/dynamic-kernel-context-budget.py; do
+            git show "${historical}:${path}" > "${root}/historical/$(basename "${path}")"
+          done
+          git rev-parse HEAD > "${root}/source-sha.txt"
+          git rev-parse HEAD^{tree} > "${root}/source-tree.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: requirement-dependency-source-${{ github.sha }}
+          path: ${{ runner.temp }}/requirement-dependency-source/
+          if-no-files-found: error
+          retention-days: 3
