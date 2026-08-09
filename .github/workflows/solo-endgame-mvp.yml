@@ -55,8 +55,10 @@ jobs:
             local command="$*"
             local log="$artifact_dir/${label}.log"
             printf '===== %s =====\ncommand=%s\nworkdir=%s\n' "$label" "$command" "$cwd" >> "$artifact_dir/commands.log"
+            set +e
             (cd "$cwd" && "$@") > "$log" 2>&1
             local code=$?
+            set -e
             cat "$log"
             printf '%s\t%s\t%s\tN/A\tN/A\tN/A\tN/A\tN/A\t%s\n' \
               "$label" "$command" "$cwd" "$code" >> "$artifact_dir/summary.tsv"
@@ -76,8 +78,10 @@ jobs:
             local command="$*"
             local log="$artifact_dir/${label}.log"
             printf '===== %s =====\ncommand=%s\nworkdir=%s\n' "$label" "$command" "$cwd" >> "$artifact_dir/commands.log"
+            set +e
             (cd "$cwd" && "$@") > "$log" 2>&1
             local code=$?
+            set -e
             cat "$log"
             local tests pass fail cancelled skipped todo effective_fail
             tests=$(awk '$1 == "#" && $2 == "tests" {sum += $3} END {print sum + 0}' "$log")
@@ -120,6 +124,7 @@ jobs:
               printf '%s\t%s\t%s\tPASS\n' "$suite" "$candidate_code" "$baseline_code" >> "$artifact_dir/baseline-comparison.tsv"
               return
             fi
+            set +e
             python3 - "$artifact_dir/${candidate_label}.log" "$artifact_dir/${baseline_label}.log" "$suite" "$candidate_code" "$baseline_code" > "$compare_log" <<'PYCOMPARE'
           import json
           import re
@@ -152,6 +157,7 @@ jobs:
           raise SystemExit(0 if valid else 1)
           PYCOMPARE
             local comparison_code=$?
+            set -e
             cat "$compare_log"
             if [ "$comparison_code" -eq 0 ]; then
               printf '%s\t%s\t%s\tBASELINE_EQUIVALENT\n' "$suite" "$candidate_code" "$baseline_code" >> "$artifact_dir/baseline-comparison.tsv"
