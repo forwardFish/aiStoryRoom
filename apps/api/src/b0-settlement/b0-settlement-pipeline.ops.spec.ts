@@ -152,6 +152,49 @@ test("B0 structured delivery persists recipient routing with the durable ROLE au
   assert.deepEqual(create.audienceRoleIdsJson, ["role.b"]);
 });
 
+test("B0 narrative tasks use the durable b0 dedupe namespace for create and lookup", async () => {
+  const captured: Json[] = [];
+  const { service } = fixture({
+    actionWindow: {
+      findUnique: async () => ({ nodeId: "node.1" }),
+    },
+    storyTaskOutbox: {
+      upsert: async (input: Json) => {
+        captured.push(input);
+        return input.create;
+      },
+    },
+  });
+
+  await (service as any).enqueueNarratives({
+    batchId: "b0.batch.1",
+    manifest: {
+      runId: "run.1",
+      windowId: "window.1",
+      commitHash: "commit.1",
+    },
+  }, {
+    planHash: "plan.1",
+    deliveries: [
+      { recipientActorId: "role.b" },
+      { recipientActorId: "role.a" },
+      { recipientActorId: "role.a" },
+    ],
+  });
+
+  assert.equal(captured.length, 2);
+  const keys = captured.map((entry) => String(entry.create.dedupeKey)).sort();
+  assert.deepEqual(keys, [
+    "b0-narrative:b0.batch.1:role.a:SETTLEMENT_ROLE_VIEW",
+    "b0-narrative:b0.batch.1:role.b:SETTLEMENT_ROLE_VIEW",
+  ]);
+  for (const entry of captured) {
+    assert.equal(entry.where.dedupeKey, entry.create.dedupeKey);
+    assert.equal(entry.create.taskType, "B0_NARRATIVE_GENERATION");
+    assert.equal(entry.create.checkpointKey, "B0_STRUCTURED_RESULTS_PUBLISHED");
+  }
+});
+
 test("C8 diagnostics is read-only and reports window, task, narrative and world sequence state", async () => {
   const { service, calls } = fixture();
   const result = await service.diagnostics("run.1");

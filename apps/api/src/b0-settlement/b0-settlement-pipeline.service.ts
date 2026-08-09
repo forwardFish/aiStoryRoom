@@ -1104,7 +1104,7 @@ function b0Locale(stateValue: unknown): string {
 }
 
 function narrativeKey(batchId: string, roleId: string) {
-  return `narrative:${batchId}:${roleId}:SETTLEMENT_ROLE_VIEW`;
+  return `b0-narrative:${batchId}:${roleId}:SETTLEMENT_ROLE_VIEW`;
 }
 
 function jsonRecord(value: unknown): JsonRecord | null {

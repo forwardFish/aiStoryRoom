@@ -43,6 +43,8 @@ test("B0 database vocabulary admits every durable state emitted by the synchroni
     "COMMITTED", "ALREADY_COMMITTED", "PUBLISHED", "ALREADY_PUBLISHED", "NARRATED", "RECORDED",
   ]);
   assert.match(constraintBody("StoryTaskOutbox_dedupe_format_check"), /LIKE 'b0-%'/);
+  assert.match(PIPELINE, /return `b0-narrative:\$\{batchId\}:\$\{roleId\}:SETTLEMENT_ROLE_VIEW`/);
+  assert.doesNotMatch(PIPELINE, /return `narrative:/);
   assertValues("ResolutionWorkflow_status_check", ["B0_PREPARED", "B0_RESOLVING"]);
   assertValues("ResolutionCheckpoint_key_check", ["B0_BATCH_COMMITTED"]);
 });
