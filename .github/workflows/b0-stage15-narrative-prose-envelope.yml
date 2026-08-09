@@ -1,0 +1,476 @@
+name: B0 Stage 15 Narrative Prose Authority Envelope Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage15-narrative-prose-envelope.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage15-narrative-prose-envelope
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage15-narrative-prose-envelope",
+              description: `narrative prose authority repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact remote baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "e345180fd462e00a07b30e774d276c136e391c99"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage15-narrative-prose-envelope.yml"
+          test "$(git hash-object apps/openovel-runtime/src/b0-narrative-service.ts)" = "2e060048b9386c3bc080b469277b82a85421e203"
+          test "$(git hash-object apps/openovel-runtime/src/provider.ts)" = "24470e15cd43629be09589520cb9fee450e94974"
+          test "$(git hash-object apps/openovel-runtime/tests/b0-narrative-service.spec.ts)" = "41ec39a1047108576cb3e3caf950f57740cd69b8"
+          test "$(git hash-object apps/openovel-runtime/tests/openovel-first.spec.ts)" = "5c39523644a8eb2a1d2ba1c95c53d1d27cf0bd1d"
+
+      - name: Narrow model authority to prose and bind the envelope server-side
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          service = Path("apps/openovel-runtime/src/b0-narrative-service.ts")
+          source = service.read_text(encoding="utf-8")
+          old = '''export class ProviderB0NarrativeGeneratorV1 implements B0NarrativeGeneratorV1 {
+            constructor(private readonly provider: OpenNovelProvider) {}
+
+            async generate(input: B0NarrativeInputV1): Promise<B0NarrativeOutputV1> {
+              const result = await this.provider.generate({
+                profile: "narrator",
+                messages: [
+                  {
+                    role: "system",
+                    content: [
+                      "Render only the committed, recipient-safe structured results supplied by the server.",
+                      "Do not invent facts, outcomes, resources, relationships, capabilities, knowledge or hidden identities.",
+                      "Return strict JSON matching the requested schema.",
+                      "Copy claims, outcomeAssertions and changeAssertions exactly from the input.",
+                      "All authoritativeFacts and mutation/grant arrays must be empty.",
+                    ].join("\\n"),
+                  },
+                  {
+                    role: "user",
+                    content: JSON.stringify(input),
+                  },
+                ],
+                temperature: 0.1,
+                maxTokens: 1_800,
+                json: true,
+                jsonSchema: {
+                  name: "b0_narrative_output_v1",
+                  schema: b0NarrativeOutputJsonSchemaV1(),
+                },
+                stream: false,
+              });
+              try {
+                return JSON.parse(jsonrepair(result.text)) as B0NarrativeOutputV1;
+              } catch (error) {
+                throw new B0NarrativeRuntimeErrorV1(
+                  "NARRATIVE_PROVIDER_OUTPUT_INVALID",
+                  `Narrative provider returned invalid JSON: ${(error as Error).message}`,
+                );
+              }
+            }
+          }
+          '''.replace("          ", "")
+          new = '''export class ProviderB0NarrativeGeneratorV1 implements B0NarrativeGeneratorV1 {
+            constructor(private readonly provider: OpenNovelProvider) {}
+
+            async generate(input: B0NarrativeInputV1): Promise<B0NarrativeOutputV1> {
+              const result = await this.provider.generate({
+                profile: "narrator",
+                messages: [
+                  {
+                    role: "system",
+                    content: [
+                      "You are a deterministic narrative renderer, not a rules engine.",
+                      "Return exactly one JSON object whose only field is prose.",
+                      "Write two to four concise sentences in the requested locale.",
+                      "Every factual statement must be a paraphrase of the supplied recipient-safe results.",
+                      "Do not repeat input keys, identifiers, hashes or schema metadata.",
+                      "Do not invent facts, outcomes, resources, relationships, capabilities, knowledge or hidden identities.",
+                      "Do not identify an undisclosed source actor.",
+                    ].join("\\n"),
+                  },
+                  {
+                    role: "user",
+                    content: JSON.stringify(b0NarrativeProseBriefV1(input)),
+                  },
+                ],
+                temperature: 0,
+                maxTokens: 500,
+                json: true,
+                jsonSchema: {
+                  name: "b0_narrative_prose_v1",
+                  schema: b0NarrativeProseJsonSchemaV1(),
+                },
+                stream: false,
+              });
+              try {
+                const parsed = JSON.parse(jsonrepair(result.text)) as Record<string, unknown>;
+                if (!parsed || Array.isArray(parsed) || typeof parsed.prose !== "string") {
+                  throw new Error("response must contain a prose string");
+                }
+                return assembleB0NarrativeOutputV1(input, parsed.prose);
+              } catch (error) {
+                throw new B0NarrativeRuntimeErrorV1(
+                  "NARRATIVE_PROVIDER_OUTPUT_INVALID",
+                  `Narrative provider returned invalid JSON: ${(error as Error).message}`,
+                );
+              }
+            }
+          }
+          '''.replace("          ", "")
+          if source.count(old) != 1:
+              raise SystemExit(f"narrative generator anchor count={source.count(old)}")
+          source = source.replace(old, new, 1)
+          addition = '''
+          export function b0NarrativeProseJsonSchemaV1(): Record<string, unknown> {
+            return {
+              type: "object",
+              additionalProperties: false,
+              required: ["prose"],
+              properties: {
+                prose: { type: "string", minLength: 20, maxLength: 6_000 },
+              },
+            };
+          }
+
+          function b0NarrativeProseBriefV1(input: B0NarrativeInputV1): Record<string, unknown> {
+            return {
+              schemaVersion: "b0-narrative-prose-brief-v1",
+              locale: input.locale,
+              styleDirectives: [...input.styleDirectives],
+              allowedActorLabels: [...input.allowedActorLabels],
+              results: input.deliveries.map((delivery) => ({
+                resultKind: delivery.resultKind,
+                summary: delivery.summary,
+                outcomeStatus: delivery.outcomeStatus,
+                changes: delivery.changes.map((change) => ({
+                  kind: change.kind,
+                  operation: change.operation,
+                  numericDelta: change.numericDelta,
+                })),
+                reasons: delivery.explanation.reasons.map((reason) => reason.summary),
+                sourceDisclosure: delivery.sourceDisclosure === "FULL" ? "DISCLOSED" : "UNDISCLOSED",
+              })),
+            };
+          }
+
+          function assembleB0NarrativeOutputV1(input: B0NarrativeInputV1, prose: string): B0NarrativeOutputV1 {
+            const revealedOriginActorIds = [...new Set(input.deliveries
+              .filter((delivery) => delivery.sourceDisclosure === "FULL")
+              .flatMap((delivery) => delivery.disclosedOriginActorIds))].sort();
+            return {
+              schemaVersion: "b0-narrative-output-v1",
+              inputHash: input.inputHash,
+              guidanceVersion: input.guidanceVersion,
+              prose: prose.trim(),
+              sourceResultIds: input.deliveries.map((delivery) => delivery.resultId),
+              claims: input.deliveries.map((delivery) => ({
+                sourceResultId: delivery.resultId,
+                statement: delivery.summary,
+              })),
+              outcomeAssertions: input.deliveries
+                .filter((delivery) => delivery.outcomeStatus !== null)
+                .map((delivery) => ({
+                  sourceResultId: delivery.resultId,
+                  outcomeStatus: delivery.outcomeStatus!,
+                })),
+              changeAssertions: input.deliveries.flatMap((delivery) => delivery.changes.map((change, changeIndex) => ({
+                sourceResultId: delivery.resultId,
+                changeIndex,
+                kind: change.kind,
+                operation: change.operation,
+                numericDelta: change.numericDelta,
+              }))),
+              revealedOriginActorIds,
+              authoritativeFacts: [],
+              stateMutations: [],
+              relationshipMutations: [],
+              capabilityMutations: [],
+              knowledgeGrants: [],
+            };
+          }
+          '''.replace("          ", "")
+          schema_anchor = '\nexport function b0NarrativeOutputJsonSchemaV1(): Record<string, unknown> {'
+          if source.count(schema_anchor) != 1:
+              raise SystemExit(f"narrative schema anchor count={source.count(schema_anchor)}")
+          service.write_text(source.replace(schema_anchor, addition + schema_anchor, 1), encoding="utf-8")
+
+          provider = Path("apps/openovel-runtime/src/provider.ts")
+          source = provider.read_text(encoding="utf-8")
+          old = '''function supportsStructuredOutputs(baseUrl: string, model: string) {
+            const host = new URL(baseUrl).hostname.toLowerCase();
+            if (!host.includes("siliconflow")) return false;
+            // SiliconFlow exposes JSON Schema for supported models, but GLM-5.x rejects
+            // response_format at transport level. The complete schema remains embedded
+            // in the Reviewer contract and the response is validated after generation.
+            return !/^zai-org\\/GLM-5(?:\\.|$)/i.test(model);
+          }
+          '''.replace("          ", "")
+          new = '''function supportsStructuredOutputs(baseUrl: string, model: string) {
+            const host = new URL(baseUrl).hostname.toLowerCase();
+            // The isolated engineering provider uses Ollama's OpenAI-compatible endpoint,
+            // which accepts response_format=json_schema on loopback. Keep this capability
+            // narrow so an arbitrary third-party compatible endpoint is not overclaimed.
+            if (isLoopbackHost(host)) return true;
+            if (!host.includes("siliconflow")) return false;
+            // SiliconFlow exposes JSON Schema for supported models, but GLM-5.x rejects
+            // response_format at transport level. The complete schema remains embedded
+            // in the Reviewer contract and the response is validated after generation.
+            return !/^zai-org\\/GLM-5(?:\\.|$)/i.test(model);
+          }
+
+          function isLoopbackHost(host: string) {
+            return host === "localhost" || host === "::1" || /^127(?:\\.\\d{1,3}){3}$/u.test(host);
+          }
+          '''.replace("          ", "")
+          if source.count(old) != 1:
+              raise SystemExit(f"provider structured-output anchor count={source.count(old)}")
+          provider.write_text(source.replace(old, new, 1), encoding="utf-8")
+
+          service_spec = Path("apps/openovel-runtime/tests/b0-narrative-service.spec.ts")
+          source = service_spec.read_text(encoding="utf-8")
+          old = '''test("C6 provider adapter requests strict JSON and repairs a JSON response before validation", async () => {
+            const input = narrativeInput();
+            let request: ProviderRequest | null = null;
+            const provider: OpenNovelProvider = {
+              describe: () => ({ provider: "test", model: "test", configured: true }),
+              generate: async (value) => {
+                request = value;
+                const serialized = JSON.stringify(validOutput(input));
+                return {
+                  text: serialized.slice(0, -1) + ",}",
+                  model: "test",
+                  usage: { inputTokens: 1, outputTokens: 1 },
+                  latencyMs: 1,
+                };
+              },
+            };
+            const generated = await new ProviderB0NarrativeGeneratorV1(provider).generate(input);
+            assert.equal(request?.profile, "narrator");
+            assert.equal(request?.json, true);
+            assert.equal(request?.jsonSchema?.name, "b0_narrative_output_v1");
+            assert.equal(generated.inputHash, input.inputHash);
+          });
+          '''.replace("          ", "")
+          new = '''test("C6 provider adapter delegates prose only and assembles the immutable authority envelope server-side", async () => {
+            const input = narrativeInput();
+            let request: ProviderRequest | null = null;
+            const provider: OpenNovelProvider = {
+              describe: () => ({ provider: "test", model: "test", configured: true }),
+              generate: async (value) => {
+                request = value;
+                return {
+                  text: '{"prose":"The committed plan opens a narrow path, while the next decision remains entirely yours.","inputHash":"smuggled"}',
+                  model: "test",
+                  usage: { inputTokens: 1, outputTokens: 1 },
+                  latencyMs: 1,
+                };
+              },
+            };
+            const generated = await new ProviderB0NarrativeGeneratorV1(provider).generate(input);
+            assert.equal(request?.profile, "narrator");
+            assert.equal(request?.json, true);
+            assert.equal(request?.jsonSchema?.name, "b0_narrative_prose_v1");
+            assert.deepEqual(request?.jsonSchema?.schema, {
+              type: "object",
+              additionalProperties: false,
+              required: ["prose"],
+              properties: { prose: { type: "string", minLength: 20, maxLength: 6_000 } },
+            });
+            assert.equal(request?.temperature, 0);
+            assert.equal(request?.maxTokens, 500);
+            const brief = String(request?.messages[1]?.content || "");
+            assert.match(brief, /b0-narrative-prose-brief-v1/u);
+            assert.doesNotMatch(brief, new RegExp(input.inputHash, "u"));
+            assert.doesNotMatch(brief, new RegExp(input.commitHash, "u"));
+            assert.doesNotMatch(brief, new RegExp(input.resolutionHash, "u"));
+            assert.doesNotMatch(brief, /internal settlement/u);
+            assert.deepEqual(generated, validOutput(
+              input,
+              "The committed plan opens a narrow path, while the next decision remains entirely yours.",
+            ));
+          });
+          '''.replace("          ", "")
+          if source.count(old) != 1:
+              raise SystemExit(f"narrative service test anchor count={source.count(old)}")
+          service_spec.write_text(source.replace(old, new, 1), encoding="utf-8")
+
+          provider_spec = Path("apps/openovel-runtime/tests/openovel-first.spec.ts")
+          source = provider_spec.read_text(encoding="utf-8")
+          marker = 'test("SiliconFlow GLM keeps schema-guided plain transport and caps hidden thinking", async () => {'
+          addition = '''test("loopback OpenAI-compatible providers receive the requested JSON Schema", async () => {
+            let sent: Record<string, unknown> = {};
+            const schema = {
+              type: "object",
+              additionalProperties: false,
+              required: ["prose"],
+              properties: { prose: { type: "string" } },
+            };
+            const provider = new OpenAICompatibleProvider({
+              apiKey: "test-key",
+              baseUrl: "http://127.0.0.1:11434/v1",
+              narratorModel: "qwen2.5:1.5b",
+              optionsModel: "qwen2.5:1.5b",
+              storykeeperModel: "qwen2.5:1.5b",
+              timeoutMs: 1_000,
+              fetchImpl: async (_url, init) => {
+                sent = JSON.parse(String(init?.body || "{}")) as Record<string, unknown>;
+                return new Response(JSON.stringify({
+                  model: "qwen2.5:1.5b",
+                  choices: [{ message: { content: '{"prose":"A safe concise result."}' }, finish_reason: "stop" }],
+                  usage: { prompt_tokens: 10, completion_tokens: 8 },
+                }), { status: 200, headers: { "content-type": "application/json" } });
+              },
+            });
+            await provider.generate({
+              profile: "narrator",
+              messages: [{ role: "user", content: "render" }],
+              temperature: 0,
+              maxTokens: 500,
+              json: true,
+              jsonSchema: { name: "b0_narrative_prose_v1", schema },
+              stream: false,
+            });
+            assert.deepEqual(sent.response_format, {
+              type: "json_schema",
+              json_schema: { name: "b0_narrative_prose_v1", schema },
+            });
+          });
+
+          '''.replace("          ", "")
+          if source.count(marker) != 1:
+              raise SystemExit(f"provider test insertion count={source.count(marker)}")
+          provider_spec.write_text(source.replace(marker, addition + marker, 1), encoding="utf-8")
+          PY
+          git diff --check
+          grep -F 'name: "b0_narrative_prose_v1"' apps/openovel-runtime/src/b0-narrative-service.ts
+          grep -F 'return assembleB0NarrativeOutputV1(input, parsed.prose);' apps/openovel-runtime/src/b0-narrative-service.ts
+          grep -F 'if (isLoopbackHost(host)) return true;' apps/openovel-runtime/src/provider.ts
+          grep -F 'immutable authority envelope server-side' apps/openovel-runtime/tests/b0-narrative-service.spec.ts
+
+      - name: Frozen install and OpenNovel verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter @apps/openovel-runtime typecheck
+          pnpm --filter @apps/openovel-runtime test:b0-runtime
+          pnpm --filter @apps/openovel-runtime test
+          pnpm --filter @apps/openovel-runtime build
+
+      - name: Commit and push the verified product repair
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          remote_before="$(git rev-parse origin/$GITHUB_REF_NAME)"
+          test "$remote_before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/openovel-runtime/src/b0-narrative-service.ts \
+            apps/openovel-runtime/src/provider.ts \
+            apps/openovel-runtime/tests/b0-narrative-service.spec.ts \
+            apps/openovel-runtime/tests/openovel-first.spec.ts
+          git rm .github/workflows/b0-stage15-narrative-prose-envelope.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage15-narrative-prose-envelope.yml
+          apps/openovel-runtime/src/b0-narrative-service.ts
+          apps/openovel-runtime/src/provider.ts
+          apps/openovel-runtime/tests/b0-narrative-service.spec.ts
+          apps/openovel-runtime/tests/openovel-first.spec.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): bind narrative authority outside the model"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          remote_after="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | awk '{print $1}')"
+          test "$remote_after" = "$local_head"
+          printf '{\n  "schemaVersion": 1,\n  "localHead": "%s",\n  "remoteTipBeforePush": "%s",\n  "remoteTipAfterPush": "%s",\n  "sourceRunId": "%s"\n}\n' \
+            "$local_head" "$remote_before" "$remote_after" "$GITHUB_RUN_ID" > /tmp/b0-stage15-push-receipt.json
+          echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
+
+      - name: Upload push receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-stage15-push-receipt-${{ steps.push.outputs.remote_after }}
+          path: /tmp/b0-stage15-push-receipt.json
+          retention-days: 14
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PRODUCT_SHA: ${{ steps.push.outputs.remote_after }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage15-narrative-prose-envelope",
+              description: `narrative prose authority repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (success && process.env.PRODUCT_SHA) {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: process.env.PRODUCT_SHA,
+                state: "success",
+                context: "b0/narrative-authority-envelope",
+                description: `verified product repair from ${context.runId}`,
+                target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              });
+            }
+            if (!success) core.setFailed("B0 narrative prose authority repair failed");
