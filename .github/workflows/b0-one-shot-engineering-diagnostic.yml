@@ -1,0 +1,288 @@
+name: B0 One-Shot Engineering Acceptance Diagnostic
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-engineering-diagnostic.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-engineering-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+      B0_EVIDENCE_ROOT: .artifacts/b0-engineering-diagnostic/${{ github.sha }}
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Publish diagnostic locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/engineering-diagnostic",
+              description: `engineering-only diagnostic running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact fast-forward starting point
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "7a6a556c98d5c3269b3bb947873f42e2466174e9"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-one-shot-engineering-diagnostic.yml"
+          test "$(git ls-tree -r --name-only HEAD -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9 | wc -l | tr -d ' ')" = "0"
+
+      - name: Frozen install and exact runtime build
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web build
+
+      - name: Prepare isolated engineering database and provider
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
+
+      - name: Execute engineering-only real flow and retain its real exit code
+        id: acceptance
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p "$B0_EVIDENCE_ROOT/diagnostic"
+          set +e
+          pnpm test:b0:real-acceptance >"$B0_EVIDENCE_ROOT/diagnostic/acceptance-console.log" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$B0_EVIDENCE_ROOT/diagnostic/acceptance-exit-code.txt"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Capture provider proof without converting failure to PASS
+        id: provider
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof >"$B0_EVIDENCE_ROOT/diagnostic/provider-proof.log" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$B0_EVIDENCE_ROOT/diagnostic/provider-proof-exit-code.txt"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Capture sanitized runtime and database diagnosis before cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$B0_EVIDENCE_ROOT/diagnostic"
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json, os, re, subprocess
+          from pathlib import Path
+
+          root = Path(os.environ["B0_EVIDENCE_ROOT"])
+          diag = root / "diagnostic"
+          diag.mkdir(parents=True, exist_ok=True)
+          console = (diag / "acceptance-console.log").read_text(encoding="utf-8", errors="replace") if (diag / "acceptance-console.log").exists() else ""
+
+          error_lines = []
+          for line in console.splitlines():
+              if re.search(r"(?:FAIL|TIMEOUT|Error:|Prisma|constraint|No post-warmup|ECONN|status=|worker|lease|outbox)", line, re.I):
+                  error_lines.append(line[-2000:])
+          error_lines = error_lines[-250:]
+
+          schema = os.environ.get("B0_ACCEPTANCE_SCHEMA", "")
+          db_url = os.environ.get("DATABASE_URL", "")
+          snapshots = {}
+          queries = {
+              "actionWindows": 'SELECT id, "runId", sequence, status, "closingReason", "deadlineAt", "settlementLeaseOwner", "settlementLeaseExpiresAt", "createdAt", "updatedAt" FROM "ActionWindow" ORDER BY sequence, "createdAt"',
+              "participants": 'SELECT id, "actionWindowId", "roleId", "mainStatus", "mainActionId", "completedAt", "updatedAt" FROM "ActionWindowParticipant" ORDER BY "actionWindowId", "roleId"',
+              "actions": 'SELECT id, "runId", "roleId", "actionWindowId", "actionSlot", status, visibility, "createdAt", "updatedAt" FROM "PlayerAction" ORDER BY "createdAt"',
+              "workflows": 'SELECT id, "runId", "actionWindowId", status, attempt, "leaseOwner", "leaseExpiresAt", "nextAttemptAt", "lastErrorCode", "createdAt", "updatedAt" FROM "ResolutionWorkflow" ORDER BY "createdAt"',
+              "checkpoints": 'SELECT id, "workflowId", stage, status, attempt, "lastErrorCode", "createdAt", "updatedAt" FROM "ResolutionCheckpoint" ORDER BY "createdAt"',
+              "outbox": 'SELECT id, "runId", "actionWindowId", kind, status, attempt, "leaseOwner", "leaseExpiresAt", "nextAttemptAt", "lastErrorCode", "createdAt", "updatedAt" FROM "StoryTaskOutbox" ORDER BY "createdAt"',
+              "narrativeEntries": 'SELECT id, "runId", "actorId", kind, visibility, "sourceEventId", "createdAt" FROM "NarrativeEntry" ORDER BY "createdAt"',
+              "deliveries": 'SELECT id, "runId", "eventId", "recipientActorId", status, "createdAt", "updatedAt" FROM "EventDelivery" ORDER BY "createdAt"',
+              "run": 'SELECT id, status, "worldSequence", "strategyVersion", "updatedAt" FROM "StoryRun" ORDER BY "createdAt"',
+          }
+          if db_url and schema:
+              for name, query in queries.items():
+                  wrapped = f'SET search_path TO "{schema}"; COPY ({query}) TO STDOUT WITH (FORMAT csv, HEADER true)'
+                  proc = subprocess.run(["psql", db_url, "-v", "ON_ERROR_STOP=1", "-c", wrapped], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                  snapshots[name] = {"exitCode": proc.returncode, "csv": proc.stdout[-120000:]}
+          else:
+              snapshots["error"] = "database environment was unavailable to the diagnostic step"
+
+          process_logs = {}
+          for candidate in sorted(root.rglob("*.log")):
+              if candidate == diag / "acceptance-console.log":
+                  continue
+              try:
+                  text = candidate.read_text(encoding="utf-8", errors="replace")
+              except Exception:
+                  continue
+              process_logs[str(candidate.relative_to(root))] = text[-80000:]
+
+          result = {
+              "schemaVersion": 1,
+              "classification": "PASS_ENGINEERING_ONLY_DIAGNOSTIC_NOT_FORMAL_C8",
+              "testedSha": os.environ.get("GITHUB_SHA"),
+              "workflowRunId": os.environ.get("GITHUB_RUN_ID"),
+              "acceptanceExitCode": int((diag / "acceptance-exit-code.txt").read_text().strip() or "-1"),
+              "providerProofExitCode": int((diag / "provider-proof-exit-code.txt").read_text().strip() or "-1"),
+              "schemaName": schema,
+              "errorLines": error_lines,
+              "databaseSnapshots": snapshots,
+              "processLogTails": process_logs,
+          }
+          (diag / "diagnosis.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Clean isolated engineering infrastructure
+        id: cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup >"$B0_EVIDENCE_ROOT/diagnostic/cleanup.log" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$B0_EVIDENCE_ROOT/diagnostic/cleanup-exit-code.txt"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Redact and independently scan the diagnostic bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib, json, os, re
+          from pathlib import Path
+
+          root = Path(os.environ["B0_EVIDENCE_ROOT"])
+          findings = []
+          patterns = {
+              "postgres_url": re.compile(r"postgres(?:ql)?://[^\s\"'<>]+", re.I),
+              "bearer": re.compile(r"\bBearer\s+[A-Za-z0-9._~+/-]{12,}", re.I),
+              "jwt": re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b"),
+              "api_key_assignment": re.compile(r"(?:API_KEY|TOKEN|PASSWORD|COOKIE)\s*[:=]\s*[\"']?(?!\*{3,}|\[REDACTED\]|<redacted>)[^\s\"']{12,}", re.I),
+          }
+          files = []
+          for path in sorted(p for p in root.rglob("*") if p.is_file()):
+              data = path.read_bytes()
+              rel = str(path.relative_to(root))
+              files.append({"path": rel, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+              if b"\x00" in data[:8192]:
+                  continue
+              text = data.decode("utf-8", errors="replace")
+              for kind, pattern in patterns.items():
+                  if pattern.search(text):
+                      findings.append({"path": rel, "kind": kind})
+          report = {"status": "PASS" if not findings else "FAIL", "findingCount": len(findings), "findings": findings, "files": files}
+          (root / "diagnostic" / "redaction-scan.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+          if findings:
+              raise SystemExit("diagnostic bundle failed independent credential scan")
+          PY
+
+      - name: Commit the sanitized diagnostic stage as an ordinary fast-forward
+        shell: bash
+        env:
+          ACCEPTANCE_EXIT: ${{ steps.acceptance.outputs.exit_code }}
+          PROVIDER_EXIT: ${{ steps.provider.outputs.exit_code }}
+          CLEANUP_EXIT: ${{ steps.cleanup.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          destination="docs/auto-execute/diagnostics/b0/engineering/${GITHUB_SHA}"
+          mkdir -p "$destination"
+          cp -a "$B0_EVIDENCE_ROOT/diagnostic/." "$destination/"
+          cat > "$destination/README.md" <<EOF
+          # B0 engineering-only real-flow diagnostic
+
+          - testedSha: \`${GITHUB_SHA}\`
+          - workflowRunId: \`${GITHUB_RUN_ID}\`
+          - acceptanceExitCode: \`${ACCEPTANCE_EXIT}\`
+          - providerProofExitCode: \`${PROVIDER_EXIT}\`
+          - cleanupExitCode: \`${CLEANUP_EXIT}\`
+          - databaseTier: official self-hosted \`supabase/postgres\`
+          - classification: \`PASS_ENGINEERING_ONLY_DIAGNOSTIC_NOT_FORMAL_C8\`
+          - formalC8: not claimed
+          - productionDataAccess: forbidden and not performed
+          EOF
+          git rm .github/workflows/b0-one-shot-engineering-diagnostic.yml
+          git add "$destination"
+          git diff --cached --check
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(b0): capture engineering real-flow blocker"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish diagnostic outcome without claiming acceptance PASS
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          ACCEPTANCE_EXIT: ${{ steps.acceptance.outputs.exit_code }}
+          CLEANUP_EXIT: ${{ steps.cleanup.outputs.exit_code }}
+        with:
+          script: |
+            const captured = process.env.CLEANUP_EXIT === "0";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: captured ? "success" : "failure",
+              context: "b0/engineering-diagnostic",
+              description: `diagnostic captured; acceptance exit ${process.env.ACCEPTANCE_EXIT} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!captured) core.setFailed("engineering diagnostic cleanup or capture failed");
