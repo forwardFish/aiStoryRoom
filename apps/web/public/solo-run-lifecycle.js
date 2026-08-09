@@ -1,3 +1,12 @@
+import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260806-opening-sequence-v1";
+import { installSoloEndgamePresentationV1 } from "./solo-endgame-presentation-v1.js?v=20260809-authoritative-v1";
+
+// app.js imports this module before it asks the already-created Story V2
+// storage instance to restore. Patching the class prototype here therefore
+// replaces the completed OpenNovel placeholder with the authoritative Result
+// API projection without changing the existing three-column game layout.
+installSoloEndgamePresentationV1(ContinuousStoryV2LegacyStorage);
+
 export function soloWorldId(view) {
   const candidates = [
     view?.run?.storyId,
