@@ -388,8 +388,10 @@ export class B0SettlementPipelineService {
     const controlsByRole = new Map(run.roleControls.map((control) => [control.roleId, control]));
     for (const role of run.roles) {
       if (controlsByRole.has(role.id)) continue;
-      const control = await this.prisma.roleControl.create({
-        data: {
+      const control = await this.prisma.roleControl.upsert({
+        where: { runId_roleId: { runId, roleId: role.id } },
+        update: {},
+        create: {
           runId,
           roleId: role.id,
           mode: role.isAiControlled ? "AI_ACTIVE" : "HUMAN_ACTIVE",
@@ -815,11 +817,15 @@ export class B0SettlementPipelineService {
       });
       if (current && !current.actionWindow) return current;
     }
-    return this.prisma.sceneNode.create({
-      data: {
+    const chapterIndex = Math.max(1, input.currentChapter);
+    const nodeIndex = Math.max(1, input.latestNodeIndex + 1);
+    return this.prisma.sceneNode.upsert({
+      where: { runId_chapterIndex_nodeIndex: { runId: input.runId, chapterIndex, nodeIndex } },
+      update: {},
+      create: {
         runId: input.runId,
-        chapterIndex: Math.max(1, input.currentChapter),
-        nodeIndex: Math.max(1, input.latestNodeIndex + 1),
+        chapterIndex,
+        nodeIndex,
         title: `Shared situation ${input.ordinal}`,
         publicNarration: "A new shared situation opens. Every role may negotiate, investigate, and commit one primary plan before the deadline.",
         nodeGoal: "Commit one bounded primary plan to the synchronized settlement.",

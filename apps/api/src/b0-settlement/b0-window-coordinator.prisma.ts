@@ -483,7 +483,7 @@ export class PrismaB0WindowFreezeStoreV1 implements B0WindowFreezeStoreV1 {
       guardStatus: "ok",
       auditStatus: "ok",
       status: "b0_locked",
-      actorKind: existing?.actorKind || "SYSTEM_OR_ACTOR",
+      actorKind: existing?.actorKind || "TIMEOUT_FALLBACK",
       controlEpoch: existing?.controlEpoch || 0,
       requestHash: hashCanonicalB0Value(input.intent),
       visibility: input.intent.visibilityIntent.type,
