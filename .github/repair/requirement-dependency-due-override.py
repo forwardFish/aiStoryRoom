@@ -105,8 +105,7 @@ text = replace_once(
       ...(condition ? { condition } : {}),
       ...(bypassWhen.length
         ? {
-          bypassWhen: [...bypassWhen].sort()
-            as PartOneRequirementDependency["bypassWhen"],
+          bypassWhen: [...bypassWhen].sort() as PartOneRequirementDependency["bypassWhen"],
         }
         : {}),
     });''',
