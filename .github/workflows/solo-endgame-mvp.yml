@@ -13,12 +13,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify:
+  verify-stage-a:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
-      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
       NODE_ENV: test
     steps:
       - name: Check out exact branch commit
@@ -43,63 +41,65 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
-      - name: Run stage verification
+      - name: Run Stage A verification
         shell: bash
         run: |
           set -uo pipefail
-          mkdir -p artifacts scripts/test-reports
-          : > artifacts/solo-endgame-commands.log
-          : > artifacts/solo-endgame-summary.tsv
+          mkdir -p artifacts
+          : > artifacts/solo-endgame-stage-a.log
+          : > artifacts/solo-endgame-stage-a-summary.tsv
           overall=0
 
           run_cmd() {
             local label="$1"
             shift
-            echo "===== ${label} =====" | tee -a artifacts/solo-endgame-commands.log
+            echo "===== ${label} =====" | tee -a artifacts/solo-endgame-stage-a.log
+            echo "command=$*" | tee -a artifacts/solo-endgame-stage-a.log
             set +e
-            "$@" 2>&1 | tee -a artifacts/solo-endgame-commands.log
+            "$@" 2>&1 | tee -a artifacts/solo-endgame-stage-a.log
             local code=${PIPESTATUS[0]}
             set -e
-            printf '%s\t%s\n' "$label" "$code" | tee -a artifacts/solo-endgame-summary.tsv
+            printf '%s\t%s\n' "$label" "$code" | tee -a artifacts/solo-endgame-stage-a-summary.tsv
             if [ "$code" -ne 0 ]; then overall=1; fi
           }
 
           set -e
-          subject="$(git log -1 --pretty=%s)"
-          echo "commit=${GITHUB_SHA}" | tee -a artifacts/solo-endgame-commands.log
-          echo "subject=${subject}" | tee -a artifacts/solo-endgame-commands.log
+          echo "commit=${GITHUB_SHA}" | tee -a artifacts/solo-endgame-stage-a.log
+          echo "checkout_head=$(git rev-parse HEAD)" | tee -a artifacts/solo-endgame-stage-a.log
+          echo "branch=$(git branch --show-current)" | tee -a artifacts/solo-endgame-stage-a.log
+          echo "status_begin" | tee -a artifacts/solo-endgame-stage-a.log
+          git status --short | tee -a artifacts/solo-endgame-stage-a.log
+          echo "status_end" | tee -a artifacts/solo-endgame-stage-a.log
+          if [ -n "$(git status --porcelain)" ]; then
+            printf '%s\t%s\n' "clean-checkout" "1" | tee -a artifacts/solo-endgame-stage-a-summary.tsv
+            overall=1
+          else
+            printf '%s\t%s\n' "clean-checkout" "0" | tee -a artifacts/solo-endgame-stage-a-summary.tsv
+          fi
 
-          run_cmd "shared:typecheck" pnpm --filter @ai-story/shared typecheck
-          run_cmd "shared:endgame-contract" pnpm --filter @ai-story/shared test:endgame
           run_cmd "openovel:typecheck" pnpm --filter @apps/openovel-runtime typecheck
           run_cmd "openovel:test" pnpm --filter @apps/openovel-runtime test
           run_cmd "openovel:build" pnpm --filter @apps/openovel-runtime build
 
-          if [[ "$subject" == feat\(api\):* || "$subject" == fix\(api\):* || "$subject" == test\(solo-endgame\):* ]]; then
-            run_cmd "api:test" pnpm --filter @apps/api test
-            run_cmd "api:build" pnpm --filter @apps/api build
-          fi
+          run_cmd "api:typecheck" pnpm --filter @apps/api typecheck
+          run_cmd "api:solo-endgame-contract" pnpm --filter @apps/api exec node --import tsx --test src/openovel-adapter/*.spec.ts
+          run_cmd "api:test" pnpm --filter @apps/api test
+          run_cmd "api:build" pnpm --filter @apps/api build
 
-          if [[ "$subject" == feat\(web\):* || "$subject" == test\(solo-endgame\):* ]]; then
-            run_cmd "web:test" pnpm --filter @apps/web test
-            run_cmd "web:build" pnpm --filter @apps/web build
-          fi
+          run_cmd "web:solo-endgame-contract" pnpm --filter @apps/web exec node --test --test-isolation=none tests/solo-endgame-presentation-v1.test.mjs
+          run_cmd "web:test" pnpm --filter @apps/web test
+          run_cmd "web:build" pnpm --filter @apps/web build
 
-          if [[ "$subject" == test\(solo-endgame\):* ]]; then
-            run_cmd "story:v4" pnpm test:story:v4
-            run_cmd "workspace:typecheck" pnpm typecheck
-            run_cmd "solo-endgame:e2e" pnpm --filter @apps/web test:solo-endgame:mvp
-          fi
+          run_cmd "story:v4" pnpm test:story:v4
+          run_cmd "workspace:typecheck" pnpm typecheck
 
           exit "$overall"
 
-      - name: Upload exact command and product evidence
+      - name: Upload exact Stage A command logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: solo-endgame-${{ github.sha }}
-          path: |
-            artifacts/
-            scripts/test-reports/solo-endgame-mvp-*/
-          if-no-files-found: warn
+          name: solo-endgame-stage-a-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
           retention-days: 14
