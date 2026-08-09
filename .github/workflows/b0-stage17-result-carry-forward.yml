@@ -1,4 +1,4 @@
-name: B0 Stage 17 Structured Result Carry Forward
+name: B0 Stage 17 Structured Result Carry Forward V2
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-stage17-result-carry-forward
+  group: b0-stage17-result-carry-forward-v2
   cancel-in-progress: false
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/stage17-result-carry-forward",
-              description: `structured result carry-forward repair running in ${context.runId}`,
+              context: "b0/stage17-result-carry-forward-v2",
+              description: `structured result carry-forward repair v2 running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -55,31 +55,31 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "a3ce95b235050f0a8665cea94e0e99604ba29dbf"
+          test "$(git rev-parse HEAD^)" = "3c9cd18869eee512d23558a0ccc65d135f550b06"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage17-result-carry-forward.yml"
           test "$(sha256sum apps/api/src/b0-settlement/b0-window-player.service.ts | cut -d' ' -f1)" = "a45524d484bddbc281e122e33a0823b8ff4c959b5334354ab334953199766b99"
           test "$(sha256sum apps/api/src/b0-settlement/b0-window-player.core.spec.ts | cut -d' ' -f1)" = "292628bb1d31389d79e6bc32c63313d4cfd4cad27d476d25e405857ea964bec6"
 
-      - name: Apply the hash-bound result projection patch
+      - name: Apply the corrected hash-bound result projection patch
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/git/blobs/ba93796f94c157e43f700d966a182150d96acad1" --jq .content \
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/199f8247007215b7e097cdf6c666cb38f7f3896c" --jq .content \
             | tr -d '\n' \
-            | base64 -d > /tmp/b0-stage17.patch.gz.b64
-          test "$(wc -c < /tmp/b0-stage17.patch.gz.b64 | tr -d ' ')" = "1880"
-          test "$(sha256sum /tmp/b0-stage17.patch.gz.b64 | cut -d' ' -f1)" = "182f73bb6a25713a1de3342dfa32bb3df0e6f550aa003940570e45b08f1c3220"
-          base64 -d /tmp/b0-stage17.patch.gz.b64 > /tmp/b0-stage17.patch.gz
-          test "$(sha256sum /tmp/b0-stage17.patch.gz | cut -d' ' -f1)" = "e02e01a22f1b4333fa91b89a92d70ceca4bf7541c0d9e59b1d5e9cafe177cbe9"
-          gzip -dc /tmp/b0-stage17.patch.gz > /tmp/b0-stage17.patch
-          test "$(sha256sum /tmp/b0-stage17.patch | cut -d' ' -f1)" = "f5a50c8f44c5f7a4d3c3296900b5e47266aebdfebafea8459f3b7692a850e0c9"
-          git apply --check /tmp/b0-stage17.patch
-          git apply /tmp/b0-stage17.patch
+            | base64 -d > /tmp/b0-stage17-v2.patch.gz.b64
+          test "$(wc -c < /tmp/b0-stage17-v2.patch.gz.b64 | tr -d ' ')" = "1880"
+          test "$(sha256sum /tmp/b0-stage17-v2.patch.gz.b64 | cut -d' ' -f1)" = "0053dabe67ee7ade062a101dd581b266c3d73c2e09f5530dd821f4414b38462f"
+          base64 -d /tmp/b0-stage17-v2.patch.gz.b64 > /tmp/b0-stage17-v2.patch.gz
+          test "$(sha256sum /tmp/b0-stage17-v2.patch.gz | cut -d' ' -f1)" = "999c07a79df32e6d31b93072f682d7a096ec461874d3898dc3ae28336fef9a1d"
+          gzip -dc /tmp/b0-stage17-v2.patch.gz > /tmp/b0-stage17-v2.patch
+          test "$(sha256sum /tmp/b0-stage17-v2.patch | cut -d' ' -f1)" = "2e46cf7ba4f77651ac363ee2dfb4d974a9ab61725105bebf887dbc0df2119628"
+          git apply --check /tmp/b0-stage17-v2.patch
+          git apply /tmp/b0-stage17-v2.patch
           git diff --check
           test "$(sha256sum apps/api/src/b0-settlement/b0-window-player.service.ts | cut -d' ' -f1)" = "73c2524953529120120c90fcb1dc5272b519c51db028cb890e7e05ddeeb818fa"
-          test "$(sha256sum apps/api/src/b0-settlement/b0-window-player.core.spec.ts | cut -d' ' -f1)" = "701f65d811cd083a1f7018df14a884e21ddea272a2b8ddc7e2d369291308a3db"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-window-player.core.spec.ts | cut -d' ' -f1)" = "1f54959b68013655eb41ca4576bc47ef1d57408a54c674283520c8b87355e64b"
 
       - name: Frozen install and affected verification
         shell: bash
@@ -148,7 +148,7 @@ jobs:
               repo: context.repo.repo,
               sha: process.env.FINAL_SHA,
               state: "success",
-              context: "b0/stage17-result-carry-forward",
+              context: "b0/stage17-result-carry-forward-v2",
               description: `ordinary fast-forward from ${process.env.REMOTE_BEFORE.slice(0, 8)} verified in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
@@ -163,8 +163,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "failure",
-              context: "b0/stage17-result-carry-forward",
-              description: `structured result carry-forward repair failed in ${context.runId}`,
+              context: "b0/stage17-result-carry-forward-v2",
+              description: `structured result carry-forward repair v2 failed in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            core.setFailed("B0 stage 17 structured result carry-forward repair failed");
+            core.setFailed("B0 stage 17 structured result carry-forward repair v2 failed");
