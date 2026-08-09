@@ -21,13 +21,14 @@ jobs:
     env:
       NODE_ENV: test
       CANDIDATE_SHA: ${{ github.sha }}
-      EVIDENCE_DIR: artifacts/solo-endgame-stage-b
+      CLEAN_CLONE_DIR: ${{ runner.temp }}/solo-stage-b-clean-clone
+      EVIDENCE_DIR: ${{ runner.temp }}/solo-endgame-stage-b-evidence
     steps:
-      - name: Check out exact remote SHA
+      - name: Check out workflow source only
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Mark Stage B verification pending
         uses: actions/github-script@v7
@@ -43,12 +44,26 @@ jobs:
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
 
-      - name: Verify exact branch, remote SHA, and clean worktree
+      - name: Clone exact remote branch into a new directory
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf "$CLEAN_CLONE_DIR" "$EVIDENCE_DIR"
+          mkdir -p "$EVIDENCE_DIR/logs"
+          git clone --branch "$GITHUB_REF_NAME" --single-branch \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "$CLEAN_CLONE_DIR" \
+            2>&1 | tee "$EVIDENCE_DIR/logs/00-clean-clone.log"
+
+      - name: Verify clone HEAD, tracking ref, ls-remote, and clean worktree
         id: git-proof
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$EVIDENCE_DIR/logs"
+          cd "$CLEAN_CLONE_DIR"
+          git fetch origin --prune
           local_sha="$(git rev-parse HEAD)"
           tracking_sha="$(git rev-parse "origin/${GITHUB_REF_NAME}")"
           ls_remote_raw="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}")"
@@ -59,7 +74,7 @@ jobs:
           test "$remote_sha" = "$GITHUB_SHA"
           test -z "$status_short"
           {
-            printf 'WORKDIR=%s\n' "$GITHUB_WORKSPACE"
+            printf 'WORKDIR=%s\n' "$CLEAN_CLONE_DIR"
             printf 'BRANCH=%s\n' "$GITHUB_REF_NAME"
             printf 'LOCAL_HEAD=%s\n' "$local_sha"
             printf 'TRACKING_HEAD=%s\n' "$tracking_sha"
@@ -77,23 +92,27 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install frozen workspace
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm install --frozen-lockfile 2>&1 | tee "$EVIDENCE_DIR/logs/01-install.log"
 
       - name: Generate Prisma client without migration
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm db:generate 2>&1 | tee "$EVIDENCE_DIR/logs/02-db-generate.log"
 
       - name: Stage B focused concurrency, recovery, and integrity contracts
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/api exec node --import tsx --test \
             src/openovel-adapter/openovel-stage-b-concurrency.spec.ts \
             src/openovel-adapter/openovel-stage-b-recovery.spec.ts \
@@ -104,66 +123,77 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee "$EVIDENCE_DIR/logs/04-runtime-typecheck.log"
 
       - name: OpenNovel Runtime test
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/openovel-runtime test 2>&1 | tee "$EVIDENCE_DIR/logs/05-runtime-test.log"
 
       - name: OpenNovel Runtime build
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/openovel-runtime build 2>&1 | tee "$EVIDENCE_DIR/logs/06-runtime-build.log"
 
       - name: API typecheck
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/api typecheck 2>&1 | tee "$EVIDENCE_DIR/logs/07-api-typecheck.log"
 
       - name: API test
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/api test 2>&1 | tee "$EVIDENCE_DIR/logs/08-api-test.log"
 
       - name: API build
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/api build 2>&1 | tee "$EVIDENCE_DIR/logs/09-api-build.log"
 
       - name: Web typecheck
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/web typecheck 2>&1 | tee "$EVIDENCE_DIR/logs/10-web-typecheck.log"
 
       - name: Web test
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/web test 2>&1 | tee "$EVIDENCE_DIR/logs/11-web-test.log"
 
       - name: Web build
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm --filter @apps/web build 2>&1 | tee "$EVIDENCE_DIR/logs/12-web-build.log"
 
       - name: Root typecheck
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           pnpm typecheck 2>&1 | tee "$EVIDENCE_DIR/logs/13-root-typecheck.log"
 
       - name: Git diff check
         shell: bash
         run: |
           set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
           git diff --check 2>&1 | tee "$EVIDENCE_DIR/logs/14-git-diff-check.log"
 
       - name: Record Stage B remote evidence manifest
@@ -171,12 +201,18 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$EVIDENCE_DIR"
+          clone_head="$(git -C "$CLEAN_CLONE_DIR" rev-parse HEAD 2>/dev/null || true)"
+          tracking_head="$(git -C "$CLEAN_CLONE_DIR" rev-parse "origin/${GITHUB_REF_NAME}" 2>/dev/null || true)"
+          status_short="$(git -C "$CLEAN_CLONE_DIR" status --short 2>/dev/null || true)"
           cat > "$EVIDENCE_DIR/manifest.json" <<JSON
           {
             "schemaVersion": "solo_endgame_stage_b_remote_evidence_v1",
             "repository": "${GITHUB_REPOSITORY}",
             "branch": "${GITHUB_REF_NAME}",
             "commitSha": "${GITHUB_SHA}",
+            "cleanCloneHead": "${clone_head}",
+            "trackingHead": "${tracking_head}",
+            "cleanCloneStatusShort": "${status_short}",
             "workflowRunId": "${GITHUB_RUN_ID}",
             "workflowRunAttempt": "${GITHUB_RUN_ATTEMPT}",
             "stage": "B",
@@ -190,7 +226,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: solo-endgame-stage-b-${{ github.sha }}
-          path: artifacts/solo-endgame-stage-b/
+          path: ${{ env.EVIDENCE_DIR }}/
           if-no-files-found: error
           retention-days: 14
 
@@ -205,7 +241,7 @@ jobs:
               sha: context.sha,
               state: 'success',
               context: 'solo-endgame-stage-b/clean-clone',
-              description: 'Stage B exact-SHA clean checkout and gates passed',
+              description: 'Stage B exact-SHA explicit clone and gates passed',
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
 
