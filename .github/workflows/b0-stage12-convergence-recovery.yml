@@ -1,0 +1,173 @@
+name: B0 Stage 1 and 2 Convergence Recovery
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage12-convergence-recovery.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage12-convergence-recovery
+  cancel-in-progress: false
+
+jobs:
+  converge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Publish recovery locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+              sha: context.sha, state: "pending", context: "b0/stage12-convergence",
+              description: `stage 1/2 convergence running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Verify exact candidate tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage12-convergence-recovery.yml"
+          git merge-base --is-ancestor d5905ed2661bd72635d2e2c4ce6559bc94ada6cd HEAD
+      - name: Recover stage payloads from immutable branch history
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage1_commit="$(git log -n1 --format=%H --all -- .github/workflows/b0-stage1-provenance-boundary.yml)"
+          stage2_commit="$(git log -n1 --format=%H --all -- .github/workflows/b0-stage2-managed-c8-runtime.yml)"
+          test -n "$stage1_commit"
+          test -n "$stage2_commit"
+          git show "$stage1_commit:.github/workflows/b0-stage1-provenance-boundary.yml" > /tmp/b0-stage1.yml
+          git show "$stage2_commit:.github/workflows/b0-stage2-managed-c8-runtime.yml" > /tmp/b0-stage2.yml
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+
+          stage1 = Path('/tmp/b0-stage1.yml').read_text(encoding='utf-8')
+          stage2 = Path('/tmp/b0-stage2.yml').read_text(encoding='utf-8')
+
+          engineering = Path('.github/workflows/b0-engineering-selfhosted-acceptance.yml')
+          formal = Path('.github/workflows/b0-candidate-real-acceptance.yml')
+          helper = Path('scripts/acceptance/b0-selfhosted-real-acceptance.sh')
+
+          if not engineering.exists():
+              formal.write_text(subprocess.check_output([
+                  'git', 'show', 'd5905ed2661bd72635d2e2c4ce6559bc94ada6cd:.github/workflows/b0-candidate-real-acceptance.yml'
+              ], text=True), encoding='utf-8')
+              helper.write_text(subprocess.check_output([
+                  'git', 'show', 'd5905ed2661bd72635d2e2c4ce6559bc94ada6cd:scripts/acceptance/b0-selfhosted-real-acceptance.sh'
+              ], text=True), encoding='utf-8')
+              match = re.search(r"python3 - <<'PY'\n(?P<body>.*?)\n\s*PY\n", stage1, re.S)
+              if not match:
+                  raise SystemExit('stage 1 transform payload is missing')
+              transform = Path('/tmp/b0-stage1-transform.py')
+              transform.write_text(match.group('body').replace('          ', ''), encoding='utf-8')
+              subprocess.run(['python3', str(transform)], check=True)
+
+          script = helper.read_text(encoding='utf-8')
+          idempotent = {
+              'c8 = root.parent.parent / "c8"': 'engineering = root.parent',
+              'c8.mkdir(parents=True, exist_ok=True)': 'engineering.mkdir(parents=True, exist_ok=True)',
+              '(c8 / "checkpoint.json")': '(engineering / "checkpoint.json")',
+              '"checkpoint": "B0_C8_REAL_OPERATIONS_VALIDATED"': '"checkpoint": "B0_ENGINEERING_SELFHOSTED_VALIDATED"',
+          }
+          for old, new in idempotent.items():
+              if old in script:
+                  script = script.replace(old, new, 1)
+          marker = '"checkpoint": "B0_ENGINEERING_SELFHOSTED_VALIDATED"'
+          if marker not in script:
+              raise SystemExit('engineering checkpoint marker is missing')
+          tail = script[script.index(marker):]
+          if '"status": "PASS_ENGINEERING_ONLY",' not in tail:
+              if '"status": "PASS",' not in tail:
+                  raise SystemExit('engineering status marker is missing')
+              head, tail = script.split(marker, 1)
+              tail = tail.replace('"status": "PASS",', '"status": "PASS_ENGINEERING_ONLY",', 1)
+              script = head + marker + tail
+          helper.write_text(script, encoding='utf-8')
+
+          def extract(label: str) -> str:
+              pattern = rf"cat > {re.escape(label)} <<'(?P<tag>[A-Z0-9_]+)'\n(?P<body>.*?)\n\s*(?P=tag)\n"
+              found = re.search(pattern, stage2, re.S)
+              if not found:
+                  raise SystemExit(f'missing stage 2 payload for {label}')
+              return found.group('body').replace('          ', '')
+
+          Path('scripts/acceptance/b0-managed-real-acceptance.sh').write_text(
+              extract('scripts/acceptance/b0-managed-real-acceptance.sh'), encoding='utf-8')
+          formal.write_text(extract('.github/workflows/b0-candidate-real-acceptance.yml'), encoding='utf-8')
+          Path('scripts/acceptance/b0-managed-acceptance-contract.mjs').write_text(
+              extract('scripts/acceptance/b0-managed-acceptance-contract.mjs'), encoding='utf-8')
+
+          if not Path('scripts/acceptance/b0-acceptance-provenance-contract.mjs').exists():
+              match = re.search(r"contract\.write_text\(r'''(?P<body>.*?)''', encoding='utf-8'\)", stage1, re.S)
+              if not match:
+                  raise SystemExit('stage 1 contract payload is missing')
+              Path('scripts/acceptance/b0-acceptance-provenance-contract.mjs').write_text(
+                  match.group('body'), encoding='utf-8')
+          PY
+          chmod +x scripts/acceptance/b0-selfhosted-real-acceptance.sh scripts/acceptance/b0-managed-real-acceptance.sh
+          rm -f \
+            .github/workflows/b0-stage1-provenance-boundary.yml \
+            .github/workflows/b0-stage2-managed-c8-runtime.yml \
+            .github/workflows/b0-stage2-runtime-verifier.yml
+          bash -n scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          bash -n scripts/acceptance/b0-managed-real-acceptance.sh
+          node scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          node scripts/acceptance/b0-managed-acceptance-contract.mjs
+          git diff --check
+      - name: Frozen install and exact acceptance typecheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh self-check
+          scripts/acceptance/b0-managed-real-acceptance.sh self-check
+      - name: Commit converged stage as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A .github/workflows scripts/acceptance
+          git diff --cached --check
+          test -n "$(git diff --cached --name-only)"
+          git commit -m "ci(b0): converge formal and engineering acceptance"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Publish recovery outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const ok = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+              sha: context.sha, state: ok ? "success" : "failure", context: "b0/stage12-convergence",
+              description: `stage 1/2 convergence ${ok ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+            if (!ok) core.setFailed('Stage 1/2 convergence failed');
