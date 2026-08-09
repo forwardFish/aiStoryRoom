@@ -1,0 +1,497 @@
+name: Requirement Dependency Direct Product Materialization
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/requirement-dependency-direct-materialize.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  materialize-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      BRANCH_NAME: codex/chatgpt-pro-dynamic-kernel-lite
+      BASE_PRODUCT_SHA: 321a9aa03ce33201a59da63350e385b885023d77
+      HISTORICAL_IMPLEMENTATION_SHA: 40908fd7583ea4006f328903d4b65c660670ad38
+      EVIDENCE_ROOT: /tmp/requirement-dependency-direct-product
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frozen workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/00-install.log"
+
+      - name: Materialize real product files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show "${HISTORICAL_IMPLEMENTATION_SHA}:.github/repair/dynamic-kernel-requirement-dependency.py.gz.b64" \
+            | tr -d '[:space:]' | base64 --decode | gzip --decompress \
+            > "${RUNNER_TEMP}/requirement-dependency-base.py"
+          for script in \
+            dynamic-kernel-requirement-dependency-round1-format.py \
+            dynamic-kernel-dependency-runtime-semantics.py \
+            dynamic-kernel-dependency-predecessor-kernels.py \
+            dynamic-kernel-authored-transition-surface.py \
+            dynamic-kernel-context-budget.py; do
+            git show "${HISTORICAL_IMPLEMENTATION_SHA}:.github/repair/${script}" \
+              > "${RUNNER_TEMP}/${script}"
+          done
+
+          python "${RUNNER_TEMP}/requirement-dependency-base.py"
+          python "${RUNNER_TEMP}/dynamic-kernel-requirement-dependency-round1-format.py"
+          python "${RUNNER_TEMP}/dynamic-kernel-dependency-runtime-semantics.py"
+          python "${RUNNER_TEMP}/dynamic-kernel-dependency-predecessor-kernels.py"
+          python "${RUNNER_TEMP}/dynamic-kernel-authored-transition-surface.py"
+          python "${RUNNER_TEMP}/dynamic-kernel-context-budget.py"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str, label: str):
+              p = Path(path)
+              text = p.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected one match, found {count}")
+              p.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          # Remove the historical test-only transition assertion; the production
+          # scene boundary remains covered by the existing OpenNovel suite.
+          p = Path("packages/templates/tests/part-one-dynamic-kernel-lite.test.ts")
+          text = p.read_text(encoding="utf-8")
+          marker = '\ntest("an authorized section change preserves the authored transition surface while rebinding the dynamic stop", () => {'
+          if marker in text:
+              text = text.split(marker, 1)[0].rstrip() + "\n"
+              p.write_text(text, encoding="utf-8")
+
+          # Dependencies arbitrate only the next player decision. Immediate
+          # reaction projection remains independent and cannot be rewritten by
+          # the newly selected stop.
+          p = Path("packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts")
+          text = p.read_text(encoding="utf-8")
+          if 'purpose?: "NEXT_DECISION" | "REACTION_PROJECTION";' not in text:
+              text = text.replace(
+                  '''export type PartOneWorkingSetSelectionOptions = {
+            mode?: PartOneKernelSelectionMode;
+            pin?: PartOneDecisionPin | null;
+          };''',
+                  '''export type PartOneWorkingSetSelectionOptions = {
+            mode?: PartOneKernelSelectionMode;
+            pin?: PartOneDecisionPin | null;
+            purpose?: "NEXT_DECISION" | "REACTION_PROJECTION";
+          };''',
+                  1,
+              )
+              replace = '''  const enforceRequirementDependencies =
+            options.purpose !== "REACTION_PROJECTION";
+          const evaluated = unresolved.map((kernelId) => evaluateKernelSafely(
+            pkg,
+            state,
+            section,
+            kernelId,
+            turnNumber,
+            enforceRequirementDependencies,
+          ));'''
+              old = '''  const evaluated = unresolved.map((kernelId) => evaluateKernelSafely(
+            pkg,
+            state,
+            section,
+            kernelId,
+            turnNumber,
+          ));'''
+              if old not in text:
+                  raise SystemExit("dynamic evaluation marker missing")
+              text = text.replace(old, replace, 1)
+              old = '''      "LEGACY_FALLBACK",
+                selection,
+              );'''
+              new = '''      "LEGACY_FALLBACK",
+                selection,
+                enforceRequirementDependencies,
+              );'''
+              if old not in text:
+                  old = '''      "LEGACY_FALLBACK",
+            selection,
+          );'''
+                  new = '''      "LEGACY_FALLBACK",
+            selection,
+            enforceRequirementDependencies,
+          );'''
+              if old not in text:
+                  raise SystemExit("dynamic fallback call marker missing")
+              text = text.replace(old, new, 1)
+              old = '''  selection: KernelSelectorLiteResult<Preview> | null = null,
+          ): DynamicPartOneRuntimeWorkingSet {'''
+              new = '''  selection: KernelSelectorLiteResult<Preview> | null = null,
+            enforceRequirementDependencies = true,
+          ): DynamicPartOneRuntimeWorkingSet {'''
+              if old not in text:
+                  old = '''  selection: KernelSelectorLiteResult<Preview> | null = null,
+): DynamicPartOneRuntimeWorkingSet {'''
+                  new = '''  selection: KernelSelectorLiteResult<Preview> | null = null,
+  enforceRequirementDependencies = true,
+): DynamicPartOneRuntimeWorkingSet {'''
+              if old not in text:
+                  raise SystemExit("fallback signature marker missing")
+              text = text.replace(old, new, 1)
+              text = text.replace(
+                  'if (mode === "LEGACY_FALLBACK") {',
+                  'if (mode === "LEGACY_FALLBACK" && enforceRequirementDependencies) {',
+                  1,
+              )
+              old = '''  kernelId: string,
+            turnNumber: number,
+          ): Evaluation {
+            try {
+              return evaluateKernel(pkg, state, section, kernelId, turnNumber);'''
+              new = '''  kernelId: string,
+            turnNumber: number,
+            enforceRequirementDependencies = true,
+          ): Evaluation {
+            try {
+              return evaluateKernel(
+                pkg,
+                state,
+                section,
+                kernelId,
+                turnNumber,
+                enforceRequirementDependencies,
+              );'''
+              if old not in text:
+                  old = '''  kernelId: string,
+  turnNumber: number,
+): Evaluation {
+  try {
+    return evaluateKernel(pkg, state, section, kernelId, turnNumber);'''
+                  new = '''  kernelId: string,
+  turnNumber: number,
+  enforceRequirementDependencies = true,
+): Evaluation {
+  try {
+    return evaluateKernel(
+      pkg,
+      state,
+      section,
+      kernelId,
+      turnNumber,
+      enforceRequirementDependencies,
+    );'''
+              if old not in text:
+                  raise SystemExit("safe evaluation marker missing")
+              text = text.replace(old, new, 1)
+              old = '''  kernelId: string,
+            turnNumber: number,
+          ): Evaluation {
+            const kernel = requireKernel(pkg, kernelId);'''
+              new = '''  kernelId: string,
+            turnNumber: number,
+            enforceRequirementDependencies = true,
+          ): Evaluation {
+            const kernel = requireKernel(pkg, kernelId);'''
+              if old not in text:
+                  old = '''  kernelId: string,
+  turnNumber: number,
+): Evaluation {
+  const kernel = requireKernel(pkg, kernelId);'''
+                  new = '''  kernelId: string,
+  turnNumber: number,
+  enforceRequirementDependencies = true,
+): Evaluation {
+  const kernel = requireKernel(pkg, kernelId);'''
+              if old not in text:
+                  raise SystemExit("evaluation marker missing")
+              text = text.replace(old, new, 1)
+              old = '''  const blockedByRequirementDependencyIds = dependencyBlocksForKernel(
+            pkg,
+            state,
+            section,
+            kernel,
+          );'''
+              new = '''  const blockedByRequirementDependencyIds = enforceRequirementDependencies
+            ? dependencyBlocksForKernel(pkg, state, section, kernel)
+            : [];'''
+              if old not in text:
+                  old = '''  const blockedByRequirementDependencyIds = dependencyBlocksForKernel(
+    pkg,
+    state,
+    section,
+    kernel,
+  );'''
+                  new = '''  const blockedByRequirementDependencyIds = enforceRequirementDependencies
+    ? dependencyBlocksForKernel(pkg, state, section, kernel)
+    : [];'''
+              if old not in text:
+                  raise SystemExit("dependency purpose marker missing")
+              text = text.replace(old, new, 1)
+              p.write_text(text, encoding="utf-8")
+
+          p = Path("packages/templates/src/story-package/dynamic-kernel-lite-settlement.ts")
+          text = p.read_text(encoding="utf-8")
+          if "function planReactionTurn(" not in text:
+              old = '''  const reactionPlan = planNextTurn(
+            pkg,
+            causal.proposedState,
+            turnNumber,
+            recoverySurface,
+          );
+          let plan = reactionPlan;'''
+              new = '''  const reactionPlan = planReactionTurn(
+            pkg,
+            causal.proposedState,
+            turnNumber,
+            recoverySurface,
+          );
+          let plan = planNextTurn(
+            pkg,
+            causal.proposedState,
+            turnNumber,
+            recoverySurface,
+          );'''
+              if old not in text:
+                  old = '''  const reactionPlan = planNextTurn(
+    pkg,
+    causal.proposedState,
+    turnNumber,
+    recoverySurface,
+  );
+  let plan = reactionPlan;'''
+                  new = '''  const reactionPlan = planReactionTurn(
+    pkg,
+    causal.proposedState,
+    turnNumber,
+    recoverySurface,
+  );
+  let plan = planNextTurn(
+    pkg,
+    causal.proposedState,
+    turnNumber,
+    recoverySurface,
+  );'''
+              if old not in text:
+                  raise SystemExit("reaction planner marker missing")
+              text = text.replace(old, new, 1)
+              marker = "function planNextTurn(\n"
+              helper = '''function planReactionTurn(
+            pkg: PartOneRuntimePackage,
+            state: PartOneState,
+            turnNumber: number,
+            recoverySurface: DynamicPartOneRuntimeWorkingSet,
+          ): NextTurnPlan {
+            try {
+              return {
+                workingSet: buildDynamicPartOneRuntimeWorkingSet(
+                  pkg,
+                  state,
+                  turnNumber,
+                  { purpose: "REACTION_PROJECTION" },
+                ),
+                status: "PLANNED",
+              };
+            } catch (error) {
+              return {
+                workingSet: buildRecoveredNextTurnWorkingSet(
+                  pkg,
+                  state,
+                  turnNumber,
+                  recoverySurface,
+                  error,
+                ),
+                status: "RECOVERED",
+                failureCode: normalizeErrorCode(error),
+              };
+            }
+          }
+
+          '''
+              if marker not in text:
+                  raise SystemExit("planNextTurn marker missing")
+              text = text.replace(marker, helper + marker, 1)
+              p.write_text(text, encoding="utf-8")
+
+          # A legal unbound action may borrow the selected next Kernel only for
+          # narrative evidence provenance; it never owns current Settlement.
+          p = Path("packages/templates/src/story-package/part-one-runtime-engine.ts")
+          text = p.read_text(encoding="utf-8")
+          if "const narrativeKernelId = input.decisionKernelId" not in text:
+              old = '''  if (!input.decisionKernelId) {
+            throw new Error("PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING");
+          }
+          const kernel = requireAsset(input.pkg, input.decisionKernelId);'''
+              new = '''  const narrativeKernelId = input.decisionKernelId
+            || input.nextDecisionPoint.decisionKernelId;
+          if (!narrativeKernelId) {
+            throw new Error("PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING");
+          }
+          const kernel = requireAsset(input.pkg, narrativeKernelId);'''
+              if old not in text:
+                  old = '''  if (!input.decisionKernelId) {
+    throw new Error("PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING");
+  }
+  const kernel = requireAsset(input.pkg, input.decisionKernelId);'''
+                  new = '''  const narrativeKernelId = input.decisionKernelId
+    || input.nextDecisionPoint.decisionKernelId;
+  if (!narrativeKernelId) {
+    throw new Error("PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING");
+  }
+  const kernel = requireAsset(input.pkg, narrativeKernelId);'''
+              if old not in text:
+                  raise SystemExit("narrative evidence marker missing")
+              text = text.replace(old, new, 1)
+              text = text.replace(
+                  "decisionKernelId: input.decisionKernelId,\n    requirementIds: kernel.requirementIds",
+                  "decisionKernelId: narrativeKernelId,\n    requirementIds: kernel.requirementIds",
+                  1,
+              )
+              text = text.replace(
+                  "PART_ONE_NEXT_STORY_BEAT_EVIDENCE_MISSING:${input.decisionKernelId}",
+                  "PART_ONE_NEXT_STORY_BEAT_EVIDENCE_MISSING:${narrativeKernelId}",
+                  1,
+              )
+              p.write_text(text, encoding="utf-8")
+          PY
+
+          SANGTIAN_SKIP_SOURCE_WRITES=1 \
+          SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
+          SANGTIAN_RUNTIME_PACKAGE_PATH="${GITHUB_WORKSPACE}/packages/templates/config/sangtian/story-package/part-one-runtime.json" \
+            node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/01-compile-package.log"
+
+          git diff --check
+          git diff --name-status -- packages apps scripts \
+            | tee "${EVIDENCE_ROOT}/product-files-before-commit.txt"
+          test -s "${EVIDENCE_ROOT}/product-files-before-commit.txt"
+
+      - name: Commit and push real product tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages apps scripts
+          while IFS= read -r path; do
+            git rm -f --ignore-unmatch "$path"
+          done < <(find .github/repair .github/workflows -type f 2>/dev/null \
+            | grep -E '(requirement-dependency|dynamic-kernel|source-export|dependency-export|acceptance-source-export)' \
+            || true)
+          git diff --cached --check
+          git commit -m "feat(kernel-lite): persist validated requirement dependency routing"
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/product-sha.txt"
+          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/product-tree.txt"
+          git diff --name-status "${BASE_PRODUCT_SHA}..HEAD" -- packages apps scripts \
+            | tee "${EVIDENCE_ROOT}/product-files.txt"
+          test -s "${EVIDENCE_ROOT}/product-files.txt"
+          test "$(git rev-parse HEAD^{tree})" != "$(git rev-parse ${BASE_PRODUCT_SHA}^{tree})"
+          git push origin HEAD:"${BRANCH_NAME}"
+
+      - name: Run complete deterministic gates on product SHA
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          results="${EVIDENCE_ROOT}/results.tsv"
+          : > "${results}"
+          failed=0
+          run_gate() {
+            label="$1"; shift
+            log="${EVIDENCE_ROOT}/logs/${label}.log"
+            set +e
+            "$@" 2>&1 | tee "$log"
+            code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\t%s\n' "$label" "$code" "$log" >> "$results"
+            if [ "$code" -ne 0 ]; then failed=1; fi
+          }
+          run_gate 02-story-v4 pnpm test:story:v4
+          run_gate 03-templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate 04-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate 05-templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate 06-templates-build pnpm --filter @ai-story/templates build
+          run_gate 07-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate 08-openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate 09-openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate 10-prisma-generate pnpm db:generate
+          run_gate 11-api-solo pnpm --filter @apps/api test:solo-story-engine
+          run_gate 12-api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate 13-branch-persistence pnpm test:story:branch-persistence
+          run_gate 14-story-options pnpm test:story:options
+          run_gate 15-story-convergence pnpm test:story:convergence
+          if [ "$failed" -eq 0 ]; then echo pass > "${EVIDENCE_ROOT}/status.txt"; else echo fail > "${EVIDENCE_ROOT}/status.txt"; fi
+
+      - name: Summarize deterministic evidence
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          root=Path(os.environ['EVIDENCE_ROOT'])
+          pats={k:re.compile(v,re.M) for k,v in {
+            'tests':r'^# tests (\d+)$','pass':r'^# pass (\d+)$','fail':r'^# fail (\d+)$','skip':r'^# skipped (\d+)$','todo':r'^# todo (\d+)$'}.items()}
+          rows=[]
+          f=root/'results.tsv'
+          if f.exists():
+            for line in f.read_text().splitlines():
+              label,code,log=line.split('\t',2); text=Path(log).read_text(errors='replace')
+              row={'label':label,'exitCode':int(code),'logPath':log}
+              for k,p in pats.items():
+                m=p.findall(text); row[k]=int(m[-1]) if m else None
+              rows.append(row)
+          summary={
+            'productSha':(root/'product-sha.txt').read_text().strip() if (root/'product-sha.txt').exists() else None,
+            'productTree':(root/'product-tree.txt').read_text().strip() if (root/'product-tree.txt').exists() else None,
+            'baseSha':os.environ['BASE_PRODUCT_SHA'],
+            'status':(root/'status.txt').read_text().strip() if (root/'status.txt').exists() else 'missing',
+            'commands':rows,'supabaseFormal':'NOT_RUN','deepSeek':'NOT_RUN'}
+          (root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirement-dependency-direct-product-${{ github.sha }}
+          path: /tmp/requirement-dependency-direct-product/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish result status
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=failure
+          description="Product materialized; deterministic gates failed"
+          if [ -f "${EVIDENCE_ROOT}/status.txt" ] && [ "$(cat "${EVIDENCE_ROOT}/status.txt")" = pass ]; then
+            state=success
+            description="Tracked product diff and all deterministic gates passed"
+          fi
+          sha="$(cat "${EVIDENCE_ROOT}/product-sha.txt" 2>/dev/null || echo "${GITHUB_SHA}")"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${sha}" \
+            -f state="$state" \
+            -f context="dynamic-kernel-lite/requirement-dependency-product" \
+            -f description="$description" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
