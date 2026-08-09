@@ -62,14 +62,20 @@ export async function bootGamePage({
     return app;
   }
 
-  // Historical room runs retain their existing member-scoped renderer. This
-  // branch is only reachable after an authenticated 2xx room projection.
+  // Historical room runs retain their existing member-scoped renderer. B0 can
+  // be enabled on one of these durable runs without changing its engineVersion,
+  // so strategyVersion is the authoritative signal for mounting the existing
+  // synchronized window and ActionContract controller on the real /game page.
   if (response.ok && payload?.room?.id) {
     win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
     const [{ RoomStoryStorage }, { createStoryApp }] = await Promise.all([loadRoomStorage(), loadSolo()]);
     const storage = new RoomStoryStorage({ roomId: runId, initialModel: payload, fetchImpl, localStorage: win.localStorage });
     const app = createStoryApp({ root, window: win, storage });
     await app.boot();
+    if (payload.room.strategyVersion === "b0_windowed_v1") {
+      const { attachManeuverV1Controller } = await loadManeuverV1();
+      await attachManeuverV1Controller({ app, root, window: win, runId, fetchImpl });
+    }
     return app;
   }
 
