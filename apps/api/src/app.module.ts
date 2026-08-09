@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { APP_INTERCEPTOR } from "@nestjs/core";
 import { AuthModule } from "./auth/auth.module";
 import { BillingModule } from "./billing/billing.module";
 import { CreditsModule } from "./credits/credits.module";
@@ -25,6 +26,8 @@ import { OpenNovelMirrorController } from "./openovel-adapter/openovel-mirror.co
 import { OpenNovelRuntimeClient } from "./openovel-adapter/openovel-runtime.client";
 import { OpenNovelSharedController } from "./openovel-adapter/openovel-shared.controller";
 import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.service";
+import { SoloEndingResultInterceptor } from "./openovel-adapter/solo-ending-result.interceptor";
+import { SoloEndingResultService } from "./openovel-adapter/solo-ending-result.service";
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
@@ -36,7 +39,12 @@ import { OpenNovelSharedService } from "./openovel-adapter/openovel-shared.servi
     PresenceHeartbeatRateLimitGuard,
     OpenNovelAdapterService,
     OpenNovelRuntimeClient,
-    OpenNovelSharedService
+    OpenNovelSharedService,
+    SoloEndingResultService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SoloEndingResultInterceptor,
+    },
   ]
 })
 export class AppModule {}
