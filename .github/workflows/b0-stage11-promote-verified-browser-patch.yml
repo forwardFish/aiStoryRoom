@@ -1,0 +1,300 @@
+name: B0 Stage 11 Promote Verified Real-Browser Patch
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage11-promote-verified-browser-patch.yml
+
+permissions:
+  actions: read
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage11-promote-verified-browser-patch
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VERIFIED_RUN_ID: "31336012613"
+      VERIFIED_ARTIFACT_ID: "9044400146"
+      VERIFIED_ARTIFACT_NAME: b0-stage11-real-browser-v7-45a6c674e13b6b9ac8de50347e1ae39584b79681
+      VERIFIED_ARTIFACT_DIGEST: sha256:cf46002061065e0c7c851de700a9e38fba059a00b0d8fe35663b616a5c8bfe11
+      VERIFIED_TRIGGER_SHA: 45a6c674e13b6b9ac8de50347e1ae39584b79681
+      B0_EVIDENCE_ROOT: ${{ github.workspace }}/.artifacts/b0-stage11-verified-v7
+
+    steps:
+      - name: Publish promotion locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage11-promote-browser-patch",
+              description: `verified real-browser patch promotion running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Verify exact fast-forward input
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$VERIFIED_TRIGGER_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-promote-verified-browser-patch.yml"
+          test "$(git hash-object scripts/acceptance/b0-candidate-real-flow.ts)" = "f434c6bf4c2d6d26d1231fd9343e87672ad58bef"
+          test -z "$(git ls-tree -r --name-only HEAD -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9)"
+
+      - name: Verify immutable artifact metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$VERIFIED_ARTIFACT_ID" > /tmp/b0-artifact-metadata.json
+          python3 - <<'PY'
+          import json, os
+          data=json.load(open('/tmp/b0-artifact-metadata.json',encoding='utf-8'))
+          assert str(data.get('id')) == os.environ['VERIFIED_ARTIFACT_ID']
+          assert data.get('name') == os.environ['VERIFIED_ARTIFACT_NAME']
+          assert data.get('expired') is False
+          assert data.get('digest') == os.environ['VERIFIED_ARTIFACT_DIGEST']
+          run=data.get('workflow_run') or {}
+          assert str(run.get('id')) == os.environ['VERIFIED_RUN_ID']
+          assert run.get('head_sha') == os.environ['VERIFIED_TRIGGER_SHA']
+          PY
+
+      - name: Download the exact passed browser evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.VERIFIED_ARTIFACT_NAME }}
+          path: ${{ env.B0_EVIDENCE_ROOT }}
+          run-id: ${{ env.VERIFIED_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Re-run redaction and the correct engineering finalizer
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
+          env \
+            GITHUB_SHA="$VERIFIED_TRIGGER_SHA" \
+            GITHUB_RUN_ID="$VERIFIED_RUN_ID" \
+            GITHUB_RUN_ATTEMPT=1 \
+            B0_EVIDENCE_ROOT="$B0_EVIDENCE_ROOT" \
+            scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize-engineering
+
+      - name: Verify the finalized evidence tree and all hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib, json, os
+          from pathlib import Path
+
+          root=Path(os.environ['B0_EVIDENCE_ROOT'])
+          trigger=os.environ['VERIFIED_TRIGGER_SHA']
+          run_id=os.environ['VERIFIED_RUN_ID']
+          required={
+            'window-1-embedded-real-narrative',
+            'idempotent-settlement-publication-outbox-replay',
+            'window-2-narrative-failure-does-not-rollback-and-retry',
+            'window-3-pause-current-completes-next-does-not-open-resume',
+            'window-4-deadline-unconfirmed-human-becomes-hold',
+            'switch-to-independent-worker',
+            'window-5-independent-worker',
+            'window-6-worker-crash-lease-expiry-recovery-and-ending',
+            'single-human-ai-action-contract-and-safe-abort',
+            'browser-dom-network-privacy-and-readback',
+          }
+          result=json.loads((root/'acceptance-result.json').read_text(encoding='utf-8'))
+          assert result['status']=='PASS'
+          assert result['testedCodeSha']==trigger
+          assert result['environment']['acceptanceTier']=='engineering-selfhosted'
+          assert result['environment']['databaseProvenance']['supabaseCloudUsed'] is False
+          phases=result['phases']
+          assert {p['name'] for p in phases}==required
+          assert all(p['status']=='PASS' for p in phases)
+
+          database=json.loads((root/'database-provenance.json').read_text(encoding='utf-8'))
+          provider=json.loads((root/'provider-provenance.json').read_text(encoding='utf-8'))
+          cleanup=json.loads((root/'schema-cleanup.json').read_text(encoding='utf-8'))
+          checkpoint=json.loads((root/'engineering-checkpoint.json').read_text(encoding='utf-8'))
+          assert database['status']=='PASS'
+          assert database['provenance']=='official-supabase-postgres-container'
+          assert database['supabaseCloudUsed'] is False
+          assert database['publicSchemaUsed'] is False
+          assert provider['status']=='PASS'
+          assert provider['provenance']=='ollama-openai-compatible-local'
+          assert provider['postWarmupProductRequestCount']>=1
+          assert provider['allObservedCompletionsHttp200'] is True
+          assert provider['fallbackAllowed'] is False
+          assert cleanup['status']=='PASS'
+          assert cleanup['randomSchemaDropped'] is True
+          assert cleanup['publicSchemaUsed'] is False
+          assert cleanup['publicSchemaUnchanged'] is True
+          assert checkpoint['status']=='PASS'
+          assert checkpoint['testedCodeSha']==trigger
+          assert str(checkpoint['workflowRunId'])==run_id
+          assert checkpoint['formalC8Eligible'] is False
+          assert checkpoint['formalC8Claimed'] is False
+
+          crash=json.loads((root/'raw/08-window-6-worker-crash-lease-expiry-recovery-and-ending.json').read_text(encoding='utf-8'))
+          assert crash['status']=='PASS'
+          assert crash['result']['after']['status']=='completed'
+          assert crash['result']['after']['worldSequence']==crash['result']['before']['worldSequence']+1
+          assert crash['result']['recoveredTask']['status']=='completed'
+          assert crash['result']['recoveredTask']['leaseVersion']>crash['result']['crashedTask']['leaseVersion']
+          assert crash['result']['endingCount']==6
+
+          browser=json.loads((root/'raw/10-browser-dom-network-privacy-and-readback.json').read_text(encoding='utf-8'))
+          assert browser['status']=='PASS'
+          reports=browser['result']['browsers']
+          assert len(reports)==3
+          assert any(r['mobile'] for r in reports)
+          for report in reports:
+            assert report['runtimeExceptions']==[]
+            assert report['dom']['statusVisible'] is True
+            assert report['dom']['resultsVisible'] is True
+            assert report['dom']['horizontalOverflow'] is False
+            posts={(row['method'],row['url'].rsplit('/',1)[-1],row['status']) for row in report['network']}
+            for suffix in ('preview','confirm','ready'):
+              assert any(method=='POST' and tail==suffix and 200<=status<300 for method,tail,status in posts)
+
+          for name in (
+            'screenshots/window-1-open-host-desktop.png',
+            'screenshots/window-1-open-player-three-narrow.png',
+            'screenshots/final-ending-host-desktop.png',
+            'screenshots/final-ending-player-three-narrow.png',
+          ):
+            assert (root/name).is_file() and (root/name).stat().st_size>0
+
+          catalog=json.loads((root/'artifact-catalog.json').read_text(encoding='utf-8'))
+          assert catalog['status']=='PASS'
+          assert catalog['acceptanceTier']=='engineering-selfhosted'
+          assert catalog['formalC8Eligible'] is False
+          assert catalog['testedCodeSha']==trigger
+          assert str(catalog['workflowRunId'])==run_id
+          assert len(catalog['files'])>=45
+          for row in catalog['files']:
+            path=Path(row['path'])
+            assert path.is_file(), path
+            data=path.read_bytes()
+            assert len(data)==row['sizeBytes'], path
+            assert hashlib.sha256(data).hexdigest()==row['sha256'], path
+          PY
+
+      - name: Upload corrected engineering-only evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-stage11-engineering-finalized-${{ env.VERIFIED_TRIGGER_SHA }}
+          path: ${{ env.B0_EVIDENCE_ROOT }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Reconstruct the exact patch that passed six real browser windows
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          workflow=Path('.github/workflows/b0-stage11-browser-v7-crash-boundary.yml').read_text(encoding='utf-8')
+          blocks=re.findall(r"^          python3 - <<'PY'\n(.*?)^          PY$",workflow,flags=re.M|re.S)
+          if len(blocks)!=2:
+            raise SystemExit(f'expected exactly two V7 Python patch blocks, found {len(blocks)}')
+          for index,block in enumerate(blocks):
+            lines=block.splitlines()
+            script='\n'.join(line[10:] if line.startswith('          ') else line for line in lines)+'\n'
+            Path(f'/tmp/b0-v7-block-{index}.py').write_text(script,encoding='utf-8')
+          PY
+          python3 /tmp/b0-v7-block-0.py
+          python3 /tmp/b0-stage11-reviewed-browser-patch.py
+          python3 /tmp/b0-v7-block-1.py
+          git diff --check
+          test "$(git diff --name-only)" = "scripts/acceptance/b0-candidate-real-flow.ts"
+          grep -F 'async function submitCyclicPlansThroughBrowser(' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'window-5 outbox quiescence before worker crash test' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'STORY_TASK_TEST_DELAY_MS: "3000"' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F '120_000, "delayed worker settlement lease"' scripts/acceptance/b0-candidate-real-flow.ts
+          ! grep -F ':not([disabled]))' scripts/acceptance/b0-candidate-real-flow.ts
+          git hash-object scripts/acceptance/b0-candidate-real-flow.ts | tee /tmp/b0-promoted-source-blob.txt
+          sha256sum scripts/acceptance/b0-candidate-real-flow.ts | tee /tmp/b0-promoted-source-sha256.txt
+
+      - name: Re-run deterministic static gates on the promoted source
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @apps/web test
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web build
+
+      - name: Commit and push the verified source as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git diff --cached --check
+          test "$(git diff --cached --name-only)" = "scripts/acceptance/b0-candidate-real-flow.ts"
+          git commit -m "test(b0): close real browser six-window acceptance"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish promotion outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success=process.env.JOB_STATUS==="success";
+            await github.rest.repos.createCommitStatus({
+              owner:context.repo.owner,
+              repo:context.repo.repo,
+              sha:context.sha,
+              state:success?"success":"failure",
+              context:"b0/stage11-promote-browser-patch",
+              description:`verified real-browser patch promotion ${success?"passed":"failed"} in ${context.runId}`,
+              target_url:`${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if(!success) core.setFailed("verified real-browser patch promotion failed");
