@@ -55,7 +55,7 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "d5905ed2661bd72635d2e2c4ce6559bc94ada6cd"
+          test "$(git rev-parse HEAD^)" = "99ac28afaa2f2c13b1fd49873bcf89dca694d86a"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage6-window-init-race.yml"
           test "$(sha256sum apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts | cut -d' ' -f1)" = "9a5a0017a9a4b8efff07530c246445d57ceaa3da7cd268fa6bd5a121faa7e113"
           test "$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)" = "7a6798b6e78aab1855cc83e6efcbd643815934dae7515bb737c1124440a5cdc3"
@@ -110,8 +110,12 @@ jobs:
               raise SystemExit(f"spec anchor count={source.count(anchor)}")
           spec.write_text(source.replace(anchor, anchor + addition), encoding="utf-8")
           PY
-          test "$(sha256sum apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts | cut -d' ' -f1)" = "c9d15ce01a19d4d74364b6d0ada76540df773831cbdd6c16c4fc869772167175"
-          test "$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)" = "92a203fbd64fbdc609dfe61f7a76c79a98fbca3e14e67810e475c654bef8fe0d"
+          coordinator_sha="$(sha256sum apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts | cut -d' ' -f1)"
+          spec_sha="$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)"
+          echo "coordinator_sha256=$coordinator_sha"
+          echo "spec_sha256=$spec_sha"
+          test "$coordinator_sha" = "c9d15ce01a19d4d74364b6d0ada76540df773831cbdd6c16c4fc869772167175"
+          test "$spec_sha" = "c09f8f255a69d369c236cd126028180aa27f3a3bfbb7668856584791f382d23d"
           git diff --check
 
       - name: Frozen install and focused verification
@@ -121,6 +125,7 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm db:generate
           pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api exec node --import tsx --test src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
           pnpm --filter @apps/api test:b0-batch
           pnpm --filter @apps/api test:b0-window
 
