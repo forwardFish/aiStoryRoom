@@ -1,171 +1,156 @@
-name: B0 Stage 11 Browser Window Driver Repair
+name: B0 Stage 11 Real Browser Six-Window Repair
 
 on:
   push:
-    branches:
-      - codex/chatgpt-pro-maneuver-evidence-v1
-    paths:
-      - .github/workflows/b0-stage11-browser-window-driver.yml
+    branches: [codex/chatgpt-pro-maneuver-evidence-v1]
+    paths: [.github/workflows/b0-stage11-browser-window-driver.yml]
 
 permissions:
   contents: write
   statuses: write
 
 concurrency:
-  group: b0-stage11-browser-window-driver
+  group: b0-stage11-real-browser-v2
   cancel-in-progress: false
 
 jobs:
   repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 110
     env:
       B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
       B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
       B0_PROVIDER_MODEL: qwen2.5:1.5b
       B0_ACCEPTANCE_TIER: engineering-selfhosted
       B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
-      B0_EVIDENCE_ROOT: .artifacts/b0-stage11/${{ github.sha }}
+      B0_EVIDENCE_ROOT: .artifacts/b0-stage11-v2/${{ github.sha }}
       B0_PROJECT_ROOT: ${{ github.workspace }}
     steps:
-      - name: Publish stage locator
+      - name: Publish locator
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: "pending",
-              context: "b0/stage11-browser-window-driver",
-              description: `browser window driver repair running in ${context.runId}`,
-              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-            });
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:"pending",context:"b0/stage11-real-browser-v2",description:`real browser six-window repair running in ${context.runId}`,target_url:`${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`});
 
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 2
-
+        with: {ref: "${{ github.sha }}", fetch-depth: 2}
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
+        with: {version: 10}
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+        with: {node-version: 22, cache: pnpm}
 
-      - name: Verify exact branch tip
+      - name: Verify exact input
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-browser-window-driver.yml"
+          test "$(git rev-parse HEAD^)" = d2f30adb30e89c90fcab1904e72e5973da361f22
+          test "$(git diff --name-only HEAD^..HEAD)" = .github/workflows/b0-stage11-browser-window-driver.yml
+          test "$(git hash-object scripts/acceptance/b0-candidate-real-flow.ts)" = f434c6bf4c2d6d26d1231fd9343e87672ad58bef
 
-      - name: Drive the synchronized window through the real browser controls
+      - name: Patch deterministic browser driver and worker boundary
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import re
+          p=Path("scripts/acceptance/b0-candidate-real-flow.ts")
+          s=p.read_text()
+          special='      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });'
+          assert s.count(special)==1
+          s=s.replace(special,'      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });',1)
+          generic='      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);'
+          assert s.count(generic)==4
+          s=s.replace(generic,'      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds);')
+          partial='      await submitCyclicPlans(mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));'
+          assert s.count(partial)==1
+          s=s.replace(partial,'      await submitCyclicPlansThroughBrowser(browsers.slice(0, 2), mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));',1)
 
-          path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
-          source = path.read_text(encoding="utf-8")
-          if "async function driveSynchronizedWindowUi(" in source:
-              raise SystemExit("browser window driver already present")
+          begin=s.index('      await sleep(1_500);\n      const participantsBeforeWorker')
+          end=s.index('\n      await startWorker(commonEnv, "worker"',begin)
+          boundary='''      await sleep(1_500);
+          const snap = await prisma.$transaction(async (tx) => ({
+            participants: await tx.actionWindowParticipant.findMany({ where: { windowId: opened.windowId }, select: { roleId: true, mainStatus: true }, orderBy: { roleId: "asc" } }),
+            settlement: await tx.storyTaskOutbox.findFirst({ where: { windowId: opened.windowId, taskType: "B0_SETTLEMENT_REQUESTED" }, select: { id: true, status: true, attempt: true, leaseVersion: true, leaseOwner: true } }),
+            window: await tx.actionWindow.findUniqueOrThrow({ where: { id: opened.windowId }, select: { status: true } }),
+            run: await tx.storyRun.findUniqueOrThrow({ where: { id: mainRun.id }, select: { worldSequence: true } }),
+          }), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+          const humanRoleIds = new Set(opened.humanRoleIds);
+          const humanParticipants = snap.participants.filter((entry) => humanRoleIds.has(entry.roleId));
+          const aiParticipants = snap.participants.filter((entry) => !humanRoleIds.has(entry.roleId));
+          const preparedStatuses = new Set(["B0_READY", "B0_LOCKED"]);
+          assert.equal(humanParticipants.length, opened.humanRoleIds.length, "all human roles must have synchronized window participants");
+          assert(humanParticipants.every((entry) => preparedStatuses.has(entry.mainStatus)), "all humans must have browser-confirmed ActionContracts before standalone worker startup");
+          assert(aiParticipants.length >= 1, "the multiplayer run must retain AI-filled vacant roles");
+          assert(aiParticipants.every((entry) => ["B0_PENDING", "B0_READY", "B0_LOCKED"].includes(entry.mainStatus)), "AI roles must remain inside the bounded ActionContract lifecycle");
+          assert.equal(snap.run.worldSequence, before.worldSequence, "without a standalone worker the world cannot advance");
+          const aiPending = aiParticipants.filter((entry) => entry.mainStatus === "B0_PENDING").length;
+          const aiLocked = aiParticipants.filter((entry) => entry.mainStatus === "B0_LOCKED").length;
+          let preWorkerBoundary: "AI_ACTIONS_UNPREPARED" | "AI_ACTIONS_PARTIALLY_PREPARED" | "SETTLEMENT_ENQUEUED";
+          if (snap.settlement === null) {
+            assert.equal(snap.window.status, "OPEN", "without settlement the synchronized window remains OPEN");
+            assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "humans remain READY before freeze");
+            assert.equal(aiLocked, 0, "an OPEN window cannot expose a partially locked AI roster");
+            preWorkerBoundary = aiPending === aiParticipants.length ? "AI_ACTIONS_UNPREPARED" : "AI_ACTIONS_PARTIALLY_PREPARED";
+          } else {
+            assert(humanParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "humans lock with the frozen roster");
+            assert.equal(aiLocked, aiParticipants.length, "all AI roles lock atomically after freeze");
+            assert.equal(snap.window.status, "LOCKED");
+            assert.equal(snap.settlement.status, "pending");
+            assert.equal(snap.settlement.leaseOwner, null);
+            assert.equal(snap.settlement.leaseVersion, 0);
+            preWorkerBoundary = "SETTLEMENT_ENQUEUED";
+          }
+          const settlementBeforeWorker = snap.settlement;
+          '''.replace('          ','')
+          s=s[:begin]+boundary+s[end:]
 
-          phase = source.find("window-1-embedded-real-narrative")
-          wait = source.find("await waitForWindowComplete(", phase)
-          if phase < 0 or wait < 0:
-              raise SystemExit("first synchronized window anchor not found")
-
-          before = source[:wait]
-          session_names = []
-          for pattern in (
-              r"await\s+assertBrowserWindowVisible\(\s*(\w+)",
-              r"const\s+(\w+)\s*=\s*await\s+BrowserSession\.",
-              r"const\s+(\w+)\s*=\s*new\s+BrowserSession\b",
-          ):
-              for match in re.finditer(pattern, before):
-                  name = match.group(1)
-                  if name not in session_names and re.search(r"session|desktop|host|role|player", name, re.I):
-                      session_names.append(name)
-          preferred = [name for name in session_names if "narrow" not in name.lower()]
-          if len(preferred) < 3:
-              preferred = session_names
-          sessions = preferred[:3]
-          if not sessions:
-              raise SystemExit("no browser sessions found")
-
-          source = source[:wait] + f"      await driveSynchronizedWindowUi([{', '.join(sessions)}]);\n" + source[wait:]
-          helper_anchor = source.find("async function assertBrowserWindowVisible(")
-          if helper_anchor < 0:
-              raise SystemExit("browser assertion helper anchor not found")
-
-          helper = r'''
-          async function driveSynchronizedWindowUi(sessions: BrowserSession[]): Promise<void> {
-            for (const session of sessions) {
-              for (let attempt = 0; attempt < 28; attempt += 1) {
-                const state = await session.evaluate<{ status: string; clicked: string; enabledCount: number }>(`(() => {
-                  const text = (node) => String(node?.textContent || "").trim().replace(/\\s+/g, " ");
-                  const status = text(document.querySelector("[data-b0-window-status]")).toUpperCase();
-                  for (const input of document.querySelectorAll("textarea, input[type='text']")) {
-                    if (input.disabled || input.readOnly || String(input.value || "").trim()) continue;
-                    const value = "Advance the synchronized plan with the currently visible evidence.";
-                    const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value")?.set;
-                    if (setter) setter.call(input, value); else input.value = value;
-                    input.dispatchEvent(new Event("input", { bubbles: true }));
-                    input.dispatchEvent(new Event("change", { bubbles: true }));
-                  }
-                  for (const select of document.querySelectorAll("select")) {
-                    if (select.disabled || select.value) continue;
-                    const option = Array.from(select.options).find((entry) => !entry.disabled && entry.value);
-                    if (option) {
-                      select.value = option.value;
-                      select.dispatchEvent(new Event("change", { bubbles: true }));
-                    }
-                  }
-                  const buttons = Array.from(document.querySelectorAll("button")).filter((button) => {
-                    if (button.disabled || button.getAttribute("aria-disabled") === "true") return false;
-                    const label = text(button).toLowerCase();
-                    const attrs = Array.from(button.attributes).map((attr) => attr.name).join(" ").toLowerCase();
-                    if (/back|cancel|leave|delete|abort|retry|reconnect/.test(label)) return false;
-                    return /confirm|ready|submit|commit|lock|choose|select|preview|continue/.test(label)
-                      || /data-(?:b0|maneuver).*(?:confirm|ready|submit|commit|choose|select|preview)/.test(attrs);
-                  });
-                  const priority = (button) => {
-                    const value = `${Array.from(button.attributes).map((attr) => attr.name).join(" ")} ${text(button)}`.toLowerCase();
-                    if (/confirm|ready|commit|lock/.test(value)) return 0;
-                    if (/submit/.test(value)) return 1;
-                    if (/preview/.test(value)) return 2;
-                    return 3;
-                  };
-                  buttons.sort((left, right) => priority(left) - priority(right));
-                  const button = buttons[0];
-                  if (button) button.click();
-                  return { status, clicked: button ? text(button) : "", enabledCount: buttons.length };
-                })()`);
-                if (/COMPLETED|SETTLING|COMMITTED|PUBLISHING|LOCKED/.test(state.status)) break;
-                await delay(state.clicked ? 750 : 250);
-              }
+          helper='''async function submitCyclicPlansThroughBrowser(
+            browsers: BrowserSession[], runId: string,
+            users: Array<{ id: string; token: string }>, roleIds: string[],
+            options: { duplicateConfirm?: boolean } = {},
+          ) {
+            assert.equal(browsers.length, users.length);
+            assert.equal(users.length, roleIds.length);
+            for (let index=0; index<users.length; index+=1) {
+              const browser=browsers[index];
+              const target=roleIds[(index+1)%roleIds.length] || roleIds[0];
+              await browser.reload();
+              await browser.waitForSelector("[data-b0-window-status]",60000);
+              await browser.waitFor(()=>browser.evaluate(`Boolean(document.querySelector('[data-mv1-kind="CONTACT"]:not([disabled]))')`),60000,`${browser.name} CONTACT enabled`);
+              await browser.evaluate(`document.querySelector('[data-mv1-kind="CONTACT"]')?.click()`);
+              await browser.waitForSelector('[data-mv1-for="CONTACT"][data-mv1-field="targetId"]',30000);
+              const selected=await browser.evaluate(`(()=>{const e=document.querySelector('[data-mv1-for="CONTACT"][data-mv1-field="targetId"]');if(!e||e.disabled)return "";const values=Array.from(e.options).filter(o=>!o.disabled&&o.value).map(o=>o.value);const wanted=${JSON.stringify(target)};e.value=values.includes(wanted)?wanted:(values[0]||"");e.dispatchEvent(new Event("change",{bubbles:true}));return e.value})()`);
+              assert.equal(selected,target,`${browser.name} must select its cyclic target through CONTACT`);
+              await browser.waitForSelector('[data-mv1-for="CONTACT"][data-mv1-field="rawText"]',30000);
+              const text=`Coordinate a bounded synchronized action with the selected counterpart.`;
+              await browser.evaluate(`(()=>{const e=document.querySelector('[data-mv1-for="CONTACT"][data-mv1-field="rawText"]');if(!e||e.disabled)return false;const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,"value")?.set;set?set.call(e,${JSON.stringify(text)}):e.value=${JSON.stringify(text)};e.dispatchEvent(new Event("input",{bubbles:true}));return true})()`);
+              await browser.waitFor(()=>browser.evaluate(`Boolean(document.querySelector('[data-mv1-preview]:not([disabled]))')`),30000,`${browser.name} preview enabled`);
+              await browser.evaluate(`document.querySelector('[data-mv1-preview]:not([disabled])')?.click()`);
+              await browser.waitFor(()=>browser.evaluate(`Boolean(document.querySelector('[data-mv1-confirm]:not([disabled]))')||Boolean(document.querySelector('[role="alert"]'))`),90000,`${browser.name} preview response`);
+              const preview=await browser.evaluate(`(()=>({ok:Boolean(document.querySelector('[data-mv1-confirm]:not([disabled])')),error:document.querySelector('[role="alert"]')?.textContent||""}))()`);
+              assert.equal(preview.ok,true,`${browser.name} preview must be confirmable: ${preview.error}`);
+              await browser.evaluate(`document.querySelector('[data-mv1-confirm]:not([disabled])')?.click()`);
+              await waitFor(async()=>{const x=await apiJson(users[index].token,`/v4/rooms/${encodeURIComponent(runId)}/b0/window`,{method:"GET"});return ["CONFIRMED","LOCKED"].includes(x.plan?.status)||x.window?.status!=="OPEN"},90000,`${browser.name} confirmation persisted`);
+              if(options.duplicateConfirm&&index===0){const x=await apiJson(users[index].token,`/v4/rooms/${encodeURIComponent(runId)}/b0/window`,{method:"GET"});const revision=Number(x.plan?.revision);assert(Number.isInteger(revision)&&revision>0);const replay=await apiJson(users[index].token,`/v4/rooms/${encodeURIComponent(runId)}/b0/window/confirm`,{method:"POST",body:{expectedRevision:revision}});assert.equal(replay.plan?.status,"CONFIRMED")}
+              await browser.waitFor(()=>browser.evaluate(`Boolean(document.querySelector('[data-b0-ready]:not([disabled]))')`),60000,`${browser.name} ready enabled`);
+              await browser.evaluate(`document.querySelector('[data-b0-ready]:not([disabled])')?.click()`);
+              await waitFor(async()=>{const x=await apiJson(users[index].token,`/v4/rooms/${encodeURIComponent(runId)}/b0/window`,{method:"GET"});return x.actor?.ready===true||x.window?.status!=="OPEN"},90000,`${browser.name} ready persisted`);
             }
           }
 
-          '''.replace("          ", "")
-          source = source[:helper_anchor] + helper + source[helper_anchor:]
-          path.write_text(source, encoding="utf-8")
+          '''.replace('          ','')
+          anchor='async function submitCyclicPlans(\n'
+          assert s.count(anchor)==1
+          s=s.replace(anchor,helper+anchor,1)
+          net='        assert(report.network.some((entry: any) => entry.url.includes("/b0/window") && entry.status >= 200 && entry.status < 300), `${report.name} must observe successful real B0 network traffic`);\n'
+          assert s.count(net)==1
+          s=s.replace(net,net+'        for (const suffix of ["/b0/window/preview", "/b0/window/confirm", "/b0/window/ready"]) assert(report.network.some((entry: any) => entry.method === "POST" && entry.url.endsWith(suffix) && entry.status >= 200 && entry.status < 300), `${report.name} must drive ${suffix} through the real browser`);\n',1)
+          p.write_text(s)
           PY
           git diff --check
-          grep -F 'async function driveSynchronizedWindowUi' scripts/acceptance/b0-candidate-real-flow.ts
-
-      - name: Frozen install and focused gates
-        shell: bash
-        run: |
-          set -euo pipefail
           pnpm install --frozen-lockfile
           pnpm db:generate
           pnpm typecheck:b0:real-acceptance
@@ -175,50 +160,38 @@ jobs:
           pnpm --filter @apps/api typecheck
           pnpm --filter @apps/api test:b0-window
           pnpm --filter @apps/api test:b0-player-window
-          pnpm --filter @apps/api test:b0-worker
+          pnpm --filter @apps/api test:b0-pipeline
           pnpm --filter @apps/api test:b0-ops
 
       - name: Build exact runtime binaries
-        shell: bash
         run: |
-          set -euo pipefail
           pnpm --filter @ai-story/shared build
           pnpm --filter @ai-story/templates build
           pnpm --filter @apps/api build
           pnpm --filter @apps/openovel-runtime build
           pnpm --filter @apps/web build
 
-      - name: Start official self-hosted Supabase PostgreSQL
-        shell: bash
+      - name: Start isolated Supabase PostgreSQL
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
-
-      - name: Start real local Ollama model
-        shell: bash
+      - name: Start real local Ollama
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
-
-      - name: Execute engineering three-session six-window acceptance
-        shell: bash
-        env:
-          CHROME_PATH: /usr/bin/google-chrome
+      - name: Execute real three-browser six-window acceptance
+        env: {CHROME_PATH: /usr/bin/google-chrome}
         run: pnpm test:b0:real-acceptance
-
-      - name: Prove product traffic reached provider
-        shell: bash
+      - name: Prove provider traffic
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
-
       - name: Clean isolated infrastructure
         if: always()
-        shell: bash
-        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup
-
-      - name: Redact engineering evidence
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup || true
+      - name: Redact evidence
         if: always()
-        shell: bash
-        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
-
-      - name: Finalize engineering evidence
-        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact || true
+      - name: Finalize evidence
         run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: "b0-stage11-real-browser-v2-${{ github.sha }}", path: "${{ env.B0_EVIDENCE_ROOT }}", if-no-files-found: warn, retention-days: 14}
 
       - name: Commit verified repair as ordinary fast-forward
         shell: bash
@@ -231,31 +204,14 @@ jobs:
           git add scripts/acceptance/b0-candidate-real-flow.ts
           git rm .github/workflows/b0-stage11-browser-window-driver.yml
           git diff --cached --check
-          cat > /tmp/expected <<'EOF'
-          .github/workflows/b0-stage11-browser-window-driver.yml
-          scripts/acceptance/b0-candidate-real-flow.ts
-          EOF
-          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
-          LC_ALL=C sort -o /tmp/expected /tmp/expected
-          diff -u /tmp/expected /tmp/actual
-          git commit -m "test(b0): drive synchronized windows through real browser controls"
+          test "$(git diff --cached --name-only | LC_ALL=C sort | tr '\n' ' ')" = ".github/workflows/b0-stage11-browser-window-driver.yml scripts/acceptance/b0-candidate-real-flow.ts "
+          git commit -m "test(b0): drive all synchronized windows through real browsers"
           git push origin "HEAD:$GITHUB_REF_NAME"
 
-      - name: Publish stage outcome
+      - name: Publish outcome
         if: always()
         uses: actions/github-script@v7
-        env:
-          JOB_STATUS: ${{ job.status }}
+        env: {JOB_STATUS: "${{ job.status }}"}
         with:
           script: |
-            const success = process.env.JOB_STATUS === "success";
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: success ? "success" : "failure",
-              context: "b0/stage11-browser-window-driver",
-              description: `browser window driver repair ${success ? "passed" : "failed"} in ${context.runId}`,
-              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-            });
-            if (!success) core.setFailed("B0 stage 11 browser window driver repair failed");
+            const ok=process.env.JOB_STATUS==="success"; await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?"success":"failure",context:"b0/stage11-real-browser-v2",description:`real browser six-window repair ${ok?"passed":"failed"} in ${context.runId}`,target_url:`${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`}); if(!ok) core.setFailed("real browser six-window repair failed");
