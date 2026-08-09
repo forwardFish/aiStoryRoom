@@ -1,4 +1,4 @@
-name: B0 Stage 19 Narrative Quiescence Before Replay
+name: B0 Stage 19 Narrative Quiescence Before Replay V2
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-stage19-narrative-quiescence
+  group: b0-stage19-narrative-quiescence-v2
   cancel-in-progress: false
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/stage19-narrative-quiescence",
-              description: `narrative quiescence repair running in ${context.runId}`,
+              context: "b0/stage19-narrative-quiescence-v2",
+              description: `narrative quiescence repair v2 running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -55,30 +55,30 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "14589ef2d488d78f223e2992fe40f3ba025fa710"
+          test "$(git rev-parse HEAD^)" = "f8c6e01e7d38a37e9e8b1898986c34fc6c441086"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage19-narrative-quiescence.yml"
           test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "2b21006e323bfc804350640f982d60831f69351bf701df09d6bdf6f8cee6bce7"
           test "$(sha256sum scripts/acceptance/__tests__/b0-formal-acceptance-boundary.spec.mjs | cut -d' ' -f1)" = "467e2afcb41b0e65469c6afc18674b588e0d4bcae1000cebef0790308b8e68e3"
 
-      - name: Apply the hash-bound narrative quiescence patch
+      - name: Apply the corrected hash-bound narrative quiescence patch
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/git/blobs/6dcdfb6caa181a2cac4768b11fd1de0306586b08" --jq .content \
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/a09ae6c9432dc46b689d0f251807e3bf4228b69d" --jq .content \
             | tr -d '\n' \
-            | base64 -d > /tmp/b0-stage19.patch.gz.b64
-          test "$(wc -c < /tmp/b0-stage19.patch.gz.b64 | tr -d ' ')" = "2360"
-          test "$(sha256sum /tmp/b0-stage19.patch.gz.b64 | cut -d' ' -f1)" = "f5fa51bf00267971eed8989246c873067d81d9cc31c99b9fa1c393c7fe379db0"
-          base64 -d /tmp/b0-stage19.patch.gz.b64 > /tmp/b0-stage19.patch.gz
-          test "$(wc -c < /tmp/b0-stage19.patch.gz | tr -d ' ')" = "1768"
-          test "$(sha256sum /tmp/b0-stage19.patch.gz | cut -d' ' -f1)" = "774d6b8e9716d1cf17cf19303f3bf9356d1bc6c7c41a6e9627307182f2e6f35c"
-          gzip -dc /tmp/b0-stage19.patch.gz > /tmp/b0-stage19.patch
-          test "$(wc -c < /tmp/b0-stage19.patch | tr -d ' ')" = "5088"
-          test "$(sha256sum /tmp/b0-stage19.patch | cut -d' ' -f1)" = "a9fc1ff82a584ef2d826e4001abcbfac5690734f0e12f02649036c0ab1f79474"
-          git apply --check /tmp/b0-stage19.patch
-          git apply /tmp/b0-stage19.patch
+            | base64 -d > /tmp/b0-stage19-v2.patch.gz.b64
+          test "$(wc -c < /tmp/b0-stage19-v2.patch.gz.b64 | tr -d ' ')" = "2360"
+          test "$(sha256sum /tmp/b0-stage19-v2.patch.gz.b64 | cut -d' ' -f1)" = "f5fa51bf00267971eed8989246c873067d81d9cc31c99b9fa1c393c7fe379db0"
+          base64 -d /tmp/b0-stage19-v2.patch.gz.b64 > /tmp/b0-stage19-v2.patch.gz
+          test "$(wc -c < /tmp/b0-stage19-v2.patch.gz | tr -d ' ')" = "1768"
+          test "$(sha256sum /tmp/b0-stage19-v2.patch.gz | cut -d' ' -f1)" = "774d6b8e9716d1cf17cf19303f3bf9356d1bc6c7c41a6e9627307182f2e6f35c"
+          gzip -dc /tmp/b0-stage19-v2.patch.gz > /tmp/b0-stage19-v2.patch
+          test "$(wc -c < /tmp/b0-stage19-v2.patch | tr -d ' ')" = "5088"
+          test "$(sha256sum /tmp/b0-stage19-v2.patch | cut -d' ' -f1)" = "a9fc1ff82a584ef2d826e4001abcbfac5690734f0e12f02649036c0ab1f79474"
+          git apply --check /tmp/b0-stage19-v2.patch
+          git apply /tmp/b0-stage19-v2.patch
           git diff --check
           test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "44cb408e4be02640fd17159a47667fb255a7a622c6d3887a87d7e5819875114a"
           test "$(sha256sum scripts/acceptance/__tests__/b0-formal-acceptance-boundary.spec.mjs | cut -d' ' -f1)" = "7c37b3db263e46b6bb87135e7e5130f73867b891f102641fa97efa1df0cc0436"
@@ -146,7 +146,7 @@ jobs:
               repo: context.repo.repo,
               sha: process.env.FINAL_SHA,
               state: "success",
-              context: "b0/stage19-narrative-quiescence",
+              context: "b0/stage19-narrative-quiescence-v2",
               description: `ordinary fast-forward from ${process.env.REMOTE_BEFORE.slice(0, 8)} verified in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
@@ -161,8 +161,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "failure",
-              context: "b0/stage19-narrative-quiescence",
-              description: `narrative quiescence repair failed in ${context.runId}`,
+              context: "b0/stage19-narrative-quiescence-v2",
+              description: `narrative quiescence repair v2 failed in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            core.setFailed("B0 stage 19 narrative quiescence repair failed");
+            core.setFailed("B0 stage 19 narrative quiescence repair v2 failed");
