@@ -246,18 +246,48 @@ async function main() {
       const before = await runReadback(prisma, mainRun.id);
       const opened = await openWindow(mainRun.id, users.slice(0, 3));
       await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);
-      const pendingTask = await waitForValue(async () => prisma.storyTaskOutbox.findFirst({
-        where: { windowId: opened.windowId, taskType: "B0_SETTLEMENT_REQUESTED", status: "pending" },
-        select: { id: true, status: true, attempt: true, leaseVersion: true },
-      }), 30_000, "settlement remains pending while API embedded worker is disabled");
       await sleep(1_500);
-      assert.equal((await prisma.storyRun.findUniqueOrThrow({ where: { id: mainRun.id }, select: { worldSequence: true } })).worldSequence, before.worldSequence, "without a standalone worker the locked window cannot commit");
+      const participantsBeforeWorker = await prisma.actionWindowParticipant.findMany({
+        where: { windowId: opened.windowId },
+        select: { roleId: true, mainStatus: true },
+        orderBy: { roleId: "asc" },
+      });
+      const humanRoleIds = new Set(opened.humanRoleIds);
+      const humanParticipants = participantsBeforeWorker.filter((entry) => humanRoleIds.has(entry.roleId));
+      const aiParticipants = participantsBeforeWorker.filter((entry) => !humanRoleIds.has(entry.roleId));
+      assert.equal(humanParticipants.length, opened.humanRoleIds.length, "all human roles must have synchronized window participants");
+      assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "all human roles must remain READY before the standalone worker starts");
+      assert(aiParticipants.length >= 1, "the multiplayer run must retain AI-filled vacant roles");
+      assert(aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING"), "AI-filled roles must remain pending until a worker prepares their ActionContracts");
+      const settlementBeforeWorker = await prisma.storyTaskOutbox.findFirst({
+        where: { windowId: opened.windowId, taskType: "B0_SETTLEMENT_REQUESTED" },
+        select: { id: true, status: true, attempt: true, leaseVersion: true, leaseOwner: true },
+      });
+      assert.equal(settlementBeforeWorker, null, "without any worker, AI-filled roles cannot freeze the window or enqueue settlement");
+      const preWorkerWindow = await prisma.actionWindow.findUniqueOrThrow({ where: { id: opened.windowId }, select: { status: true } });
+      const preWorkerRun = await prisma.storyRun.findUniqueOrThrow({ where: { id: mainRun.id }, select: { worldSequence: true } });
+      assert.equal(preWorkerWindow.status, "OPEN", "the synchronized window must remain OPEN while AI-filled roles are unprepared");
+      assert.equal(preWorkerRun.worldSequence, before.worldSequence, "without a standalone worker the world cannot advance");
       await startWorker(commonEnv, "worker", { B0_NARRATIVE_ENABLED: "false" });
       const workerPid = requiredValue(processes.get("worker")?.pid, "standalone worker pid");
       await waitForWindowComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1, 120_000);
       const tasks = await prisma.storyTaskOutbox.findMany({ where: { windowId: opened.windowId, taskType: { startsWith: "B0_" } }, select: { id: true, windowId: true, roleId: true, taskType: true, status: true, outcome: true, leaseVersion: true, attempt: true, completedAt: true, lastError: true }, orderBy: { createdAt: "asc" } });
-      assert(tasks.some((entry) => entry.id === pendingTask.id && entry.status === "completed" && entry.leaseVersion > pendingTask.leaseVersion), "standalone worker must claim and complete the previously pending settlement");
-      return { windowId: stableLabel(opened.windowId), before, after: await runReadback(prisma, mainRun.id), standaloneWorkerPidHash: hashText(String(workerPid)).slice(0, 16), pendingBeforeWorker: pendingTask, tasks: tasks.map(safeTask) };
+      const completedSettlement = tasks.find((entry) => entry.taskType === "B0_SETTLEMENT_REQUESTED");
+      assert(completedSettlement?.status === "completed" && completedSettlement.leaseVersion > 0, "standalone worker must prepare AI actions, lease settlement, and complete the window");
+      return {
+        windowId: stableLabel(opened.windowId),
+        before,
+        after: await runReadback(prisma, mainRun.id),
+        standaloneWorkerPidHash: hashText(String(workerPid)).slice(0, 16),
+        beforeWorker: {
+          windowStatus: preWorkerWindow.status,
+          worldSequence: preWorkerRun.worldSequence,
+          humanParticipants: humanParticipants.map((entry) => ({ roleId: stableLabel(entry.roleId), mainStatus: entry.mainStatus })),
+          aiParticipants: aiParticipants.map((entry) => ({ roleId: stableLabel(entry.roleId), mainStatus: entry.mainStatus })),
+          settlementTask: null,
+        },
+        tasks: tasks.map(safeTask),
+      };
     });
 
     await phase("window-6-worker-crash-lease-expiry-recovery-and-ending", async () => {
