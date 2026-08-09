@@ -1,4 +1,7 @@
-import type { EndgameCauseDirectionV1, EndgamePresentationV1 } from "@ai-story/shared";
+import {
+  validateEndgamePresentationV1,
+  type EndgamePresentationV1,
+} from "@ai-story/shared";
 import {
   legacySoloEndgamePresentation,
   toSoloEndgamePresentation,
@@ -28,11 +31,7 @@ export type SoloResultRunRecord = {
   updatedAt: Date | string;
   players: Array<{
     userId: string | null;
-    role: null | {
-      roleKey: string;
-      roleName: string;
-      personalGoal: string;
-    };
+    role: null | { roleKey: string; roleName: string; personalGoal: string };
   }>;
 };
 
@@ -54,23 +53,15 @@ export type OpenNovelResultV2 = RawOpenNovelResult & {
   presentation: EndgamePresentationV1;
 };
 
-const ENDING_DIRECTION: Readonly<Record<string, Exclude<EndgameCauseDirectionV1, "DECISIVE">>> = Object.freeze({
-  guarded_people_bore_responsibility: "HELPED",
-  guarded_people_preserved_evidence: "HELPED",
-  evidence_entered_capital: "HELPED",
-  executed_policy_lost_people: "HURT",
-  crisis_unresolved: "HURT",
-});
+type RankedEvidence = SoloEndingEvidenceCandidate & { score: number };
 
 export function isRawOpenNovelResult(value: unknown): value is RawOpenNovelResult {
-  const root = record(value);
-  const room = record(root?.room);
-  const ending = record(root?.ending);
-  return Boolean(
-    room?.id
+  const root = object(value);
+  const room = object(root?.room);
+  const ending = object(root?.ending);
+  return Boolean(room?.id
     && ending?.schemaVersion === "openovel_ending_v1"
-    && typeof ending.endingKey === "string",
-  );
+    && typeof ending.endingKey === "string");
 }
 
 export function compileOpenNovelResultV2(input: {
@@ -81,35 +72,21 @@ export function compileOpenNovelResultV2(input: {
   supportedRoleKeys?: string[];
   nextPart?: SoloReplayCapabilities["nextPart"];
 }): OpenNovelResultV2 {
+  const role = membership(input.run, input.viewerUserId);
   if (input.raw.room.id !== input.run.id) throw new Error("SOLO_RESULT_RUN_MISMATCH");
-  const membership = input.run.players.find((player) => player.userId === input.viewerUserId);
-  if (input.run.ownerUserId !== input.viewerUserId || !membership?.role) {
-    throw new Error("SOLO_RESULT_VIEWER_FORBIDDEN");
-  }
-  const replay: SoloReplayCapabilities = {
-    worldId: input.run.templateKey,
-    currentRoleKey: membership.role.roleKey,
-    supportedRoleKeys: input.supportedRoleKeys?.length
-      ? [...new Set(input.supportedRoleKeys)]
-      : [membership.role.roleKey],
-    nextPart: input.nextPart || null,
-  };
-  const evidence = extractCommittedSoloEndingEvidence({
-    actions: input.actions,
-    viewerUserId: input.viewerUserId,
-    roleName: membership.role.roleName,
-    endingKey: input.raw.ending.endingKey,
-  });
-  return {
-    ...input.raw,
-    schemaVersion: "openovel_result_v2",
-    presentation: toSoloEndgamePresentation({
-      ending: input.raw.ending,
-      evidence,
-      revealCandidates: [],
-      replay,
+  const presentation = toSoloEndgamePresentation({
+    ending: input.raw.ending,
+    evidence: extractCommittedSoloEndingEvidence({
+      actions: input.actions,
+      runId: input.run.id,
+      viewerUserId: input.viewerUserId,
+      roleName: role.roleName,
     }),
-  };
+    revealCandidates: aftermathReveal(input.raw.ending),
+    replay: replay(input.run, role.roleKey, input.supportedRoleKeys, input.nextPart),
+  });
+  assertPresentation(presentation);
+  return { ...input.raw, schemaVersion: "openovel_result_v2", presentation };
 }
 
 export function compileLegacyOpenNovelResult(input: {
@@ -117,142 +94,154 @@ export function compileLegacyOpenNovelResult(input: {
   viewerUserId: string;
   completedNodes: number;
   ending?: SoloEndingSource | null;
-}): {
-  schemaVersion: "openovel_result_v2";
-  room: { id: string; worldId: string; completedAt: string };
-  player: { roleKey: string; roleName: string; personalGoal: string };
-  ending: SoloEndingSource | null;
-  completedNodes: number;
-  presentation: EndgamePresentationV1;
-} {
-  const membership = input.run.players.find((player) => player.userId === input.viewerUserId);
-  if (input.run.ownerUserId !== input.viewerUserId || !membership?.role) {
-    throw new Error("SOLO_RESULT_VIEWER_FORBIDDEN");
-  }
-  const replay: SoloReplayCapabilities = {
-    worldId: input.run.templateKey,
-    currentRoleKey: membership.role.roleKey,
-    supportedRoleKeys: [membership.role.roleKey],
-    nextPart: null,
-  };
+  supportedRoleKeys?: string[];
+}) {
+  const role = membership(input.run, input.viewerUserId);
+  const presentation = legacySoloEndgamePresentation({
+    ending: input.ending || null,
+    replay: replay(input.run, role.roleKey, input.supportedRoleKeys, null),
+  });
+  assertPresentation(presentation);
   return {
-    schemaVersion: "openovel_result_v2",
+    schemaVersion: "openovel_result_v2" as const,
     room: {
       id: input.run.id,
       worldId: input.run.templateKey,
       completedAt: iso(input.run.updatedAt),
     },
-    player: {
-      roleKey: membership.role.roleKey,
-      roleName: membership.role.roleName,
-      personalGoal: membership.role.personalGoal,
-    },
+    player: { roleKey: role.roleKey, roleName: role.roleName, personalGoal: role.personalGoal },
     ending: input.ending || null,
     completedNodes: input.completedNodes,
-    presentation: legacySoloEndgamePresentation({
-      ending: input.ending || null,
-      replay,
-    }),
+    presentation,
   };
 }
 
+/** Production SSE removes private causalDelta. A resolved PlayerAction is still
+ * an allowed authoritative cause; generated narration is never parsed. */
 export function extractCommittedSoloEndingEvidence(input: {
   actions: readonly SoloResultActionRecord[];
+  runId: string;
   viewerUserId: string;
   roleName: string;
-  endingKey: string;
 }): SoloEndingEvidenceCandidate[] {
-  const direction = ENDING_DIRECTION[input.endingKey] || "HURT";
-  const rows = input.actions
-    .filter((action) => (
-      action.userId === input.viewerUserId
-      && action.status === "resolved"
-      && action.runId.length > 0
-    ))
-    .map((action) => evidenceRow(action, input.roleName, direction))
-    .filter((row): row is NonNullable<ReturnType<typeof evidenceRow>> => Boolean(row))
-    .sort((left, right) => (
-      Number(right.stageIndex || 0) - Number(left.stageIndex || 0)
-      || String(left.sourceActionId).localeCompare(String(right.sourceActionId))
-    ));
-  if (rows.length) rows[0] = { ...rows[0], direction: "DECISIVE" };
-  return rows;
+  return input.actions
+    .filter((action) => action.runId === input.runId
+      && action.userId === input.viewerUserId
+      && action.status === "resolved")
+    .map((action) => evidence(action, input.roleName))
+    .filter((row): row is RankedEvidence => Boolean(row))
+    .sort((a, b) => b.score - a.score
+      || Number(b.stageIndex || 0) - Number(a.stageIndex || 0)
+      || String(a.sourceActionId).localeCompare(String(b.sourceActionId)))
+    .slice(0, 3)
+    .sort((a, b) => Number(a.stageIndex || 0) - Number(b.stageIndex || 0)
+      || String(a.sourceActionId).localeCompare(String(b.sourceActionId)))
+    .map(({ score: _score, ...row }) => row);
 }
 
-function evidenceRow(
-  action: SoloResultActionRecord,
-  roleName: string,
-  direction: Exclude<EndgameCauseDirectionV1, "DECISIVE">,
-): SoloEndingEvidenceCandidate | null {
-  const result = record(action.resolvedJson);
-  const causalDelta = record(result?.causalDelta);
-  if (!result || !causalDelta) return null;
-  const factText = firstNonEmpty([
-    ...strings(causalDelta.requiredNarrativeFacts),
-    ...hintTexts(causalDelta.durableHints),
-    ...strings(record(causalDelta.scenePacket)?.visibleFacts),
-  ]);
-  if (!factText) return null;
-  const immediate = record(action.immediateJson);
-  const boundOption = record(immediate?.boundOption);
-  const actionTitle = firstNonEmpty([
-    typeof boundOption?.label === "string" ? boundOption.label : "",
-    typeof causalDelta.readerAction === "string" ? causalDelta.readerAction : "",
+function evidence(action: SoloResultActionRecord, roleName: string): RankedEvidence | null {
+  const result = object(action.resolvedJson);
+  if (!result) return null;
+  const turn = positive(result.turnNumber) || turnFromId(result.turnId);
+  const immediate = object(action.immediateJson);
+  const bound = object(immediate?.boundOption);
+  const delta = object(result.causalDelta);
+  const explicit = object(result.endingEvidence);
+  const explicitFacts = explicit?.schemaVersion === "openovel_player_ending_evidence_v1"
+    ? strings(explicit.facts) : [];
+  const required = strings(delta?.requiredNarrativeFacts);
+  const durable = hints(delta?.durableHints);
+  const visible = strings(object(delta?.scenePacket)?.visibleFacts);
+  const actionTitle = first([
+    typeof bound?.label === "string" ? bound.label : "",
+    typeof delta?.readerAction === "string" ? delta.readerAction : "",
     action.method,
   ]);
   if (!actionTitle) return null;
-  const turnNumber = positiveInteger(result.turnNumber)
-    || turnNumberFromId(result.turnId)
-    || null;
+  const factText = first([...explicitFacts, ...required, ...durable, ...visible])
+    || (turn
+      ? `该选择已由权威结算提交，并进入第 ${turn} 回合的最终 Canon。`
+      : "该选择已由权威结算提交，并进入本局最终 Canon。");
   return {
     authority: "PLAYER_ACTION",
     committed: true,
     authorized: true,
-    stageIndex: turnNumber,
+    stageIndex: turn,
     sourceActionId: action.id,
     sourceRoleName: roleName,
     actionTitle,
     factText,
-    direction,
+    direction: "DECISIVE",
+    score: (turn === 20 ? 1_000 : 0) + Number(turn || 0)
+      + explicitFacts.length * 10 + required.length * 5
+      + durable.length * 3 + visible.length * 2,
   };
 }
 
-function hintTexts(value: unknown): string[] {
+function membership(run: SoloResultRunRecord, viewerUserId: string) {
+  const role = run.players.find((player) => player.userId === viewerUserId)?.role;
+  if (run.ownerUserId !== viewerUserId || !role) throw new Error("SOLO_RESULT_VIEWER_FORBIDDEN");
+  return role;
+}
+
+function replay(
+  run: SoloResultRunRecord,
+  roleKey: string,
+  supportedRoleKeys?: string[],
+  nextPart?: SoloReplayCapabilities["nextPart"],
+): SoloReplayCapabilities {
+  return {
+    worldId: run.templateKey,
+    currentRoleKey: roleKey,
+    supportedRoleKeys: supportedRoleKeys?.length ? [...new Set(supportedRoleKeys)] : [roleKey],
+    nextPart: nextPart || null,
+  };
+}
+
+function aftermathReveal(ending: SoloEndingSource) {
+  const text = ending.aftermath.map((item) => String(item || "").trim()).filter(Boolean).join(" ");
+  return text ? [{
+    committed: true,
+    authorized: true,
+    visibility: "PLAYER" as const,
+    title: ending.scope === "PART" ? "第一部分之后" : "尾声余波",
+    text,
+  }] : [];
+}
+
+function assertPresentation(value: EndgamePresentationV1) {
+  const validation = validateEndgamePresentationV1(value);
+  if (!validation.ok) throw new Error(`SOLO_ENDGAME_PRESENTATION_INVALID:${validation.errors.join("|")}`);
+}
+
+function hints(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
-    const hint = record(item);
-    if (!hint) return [];
-    return [hint.note, hint.surfaceAnchor, typeof hint.value === "string" ? hint.value : ""]
-      .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+    const hint = object(item);
+    return hint ? [hint.note, hint.surfaceAnchor, typeof hint.value === "string" ? hint.value : ""]
+      .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0) : [];
   });
 }
 
-function turnNumberFromId(value: unknown) {
+function turnFromId(value: unknown) {
   const match = /^T(\d+)$/.exec(String(value || ""));
-  return match ? positiveInteger(Number(match[1])) : null;
+  return match ? positive(match[1]) : null;
 }
-
-function positiveInteger(value: unknown): number | null {
+function positive(value: unknown): number | null {
   const number = Number(value);
   return Number.isInteger(number) && number > 0 ? number : null;
 }
-
 function strings(value: unknown): string[] {
   return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-    : [];
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
 }
-
-function firstNonEmpty(values: readonly string[]) {
+function first(values: readonly string[]) {
   return values.map((value) => value.trim()).find(Boolean) || "";
 }
-
-function record(value: unknown): Record<string, any> | null {
+function object(value: unknown): Record<string, any> | null {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, any>
-    : null;
+    ? value as Record<string, any> : null;
 }
-
 function iso(value: Date | string) {
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? new Date(0).toISOString() : date.toISOString();
