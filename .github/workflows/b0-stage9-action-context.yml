@@ -1,4 +1,4 @@
-name: B0 Stage 9 Synchronized ActionContract Context Repair
+name: B0 Stage 9 Synchronized ActionContract Context Repair V2
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-stage9-action-context
+  group: b0-stage9-action-context-v2
   cancel-in-progress: false
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/stage9-action-context",
-              description: `synchronized ActionContract context repair running in ${context.runId}`,
+              context: "b0/stage9-action-context-v2",
+              description: `synchronized ActionContract context repair v2 running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -55,7 +55,7 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "93f4328ee211b1713c4abe88964d2f559e336707"
+          test "$(git rev-parse HEAD^)" = "8a430fb218a529c558c60f068b20f5dafa37ed33"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage9-action-context.yml"
 
       - name: Apply the hash-bound B0 ActionContract context patch
@@ -75,7 +75,29 @@ jobs:
           test "$(sha256sum /tmp/b0-stage9.patch | cut -d' ' -f1)" = "af8ed1d31eb813ee1ab679e3987e40579c75e34bcbe955e7727ad479ce134091"
           git apply --check /tmp/b0-stage9.patch
           git apply /tmp/b0-stage9.patch
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts")
+          source = path.read_text(encoding="utf-8")
+          if "const PLAYER_WINDOW =" not in source:
+              anchor = 'const COMMIT = readFileSync(join(ROOT, "apps", "api", "src", "b0-settlement", "b0-settlement-commit.prisma.ts"), "utf8");\n'
+              addition = (
+                  'const PLAYER_WINDOW = readFileSync(join(ROOT, "apps", "api", "src", "b0-settlement", "b0-window-player.service.ts"), "utf8");\n'
+                  'const MANEUVER_READ = readFileSync(join(ROOT, "apps", "api", "src", "maneuver-v1", "maneuver-v1.prisma-read.ts"), "utf8");\n'
+              )
+              if source.count(anchor) != 1:
+                  raise SystemExit(f"static source constant anchor count={source.count(anchor)}")
+              source = source.replace(anchor, anchor + addition, 1)
+          if source.count("const PLAYER_WINDOW =") != 1 or source.count("const MANEUVER_READ =") != 1:
+              raise SystemExit("B0 source constants must be declared exactly once")
+          path.write_text(source, encoding="utf-8")
+          PY
+
           git diff --check
+          grep -F 'const PLAYER_WINDOW = readFileSync' apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          grep -F 'const MANEUVER_READ = readFileSync' apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
 
       - name: Frozen install and focused verification
         shell: bash
@@ -142,8 +164,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: success ? "success" : "failure",
-              context: "b0/stage9-action-context",
-              description: `synchronized ActionContract context repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              context: "b0/stage9-action-context-v2",
+              description: `synchronized ActionContract context repair v2 ${success ? "passed" : "failed"} in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            if (!success) core.setFailed("B0 stage 9 ActionContract context repair failed");
+            if (!success) core.setFailed("B0 stage 9 ActionContract context repair v2 failed");
