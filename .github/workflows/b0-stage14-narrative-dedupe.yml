@@ -1,0 +1,228 @@
+name: B0 Stage 14 Narrative Dedupe Namespace Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage14-narrative-dedupe.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage14-narrative-dedupe
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage14-narrative-dedupe",
+              description: `narrative dedupe namespace repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact remote baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "41f40615f1f9bc93c7326e4fa3387a906cf6038a"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage14-narrative-dedupe.yml"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts)" = "5fb65cb7c79e0f599659c96187d42245e0aab064"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts)" = "3e31c63f78a65134466e1dfb28f2e96b3edf9e7e"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts)" = "fe3732fa733f5dd17d0d3a14720984d3c0633de9"
+
+      - name: Move narrative tasks into the durable B0 dedupe namespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          pipeline = Path("apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts")
+          source = pipeline.read_text(encoding="utf-8")
+          old = '  return `narrative:${batchId}:${roleId}:SETTLEMENT_ROLE_VIEW`;\n'
+          new = '  return `b0-narrative:${batchId}:${roleId}:SETTLEMENT_ROLE_VIEW`;\n'
+          if source.count(old) != 1:
+              raise SystemExit(f"narrative key anchor count={source.count(old)}")
+          pipeline.write_text(source.replace(old, new, 1), encoding="utf-8")
+
+          ops = Path("apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts")
+          source = ops.read_text(encoding="utf-8")
+          marker = 'test("C8 diagnostics is read-only and reports window, task, narrative and world sequence state", async () => {'
+          addition = '''test("B0 narrative tasks use the durable b0 dedupe namespace for create and lookup", async () => {
+            const captured: Json[] = [];
+            const { service } = fixture({
+              actionWindow: {
+                findUnique: async () => ({ nodeId: "node.1" }),
+              },
+              storyTaskOutbox: {
+                upsert: async (input: Json) => {
+                  captured.push(input);
+                  return input.create;
+                },
+              },
+            });
+
+            await (service as any).enqueueNarratives({
+              batchId: "b0.batch.1",
+              manifest: {
+                runId: "run.1",
+                windowId: "window.1",
+                commitHash: "commit.1",
+              },
+            }, {
+              planHash: "plan.1",
+              deliveries: [
+                { recipientActorId: "role.b" },
+                { recipientActorId: "role.a" },
+                { recipientActorId: "role.a" },
+              ],
+            });
+
+            assert.equal(captured.length, 2);
+            const keys = captured.map((entry) => String(entry.create.dedupeKey)).sort();
+            assert.deepEqual(keys, [
+              "b0-narrative:b0.batch.1:role.a:SETTLEMENT_ROLE_VIEW",
+              "b0-narrative:b0.batch.1:role.b:SETTLEMENT_ROLE_VIEW",
+            ]);
+            for (const entry of captured) {
+              assert.equal(entry.where.dedupeKey, entry.create.dedupeKey);
+              assert.equal(entry.create.taskType, "B0_NARRATIVE_GENERATION");
+              assert.equal(entry.create.checkpointKey, "B0_STRUCTURED_RESULTS_PUBLISHED");
+            }
+          });
+
+          '''.replace("          ", "")
+          if source.count(marker) != 1:
+              raise SystemExit(f"narrative regression insertion count={source.count(marker)}")
+          if "B0 narrative tasks use the durable b0 dedupe namespace for create and lookup" in source:
+              raise SystemExit("narrative regression test already exists")
+          ops.write_text(source.replace(marker, addition + marker, 1), encoding="utf-8")
+
+          vocabulary = Path("apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts")
+          source = vocabulary.read_text(encoding="utf-8")
+          old = '  assert.match(constraintBody("StoryTaskOutbox_dedupe_format_check"), /LIKE \'b0-%\'/);\n'
+          new = old + '  assert.match(PIPELINE, /return `b0-narrative:\\$\\{batchId\\}:\\$\\{roleId\\}:SETTLEMENT_ROLE_VIEW`/);\n  assert.doesNotMatch(PIPELINE, /return `narrative:/);\n'
+          if source.count(old) != 1:
+              raise SystemExit(f"database vocabulary dedupe anchor count={source.count(old)}")
+          vocabulary.write_text(source.replace(old, new, 1), encoding="utf-8")
+          PY
+          git diff --check
+          grep -F 'return `b0-narrative:${batchId}:${roleId}:SETTLEMENT_ROLE_VIEW`' apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          ! grep -F 'return `narrative:${batchId}:${roleId}:SETTLEMENT_ROLE_VIEW`' apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          grep -F 'B0 narrative tasks use the durable b0 dedupe namespace for create and lookup' apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts
+
+      - name: Frozen install and product verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-batch
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api test
+          pnpm --filter @apps/api build
+
+      - name: Commit and push the verified product repair
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          remote_before="$(git rev-parse origin/$GITHUB_REF_NAME)"
+          test "$remote_before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts \
+            apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          git rm .github/workflows/b0-stage14-narrative-dedupe.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage14-narrative-dedupe.yml
+          apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): namespace narrative outbox dedupe keys"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          remote_after="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | awk '{print $1}')"
+          test "$remote_after" = "$local_head"
+          printf '{\n  "schemaVersion": 1,\n  "localHead": "%s",\n  "remoteTipBeforePush": "%s",\n  "remoteTipAfterPush": "%s",\n  "sourceRunId": "%s"\n}\n' \
+            "$local_head" "$remote_before" "$remote_after" "$GITHUB_RUN_ID" > /tmp/b0-stage14-push-receipt.json
+          echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
+
+      - name: Upload push receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-stage14-push-receipt-${{ steps.push.outputs.remote_after }}
+          path: /tmp/b0-stage14-push-receipt.json
+          retention-days: 14
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PRODUCT_SHA: ${{ steps.push.outputs.remote_after }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage14-narrative-dedupe",
+              description: `narrative dedupe namespace repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (success && process.env.PRODUCT_SHA) {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: process.env.PRODUCT_SHA,
+                state: "success",
+                context: "b0/narrative-dedupe-repair",
+                description: `verified product repair from ${context.runId}`,
+                target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              });
+            }
+            if (!success) core.setFailed("B0 narrative dedupe namespace repair failed");
