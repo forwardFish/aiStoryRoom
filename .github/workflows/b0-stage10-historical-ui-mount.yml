@@ -1,0 +1,215 @@
+name: B0 Stage 10 Historical Game B0 Mount Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage10-historical-ui-mount.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage10-historical-ui-mount
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage10-historical-ui-mount",
+              description: `historical B0 game mount repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Verify exact branch tip and source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "c47201f6af706d18e27532472ddc2e7f65369d32"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage10-historical-ui-mount.yml"
+          test "$(git hash-object apps/web/public/game-bootstrap.js)" = "e01b8bf639f38ea17340820e3e217c1f5debdb4c"
+          test "$(git hash-object apps/web/tests/room-main-game.test.mjs)" = "4d6356a1e272223be4bd865244c8fe28150aefdf"
+
+      - name: Mount the existing B0 controller on historical B0 room projections
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          bootstrap = Path("apps/web/public/game-bootstrap.js")
+          source = bootstrap.read_text(encoding="utf-8")
+          old = '''  // Historical room runs retain their existing member-scoped renderer. This
+          // branch is only reachable after an authenticated 2xx room projection.
+          if (response.ok && payload?.room?.id) {
+            win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
+            const [{ RoomStoryStorage }, { createStoryApp }] = await Promise.all([loadRoomStorage(), loadSolo()]);
+            const storage = new RoomStoryStorage({ roomId: runId, initialModel: payload, fetchImpl, localStorage: win.localStorage });
+            const app = createStoryApp({ root, window: win, storage });
+            await app.boot();
+            return app;
+          }
+          '''.replace("          ", "")
+          new = '''  // Historical room runs retain their existing member-scoped renderer. B0 can
+          // be enabled on one of these durable runs without changing its engineVersion,
+          // so strategyVersion is the authoritative signal for mounting the existing
+          // synchronized window and ActionContract controller on the real /game page.
+          if (response.ok && payload?.room?.id) {
+            win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
+            const [{ RoomStoryStorage }, { createStoryApp }] = await Promise.all([loadRoomStorage(), loadSolo()]);
+            const storage = new RoomStoryStorage({ roomId: runId, initialModel: payload, fetchImpl, localStorage: win.localStorage });
+            const app = createStoryApp({ root, window: win, storage });
+            await app.boot();
+            if (payload.room.strategyVersion === "b0_windowed_v1") {
+              const { attachManeuverV1Controller } = await loadManeuverV1();
+              await attachManeuverV1Controller({ app, root, window: win, runId, fetchImpl });
+            }
+            return app;
+          }
+          '''.replace("          ", "")
+          if source.count(old) != 1:
+              raise SystemExit(f"historical bootstrap anchor count={source.count(old)}")
+          bootstrap.write_text(source.replace(old, new, 1), encoding="utf-8")
+
+          test_path = Path("apps/web/tests/room-main-game.test.mjs")
+          source = test_path.read_text(encoding="utf-8")
+          old = '''    loadRoomStorage: async () => ({ RoomStoryStorage: class { constructor({ initialModel }) { storageConstructed = initialModel?.room?.id === "room-1"; } } }),
+            loadSolo: async () => ({ createStoryApp: ({ storage }) => ({ boot: async () => { formalAppBooted = Boolean(storage); }, getState: () => ({ view: null }), refresh: async () => {} }) })
+          });'''.replace("            ", "")
+          new = '''    loadRoomStorage: async () => ({ RoomStoryStorage: class { constructor({ initialModel }) { storageConstructed = initialModel?.room?.id === "room-1"; } } }),
+            loadSolo: async () => ({ createStoryApp: ({ storage }) => ({ boot: async () => { formalAppBooted = Boolean(storage); }, getState: () => ({ view: null }), refresh: async () => {} }) }),
+            loadManeuverV1: async () => { throw new Error("ordinary historical rooms must not mount B0 controls"); }
+          });'''.replace("            ", "")
+          if source.count(old) != 1:
+              raise SystemExit(f"ordinary room bootstrap test anchor count={source.count(old)}")
+          source = source.replace(old, new, 1)
+
+          marker = '''test("game bootstrap fails closed when an explicit room run does not exist", async () => {
+          '''.replace("          ", "")
+          addition = '''test("game bootstrap mounts synchronized B0 controls after the historical room renderer", async () => {
+            const dom = new JSDOM('<!doctype html><main id="app"></main>', { url: "http://127.0.0.1:5200/game?runId=room-1" });
+            dom.window.document.cookie = "many_worlds_session_hint=1; Path=/";
+            const payload = roomModel();
+            payload.room.strategyVersion = "b0_windowed_v1";
+            let appBooted = false;
+            let controllerAttached = false;
+
+            const app = await bootGamePage({
+              root: dom.window.document.querySelector("#app"),
+              window: dom.window,
+              fetchImpl: async () => new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } }),
+              loadRoomStorage: async () => ({ RoomStoryStorage: class {} }),
+              loadSolo: async () => ({ createStoryApp: () => ({
+                boot: async () => { appBooted = true; },
+                getState: () => ({ view: null }),
+                refresh: async () => {},
+                destroy: () => {},
+              }) }),
+              loadManeuverV1: async () => ({
+                attachManeuverV1Controller: async ({ app: mountedApp, root, runId, fetchImpl }) => {
+                  assert.equal(appBooted, true, "the existing game renderer must boot before B0 mounts");
+                  assert.equal(mountedApp?.boot instanceof Function, true);
+                  assert.equal(root, dom.window.document.querySelector("#app"));
+                  assert.equal(runId, "room-1");
+                  assert.equal(typeof fetchImpl, "function");
+                  controllerAttached = true;
+                },
+              }),
+            });
+
+            assert.equal(appBooted, true);
+            assert.equal(controllerAttached, true);
+            assert.equal(app?.boot instanceof Function, true);
+            dom.window.close();
+          });
+
+          '''.replace("          ", "")
+          if source.count(marker) != 1:
+              raise SystemExit(f"B0 bootstrap test insertion count={source.count(marker)}")
+          test_path.write_text(source.replace(marker, addition + marker, 1), encoding="utf-8")
+          PY
+          git diff --check
+          grep -F 'payload.room.strategyVersion === "b0_windowed_v1"' apps/web/public/game-bootstrap.js
+          grep -F 'game bootstrap mounts synchronized B0 controls' apps/web/tests/room-main-game.test.mjs
+
+      - name: Frozen install and Web verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web exec node --test tests/room-main-game.test.mjs
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @apps/web test
+          pnpm --filter @apps/web build
+
+      - name: Commit the completed repair as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/public/game-bootstrap.js apps/web/tests/room-main-game.test.mjs
+          git rm .github/workflows/b0-stage10-historical-ui-mount.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage10-historical-ui-mount.yml
+          apps/web/public/game-bootstrap.js
+          apps/web/tests/room-main-game.test.mjs
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): mount synchronized controls on historical game page"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage10-historical-ui-mount",
+              description: `historical B0 game mount repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 stage 10 historical game mount repair failed");
