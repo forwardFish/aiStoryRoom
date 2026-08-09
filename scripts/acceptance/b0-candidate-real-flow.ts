@@ -12,16 +12,20 @@ const RAW_ROOT = join(EVIDENCE_ROOT, "raw");
 const LOG_ROOT = join(EVIDENCE_ROOT, "logs");
 const SCREENSHOT_ROOT = join(EVIDENCE_ROOT, "screenshots");
 const TESTED_CODE_SHA = required("GITHUB_SHA");
+const ACCEPTANCE_TIER = required("B0_ACCEPTANCE_TIER");
+const ACCEPTANCE_ENVIRONMENT = optional("B0_ACCEPTANCE_ENVIRONMENT");
+const DATABASE_SECRET_NAME = optional("B0_DATABASE_SECRET_NAME");
+const PROVIDER_SECRET_NAME = optional("B0_PROVIDER_SECRET_NAME");
 const DATABASE_URL = required("DATABASE_URL");
 const OPENOVEL_PROVIDER_BASE_URL = required("OPENOVEL_PROVIDER_BASE_URL");
 const OPENOVEL_API_KEY = required("OPENOVEL_API_KEY");
 const OPENOVEL_MODEL = required("OPENOVEL_MODEL");
 const DATABASE_PROVENANCE = required("B0_DATABASE_PROVENANCE");
-const DATABASE_IMAGE = required("B0_DATABASE_IMAGE");
-const DATABASE_IMAGE_DIGEST = required("B0_DATABASE_IMAGE_DIGEST");
+const DATABASE_IMAGE = optional("B0_DATABASE_IMAGE");
+const DATABASE_IMAGE_DIGEST = optional("B0_DATABASE_IMAGE_DIGEST");
 const PROVIDER_PROVENANCE = required("B0_PROVIDER_PROVENANCE");
-const PROVIDER_IMAGE = required("B0_PROVIDER_IMAGE");
-const PROVIDER_IMAGE_DIGEST = required("B0_PROVIDER_IMAGE_DIGEST");
+const PROVIDER_IMAGE = optional("B0_PROVIDER_IMAGE");
+const PROVIDER_IMAGE_DIGEST = optional("B0_PROVIDER_IMAGE_DIGEST");
 const PROVIDER_MODEL_DIGEST = required("B0_PROVIDER_MODEL_DIGEST");
 const CHROME_PATH = discoverChrome();
 const API_PORT = integerEnv("B0_API_PORT", 33102);
@@ -49,20 +53,25 @@ const evidence: Record<string, unknown> = {
     apiPort: API_PORT,
     webPort: WEB_PORT,
     runtimePort: RUNTIME_PORT,
+    acceptanceTier: ACCEPTANCE_TIER,
+    acceptanceEnvironment: ACCEPTANCE_ENVIRONMENT || null,
     databaseKind: safeDatabaseKind(DATABASE_URL),
     databaseProvenance: {
       kind: DATABASE_PROVENANCE,
-      image: DATABASE_IMAGE,
-      imageDigest: DATABASE_IMAGE_DIGEST,
-      selfHostedOfficialSupabase: true,
-      supabaseCloudUsed: false,
+      environment: ACCEPTANCE_ENVIRONMENT || null,
+      secretName: DATABASE_SECRET_NAME || null,
+      image: DATABASE_IMAGE || null,
+      imageDigest: DATABASE_IMAGE_DIGEST || null,
+      selfHostedOfficialSupabase: ACCEPTANCE_TIER === "engineering-selfhosted",
+      supabaseCloudUsed: ACCEPTANCE_TIER === "formal-c8",
       publicSchemaUsed: false,
     },
     narrativeProvider: {
       ...safeProviderKind(OPENOVEL_PROVIDER_BASE_URL),
       provenance: PROVIDER_PROVENANCE,
-      image: PROVIDER_IMAGE,
-      imageDigest: PROVIDER_IMAGE_DIGEST,
+      secretName: PROVIDER_SECRET_NAME || null,
+      image: PROVIDER_IMAGE || null,
+      imageDigest: PROVIDER_IMAGE_DIGEST || null,
       model: OPENOVEL_MODEL,
       modelDigest: PROVIDER_MODEL_DIGEST,
       mode: "live-provider-only",
@@ -867,7 +876,13 @@ async function walk(root: string): Promise<string[]> {
 
 function markdownReport(value: Record<string, unknown>) {
   const phases = array(value.phases);
-  return `# B0 C9 Real Acceptance Report\n\n- Status: **${String(value.status || "UNKNOWN")}**\n- Tested code SHA: \`${TESTED_CODE_SHA}\`\n- Started: ${String(value.startedAt)}\n- Completed: ${String(value.completedAt || "") }\n- Database: official self-hosted Supabase PostgreSQL image ${DATABASE_IMAGE} in an isolated random schema; Supabase Cloud and the public schema were not used.\n- Narrative provider: real ${PROVIDER_PROVENANCE} model ${OPENOVEL_MODEL} over OpenAI-compatible HTTP; deterministic/mock providers and fallback are prohibited.\n- Runtime: real Nest API, static Web server, OpenNovel runtime, embedded and independent worker processes.\n- Browser: three isolated Chromium profiles, including desktop and 390px narrow viewport.\n\n## Phases\n\n${phases.map((phase) => `- ${object(phase).status === "PASS" ? "✅" : "❌"} ${object(phase).name}`).join("\n")}\n\n## Trust boundary\n\nThis report records only sanitized identifiers, hashes, counts, status transitions, DOM summaries, network status metadata, and screenshots. Database URLs, provider keys, session cookies, bearer tokens, and internal shared tokens are excluded and scrubbed from process logs.\n`;
+  const databaseDescription = ACCEPTANCE_TIER === "formal-c8"
+    ? `real non-production Supabase project bound through GitHub environment ${ACCEPTANCE_ENVIRONMENT} and random isolated schema`
+    : `official self-hosted Supabase PostgreSQL image ${DATABASE_IMAGE} in a random isolated engineering schema`;
+  const providerDescription = ACCEPTANCE_TIER === "formal-c8"
+    ? `real DeepSeek API model ${OPENOVEL_MODEL}`
+    : `real local Ollama model ${OPENOVEL_MODEL} from image ${PROVIDER_IMAGE}`;
+  return `# B0 C9 Real Acceptance Report\n\n- Status: **${String(value.status || "UNKNOWN")}**\n- Tested code SHA: \`${TESTED_CODE_SHA}\`\n- Acceptance tier: \`${ACCEPTANCE_TIER}\`\n- Started: ${String(value.startedAt)}\n- Completed: ${String(value.completedAt || "") }\n- Database: ${databaseDescription}; the public schema was not used or modified.\n- Narrative provider: ${providerDescription} over OpenAI-compatible HTTP; deterministic/mock providers and fallback are prohibited.\n- Runtime: real Nest API, static Web server, OpenNovel runtime, embedded and independent worker processes.\n- Browser: three isolated Chromium profiles, including desktop and 390px narrow viewport.\n\n## Phases\n\n${phases.map((phase) => `- ${object(phase).status === "PASS" ? "✅" : "❌"} ${object(phase).name}`).join("\n")}\n\n## Trust boundary\n\nThis report records only sanitized identifiers, hashes, counts, status transitions, DOM summaries, network status metadata, and screenshots. Database URLs, provider keys, session cookies, bearer tokens, and internal shared tokens are excluded and scrubbed from process logs.\n`;
 }
 
 
@@ -905,6 +920,7 @@ function hashObject(value: unknown) { return hashText(JSON.stringify(value)); }
 function hashText(value: string) { return createHash("sha256").update(value).digest("hex"); }
 function stableLabel(value: unknown) { if (!value) return null; return `id_${hashText(String(value)).slice(0, 16)}`; }
 function required(name: string) { const value = String(process.env[name] || "").trim(); if (!value) throw new Error(`${name} is required`); return value; }
+function optional(name: string) { return String(process.env[name] || "").trim(); }
 function integerEnv(name: string, fallback: number) { const value = Number(process.env[name] || fallback); if (!Number.isInteger(value) || value <= 0) throw new Error(`${name} must be a positive integer`); return value; }
 function object(value: unknown): Record<string, any> { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {}; }
 function array(value: unknown): any[] { return Array.isArray(value) ? value : []; }
@@ -937,7 +953,8 @@ function safeDatabaseKind(urlValue: string) {
     protocol: url.protocol.replace(":", ""),
     provider: DATABASE_PROVENANCE,
     hostHash: hashText(url.hostname).slice(0, 16),
-    selfHostedOfficialSupabase: DATABASE_PROVENANCE === "official-supabase-postgres-container",
+    selfHostedOfficialSupabase: ACCEPTANCE_TIER === "engineering-selfhosted",
+    supabaseCloudNonProduction: ACCEPTANCE_TIER === "formal-c8",
   };
 }
 function safeProviderKind(urlValue: string) {
@@ -949,15 +966,42 @@ function safeProviderKind(urlValue: string) {
   };
 }
 function assertAcceptanceProvenance() {
-  if (DATABASE_PROVENANCE !== "official-supabase-postgres-container") throw new Error("B0 acceptance requires the official self-hosted Supabase PostgreSQL container provenance");
-  if (!DATABASE_IMAGE.startsWith("supabase/postgres:")) throw new Error("B0_DATABASE_IMAGE must identify the official supabase/postgres image");
-  if (!DATABASE_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_DATABASE_IMAGE_DIGEST must be a sha256 digest");
-  if (PROVIDER_PROVENANCE !== "ollama-openai-compatible-local") throw new Error("B0 acceptance requires a real local Ollama provider provenance");
-  if (!PROVIDER_IMAGE.startsWith("ollama/ollama:")) throw new Error("B0_PROVIDER_IMAGE must identify the official ollama/ollama image");
-  if (!PROVIDER_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_IMAGE_DIGEST must be a sha256 digest");
-  if (!PROVIDER_MODEL_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_MODEL_DIGEST must be a sha256 digest");
+  const databaseUrl = new URL(DATABASE_URL);
   const providerUrl = new URL(OPENOVEL_PROVIDER_BASE_URL);
-  if (providerUrl.hostname !== "127.0.0.1" && providerUrl.hostname !== "localhost") throw new Error("B0 real provider must be bound to the isolated local acceptance runner");
+  const databaseHost = databaseUrl.hostname.toLowerCase();
+  const providerHost = providerUrl.hostname.toLowerCase();
+  const localHosts = new Set(["127.0.0.1", "localhost", "::1"]);
+
+  if (!PROVIDER_MODEL_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_MODEL_DIGEST must be a sha256 digest");
+
+  if (ACCEPTANCE_TIER === "engineering-selfhosted") {
+    if (DATABASE_PROVENANCE !== "official-supabase-postgres-container") throw new Error("Engineering acceptance requires the official self-hosted Supabase PostgreSQL container provenance");
+    if (!DATABASE_IMAGE.startsWith("supabase/postgres:")) throw new Error("B0_DATABASE_IMAGE must identify the official supabase/postgres image");
+    if (!DATABASE_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_DATABASE_IMAGE_DIGEST must be a sha256 digest");
+    if (!localHosts.has(databaseHost)) throw new Error("Engineering database must be isolated on the local runner");
+    if (PROVIDER_PROVENANCE !== "ollama-openai-compatible-local") throw new Error("Engineering acceptance requires a real local Ollama provider provenance");
+    if (!PROVIDER_IMAGE.startsWith("ollama/ollama:")) throw new Error("B0_PROVIDER_IMAGE must identify the official ollama/ollama image");
+    if (!PROVIDER_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_IMAGE_DIGEST must be a sha256 digest");
+    if (!localHosts.has(providerHost)) throw new Error("Engineering provider must be bound to the isolated local runner");
+    return;
+  }
+
+  if (ACCEPTANCE_TIER === "formal-c8") {
+    if (DATABASE_PROVENANCE !== "supabase-cloud-nonproduction-random-schema") throw new Error("Formal C8 requires a real non-production Supabase project with a random isolated schema");
+    if (!/(?:^|\.)supabase\.(?:co|com)$/.test(databaseHost)) throw new Error("Formal C8 DATABASE_URL must target a Supabase-managed host");
+    if (localHosts.has(databaseHost)) throw new Error("Formal C8 cannot use a local PostgreSQL or Supabase container");
+    if (!/(?:test|testing|staging|stage|preview)/i.test(ACCEPTANCE_ENVIRONMENT)) throw new Error("Formal C8 must bind through an explicitly non-production GitHub environment");
+    if (!DATABASE_SECRET_NAME) throw new Error("Formal C8 must record the non-production database secret name");
+    if (DATABASE_IMAGE || DATABASE_IMAGE_DIGEST) throw new Error("Formal C8 must not claim a container image as its database provenance");
+    if (PROVIDER_PROVENANCE !== "deepseek-api-real") throw new Error("Formal C8 requires the real DeepSeek API provider provenance");
+    if (providerUrl.protocol !== "https:") throw new Error("Formal C8 provider transport must use HTTPS");
+    if (providerHost !== "api.deepseek.com") throw new Error("Formal C8 provider must target the official DeepSeek API host");
+    if (!PROVIDER_SECRET_NAME) throw new Error("Formal C8 must record the provider secret name");
+    if (PROVIDER_IMAGE || PROVIDER_IMAGE_DIGEST) throw new Error("Formal C8 must not claim a local provider image");
+    return;
+  }
+
+  throw new Error(`Unsupported B0_ACCEPTANCE_TIER: ${ACCEPTANCE_TIER}`);
 }
 function dedupeNetwork(rows: Array<{ method: string; url: string; status: number; type: string }>) { const seen = new Set<string>(); return rows.filter((entry) => { const key = `${entry.url}|${entry.status}|${entry.type}`; if (seen.has(key)) return false; seen.add(key); return true; }).slice(-80); }
 async function writeJson(path: string, value: unknown) { await mkdir(dirname(path), { recursive: true }); await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8"); }
