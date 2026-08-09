@@ -13,6 +13,7 @@ import {
   normalizeB0PlayerPlanPresentationV1,
   projectB0PlayerWindowV1,
 } from "./b0-window-player.core";
+import { B0WindowPlayerService } from "./b0-window-player.service";
 
 function window(status: B0SettlementWindowV1["status"] = "OPEN"): B0SettlementWindowV1 {
   return {
@@ -292,4 +293,48 @@ test("C7 player plan presentation rejects internal and unknown fields", () => {
     confirmLabel: "Confirm",
     predicate: "internal",
   }), (error: unknown) => error instanceof B0PlayerWindowErrorV1 && error.code === "PLAN_PRESENTATION_INVALID");
+});
+
+test("C7 current window keeps the just-completed structured settlement visible", async () => {
+  const previousEnvelope = { schemaVersion: "b0-commit-envelope-v1", batchId: "batch.previous" };
+  const prisma = {
+    actionWindow: {
+      findMany: async () => [
+        { resolutionWorkflow: { rulesOutputJson: { schemaVersion: "not-b0" } } },
+        { resolutionWorkflow: { rulesOutputJson: previousEnvelope } },
+      ],
+    },
+  };
+  const service = new B0WindowPlayerService(prisma as never, {} as never, {} as never);
+
+  const selected = await (service as any).structuredResultEnvelope({
+    id: "window.current",
+    runId: "run.one",
+    resolutionWorkflow: { rulesOutputJson: null },
+  });
+
+  assert.equal(selected, previousEnvelope);
+});
+
+test("C7 current committed settlement takes precedence over historical results", async () => {
+  let queriedHistory = false;
+  const currentEnvelope = { schemaVersion: "b0-commit-envelope-v1", batchId: "batch.current" };
+  const prisma = {
+    actionWindow: {
+      findMany: async () => {
+        queriedHistory = true;
+        return [];
+      },
+    },
+  };
+  const service = new B0WindowPlayerService(prisma as never, {} as never, {} as never);
+
+  const selected = await (service as any).structuredResultEnvelope({
+    id: "window.current",
+    runId: "run.one",
+    resolutionWorkflow: { rulesOutputJson: currentEnvelope },
+  });
+
+  assert.equal(selected, currentEnvelope);
+  assert.equal(queriedHistory, false);
 });

@@ -245,8 +245,8 @@ export class B0WindowPlayerService {
   }
 
   private async structuredResults(window: NonNullable<WindowRow>, actorId: string): Promise<B0PublicationDeliveryV1[]> {
-    const envelope = jsonRecord(window.resolutionWorkflow?.rulesOutputJson);
-    if (envelope?.schemaVersion !== "b0-commit-envelope-v1") return [];
+    const envelope = await this.structuredResultEnvelope(window);
+    if (!envelope) return [];
     const snapshot = envelope.snapshot as B0SettlementSnapshotV1;
     const resolution = envelope.resolution as B0SettlementResolutionV1;
     const intentIds = [...new Set(resolution.intentOutcomes.map((entry) => entry.intentId))].sort();
@@ -267,6 +267,33 @@ export class B0WindowPlayerService {
     }
     return buildB0PublicationPlanV1({ snapshot, resolution, intents }).deliveries
       .filter((delivery) => delivery.recipientActorId === actorId);
+  }
+
+  private async structuredResultEnvelope(window: NonNullable<WindowRow>): Promise<Record<string, any> | null> {
+    const current = jsonRecord(window.resolutionWorkflow?.rulesOutputJson);
+    if (current?.schemaVersion === "b0-commit-envelope-v1") return current;
+
+    // Publication opens the next synchronized window immediately. Keep the
+    // just-completed settlement visible while players plan in that new window
+    // instead of dropping every structured result as soon as ensureRunWindow
+    // creates the successor.
+    const completed = await this.prisma.actionWindow.findMany({
+      where: {
+        runId: window.runId,
+        id: { not: window.id },
+        status: "COMPLETED",
+      },
+      select: {
+        resolutionWorkflow: { select: { rulesOutputJson: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+    });
+    for (const candidate of completed) {
+      const envelope = jsonRecord(candidate.resolutionWorkflow?.rulesOutputJson);
+      if (envelope?.schemaVersion === "b0-commit-envelope-v1") return envelope;
+    }
+    return null;
   }
 
   private async narrativeProjection(
