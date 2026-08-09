@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { catchError, from, mergeMap, of, throwError, type Observable } from "rxjs";
 import type { AuthenticatedUser } from "../auth/current-user.decorator";
+import { stripPrivateSoloEndingEvidence } from "./solo-ending-result";
 import { SoloEndingResultService } from "./solo-ending-result.service";
 
 @Injectable()
@@ -17,20 +18,35 @@ export class SoloEndingResultInterceptor implements NestInterceptor {
       method?: string;
       originalUrl?: string;
       url?: string;
-      params?: { roomId?: string };
+      params?: { roomId?: string; runId?: string };
       user?: AuthenticatedUser;
     }>();
-    const runId = String(request.params?.roomId || "").trim();
     const path = String(request.originalUrl || request.url || "");
-    const target = request.method === "GET"
-      && Boolean(runId)
+    const roomResultRunId = String(request.params?.roomId || "").trim();
+    const directRunId = String(request.params?.runId || "").trim();
+    const resultTarget = request.method === "GET"
+      && Boolean(roomResultRunId)
       && /\/v4\/rooms\/[^/?]+\/result(?:\?|$)/.test(path);
-    if (!target || !request.user) return next.handle();
+    const directProjectionTarget = /\/v4\/openovel\/runs(?:\/[^/?]+)?(?:\?|$)/.test(path)
+      && !/\/actions(?:\?|$)/.test(path)
+      && (request.method === "GET" || request.method === "POST")
+      && (Boolean(directRunId) || /\/v4\/openovel\/runs(?:\?|$)/.test(path));
+
+    if (directProjectionTarget) {
+      return next.handle().pipe(
+        mergeMap((payload) => of(stripPrivateSoloEndingEvidence(payload))),
+      );
+    }
+    if (!resultTarget || !request.user) return next.handle();
 
     return next.handle().pipe(
-      mergeMap((payload) => from(this.results.present(request.user!, runId, payload))),
+      mergeMap((payload) => from(this.results.present(
+        request.user!,
+        roomResultRunId,
+        payload,
+      ))),
       catchError((error) => from(
-        this.results.recoverCompletedLegacy(request.user!, runId, error),
+        this.results.recoverCompletedLegacy(request.user!, roomResultRunId, error),
       ).pipe(
         mergeMap((recovered) => recovered === null
           ? throwError(() => error)

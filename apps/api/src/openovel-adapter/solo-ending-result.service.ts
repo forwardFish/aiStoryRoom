@@ -10,11 +10,13 @@ import { PrismaService } from "../prisma.service";
 import {
   OPENOVEL_ENGINE_VERSION,
   OpenNovelRuntimeClient,
+  type OpenNovelPublicRun,
 } from "./openovel-runtime.client";
 import {
   compileLegacyOpenNovelResult,
   compileOpenNovelResultV2,
   isRawOpenNovelResult,
+  isSoloResultNotReadyError,
   type RawOpenNovelResult,
   type SoloResultActionRecord,
   type SoloResultRunRecord,
@@ -35,24 +37,32 @@ export class SoloEndingResultService {
     if (!isRawOpenNovelResult(payload)) return payload;
     const run = await this.authorizedRun(user, runId);
     if (run.engineVersion !== OPENOVEL_ENGINE_VERSION) return payload;
+    const runtimeRun = await this.runtime.getRun(runId);
+    assertAuthoritativeResultReady(run, payload, runtimeRun);
     const actions = await this.resolvedActions(runId, user.id);
-    return compileOpenNovelResultV2({
-      raw: payload,
-      run,
-      viewerUserId: user.id,
-      actions,
-      // The current runtime module advertises only the role already bound to
-      // this completed run. Future roles must be exposed by an explicit
-      // runtime capability before the change-role action can become enabled.
-      supportedRoleKeys: [run.players[0]!.role!.roleKey],
-      nextPart: null,
-    });
+    try {
+      return compileOpenNovelResultV2({
+        raw: payload,
+        authoritativeEnding: runtimeRun.ending!,
+        run,
+        viewerUserId: user.id,
+        actions,
+        // The current runtime module advertises only the role already bound to
+        // this completed run. Future roles must be exposed by an explicit
+        // runtime capability before the change-role action can become enabled.
+        supportedRoleKeys: [run.players[0]!.role!.roleKey],
+        nextPart: null,
+      });
+    } catch (error) {
+      if (isSoloResultNotReadyError(error)) throw resultNotReady(error.reason);
+      throw error;
+    }
   }
 
   /**
    * Historical completed runs can predate ending.json. Recover only that exact
-   * fail-closed case; permission, membership, runtime and unrelated 409 errors
-   * continue to propagate unchanged.
+   * fail-closed case. A completed run that has an Ending but lacks verified
+   * causes is not historical fallback; it remains RESULT_NOT_READY.
    */
   async recoverCompletedLegacy(
     user: AuthenticatedUser,
@@ -64,35 +74,7 @@ export class SoloEndingResultService {
     if (run.engineVersion !== OPENOVEL_ENGINE_VERSION) return null;
     const runtimeRun = await this.runtime.getRun(runId);
     if (runtimeRun.status !== "COMPLETED") return null;
-
-    if (runtimeRun.ending) {
-      const actions = await this.resolvedActions(runId, user.id);
-      const role = run.players[0]!.role!;
-      const raw: RawOpenNovelResult = {
-        room: {
-          id: run.id,
-          title: (run as any).title,
-          worldId: run.templateKey,
-          completedAt: runtimeRun.updatedAt,
-        },
-        player: {
-          roleName: role.roleName,
-          personalGoal: role.personalGoal,
-          endingTitle: runtimeRun.ending.title,
-          protagonistFate: runtimeRun.ending.protagonistFate,
-        },
-        ending: runtimeRun.ending,
-        completedNodes: runtimeRun.turnNumber,
-      };
-      return compileOpenNovelResultV2({
-        raw,
-        run,
-        viewerUserId: user.id,
-        actions,
-        supportedRoleKeys: [role.roleKey],
-        nextPart: null,
-      });
-    }
+    if (runtimeRun.ending) return null;
 
     return compileLegacyOpenNovelResult({
       run,
@@ -161,6 +143,49 @@ export class SoloEndingResultService {
       },
     }) as unknown as Promise<SoloResultActionRecord[]>;
   }
+}
+
+function assertAuthoritativeResultReady(
+  run: SoloResultRunRecord,
+  raw: RawOpenNovelResult,
+  runtimeRun: OpenNovelPublicRun,
+) {
+  const role = run.players[0]?.role;
+  const runtimeEnding = runtimeRun.ending;
+  if (
+    runtimeRun.runId !== run.id
+    || runtimeRun.worldId !== run.templateKey
+    || runtimeRun.roleId !== role?.roleKey
+    || runtimeRun.status !== "COMPLETED"
+    || runtimeRun.turnNumber !== 20
+    || !runtimeEnding
+  ) throw resultNotReady("RUNTIME_NOT_AUTHORITATIVELY_COMPLETED");
+  if (
+    raw.room.id !== run.id
+    || raw.completedNodes !== 20
+    || raw.ending.endingKey !== runtimeEnding.endingKey
+    || raw.ending.scope !== runtimeEnding.scope
+    || raw.ending.sourceTurnId !== runtimeEnding.sourceTurnId
+    || raw.ending.sourceRevision !== runtimeEnding.sourceRevision
+    || raw.ending.title !== runtimeEnding.title
+    || raw.ending.finalSceneNarrative !== runtimeEnding.finalSceneNarrative
+    || raw.ending.protagonistFate !== runtimeEnding.protagonistFate
+    || JSON.stringify(raw.ending.aftermath) !== JSON.stringify(runtimeEnding.aftermath)
+  ) throw resultNotReady("RESULT_ENDING_MISMATCH");
+  if (
+    runtimeEnding.sourceTurnId !== "T20"
+    || runtimeEnding.sourceRevision !== 20
+    || !new Set(["PART", "STORY"]).has(runtimeEnding.scope)
+    || (run.templateKey === "sangtian" && runtimeEnding.scope !== "PART")
+  ) throw resultNotReady("ENDING_SOURCE_NOT_READY");
+}
+
+function resultNotReady(reason: string) {
+  return new ConflictException({
+    code: "RESULT_NOT_READY",
+    message: "The ending is available after authoritative part completion and cause projection.",
+    reason,
+  });
 }
 
 function errorCode(error: unknown) {

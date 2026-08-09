@@ -3,6 +3,7 @@ import { AuthGuard } from "../auth/auth.guard";
 import { CurrentUser, type AuthenticatedUser } from "../auth/current-user.decorator";
 import { OpenNovelAdapterService } from "./openovel-adapter.service";
 import type { OpenNovelTurnEvent } from "./openovel-runtime.client";
+import { stripPrivateSoloEndingEvidenceFromEvent } from "./solo-ending-result";
 
 @UseGuards(AuthGuard)
 @Controller("v4/openovel")
@@ -43,7 +44,7 @@ export class OpenNovelAdapterController {
     response.flushHeaders?.();
     try {
       await this.adapter.submitAction(user, runId, body, async (event) => {
-        writeSse(response, event);
+        writeSse(response, stripPrivateSoloEndingEvidenceFromEvent(event));
       });
     } catch (error) {
       writeSse(response, {

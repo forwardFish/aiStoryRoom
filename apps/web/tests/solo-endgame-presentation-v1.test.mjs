@@ -218,6 +218,6 @@ test("DOM enhancement is idempotent and does not create a parallel page", () => 
   enhanceSoloEndgamePage(dom.window.document, normalized);
   assert.equal(dom.window.document.querySelectorAll('[data-testid="final-judgement"]').length, 1);
   assert.equal(dom.window.document.querySelectorAll('[data-solo-endgame-v1="details"]').length, 1);
-  assert.equal(dom.window.document.querySelectoqAll('[data-solo-endgame-v1="replay-actions"]').length, 1);
+  assert.equal(dom.window.document.querySelectorAll('[data-solo-endgame-v1="replay-actions"]').length, 1);
   dom.window.close();
 });
