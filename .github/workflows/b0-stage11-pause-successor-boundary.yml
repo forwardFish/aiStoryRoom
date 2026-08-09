@@ -1,0 +1,194 @@
+name: B0 Stage 11 Pause Successor Boundary Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage11-pause-successor-boundary.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage11-pause-successor-boundary
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage11-pause-successor-boundary",
+              description: `pause successor boundary repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch tip and source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "d42778203e06466934ac3bc9d3f06941af5e2976"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-pause-successor-boundary.yml"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts)" = "35e2716acde2247546f41734ddeee925d9f9369a"
+          test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts)" = "3d1ccbe18e81c841b9eb9cd76d6c02c181d1c047"
+
+      - name: Enforce pause only at successor creation boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          service = Path("apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts")
+          source = service.read_text(encoding="utf-8")
+          old_active = '''    const active = [...b0Windows].reverse().find((window) =>
+                ACTIVE_B0_WINDOW_STATUSES.includes(window.status as typeof ACTIVE_B0_WINDOW_STATUSES[number]));
+              if (active) return mapStoredWindow(active);
+
+              const priorConfig = b0Windows.length
+          '''.replace("              ", "")
+          new_active = '''    const active = [...b0Windows].reverse().find((window) =>
+                ACTIVE_B0_WINDOW_STATUSES.includes(window.status as typeof ACTIVE_B0_WINDOW_STATUSES[number]));
+              if (active) return mapStoredWindow(active);
+              if (b0RunPaused(run.stateJson)) return null;
+
+              const priorConfig = b0Windows.length
+          '''.replace("              ", "")
+          if source.count(old_active) != 1:
+              raise SystemExit(f"active-window pause boundary anchor count={source.count(old_active)}")
+          source = source.replace(old_active, new_active, 1)
+
+          old_helpers = '''function b0RunEnabled(strategyVersion: string, stateValue: unknown): boolean {
+            if (process.env.B0_ENABLED === "false") return false;
+            if (B0_STRATEGY_VERSIONS.has(strategyVersion)) return true;
+            const state = jsonRecord(stateValue);
+            const b0 = jsonRecord(state?.b0);
+            return b0?.enabled === true && b0?.paused !== true;
+          }
+          '''.replace("          ", "")
+          new_helpers = '''export function b0RunEnabled(strategyVersion: string, stateValue: unknown): boolean {
+            if (process.env.B0_ENABLED === "false") return false;
+            if (B0_STRATEGY_VERSIONS.has(strategyVersion)) return true;
+            const state = jsonRecord(stateValue);
+            const b0 = jsonRecord(state?.b0);
+            return b0?.enabled === true;
+          }
+
+          export function b0RunPaused(stateValue: unknown): boolean {
+            const state = jsonRecord(stateValue);
+            const b0 = jsonRecord(state?.b0);
+            return b0?.paused === true;
+          }
+          '''.replace("          ", "")
+          if source.count(old_helpers) != 1:
+              raise SystemExit(f"B0 run-state helper anchor count={source.count(old_helpers)}")
+          service.write_text(source.replace(old_helpers, new_helpers, 1), encoding="utf-8")
+
+          spec = Path("apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts")
+          source = spec.read_text(encoding="utf-8")
+          old_import = 'import { B0SettlementPipelineService, b0ExceptionCode } from "./b0-settlement-pipeline.service";'
+          new_import = 'import { B0SettlementPipelineService, b0ExceptionCode, b0RunEnabled, b0RunPaused } from "./b0-settlement-pipeline.service";'
+          if source.count(old_import) != 1:
+              raise SystemExit(f"pipeline test import anchor count={source.count(old_import)}")
+          source = source.replace(old_import, new_import, 1)
+          marker = 'test("C8 pause is stored only in the run-scoped B0 control state", async () => {'
+          addition = '''test("C8 pause preserves an active B0 window while preventing successor creation", () => {
+            assert.equal(b0RunEnabled("b0_windowed_v1", { b0: { paused: true } }), true);
+            assert.equal(b0RunEnabled("legacy_v1", { b0: { enabled: true, paused: true } }), true);
+            assert.equal(b0RunPaused({ b0: { enabled: true, paused: true } }), true);
+            assert.equal(b0RunPaused({ b0: { enabled: true, paused: false } }), false);
+            assert.equal(b0RunPaused({}), false);
+          });
+
+          '''.replace("          ", "")
+          if source.count(marker) != 1:
+              raise SystemExit(f"pause test insertion anchor count={source.count(marker)}")
+          spec.write_text(source.replace(marker, addition + marker, 1), encoding="utf-8")
+          PY
+          git diff --check
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts | cut -d' ' -f1)" = "2e19c138250fab2d19ce1e6f09955ca31604551725f4a080617aa0f418bba9c9"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts | cut -d' ' -f1)" = "525d6432806ef513692e6295d8f39abb1e4167c200d772b2d3e237ea134c3a27"
+
+      - name: Frozen install and focused verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api build
+
+      - name: Commit completed stage as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts
+          git rm .github/workflows/b0-stage11-pause-successor-boundary.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage11-pause-successor-boundary.yml
+          apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): honor pause before opening successor window"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage11-pause-successor-boundary",
+              description: `pause successor boundary repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 stage 11 pause successor boundary repair failed");
