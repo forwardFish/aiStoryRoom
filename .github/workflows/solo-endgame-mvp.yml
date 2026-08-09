@@ -37,7 +37,7 @@ jobs:
         shell: bash
         env:
           BRANCH: codex/chatgpt-pro-main-game-final-v1
-          BASE_SHA: 91128ab93455a61e53157b9d6072e36800e2cd42
+          BASE_SHA: 49e0bc1497130fe91f79a62cf4d9ee4d2f4041f3
         run: |
           set -uo pipefail
           artifact_dir="${GITHUB_WORKSPACE}/artifacts"
@@ -49,7 +49,7 @@ jobs:
 
           record_gate() {
             local label="$1" command="$2" cwd="$3" code="$4"
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
               "$label" "$command" "$cwd" "N/A" "N/A" "N/A" "N/A" "N/A" "$code" \
               >> "$artifact_dir/summary.tsv"
             if [ "$code" -ne 0 ]; then overall=1; fi
@@ -65,7 +65,7 @@ jobs:
             echo "workdir=${clone_dir}" | tee -a "$artifact_dir/commands.log"
             set +e
             (cd "$clone_dir" && "$@") 2>&1 | tee "$log"
-            local code=${PIPESTATUS[0]}
+            local code=${PIPESTATUS_0}
             set -e
             record_gate "$label" "$command" "$clone_dir" "$code"
           }
@@ -80,7 +80,7 @@ jobs:
             echo "workdir=${clone_dir}" | tee -a "$artifact_dir/commands.log"
             set +e
             (cd "$clone_dir" && "$@") 2>&1 | tee "$log"
-            local code=${PIPESTATUS[0]}
+            local code=${PIPESTATUS_0]
             set -e
             local tests pass fail skip todo
             tests=$(awk '$1 == "#" && $2 == "tests" {sum += $3} END {print sum + 0}' "$log")
@@ -95,7 +95,7 @@ jobs:
               || [ "$fail" -ne 0 ] || [ "$skip" -ne 0 ] || [ "$todo" -ne 0 ]; then
               overall=1
             fi
-            if [ "$label" = "api-targeted-contract" ] && [ "$tests" -lt 20 ]; then
+            if [ "$label" = "api-targeted-contract" ] && [ "$tests" -lt 24 ]; then
               overall=1
             fi
           }
@@ -129,7 +129,8 @@ jobs:
           run_gate prisma-generate pnpm db:generate
           run_tap_test api-targeted-contract pnpm --filter @apps/api exec node --import tsx --test \
             src/openovel-adapter/solo-ending-result-production-contract.spec.ts \
-            src/openovel-adapter/solo-ending-result.spec.ts
+            src/openovel-adapter/solo-ending-result.spec.ts \
+            src/openovel-adapter/solo-ending-completion-contract.spec.ts
           run_gate openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
           run_tap_test openovel-test pnpm --filter @apps/openovel-runtime test
           run_gate openovel-build pnpm --filter @apps/openovel-runtime build
@@ -137,7 +138,9 @@ jobs:
           run_tap_test api-test pnpm --filter @apps/api test
           run_gate api-build pnpm --filter @apps/api build
           run_gate web-typecheck pnpm --filter @apps/web typecheck
+          run_tap_test web-test pnpm --filter @apps/web test
           run_gate web-build pnpm --filter @apps/web build
+          run_gate story-v4 pnpm test:story:v4
           run_gate workspace-typecheck pnpm typecheck
           run_gate git-diff-check git diff --check
           run_gate delivered-diff-check git diff --check "$BASE_SHA" "$GITHUB_SHA"

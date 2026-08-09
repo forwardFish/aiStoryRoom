@@ -1,6 +1,11 @@
-import type { PartOneState } from "@ai-story/templates";
+import { readFileSync } from "node:fs";
+import type {
+  PartOneCommittedEvent,
+  PartOneState,
+} from "@ai-story/templates";
 import type { PreparedSangtianDecision } from "./sangtian-decisions.js";
 import type { EndingModule, EndingModuleInput } from "./ending-module.js";
+import { runtimeRoot, workspacePaths } from "./paths.js";
 import type { EndingPresentation } from "./types.js";
 
 type EvidenceDirection = "HELPED" | "HURT" | "DECISIVE";
@@ -36,8 +41,30 @@ type SangtianOutcome = {
   title: string;
 };
 
+type EndingEvidenceCandidate = {
+  criterion: string;
+  paths: string[];
+  finalValue: unknown;
+  factText: string;
+  direction: EvidenceDirection;
+  priority: number;
+};
+
+type MatchedEvidence = {
+  candidate: EndingEvidenceCandidate;
+  event: PartOneCommittedEvent;
+};
+
+export type SangtianCommittedEventReader = (
+  runId: string,
+) => readonly PartOneCommittedEvent[];
+
 export class SangtianEndingModule implements EndingModule {
   readonly moduleId = "sangtian.protagonist-ending.v1";
+
+  constructor(
+    private readonly readCommittedEvents: SangtianCommittedEventReader = readCommittedPartOneEvents,
+  ) {}
 
   build(input: EndingModuleInput): EndingPresentation {
     const settlement = sangtianSettlement(input);
@@ -59,12 +86,18 @@ export class SangtianEndingModule implements EndingModule {
       sourceRevision: input.turnNumber,
     };
 
-    // This is the only producer for the player-safe Solo ending evidence. It
-    // reads the final Settlement event and state before the atomic Head is
-    // published. The API may bind these turn references to committed
-    // PlayerAction IDs, but it must never reconstruct causes from prose.
+    // The persisted Part event history contains only previously committed
+    // turns. The current T20 Settlement event is added explicitly because the
+    // Ending is compiled before the final atomic Head advances.
+    const committedHistory = this.readCommittedEvents(input.runId);
     return Object.assign(ending, {
-      playerEvidence: buildPlayerEndingEvidence(input, settlement, state, outcome),
+      playerEvidence: buildPlayerEndingEvidence(
+        input,
+        settlement,
+        state,
+        outcome,
+        committedHistory,
+      ),
     } satisfies Pick<EndingWithEvidence, "playerEvidence">);
   }
 }
@@ -122,32 +155,69 @@ function buildPlayerEndingEvidence(
   settlement: PreparedSangtianDecision["settlement"],
   state: PartOneState,
   outcome: SangtianOutcome,
+  committedHistory: readonly PartOneCommittedEvent[],
 ): PlayerEndingEvidenceV1 {
-  const event = settlement.event;
-  const changedPaths = Array.isArray(event?.changedStatePaths)
-    ? event.changedStatePaths.map(String)
-    : [];
-  const sourceEventId = String(event?.eventId || "").trim();
-  const causeCandidates = sourceEventId
-    ? endingEvidenceCandidates(state, outcome.key).filter((candidate) => (
-        candidate.paths.some((path) => changedPath(changedPaths, path))
-      ))
-    : [];
-  const causes = causeCandidates
+  const events = committedPartEvents(
+    committedHistory,
+    settlement.event,
+    input.turnNumber,
+  );
+  const matched = endingEvidenceCandidates(state, outcome.key)
+    .map((candidate): MatchedEvidence | null => {
+      const event = latestEventEstablishingFinalValue(events, candidate);
+      return event ? { candidate, event } : null;
+    })
+    .filter((item): item is MatchedEvidence => Boolean(item));
+
+  const groupedByTurn = new Map<number, MatchedEvidence[]>();
+  for (const item of matched) {
+    const rows = groupedByTurn.get(item.event.turnNumber) || [];
+    rows.push(item);
+    groupedByTurn.set(item.event.turnNumber, rows);
+  }
+
+  const ranked = [...groupedByTurn.entries()].map(([turnNumber, rows]) => {
+    const ordered = [...rows].sort((left, right) => (
+      directionPriority(right.candidate.direction) - directionPriority(left.candidate.direction)
+      || right.candidate.priority - left.candidate.priority
+      || left.candidate.criterion.localeCompare(right.candidate.criterion)
+    ));
+    const lead = ordered[0]!;
+    const direction = ordered.reduce<EvidenceDirection>(
+      (current, item) => directionPriority(item.candidate.direction) > directionPriority(current)
+        ? item.candidate.direction
+        : current,
+      lead.candidate.direction,
+    );
+    const facts = [...new Set(ordered.map((item) => item.candidate.factText.trim()).filter(Boolean))];
+    return {
+      sourceTurnId: `T${String(turnNumber).padStart(2, "0")}`,
+      sourceRevision: turnNumber,
+      sourceEventId: lead.event.eventId,
+      authority: "PREDICATE" as const,
+      visibility: "PLAYER" as const,
+      criterion: ordered.length === 1
+        ? lead.candidate.criterion
+        : "MULTIPLE_ENDING_DETERMINANTS",
+      factText: facts.join("；"),
+      direction,
+      priority: Math.max(...ordered.map((item) => item.candidate.priority)),
+    };
+  });
+
+  const causes = ranked
     .sort((left, right) => (
       directionPriority(right.direction) - directionPriority(left.direction)
       || right.priority - left.priority
-      || left.criterion.localeCompare(right.criterion)
+      || left.sourceRevision - right.sourceRevision
+      || left.sourceEventId.localeCompare(right.sourceEventId)
     ))
     .slice(0, 3)
-    .map(({ paths: _paths, priority: _priority, ...candidate }) => ({
-      sourceTurnId: input.turnId,
-      sourceRevision: input.turnNumber,
-      sourceEventId,
-      authority: "PREDICATE" as const,
-      visibility: "PLAYER" as const,
-      ...candidate,
-    }));
+    .sort((left, right) => (
+      left.sourceRevision - right.sourceRevision
+      || left.sourceEventId.localeCompare(right.sourceEventId)
+    ))
+    .map(({ priority: _priority, ...cause }) => cause);
 
   return {
     schemaVersion: "openovel_player_ending_evidence_v1",
@@ -163,7 +233,10 @@ function buildPlayerEndingEvidence(
   };
 }
 
-function endingEvidenceCandidates(state: PartOneState, endingKey: string) {
+function endingEvidenceCandidates(
+  state: PartOneState,
+  endingKey: string,
+): EndingEvidenceCandidate[] {
   const landProtected = state.land.safeguardStatus === "ACTIVE";
   const grainRelieved = state.grain.immediatePressure !== "UNRELIEVED";
   const evidenceTraceable = state.evidence.chainStatus === "TRACEABLE";
@@ -174,6 +247,7 @@ function endingEvidenceCandidates(state: PartOneState, endingKey: string) {
     {
       criterion: "PEOPLE_LAND_SAFEGUARD",
       paths: ["land.safeguardStatus"],
+      finalValue: state.land.safeguardStatus,
       factText: landProtected
         ? "灾期民田保护已经写入最终提交状态。"
         : "最终提交状态中没有建立有效的灾期民田保护。",
@@ -183,6 +257,7 @@ function endingEvidenceCandidates(state: PartOneState, endingKey: string) {
     {
       criterion: "PEOPLE_GRAIN_RELIEF",
       paths: ["grain.immediatePressure"],
+      finalValue: state.grain.immediatePressure,
       factText: grainRelieved
         ? "最急迫的粮食压力已经得到缓解。"
         : "最急迫的粮食压力仍未解除。",
@@ -192,6 +267,7 @@ function endingEvidenceCandidates(state: PartOneState, endingKey: string) {
     {
       criterion: "EVIDENCE_CHAIN",
       paths: ["evidence.chainStatus"],
+      finalValue: state.evidence.chainStatus,
       factText: evidenceTraceable
         ? "县册证据链已经保持为可追索状态。"
         : "县册证据链在最终提交时仍不可完整追索。",
@@ -201,6 +277,7 @@ function endingEvidenceCandidates(state: PartOneState, endingKey: string) {
     {
       criterion: "REPORT_ATTACHMENT",
       paths: ["report.attachmentStrength"],
+      finalValue: state.report.attachmentStrength,
       factText: attachmentPresent
         ? "首份奏报已经附带可核验材料。"
         : "首份奏报没有附带足以核验的材料。",
@@ -210,6 +287,7 @@ function endingEvidenceCandidates(state: PartOneState, endingKey: string) {
     {
       criterion: "REPORT_DISPATCH",
       paths: ["report.dispatchStatus"],
+      finalValue: state.report.dispatchStatus,
       factText: reportDeparted
         ? "首份奏报已经离开浙江。"
         : "首份奏报在第一部分结束时仍未离开浙江。",
@@ -219,19 +297,104 @@ function endingEvidenceCandidates(state: PartOneState, endingKey: string) {
     {
       criterion: "GOVERNOR_RESPONSIBILITY",
       paths: ["responsibility.governorExposure"],
+      finalValue: state.responsibility.governorExposure,
       factText: highExposure
         ? "总督本人已经进入明确问责范围。"
         : "最终责任没有完全落到总督本人名下。",
       direction: directDirection(endingKey, "EXPOSURE", !highExposure),
       priority: 35,
     },
-  ] as Array<{
-    criterion: string;
-    paths: string[];
-    factText: string;
-    direction: EvidenceDirection;
-    priority: number;
-  }>;
+  ];
+}
+
+function latestEventEstablishingFinalValue(
+  events: readonly PartOneCommittedEvent[],
+  candidate: EndingEvidenceCandidate,
+) {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]!;
+    for (const path of candidate.paths) {
+      if (!event.changedStatePaths.some((changed) => changedPath([changed], path))) continue;
+      const patchValue = statePatchValue(event.statePatch, path);
+      if (sameStructuredValue(patchValue, candidate.finalValue)) return event;
+    }
+  }
+  return null;
+}
+
+function committedPartEvents(
+  history: readonly PartOneCommittedEvent[],
+  current: PartOneCommittedEvent,
+  terminalTurn: number,
+) {
+  const byId = new Map<string, PartOneCommittedEvent>();
+  for (const candidate of [...history, current]) {
+    if (!isCommittedPartOneEvent(candidate)) continue;
+    if (candidate.turnNumber > terminalTurn) continue;
+    byId.set(candidate.eventId, candidate);
+  }
+  return [...byId.values()].sort((left, right) => (
+    left.turnNumber - right.turnNumber
+    || left.eventId.localeCompare(right.eventId)
+  ));
+}
+
+function isCommittedPartOneEvent(value: unknown): value is PartOneCommittedEvent {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const event = value as Record<string, unknown>;
+  if (event.committed === false) return false;
+  return event.schemaVersion === "sangtian-part-one-event-v1"
+    && typeof event.eventId === "string"
+    && event.eventId.trim().length > 0
+    && Number.isInteger(event.turnNumber)
+    && Number(event.turnNumber) > 0
+    && Array.isArray(event.changedStatePaths)
+    && event.changedStatePaths.every((path) => typeof path === "string" && path.trim().length > 0)
+    && Boolean(event.statePatch)
+    && typeof event.statePatch === "object"
+    && !Array.isArray(event.statePatch);
+}
+
+function statePatchValue(patch: Record<string, unknown>, path: string) {
+  if (Object.prototype.hasOwnProperty.call(patch, path)) return patch[path];
+  const prefixed = Object.entries(patch).find(([key]) => key.endsWith(`.${path}`));
+  if (prefixed) return prefixed[1];
+  const direct = nestedValue(patch, path);
+  if (direct !== undefined) return direct;
+  return nestedValue(patch, `state.${path}`);
+}
+
+function nestedValue(root: Record<string, unknown>, path: string) {
+  let current: unknown = root;
+  for (const segment of path.split(".")) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) return undefined;
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return current;
+}
+
+function sameStructuredValue(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function readCommittedPartOneEvents(runId: string): PartOneCommittedEvent[] {
+  const file = workspacePaths(runtimeRoot(), runId).partOneEvents;
+  let text: string;
+  try {
+    text = readFileSync(file, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  return text.split(/\r?\n/u).flatMap((line) => {
+    if (!line.trim()) return [];
+    try {
+      const parsed = JSON.parse(line) as unknown;
+      return isCommittedPartOneEvent(parsed) ? [parsed] : [];
+    } catch {
+      return [];
+    }
+  });
 }
 
 function directDirection(

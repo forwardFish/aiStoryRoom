@@ -166,12 +166,17 @@ test("missing historical ending also fails closed without reading prose", () => 
   assert.equal(presentation.narrative, "");
 });
 
-test("STORY scope is not mislabeled as a Part ending", () => {
+test("generic STORY scope is not mislabeled as a Part ending", () => {
   const presentation = toSoloEndgamePresentation({
     ending: ending("guarded_people_preserved_evidence", "STORY"),
     evidence: [],
     revealCandidates: [],
-    replay,
+    replay: {
+      worldId: "generic_story",
+      currentRoleKey: "protagonist",
+      supportedRoleKeys: ["protagonist"],
+      nextPart: null,
+    },
   });
   assert.equal(presentation.resultType, "SOLO_STORY_END");
   assert.match(

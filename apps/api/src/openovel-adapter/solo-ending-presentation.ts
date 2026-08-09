@@ -7,7 +7,6 @@ import {
   type EndgameRevealV1,
   type EndgameVerdictV1,
 } from "@ai-story/shared";
-
 export type SoloEndingSource = {
   schemaVersion: "openovel_ending_v1";
   scope: "STORY" | "PART";
@@ -64,6 +63,44 @@ export type SoloEndingPresentationInput = {
   revealCandidates: SoloEndingRevealCandidate[];
   replay: SoloReplayCapabilities;
 };
+
+export type SoloEndingCompletionContractV1 = {
+  schemaVersion: "openovel_completion_contract_v1";
+  contractId: string;
+  engineVersion: "openovel_v1";
+  templateKey: string;
+  roleKey: string;
+  partId: string;
+  terminalScope: "PART" | "STORY";
+  terminalTurnId: string;
+  terminalRevision: number;
+};
+
+const COMPLETION_CONTRACTS: readonly SoloEndingCompletionContractV1[] = Object.freeze([
+  Object.freeze({
+    schemaVersion: "openovel_completion_contract_v1",
+    contractId: "openovel.sangtian.part-01.zhejiang-governor.v1",
+    engineVersion: "openovel_v1",
+    templateKey: "sangtian",
+    roleKey: "zhejiang_governor",
+    partId: "PART-01",
+    terminalScope: "PART",
+    terminalTurnId: "T20",
+    terminalRevision: 20,
+  }),
+]);
+
+export function resolveSoloEndingCompletionContract(input: {
+  engineVersion: string;
+  templateKey: string;
+  roleKey: string;
+}): SoloEndingCompletionContractV1 | null {
+  return COMPLETION_CONTRACTS.find((contract) => (
+    contract.engineVersion === input.engineVersion
+    && contract.templateKey === input.templateKey
+    && contract.roleKey === input.roleKey
+  )) || null;
+}
 
 type OutcomePolicy = {
   verdict: Exclude<EndgameVerdictV1, "UNAVAILABLE">;
@@ -140,6 +177,10 @@ const OUTCOME_POLICY: Readonly<Record<string, OutcomePolicy>> = Object.freeze({
 export function toSoloEndgamePresentation(
   input: SoloEndingPresentationInput,
 ): EndgamePresentationV1 {
+  assertSoloEndingCompletionContract({
+    ending: input.ending,
+    replay: input.replay,
+  });
   const policy = OUTCOME_POLICY[input.ending.endingKey];
   if (!policy) return legacySoloEndgamePresentation({
     ending: input.ending,
@@ -173,7 +214,7 @@ export function legacySoloEndgamePresentation(input: {
     verdict: "UNAVAILABLE",
     verdictLabel: "历史结局数据不完整",
     title: "历史结局数据不完整",
-    verdictLine: "系统没有找到可验证的终局裁定映射，因此不会从小说正文猜测胜负。",
+    verdictLine: "系统没有找到可验证的终局裁定映射，因此不会从小诱正文猜测胜负。",
     narrative: input.ending?.finalSceneNarrative || "",
     gain: [],
     loss: [],
@@ -182,6 +223,34 @@ export function legacySoloEndgamePresentation(input: {
     replayHint: "你可以保留这条历史记录，并从同一世界重新开始一条完整的新故事线。",
     replayActions: buildSoloReplayActions(input.replay, input.ending?.scope || "PART"),
   };
+}
+
+function assertSoloEndingCompletionContract(input: {
+  ending: SoloEndingSource;
+  replay: Pick<SoloReplayCapabilities, "worldId" | "currentRoleKey">;
+}) {
+  // This mapper is entered only after the OpenNovel service has verified the
+  // engine version and authenticated role. The exact template/role identity
+  // selects a versioned Part contract; no prose, keyword or title is read.
+  const contract = resolveSoloEndingCompletionContract({
+    engineVersion: "openovel_v1",
+    templateKey: input.replay.worldId,
+    roleKey: input.replay.currentRoleKey,
+  });
+  if (!contract) return;
+  if (
+    input.ending.scope !== contract.terminalScope
+    || input.ending.sourceTurnId !== contract.terminalTurnId
+    || input.ending.sourceRevision !== contract.terminalRevision
+  ) {
+    throw Object.assign(
+      new Error("SOLO_RESULT_NOT_READY:ENDING_COMPLETION_CONTRACT_MISMATCH"),
+      {
+        code: "SOLO_RESULT_NOT_READY" as const,
+        reason: "ENDING_COMPLETION_CONTRACT_MISMATCH",
+      },
+    );
+  }
 }
 
 export function projectAuthorizedCauses(
