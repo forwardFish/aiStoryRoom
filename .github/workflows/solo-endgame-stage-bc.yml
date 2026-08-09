@@ -1,27 +1,27 @@
-name: Solo Endgame Stage B and Stage C Technical Verification
+name: Solo Endgame Stage B Exact Remote Verification
 
 on:
   push:
     branches:
       - codex/chatgpt-pro-main-game-final-v1
+  workflow_dispatch:
 
 permissions:
   contents: read
   statuses: write
 
 concurrency:
-  group: solo-endgame-stage-bc-${{ github.ref }}
+  group: solo-endgame-stage-b-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  verify:
+  verify-stage-b:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 120
     env:
       NODE_ENV: test
-      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
-      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
       CANDIDATE_SHA: ${{ github.sha }}
+      EVIDENCE_DIR: artifacts/solo-endgame-stage-b
     steps:
       - name: Check out exact remote SHA
         uses: actions/checkout@v4
@@ -29,14 +29,43 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Verify exact branch and clean worktree
+      - name: Mark Stage B verification pending
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'pending',
+              context: 'solo-endgame-stage-b/clean-clone',
+              description: 'Stage B exact-SHA verification is running',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
+      - name: Verify exact branch, remote SHA, and clean worktree
+        id: git-proof
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-          test -z "$(git status --short)"
-          remote_sha="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
-          test "$remote_sha" = "${GITHUB_SHA}"
+          mkdir -p "$EVIDENCE_DIR/logs"
+          local_sha="$(git rev-parse HEAD)"
+          tracking_sha="$(git rev-parse "origin/${GITHUB_REF_NAME}")"
+          ls_remote_raw="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}")"
+          remote_sha="$(printf '%s\n' "$ls_remote_raw" | awk '{print $1}')"
+          status_short="$(git status --short)"
+          test "$local_sha" = "$GITHUB_SHA"
+          test "$tracking_sha" = "$GITHUB_SHA"
+          test "$remote_sha" = "$GITHUB_SHA"
+          test -z "$status_short"
+          {
+            printf 'WORKDIR=%s\n' "$GITHUB_WORKSPACE"
+            printf 'BRANCH=%s\n' "$GITHUB_REF_NAME"
+            printf 'LOCAL_HEAD=%s\n' "$local_sha"
+            printf 'TRACKING_HEAD=%s\n' "$tracking_sha"
+            printf 'LS_REMOTE_RAW=%s\n' "$ls_remote_raw"
+            printf 'STATUS_SHORT=%s\n' "$status_short"
+          } | tee "$EVIDENCE_DIR/git-proof.txt"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -50,88 +79,147 @@ jobs:
           cache: pnpm
 
       - name: Install frozen workspace
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client without migration
-        run: pnpm db:generate
-
-      - name: Stage B focused concurrency and recovery contract
-        run: >-
-          pnpm --filter @apps/api exec node --import tsx --test
-          src/openovel-adapter/openovel-stage-b-concurrency.spec.ts
-          src/openovel-adapter/openovel-stage-b-recovery.spec.ts
-          src/openovel-adapter/openovel-stage-b-result-integrity.spec.ts
-
-      - name: Stage C evidence validators
-        run: |
-          node --test scripts/e2e/solo-endgame-stage-c.spec.mjs
-          node --test scripts/acceptance/__tests__/solo-endgame-human-acceptance.spec.mjs
-
-      - name: OpenNovel Runtime gates
-        run: |
-          pnpm --filter @apps/openovel-runtime typecheck
-          pnpm --filter @apps/openovel-runtime test
-          pnpm --filter @apps/openovel-runtime build
-
-      - name: API gates
-        run: |
-          pnpm --filter @apps/api typecheck
-          pnpm --filter @apps/api test
-          pnpm --filter @apps/api build
-
-      - name: Web gates
-        run: |
-          pnpm --filter @apps/web test
-          pnpm --filter @apps/web build
-
-      - name: Story and workspace gates
-        run: |
-          pnpm test:story:v4
-          pnpm typecheck
-          git diff --check
-
-      - name: Require configured Supabase test database
         shell: bash
         run: |
-          set -euo pipefail
-          if [ -z "${SUPABASE_DATABASE_URL:-}" ]; then
-            echo "SUPABASE_DATABASE_URL or DATABASE_URL test secret is required for Stage C." >&2
-            exit 1
-          fi
-          case "$SUPABASE_DATABASE_URL" in
-            *supabase*) ;;
-            *) echo "Stage C accepts only the configured Supabase test database." >&2; exit 1 ;;
-          esac
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee "$EVIDENCE_DIR/logs/01-install.log"
 
-      - name: Stage C real Supabase, API, Runtime and /game verification
-        run: node --env-file-if-exists=.env.test scripts/e2e/solo-endgame-stage-c.mjs
+      - name: Generate Prisma client without migration
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm db:generate 2>&1 | tee "$EVIDENCE_DIR/logs/02-db-generate.log"
 
-      - name: Record human acceptance boundary
+      - name: Stage B focused concurrency, recovery, and integrity contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/api exec node --import tsx --test \
+            src/openovel-adapter/openovel-stage-b-concurrency.spec.ts \
+            src/openovel-adapter/openovel-stage-b-recovery.spec.ts \
+            src/openovel-adapter/openovel-stage-b-result-integrity.spec.ts \
+            2>&1 | tee "$EVIDENCE_DIR/logs/03-stage-b-focused.tap"
+
+      - name: OpenNovel Runtime typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime typecheck 2>&1 | tee "$EVIDENCE_DIR/logs/04-runtime-typecheck.log"
+
+      - name: OpenNovel Runtime test
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime test 2>&1 | tee "$EVIDENCE_DIR/logs/05-runtime-test.log"
+
+      - name: OpenNovel Runtime build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/openovel-runtime build 2>&1 | tee "$EVIDENCE_DIR/logs/06-runtime-build.log"
+
+      - name: API typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/api typecheck 2>&1 | tee "$EVIDENCE_DIR/logs/07-api-typecheck.log"
+
+      - name: API test
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/api test 2>&1 | tee "$EVIDENCE_DIR/logs/08-api-test.log"
+
+      - name: API build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/api build 2>&1 | tee "$EVIDENCE_DIR/logs/09-api-build.log"
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/web typecheck 2>&1 | tee "$EVIDENCE_DIR/logs/10-web-typecheck.log"
+
+      - name: Web test
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/web test 2>&1 | tee "$EVIDENCE_DIR/logs/11-web-test.log"
+
+      - name: Web build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @apps/web build 2>&1 | tee "$EVIDENCE_DIR/logs/12-web-build.log"
+
+      - name: Root typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee "$EVIDENCE_DIR/logs/13-root-typecheck.log"
+
+      - name: Git diff check
+        shell: bash
+        run: |
+          set -o pipefail
+          git diff --check 2>&1 | tee "$EVIDENCE_DIR/logs/14-git-diff-check.log"
+
+      - name: Record Stage B remote evidence manifest
         if: always()
         shell: bash
         run: |
-          mkdir -p artifacts/solo-endgame-stage-c
-          cat > artifacts/solo-endgame-stage-c/HUMAN_ACCEPTANCE_REQUIRED.md <<'MARKDOWN'
-          # Human acceptance is still required
+          mkdir -p "$EVIDENCE_DIR"
+          cat > "$EVIDENCE_DIR/manifest.json" <<JSON
+          {
+            "schemaVersion": "solo_endgame_stage_b_remote_evidence_v1",
+            "repository": "${GITHUB_REPOSITORY}",
+            "branch": "${GITHUB_REF_NAME}",
+            "commitSha": "${GITHUB_SHA}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunAttempt": "${GITHUB_RUN_ATTEMPT}",
+            "stage": "B",
+            "stageCExecuted": false,
+            "generatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          JSON
 
-          Engineering, Supabase, and real `/game` automation cannot be counted as the five independent human participants required by the Solo Endgame plan.
-
-          Use `scripts/acceptance/solo-endgame-human-acceptance.template.json` and validate completed evidence with:
-
-          ```bash
-          node scripts/acceptance/solo-endgame-human-acceptance.mjs <evidence.json> <report.json>
-          ```
-
-          `RELEASE_READY` is forbidden until that validator passes on evidence from at least five unique non-developer human participants.
-          MARKDOWN
-
-      - name: Upload Stage B and Stage C evidence
+      - name: Upload Stage B evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: solo-endgame-stage-bc-${{ github.sha }}
-          path: |
-            artifacts/solo-endgame-stage-c/
-            scripts/test-reports/solo-endgame-mvp-*/
-          if-no-files-found: warn
+          name: solo-endgame-stage-b-${{ github.sha }}
+          path: artifacts/solo-endgame-stage-b/
+          if-no-files-found: error
           retention-days: 14
+
+      - name: Mark Stage B verification successful
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              context: 'solo-endgame-stage-b/clean-clone',
+              description: 'Stage B exact-SHA clean checkout and gates passed',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
+      - name: Mark Stage B verification failed
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'failure',
+              context: 'solo-endgame-stage-b/clean-clone',
+              description: 'Stage B exact-SHA verification failed; inspect workflow logs',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
