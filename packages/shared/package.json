@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:endgame": "node --import tsx --test tests/endgame.schemas.spec.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

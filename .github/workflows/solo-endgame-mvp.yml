@@ -1,0 +1,105 @@
+name: Solo Endgame MVP
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-main-game-final-v1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solo-endgame-mvp-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact branch commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Run stage verification
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p artifacts
+          : > artifacts/solo-endgame-commands.log
+          : > artifacts/solo-endgame-summary.tsv
+          overall=0
+
+          run_cmd() {
+            local label="$1"
+            shift
+            echo "===== ${label} =====" | tee -a artifacts/solo-endgame-commands.log
+            set +e
+            "$@" 2>&1 | tee -a artifacts/solo-endgame-commands.log
+            local code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\n' "$label" "$code" | tee -a artifacts/solo-endgame-summary.tsv
+            if [ "$code" -ne 0 ]; then overall=1; fi
+          }
+
+          set -e
+          subject="$(git log -1 --pretty=%s)"
+          echo "commit=${GITHUB_SHA}" | tee -a artifacts/solo-endgame-commands.log
+          echo "subject=${subject}" | tee -a artifacts/solo-endgame-commands.log
+
+          run_cmd "shared:typecheck" pnpm --filter @ai-story/shared typecheck
+          run_cmd "shared:endgame-contract" pnpm --filter @ai-story/shared test:endgame
+          run_cmd "openovel:typecheck" pnpm --filter @apps/openovel-runtime typecheck
+          run_cmd "openovel:test" pnpm --filter @apps/openovel-runtime test
+          run_cmd "openovel:build" pnpm --filter @apps/openovel-runtime build
+
+          if [[ "$subject" == feat\(api\):* || "$subject" == test\(solo-endgame\):* ]]; then
+            run_cmd "api:test" pnpm --filter @apps/api test
+            run_cmd "api:build" pnpm --filter @apps/api build
+          fi
+
+          if [[ "$subject" == feat\(web\):* || "$subject" == test\(solo-endgame\):* ]]; then
+            run_cmd "web:test" pnpm --filter @apps/web test
+            run_cmd "web:build" pnpm --filter @apps/web build
+          fi
+
+          if [[ "$subject" == test\(solo-endgame\):* ]]; then
+            run_cmd "story:v4" pnpm test:story:v4
+            run_cmd "workspace:typecheck" pnpm typecheck
+            if node -e 'const p=require("./package.json"); process.exit(p.scripts?.["test:solo-endgame:mvp"] ? 0 : 1)'; then
+              run_cmd "solo-endgame:e2e" pnpm test:solo-endgame:mvp
+            else
+              echo "test:solo-endgame:mvp is missing" | tee -a artifacts/solo-endgame-commands.log
+              printf '%s\t%s\n' "solo-endgame:e2e" "127" | tee -a artifacts/solo-endgame-summary.tsv
+              overall=1
+            fi
+          fi
+
+          exit "$overall"
+
+      - name: Upload exact command logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: solo-endgame-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
