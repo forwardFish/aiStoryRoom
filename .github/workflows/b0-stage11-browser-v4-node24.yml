@@ -1,4 +1,4 @@
-name: B0 Stage 11 Real Browser Six-Window Repair V5 Selector Fix
+name: B0 Stage 11 Real Browser Six-Window Repair V6 Selector Fix
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-stage11-real-browser-v5-selector-fix
+  group: b0-stage11-real-browser-v6-selector-fix
   cancel-in-progress: false
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
       B0_PROVIDER_MODEL: qwen2.5:1.5b
       B0_ACCEPTANCE_TIER: engineering-selfhosted
       B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
-      B0_EVIDENCE_ROOT: .artifacts/b0-stage11-v5/${{ github.sha }}
+      B0_EVIDENCE_ROOT: .artifacts/b0-stage11-v6/${{ github.sha }}
       B0_PROJECT_ROOT: ${{ github.workspace }}
     steps:
       - name: Publish locator
@@ -37,8 +37,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/stage11-real-browser-v5",
-              description: `real browser selector repair running in ${context.runId}`,
+              context: "b0/stage11-real-browser-v6",
+              description: `real browser selector repair v6 running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -63,7 +63,7 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "b0e3c63b6a77f136c261f8ce6bad632e30a2690a"
+          test "$(git rev-parse HEAD^)" = "eaf1de4f08c318c2abb3b6fa43566d61868e3fa5"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-browser-v4-node24.yml"
           test "$(git hash-object scripts/acceptance/b0-candidate-real-flow.ts)" = "f434c6bf4c2d6d26d1231fd9343e87672ad58bef"
 
@@ -92,16 +92,8 @@ jobs:
                   "`(() => { const element = document.querySelector('[data-mv1-kind=\"CONTACT\"]'); return Boolean(element && !element.disabled); })()`",
               ),
               (
-                  "`document.querySelector('[data-mv1-kind=\"CONTACT\"]:not([disabled]))')?.click()`",
-                  "`(() => { const element = document.querySelector('[data-mv1-kind=\"CONTACT\"]'); if (!element || element.disabled) return false; element.click(); return true; })()`",
-              ),
-              (
                   "`Boolean(document.querySelector('[data-mv1-preview]:not([disabled]))')`",
                   "`(() => { const element = document.querySelector('[data-mv1-preview]'); return Boolean(element && !element.disabled); })()`",
-              ),
-              (
-                  "`document.querySelector('[data-mv1-preview]:not([disabled]))')?.click()`",
-                  "`(() => { const element = document.querySelector('[data-mv1-preview]'); if (!element || element.disabled) return false; element.click(); return true; })()`",
               ),
               (
                   "`Boolean(document.querySelector('[data-mv1-confirm]:not([disabled]))') || Boolean(document.querySelector('[role=\"alert\"]'))`",
@@ -202,7 +194,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: b0-stage11-real-browser-v5-${{ github.sha }}
+          name: b0-stage11-real-browser-v6-${{ github.sha }}
           path: ${{ env.B0_EVIDENCE_ROOT }}
           if-no-files-found: warn
           retention-days: 14
@@ -234,8 +226,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: success ? "success" : "failure",
-              context: "b0/stage11-real-browser-v5",
-              description: `real browser selector repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              context: "b0/stage11-real-browser-v6",
+              description: `real browser selector repair v6 ${success ? "passed" : "failed"} in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            if (!success) core.setFailed("real browser selector repair failed");
+            if (!success) core.setFailed("real browser selector repair v6 failed");
