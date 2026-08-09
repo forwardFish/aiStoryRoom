@@ -61,3 +61,9 @@ test("acceptance binds runtime publication proof to its isolated OpenNovel works
   assert.match(driver, /OPENOVEL_WORKSPACE_ROOT:\s*OPENOVEL_RUNTIME_ROOT/);
   assert.match(driver, /join\(OPENOVEL_RUNTIME_ROOT, "b0-narrative-jobs"\)/);
 });
+
+test("idempotent replay snapshots only after asynchronous narratives reach quiescence", () => {
+  assert.match(driver, /waitForWindowNarrativesComplete\(prisma, mainRun\.id, opened\.windowId/);
+  assert.match(driver, /all window narrative tasks and role publications complete before replay fingerprint/);
+  assert.match(driver, /every human role must observe its completed provider-backed narrative before replay begins/);
+});

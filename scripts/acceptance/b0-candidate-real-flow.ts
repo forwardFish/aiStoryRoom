@@ -122,16 +122,17 @@ async function main() {
       await assertBrowserWindowVisible(browsers, opened.windowId, 1);
       await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });
       await waitForWindowComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1, 180_000);
-      await waitFor(async () => (await prisma.narrativeEntry.count({ where: { runId: mainRun.id, entryType: "B0_NARRATIVE" } })) >= 1, 240_000, "at least one real B0 narrative publication");
+      const narrativeBatch = await waitForWindowNarrativesComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1);
       const projections = await fetchHumanProjections(mainRun.id, users.slice(0, 3));
       assertRecipientPrivacy(projections);
       assert(projections.every((entry) => entry.structuredResults.some((result: any) => result.resultKind === "CROSS_PLAYER_IMPACT")), "each cyclic target must receive one cross-player impact");
+      assert(projections.every((entry) => entry.narrative.status === "AVAILABLE"), "every human role must observe its completed provider-backed narrative before replay begins");
       const after = await runReadback(prisma, mainRun.id);
       assert.equal(after.worldSequence, before.worldSequence + 1, "window 1 advances worldSequence exactly once");
       const runtimeProof = await runtimeNarrativeRepositoryProof();
-      assert(runtimeProof.publicationCount >= 1, "a real provider-backed OpenNovel publication file is required");
+      assert(runtimeProof.publicationCount >= narrativeBatch.publicationCount, "every completed narrative task requires a provider-backed OpenNovel publication file");
       await captureBrowserEvidence(browsers, "window-1");
-      return { windowId: stableLabel(opened.windowId), before, after, projections: projections.map(safeProjection), runtimeProof };
+      return { windowId: stableLabel(opened.windowId), before, after, narrativeBatch, projections: projections.map(safeProjection), runtimeProof };
     });
 
     await phase("idempotent-settlement-publication-outbox-replay", async () => {
@@ -541,6 +542,34 @@ async function runReadback(prisma: PrismaClient, runId: string) {
     prisma.storyTaskOutbox.count({ where: { runId, taskType: { startsWith: "B0_" } } }),
   ]);
   return { ...run, updatedAt: run.updatedAt.toISOString(), windows, events, deliveries, narratives, tasks };
+}
+
+async function waitForWindowNarrativesComplete(prisma: PrismaClient, runId: string, windowId: string, worldSequence: number) {
+  return waitForValue(async () => {
+    const tasks = await prisma.storyTaskOutbox.findMany({
+      where: { runId, windowId, taskType: "B0_NARRATIVE_GENERATION" },
+      select: { id: true, roleId: true, status: true, dedupeKey: true },
+      orderBy: { roleId: "asc" },
+    });
+    if (tasks.length === 0 || tasks.some((entry) => entry.status !== "completed")) return null;
+    const roleIds = tasks.map((entry) => requiredValue(entry.roleId, `narrative role for task ${entry.id}`));
+    assert.equal(new Set(roleIds).size, roleIds.length, "window narrative tasks must be unique per role");
+    const entries = await prisma.narrativeEntry.findMany({
+      where: { runId, entryType: "B0_NARRATIVE", worldSequence, roleId: { in: roleIds } },
+      select: { id: true, roleId: true, dedupeKey: true },
+      orderBy: { roleId: "asc" },
+    });
+    if (entries.length !== tasks.length) return null;
+    const publishedRoleIds = entries.map((entry) => requiredValue(entry.roleId, `narrative role for entry ${entry.id}`));
+    if (publishedRoleIds.some((roleId, index) => roleId !== roleIds[index])) return null;
+    return {
+      taskCount: tasks.length,
+      publicationCount: entries.length,
+      roleIds: roleIds.map(stableLabel),
+      taskDedupeHashes: tasks.map((entry) => hashText(entry.dedupeKey)),
+      entryDedupeHashes: entries.map((entry) => hashText(requiredValue(entry.dedupeKey, `dedupe key for narrative ${entry.id}`))),
+    };
+  }, 360_000, "all window narrative tasks and role publications complete before replay fingerprint");
 }
 
 async function replayFingerprint(prisma: PrismaClient, runId: string, windowId: string) {
