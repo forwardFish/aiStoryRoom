@@ -21,8 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     env:
-      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
       B0_EVIDENCE_ROOT: docs/auto-execute/evidence/b0/c9/runtime
       B0_PROJECT_ROOT: ${{ github.workspace }}
     steps:
@@ -52,17 +53,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-
-      - name: Fail closed unless real acceptance secrets are present
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "${SUPABASE_DATABASE_URL:-}" || { echo "SUPABASE_DATABASE_URL secret is required" >&2; exit 1; }
-          test -n "${DEEPSEEK_API_KEY:-}" || { echo "DEEPSEEK_API_KEY secret is required" >&2; exit 1; }
-          case "$SUPABASE_DATABASE_URL" in
-            *supabase*) ;;
-            *) echo "B0 real acceptance requires a Supabase PostgreSQL URL" >&2; exit 1 ;;
-          esac
+          test "$(sha256sum scripts/acceptance/b0-selfhosted-real-acceptance.sh | cut -d' ' -f1)" = "9b146e454697b9ef68e122a2fc33b601e0e32434268bcc08d92d2cecf96a3930"
+          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "0dd15674e3d7dc52667b217ae48c988a64c01354a0ca232898152d24716ded95"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -73,14 +65,13 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Frozen install
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm db:generate
-
-      - name: Typecheck the real acceptance driver
-        run: pnpm typecheck:b0:real-acceptance
+      - name: Frozen install and Prisma generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
 
       - name: Build exact runtime binaries
         shell: bash
@@ -93,135 +84,47 @@ jobs:
           pnpm --filter @apps/web typecheck
           pnpm --filter @apps/web build
 
-      - name: Bind an independent random Supabase schema
+      - name: Start official self-hosted Supabase PostgreSQL in a random schema
         id: database
         shell: bash
-        run: |
-          set -euo pipefail
-          schema="cs_accept_b0_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_$(openssl rand -hex 4)"
-          export B0_SCHEMA="$schema"
-          python3 - <<'PY'
-          import os
-          from pathlib import Path
-          from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
 
-          raw = os.environ["SUPABASE_DATABASE_URL"].strip()
-          schema = os.environ["B0_SCHEMA"]
-          split = urlsplit(raw)
-          query = [(key, value) for key, value in parse_qsl(split.query, keep_blank_values=True)
-                   if key.lower() not in {"schema", "connection_limit", "sslmode"}]
-          query.extend([("sslmode", "disable"), ("schema", schema), ("connection_limit", "3")])
-          runtime = urlunsplit((split.scheme, split.netloc, split.path, urlencode(query), split.fragment))
-          print(f"::add-mask::{runtime}")
-          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as handle:
-              handle.write(f"DATABASE_URL={runtime}\n")
-              handle.write(f"B0_ACCEPTANCE_SCHEMA={schema}\n")
-              handle.write(f"MANY_WORLDS_DB_SCHEMA={schema}\n")
-          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
-              handle.write(f"schema={schema}\n")
-          PY
-          echo "Random isolated schema prepared; credentials remain masked."
-
-      - name: Apply migrations only to the random schema
-        run: pnpm prisma migrate deploy
+      - name: Start a real Ollama model with OpenAI-compatible transport
+        id: provider
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
 
       - name: Execute the real six-window acceptance
         id: acceptance
+        shell: bash
         env:
           GITHUB_SHA: ${{ github.sha }}
           CHROME_PATH: /usr/bin/google-chrome
         run: pnpm test:b0:real-acceptance
 
-      - name: Drop the random acceptance schema
-        id: cleanup
-        if: always() && env.DATABASE_URL != ''
+      - name: Prove product traffic reached the real model
+        id: provider_proof
+        if: always()
         shell: bash
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const { createHash } = require("node:crypto");
-          const { mkdirSync, writeFileSync } = require("node:fs");
-          const { PrismaClient } = require("@prisma/client");
-          const schema = String(process.env.B0_ACCEPTANCE_SCHEMA || "");
-          if (!/^cs_accept_b0_[a-z0-9_]{8,}$/i.test(schema) || schema.toLowerCase() === "public") {
-            throw new Error("Refusing to clean an invalid or non-isolated schema");
-          }
-          const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
-          (async () => {
-            try {
-              await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
-              const root = process.env.B0_EVIDENCE_ROOT;
-              mkdirSync(root, { recursive: true });
-              writeFileSync(`${root}/schema-cleanup.json`, JSON.stringify({
-                schemaVersion: 1,
-                status: "PASS",
-                schemaName: schema,
-                schemaNameSha256: createHash("sha256").update(schema).digest("hex"),
-                publicSchemaUsed: false,
-                droppedAt: new Date().toISOString()
-              }, null, 2) + "\n");
-            } finally {
-              await prisma.$disconnect();
-            }
-          })().catch((error) => { console.error(error.message); process.exitCode = 1; });
-          NODE
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
+
+      - name: Verify public-schema isolation and clean all acceptance infrastructure
+        id: cleanup
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup
+
+      - name: Redact and scan evidence
+        id: redaction
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
 
       - name: Finalize C8 checkpoint and evidence hashes
+        id: finalize
         if: success()
         shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import hashlib
-          import json
-          import os
-          from pathlib import Path
-
-          root = Path(os.environ["B0_EVIDENCE_ROOT"])
-          result = json.loads((root / "acceptance-result.json").read_text(encoding="utf-8"))
-          if result.get("status") != "PASS":
-              raise SystemExit("real acceptance result is not PASS")
-          c8 = root.parent.parent / "c8"
-          c8.mkdir(parents=True, exist_ok=True)
-          checkpoint = {
-              "schemaVersion": 1,
-              "checkpoint": "B0_C8_REAL_OPERATIONS_VALIDATED",
-              "status": "PASS",
-              "testedCodeSha": os.environ["GITHUB_SHA"],
-              "workflowRunId": os.environ["GITHUB_RUN_ID"],
-              "workflowRunAttempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
-              "randomTestSchema": os.environ["B0_ACCEPTANCE_SCHEMA"],
-              "productionPublicSchemaUsed": False,
-              "validated": [
-                  "bounded admin diagnostics and recovery",
-                  "pause and resume",
-                  "deadline freeze with HOLD",
-                  "safe abort of an uncommitted window",
-                  "embedded and independent workers",
-                  "lease expiry and crash recovery",
-                  "narrative retry without world rollback"
-              ],
-              "evidenceRoot": str(root).replace("\\", "/"),
-          }
-          (c8 / "checkpoint.json").write_text(json.dumps(checkpoint, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-          files = []
-          for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "artifact-catalog.json"):
-              data = path.read_bytes()
-              files.append({
-                  "path": str(path).replace("\\", "/"),
-                  "sizeBytes": len(data),
-                  "sha256": hashlib.sha256(data).hexdigest(),
-              })
-          catalog = {
-              "schemaVersion": 1,
-              "testedCodeSha": os.environ["GITHUB_SHA"],
-              "workflowRunId": os.environ["GITHUB_RUN_ID"],
-              "generatedAt": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
-              "files": files,
-          }
-          (root / "artifact-catalog.json").write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-          PY
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize
 
       - name: Upload sanitized acceptance evidence
         if: always()
@@ -235,6 +138,7 @@ jobs:
           retention-days: 14
 
       - name: Commit passing C8 and runtime evidence as docs only
+        id: evidence_commit
         if: success()
         shell: bash
         run: |
@@ -262,13 +166,21 @@ jobs:
         uses: actions/github-script@v7
         env:
           ACCEPTANCE_OUTCOME: ${{ steps.acceptance.outcome }}
+          PROVIDER_OUTCOME: ${{ steps.provider_proof.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+          REDACTION_OUTCOME: ${{ steps.redaction.outcome }}
+          FINALIZE_OUTCOME: ${{ steps.finalize.outcome }}
+          EVIDENCE_COMMIT_OUTCOME: ${{ steps.evidence_commit.outcome }}
           JOB_STATUS: ${{ job.status }}
         with:
           script: |
             const success = process.env.JOB_STATUS === "success"
               && process.env.ACCEPTANCE_OUTCOME === "success"
-              && process.env.CLEANUP_OUTCOME === "success";
+              && process.env.PROVIDER_OUTCOME === "success"
+              && process.env.CLEANUP_OUTCOME === "success"
+              && process.env.REDACTION_OUTCOME === "success"
+              && process.env.FINALIZE_OUTCOME === "success"
+              && process.env.EVIDENCE_COMMIT_OUTCOME === "success";
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -278,4 +190,6 @@ jobs:
               description: `${success ? "real acceptance passed" : "real acceptance failed"} in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            if (!success) core.setFailed(`B0 real acceptance did not close: acceptance=${process.env.ACCEPTANCE_OUTCOME}, cleanup=${process.env.CLEANUP_OUTCOME}, job=${process.env.JOB_STATUS}`);
+            if (!success) {
+              core.setFailed(`B0 real acceptance did not close: acceptance=${process.env.ACCEPTANCE_OUTCOME}, provider=${process.env.PROVIDER_OUTCOME}, cleanup=${process.env.CLEANUP_OUTCOME}, redaction=${process.env.REDACTION_OUTCOME}, finalize=${process.env.FINALIZE_OUTCOME}, evidence=${process.env.EVIDENCE_COMMIT_OUTCOME}, job=${process.env.JOB_STATUS}`);
+            }
