@@ -1,4 +1,4 @@
-name: B0 Stage 11 Real Browser Six-Window Repair V4 Node 24
+name: B0 Stage 11 Real Browser Six-Window Repair V5 Selector Fix
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-stage11-real-browser-v4-node24
+  group: b0-stage11-real-browser-v5-selector-fix
   cancel-in-progress: false
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
       B0_PROVIDER_MODEL: qwen2.5:1.5b
       B0_ACCEPTANCE_TIER: engineering-selfhosted
       B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
-      B0_EVIDENCE_ROOT: .artifacts/b0-stage11-v4/${{ github.sha }}
+      B0_EVIDENCE_ROOT: .artifacts/b0-stage11-v5/${{ github.sha }}
       B0_PROJECT_ROOT: ${{ github.workspace }}
     steps:
       - name: Publish locator
@@ -37,8 +37,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/stage11-real-browser-v4",
-              description: `real browser Node 24 repair running in ${context.runId}`,
+              context: "b0/stage11-real-browser-v5",
+              description: `real browser selector repair running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -56,14 +56,14 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - name: Verify exact input and reuse the reviewed V3 patch
+      - name: Verify exact input and apply reviewed browser patch
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "9c60d02ba2475fcfaacc18fb425d63420a79109b"
+          test "$(git rev-parse HEAD^)" = "b0e3c63b6a77f136c261f8ce6bad632e30a2690a"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-browser-v4-node24.yml"
           test "$(git hash-object scripts/acceptance/b0-candidate-real-flow.ts)" = "f434c6bf4c2d6d26d1231fd9343e87672ad58bef"
 
@@ -80,10 +80,65 @@ jobs:
           PY
 
           python3 /tmp/b0-stage11-reviewed-patch.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/acceptance/b0-candidate-real-flow.ts')
+          source = path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  "`Boolean(document.querySelector('[data-mv1-kind=\"CONTACT\"]:not([disabled]))')`",
+                  "`(() => { const element = document.querySelector('[data-mv1-kind=\"CONTACT\"]'); return Boolean(element && !element.disabled); })()`",
+              ),
+              (
+                  "`document.querySelector('[data-mv1-kind=\"CONTACT\"]:not([disabled]))')?.click()`",
+                  "`(() => { const element = document.querySelector('[data-mv1-kind=\"CONTACT\"]'); if (!element || element.disabled) return false; element.click(); return true; })()`",
+              ),
+              (
+                  "`Boolean(document.querySelector('[data-mv1-preview]:not([disabled]))')`",
+                  "`(() => { const element = document.querySelector('[data-mv1-preview]'); return Boolean(element && !element.disabled); })()`",
+              ),
+              (
+                  "`document.querySelector('[data-mv1-preview]:not([disabled]))')?.click()`",
+                  "`(() => { const element = document.querySelector('[data-mv1-preview]'); if (!element || element.disabled) return false; element.click(); return true; })()`",
+              ),
+              (
+                  "`Boolean(document.querySelector('[data-mv1-confirm]:not([disabled]))') || Boolean(document.querySelector('[role=\"alert\"]'))`",
+                  "`(() => { const element = document.querySelector('[data-mv1-confirm]'); return Boolean((element && !element.disabled) || document.querySelector('[role=\"alert\"]')); })()`",
+              ),
+              (
+                  "`Boolean(document.querySelector('[data-b0-ready]:not([disabled]))')`",
+                  "`(() => { const element = document.querySelector('[data-b0-ready]'); return Boolean(element && !element.disabled); })()`",
+              ),
+          ]
+          for old, new in replacements:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'CDP selector repair anchor count={count}: {old}')
+              source = source.replace(old, new, 1)
+
+          old_exception = '    if (result.exceptionDetails) throw new Error(`${this.name}: ${result.exceptionDetails.text || "browser evaluation failed"}`);'
+          new_exception = '''    if (result.exceptionDetails) {
+              const details = object(result.exceptionDetails);
+              const exception = object(details.exception);
+              const description = String(exception.description || exception.value || details.text || "browser evaluation failed");
+              throw new Error(`${this.name}: ${description}`);
+            }'''.replace('            ', '')
+          if source.count(old_exception) != 1:
+              raise SystemExit(f'CDP exception detail anchor count={source.count(old_exception)}')
+          source = source.replace(old_exception, new_exception, 1)
+
+          if ":not([disabled]))')" in source:
+              raise SystemExit('invalid selector parenthesis remains in browser driver')
+          path.write_text(source, encoding='utf-8')
+          PY
+
           git diff --check
-          grep -F 'const preWorkerWindow = snap.window;' scripts/acceptance/b0-candidate-real-flow.ts
-          grep -F 'const preWorkerRun = snap.run;' scripts/acceptance/b0-candidate-real-flow.ts
-          grep -F 'async function submitCyclicPlansThroughBrowser(' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F "const element = document.querySelector('[data-mv1-kind=\"CONTACT\"]');" scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F "const element = document.querySelector('[data-mv1-preview]');" scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F "const description = String(exception.description" scripts/acceptance/b0-candidate-real-flow.ts
+          ! grep -F ":not([disabled]))')" scripts/acceptance/b0-candidate-real-flow.ts
 
       - name: Frozen install and complete focused verification on Node 24
         shell: bash
@@ -147,7 +202,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: b0-stage11-real-browser-v4-${{ github.sha }}
+          name: b0-stage11-real-browser-v5-${{ github.sha }}
           path: ${{ env.B0_EVIDENCE_ROOT }}
           if-no-files-found: warn
           retention-days: 14
@@ -161,20 +216,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add scripts/acceptance/b0-candidate-real-flow.ts
-          git rm .github/workflows/b0-stage11-browser-window-driver.yml
-          git rm .github/workflows/b0-stage11-browser-alias-fix.yml
-          git rm .github/workflows/b0-stage11-browser-v4-node24.yml
           git diff --cached --check
-          cat > /tmp/expected <<'EOF'
-          .github/workflows/b0-stage11-browser-alias-fix.yml
-          .github/workflows/b0-stage11-browser-v4-node24.yml
-          .github/workflows/b0-stage11-browser-window-driver.yml
-          scripts/acceptance/b0-candidate-real-flow.ts
-          EOF
-          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
-          LC_ALL=C sort -o /tmp/expected /tmp/expected
-          diff -u /tmp/expected /tmp/actual
-          git commit -m "test(b0): drive all synchronized windows through real browsers"
+          test "$(git diff --cached --name-only)" = "scripts/acceptance/b0-candidate-real-flow.ts"
+          git commit -m "test(b0): drive synchronized windows through real browsers"
           git push origin "HEAD:$GITHUB_REF_NAME"
 
       - name: Publish outcome
@@ -190,8 +234,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: success ? "success" : "failure",
-              context: "b0/stage11-real-browser-v4",
-              description: `real browser Node 24 repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              context: "b0/stage11-real-browser-v5",
+              description: `real browser selector repair ${success ? "passed" : "failed"} in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            if (!success) core.setFailed("real browser Node 24 repair failed");
+            if (!success) core.setFailed("real browser selector repair failed");
