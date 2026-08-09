@@ -1,6 +1,6 @@
 name: Requirement Dependency Fast Forward Delivery
 
-# Retry after removing an obsolete migration for the current settlement shape.
+# Retry after fixing the TypeScript assertion line break in the generated core.
 on:
   push:
     branches:
