@@ -231,8 +231,13 @@ export function buildSoloReplayActions(
   capability: SoloReplayCapabilities,
   endingScope: "STORY" | "PART",
 ): EndgameReplayActionV1[] {
-  const worldId = encodeURIComponent(capability.worldId);
-  const roleSelectionHref = `/role-select?story=${worldId}&start=new`;
+  const params = new URLSearchParams({
+    story: capability.worldId,
+    role: capability.currentRoleKey,
+    start: "new",
+    soloRoles: [...new Set(capability.supportedRoleKeys)].join(","),
+  });
+  const roleSelectionHref = `/role-select?${params.toString()}`;
   const hasAlternativeRole = capability.supportedRoleKeys.some(
     (roleKey) => roleKey !== capability.currentRoleKey,
   );

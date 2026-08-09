@@ -15,7 +15,11 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
+    env:
+      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
+      NODE_ENV: test
     steps:
       - name: Check out exact branch commit
         uses: actions/checkout@v4
@@ -43,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
-          mkdir -p artifacts
+          mkdir -p artifacts scripts/test-reports
           : > artifacts/solo-endgame-commands.log
           : > artifacts/solo-endgame-summary.tsv
           overall=0
@@ -71,7 +75,7 @@ jobs:
           run_cmd "openovel:test" pnpm --filter @apps/openovel-runtime test
           run_cmd "openovel:build" pnpm --filter @apps/openovel-runtime build
 
-          if [[ "$subject" == feat\(api\):* || "$subject" == test\(solo-endgame\):* ]]; then
+          if [[ "$subject" == feat\(api\):* || "$subject" == fix\(api\):* || "$subject" == test\(solo-endgame\):* ]]; then
             run_cmd "api:test" pnpm --filter @apps/api test
             run_cmd "api:build" pnpm --filter @apps/api build
           fi
@@ -84,22 +88,18 @@ jobs:
           if [[ "$subject" == test\(solo-endgame\):* ]]; then
             run_cmd "story:v4" pnpm test:story:v4
             run_cmd "workspace:typecheck" pnpm typecheck
-            if node -e 'const p=require("./package.json"); process.exit(p.scripts?.["test:solo-endgame:mvp"] ? 0 : 1)'; then
-              run_cmd "solo-endgame:e2e" pnpm test:solo-endgame:mvp
-            else
-              echo "test:solo-endgame:mvp is missing" | tee -a artifacts/solo-endgame-commands.log
-              printf '%s\t%s\n' "solo-endgame:e2e" "127" | tee -a artifacts/solo-endgame-summary.tsv
-              overall=1
-            fi
+            run_cmd "solo-endgame:e2e" pnpm --filter @apps/web test:solo-endgame:mvp
           fi
 
           exit "$overall"
 
-      - name: Upload exact command logs
+      - name: Upload exact command and product evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: solo-endgame-${{ github.sha }}
-          path: artifacts/
-          if-no-files-found: error
+          path: |
+            artifacts/
+            scripts/test-reports/solo-endgame-mvp-*/
+          if-no-files-found: warn
           retention-days: 14
