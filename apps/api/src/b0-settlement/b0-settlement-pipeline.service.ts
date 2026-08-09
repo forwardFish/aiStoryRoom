@@ -84,6 +84,7 @@ export class B0SettlementPipelineService {
    * model calls and world writes remain outside the freeze transaction.
    */
   async recover(now = new Date()) {
+    await this.recoverActiveAiPlans();
     return this.windows.recoverExpired(now);
   }
 
@@ -780,42 +781,87 @@ export class B0SettlementPipelineService {
     }
   }
 
+  private async recoverActiveAiPlans() {
+    const storedWindows = await this.prisma.actionWindow.findMany({
+      where: { status: "OPEN" },
+      include: { node: true, participants: true },
+      orderBy: { createdAt: "asc" },
+    });
+    for (const stored of storedWindows) {
+      if (stored.status !== "OPEN" || jsonRecord(stored.configJson)?.schemaVersion !== "b0-window-config-v1") continue;
+      await this.prepareAiPlans(mapStoredWindow(stored));
+    }
+  }
+
   private async prepareAiPlans(window: B0SettlementWindowV1) {
+    const storedWindow = await this.prisma.actionWindow.findUnique({
+      where: { id: window.id },
+      select: { nodeId: true, status: true },
+    });
+    if (!storedWindow) throw hard("WINDOW_NOT_FOUND", "The synchronized window no longer exists.");
+    if (storedWindow.status !== "OPEN") return;
+
     const controls = await this.prisma.roleControl.findMany({
       where: { runId: window.runId, roleId: { in: window.expectedActorIds }, mode: "AI_ACTIVE" },
       select: { roleId: true, epoch: true },
       orderBy: { roleId: "asc" },
     });
     for (const control of controls) {
-      const now = new Date().toISOString();
-      const candidate = aiIntent(window, control.roleId, now);
-      await this.windows.saveDraft({
-        windowId: window.id,
-        actorId: control.roleId,
-        controlEpoch: control.epoch,
-        expectedRevision: 0,
-        candidate,
-        now,
-      });
-      await this.windows.confirmDraft({
-        windowId: window.id,
-        actorId: control.roleId,
-        controlEpoch: control.epoch,
-        expectedRevision: 1,
-        now,
-      });
-      const participant = await this.prisma.actionWindowParticipant.findUnique({
-        where: { windowId_roleId: { windowId: window.id, roleId: control.roleId } },
-        select: { version: true },
-      });
-      if (!participant) throw hard("ACTOR_NOT_EXPECTED", "AI role has no window participant.");
-      await this.windows.ready({
-        windowId: window.id,
-        actorId: control.roleId,
-        controlEpoch: control.epoch,
-        expectedParticipantVersion: participant.version,
-        now,
-      });
+      try {
+        const participant = await this.prisma.actionWindowParticipant.findUnique({
+          where: { windowId_roleId: { windowId: window.id, roleId: control.roleId } },
+          select: { mainStatus: true, version: true },
+        });
+        if (!participant) throw hard("ACTOR_NOT_EXPECTED", "AI role has no window participant.");
+        if (participant.mainStatus !== "B0_PENDING") continue;
+
+        const row = await this.prisma.playerAction.findUnique({
+          where: { nodeId_roleId_actionSlot: { nodeId: storedWindow.nodeId, roleId: control.roleId, actionSlot: "B0_PRIMARY" } },
+          select: { normalizedJson: true },
+        });
+        const current = row?.normalizedJson ? assertB0StoredIntentEnvelopeV1(row.normalizedJson) : null;
+        if (!current?.lastConfirmed) {
+          const now = new Date().toISOString();
+          const candidate = aiIntent(window, control.roleId, now);
+          await this.windows.saveDraft({
+            windowId: window.id,
+            actorId: control.roleId,
+            controlEpoch: control.epoch,
+            expectedRevision: current?.latestRevision ?? 0,
+            candidate,
+            now,
+          });
+          const confirmedRevision = current?.latestDraft?.clientRequestId === candidate.clientRequestId
+            ? current.latestRevision
+            : (current?.latestRevision ?? 0) + 1;
+          await this.windows.confirmDraft({
+            windowId: window.id,
+            actorId: control.roleId,
+            controlEpoch: control.epoch,
+            expectedRevision: confirmedRevision,
+            now,
+          });
+        }
+
+        const refreshed = await this.prisma.actionWindowParticipant.findUnique({
+          where: { windowId_roleId: { windowId: window.id, roleId: control.roleId } },
+          select: { mainStatus: true, version: true },
+        });
+        if (!refreshed) throw hard("ACTOR_NOT_EXPECTED", "AI role has no window participant.");
+        if (refreshed.mainStatus !== "B0_PENDING") continue;
+        await this.windows.ready({
+          windowId: window.id,
+          actorId: control.roleId,
+          controlEpoch: control.epoch,
+          expectedParticipantVersion: refreshed.version,
+          now: new Date().toISOString(),
+        });
+      } catch (error) {
+        const code = b0ExceptionCode(error);
+        if (code === "WINDOW_NOT_OPEN" || code === "WINDOW_ALREADY_LOCKED") return;
+        if (code === "INTENT_STALE_REVISION") continue;
+        throw error;
+      }
     }
   }
 

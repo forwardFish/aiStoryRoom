@@ -262,6 +262,144 @@ test("C8 safe abort changes only an uncommitted open/locked/retryable window", a
   assert.equal(update.data.status, "ABORTED");
 });
 
+test("C8 recovery reconciles pending AI roles before deadline recovery", async () => {
+  const { service, calls } = fixture();
+  (service as any).recoverActiveAiPlans = async () => {
+    calls.push({ method: "pipeline.recoverActiveAiPlans", input: null });
+  };
+  const result = await service.recover(new Date("2026-08-07T00:00:00.000Z"));
+  assert.deepEqual(result, { recovered: 1 });
+  assert.deepEqual(
+    calls.filter((entry) => entry.method.startsWith("pipeline.") || entry.method === "windows.recoverExpired").map((entry) => entry.method),
+    ["pipeline.recoverActiveAiPlans", "windows.recoverExpired"],
+  );
+});
+
+test("C8 AI recovery creates, confirms, and readies the same ActionContract used by normal window creation", async () => {
+  const calls: Array<{ method: string; input: any }> = [];
+  let participantReads = 0;
+  const prisma = {
+    actionWindow: {
+      findUnique: async () => ({ nodeId: "node.1", status: "OPEN" }),
+    },
+    roleControl: {
+      findMany: async () => [{ roleId: "role.ai", epoch: 3 }],
+    },
+    actionWindowParticipant: {
+      findUnique: async () => {
+        participantReads += 1;
+        return { mainStatus: "B0_PENDING", version: participantReads };
+      },
+    },
+    playerAction: {
+      findUnique: async () => null,
+    },
+  };
+  const windows = {
+    saveDraft: async (input: any) => { calls.push({ method: "saveDraft", input }); },
+    confirmDraft: async (input: any) => { calls.push({ method: "confirmDraft", input }); },
+    ready: async (input: any) => { calls.push({ method: "ready", input }); },
+  };
+  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any, {} as any);
+  await (service as any).prepareAiPlans(aiWindow());
+  assert.deepEqual(calls.map((entry) => entry.method), ["saveDraft", "confirmDraft", "ready"]);
+  assert.equal(calls[0].input.expectedRevision, 0);
+  assert.equal(calls[0].input.candidate.clientRequestId, "ai-plan:window.ai:role.ai");
+  assert.equal(calls[1].input.expectedRevision, 1);
+  assert.equal(calls[2].input.controlEpoch, 3);
+});
+
+test("C8 AI recovery preserves an already confirmed plan and only restores READY", async () => {
+  const calls: string[] = [];
+  const action = aiAction();
+  const prisma = {
+    actionWindow: { findUnique: async () => ({ nodeId: "node.1", status: "OPEN" }) },
+    roleControl: { findMany: async () => [{ roleId: "role.ai", epoch: 1 }] },
+    actionWindowParticipant: { findUnique: async () => ({ mainStatus: "B0_PENDING", version: 4 }) },
+    playerAction: { findUnique: async () => ({
+      normalizedJson: {
+        schemaVersion: "b0-intent-revision-envelope-v1",
+        windowId: "window.ai",
+        roomId: "run.1",
+        runId: "run.1",
+        actorId: "role.ai",
+        latestRevision: 1,
+        latestDraft: action,
+        lastConfirmed: action,
+        lockedIntent: null,
+        latestRequestHash: "a".repeat(64),
+      },
+    }) },
+  };
+  const windows = {
+    saveDraft: async () => { calls.push("saveDraft"); },
+    confirmDraft: async () => { calls.push("confirmDraft"); },
+    ready: async () => { calls.push("ready"); },
+  };
+  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any, {} as any);
+  await (service as any).prepareAiPlans(aiWindow());
+  assert.deepEqual(calls, ["ready"]);
+});
+
+function aiWindow() {
+  return {
+    schemaVersion: "b0-settlement-window-v1",
+    id: "window.ai",
+    roomId: "run.1",
+    runId: "run.1",
+    mode: "WINDOWED",
+    ordinal: 1,
+    situationId: "situation.1",
+    baseWorldSequence: 0,
+    expectedActorIds: ["role.ai"],
+    readyActorIds: [],
+    openedAt: "2026-08-07T00:00:00.000Z",
+    locksAt: "2026-08-07T00:05:00.000Z",
+    lockedAt: null,
+    committedAt: null,
+    completedAt: null,
+    status: "OPEN",
+    lockReason: null,
+    rulesetVersion: "b0-rules-v1",
+    schemaRevision: 1,
+  } as const;
+}
+
+function aiAction() {
+  return {
+    schemaVersion: "b0-action-contract-v1",
+    id: "intent.ai",
+    windowId: "window.ai",
+    roomId: "run.1",
+    runId: "run.1",
+    actorId: "role.ai",
+    baseWorldSequence: 0,
+    revision: 1,
+    kind: "ACT",
+    rawPlayerText: "Protect position.",
+    normalizedSummary: "Protect position.",
+    targetRefs: [{ type: "ACTOR", id: "role.ai" }],
+    primaryEffect: { effectTypeId: "position.protect", direction: "PROTECT", requestedMagnitude: "MINOR" },
+    method: { methodTypeId: "ai.conservative.plan", description: "Use a bounded plan." },
+    resourceCommitments: [],
+    evidenceRefs: [],
+    capabilityRefs: [],
+    propositionRefs: [],
+    visibilityIntent: { type: "PRIVATE", declaredRecipientRefs: ["role.ai"] },
+    reactionPolicy: "IF_OBSERVED",
+    requestedTiming: "CURRENT_WINDOW",
+    riskTags: ["conservative"],
+    compilerVersion: "b0-ai-fallback-v1",
+    validationVersion: "b0-action-contract-v1",
+    clientRequestId: "ai-plan:window.ai:role.ai",
+    status: "CONFIRMED",
+    createdAt: "2026-08-07T00:00:00.000Z",
+    updatedAt: "2026-08-07T00:00:01.000Z",
+    confirmedAt: "2026-08-07T00:00:01.000Z",
+    lockedAt: null,
+  } as const;
+}
+
 test("C8 deadline recovery delegates to the authoritative window coordinator", async () => {
   const { service, calls } = fixture();
   const result = await service.recover(new Date("2026-08-07T00:00:00.000Z"));
