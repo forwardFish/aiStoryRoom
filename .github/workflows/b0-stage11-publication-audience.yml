@@ -1,4 +1,4 @@
-name: B0 Stage 11 Structured Publication Audience Repair
+name: B0 Stage 11 Structured Publication Audience Repair V2
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-stage11-publication-audience
+  group: b0-stage11-publication-audience-v2
   cancel-in-progress: false
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/stage11-publication-audience",
-              description: `structured publication audience repair running in ${context.runId}`,
+              context: "b0/stage11-publication-audience-v2",
+              description: `structured publication audience repair v2 running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -55,7 +55,7 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "09a2e975d770dc20cd7bfa59c53049a1265491fb"
+          test "$(git rev-parse HEAD^)" = "d1bd73a2d57f353ec578d4c1b38fb6360aa1b6d2"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-publication-audience.yml"
           test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts)" = "3f48ee7da048bbc3b1a9624f4257e69e5631cc02"
           test "$(git hash-object apps/api/src/b0-settlement/b0-settlement-pipeline.ops.spec.ts)" = "8d2d110bd3a3e088ce600876c49e2b96c78e2ae9"
@@ -79,7 +79,7 @@ jobs:
           source = spec.read_text(encoding="utf-8")
           marker = 'test("C8 diagnostics is read-only and reports window, task, narrative and world sequence state", async () => {'
           addition = '''test("B0 structured delivery persists recipient routing with the durable ROLE audience vocabulary", async () => {
-            let persisted: Json | null = null;
+            const capture: { persisted?: Json } = {};
             const { service } = fixture({
               storyRole: {
                 findUnique: async () => ({ id: "role.b", runId: "run.1", roleKey: "role-b" }),
@@ -89,7 +89,7 @@ jobs:
               },
               storyEvent: {
                 upsert: async (input: Json) => {
-                  persisted = input;
+                  capture.persisted = input;
                   return { id: "event.1" };
                 },
               },
@@ -121,7 +121,8 @@ jobs:
               },
             });
 
-            const create = persisted?.create as Json;
+            assert.ok(capture.persisted);
+            const create = capture.persisted.create as Json;
             assert.equal(create.visibility, "targeted");
             assert.equal(create.audienceType, "ROLE");
             assert.deepEqual(create.audienceRoleIdsJson, ["role.b"]);
@@ -207,8 +208,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: success ? "success" : "failure",
-              context: "b0/stage11-publication-audience",
-              description: `structured publication audience repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              context: "b0/stage11-publication-audience-v2",
+              description: `structured publication audience repair v2 ${success ? "passed" : "failed"} in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
             if (success && process.env.PRODUCT_SHA) {
@@ -222,4 +223,4 @@ jobs:
                 target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
               });
             }
-            if (!success) core.setFailed("B0 structured publication audience repair failed");
+            if (!success) core.setFailed("B0 structured publication audience repair v2 failed");
