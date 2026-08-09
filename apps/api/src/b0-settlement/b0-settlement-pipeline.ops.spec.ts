@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import { ConflictException } from "@nestjs/common";
 import test from "node:test";
-import { B0SettlementPipelineService } from "./b0-settlement-pipeline.service";
+import { B0SettlementPipelineService, b0ExceptionCode } from "./b0-settlement-pipeline.service";
 
 type Json = Record<string, any>;
 
@@ -165,4 +166,16 @@ test("C8 deadline recovery delegates to the authoritative window coordinator", a
   const result = await service.recover(new Date("2026-08-07T00:00:00.000Z"));
   assert.deepEqual(result, { recovered: 1 });
   assert.equal(calls.some((entry) => entry.method === "windows.recoverExpired"), true);
+});
+
+
+test("concurrent B0 lazy creation recognizes the Nest WINDOW_ALREADY_ACTIVE response code", () => {
+  const active = new ConflictException({
+    code: "WINDOW_ALREADY_ACTIVE",
+    message: "another request created the synchronized window",
+  });
+  assert.equal(b0ExceptionCode(active), "WINDOW_ALREADY_ACTIVE");
+  assert.equal(b0ExceptionCode({ code: "P2002" }), "P2002");
+  assert.equal(b0ExceptionCode(new ConflictException({ code: "OTHER_CONFLICT", message: "other" })), "OTHER_CONFLICT");
+  assert.equal(b0ExceptionCode(new Error("WINDOW_ALREADY_ACTIVE")), "");
 });

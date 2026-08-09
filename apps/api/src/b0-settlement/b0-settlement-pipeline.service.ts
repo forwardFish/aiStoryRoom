@@ -442,7 +442,7 @@ export class B0SettlementPipelineService {
         locksAt: new Date(Date.now() + ruleset.windowDurationSeconds * 1_000).toISOString(),
       });
     } catch (error) {
-      if (String((error as any)?.code ?? "") !== "WINDOW_ALREADY_ACTIVE") throw error;
+      if (b0ExceptionCode(error) !== "WINDOW_ALREADY_ACTIVE") throw error;
       const concurrent = await this.prisma.actionWindow.findMany({
         where: { runId, status: { in: [...ACTIVE_B0_WINDOW_STATUSES] } },
         include: { node: true },
@@ -974,6 +974,20 @@ function defaultRuleset(actorCount: number): B0RoomRulesetV1 {
     windowDurationSeconds: boundedInteger(process.env.B0_WINDOW_DURATION_SECONDS, 300, 5, 86_400),
     maxHumanPlayers: Math.max(1, Math.min(5, actorCount)),
   });
+}
+
+export function b0ExceptionCode(error: unknown): string {
+  const candidate = error as any;
+  const direct = String(candidate?.code ?? "").trim();
+  if (direct) return direct;
+  if (typeof candidate?.getResponse !== "function") return "";
+  try {
+    const response = candidate.getResponse();
+    if (!response || typeof response !== "object" || Array.isArray(response)) return "";
+    return String((response as Record<string, unknown>).code ?? "").trim();
+  } catch {
+    return "";
+  }
 }
 
 function b0RunEnabled(strategyVersion: string, stateValue: unknown): boolean {
