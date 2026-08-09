@@ -255,36 +255,62 @@ async function main() {
       const humanRoleIds = new Set(opened.humanRoleIds);
       const humanParticipants = participantsBeforeWorker.filter((entry) => humanRoleIds.has(entry.roleId));
       const aiParticipants = participantsBeforeWorker.filter((entry) => !humanRoleIds.has(entry.roleId));
+      const preparedStatuses = new Set(["B0_READY", "B0_LOCKED"]);
       assert.equal(humanParticipants.length, opened.humanRoleIds.length, "all human roles must have synchronized window participants");
-      assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "all human roles must remain READY before the standalone worker starts");
+      assert(humanParticipants.every((entry) => preparedStatuses.has(entry.mainStatus)), "all human roles must have a confirmed ActionContract before the standalone worker starts");
       assert(aiParticipants.length >= 1, "the multiplayer run must retain AI-filled vacant roles");
-      assert(aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING"), "AI-filled roles must remain pending until a worker prepares their ActionContracts");
+      assert(aiParticipants.every((entry) => ["B0_PENDING", "B0_READY", "B0_LOCKED"].includes(entry.mainStatus)), "AI-filled roles must remain inside the bounded ActionContract lifecycle");
+      const aiAllPending = aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING");
+      const aiAllPrepared = aiParticipants.every((entry) => preparedStatuses.has(entry.mainStatus));
+      assert(aiAllPending || aiAllPrepared, "the pre-worker crash boundary must be either wholly before or wholly after AI ActionContract preparation");
       const settlementBeforeWorker = await prisma.storyTaskOutbox.findFirst({
         where: { windowId: opened.windowId, taskType: "B0_SETTLEMENT_REQUESTED" },
         select: { id: true, status: true, attempt: true, leaseVersion: true, leaseOwner: true },
       });
-      assert.equal(settlementBeforeWorker, null, "without any worker, AI-filled roles cannot freeze the window or enqueue settlement");
       const preWorkerWindow = await prisma.actionWindow.findUniqueOrThrow({ where: { id: opened.windowId }, select: { status: true } });
       const preWorkerRun = await prisma.storyRun.findUniqueOrThrow({ where: { id: mainRun.id }, select: { worldSequence: true } });
-      assert.equal(preWorkerWindow.status, "OPEN", "the synchronized window must remain OPEN while AI-filled roles are unprepared");
       assert.equal(preWorkerRun.worldSequence, before.worldSequence, "without a standalone worker the world cannot advance");
+
+      let preWorkerBoundary: "AI_ACTIONS_UNPREPARED" | "SETTLEMENT_ENQUEUED";
+      if (aiAllPending) {
+        assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "human roles must remain READY while every AI-filled role is pending");
+        assert.equal(preWorkerWindow.status, "OPEN", "the synchronized window must remain OPEN while AI-filled roles are unprepared");
+        assert.equal(settlementBeforeWorker, null, "unprepared AI-filled roles cannot freeze the window or enqueue settlement");
+        preWorkerBoundary = "AI_ACTIONS_UNPREPARED";
+      } else {
+        assert(humanParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "human roles must be LOCKED once the prepared roster freezes");
+        assert(aiParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "AI-filled roles must use the same LOCKED participant state");
+        assert.equal(preWorkerWindow.status, "LOCKED", "a fully prepared roster must freeze before settlement execution");
+        assert.equal(settlementBeforeWorker?.status, "pending", "the disabled embedded worker must leave settlement pending");
+        assert.equal(settlementBeforeWorker?.leaseOwner, null, "no worker may own the pending settlement before standalone startup");
+        assert.equal(settlementBeforeWorker?.leaseVersion, 0, "the pending settlement must not have been leased before standalone startup");
+        preWorkerBoundary = "SETTLEMENT_ENQUEUED";
+      }
+
       await startWorker(commonEnv, "worker", { B0_NARRATIVE_ENABLED: "false" });
       const workerPid = requiredValue(processes.get("worker")?.pid, "standalone worker pid");
       await waitForWindowComplete(prisma, mainRun.id, opened.windowId, before.worldSequence + 1, 120_000);
       const tasks = await prisma.storyTaskOutbox.findMany({ where: { windowId: opened.windowId, taskType: { startsWith: "B0_" } }, select: { id: true, windowId: true, roleId: true, taskType: true, status: true, outcome: true, leaseVersion: true, attempt: true, completedAt: true, lastError: true }, orderBy: { createdAt: "asc" } });
       const completedSettlement = tasks.find((entry) => entry.taskType === "B0_SETTLEMENT_REQUESTED");
-      assert(completedSettlement?.status === "completed" && completedSettlement.leaseVersion > 0, "standalone worker must prepare AI actions, lease settlement, and complete the window");
+      assert(completedSettlement?.status === "completed" && completedSettlement.leaseVersion > 0, "standalone worker must prepare any missing AI actions, lease settlement, and complete the window");
+      if (settlementBeforeWorker) {
+        assert.equal(completedSettlement.id, settlementBeforeWorker.id, "standalone worker must complete the exact pre-existing settlement task");
+        assert(completedSettlement.leaseVersion > settlementBeforeWorker.leaseVersion, "standalone worker must claim a newer lease epoch");
+      }
       return {
         windowId: stableLabel(opened.windowId),
         before,
         after: await runReadback(prisma, mainRun.id),
         standaloneWorkerPidHash: hashText(String(workerPid)).slice(0, 16),
         beforeWorker: {
+          boundary: preWorkerBoundary,
           windowStatus: preWorkerWindow.status,
           worldSequence: preWorkerRun.worldSequence,
           humanParticipants: humanParticipants.map((entry) => ({ roleId: stableLabel(entry.roleId), mainStatus: entry.mainStatus })),
           aiParticipants: aiParticipants.map((entry) => ({ roleId: stableLabel(entry.roleId), mainStatus: entry.mainStatus })),
-          settlementTask: null,
+          settlementTask: settlementBeforeWorker
+            ? { id: stableLabel(settlementBeforeWorker.id), status: settlementBeforeWorker.status, attempt: settlementBeforeWorker.attempt, leaseVersion: settlementBeforeWorker.leaseVersion, leased: Boolean(settlementBeforeWorker.leaseOwner) }
+            : null,
         },
         tasks: tasks.map(safeTask),
       };
