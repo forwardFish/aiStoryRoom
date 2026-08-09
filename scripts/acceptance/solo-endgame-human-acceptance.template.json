@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "solo_endgame_human_acceptance_v1",
+  "candidateSha": "REPLACE_WITH_EXACT_40_CHARACTER_REMOTE_SHA",
+  "remoteBranch": "codex/chatgpt-pro-main-game-final-v1",
+  "conductedAt": "YYYY-MM-DDTHH:mm:ss.sssZ",
+  "participants": [
+    {
+      "participantId": "PSEUDONYMOUS_UNIQUE_ID",
+      "attestationId": "UNIQUE_SIGNED_SESSION_ATTESTATION_ID",
+      "browserSessionId": "UNIQUE_BROWSER_SESSION_ID",
+      "runId": "UNIQUE_SOLO_RUN_ID",
+      "participantKind": "HUMAN",
+      "independent": true,
+      "involvedInDevelopment": false,
+      "realPersonAttested": true,
+      "resultType": "SOLO_PART_END",
+      "recognizedPartEnd": true,
+      "explainedGainLoss": true,
+      "identifiedAuthoritativeCause": true,
+      "resultConsistent": true,
+      "replaySucceeded": true,
+      "privacyLeakDetected": false,
+      "wantsReplay": true,
+      "notes": "No directly identifying personal data."
+    }
+  ]
+}

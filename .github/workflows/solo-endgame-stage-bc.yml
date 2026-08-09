@@ -1,0 +1,137 @@
+name: Solo Endgame Stage B and Stage C Technical Verification
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-main-game-final-v1
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: solo-endgame-stage-bc-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      NODE_ENV: test
+      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.DATABASE_URL }}
+      CANDIDATE_SHA: ${{ github.sha }}
+    steps:
+      - name: Check out exact remote SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact branch and clean worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --short)"
+          remote_sha="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          test "$remote_sha" = "${GITHUB_SHA}"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frozen workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client without migration
+        run: pnpm db:generate
+
+      - name: Stage B focused concurrency and recovery contract
+        run: >-
+          pnpm --filter @apps/api exec node --import tsx --test
+          src/openovel-adapter/openovel-stage-b-concurrency.spec.ts
+          src/openovel-adapter/openovel-stage-b-recovery.spec.ts
+          src/openovel-adapter/openovel-stage-b-result-integrity.spec.ts
+
+      - name: Stage C evidence validators
+        run: |
+          node --test scripts/e2e/solo-endgame-stage-c.spec.mjs
+          node --test scripts/acceptance/__tests__/solo-endgame-human-acceptance.spec.mjs
+
+      - name: OpenNovel Runtime gates
+        run: |
+          pnpm --filter @apps/openovel-runtime typecheck
+          pnpm --filter @apps/openovel-runtime test
+          pnpm --filter @apps/openovel-runtime build
+
+      - name: API gates
+        run: |
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test
+          pnpm --filter @apps/api build
+
+      - name: Web gates
+        run: |
+          pnpm --filter @apps/web test
+          pnpm --filter @apps/web build
+
+      - name: Story and workspace gates
+        run: |
+          pnpm test:story:v4
+          pnpm typecheck
+          git diff --check
+
+      - name: Require configured Supabase test database
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DATABASE_URL:-}" ]; then
+            echo "SUPABASE_DATABASE_URL or DATABASE_URL test secret is required for Stage C." >&2
+            exit 1
+          fi
+          case "$SUPABASE_DATABASE_URL" in
+            *supabase*) ;;
+            *) echo "Stage C accepts only the configured Supabase test database." >&2; exit 1 ;;
+          esac
+
+      - name: Stage C real Supabase, API, Runtime and /game verification
+        run: node --env-file-if-exists=.env.test scripts/e2e/solo-endgame-stage-c.mjs
+
+      - name: Record human acceptance boundary
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p artifacts/solo-endgame-stage-c
+          cat > artifacts/solo-endgame-stage-c/HUMAN_ACCEPTANCE_REQUIRED.md <<'MARKDOWN'
+          # Human acceptance is still required
+
+          Engineering, Supabase, and real `/game` automation cannot be counted as the five independent human participants required by the Solo Endgame plan.
+
+          Use `scripts/acceptance/solo-endgame-human-acceptance.template.json` and validate completed evidence with:
+
+          ```bash
+          node scripts/acceptance/solo-endgame-human-acceptance.mjs <evidence.json> <report.json>
+          ```
+
+          `RELEASE_READY` is forbidden until that validator passes on evidence from at least five unique non-developer human participants.
+          MARKDOWN
+
+      - name: Upload Stage B and Stage C evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: solo-endgame-stage-bc-${{ github.sha }}
+          path: |
+            artifacts/solo-endgame-stage-c/
+            scripts/test-reports/solo-endgame-mvp-*/
+          if-no-files-found: warn
+          retention-days: 14
