@@ -117,7 +117,11 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
         max_tokens: request.maxTokens,
         stream: request.stream,
         ...(request.stream ? { stream_options: { include_usage: true } } : {}),
-        ...(request.jsonSchema && supportsStructuredOutputs(this.config.baseUrl, model)
+        ...(request.jsonSchema && supportsStructuredOutputs(
+          this.config.baseUrl,
+          model,
+          request.jsonSchema.schema,
+        )
           ? {
               response_format: {
                 type: "json_schema",
@@ -264,12 +268,17 @@ function thinkingFields(
   return {};
 }
 
-function supportsStructuredOutputs(baseUrl: string, model: string) {
+function supportsStructuredOutputs(
+  baseUrl: string,
+  model: string,
+  schema?: Record<string, unknown>,
+) {
   const host = new URL(baseUrl).hostname.toLowerCase();
-  // The isolated engineering provider uses Ollama's OpenAI-compatible endpoint,
-  // which accepts response_format=json_schema on loopback. Keep this capability
-  // narrow so an arbitrary third-party compatible endpoint is not overclaimed.
-  if (isLoopbackHost(host)) return true;
+  // Ollama compiles JSON Schema into a llama.cpp grammar. Large bounded string
+  // repetitions (for example prose{20,6000}) are rejected before generation,
+  // even though the same endpoint supports ordinary JSON Schema. In that case
+  // use JSON Object transport and keep the authoritative application validator.
+  if (isLoopbackHost(host)) return !hasUnsafeLoopbackGrammarRepetition(schema);
   if (!host.includes("siliconflow")) return false;
   // SiliconFlow exposes JSON Schema for supported models, but GLM-5.x rejects
   // response_format at transport level. The complete schema remains embedded
@@ -279,6 +288,17 @@ function supportsStructuredOutputs(baseUrl: string, model: string) {
 
 function isLoopbackHost(host: string) {
   return host === "localhost" || host === "::1" || /^127(?:\.\d{1,3}){3}$/u.test(host);
+}
+
+function hasUnsafeLoopbackGrammarRepetition(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasUnsafeLoopbackGrammarRepetition);
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  if (record.type === "string") {
+    const maxLength = Number(record.maxLength);
+    if (Number.isFinite(maxLength) && maxLength > 1_000) return true;
+  }
+  return Object.values(record).some(hasUnsafeLoopbackGrammarRepetition);
 }
 
 function supportsJsonMode(baseUrl: string, model: string) {

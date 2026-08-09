@@ -223,6 +223,45 @@ test("loopback OpenAI-compatible providers receive the requested JSON Schema", a
   });
 });
 
+test("loopback providers use JSON Object mode when schema repetition exceeds the grammar limit", async () => {
+  let sent: Record<string, unknown> = {};
+  const schema = {
+    type: "object",
+    additionalProperties: false,
+    required: ["prose"],
+    properties: {
+      prose: { type: "string", minLength: 20, maxLength: 6_000 },
+    },
+  };
+  const provider = new OpenAICompatibleProvider({
+    apiKey: "test-key",
+    baseUrl: "http://127.0.0.1:11434/v1",
+    narratorModel: "qwen2.5:1.5b",
+    optionsModel: "qwen2.5:1.5b",
+    storykeeperModel: "qwen2.5:1.5b",
+    timeoutMs: 1_000,
+    fetchImpl: async (_url, init) => {
+      sent = JSON.parse(String(init?.body || "{}")) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        model: "qwen2.5:1.5b",
+        choices: [{ message: { content: '{"prose":"A sufficiently detailed safe narrative result."}' }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 8 },
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    },
+  });
+  await provider.generate({
+    profile: "narrator",
+    messages: [{ role: "user", content: "render" }],
+    temperature: 0,
+    maxTokens: 500,
+    json: true,
+    jsonSchema: { name: "b0_narrative_prose_v1", schema },
+    stream: false,
+  });
+  assert.deepEqual(sent.response_format, { type: "json_object" });
+  assert.equal(schema.properties.prose.maxLength, 6_000);
+});
+
 test("SiliconFlow GLM keeps schema-guided plain transport and caps hidden thinking", async () => {
   let sent: Record<string, unknown> = {};
   const provider = new OpenAICompatibleProvider({
