@@ -1,0 +1,59 @@
+name: Requirement Dependency Fast Forward Delivery
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/requirement-dependency-fast-forward-delivery.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: requirement-dependency-fast-forward-delivery
+  cancel-in-progress: false
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Decode and execute exact delivery
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat .github/bootstrap/requirement-dependency-fast-forward/seg-*.b64 \
+            | tr -d '\r\n' \
+            | base64 --decode \
+            > "${RUNNER_TEMP}/requirement-dependency-fast-forward.sh"
+          chmod +x "${RUNNER_TEMP}/requirement-dependency-fast-forward.sh"
+          bash -n "${RUNNER_TEMP}/requirement-dependency-fast-forward.sh"
+          bash "${RUNNER_TEMP}/requirement-dependency-fast-forward.sh"
+
+      - name: Upload deterministic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirement-dependency-fast-forward-${{ github.sha }}
+          path: /tmp/requirement-dependency-fast-forward/
+          if-no-files-found: error
+          retention-days: 7
