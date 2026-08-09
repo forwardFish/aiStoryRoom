@@ -67,3 +67,9 @@ test("idempotent replay snapshots only after asynchronous narratives reach quies
   assert.match(driver, /all window narrative tasks and role publications complete before replay fingerprint/);
   assert.match(driver, /every human role must observe its completed provider-backed narrative before replay begins/);
 });
+
+test("planned acceptance windows outlive real narrative quiescence", () => {
+  assert.match(driver, /B0_WINDOW_DURATION_SECONDS:\s*"300"/);
+  assert.match(driver, /acceptance must begin each planned phase on an OPEN synchronized window/);
+  assert.match(driver, /a successor window must reset each human participant to not ready/);
+});

@@ -443,6 +443,8 @@ async function openWindow(runId: string, users: Array<{ id: string; token: strin
   const projections = await Promise.all(users.map((user) => apiJson(user.token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" })));
   const ids = new Set(projections.map((entry) => entry.window.id));
   assert.equal(ids.size, 1, "all human sessions must observe one active synchronized window");
+  assert(projections.every((entry) => entry.window.status === "OPEN"), "acceptance must begin each planned phase on an OPEN synchronized window");
+  assert(projections.every((entry) => entry.actor.ready === false), "a successor window must reset each human participant to not ready");
   const humanRoleIds = await roleIdsForUsers(runId, users.map((entry) => entry.id));
   return { windowId: projections[0].window.id as string, ordinal: projections[0].window.ordinal as number, humanRoleIds, projections };
 }
@@ -658,7 +660,7 @@ function childEnvironment(adminUserId: string) {
     ROLE_AGENT_PROVIDER: "rules",
     STORY_WORKER_ENABLED: "true",
     B0_TOTAL_WINDOWS: "6",
-    B0_WINDOW_DURATION_SECONDS: "30",
+    B0_WINDOW_DURATION_SECONDS: "300",
     B0_RECOVERY_POLL_MS: "500",
     B0_NARRATIVE_ENABLED: "true",
     CREDIT_ACTION_METERING_MODE: "OFF",
