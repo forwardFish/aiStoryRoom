@@ -56,3 +56,8 @@ test("formal evidence is committed only after exact gates, cleanup, redaction an
   assert.match(workflow, /Commit passing formal C8 runtime evidence as docs only/);
   assert.match(workflow, /grep -Ev '\^docs\/auto-execute\/evidence\/b0\/'/);
 });
+
+test("acceptance binds runtime publication proof to its isolated OpenNovel workspace", () => {
+  assert.match(driver, /OPENOVEL_WORKSPACE_ROOT:\s*OPENOVEL_RUNTIME_ROOT/);
+  assert.match(driver, /join\(OPENOVEL_RUNTIME_ROOT, "b0-narrative-jobs"\)/);
+});
