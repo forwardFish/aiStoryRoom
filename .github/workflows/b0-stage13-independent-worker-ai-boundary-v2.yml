@@ -1,0 +1,147 @@
+name: B0 Stage 13 Independent Worker AI Boundary Repair V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage13-independent-worker-ai-boundary-v2.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage13-independent-worker-ai-boundary-v2
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage13-independent-worker-ai-boundary-v2",
+              description: `independent worker AI boundary repair v2 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch tip and acceptance driver blob
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "73ddf8f17c90ad54af554153d9e78a9868eafa9a"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage13-independent-worker-ai-boundary-v2.yml"
+          test "$(git hash-object scripts/acceptance/b0-candidate-real-flow.ts)" = "0fd6a46521d7d6d8c2a7436b6e32929076485cee"
+          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "fabdb3296069ca917e992c27ca7956787863e28779d4c2f13d6271206c7803fb"
+          test -f .github/workflows/b0-stage13-independent-worker-ai-boundary.yml
+
+      - name: Align independent worker acceptance with AI-filled role lifecycle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/b195770cde0520862c90e3dbe8a15ae45cd325a1" --jq .content \
+            | tr -d '\n' \
+            | base64 -d > /tmp/b0-stage13-replacement.ts
+          test "$(wc -c < /tmp/b0-stage13-replacement.ts | tr -d ' ')" = "3888"
+          test "$(sha256sum /tmp/b0-stage13-replacement.ts | cut -d' ' -f1)" = "7e8ee4d3825d5014089b62ec03d59f579426e122af6ea203e586ddf79fb03458"
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
+          source = path.read_text(encoding="utf-8")
+          start_marker = '    await phase("window-5-independent-worker", async () => {'
+          end_marker = '\n\n    await phase("window-6-worker-crash-lease-expiry-recovery-and-ending", async () => {'
+          if source.count(start_marker) != 1 or source.count(end_marker) != 1:
+              raise SystemExit(f"phase markers start={source.count(start_marker)} end={source.count(end_marker)}")
+          start = source.index(start_marker)
+          end = source.index(end_marker, start)
+          replacement = Path("/tmp/b0-stage13-replacement.ts").read_text(encoding="utf-8")
+          path.write_text(source[:start] + replacement + source[end:], encoding="utf-8")
+          PY
+          git diff --check
+          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "97f7a410e419be2f0d3249e8c073c17dfecf76234bc4212f0321e1a13eda0025"
+          grep -F 'AI-filled roles must remain pending until a worker prepares their ActionContracts' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'without any worker, AI-filled roles cannot freeze the window or enqueue settlement' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'standalone worker must prepare AI actions, lease settlement, and complete the window' scripts/acceptance/b0-candidate-real-flow.ts
+
+      - name: Frozen install and acceptance harness verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          bash -n scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          bash -n scripts/acceptance/b0-formal-supabase-acceptance.sh
+          node --test scripts/acceptance/__tests__/b0-formal-acceptance-boundary.spec.mjs
+
+      - name: Commit completed stage as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git rm \
+            .github/workflows/b0-stage13-independent-worker-ai-boundary.yml \
+            .github/workflows/b0-stage13-independent-worker-ai-boundary-v2.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage13-independent-worker-ai-boundary-v2.yml
+          .github/workflows/b0-stage13-independent-worker-ai-boundary.yml
+          scripts/acceptance/b0-candidate-real-flow.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "test(b0): model AI fill before independent settlement"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage13-independent-worker-ai-boundary-v2",
+              description: `independent worker AI boundary repair v2 ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 stage 13 independent worker AI boundary repair v2 failed");
