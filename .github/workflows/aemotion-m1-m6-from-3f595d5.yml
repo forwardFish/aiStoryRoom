@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           base64 --decode .github/scripts/aemotion-m1-m6-delivery.sh.gz.b64 | gzip -dc > /tmp/aemotion-m1-m6-delivery.sh
           chmod +x /tmp/aemotion-m1-m6-delivery.sh
-          printf '%s  %s\n' '878fc9726c89480309716605f40ca0e007d64d28387e265d28799f83df7ad02f' /tmp/aemotion-m1-m6-delivery.sh | sha256sum --check --strict
+          printf '%s  %s\n' '2f98607028a767cea2d88fcf6dccfdbd40378b138ba72972041f66dc2a67cb6a' /tmp/aemotion-m1-m6-delivery.sh | sha256sum --check --strict
           git checkout --detach "$BASE_SHA"
           git clean -fd
 
