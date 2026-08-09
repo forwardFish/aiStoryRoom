@@ -39,7 +39,7 @@ jobs:
           BRANCH: codex/chatgpt-pro-main-game-final-v1
           BASE_SHA: 49e0bc1497130fe91f79a62cf4d9ee4d2f4041f3
         run: |
-          set -uo pipefail
+          set -u
           artifact_dir="${GITHUB_WORKSPACE}/artifacts"
           clone_dir="${RUNNER_TEMP}/solo-endgame-stage-a-clean"
           mkdir -p "$artifact_dir"
@@ -47,27 +47,20 @@ jobs:
           printf 'label\tcommand\tworkdir\ttests\tpass\tfail\tskip\ttodo\texit_code\n' > "$artifact_dir/summary.tsv"
           overall=0
 
-          record_gate() {
-            local label="$1" command="$2" cwd="$3" code="$4"
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-              "$label" "$command" "$cwd" "N/A" "N/A" "N/A" "N/A" "N/A" "$code" \
-              >> "$artifact_dir/summary.tsv"
-            if [ "$code" -ne 0 ]; then overall=1; fi
-          }
-
           run_gate() {
             local label="$1"
             shift
             local command="$*"
             local log="$artifact_dir/${label}.log"
-            echo "===== ${label} =====" | tee -a "$artifact_dir/commands.log"
-            echo "command=${command}" | tee -a "$artifact_dir/commands.log"
-            echo "workdir=${clone_dir}" | tee -a "$artifact_dir/commands.log"
+            printf '===== %s =====\ncommand=%s\nworkdir=%s\n' "$label" "$command" "$clone_dir" >> "$artifact_dir/commands.log"
             set +e
-            (cd "$clone_dir" && "$@") 2>&1 | tee "$log"
-            local code=${PIPESTATUS_0}
+            (cd "$clone_dir" && "$@") > "$log" 2>&1
+            local code=$?
             set -e
-            record_gate "$label" "$command" "$clone_dir" "$code"
+            cat "$log"
+            printf '%s\t%s\t%s\tN/A\tN/A\tN/A\tN/A\tN/A\t%s\n' \
+              "$label" "$command" "$clone_dir" "$code" >> "$artifact_dir/summary.tsv"
+            if [ "$code" -ne 0 ]; then overall=1; fi
           }
 
           run_tap_test() {
@@ -75,13 +68,12 @@ jobs:
             shift
             local command="$*"
             local log="$artifact_dir/${label}.log"
-            echo "===== ${label} =====" | tee -a "$artifact_dir/commands.log"
-            echo "command=${command}" | tee -a "$artifact_dir/commands.log"
-            echo "workdir=${clone_dir}" | tee -a "$artifact_dir/commands.log"
+            printf '===== %s =====\ncommand=%s\nworkdir=%s\n' "$label" "$command" "$clone_dir" >> "$artifact_dir/commands.log"
             set +e
-            (cd "$clone_dir" && "$@") 2>&1 | tee "$log"
-            local code=${PIPESTATUS_0]
+            (cd "$clone_dir" && "$@") > "$log" 2>&1
+            local code=$?
             set -e
+            cat "$log"
             local tests pass fail skip todo
             tests=$(awk '$1 == "#" && $2 == "tests" {sum += $3} END {print sum + 0}' "$log")
             pass=$(awk '$1 == "#" && $2 == "pass" {sum += $3} END {print sum + 0}' "$log")
@@ -89,41 +81,29 @@ jobs:
             skip=$(awk '$1 == "#" && ($2 == "skipped" || $2 == "skip") {sum += $3} END {print sum + 0}' "$log")
             todo=$(awk '$1 == "#" && $2 == "todo" {sum += $3} END {print sum + 0}' "$log")
             printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-              "$label" "$command" "$clone_dir" "$tests" "$pass" "$fail" "$skip" "$todo" "$code" \
-              >> "$artifact_dir/summary.tsv"
+              "$label" "$command" "$clone_dir" "$tests" "$pass" "$fail" "$skip" "$todo" "$code" >> "$artifact_dir/summary.tsv"
             if [ "$code" -ne 0 ] || [ "$tests" -eq 0 ] || [ "$pass" -ne "$tests" ] \
               || [ "$fail" -ne 0 ] || [ "$skip" -ne 0 ] || [ "$todo" -ne 0 ]; then
               overall=1
             fi
-            if [ "$label" = "api-targeted-contract" ] && [ "$tests" -lt 24 ]; then
-              overall=1
-            fi
+            if [ "$label" = "api-targeted-contract" ] && [ "$tests" -lt 24 ]; then overall=1; fi
           }
 
           remote_url="https://github.com/${GITHUB_REPOSITORY}.git"
           raw_remote=$(git ls-remote "$remote_url" "refs/heads/${BRANCH}")
           remote_sha=$(printf '%s' "$raw_remote" | awk '{print $1}')
           printf '%s\n' "$raw_remote" | tee "$artifact_dir/ls-remote.txt"
-          printf 'github_sha=%s\nremote_sha=%s\n' "$GITHUB_SHA" "$remote_sha" \
-            | tee "$artifact_dir/remote-sha.txt"
-          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
-            echo "REMOTE_SHA_MISMATCH" | tee -a "$artifact_dir/commands.log"
-            exit 1
-          fi
+          printf 'github_sha=%s\nremote_sha=%s\n' "$GITHUB_SHA" "$remote_sha" | tee "$artifact_dir/remote-sha.txt"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then exit 1; fi
 
           rm -rf "$clone_dir"
-          git clone --no-tags --single-branch --branch "$BRANCH" "$remote_url" "$clone_dir" \
-            2>&1 | tee "$artifact_dir/git-clone.log"
+          git clone --no-tags --single-branch --branch "$BRANCH" "$remote_url" "$clone_dir" > "$artifact_dir/git-clone.log" 2>&1
           clone_sha=$(git -C "$clone_dir" rev-parse HEAD)
           clone_branch=$(git -C "$clone_dir" branch --show-current)
           clone_status=$(git -C "$clone_dir" status --short)
           printf 'clone_head=%s\nclone_branch=%s\nstatus_begin\n%s\nstatus_end\n' \
             "$clone_sha" "$clone_branch" "$clone_status" | tee "$artifact_dir/clean-clone.txt"
-          if [ "$clone_sha" != "$GITHUB_SHA" ] || [ "$clone_branch" != "$BRANCH" ] \
-            || [ -n "$clone_status" ]; then
-            echo "CLEAN_CLONE_INVARIANT_FAILED" | tee -a "$artifact_dir/commands.log"
-            exit 1
-          fi
+          if [ "$clone_sha" != "$GITHUB_SHA" ] || [ "$clone_branch" != "$BRANCH" ] || [ -n "$clone_status" ]; then exit 1; fi
 
           run_gate install pnpm install --frozen-lockfile
           run_gate prisma-generate pnpm db:generate
@@ -147,11 +127,7 @@ jobs:
 
           final_status=$(git -C "$clone_dir" status --short)
           printf '%s\n' "$final_status" > "$artifact_dir/final-git-status.txt"
-          if [ -n "$final_status" ]; then
-            echo "FINAL_WORKTREE_NOT_CLEAN" | tee -a "$artifact_dir/commands.log"
-            overall=1
-          fi
-
+          if [ -n "$final_status" ]; then overall=1; fi
           cat "$artifact_dir/summary.tsv"
           exit "$overall"
 
