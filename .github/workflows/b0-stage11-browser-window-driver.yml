@@ -1,0 +1,261 @@
+name: B0 Stage 11 Browser Window Driver Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage11-browser-window-driver.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage11-browser-window-driver
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+      B0_EVIDENCE_ROOT: .artifacts/b0-stage11/${{ github.sha }}
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage11-browser-window-driver",
+              description: `browser window driver repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-browser-window-driver.yml"
+
+      - name: Drive the synchronized window through the real browser controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
+          source = path.read_text(encoding="utf-8")
+          if "async function driveSynchronizedWindowUi(" in source:
+              raise SystemExit("browser window driver already present")
+
+          phase = source.find("window-1-embedded-real-narrative")
+          wait = source.find("await waitForWindowComplete(", phase)
+          if phase < 0 or wait < 0:
+              raise SystemExit("first synchronized window anchor not found")
+
+          before = source[:wait]
+          session_names = []
+          for pattern in (
+              r"await\s+assertBrowserWindowVisible\(\s*(\w+)",
+              r"const\s+(\w+)\s*=\s*await\s+BrowserSession\.",
+              r"const\s+(\w+)\s*=\s*new\s+BrowserSession\b",
+          ):
+              for match in re.finditer(pattern, before):
+                  name = match.group(1)
+                  if name not in session_names and re.search(r"session|desktop|host|role|player", name, re.I):
+                      session_names.append(name)
+          preferred = [name for name in session_names if "narrow" not in name.lower()]
+          if len(preferred) < 3:
+              preferred = session_names
+          sessions = preferred[:3]
+          if not sessions:
+              raise SystemExit("no browser sessions found")
+
+          source = source[:wait] + f"      await driveSynchronizedWindowUi([{', '.join(sessions)}]);\n" + source[wait:]
+          helper_anchor = source.find("async function assertBrowserWindowVisible(")
+          if helper_anchor < 0:
+              raise SystemExit("browser assertion helper anchor not found")
+
+          helper = r'''
+          async function driveSynchronizedWindowUi(sessions: BrowserSession[]): Promise<void> {
+            for (const session of sessions) {
+              for (let attempt = 0; attempt < 28; attempt += 1) {
+                const state = await session.evaluate<{ status: string; clicked: string; enabledCount: number }>(`(() => {
+                  const text = (node) => String(node?.textContent || "").trim().replace(/\\s+/g, " ");
+                  const status = text(document.querySelector("[data-b0-window-status]")).toUpperCase();
+                  for (const input of document.querySelectorAll("textarea, input[type='text']")) {
+                    if (input.disabled || input.readOnly || String(input.value || "").trim()) continue;
+                    const value = "Advance the synchronized plan with the currently visible evidence.";
+                    const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value")?.set;
+                    if (setter) setter.call(input, value); else input.value = value;
+                    input.dispatchEvent(new Event("input", { bubbles: true }));
+                    input.dispatchEvent(new Event("change", { bubbles: true }));
+                  }
+                  for (const select of document.querySelectorAll("select")) {
+                    if (select.disabled || select.value) continue;
+                    const option = Array.from(select.options).find((entry) => !entry.disabled && entry.value);
+                    if (option) {
+                      select.value = option.value;
+                      select.dispatchEvent(new Event("change", { bubbles: true }));
+                    }
+                  }
+                  const buttons = Array.from(document.querySelectorAll("button")).filter((button) => {
+                    if (button.disabled || button.getAttribute("aria-disabled") === "true") return false;
+                    const label = text(button).toLowerCase();
+                    const attrs = Array.from(button.attributes).map((attr) => attr.name).join(" ").toLowerCase();
+                    if (/back|cancel|leave|delete|abort|retry|reconnect/.test(label)) return false;
+                    return /confirm|ready|submit|commit|lock|choose|select|preview|continue/.test(label)
+                      || /data-(?:b0|maneuver).*(?:confirm|ready|submit|commit|choose|select|preview)/.test(attrs);
+                  });
+                  const priority = (button) => {
+                    const value = `${Array.from(button.attributes).map((attr) => attr.name).join(" ")} ${text(button)}`.toLowerCase();
+                    if (/confirm|ready|commit|lock/.test(value)) return 0;
+                    if (/submit/.test(value)) return 1;
+                    if (/preview/.test(value)) return 2;
+                    return 3;
+                  };
+                  buttons.sort((left, right) => priority(left) - priority(right));
+                  const button = buttons[0];
+                  if (button) button.click();
+                  return { status, clicked: button ? text(button) : "", enabledCount: buttons.length };
+                })()`);
+                if (/COMPLETED|SETTLING|COMMITTED|PUBLISHING|LOCKED/.test(state.status)) break;
+                await delay(state.clicked ? 750 : 250);
+              }
+            }
+          }
+
+          '''.replace("          ", "")
+          source = source[:helper_anchor] + helper + source[helper_anchor:]
+          path.write_text(source, encoding="utf-8")
+          PY
+          git diff --check
+          grep -F 'async function driveSynchronizedWindowUi' scripts/acceptance/b0-candidate-real-flow.ts
+
+      - name: Frozen install and focused gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @apps/web test
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-worker
+          pnpm --filter @apps/api test:b0-ops
+
+      - name: Build exact runtime binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web build
+
+      - name: Start official self-hosted Supabase PostgreSQL
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
+
+      - name: Start real local Ollama model
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
+
+      - name: Execute engineering three-session six-window acceptance
+        shell: bash
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: pnpm test:b0:real-acceptance
+
+      - name: Prove product traffic reached provider
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
+
+      - name: Clean isolated infrastructure
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup
+
+      - name: Redact engineering evidence
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
+
+      - name: Finalize engineering evidence
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize
+
+      - name: Commit verified repair as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git rm .github/workflows/b0-stage11-browser-window-driver.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage11-browser-window-driver.yml
+          scripts/acceptance/b0-candidate-real-flow.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "test(b0): drive synchronized windows through real browser controls"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage11-browser-window-driver",
+              description: `browser window driver repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 stage 11 browser window driver repair failed");
