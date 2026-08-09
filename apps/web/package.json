@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "node src/server.mjs",
     "typecheck": "node --check src/server.mjs && node --check public/api-story-storage.js && node --check public/app.js && node --check public/game-bootstrap.js && node --check public/room-story-storage.js && node --check public/continuous-game-client.js && node --check public/continuous-game-view.js && node --check public/continuous-story-v2-client.js && node --check public/continuous-story-v2-view.js && node --check public/solo-endgame-presentation-v1.js && node --check public/solo-role-capability-filter.js && node --check public/home.js && node --check public/home-seo.js && node --check public/legal.js && node --check public/platform.js && node --check public/reset-password.js && node --check public/worlds.js && node --check public/role-select.js && node --check public/trio.js && node --check public/js/api-client.js && node --check public/js/credits.js && node --check public/js/credits-success.js && node --check tests/auth-runtime-config.test.mjs && node --check tests/browser-smoke.test.mjs && node --check tests/continuous-game.test.mjs && node --check tests/continuous-story-v2.test.mjs && node --check tests/deployment-routes.test.mjs && node --check tests/home-ui.test.mjs && node --check tests/lobby-navigation.test.mjs && node --check tests/room-main-game.test.mjs && node --check tests/room-world-selection.test.mjs && node --check tests/seo.test.mjs && node --check tests/solo-endgame-presentation-v1.test.mjs && node --check tests/trio-ui.test.mjs && node --check tests/world-credits-ui.test.mjs && node --check tests/worlds-lobby.test.mjs && node --check tests/world-detail-content.test.mjs && node --check ../../scripts/e2e/solo-endgame-browser.mjs && node --check ../../scripts/e2e/solo-endgame-mvp.mjs",
-    "test": "node --test --test-isolation=none tests/*.test.mjs",
-    "test:smoke": "node --test --test-isolation=none tests/*.test.mjs",
-    "test:seo": "node --test --test-isolation=none tests/seo.test.mjs",
+    "test": "node --test --experimental-test-isolation=none tests/*.test.mjs",
+    "test:smoke": "node --test --experimental-test-isolation=none tests/*.test.mjs",
+    "test:seo": "node --test --experimental-test-isolation=none tests/seo.test.mjs",
     "test:solo-endgame:mvp": "node --env-file-if-exists=../../.env.test ../../scripts/e2e/solo-endgame-mvp.mjs",
     "build": "node -e \"console.log('web MVP is static; validation is performed by typecheck and node:test')\""
   },
