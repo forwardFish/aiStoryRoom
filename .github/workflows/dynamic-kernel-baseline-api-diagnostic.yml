@@ -1,0 +1,52 @@
+name: Dynamic Kernel Baseline API Diagnostic
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/dynamic-kernel-baseline-api-diagnostic.yml
+
+permissions:
+  contents: write
+
+jobs:
+  baseline-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 321a9aa03ce33201a59da63350e385b885023d77
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Run exact baseline legacy API
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian 2>&1 | tee /tmp/baseline-api.log
+      - name: Upload baseline log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-kernel-baseline-api-${{ github.sha }}
+          path: /tmp/baseline-api.log
+          if-no-files-found: error
+      - name: Remove diagnostic workflow
+        if: always()
+        shell: bash
+        run: |
+          git fetch origin codex/chatgpt-pro-dynamic-kernel-lite
+          git checkout -B cleanup origin/codex/chatgpt-pro-dynamic-kernel-lite
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/dynamic-kernel-baseline-api-diagnostic.yml
+          git commit -m "chore(kernel-lite): remove baseline API diagnostic"
+          git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
