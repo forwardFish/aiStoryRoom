@@ -241,16 +241,15 @@ test("C6 concurrent workers are fenced so only one owns generation", async (t) =
   assert.equal(rejected.reason.code, "NARRATIVE_JOB_BUSY");
 });
 
-test("C6 provider adapter requests strict JSON and repairs a JSON response before validation", async () => {
+test("C6 provider adapter delegates prose only and assembles the immutable authority envelope server-side", async () => {
   const input = narrativeInput();
   let request: ProviderRequest | null = null;
   const provider: OpenNovelProvider = {
     describe: () => ({ provider: "test", model: "test", configured: true }),
     generate: async (value) => {
       request = value;
-      const serialized = JSON.stringify(validOutput(input));
       return {
-        text: serialized.slice(0, -1) + ",}",
+        text: '{"prose":"The committed plan opens a narrow path, while the next decision remains entirely yours.","inputHash":"smuggled"}',
         model: "test",
         usage: { inputTokens: 1, outputTokens: 1 },
         latencyMs: 1,
@@ -260,6 +259,23 @@ test("C6 provider adapter requests strict JSON and repairs a JSON response befor
   const generated = await new ProviderB0NarrativeGeneratorV1(provider).generate(input);
   assert.equal(request?.profile, "narrator");
   assert.equal(request?.json, true);
-  assert.equal(request?.jsonSchema?.name, "b0_narrative_output_v1");
-  assert.equal(generated.inputHash, input.inputHash);
+  assert.equal(request?.jsonSchema?.name, "b0_narrative_prose_v1");
+  assert.deepEqual(request?.jsonSchema?.schema, {
+    type: "object",
+    additionalProperties: false,
+    required: ["prose"],
+    properties: { prose: { type: "string", minLength: 20, maxLength: 6_000 } },
+  });
+  assert.equal(request?.temperature, 0);
+  assert.equal(request?.maxTokens, 500);
+  const brief = String(request?.messages[1]?.content || "");
+  assert.match(brief, /b0-narrative-prose-brief-v1/u);
+  assert.doesNotMatch(brief, new RegExp(input.inputHash, "u"));
+  assert.doesNotMatch(brief, new RegExp(input.commitHash, "u"));
+  assert.doesNotMatch(brief, new RegExp(input.resolutionHash, "u"));
+  assert.doesNotMatch(brief, /internal settlement/u);
+  assert.deepEqual(generated, validOutput(
+    input,
+    "The committed plan opens a narrow path, while the next decision remains entirely yours.",
+  ));
 });

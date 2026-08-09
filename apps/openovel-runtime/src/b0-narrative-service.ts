@@ -38,31 +38,37 @@ export class ProviderB0NarrativeGeneratorV1 implements B0NarrativeGeneratorV1 {
       profile: "narrator",
       messages: [
         {
-          role: "system",
-          content: [
-            "Render only the committed, recipient-safe structured results supplied by the server.",
-            "Do not invent facts, outcomes, resources, relationships, capabilities, knowledge or hidden identities.",
-            "Return strict JSON matching the requested schema.",
-            "Copy claims, outcomeAssertions and changeAssertions exactly from the input.",
-            "All authoritativeFacts and mutation/grant arrays must be empty.",
-          ].join("\n"),
+role: "system",
+content: [
+  "You are a deterministic narrative renderer, not a rules engine.",
+  "Return exactly one JSON object whose only field is prose.",
+  "Write two to four concise sentences in the requested locale.",
+  "Every factual statement must be a paraphrase of the supplied recipient-safe results.",
+  "Do not repeat input keys, identifiers, hashes or schema metadata.",
+  "Do not invent facts, outcomes, resources, relationships, capabilities, knowledge or hidden identities.",
+  "Do not identify an undisclosed source actor.",
+].join("\n"),
         },
         {
-          role: "user",
-          content: JSON.stringify(input),
+role: "user",
+content: JSON.stringify(b0NarrativeProseBriefV1(input)),
         },
       ],
-      temperature: 0.1,
-      maxTokens: 1_800,
+      temperature: 0,
+      maxTokens: 500,
       json: true,
       jsonSchema: {
-        name: "b0_narrative_output_v1",
-        schema: b0NarrativeOutputJsonSchemaV1(),
+        name: "b0_narrative_prose_v1",
+        schema: b0NarrativeProseJsonSchemaV1(),
       },
       stream: false,
     });
     try {
-      return JSON.parse(jsonrepair(result.text)) as B0NarrativeOutputV1;
+      const parsed = JSON.parse(jsonrepair(result.text)) as Record<string, unknown>;
+      if (!parsed || Array.isArray(parsed) || typeof parsed.prose !== "string") {
+        throw new Error("response must contain a prose string");
+      }
+      return assembleB0NarrativeOutputV1(input, parsed.prose);
     } catch (error) {
       throw new B0NarrativeRuntimeErrorV1(
         "NARRATIVE_PROVIDER_OUTPUT_INVALID",
@@ -372,6 +378,74 @@ export class B0NarrativeRuntimeV1 {
       throw error;
     }
   }
+}
+
+export function b0NarrativeProseJsonSchemaV1(): Record<string, unknown> {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["prose"],
+    properties: {
+      prose: { type: "string", minLength: 20, maxLength: 6_000 },
+    },
+  };
+}
+
+function b0NarrativeProseBriefV1(input: B0NarrativeInputV1): Record<string, unknown> {
+  return {
+    schemaVersion: "b0-narrative-prose-brief-v1",
+    locale: input.locale,
+    styleDirectives: [...input.styleDirectives],
+    allowedActorLabels: [...input.allowedActorLabels],
+    results: input.deliveries.map((delivery) => ({
+      resultKind: delivery.resultKind,
+      summary: delivery.summary,
+      outcomeStatus: delivery.outcomeStatus,
+      changes: delivery.changes.map((change) => ({
+        kind: change.kind,
+        operation: change.operation,
+        numericDelta: change.numericDelta,
+      })),
+      reasons: delivery.explanation.reasons.map((reason) => reason.summary),
+      sourceDisclosure: delivery.sourceDisclosure === "FULL" ? "DISCLOSED" : "UNDISCLOSED",
+    })),
+  };
+}
+
+function assembleB0NarrativeOutputV1(input: B0NarrativeInputV1, prose: string): B0NarrativeOutputV1 {
+  const revealedOriginActorIds = [...new Set(input.deliveries
+    .filter((delivery) => delivery.sourceDisclosure === "FULL")
+    .flatMap((delivery) => delivery.disclosedOriginActorIds))].sort();
+  return {
+    schemaVersion: "b0-narrative-output-v1",
+    inputHash: input.inputHash,
+    guidanceVersion: input.guidanceVersion,
+    prose: prose.trim(),
+    sourceResultIds: input.deliveries.map((delivery) => delivery.resultId),
+    claims: input.deliveries.map((delivery) => ({
+      sourceResultId: delivery.resultId,
+      statement: delivery.summary,
+    })),
+    outcomeAssertions: input.deliveries
+      .filter((delivery) => delivery.outcomeStatus !== null)
+      .map((delivery) => ({
+        sourceResultId: delivery.resultId,
+        outcomeStatus: delivery.outcomeStatus!,
+      })),
+    changeAssertions: input.deliveries.flatMap((delivery) => delivery.changes.map((change, changeIndex) => ({
+      sourceResultId: delivery.resultId,
+      changeIndex,
+      kind: change.kind,
+      operation: change.operation,
+      numericDelta: change.numericDelta,
+    }))),
+    revealedOriginActorIds,
+    authoritativeFacts: [],
+    stateMutations: [],
+    relationshipMutations: [],
+    capabilityMutations: [],
+    knowledgeGrants: [],
+  };
 }
 
 export function b0NarrativeOutputJsonSchemaV1(): Record<string, unknown> {

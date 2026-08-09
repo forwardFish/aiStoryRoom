@@ -266,11 +266,19 @@ function thinkingFields(
 
 function supportsStructuredOutputs(baseUrl: string, model: string) {
   const host = new URL(baseUrl).hostname.toLowerCase();
+  // The isolated engineering provider uses Ollama's OpenAI-compatible endpoint,
+  // which accepts response_format=json_schema on loopback. Keep this capability
+  // narrow so an arbitrary third-party compatible endpoint is not overclaimed.
+  if (isLoopbackHost(host)) return true;
   if (!host.includes("siliconflow")) return false;
   // SiliconFlow exposes JSON Schema for supported models, but GLM-5.x rejects
   // response_format at transport level. The complete schema remains embedded
   // in the Reviewer contract and the response is validated after generation.
   return !/^zai-org\/GLM-5(?:\.|$)/i.test(model);
+}
+
+function isLoopbackHost(host: string) {
+  return host === "localhost" || host === "::1" || /^127(?:\.\d{1,3}){3}$/u.test(host);
 }
 
 function supportsJsonMode(baseUrl: string, model: string) {
