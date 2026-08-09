@@ -19,16 +19,16 @@ jobs:
     timeout-minutes: 20
     env:
       TARGET_BRANCH: codex/chatgpt-pro-main-game-final-v1
-      EXPECTED_PARENT: 1a478cb7c854fa68b5b1f5baeea42bb663247fa7
+      M0_PARENT: 1a478cb7c854fa68b5b1f5baeea42bb663247fa7
       EXPECTED_M1_TREE: f0429805da585b2eb2147374eb50e379c99d5999
-      EXPECTED_FINAL_TREE: 5d004717a8e2bf686fc7956edc5ae7e546565ae8
+      EXPECTED_CANDIDATE_TREE: 5d004717a8e2bf686fc7956edc5ae7e546565ae8
       ARCHIVE_SHA256: 9035d3c02a93102c03771d585af85058f264d151244d80ec36d50475db0ac1a1
       M1_PATCH_SHA256: 8db99b7db2760b1374f4efded1c2f1b95b28e2cf1d8edc66f44967ec6bfa8312
       M2_M6_PATCH_SHA256: 73789e4fd513e91fa9f27ce2feb54f17fed46382c6fa083fb59a1ac08175ee7b
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Check out exact target branch
+      - name: Check out repository with full history
         uses: actions/checkout@v4
         with:
           ref: codex/chatgpt-pro-main-game-final-v1
@@ -89,7 +89,7 @@ jobs:
           printf '%s  %s\n' "$M1_PATCH_SHA256" /tmp/aemotion-patches/m1.patch | sha256sum --check --strict
           printf '%s  %s\n' "$M2_M6_PATCH_SHA256" /tmp/aemotion-patches/m2m6.patch | sha256sum --check --strict
 
-      - name: Apply, commit, and push M1 and M2-M6
+      - name: Build exact M1 and M2-M6 candidate commits
         shell: bash
         run: |
           set -euo pipefail
@@ -99,10 +99,10 @@ jobs:
           git config core.safecrlf false
 
           git fetch origin "$TARGET_BRANCH"
-          test "$(git rev-parse HEAD)" = "$EXPECTED_PARENT"
-          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_PARENT"
-          test -z "$(git status --porcelain)"
+          TARGET_START="$(git rev-parse "origin/$TARGET_BRANCH")"
+          git merge-base --is-ancestor "$M0_PARENT" "$TARGET_START"
 
+          git switch --detach "$M0_PARENT"
           rm -f "主游戏最终版/M0_仓库审计与M1接入点冻结报告.md"
           git apply --check --binary /tmp/aemotion-patches/m1.patch
           git apply --binary /tmp/aemotion-patches/m1.patch
@@ -114,17 +114,113 @@ jobs:
           git apply --check --binary /tmp/aemotion-patches/m2m6.patch
           git apply --binary /tmp/aemotion-patches/m2m6.patch
           git add -A
-          test "$(git write-tree)" = "$EXPECTED_FINAL_TREE"
+          test "$(git write-tree)" = "$EXPECTED_CANDIDATE_TREE"
           git commit -m "feat(a-emotion): complete M2-M6 interaction lifecycle"
-          FINAL_SHA="$(git rev-parse HEAD)"
+          M2_M6_SHA="$(git rev-parse HEAD)"
 
+          printf 'TARGET_START=%s\nM1_SHA=%s\nM2_M6_SHA=%s\n' "$TARGET_START" "$M1_SHA" "$M2_M6_SHA" >> "$GITHUB_ENV"
+
+      - name: Merge candidate without rewriting concurrent target work
+        shell: bash
+        run: |
+          set -euo pipefail
+          git switch -C aemotion-integration "$TARGET_START"
+
+          set +e
+          git merge --no-ff --no-commit "$M2_M6_SHA"
+          merge_status=$?
+          set -e
+
+          if [ "$merge_status" -ne 0 ]; then
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            unexpected="$(printf '%s\n' "$conflicts" | grep -v '^packages/shared/src/continuous-strategy/index.ts$' || true)"
+            if [ -n "$unexpected" ]; then
+              echo "Unexpected merge conflicts:" >&2
+              printf '%s\n' "$unexpected" >&2
+              exit 1
+            fi
+
+            if printf '%s\n' "$conflicts" | grep -qx 'packages/shared/src/continuous-strategy/index.ts'; then
+              git checkout --ours packages/shared/src/continuous-strategy/index.ts
+              python3 - <<'PY'
+              from pathlib import Path
+              path = Path("packages/shared/src/continuous-strategy/index.ts")
+              text = path.read_text(encoding="utf-8")
+              additions = [
+                  'export * from "./a-emotion.schemas";',
+                  'export * from "./endgame.schemas";',
+              ]
+              if text and not text.endswith("\n"):
+                  text += "\n"
+              for line in additions:
+                  if line not in text:
+                      if text and not text.endswith("\n\n"):
+                          text += "\n"
+                      text += line + "\n"
+              path.write_text(text, encoding="utf-8")
+              PY
+              git add packages/shared/src/continuous-strategy/index.ts
+            fi
+          fi
+
+          if git diff --name-only --diff-filter=U | grep -q .; then
+            echo "Unresolved merge conflicts remain" >&2
+            git diff --name-only --diff-filter=U >&2
+            exit 1
+          fi
+
+          # Every candidate-modified path must match the verified candidate,
+          # except the shared export barrel where concurrent endgame work is
+          # intentionally combined with A-Emotion.
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            if [ "$path" = "packages/shared/src/continuous-strategy/index.ts" ]; then
+              continue
+            fi
+            if git cat-file -e "$M2_M6_SHA:$path" 2>/dev/null; then
+              test -f "$path"
+              test "$(git hash-object "$path")" = "$(git rev-parse "$M2_M6_SHA:$path")"
+            else
+              test ! -e "$path"
+            fi
+          done < <(git diff --name-only "$M0_PARENT" "$M2_M6_SHA")
+
+          # Every concurrent target path must remain byte-identical unless it
+          # is the shared export barrel intentionally unioned above.
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            if [ "$path" = "packages/shared/src/continuous-strategy/index.ts" ]; then
+              continue
+            fi
+            if git cat-file -e "$TARGET_START:$path" 2>/dev/null; then
+              test -f "$path"
+              test "$(git hash-object "$path")" = "$(git rev-parse "$TARGET_START:$path")"
+            else
+              test ! -e "$path"
+            fi
+          done < <(git diff --name-only "$M0_PARENT" "$TARGET_START")
+
+          grep -Fqx 'export * from "./a-emotion.schemas";' packages/shared/src/continuous-strategy/index.ts
+          grep -Fqx 'export * from "./endgame.schemas";' packages/shared/src/continuous-strategy/index.ts
+          grep -Fq '"test:endgame"' packages/shared/package.json
+          test -f .github/workflows/solo-endgame-mvp.yml
+          test -f packages/shared/src/continuous-strategy/endgame.schemas.ts
+          test -f packages/shared/tests/endgame.schemas.spec.ts
+
+          git commit -m "merge(a-emotion): integrate M1-M6 without rewriting concurrent work"
+          MERGE_SHA="$(git rev-parse HEAD)"
+          FINAL_TREE="$(git rev-parse 'HEAD^{tree}')"
+
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_START"
           git push origin "HEAD:refs/heads/$TARGET_BRANCH"
-          printf 'M1_SHA=%s\nFINAL_SHA=%s\n' "$M1_SHA" "$FINAL_SHA" >> "$GITHUB_ENV"
+
+          printf 'MERGE_SHA=%s\nFINAL_TREE=%s\n' "$MERGE_SHA" "$FINAL_TREE" >> "$GITHUB_ENV"
 
       - name: Record successful delivery and clean temporary resources
         if: success()
         shell: bash
         run: |
           set -euo pipefail
-          gh issue close 41 --repo "$GITHUB_REPOSITORY" --comment "Remote delivery completed. M1 commit: $M1_SHA. M2-M6 commit: $FINAL_SHA. Final tree: $EXPECTED_FINAL_TREE. No main modification, deployment, or Supabase migration was performed."
+          gh issue close 41 --repo "$GITHUB_REPOSITORY" --comment "Remote delivery completed without rewriting concurrent target work. M1 commit: $M1_SHA. M2-M6 commit: $M2_M6_SHA. Integration merge: $MERGE_SHA. Remote final tree: $FINAL_TREE. No main modification, deployment, or Supabase migration was performed."
           git push origin --delete tmp/aemotion-remote-delivery-20260809 || true
