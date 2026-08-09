@@ -1,0 +1,226 @@
+name: B0 Stage 7 Authoritative RoleControl Binding Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage7-role-control-binding.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage7-role-control-binding
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage7-role-control-binding",
+              description: `authoritative RoleControl binding repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch tip and immutable inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "7e19f430412e30be62ec89aa4848adc9a87fe1d4"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage7-role-control-binding.yml"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts | cut -d' ' -f1)" = "9124a5e8783daafa32b8d3ece8ab7ec337e81040f73fdaeb71f5d956185d4b64"
+          test "$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)" = "c09f8f255a69d369c236cd126028180aa27f3a3bfbb7668856584791f382d23d"
+
+      - name: Bind B0 controls from the durable active human roster
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          pipeline = Path("apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts")
+          source = pipeline.read_text(encoding="utf-8")
+          old = '''      include: {
+            roles: { orderBy: { id: "asc" } },
+            nodes: { orderBy: { nodeIndex: "desc" }, take: 1 },
+          },
+          '''.replace("          ", "")
+          new = '''      include: {
+            roles: { orderBy: { id: "asc" } },
+            players: {
+              where: { playerType: "human", status: "active" },
+              orderBy: { joinedAt: "asc" },
+            },
+            nodes: { orderBy: { nodeIndex: "desc" }, take: 1 },
+          },
+          '''.replace("          ", "")
+          if source.count(old) != 1:
+              raise SystemExit(f"run include anchor count={source.count(old)}")
+          source = source.replace(old, new, 1)
+
+          old = '''    // Prisma may emulate an empty-update upsert as SELECT + INSERT, which can
+            // still surface P2002 under simultaneous /game projections. PostgreSQL's
+            // INSERT .. ON CONFLICT DO NOTHING is the authoritative lazy initializer.
+            await this.prisma.roleControl.createMany({
+              data: run.roles.map((role) => ({
+                runId,
+                roleId: role.id,
+                mode: role.isAiControlled ? "AI_ACTIVE" : "HUMAN_ACTIVE",
+                epoch: 1,
+                reason: "B0_INITIAL_ROLE_BINDING",
+                policyVersion: "b0-role-control-v1",
+              })),
+              skipDuplicates: true,
+            });'''.replace("            ", "")
+          new = '''    // Prisma may emulate an empty-update upsert as SELECT + INSERT, which can
+            // still surface P2002 under simultaneous /game projections. PostgreSQL's
+            // INSERT .. ON CONFLICT DO NOTHING is the authoritative lazy initializer.
+            // Bind control from the durable active StoryPlayer roster, not the role's
+            // presentation flag: legacy rooms do not create RoleControl rows and may
+            // leave every StoryRole.isAiControlled=false before B0 is enabled.
+            const bindingTime = new Date();
+            const humanPlayerByRoleId = new Map(
+              run.players
+                .filter((player) => Boolean(player.userId && player.roleId))
+                .map((player) => [player.roleId!, player] as const),
+            );
+            await this.prisma.roleControl.createMany({
+              data: run.roles.map((role) => {
+                const humanPlayer = humanPlayerByRoleId.get(role.id) ?? null;
+                return {
+                  runId,
+                  roleId: role.id,
+                  humanPlayerId: humanPlayer?.id ?? null,
+                  mode: humanPlayer ? "HUMAN_ACTIVE" : "AI_ACTIVE",
+                  epoch: 1,
+                  lastHeartbeatAt: humanPlayer ? bindingTime : null,
+                  takeoverAt: humanPlayer ? null : bindingTime,
+                  reason: "B0_INITIAL_ROLE_BINDING",
+                  policyVersion: "b0-role-control-v1",
+                };
+              }),
+              skipDuplicates: true,
+            });'''.replace("            ", "")
+          if source.count(old) != 1:
+              raise SystemExit(f"RoleControl initializer anchor count={source.count(old)}")
+          pipeline.write_text(source.replace(old, new, 1), encoding="utf-8")
+
+          spec = Path("apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts")
+          source = spec.read_text(encoding="utf-8")
+          anchor = '''test("concurrent lazy initialization uses one-statement conflict-safe inserts", () => {
+            assert.match(PIPELINE, /roleControl\\.createMany\\(\\{[\\s\\S]*?skipDuplicates: true/);
+            assert.doesNotMatch(PIPELINE, /roleControl\\.upsert\\(\\{[\\s\\S]*?B0_INITIAL_ROLE_BINDING/);
+            assert.doesNotMatch(PIPELINE, /roleControl\\.create\\(\\{[\\s\\S]*?B0_INITIAL_ROLE_BINDING/);
+            assert.match(PIPELINE, /sceneNode\\.createMany\\(\\{[\\s\\S]*?skipDuplicates: true/);
+            assert.match(PIPELINE, /sceneNode\\.findUnique\\(\\{[\\s\\S]*?runId_chapterIndex_nodeIndex/);
+            assert.doesNotMatch(PIPELINE, /sceneNode\\.upsert\\(\\{[\\s\\S]*?Shared situation/);
+            assert.doesNotMatch(PIPELINE, /sceneNode\\.create\\(\\{[\\s\\S]*?Shared situation/);
+          });
+          '''.replace("          ", "")
+          addition = '''
+          test("B0 initial control bindings come from active human StoryPlayers and leave empty seats to AI", () => {
+            assert.match(PIPELINE, /players: \\{[\\s\\S]*?playerType: "human"[\\s\\S]*?status: "active"/);
+            assert.match(PIPELINE, /const humanPlayerByRoleId = new Map\\([\\s\\S]*?player\\.userId && player\\.roleId/);
+            assert.match(PIPELINE, /humanPlayerId: humanPlayer\\?\\.id \\?\\? null/);
+            assert.match(PIPELINE, /mode: humanPlayer \\? "HUMAN_ACTIVE" : "AI_ACTIVE"/);
+            assert.match(PIPELINE, /lastHeartbeatAt: humanPlayer \\? bindingTime : null/);
+            assert.match(PIPELINE, /takeoverAt: humanPlayer \\? null : bindingTime/);
+            assert.doesNotMatch(PIPELINE, /mode: role\\.isAiControlled \\? "AI_ACTIVE" : "HUMAN_ACTIVE"/);
+          });
+          '''.replace("          ", "")
+          if source.count(anchor) != 1:
+              raise SystemExit(f"vocabulary spec anchor count={source.count(anchor)}")
+          spec.write_text(source.replace(anchor, anchor + addition, 1), encoding="utf-8")
+          PY
+          pipeline_sha="$(sha256sum apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts | cut -d' ' -f1)"
+          spec_sha="$(sha256sum apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts | cut -d' ' -f1)"
+          echo "pipeline_sha256=$pipeline_sha"
+          echo "spec_sha256=$spec_sha"
+          test "$pipeline_sha" = "1f23c93def31dc29c1e25aa933ecb08c5c3011bc0301d3ef5eb210c8be6c5a5a"
+          test "$spec_sha" = "0df7e0a762f0fd312c6d6d8271870d49983b2d437eaee669bfa1369fb5541bd1"
+          git diff --check
+
+      - name: Frozen install and focused verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api exec node --import tsx --test src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-ops
+
+      - name: Commit the completed repair as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts \
+            apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          git rm .github/workflows/b0-stage7-role-control-binding.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage7-role-control-binding.yml
+          apps/api/src/b0-settlement/b0-runtime-database-vocabulary.spec.ts
+          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): bind initial controls from active human roster"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage7-role-control-binding",
+              description: `authoritative RoleControl binding repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 stage 7 RoleControl binding repair failed");
