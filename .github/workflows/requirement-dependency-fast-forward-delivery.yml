@@ -1,5 +1,6 @@
 name: Requirement Dependency Fast Forward Delivery
 
+# Retry after removing an obsolete migration for the current settlement shape.
 on:
   push:
     branches:
