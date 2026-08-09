@@ -70,6 +70,16 @@ test("concurrent lazy initialization uses one-statement conflict-safe inserts", 
   assert.doesNotMatch(PIPELINE, /sceneNode\.create\(\{[\s\S]*?Shared situation/);
 });
 
+test("B0 initial control bindings come from active human StoryPlayers and leave empty seats to AI", () => {
+  assert.match(PIPELINE, /players: \{[\s\S]*?playerType: "human"[\s\S]*?status: "active"/);
+  assert.match(PIPELINE, /const humanPlayerByRoleId = new Map\([\s\S]*?player\.userId && player\.roleId/);
+  assert.match(PIPELINE, /humanPlayerId: humanPlayer\?\.id \?\? null/);
+  assert.match(PIPELINE, /mode: humanPlayer \? "HUMAN_ACTIVE" : "AI_ACTIVE"/);
+  assert.match(PIPELINE, /lastHeartbeatAt: humanPlayer \? bindingTime : null/);
+  assert.match(PIPELINE, /takeoverAt: humanPlayer \? null : bindingTime/);
+  assert.doesNotMatch(PIPELINE, /mode: role\.isAiControlled \? "AI_ACTIVE" : "HUMAN_ACTIVE"/);
+});
+
 test("generated HOLD rows use a precise durable actor provenance", () => {
   assert.match(COORDINATOR, /actorKind: existing\?\.actorKind \|\| "TIMEOUT_FALLBACK"/);
   assert.doesNotMatch(COORDINATOR, /SYSTEM_OR_ACTOR/);

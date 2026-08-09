@@ -352,6 +352,10 @@ export class B0SettlementPipelineService {
       where: { id: runId },
       include: {
         roles: { orderBy: { id: "asc" } },
+        players: {
+          where: { playerType: "human", status: "active" },
+          orderBy: { joinedAt: "asc" },
+        },
         nodes: { orderBy: { nodeIndex: "desc" }, take: 1 },
       },
     });
@@ -390,15 +394,30 @@ export class B0SettlementPipelineService {
     // Prisma may emulate an empty-update upsert as SELECT + INSERT, which can
     // still surface P2002 under simultaneous /game projections. PostgreSQL's
     // INSERT .. ON CONFLICT DO NOTHING is the authoritative lazy initializer.
+    // Bind control from the durable active StoryPlayer roster, not the role's
+    // presentation flag: legacy rooms do not create RoleControl rows and may
+    // leave every StoryRole.isAiControlled=false before B0 is enabled.
+    const bindingTime = new Date();
+    const humanPlayerByRoleId = new Map(
+      run.players
+        .filter((player) => Boolean(player.userId && player.roleId))
+        .map((player) => [player.roleId!, player] as const),
+    );
     await this.prisma.roleControl.createMany({
-      data: run.roles.map((role) => ({
-        runId,
-        roleId: role.id,
-        mode: role.isAiControlled ? "AI_ACTIVE" : "HUMAN_ACTIVE",
-        epoch: 1,
-        reason: "B0_INITIAL_ROLE_BINDING",
-        policyVersion: "b0-role-control-v1",
-      })),
+      data: run.roles.map((role) => {
+        const humanPlayer = humanPlayerByRoleId.get(role.id) ?? null;
+        return {
+          runId,
+          roleId: role.id,
+          humanPlayerId: humanPlayer?.id ?? null,
+          mode: humanPlayer ? "HUMAN_ACTIVE" : "AI_ACTIVE",
+          epoch: 1,
+          lastHeartbeatAt: humanPlayer ? bindingTime : null,
+          takeoverAt: humanPlayer ? null : bindingTime,
+          reason: "B0_INITIAL_ROLE_BINDING",
+          policyVersion: "b0-role-control-v1",
+        };
+      }),
       skipDuplicates: true,
     });
 
