@@ -1,0 +1,247 @@
+name: B0 One-Shot Generic Real Provider Driver Patch V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-generic-provider-driver-v2.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-generic-real-provider-driver-v2
+  cancel-in-progress: false
+
+jobs:
+  patch-driver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Publish exact run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/generic-provider-driver-patch-v2",
+              description: `generic real-provider driver patch v2 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact candidate commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD | LC_ALL=C sort)" = ".github/workflows/b0-one-shot-generic-provider-driver-v2.yml"
+          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "adf3c939facb72a572281ec4f93982c48f46fcc58555391fcc3b6d822349421d"
+
+      - name: Patch the acceptance driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
+          source = path.read_text(encoding="utf-8")
+
+          def replace_once(old: str, new: str) -> None:
+              global source
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f"expected one occurrence, found {count}: {old[:120]!r}")
+              source = source.replace(old, new)
+
+          replace_once(
+              'const DEEPSEEK_API_KEY = required("DEEPSEEK_API_KEY");',
+              dedent('''\
+              const OPENOVEL_PROVIDER_BASE_URL = required("OPENOVEL_PROVIDER_BASE_URL");
+              const OPENOVEL_API_KEY = required("OPENOVEL_API_KEY");
+              const OPENOVEL_MODEL = required("OPENOVEL_MODEL");
+              const DATABASE_PROVENANCE = required("B0_DATABASE_PROVENANCE");
+              const DATABASE_IMAGE = required("B0_DATABASE_IMAGE");
+              const DATABASE_IMAGE_DIGEST = required("B0_DATABASE_IMAGE_DIGEST");
+              const PROVIDER_PROVENANCE = required("B0_PROVIDER_PROVENANCE");
+              const PROVIDER_IMAGE = required("B0_PROVIDER_IMAGE");
+              const PROVIDER_IMAGE_DIGEST = required("B0_PROVIDER_IMAGE_DIGEST");
+              const PROVIDER_MODEL_DIGEST = required("B0_PROVIDER_MODEL_DIGEST");'''),
+          )
+          replace_once(
+              'const SAFE_SECRET_VALUES = [DATABASE_URL, DEEPSEEK_API_KEY, AUTH_TOKEN_SECRET, OPENOVEL_INTERNAL_TOKEN, MANEUVER_PREVIEW_SECRET];',
+              'const SAFE_SECRET_VALUES = [DATABASE_URL, OPENOVEL_API_KEY, AUTH_TOKEN_SECRET, OPENOVEL_INTERNAL_TOKEN, MANEUVER_PREVIEW_SECRET];',
+          )
+          replace_once(
+              dedent('''\
+                  databaseKind: safeDatabaseKind(DATABASE_URL),
+                  narrativeProvider: { host: "api.deepseek.com", mode: "live-provider-only", fallbackAllowed: false },
+                  schema: new URL(DATABASE_URL).searchParams.get("schema"),'''),
+              dedent('''\
+                  databaseKind: safeDatabaseKind(DATABASE_URL),
+                  databaseProvenance: {
+                    kind: DATABASE_PROVENANCE,
+                    image: DATABASE_IMAGE,
+                    imageDigest: DATABASE_IMAGE_DIGEST,
+                    selfHostedOfficialSupabase: true,
+                    supabaseCloudUsed: false,
+                    publicSchemaUsed: false,
+                  },
+                  narrativeProvider: {
+                    ...safeProviderKind(OPENOVEL_PROVIDER_BASE_URL),
+                    provenance: PROVIDER_PROVENANCE,
+                    image: PROVIDER_IMAGE,
+                    imageDigest: PROVIDER_IMAGE_DIGEST,
+                    model: OPENOVEL_MODEL,
+                    modelDigest: PROVIDER_MODEL_DIGEST,
+                    mode: "live-provider-only",
+                    fallbackAllowed: false,
+                    deterministicProvider: false,
+                  },
+                  schema: new URL(DATABASE_URL).searchParams.get("schema"),'''),
+          )
+          replace_once(
+              dedent('''\
+                  OPENOVEL_PROVIDER_BASE_URL: "https://api.deepseek.com",
+                  OPENOVEL_API_KEY: "",
+                  SOLO_STORY_API_KEY: "",
+                  DEEPSEEK_API_KEY,
+                  OPENOVEL_PROVIDER_TIMEOUT_MS: "180000",'''),
+              dedent('''\
+                  OPENOVEL_PROVIDER_BASE_URL,
+                  OPENOVEL_API_KEY,
+                  OPENOVEL_MODEL,
+                  OPENOVEL_NARRATOR_MODEL: OPENOVEL_MODEL,
+                  OPENOVEL_REVIEWER_MODEL: OPENOVEL_MODEL,
+                  OPENOVEL_OPTIONS_MODEL: OPENOVEL_MODEL,
+                  OPENOVEL_STORYKEEPER_MODEL: OPENOVEL_MODEL,
+                  OPENOVEL_DEEPSEEK_THINKING: "disabled",
+                  SOLO_STORY_API_KEY: "",
+                  DEEPSEEK_API_KEY: "",
+                  OPENOVEL_PROVIDER_TIMEOUT_MS: "300000",'''),
+          )
+          replace_once(
+              '- Database: isolated random Supabase schema; credentials are not persisted.\\n- Runtime: real Nest API, static Web server, OpenNovel runtime, embedded and independent worker processes.',
+              '- Database: official self-hosted Supabase PostgreSQL image `${DATABASE_IMAGE}` in an isolated random schema; Supabase Cloud and the public schema were not used.\\n- Narrative provider: real `${PROVIDER_PROVENANCE}` model `${OPENOVEL_MODEL}` over OpenAI-compatible HTTP; deterministic/mock providers and fallback are prohibited.\\n- Runtime: real Nest API, static Web server, OpenNovel runtime, embedded and independent worker processes.',
+          )
+          replace_once(
+              'function safeDatabaseKind(urlValue: string) { const url = new URL(urlValue); return { protocol: url.protocol.replace(":", ""), provider: url.hostname.includes("supabase") ? "supabase" : "postgres", hostHash: hashText(url.hostname).slice(0, 16) }; }',
+              dedent('''\
+              function safeDatabaseKind(urlValue: string) {
+                const url = new URL(urlValue);
+                return {
+                  protocol: url.protocol.replace(":", ""),
+                  provider: DATABASE_PROVENANCE,
+                  hostHash: hashText(url.hostname).slice(0, 16),
+                  selfHostedOfficialSupabase: DATABASE_PROVENANCE === "official-supabase-postgres-container",
+                };
+              }
+              function safeProviderKind(urlValue: string) {
+                const url = new URL(urlValue);
+                return {
+                  protocol: url.protocol.replace(":", ""),
+                  hostHash: hashText(url.hostname).slice(0, 16),
+                  local: url.hostname === "127.0.0.1" || url.hostname === "localhost",
+                };
+              }
+              function assertAcceptanceProvenance() {
+                if (DATABASE_PROVENANCE !== "official-supabase-postgres-container") throw new Error("B0 acceptance requires the official self-hosted Supabase PostgreSQL container provenance");
+                if (!DATABASE_IMAGE.startsWith("supabase/postgres:")) throw new Error("B0_DATABASE_IMAGE must identify the official supabase/postgres image");
+                if (!DATABASE_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_DATABASE_IMAGE_DIGEST must be a sha256 digest");
+                if (PROVIDER_PROVENANCE !== "ollama-openai-compatible-local") throw new Error("B0 acceptance requires a real local Ollama provider provenance");
+                if (!PROVIDER_IMAGE.startsWith("ollama/ollama:")) throw new Error("B0_PROVIDER_IMAGE must identify the official ollama/ollama image");
+                if (!PROVIDER_IMAGE_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_IMAGE_DIGEST must be a sha256 digest");
+                if (!PROVIDER_MODEL_DIGEST.startsWith("sha256:")) throw new Error("B0_PROVIDER_MODEL_DIGEST must be a sha256 digest");
+                const providerUrl = new URL(OPENOVEL_PROVIDER_BASE_URL);
+                if (providerUrl.hostname !== "127.0.0.1" && providerUrl.hostname !== "localhost") throw new Error("B0 real provider must be bound to the isolated local acceptance runner");
+              }'''),
+          )
+          replace_once(
+              '  assertIsolatedSchema(DATABASE_URL);\n  const prisma = new PrismaClient',
+              '  assertIsolatedSchema(DATABASE_URL);\n  assertAcceptanceProvenance();\n  const prisma = new PrismaClient',
+          )
+          replace_once(
+              'if (process.env.B0_ACCEPTANCE_SELF_CHECK === "1") {\n  assertIsolatedSchema(DATABASE_URL);\n  console.log("B0_ACCEPTANCE_SELF_CHECK_OK");',
+              'if (process.env.B0_ACCEPTANCE_SELF_CHECK === "1") {\n  assertIsolatedSchema(DATABASE_URL);\n  assertAcceptanceProvenance();\n  console.log("B0_ACCEPTANCE_SELF_CHECK_OK");',
+          )
+
+          path.write_text(source, encoding="utf-8")
+          PY
+          test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "04fcd2a6a54ea92970c5b75078516bb448bcd360264cffadc1922b9235ee84d3"
+          git diff --check
+
+      - name: Frozen install, Prisma generation, typecheck and provenance self-check
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          GITHUB_SHA="$GITHUB_SHA" \
+          DATABASE_URL='postgresql://postgres:secret@127.0.0.1:55432/postgres?schema=cs_accept_b0_selfcheck123&connection_limit=3&sslmode=disable' \
+          OPENOVEL_PROVIDER_BASE_URL='http://127.0.0.1:11435/v1' \
+          OPENOVEL_API_KEY='ollama-self-check' \
+          OPENOVEL_MODEL='qwen2.5:1.5b' \
+          B0_DATABASE_PROVENANCE='official-supabase-postgres-container' \
+          B0_DATABASE_IMAGE='supabase/postgres:15.14.1.157-mmlb' \
+          B0_DATABASE_IMAGE_DIGEST='sha256:0000000000000000000000000000000000000000000000000000000000000000' \
+          B0_PROVIDER_PROVENANCE='ollama-openai-compatible-local' \
+          B0_PROVIDER_IMAGE='ollama/ollama:0.32.5' \
+          B0_PROVIDER_IMAGE_DIGEST='sha256:0000000000000000000000000000000000000000000000000000000000000000' \
+          B0_PROVIDER_MODEL_DIGEST='sha256:0000000000000000000000000000000000000000000000000000000000000000' \
+          B0_ACCEPTANCE_SELF_CHECK=1 \
+            pnpm test:b0:real-acceptance
+
+      - name: Commit only the verified driver as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git diff --cached --check
+          test "$(git diff --cached --name-only)" = "scripts/acceptance/b0-candidate-real-flow.ts"
+          git commit -m "test(b0): support explicit real acceptance providers"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish patch outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/generic-provider-driver-patch-v2",
+              description: `generic real-provider driver patch v2 ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
