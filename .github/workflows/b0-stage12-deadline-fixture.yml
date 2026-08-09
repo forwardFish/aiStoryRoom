@@ -1,4 +1,4 @@
-name: B0 Stage 12 Deadline Fixture Contract Repair
+name: B0 Stage 12 Deadline Fixture Contract Repair V2
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-stage12-deadline-fixture
+  group: b0-stage12-deadline-fixture-v2
   cancel-in-progress: false
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/stage12-deadline-fixture",
-              description: `deadline fixture contract repair running in ${context.runId}`,
+              context: "b0/stage12-deadline-fixture-v2",
+              description: `deadline fixture contract repair v2 running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -55,7 +55,7 @@ jobs:
           git fetch origin "$GITHUB_REF_NAME"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "7b10b85913f011e569c3be35b02bdc1e32050a78"
+          test "$(git rev-parse HEAD^)" = "b5b8a3c93f5616567a80eee22fef6c02e1be181a"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage12-deadline-fixture.yml"
           test "$(git hash-object scripts/acceptance/b0-candidate-real-flow.ts)" = "00a121e879f95547e5a54bd8ea3c8011516aecbf"
           test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "ef1818d44bee2954cfaed43f0095fbe28f1c4de856627fc47a6b6ac7a478e6f0"
@@ -70,22 +70,25 @@ jobs:
           path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
           source = path.read_text(encoding="utf-8")
           old = '      await prisma.actionWindow.update({ where: { id: opened.windowId }, data: { mainClosesAt: new Date(Date.now() - 1_000) } });'
-          new = '''      const expiredDeadline = new Date(Date.now() - 1_000);
-          await prisma.actionWindow.update({
-            where: { id: opened.windowId },
-            data: {
-              mainOpenedAt: new Date(expiredDeadline.getTime() - 60_000),
-              mainClosesAt: expiredDeadline,
-            },
-          });'''.replace("          ", "")
+          new = (
+              '      const expiredDeadline = new Date(Date.now() - 1_000);\n'
+              '      await prisma.actionWindow.update({\n'
+              '        where: { id: opened.windowId },\n'
+              '        data: {\n'
+              '          mainOpenedAt: new Date(expiredDeadline.getTime() - 60_000),\n'
+              '          mainClosesAt: expiredDeadline,\n'
+              '        },\n'
+              '      });'
+          )
           if source.count(old) != 1:
               raise SystemExit(f"deadline fixture anchor count={source.count(old)}")
           path.write_text(source.replace(old, new, 1), encoding="utf-8")
           PY
           git diff --check
           test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "fabdb3296069ca917e992c27ca7956787863e28779d4c2f13d6271206c7803fb"
-          grep -F 'mainOpenedAt: new Date(expiredDeadline.getTime() - 60_000)' scripts/acceptance/b0-candidate-real-flow.ts
-          grep -F 'mainClosesAt: expiredDeadline' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F '      await prisma.actionWindow.update({' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F '          mainOpenedAt: new Date(expiredDeadline.getTime() - 60_000),' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F '          mainClosesAt: expiredDeadline,' scripts/acceptance/b0-candidate-real-flow.ts
 
       - name: Frozen install and acceptance harness verification
         shell: bash
@@ -132,8 +135,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: success ? "success" : "failure",
-              context: "b0/stage12-deadline-fixture",
-              description: `deadline fixture contract repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              context: "b0/stage12-deadline-fixture-v2",
+              description: `deadline fixture contract repair v2 ${success ? "passed" : "failed"} in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            if (!success) core.setFailed("B0 stage 12 deadline fixture repair failed");
+            if (!success) core.setFailed("B0 stage 12 deadline fixture repair v2 failed");
