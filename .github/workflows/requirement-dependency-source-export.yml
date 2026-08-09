@@ -1,4 +1,4 @@
-name: Requirement Dependency Dependency Export
+name: Requirement Dependency Acceptance Source Export
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   export:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Publish export status
         shell: bash
@@ -26,44 +26,36 @@ jobs:
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
-            -f context="dynamic-kernel-lite/dependency-export" \
-            -f description="Dependency export running" \
+            -f context="dynamic-kernel-lite/acceptance-source-export" \
+            -f description="Acceptance source export running" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.1
-          run_install: false
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install frozen workspace and pack dependencies
+      - name: Export remaining deterministic acceptance source
         shell: bash
         run: |
           set -euo pipefail
-          pnpm install --frozen-lockfile
-          root="${RUNNER_TEMP}/requirement-dependency-deps"
-          mkdir -p "${root}"
-          tar --zstd -cf "${root}/workspace-deps.tar.zst" \
-            node_modules \
-            packages/openovel-runtime \
-            packages/templates/node_modules \
-            apps/openovel-runtime/node_modules \
-            apps/api/node_modules
+          root="${RUNNER_TEMP}/requirement-dependency-acceptance-source"
+          mkdir -p "${root}/packages" "${root}/scripts" "${root}/prisma"
+          rsync -a --exclude='node_modules/' --exclude='dist/' \
+            packages/shared/ "${root}/packages/shared/"
+          rsync -a --exclude='node_modules/' --exclude='dist/' \
+            scripts/acceptance/ "${root}/scripts/acceptance/"
+          cp scripts/run-current-solo-story-engine-tests.mjs "${root}/scripts/"
+          if [ -d prisma ]; then rsync -a prisma/ "${root}/prisma/"; fi
+          for file in tsconfig.base.json .env.test; do
+            if [ -f "${file}" ]; then cp "${file}" "${root}/"; fi
+          done
           git rev-parse HEAD > "${root}/source-sha.txt"
-          du -sh "${root}/workspace-deps.tar.zst"
+          du -sh "${root}"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: requirement-dependency-deps-${{ github.sha }}
-          path: ${{ runner.temp }}/requirement-dependency-deps/
+          name: requirement-dependency-acceptance-source-${{ github.sha }}
+          path: ${{ runner.temp }}/requirement-dependency-acceptance-source/
           if-no-files-found: error
           retention-days: 2
 
@@ -76,6 +68,6 @@ jobs:
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
-            -f context="dynamic-kernel-lite/dependency-export" \
-            -f description="Dependency export uploaded" \
+            -f context="dynamic-kernel-lite/acceptance-source-export" \
+            -f description="Acceptance source export uploaded" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
