@@ -58,42 +58,21 @@ jobs:
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage2-acceptance-provenance.yml"
           test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "0dd15674e3d7dc52667b217ae48c988a64c01354a0ca232898152d24716ded95"
 
-      - name: Install hash-bound dual-tier acceptance driver
+      - name: Apply hash-bound dual-tier provenance transform
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          fetch_blob_text() {
-            gh api "repos/$GITHUB_REPOSITORY/git/blobs/$1" --jq .content \
-              | tr -d '\n' \
-              | base64 -d
-          }
-          : > /tmp/b0-stage2-driver.gz.b64
-          while read -r blob size digest; do
-            chunk="/tmp/${blob}.chunk"
-            fetch_blob_text "$blob" > "$chunk"
-            actual_size="$(wc -c < "$chunk" | tr -d ' ')"
-            actual_digest="$(sha256sum "$chunk" | cut -d' ' -f1)"
-            echo "stage2_blob=${blob:0:12} size=$actual_size sha256=$actual_digest"
-            test "$actual_size" = "$size"
-            test "$actual_digest" = "$digest"
-            cat "$chunk" >> /tmp/b0-stage2-driver.gz.b64
-          done <<'B0_STAGE2_BLOBS'
-          3a65c91f4a2d5194ddb5b41d8a288573a11b23c4 5500 e2601d3aa3b7f8cd9391150f7c86ff313ea16849a6648a140618b5d54c978bca
-          1bdffd0a79cbb14d9f3ce9ad7b7f5712069f463a 5500 fc8e98275e23b7663a791079e25e4853f1d439204a9308750016f8081a9c4b7f
-          0f29c4b14bbaa5b9146295e9ce5689588010636a 5500 51fe22705696bd7c528ae7d74b5edd529b08531a0ef89b798aa764da02edd6ba
-          96f8a677ef6ce1cea6dc4fcc5fa2aed3d68bab5e 5500 6879123f6790d2b6fc86fec51017a2ff65c4ab9edbc67ca6eeaee8ffe1d69383
-          ba0cf3d72a1d901033695b5d12b3ce1b536f794b 1168 246023cfd39862f316c97043ba663f96f51084e05e79658604bbecc2cd97dca8
-          B0_STAGE2_BLOBS
-          payload_size="$(wc -c < /tmp/b0-stage2-driver.gz.b64 | tr -d ' ')"
-          payload_digest="$(sha256sum /tmp/b0-stage2-driver.gz.b64 | cut -d' ' -f1)"
-          echo "stage2_payload_size=$payload_size stage2_payload_sha256=$payload_digest"
-          test "$payload_size" = "23168"
-          test "$payload_digest" = "7aedf1ce65faf92cc36d0baf729e79c642260febbb9d7aa045bb3001ad2c4928"
-          base64 -d /tmp/b0-stage2-driver.gz.b64 > /tmp/b0-stage2-driver.gz
-          test "$(sha256sum /tmp/b0-stage2-driver.gz | cut -d' ' -f1)" = "426b0ea1a570d8c72bf7d958a674efe60f289a215787bce92be48ebda9e3466a"
-          gzip -dc /tmp/b0-stage2-driver.gz > scripts/acceptance/b0-candidate-real-flow.ts
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/12fb40ca62cb5677f14819f37815a064f466d18f" --jq .content \
+            | tr -d '\n' \
+            | base64 -d > /tmp/b0-stage2-transform.py
+          transform_size="$(wc -c < /tmp/b0-stage2-transform.py | tr -d ' ')"
+          transform_digest="$(sha256sum /tmp/b0-stage2-transform.py | cut -d' ' -f1)"
+          echo "stage2_transform_size=$transform_size stage2_transform_sha256=$transform_digest"
+          test "$transform_size" = "10329"
+          test "$transform_digest" = "e31ab3036c09672403ec4756b550d0f947a882127c1c72985f23a23f61a05d6e"
+          python3 /tmp/b0-stage2-transform.py
           test "$(sha256sum scripts/acceptance/b0-candidate-real-flow.ts | cut -d' ' -f1)" = "20d1fd8fdaa038c366192238b2bb0af9bf9b30ea0cc543755b0a365e261d45b4"
           git diff --check
 
