@@ -1,0 +1,145 @@
+name: Requirement Dependency Clean Product Delivery
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/requirement-dependency-clean-product.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EVIDENCE_ROOT: /tmp/requirement-dependency-clean-product
+      BASE_SHA: 321a9aa03ce33201a59da63350e385b885023d77
+      TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/input-sha.txt"
+          pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/00-install.log"
+      - name: Materialize and normalize product patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f packages/templates/src/story-package/requirement-dependency.ts ]; then
+            script="$(git ls-files '.github/repair/requirement-dependency-product.py' | head -n1)"
+            test -n "$script"
+            python "$script" 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-apply-product.log"
+          else
+            echo 'tracked product already materialized' | tee "${EVIDENCE_ROOT}/logs/01-apply-product.log"
+          fi
+          SANGTIAN_SKIP_SOURCE_WRITES=1 \
+          SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
+          SANGTIAN_RUNTIME_PACKAGE_PATH="${GITHUB_WORKSPACE}/packages/templates/config/sangtian/story-package/part-one-runtime.json" \
+            node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
+            2>&1 | tee "${EVIDENCE_ROOT}/logs/02-compile-package.log"
+          git diff --check
+          git diff --binary "${BASE_SHA}" -- packages apps scripts \
+            > "${EVIDENCE_ROOT}/product.patch"
+          test -s "${EVIDENCE_ROOT}/product.patch"
+          grep -q 'requirement-dependency.ts' "${EVIDENCE_ROOT}/product.patch"
+          grep -q 'predecessorRequirementId' "${EVIDENCE_ROOT}/product.patch"
+          grep -q 'successorRequirementId' "${EVIDENCE_ROOT}/product.patch"
+
+          git reset --hard "${BASE_SHA}"
+          git apply --index "${EVIDENCE_ROOT}/product.patch"
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          export GIT_AUTHOR_DATE='2026-08-09T00:00:00Z'
+          export GIT_COMMITTER_DATE='2026-08-09T00:00:00Z'
+          git commit -m "feat(kernel-lite): persist validated Requirement dependencies"
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/tested-sha.txt"
+          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/tested-tree.txt"
+          git rev-parse "${BASE_SHA}^{tree}" > "${EVIDENCE_ROOT}/base-tree.txt"
+          git diff --name-status "${BASE_SHA}..HEAD" | tee "${EVIDENCE_ROOT}/changed-files.txt"
+          git status --short > "${EVIDENCE_ROOT}/pretest-status.txt"
+          test ! -s "${EVIDENCE_ROOT}/pretest-status.txt"
+          test "$(cat "${EVIDENCE_ROOT}/tested-tree.txt")" != "$(cat "${EVIDENCE_ROOT}/base-tree.txt")"
+          test -f packages/templates/src/story-package/requirement-dependency.ts
+          test -f packages/templates/tests/requirement-dependency.test.ts
+          test -f apps/openovel-runtime/tests/requirement-dependency-production.spec.ts
+          grep -q 'selectionRules' packages/templates/config/sangtian/story-package/part-one-runtime.json
+          test -z "$(git ls-files '.github/repair/requirement-dependency*')"
+          test -z "$(git ls-files '.github/workflows/requirement-dependency*')"
+      - name: Full deterministic matrix on exact candidate
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          results="${EVIDENCE_ROOT}/results.tsv"; : > "$results"; failed=0
+          run_gate() { local label="$1"; shift; local log="${EVIDENCE_ROOT}/logs/${label}.log"; set +e; "$@" 2>&1 | tee "$log"; local code=${PIPESTATUS[0]}; set -e; printf '%s\t%s\t%s\n' "$label" "$code" "$log" >> "$results"; if [ "$code" -ne 0 ]; then failed=1; fi; }
+          run_gate 03-story-v4 pnpm test:story:v4
+          run_gate 04-templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate 05-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate 06-templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate 07-templates-build pnpm --filter @ai-story/templates build
+          run_gate 08-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate 09-openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate 10-openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate 11-prisma-generate pnpm db:generate
+          run_gate 12-api-solo pnpm --filter @apps/api test:solo-story-engine
+          run_gate 13-api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate 14-branch-persistence pnpm test:story:branch-persistence
+          run_gate 15-story-options pnpm test:story:options
+          run_gate 16-story-convergence pnpm test:story:convergence
+          if [ "$failed" -eq 0 ]; then echo pass > "${EVIDENCE_ROOT}/status.txt"; else echo fail > "${EVIDENCE_ROOT}/status.txt"; fi
+      - name: Summarize
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          root=Path(os.environ['EVIDENCE_ROOT']); rows=[]
+          pats={k:re.compile(v,re.M) for k,v in {'tests':r'^# tests (\d+)$','pass':r'^# pass (\d+)$','fail':r'^# fail (\d+)$','skip':r'^# skipped (\d+)$','todo':r'^# todo (\d+)$'}.items()}
+          if (root/'results.tsv').exists():
+            for line in (root/'results.tsv').read_text().splitlines():
+              label,code,log=line.split('\t',2); text=Path(log).read_text(errors='replace') if Path(log).exists() else ''; row={'label':label,'exitCode':int(code),'logPath':log}
+              for k,p in pats.items(): m=p.findall(text); row[k]=int(m[-1]) if m else None
+              rows.append(row)
+          out={'inputSha':(root/'input-sha.txt').read_text().strip() if (root/'input-sha.txt').exists() else None,'baseSha':os.environ['BASE_SHA'],'testedSha':(root/'tested-sha.txt').read_text().strip() if (root/'tested-sha.txt').exists() else None,'baseTree':(root/'base-tree.txt').read_text().strip() if (root/'base-tree.txt').exists() else None,'testedTree':(root/'tested-tree.txt').read_text().strip() if (root/'tested-tree.txt').exists() else None,'status':(root/'status.txt').read_text().strip() if (root/'status.txt').exists() else 'missing','commands':rows,'supabaseFormal':'NOT_RUN','deepSeek':'NOT_RUN'}
+          (root/'summary.json').write_text(json.dumps(out,indent=2)+'\n')
+          PY
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirement-dependency-clean-${{ github.sha }}
+          path: /tmp/requirement-dependency-clean-product/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Replace feature branch with exact green candidate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat "${EVIDENCE_ROOT}/status.txt")" = pass
+          test "$(git rev-parse HEAD)" = "$(cat "${EVIDENCE_ROOT}/tested-sha.txt")"
+          input_sha="$(cat "${EVIDENCE_ROOT}/input-sha.txt")"
+          git push \
+            --force-with-lease="refs/heads/${TARGET_BRANCH}:${input_sha}" \
+            origin "HEAD:refs/heads/${TARGET_BRANCH}"
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/final-sha.txt"
