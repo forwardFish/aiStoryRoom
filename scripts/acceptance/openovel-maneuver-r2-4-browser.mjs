@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { assertSupabaseTestDatabaseUrl } from "./openovel-maneuver-acceptance-guards.mjs";
 import { classifyManeuverRequest, stableClone } from "./openovel-maneuver-preview-confirm-contract.mjs";
 import {
   captureBrowserEvidence,
@@ -22,6 +23,7 @@ const WEB_BASE = String(process.env.OPENOVEL_R2_4_WEB_BASE || "http://127.0.0.1:
 const API_BASE = String(process.env.OPENOVEL_R2_4_API_BASE || "http://127.0.0.1:3000/api").replace(/\/+$/, "");
 const SESSION_COOKIE = normalizeCookie(requiredEnv("OPENOVEL_R2_4_SESSION_COOKIE"));
 const DATABASE_URL = requiredEnv("DATABASE_URL");
+const DATABASE_TARGET = assertSupabaseTestDatabaseUrl(DATABASE_URL);
 const EVIDENCE_ROOT = path.resolve(
   process.env.OPENOVEL_R2_4_EVIDENCE_ROOT
   || path.join(process.cwd(), "artifacts", "openovel-maneuver-r2-4-browser"),
@@ -292,7 +294,8 @@ try {
     roleSelectUrl: ROLE_SELECT_URL,
     gameUrl,
     runId,
-    database: "PostgreSQL via Prisma",
+    database: "Supabase PostgreSQL via Prisma",
+    databaseHost: DATABASE_TARGET.hostname,
     finalWorldSequence: finalProjection.worldSequence,
     finalManeuverVersion: finalProjection.maneuverVersion,
     previewRequestCount: previewRequests.length,

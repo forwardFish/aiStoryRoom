@@ -5,6 +5,7 @@ import { createWriteStream } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertSupabaseTestDatabaseUrl } from "./openovel-maneuver-acceptance-guards.mjs";
 
 const ROOT = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const EVIDENCE_ROOT = path.resolve(
@@ -17,6 +18,8 @@ const EMAIL = `openovel-maneuver-${STAMP}@example.test`;
 const PASSWORD = "OpenNovelManeuverLive2026!";
 const AUTH_SECRET = "openovel-maneuver-live-session-secret";
 const INTERNAL_TOKEN = "openovel-maneuver-live-runtime-token";
+
+assertSupabaseTestDatabaseUrl(DATABASE_URL);
 
 await main().catch((error) => {
   console.error(error instanceof Error ? error.stack || error.message : error);
