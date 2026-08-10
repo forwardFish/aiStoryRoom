@@ -296,7 +296,7 @@ jobs:
           test "$before" = "$GITHUB_SHA"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$B0_ROOT"
+          git add -f "$B0_ROOT"
           git diff --cached --check
           test -n "$(git diff --cached --name-only)"
           test -z "$(git diff --cached --name-only | grep -Ev '^docs/auto-execute/evidence/b0/' || true)"
