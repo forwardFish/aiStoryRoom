@@ -8,7 +8,10 @@
     "build": "tsc -p tsconfig.build.json",
     "pregeneric-endgame:verify:s1-s4": "node --check src/endgame/endgame-package-v1.contract.mjs && node --check src/endgame/endgame-package-loader-v1.mjs && node --check src/endgame/endgame-metric-ledger-v1.mjs && node --check src/endgame/config-driven-endgame-adjudicator-v1.mjs && node --check src/endgame/endgame-fact-store-v1.mjs && node --check src/endgame/config-driven-ending-detail-compiler-v1.mjs",
     "generic-endgame:verify:s1-s4": "node --test tests/generic-endgame-package-v1.s0.spec.mjs tests/generic-endgame-s1-loader.spec.mjs tests/generic-endgame-s2-metrics.spec.mjs tests/generic-endgame-s3-adjudication.spec.mjs tests/generic-endgame-s4-details.spec.mjs",
-    "pretypecheck": "pnpm run generic-endgame:verify:s1-s4",
+    "pregeneric-endgame:verify:s5": "node --check src/endgame/config-driven-ending-narrator-v1.mjs && node --check tests/generic-endgame-s5-narrator.spec.mjs",
+    "generic-endgame:verify:s5": "node --test tests/generic-endgame-s5-narrator.spec.mjs",
+    "generic-endgame:verify:s1-s5": "pnpm run generic-endgame:verify:s1-s4 && pnpm run generic-endgame:verify:s5",
+    "pretypecheck": "pnpm run generic-endgame:verify:s1-s5",
     "typecheck": "tsc --noEmit",
     "posttypecheck": "pnpm run build && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "test:endgame": "node --import tsx --test tests/endgame.schemas.spec.ts"
