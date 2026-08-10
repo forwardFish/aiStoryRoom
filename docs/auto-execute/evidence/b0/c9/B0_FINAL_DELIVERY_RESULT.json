@@ -6,7 +6,7 @@
   "mainBaselineSha": "86da64eea18ab773312f40c7024ace9cb393344a",
   "testableCandidateSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
   "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
-  "evidenceCommitSha": null,
+  "evidenceCommitSha": "618c26ed9fc560e2ca6d2b6612273118d722889d",
   "finalRemoteSha": null,
   "finalRemoteShaResolution": "external clean-clone readback",
   "status": "EXTERNAL_BLOCKED",
