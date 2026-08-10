@@ -1,14 +1,13 @@
 {
-  "schemaVersion": 1,
-  "generatedAtUtc": "2026-08-10T17:12:35.103683+00:00",
-  "startingRemoteSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
+  "schemaVersion": 2,
+  "generatedAtUtc": "2026-08-10T17:43:41.935825+00:00",
+  "startingRemoteSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
   "mainBaselineSha": "86da64eea18ab773312f40c7024ace9cb393344a",
   "testableCandidateSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
   "historicalEvidenceSourceSha": "6032972d4518f8feb57f958ff0b2e52636431be1",
-  "previousEvidenceRemoteSha": "e0a986f0f772ee750b7f7cdd5165fc25f6623923",
+  "previousEvidenceRemoteSha": "787f735673c4e738003900f00cb5676b1d074217",
   "historicalC0ThroughC6Restored": true,
-  "previousC8C9ArchivedUnderVersionedPath": true,
-  "finalizerV2DiagnosisPath": "recovery/finalizer-v2/diagnosis.json",
+  "priorC8C9ArchivedAsZip": true,
   "ordinaryFastForwardOnly": true,
   "forcePushUsed": false
 }

@@ -1,52 +1,52 @@
 {
   "schemaVersion": 1,
-  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
+  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
   "screenshotCount": 9,
   "screenshots": [
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/final-ending-host-desktop.png",
-      "bytes": 250433,
-      "sha256": "2e6e6831b3d05c8c651c53cd5a297bba86a4f33f798e34c25be871d70a884633"
+      "path": "c9/runtime/engineering/current/screenshots/final-ending-host-desktop.png",
+      "bytes": 250411,
+      "sha256": "dcf8d76c31886e0f4ee96bc031c06ec4f398f241aa803b99d3fd93cffd09e2a9"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/final-ending-player-three-narrow.png",
-      "bytes": 45958,
-      "sha256": "334592cccaa1327044393a730fc302f90821f9788dc758340e8029445350be6c"
+      "path": "c9/runtime/engineering/current/screenshots/final-ending-player-three-narrow.png",
+      "bytes": 45038,
+      "sha256": "ede85f909f318c6508332da7df730812850b40dd3c9b0cc0c14ce0090330a2f9"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/final-ending-player-two-desktop.png",
-      "bytes": 245967,
-      "sha256": "b801019f8ab4ec7ba48358a60b5f4a3e4f81b41e5dcd81da328a657da881ec45"
+      "path": "c9/runtime/engineering/current/screenshots/final-ending-player-two-desktop.png",
+      "bytes": 240946,
+      "sha256": "917f440091b8d22af7e933529012509320465346ed5e99dcf998ee9b1c2f769b"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-host-desktop.png",
-      "bytes": 310164,
-      "sha256": "bab0efca36a1d0923a37fb7bbe07d334a211fd41c31e908187961cd71f27d0f1"
+      "path": "c9/runtime/engineering/current/screenshots/window-1-host-desktop.png",
+      "bytes": 328758,
+      "sha256": "be4e5b9903fc312624a5157e0faab067fcf3c8924c1dcda852b06088002fc596"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-open-host-desktop.png",
-      "bytes": 693035,
-      "sha256": "44378221c7a1bb7728fd5fc4d00953c38374ff555e64f40e06a07cdaf77ac4af"
+      "path": "c9/runtime/engineering/current/screenshots/window-1-open-host-desktop.png",
+      "bytes": 693267,
+      "sha256": "ed9d823ad3581e60d12fb29b004cd816a73be5f68abac55f6a9454ad580db748"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-open-player-three-narrow.png",
+      "path": "c9/runtime/engineering/current/screenshots/window-1-open-player-three-narrow.png",
       "bytes": 146123,
       "sha256": "0ad1e51efbd206a51ccae720bfc60f4ad7f8478a0cfe3424eac88aa81fc56ac0"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-open-player-two-desktop.png",
-      "bytes": 527982,
-      "sha256": "ffc33b6e6496ad4438b988e4f666ddecc78c88656091ee7455cb421e4f8a2ffc"
+      "path": "c9/runtime/engineering/current/screenshots/window-1-open-player-two-desktop.png",
+      "bytes": 528165,
+      "sha256": "bf3af6e1702741414cc63aacf5798e87c1909348ae989e5bce876994944c3cee"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-player-three-narrow.png",
-      "bytes": 125977,
-      "sha256": "90532c28b9013d1a5da649b823baf892732b402572130e378534e2da3e4c3548"
+      "path": "c9/runtime/engineering/current/screenshots/window-1-player-three-narrow.png",
+      "bytes": 125429,
+      "sha256": "31321faa31afa604c5d481117bb41ef5101f41747995501e65011fdebbf8e23a"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-player-two-desktop.png",
-      "bytes": 281054,
-      "sha256": "7cf9201ce429ed173eb9ebbe6353bf13c6880872f5a2ddf6a720d18a6737a0c4"
+      "path": "c9/runtime/engineering/current/screenshots/window-1-player-two-desktop.png",
+      "bytes": 280963,
+      "sha256": "603fe63fbb67f62ae06960ee2e6a112eee70ce606c62e54b9734710305fe3cf7"
     }
   ]
 }

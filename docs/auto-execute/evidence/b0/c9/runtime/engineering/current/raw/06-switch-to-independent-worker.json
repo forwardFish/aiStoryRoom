@@ -1,0 +1,14 @@
+{
+  "name": "switch-to-independent-worker",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:42:30.884Z",
+  "completedAt": "2026-08-10T17:42:32.224Z",
+  "result": {
+    "apiRestartedWithEmbeddedWorker": false,
+    "apiWorkerHealth": {
+      "enabled": false,
+      "topology": "embedded",
+      "leaseMs": 30000
+    }
+  }
+}

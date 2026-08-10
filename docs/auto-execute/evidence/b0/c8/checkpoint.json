@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
-  "generatedAtUtc": "2026-08-10T17:12:35.103683+00:00",
+  "schemaVersion": 2,
+  "generatedAtUtc": "2026-08-10T17:43:41.935825+00:00",
   "testableCandidateSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
-  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
+  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
   "status": "EXTERNAL_BLOCKED",
   "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED",
   "formalC8": {
@@ -15,34 +15,27 @@
     "publicSchemaForbiddenAsTestSchema": true,
     "selfHostedContainerMaySubstitute": false,
     "credentialValuesPersisted": false,
-    "environmentsChecked": [
-      "ourmanyworlds.com / test",
-      "stellar-encouragement / test",
-      "Preview"
-    ],
-    "workflowRunId": 31412217066
+    "workflowRunId": 31414693756
   },
   "engineeringAcceptance": {
     "status": "PASS_ENGINEERING_ONLY",
     "passed": true,
     "formalC8Substitute": false,
-    "database": "official self-hosted supabase/postgres random isolated engineering schema",
     "realBrowserSessions": 3,
     "synchronizedWindows": 6,
     "desktopViewportCovered": true,
     "narrow390ViewportCovered": true,
     "screenshotCount": 9,
-    "acceptanceResultPath": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/acceptance-result.json",
-    "workflowRunId": 31412217066
+    "workflowRunId": 31414693756
   },
   "crossPlatformSeed": {
     "linux": {
       "status": "PASS",
-      "workflowRunId": 31412217147
+      "workflowRunId": 31414693742
     },
     "windows": {
       "status": "PASS",
-      "workflowRunId": 31412217017
+      "workflowRunId": 31414693761
     }
   }
 }

@@ -1,171 +1,19 @@
 {
-  "schemaVersion": 1,
-  "generatedAtUtc": "2026-08-10T17:12:35.103683+00:00",
-  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
+  "schemaVersion": 2,
+  "generatedAtUtc": "2026-08-10T17:43:41.935825+00:00",
+  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
   "overall": "EXTERNAL_BLOCKED",
   "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED",
-  "jobs": [
-    {
-      "runId": 31412217017,
-      "jobId": 93532751768,
-      "name": "Windows clean-clone migration and seed",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:04:47Z",
-      "completedAt": "2026-08-10T17:06:20Z"
-    },
-    {
-      "runId": 31412217147,
-      "jobId": 93532752193,
-      "name": "USER_TEST_READY clean-clone seed",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:04:51Z",
-      "completedAt": "2026-08-10T17:05:46Z"
-    },
-    {
-      "runId": 31412217147,
-      "jobId": 93532752239,
-      "name": "Focused B0 contracts",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:04:46Z",
-      "completedAt": "2026-08-10T17:06:25Z"
-    },
-    {
-      "runId": 31412217147,
-      "jobId": 93532752252,
-      "name": "Full Web regression on Node 24",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:04:45Z",
-      "completedAt": "2026-08-10T17:05:18Z"
-    },
-    {
-      "runId": 31412217147,
-      "jobId": 93532752253,
-      "name": "Exact candidate code snapshot",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:04:51Z",
-      "completedAt": "2026-08-10T17:05:11Z"
-    },
-    {
-      "runId": 31412217147,
-      "jobId": 93532752267,
-      "name": "Causal aggregate on Node 24",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:04:45Z",
-      "completedAt": "2026-08-10T17:06:19Z"
-    },
-    {
-      "runId": 31412217147,
-      "jobId": 93532752294,
-      "name": "API, Story V4, Maneuver and builds",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:04:45Z",
-      "completedAt": "2026-08-10T17:09:33Z"
-    },
-    {
-      "runId": 31412217147,
-      "jobId": 93534078495,
-      "name": "Record exact push outcome",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:09:35Z",
-      "completedAt": "2026-08-10T17:09:38Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533209190,
-      "name": "Acceptance provenance and harness contract",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:06:23Z",
-      "completedAt": "2026-08-10T17:07:08Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533431375,
-      "name": "Probe ourmanyworlds test credential names",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:07:12Z",
-      "completedAt": "2026-08-10T17:07:15Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533431433,
-      "name": "Probe Preview credential names",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:07:17Z",
-      "completedAt": "2026-08-10T17:07:20Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533431448,
-      "name": "Probe stellar test credential names",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:07:12Z",
-      "completedAt": "2026-08-10T17:07:15Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533431533,
-      "name": "Engineering-only self-hosted Supabase and Ollama acceptance",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:07:17Z",
-      "completedAt": "2026-08-10T17:12:21Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533481732,
-      "name": "Select the first complete non-production credential pair",
-      "status": "completed",
-      "conclusion": "success",
-      "startedAt": "2026-08-10T17:07:22Z",
-      "completedAt": "2026-08-10T17:07:24Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533501562,
-      "name": "Record formal C8 credential blocker",
-      "status": "completed",
-      "conclusion": "failure",
-      "startedAt": "2026-08-10T17:07:31Z",
-      "completedAt": "2026-08-10T17:08:50Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533502309,
-      "name": "Require all exact-SHA engineering gates before formal C8",
-      "status": "completed",
-      "conclusion": "skipped",
-      "startedAt": "2026-08-10T17:07:24Z",
-      "completedAt": "2026-08-10T17:07:24Z"
-    },
-    {
-      "runId": 31412217066,
-      "jobId": 93533502832,
-      "name": "Formal C8 on real non-production Supabase and DeepSeek",
-      "status": "completed",
-      "conclusion": "skipped",
-      "startedAt": "2026-08-10T17:07:24Z",
-      "completedAt": "2026-08-10T17:07:24Z"
-    }
-  ],
+  "runs": {
+    "exact": "31414693742",
+    "windowsSeed": "31414693761",
+    "acceptance": "31414693756"
+  },
   "coverage": {
-    "frozenInstallAndWorkspaceGates": true,
+    "exactEngineeringGates": true,
     "linuxCleanCloneSeed": true,
     "windowsCleanCloneSeed": true,
-    "threeIsolatedBrowserSessions": true,
-    "sixSynchronizedWindows": true,
-    "worldSequenceExactlyOnce": true,
+    "threeSessionsSixWindows": true,
     "privacyIdempotencyNarrativeWorkers": true,
     "pauseResumeDeadlineLeaseCrashRecovery": true,
     "desktopAnd390px": true,

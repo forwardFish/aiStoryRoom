@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 1,
-  "generatedAtUtc": "2026-08-10T17:12:35.103683+00:00",
-  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
+  "schemaVersion": 2,
+  "generatedAtUtc": "2026-08-10T17:43:41.935825+00:00",
+  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
   "status": "EXTERNAL_BLOCKED",
   "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED",
   "candidateBranchReady": false,

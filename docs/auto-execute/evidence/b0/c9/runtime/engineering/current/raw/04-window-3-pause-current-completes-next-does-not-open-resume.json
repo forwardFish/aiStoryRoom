@@ -1,0 +1,41 @@
+{
+  "name": "window-3-pause-current-completes-next-does-not-open-resume",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:41:54.183Z",
+  "completedAt": "2026-08-10T17:42:26.988Z",
+  "result": {
+    "windowId": "id_0fcd4c94d03edff9",
+    "before": {
+      "id": "room_63ae674ab09c08fe7a504dc32c40525b",
+      "status": "playing",
+      "worldSequence": 2,
+      "reservedWorldSequence": 0,
+      "currentDay": 3,
+      "version": 13,
+      "updatedAt": "2026-08-10T17:41:41.162Z",
+      "windows": 3,
+      "events": 23,
+      "deliveries": 12,
+      "narratives": 8,
+      "tasks": 36
+    },
+    "after": {
+      "id": "room_63ae674ab09c08fe7a504dc32c40525b",
+      "status": "playing",
+      "worldSequence": 3,
+      "reservedWorldSequence": 0,
+      "currentDay": 4,
+      "version": 16,
+      "updatedAt": "2026-08-10T17:42:26.820Z",
+      "windows": 4,
+      "events": 32,
+      "deliveries": 18,
+      "narratives": 12,
+      "tasks": 46
+    },
+    "openedOrdinal": 3,
+    "resumedOrdinal": 4,
+    "resumedWindowId": "id_0b8dedaf482e6804",
+    "pausedOpenCount": 0
+  }
+}

@@ -1,8 +1,0 @@
-{
-  "exitCode": 0,
-  "command": "pnpm db:seed",
-  "pnpm": "10.34.5",
-  "os": "windows-2025",
-  "node": "v22.23.2",
-  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958"
-}

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-08-10T17:43:41.935825+00:00",
+  "sourceFinalRemoteSha": "787f735673c4e738003900f00cb5676b1d074217",
+  "archive": "prior-c8-c9.zip",
+  "archiveBytes": 2953550,
+  "archiveSha256": "e063cf1ce2e64ac1408656ef78894de63c410a98cc8ddb85e713aadf56a41b77",
+  "preservationRule": "prior active C8/C9 is retained as a versioned ZIP; C0-C6 remain ordinary immutable files"
+}

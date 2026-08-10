@@ -1,0 +1,638 @@
+Windows clean-clone migration and seed	Set up job	﻿2026-08-10T17:34:35.1090700Z Current runner version: '2.336.0'
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1643145Z ##[group]Runner Image Provisioner
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1644246Z Hosted Compute Agent
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1644888Z Version: 20260729.566
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1645551Z Commit: cf7153fe6e25b664e8693c24944bf2b00355d109
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1646414Z Build Date: 2026-07-29T19:17:02Z
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1647227Z Worker ID: {962f067f-f4ee-4615-9ccd-b7d355321e6d}
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1648041Z Azure Region: eastus
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1648659Z ##[endgroup]
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1650188Z ##[group]Operating System
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1650919Z Microsoft Windows Server 2025
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1651956Z 10.0.26100
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1652539Z Datacenter
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1653020Z ##[endgroup]
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1653577Z ##[group]Runner Image
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1654201Z Image: windows-2025-vs2026
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1654828Z Version: 20260803.193.1
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1656357Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260803.193/images/windows/Windows2025-VS2026-Readme.md
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1659130Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260803.193
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1660450Z ##[endgroup]
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1661905Z ##[group]GITHUB_TOKEN Permissions
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1664080Z Contents: read
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1664764Z Metadata: read
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1665366Z Statuses: write
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1665914Z ##[endgroup]
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1668159Z Secret source: Actions
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.1669265Z Prepare workflow directory
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.3367026Z Prepare all required actions
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.3419458Z Getting action download info
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.5104607Z Download action repository 'actions/github-script@v7' (SHA:f28e40c7f34bde8b3046d885e986cb6290c5673b)
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:35.8108267Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:36.0028333Z Download action repository 'pnpm/action-setup@v4' (SHA:b906affcce14559ad1aafd4ab0e942779e9f58b1)
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:36.2715850Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:36.5676193Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+Windows clean-clone migration and seed	Set up job	2026-08-10T17:34:38.1459143Z Complete job name: Windows clean-clone migration and seed
+Windows clean-clone migration and seed	Publish exact run locator	﻿2026-08-10T17:34:39.4013695Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4023158Z ##[group]Run actions/github-script@v7
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4023737Z with:
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4025192Z   script: await github.rest.repos.createCommitStatus({
+Windows clean-clone migration and seed	Publish exact run locator	  owner: context.repo.owner,
+Windows clean-clone migration and seed	Publish exact run locator	  repo: context.repo.repo,
+Windows clean-clone migration and seed	Publish exact run locator	  sha: context.sha,
+Windows clean-clone migration and seed	Publish exact run locator	  state: "pending",
+Windows clean-clone migration and seed	Publish exact run locator	  context: "b0/windows-seed",
+Windows clean-clone migration and seed	Publish exact run locator	  description: `Windows clean-clone seed running in ${context.runId}`,
+Windows clean-clone migration and seed	Publish exact run locator	  target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+Windows clean-clone migration and seed	Publish exact run locator	});
+Windows clean-clone migration and seed	Publish exact run locator	
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4029274Z   github-token: ***
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4029540Z   debug: false
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4029800Z   user-agent: actions/github-script
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4030110Z   result-encoding: json
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4030410Z   retries: 0
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4030680Z   retry-exempt-status-codes: 400,401,403,404,422
+Windows clean-clone migration and seed	Publish exact run locator	2026-08-10T17:34:39.4031232Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	﻿2026-08-10T17:34:40.9172300Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9174986Z ##[group]Run actions/checkout@v4
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9271368Z with:
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9271675Z   ref: 14c1e871f75f3c597919f7cbcd1d035851ebf142
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9272011Z   fetch-depth: 1
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9272259Z   repository: forwardFish/aiStoryRoom
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9275284Z   token: ***
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9275510Z   ssh-strict: true
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9275740Z   ssh-user: git
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9276040Z   persist-credentials: true
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9276386Z   clean: true
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9276626Z   sparse-checkout-cone-mode: true
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9276915Z   fetch-tags: false
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9277157Z   show-progress: true
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9277440Z   lfs: false
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9277669Z   submodules: false
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9278113Z   set-safe-directory: true
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9278392Z   allow-unsafe-pr-checkout: false
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:40.9278679Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.1230090Z Syncing repository: forwardFish/aiStoryRoom
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.1231825Z ##[group]Getting Git version info
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.1232247Z Working directory is 'D:\a\aiStoryRoom\aiStoryRoom'
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.2216195Z [command]"C:\Program Files\Git\bin\git.exe" version
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.7158133Z git version 2.55.0.windows.3
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.7212879Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.7268785Z Temporarily overriding HOME='D:\a\_temp\e2910f7d-5cdb-43a9-ab6e-0732b8161758' before making global git config changes
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.7269549Z Adding repository directory to the temporary git global config as a safe directory
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.7270222Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\aiStoryRoom\aiStoryRoom
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.7904395Z Deleting the contents of 'D:\a\aiStoryRoom\aiStoryRoom'
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.7910965Z ##[group]Initializing the repository
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.7919187Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\aiStoryRoom\aiStoryRoom
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.8997948Z Initialized empty Git repository in D:/a/aiStoryRoom/aiStoryRoom/.git/
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.9049069Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/forwardFish/aiStoryRoom
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.9910818Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.9911331Z ##[group]Disabling automatic garbage collection
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:41.9920133Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:42.0229745Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:42.0230209Z ##[group]Setting up auth
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:42.0242831Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:42.0576002Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:43.7159090Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:43.7465330Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:44.2757087Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:44.3063162Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:44.8586219Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:44.8903563Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:44.8904496Z ##[group]Fetching the repository
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:34:44.8916927Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 14c1e871f75f3c597919f7cbcd1d035851ebf142
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5033966Z From https://github.com/forwardFish/aiStoryRoom
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5034821Z  * branch            14c1e871f75f3c597919f7cbcd1d035851ebf142 -> FETCH_HEAD
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5083454Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5084081Z ##[group]Determining the checkout info
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5086116Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5102199Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5620048Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5922734Z ##[group]Checking out the ref
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:13.5932193Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force 14c1e871f75f3c597919f7cbcd1d035851ebf142
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:14.7233147Z Updating files:  30% (769/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:14.8453998Z Updating files:  31% (784/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:14.9261058Z Updating files:  32% (809/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.0835445Z Updating files:  33% (835/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.2553956Z Updating files:  34% (860/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.4013241Z Updating files:  35% (885/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.4098913Z Updating files:  36% (911/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.4156753Z Updating files:  37% (936/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.4221729Z Updating files:  38% (961/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.4290587Z Updating files:  39% (986/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.4342954Z Updating files:  40% (1012/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.4820145Z Updating files:  41% (1037/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.6292958Z Updating files:  42% (1062/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.6578393Z Updating files:  43% (1088/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.8353455Z Updating files:  43% (1091/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.9401568Z Updating files:  44% (1113/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.9453749Z Updating files:  45% (1138/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.9512151Z Updating files:  46% (1163/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.9585293Z Updating files:  47% (1189/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.9676276Z Updating files:  48% (1214/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.9799035Z Updating files:  49% (1239/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:15.9873678Z Updating files:  50% (1264/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0037101Z Updating files:  51% (1290/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0209878Z Updating files:  52% (1315/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0268849Z Updating files:  53% (1340/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0316573Z Updating files:  54% (1366/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0373736Z Updating files:  55% (1391/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0441274Z Updating files:  56% (1416/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0507863Z Updating files:  57% (1441/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0611511Z Updating files:  58% (1467/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0676990Z Updating files:  59% (1492/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0748540Z Updating files:  60% (1517/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0842659Z Updating files:  61% (1543/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.0994175Z Updating files:  62% (1568/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1064130Z Updating files:  63% (1593/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1134725Z Updating files:  64% (1618/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1196141Z Updating files:  65% (1644/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1263416Z Updating files:  66% (1669/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1336032Z Updating files:  67% (1694/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1397557Z Updating files:  68% (1720/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1456214Z Updating files:  69% (1745/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1539868Z Updating files:  70% (1770/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1599274Z Updating files:  71% (1795/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1656916Z Updating files:  72% (1821/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1719309Z Updating files:  73% (1846/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1778212Z Updating files:  74% (1871/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1841331Z Updating files:  75% (1896/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1897594Z Updating files:  76% (1922/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.1966921Z Updating files:  77% (1947/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2025690Z Updating files:  78% (1972/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2088770Z Updating files:  79% (1998/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2176752Z Updating files:  80% (2023/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2237668Z Updating files:  81% (2048/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2317802Z Updating files:  82% (2073/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2377772Z Updating files:  83% (2099/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2462063Z Updating files:  84% (2124/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2554613Z Updating files:  85% (2149/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2628760Z Updating files:  86% (2175/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2715590Z Updating files:  87% (2200/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2825549Z Updating files:  88% (2225/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.2901292Z Updating files:  89% (2250/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3003356Z Updating files:  90% (2276/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3101387Z Updating files:  91% (2301/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3199354Z Updating files:  92% (2326/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3280198Z Updating files:  93% (2352/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3366300Z Updating files:  94% (2377/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3462108Z Updating files:  95% (2402/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3567466Z Updating files:  96% (2427/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3686050Z Updating files:  97% (2453/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3790839Z Updating files:  98% (2478/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3900159Z Updating files:  99% (2503/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3901303Z Updating files: 100% (2528/2528)
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.3902310Z Updating files: 100% (2528/2528), done.
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4334245Z Note: switching to '14c1e871f75f3c597919f7cbcd1d035851ebf142'.
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4340932Z 
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4341694Z You are in 'detached HEAD' state. You can look around, make experimental
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4343254Z changes and commit them, and you can discard any commits you make in this
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4344574Z state without impacting any branches by switching back to a branch.
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4345660Z 
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4346294Z If you want to create a new branch to retain commits you create, you may
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4347627Z do so (now or later) by using -c with the switch command. Example:
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4348401Z 
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4348768Z   git switch -c <new-branch-name>
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4349236Z 
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4349493Z Or undo this operation with:
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4349888Z 
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4350115Z   git switch -
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4350436Z 
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4350910Z Turn off this advice by setting config variable advice.detachedHead to false
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4351592Z 
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.4352708Z HEAD is now at 14c1e87 ci(b0): finalize portable evidence on Windows and Linux
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.5133527Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.5670598Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+Windows clean-clone migration and seed	Run actions/checkout@v4	2026-08-10T17:35:16.6076242Z 14c1e871f75f3c597919f7cbcd1d035851ebf142
+Windows clean-clone migration and seed	Verify exact clean checkout	﻿2026-08-10T17:35:16.6570504Z ##[group]Run $ErrorActionPreference = "Stop"
+Windows clean-clone migration and seed	Verify exact clean checkout	2026-08-10T17:35:16.6571211Z ^[[36;1m$ErrorActionPreference = "Stop"^[[0m
+Windows clean-clone migration and seed	Verify exact clean checkout	2026-08-10T17:35:16.6572002Z ^[[36;1mif ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw "wrong checkout SHA" }^[[0m
+Windows clean-clone migration and seed	Verify exact clean checkout	2026-08-10T17:35:16.6572963Z ^[[36;1mif ((git status --short) -ne $null) { throw "checkout is not clean" }^[[0m
+Windows clean-clone migration and seed	Verify exact clean checkout	2026-08-10T17:35:16.7450707Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Windows clean-clone migration and seed	Verify exact clean checkout	2026-08-10T17:35:16.7451385Z ##[endgroup]
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	﻿2026-08-10T17:35:17.4904845Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4907194Z ##[group]Run pnpm/action-setup@v4
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4907595Z with:
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4907907Z   version: 10
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4908209Z   dest: ~/setup-pnpm
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4936771Z   run_install: null
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4937167Z   cache: false
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4937521Z   cache_dependency_path: pnpm-lock.yaml
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4937984Z   package_json_file: package.json
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4938389Z   standalone: false
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.4938703Z ##[endgroup]
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:17.6947837Z ##[group]Running self-installer...
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:18.3407649Z (node:6264) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:18.3410053Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:18.5553539Z Progress: resolved 1, reused 0, downloaded 0, added 0
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:18.5686211Z Packages: +1
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:18.5686756Z +
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:22.2052685Z Progress: resolved 1, reused 0, downloaded 1, added 0
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:22.8919803Z Progress: resolved 1, reused 0, downloaded 1, added 1, done
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:23.3292054Z 
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:23.3292586Z dependencies:
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:23.3293036Z + pnpm 10.34.5 (11.21.0 is available)
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:23.3293395Z 
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:23.3525203Z Done in 5.4s
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:23.3742285Z ##[endgroup]
+Windows clean-clone migration and seed	Run pnpm/action-setup@v4	2026-08-10T17:35:23.3743051Z Installation Completed!
+Windows clean-clone migration and seed	Run actions/setup-node@v4	﻿2026-08-10T17:35:23.4075646Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4077128Z ##[group]Run actions/setup-node@v4
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4077397Z with:
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4077588Z   node-version: 22
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4077790Z   cache: pnpm
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4077987Z   always-auth: false
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4078415Z   check-latest: false
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4080902Z   token: ***
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4081101Z env:
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4081387Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.4081735Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.5989209Z Found in cache @ C:\hostedtoolcache\windows\node\22.23.2\x64
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.5996691Z (node:2512) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.5997589Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:23.6000026Z ##[group]Environment details
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:29.9820939Z node: v22.23.2
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:29.9821312Z npm: 10.9.8
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:29.9821512Z yarn: 1.22.22
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:29.9822516Z ##[endgroup]
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:30.0641554Z [command]C:\Windows\system32\cmd.exe /D /S /C "C:\Users\runneradmin\setup-pnpm\node_modules\.bin\pnpm.CMD store path --silent"
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:31.0933970Z D:\.pnpm-store\v10
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:31.3531362Z Cache hit for: node-cache-Windows-x64-pnpm-97d8d0fc5ce2b453c0618d90d170df9ec73684b87ea6d2b5977e7a5a8d5ea2c4
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:31.3649456Z (node:2512) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:32.4216162Z Received 146018246 of 154406854 (94.6%), 136.8 MBs/sec
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:32.4514479Z Received 154406854 of 154406854 (100.0%), 140.5 MBs/sec
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:32.4518171Z Cache Size: ~147 MB (154406854 B)
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:32.4599108Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/28df3406-0a4a-487d-ba61-137f7c6c3c6a/cache.tzst -P -C D:/a/aiStoryRoom/aiStoryRoom --force-local --use-compress-program "zstd -d"
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:41.5243132Z Cache restored successfully
+Windows clean-clone migration and seed	Run actions/setup-node@v4	2026-08-10T17:35:41.5342062Z Cache restored from key: node-cache-Windows-x64-pnpm-97d8d0fc5ce2b453c0618d90d170df9ec73684b87ea6d2b5977e7a5a8d5ea2c4
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	﻿2026-08-10T17:35:41.5638642Z ##[group]Run $ErrorActionPreference = "Stop"
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5639180Z ^[[36;1m$ErrorActionPreference = "Stop"^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5639700Z ^[[36;1m$service = Get-Service -Name "postgresql-x64-*" | Select-Object -First 1^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5640345Z ^[[36;1mif (-not $service) { throw "No preinstalled PostgreSQL service was found" }^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5641664Z ^[[36;1mSet-Service -Name $service.Name -StartupType Manual^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5642099Z ^[[36;1mStart-Service -Name $service.Name^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5642555Z ^[[36;1m$service.WaitForStatus("Running", [TimeSpan]::FromSeconds(60))^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5643139Z ^[[36;1mif (-not $env:PGBIN) { throw "PGBIN is not configured by the Windows runner image" }^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5643578Z ^[[36;1m$env:Path = "$env:PGBIN;$env:Path"^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5643858Z ^[[36;1m$env:PGPASSWORD = "root"^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5644333Z ^[[36;1m& "$env:PGBIN\dropdb.exe" --if-exists --force --host 127.0.0.1 --username postgres ai_story_run^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5644968Z ^[[36;1m& "$env:PGBIN\createdb.exe" --host 127.0.0.1 --username postgres ai_story_run^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5645564Z ^[[36;1m& "$env:PGBIN\pg_isready.exe" --host 127.0.0.1 --port 5432 --username postgres --dbname ai_story_run^[[0m
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5716026Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5716397Z env:
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5716670Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:41.5716992Z ##[endgroup]
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:45.0271594Z NOTICE:  database "ai_story_run" does not exist, skipping
+Windows clean-clone migration and seed	Start the preinstalled PostgreSQL service	2026-08-10T17:35:47.0834951Z 127.0.0.1:5432 - accepting connections
+Windows clean-clone migration and seed	Frozen install	﻿2026-08-10T17:35:47.1548108Z ##[group]Run pnpm install --frozen-lockfile
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:47.1548766Z ^[[36;1mpnpm install --frozen-lockfile^[[0m
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:47.1645447Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:47.1645812Z env:
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:47.1646082Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:47.1646426Z ##[endgroup]
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:47.8677550Z Scope: all 8 workspace projects
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:48.0129348Z Lockfile is up to date, resolution step is skipped
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:48.0817893Z Progress: resolved 1, reused 0, downloaded 0, added 0
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:48.3075962Z Packages: +1075
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:48.3076683Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:49.0867754Z Progress: resolved 1075, reused 232, downloaded 0, added 0
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:50.0863236Z Progress: resolved 1075, reused 1075, downloaded 0, added 69
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:51.0958126Z Progress: resolved 1075, reused 1075, downloaded 0, added 128
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:52.1004437Z Progress: resolved 1075, reused 1075, downloaded 0, added 275
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:53.1087215Z Progress: resolved 1075, reused 1075, downloaded 0, added 573
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:54.1093939Z Progress: resolved 1075, reused 1075, downloaded 0, added 782
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:55.1097457Z Progress: resolved 1075, reused 1075, downloaded 0, added 1043
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:55.1490346Z Progress: resolved 1075, reused 1075, downloaded 0, added 1075, done
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3222630Z 
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3223223Z dependencies:
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3223655Z + @nestjs/common 11.1.19
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3224100Z + @nestjs/core 11.1.19
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3224547Z + @nestjs/platform-express 11.1.19
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3224997Z + @prisma/client 6.19.3
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3225387Z + reflect-metadata 0.2.2
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3225749Z + rxjs 7.8.2
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3225928Z 
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3226071Z devDependencies:
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3226395Z + prisma 6.19.3
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3226723Z + tsx 4.21.0
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3227046Z + typescript 5.9.3
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.3227250Z 
+Windows clean-clone migration and seed	Frozen install	2026-08-10T17:35:56.4130148Z Done in 8.9s using pnpm v10.34.5
+Windows clean-clone migration and seed	Create the documented local environment file	﻿2026-08-10T17:35:56.5640484Z ##[group]Run @'
+Windows clean-clone migration and seed	Create the documented local environment file	2026-08-10T17:35:56.5640926Z ^[[36;1m@'^[[0m
+Windows clean-clone migration and seed	Create the documented local environment file	2026-08-10T17:35:56.5641716Z ^[[36;1mDATABASE_URL=***127.0.0.1:5432/ai_story_run?schema=public^[[0m
+Windows clean-clone migration and seed	Create the documented local environment file	2026-08-10T17:35:56.5642408Z ^[[36;1m'@ | Set-Content -Path .env -Encoding utf8NoBOM^[[0m
+Windows clean-clone migration and seed	Create the documented local environment file	2026-08-10T17:35:56.5736216Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Windows clean-clone migration and seed	Create the documented local environment file	2026-08-10T17:35:56.5736789Z env:
+Windows clean-clone migration and seed	Create the documented local environment file	2026-08-10T17:35:56.5737209Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Create the documented local environment file	2026-08-10T17:35:56.5737959Z ##[endgroup]
+Windows clean-clone migration and seed	Generate client and apply migrations	﻿2026-08-10T17:35:56.9744740Z ##[group]Run $ErrorActionPreference = "Stop"
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:56.9745207Z ^[[36;1m$ErrorActionPreference = "Stop"^[[0m
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:56.9745490Z ^[[36;1mpnpm db:generate^[[0m
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:56.9745725Z ^[[36;1mpnpm db:migrate:deploy^[[0m
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:56.9818206Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:56.9818782Z env:
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:56.9819203Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:56.9819762Z ##[endgroup]
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:57.8238903Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:57.8239927Z > ai-story-room@0.1.0 db:generate D:\a\aiStoryRoom\aiStoryRoom
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:57.8240788Z > prisma generate
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:57.8241071Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:58.9250196Z warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:58.9252213Z For more information, see: https://pris.ly/prisma-config
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:58.9252692Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:59.0399483Z Environment variables loaded from .env
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:35:59.0414828Z Prisma schema loaded from prisma\schema.prisma
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:00.8529046Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:00.8530972Z ✔ Generated Prisma Client (v6.19.3) to .\node_modules\.pnpm\@prisma+client@6.19.3_prism_1d040ab5215f59f0e27ddee7f0cf082e\node_modules\@prisma\client in 706ms
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:00.8531845Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:00.8532279Z Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:00.8532702Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:00.8533270Z Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:00.8533808Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:01.3210902Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:01.3211932Z > ai-story-room@0.1.0 db:migrate:deploy D:\a\aiStoryRoom\aiStoryRoom
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:01.3212537Z > prisma migrate deploy
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:01.3212772Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.3996600Z warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.3997756Z For more information, see: https://pris.ly/prisma-config
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.3998073Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.6093022Z Environment variables loaded from .env
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.6110447Z Prisma schema loaded from prisma\schema.prisma
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.6307513Z Datasource "db": PostgreSQL database "ai_story_run", schema "public" at "127.0.0.1:5432"
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.7408120Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.7409085Z 33 migrations found in prisma/migrations
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.7409830Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:02.9078106Z Applying migration `20260711011043_init`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.1494459Z Applying migration `20260711012408_v4_ai_task_ledger`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.1736380Z Applying migration `20260712220000_world_credits_billing_referrals`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.2644601Z Applying migration `20260714193000_checkout_return_context`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.2775922Z Applying migration `20260714194500_referral_social_channels`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.2999990Z Applying migration `20260714201000_purchase_display_code`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.3281969Z Applying migration `20260715020000_purchase_display_code_default`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.3450428Z Applying migration `20260715190000_auth_closure`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.3923423Z Applying migration `20260716120000_foundation_current_schema`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.4720985Z Applying migration `20260716130000_continuous_strategy_p0_expand`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.6658938Z Applying migration `20260716131000_continuous_strategy_p0_backfill`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.6814358Z Applying migration `20260716132000_continuous_strategy_p0_contract`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.7403915Z Applying migration `20260716133000_continuous_strategy_task_contract`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.7547742Z Applying migration `20260716134000_continuous_strategy_role_control_reasons`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.7695919Z Applying migration `20260716135000_continuous_strategy_runtime_vocabulary`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.7888581Z Applying migration `20260716136000_continuous_strategy_presence_sessions`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.8161453Z Applying migration `20260716137000_continuous_strategy_reclaim_next_window`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.8373515Z Applying migration `20260716138000_world_actor_not_player_role`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.8537087Z Applying migration `20260716170000_refunds_and_secure_result_shares`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.8816424Z Applying migration `20260718110000_share_token_default_contract`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.8967431Z Applying migration `20260718190000_continuous_story_v2_actor_threads`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.9743138Z Applying migration `20260718193000_continuous_story_v2_outbox_vocabulary`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:03.9910396Z Applying migration `20260718194500_continuous_story_v2_action_slot`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.0052265Z Applying migration `20260719093000_continuous_story_v2_real_intent`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.0521107Z Applying migration `20260719103000_continuous_story_context_prompt_pipeline`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.0850333Z Applying migration `20260719144500_continuous_story_v2_generation_tasks`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.0993672Z Applying migration `20260721113000_solo_story_engine_v1`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.1282293Z Applying migration `20260721154500_solo_story_action_slot`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.1425860Z Applying migration `20260721170000_active_action_credit_policy`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2084701Z Applying migration `20260806060000_maneuver_v1_action_slots`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2304309Z Applying migration `20260806063000_maneuver_v1_visibility`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2432469Z Applying migration `20260809020000_b0_role_control_reason_vocabulary`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2562479Z Applying migration `20260809030000_b0_runtime_database_vocabulary`
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2773904Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2805692Z ┌─────────────────────────────────────────────────────────┐
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2806640Z │  Update available 6.19.3 -> 7.9.1                       │
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2807395Z │                                                         │
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2808147Z │  This is a major update - please follow the guide at    │
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2808999Z │  https://pris.ly/d/major-version-upgrade                │
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2809755Z │                                                         │
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2810439Z │  Run the following to update                            │
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2810939Z │    npm i --save-dev prisma@latest                       │
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2811399Z │    npm i @prisma/client@latest                          │
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2811866Z └─────────────────────────────────────────────────────────┘
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2812256Z The following migration(s) have been applied:
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2812474Z 
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2812566Z migrations/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2812807Z   └─ 20260711011043_init/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2813054Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2813333Z   └─ 20260711012408_v4_ai_task_ledger/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2813627Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2813949Z   └─ 20260712220000_world_credits_billing_referrals/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2814288Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2814578Z   └─ 20260714193000_checkout_return_context/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2814872Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2815237Z   └─ 20260714194500_referral_social_channels/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2815685Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2815970Z   └─ 20260714201000_purchase_display_code/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2816250Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2816545Z   └─ 20260715020000_purchase_display_code_default/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2816860Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2817349Z   └─ 20260715190000_auth_closure/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2817621Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2817912Z   └─ 20260716120000_foundation_current_schema/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2818219Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2818533Z   └─ 20260716130000_continuous_strategy_p0_expand/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2819295Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2819604Z   └─ 20260716131000_continuous_strategy_p0_backfill/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2820909Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2821253Z   └─ 20260716132000_continuous_strategy_p0_contract/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2821576Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2821883Z   └─ 20260716133000_continuous_strategy_task_contract/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2822197Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2822530Z   └─ 20260716134000_continuous_strategy_role_control_reasons/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2822876Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2823210Z   └─ 20260716135000_continuous_strategy_runtime_vocabulary/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2823548Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2823874Z   └─ 20260716136000_continuous_strategy_presence_sessions/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2824211Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2824536Z   └─ 20260716137000_continuous_strategy_reclaim_next_window/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2824867Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2825166Z   └─ 20260716138000_world_actor_not_player_role/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2825474Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2825777Z   └─ 20260716170000_refunds_and_secure_result_shares/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2826084Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2826368Z   └─ 20260718110000_share_token_default_contract/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2826667Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2826973Z   └─ 20260718190000_continuous_story_v2_actor_threads/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2827283Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2827597Z   └─ 20260718193000_continuous_story_v2_outbox_vocabulary/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2827940Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2828236Z   └─ 20260718194500_continuous_story_v2_action_slot/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2828538Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2828821Z   └─ 20260719093000_continuous_story_v2_real_intent/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2829120Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2829461Z   └─ 20260719103000_continuous_story_context_prompt_pipeline/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2829808Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2830123Z   └─ 20260719144500_continuous_story_v2_generation_tasks/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2830447Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2830717Z   └─ 20260721113000_solo_story_engine_v1/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2830993Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2831261Z   └─ 20260721154500_solo_story_action_slot/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2831547Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2831827Z   └─ 20260721170000_active_action_credit_policy/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2832601Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2833123Z   └─ 20260806060000_maneuver_v1_action_slots/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2833670Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2834168Z   └─ 20260806063000_maneuver_v1_visibility/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2834730Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2835255Z   └─ 20260809020000_b0_role_control_reason_vocabulary/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2835833Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2836365Z   └─ 20260809030000_b0_runtime_database_vocabulary/
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2836785Z     └─ migration.sql
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2836977Z       
+Windows clean-clone migration and seed	Generate client and apply migrations	2026-08-10T17:36:04.2837742Z All migrations have been successfully applied.
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	﻿2026-08-10T17:36:04.4558693Z ##[group]Run $ErrorActionPreference = "Continue"
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4559186Z ^[[36;1m$ErrorActionPreference = "Continue"^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4559706Z ^[[36;1mNew-Item -ItemType Directory -Force -Path .artifacts/user-test-seed-windows | Out-Null^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4560360Z ^[[36;1mpnpm db:seed *>&1 | Tee-Object -FilePath .artifacts/user-test-seed-windows/db-seed.log^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4560809Z ^[[36;1m$exitCode = $LASTEXITCODE^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4561057Z ^[[36;1m@{^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4561600Z ^[[36;1m  testedCodeSha = $env:GITHUB_SHA^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4561941Z ^[[36;1m  command = "pnpm db:seed"^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4562201Z ^[[36;1m  exitCode = $exitCode^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4562440Z ^[[36;1m  os = "windows-2025"^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4562688Z ^[[36;1m  node = (node --version)^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4563695Z ^[[36;1m  pnpm = (pnpm --version)^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4564211Z ^[[36;1m} | ConvertTo-Json | Set-Content -Path .artifacts/user-test-seed-windows/result.json -Encoding utf8NoBOM^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4564893Z ^[[36;1mif ($exitCode -ne 0) { throw "pnpm db:seed failed with exit code $exitCode" }^[[0m
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4633794Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4634156Z env:
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4634437Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:04.4634778Z ##[endgroup]
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:05.2325614Z 
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:05.2330615Z > ai-story-room@0.1.0 db:seed D:\a\aiStoryRoom\aiStoryRoom
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:05.2332801Z > node --env-file-if-exists=.env --import tsx prisma/seed.ts
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:05.2334709Z 
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:06.1608487Z 
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:06.1612282Z > @ai-story/shared@0.1.0 build D:\a\aiStoryRoom\aiStoryRoom\packages\shared
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:06.1614614Z > tsc -p tsconfig.build.json
+Windows clean-clone migration and seed	Run the documented seed command and record its exit code	2026-08-10T17:36:06.1617336Z 
+Windows clean-clone migration and seed	Read back seeded records	﻿2026-08-10T17:36:08.8245365Z ##[group]Run $ErrorActionPreference = "Stop"
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8245822Z ^[[36;1m$ErrorActionPreference = "Stop"^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8246099Z ^[[36;1m@'^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8246342Z ^[[36;1mimport { PrismaClient } from "@prisma/client";^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8246685Z ^[[36;1mconst prisma = new PrismaClient();^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8246948Z ^[[36;1mtry {^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8247260Z ^[[36;1m  const [templateCount, userCount, runCount] = await Promise.all([^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8247660Z ^[[36;1m    prisma.worldTemplate.count(),^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8248041Z ^[[36;1m    prisma.user.count({ where: { openid: "mock_openid_owner_001" } }),^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8248496Z ^[[36;1m    prisma.storyRun.count({ where: { inviteCode: "LOCAL1" } }),^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8248832Z ^[[36;1m  ]);^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8249092Z ^[[36;1m  const result = { templateCount, userCount, runCount };^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8249464Z ^[[36;1m  console.log(JSON.stringify(result));^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8249852Z ^[[36;1m  if (templateCount !== 5 || userCount !== 1 || runCount !== 1) {^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8250305Z ^[[36;1m    throw new Error(`seed readback failed: ${JSON.stringify(result)}`);^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8250663Z ^[[36;1m  }^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8250843Z ^[[36;1m} finally {^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8251053Z ^[[36;1m  await prisma.$disconnect();^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8251297Z ^[[36;1m}^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8251551Z ^[[36;1m'@ | node --env-file=.env --import tsx --input-type=module^[[0m
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8319152Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8319507Z env:
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8319771Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:08.8320098Z ##[endgroup]
+Windows clean-clone migration and seed	Read back seeded records	2026-08-10T17:36:09.5827478Z {"templateCount":5,"userCount":1,"runCount":1}
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	﻿2026-08-10T17:36:09.6775042Z ##[group]Run $ErrorActionPreference = "Stop"
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6775528Z ^[[36;1m$ErrorActionPreference = "Stop"^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6776199Z ^[[36;1mnode -e 'const p=require("./package.json"); if(p.scripts["db:seed"]!=="node --env-file-if-exists=.env --import tsx prisma/seed.ts") process.exit(1)'^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6776824Z ^[[36;1m@'^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6777020Z ^[[36;1mimport pathlib, re^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6777259Z ^[[36;1mpaths = [^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6777492Z ^[[36;1m    pathlib.Path("package.json"),^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6777794Z ^[[36;1m    pathlib.Path("prisma/seed.ts"),^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6778195Z ^[[36;1m    pathlib.Path(".github/workflows/b0-user-test-seed-windows.yml"),^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6778557Z ^[[36;1m]^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6778734Z ^[[36;1mpatterns = {^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6778998Z ^[[36;1m    "api-key": re.compile(r"sk-[A-Za-z0-9_-]{16,}"),^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6779404Z ^[[36;1m    "bearer": re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6779924Z ^[[36;1m    "jwt": re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6780510Z ^[[36;1m}^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6780697Z ^[[36;1mfindings = []^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6780917Z ^[[36;1mfor path in paths:^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6781183Z ^[[36;1m    text = path.read_text(encoding="utf-8")^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6781526Z ^[[36;1m    for kind, pattern in patterns.items():^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6781972Z ^[[36;1m        if pattern.search(text): findings.append({"path": str(path), "kind": kind})^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6782421Z ^[[36;1mif findings: raise SystemExit(str(findings))^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6782761Z ^[[36;1mprint("changed-file secret scan: PASS")^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6783054Z ^[[36;1m'@ | python -^[[0m
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6852633Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6852997Z env:
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6853265Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:09.6853598Z ##[endgroup]
+Windows clean-clone migration and seed	Minimum regression and changed-file secret scan	2026-08-10T17:36:11.0411199Z changed-file secret scan: PASS
+Windows clean-clone migration and seed	Upload Windows seed proof	﻿2026-08-10T17:36:11.1361499Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1362919Z ##[group]Run actions/upload-artifact@v4
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1363190Z with:
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1363511Z   name: b0-user-test-seed-windows-14c1e871f75f3c597919f7cbcd1d035851ebf142
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1363929Z   path: .artifacts/user-test-seed-windows
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1364213Z   if-no-files-found: warn
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1364430Z   retention-days: 14
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1364647Z   compression-level: 6
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1364849Z   overwrite: false
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1365049Z   include-hidden-files: false
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1365269Z env:
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1365534Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.1365882Z ##[endgroup]
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.3430247Z (node:2704) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.3436657Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.3513248Z With the provided path, there will be 2 files uploaded
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.3519630Z Artifact name is valid!
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.3521752Z Root directory input is valid!
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.5035937Z Beginning upload of artifact content to blob storage
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.5248944Z (node:2704) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.5548668Z Uploaded bytes 546
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.5717417Z Finished uploading artifact content to blob storage!
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.5719419Z SHA256 digest of uploaded artifact zip is 2aaec7f6707df389579f1498ee47629b08fa94aff66d8296eca74bbd9bd3fb1f
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.5721608Z Finalizing artifact upload
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.7137792Z Artifact b0-user-test-seed-windows-14c1e871f75f3c597919f7cbcd1d035851ebf142.zip successfully finalized. Artifact ID 9072985469
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.7139877Z Artifact b0-user-test-seed-windows-14c1e871f75f3c597919f7cbcd1d035851ebf142 has been successfully uploaded! Final size is 546 bytes. Artifact ID is 9072985469
+Windows clean-clone migration and seed	Upload Windows seed proof	2026-08-10T17:36:11.7152615Z Artifact download URL: https://github.com/forwardFish/aiStoryRoom/actions/runs/31414693761/artifacts/9072985469
+Windows clean-clone migration and seed	Publish Windows seed outcome	﻿2026-08-10T17:36:11.7446511Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7448085Z ##[group]Run actions/github-script@v7
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7448355Z with:
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7450318Z   script: const success = process.env.JOB_STATUS === "success";
+Windows clean-clone migration and seed	Publish Windows seed outcome	await github.rest.repos.createCommitStatus({
+Windows clean-clone migration and seed	Publish Windows seed outcome	  owner: context.repo.owner,
+Windows clean-clone migration and seed	Publish Windows seed outcome	  repo: context.repo.repo,
+Windows clean-clone migration and seed	Publish Windows seed outcome	  sha: context.sha,
+Windows clean-clone migration and seed	Publish Windows seed outcome	  state: success ? "success" : "failure",
+Windows clean-clone migration and seed	Publish Windows seed outcome	  context: "b0/windows-seed",
+Windows clean-clone migration and seed	Publish Windows seed outcome	  description: success
+Windows clean-clone migration and seed	Publish Windows seed outcome	    ? `Windows clean-clone seed passed in ${context.runId}`
+Windows clean-clone migration and seed	Publish Windows seed outcome	    : `Windows clean-clone seed failed in ${context.runId}`,
+Windows clean-clone migration and seed	Publish Windows seed outcome	  target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+Windows clean-clone migration and seed	Publish Windows seed outcome	});
+Windows clean-clone migration and seed	Publish Windows seed outcome	if (!success) core.setFailed("Windows clean-clone migration/seed/readback failed");
+Windows clean-clone migration and seed	Publish Windows seed outcome	
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7454505Z   github-token: ***
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7454717Z   debug: false
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7454927Z   user-agent: actions/github-script
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7455202Z   result-encoding: json
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7455410Z   retries: 0
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7455637Z   retry-exempt-status-codes: 400,401,403,404,422
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7455922Z env:
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7456182Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7456518Z   JOB_STATUS: success
+Windows clean-clone migration and seed	Publish Windows seed outcome	2026-08-10T17:36:11.7456718Z ##[endgroup]
+Windows clean-clone migration and seed	Post Run actions/setup-node@v4	﻿2026-08-10T17:36:12.6632421Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Post Run actions/setup-node@v4	2026-08-10T17:36:12.6633788Z Post job cleanup.
+Windows clean-clone migration and seed	Post Run actions/setup-node@v4	2026-08-10T17:36:12.8104582Z (node:6800) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Windows clean-clone migration and seed	Post Run actions/setup-node@v4	2026-08-10T17:36:12.8105595Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Windows clean-clone migration and seed	Post Run actions/setup-node@v4	2026-08-10T17:36:12.8109361Z Cache hit occurred on the primary key node-cache-Windows-x64-pnpm-97d8d0fc5ce2b453c0618d90d170df9ec73684b87ea6d2b5977e7a5a8d5ea2c4, not saving cache.
+Windows clean-clone migration and seed	Post Run pnpm/action-setup@v4	﻿2026-08-10T17:36:12.8440534Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Post Run pnpm/action-setup@v4	2026-08-10T17:36:12.8441902Z Post job cleanup.
+Windows clean-clone migration and seed	Post Run pnpm/action-setup@v4	2026-08-10T17:36:13.0289954Z Pruning is unnecessary.
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	﻿2026-08-10T17:36:13.0591071Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.0592676Z Post job cleanup.
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.2547240Z [command]"C:\Program Files\Git\bin\git.exe" version
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.2806822Z git version 2.55.0.windows.3
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.2869065Z Temporarily overriding HOME='D:\a\_temp\fd675164-95a2-48a2-92e7-9170c275d9fb' before making global git config changes
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.2870290Z Adding repository directory to the temporary git global config as a safe directory
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.2880132Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\aiStoryRoom\aiStoryRoom
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.3167650Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.3451991Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.8686612Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.8938664Z http.https://github.com/.extraheader
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.8978157Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:13.9261229Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:14.4493238Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Windows clean-clone migration and seed	Post Run actions/checkout@v4	2026-08-10T17:36:14.4777173Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Windows clean-clone migration and seed	Complete job	﻿2026-08-10T17:36:15.0075265Z Cleaning up orphan processes
+Windows clean-clone migration and seed	Complete job	2026-08-10T17:36:15.1429644Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/github-script@v7, actions/setup-node@v4, actions/upload-artifact@v4, pnpm/action-setup@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

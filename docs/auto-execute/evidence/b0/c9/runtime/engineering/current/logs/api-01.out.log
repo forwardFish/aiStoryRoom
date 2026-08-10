@@ -1,0 +1,210 @@
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +22ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEmailModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSoloStoryEngineModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mContinuousStrategyModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mResultSharingModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mContinuousStoryV2Module dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mReferralsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mBillingModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCreditsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStoryAccessModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMvpCatalogController {/api/v4/stories}:[39m[38;5;3m +2ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/stories, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/stories/:storyId/roles, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/stories/:storyId/runs, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/stories/:storyId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStoryController {/api}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health/live, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health/ready, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/wechat-login, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/user/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/user/agree-policy, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/world-templates, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/world-templates/:templateId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/dashboard, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/messages/:messageId/decisions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/critical-events/:eventId/respond, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/messages/:messageId/defer, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/maneuvers, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/advance-day, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/finalize, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/state, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/my/story-runs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/join, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/start, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/pause, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/roles, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/roles/:roleId/claim, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/my-role, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/current-node, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/nodes, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/nodes/:nodeId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/nodes/:nodeId/actions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/nodes/:nodeId/actions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/nodes/:nodeId/ai-fill-missing-actions, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/nodes/:nodeId/resolve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/nodes/:nodeId/resolution, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/narrative-segments, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/generate-chapter, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chapters/:chapterId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chapters/:chapterId/share, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notifications, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/feedback/report, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/story-runs/:runId/insights, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/dashboard, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/story-runs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/story-runs/:runId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/roles, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/actions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/resolutions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/ai-tasks, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/audit-logs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/event-logs, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/action-guard, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mRoomsController {/api/v4/rooms}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/mine, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/solo, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/join-by-code, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/waiting/extend, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/play-solo, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/result, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/action, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/actions/main, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/turns/:turnId/decision, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/turns/:turnId/decision/stream, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/generation/retry, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/interactions/:interactionId/reply, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/actions/maneuver, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/events/:eventId/reaction, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/layout/done, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/layout/leave-stage, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/presence/heartbeat, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/control/handoff-to-ai, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/control/reclaim, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/resolve, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/resolve-async, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/game/tasks/:taskId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/events, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/events/stream, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/role, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/role/lock, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/ready, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/start, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/close, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mWorldsController {/api/v4/worlds}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/worlds, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/worlds/:worldId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStoryTaskOutboxController {/api/health}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health/worker, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMetricsController {/api}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/metrics, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOpenNovelAdapterController {/api/v4/openovel}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/runs, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/runs/:runId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/runs/:runId/actions, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOpenNovelMirrorController {/api/internal/openovel/mirror}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/internal/openovel/mirror, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOpenNovelSharedController {/api/v4/openovel/shared-runs}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId/initialize, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId/actions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId/feed, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId/actions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId/projection, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId/impact, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId/clues, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/openovel/shared-runs/:runId/destiny-net, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mManeuverV1Controller {/api/v4/rooms/:runId/maneuvers}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:runId/maneuvers/projection, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:runId/maneuvers/preview, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:runId/maneuvers/commit, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mB0WindowPlayerController {/api/v4/rooms}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:runId/b0/window, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:runId/b0/window/preview, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:runId/b0/window/confirm, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:runId/b0/window/ready, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:runId/b0/window/ready, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mB0OpsController {/api/v4/admin/b0}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/b0/runs/:runId/diagnostics, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/b0/recover, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/b0/windows/:windowId/replay, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/b0/tasks/:taskId/retry, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/b0/runs/:runId/pause, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/b0/windows/:windowId/abort, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/api/v4/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/register, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/verify, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/verification/resend, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/login, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/password-reset/request, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/password-reset/confirm, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/google/challenge, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/google, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/google/link, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/google/link, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/me, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/session/upgrade, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/auth/logout, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCreditsController {/api/v4/credits}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/credits/test-grant, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/credits/onboarding, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/credits/balance, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/credits/transactions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mRunSponsorshipController {/api/v4/story-runs/:runId}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/credit-status, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/sponsorship-requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/sponsorship-requests, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/sponsorship-requests/:requestId/approve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/sponsorship-requests/:requestId/decline, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mReferralsController {/api/v4/referrals}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/referrals/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/referrals/share-events, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/referrals/bind, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/referrals/qr, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mBillingController {/api/v4/billing}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/billing/checkouts, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/billing/checkouts/:checkoutId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/billing/checkout-status, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/billing/purchases, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/billing/refund-requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mBillingAdminController {/api/v4/admin/refunds}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/refunds, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/refunds/:requestId/approve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/admin/refunds/:requestId/reject, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCreemWebhookController {/api/v4/webhooks}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/webhooks/creem, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStoryAccessController {/api/v4/story-runs}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/free-decision, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/story-runs/:runId/unlock, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mResultSharingController {/api/v4/rooms/:roomId/result/shares}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/result/shares, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/result/shares, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/rooms/:roomId/result/shares/:shareId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicResultSharingController {/api/v4/public/results}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v4/public/results/:token, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5900  - [39m08/10/2026, 5:40:47 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +57ms[39m
+AI Story Room API listening on http://localhost:33102/api
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:41 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfe00744sjwufahslim attempt 1 failed: fetch failed[39m
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:41 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfg00764sjw0wet0nmg attempt 1 failed: fetch failed[39m
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:42 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfi00784sjwkqx517xk attempt 1 failed: fetch failed[39m
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:42 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfe00744sjwufahslim attempt 2 failed: fetch failed[39m
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:42 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfg00764sjw0wet0nmg attempt 2 failed: fetch failed[39m
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:42 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfi00784sjwkqx517xk attempt 2 failed: fetch failed[39m
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:43 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfl007a4sjwrc37xfap attempt 1 failed: fetch failed[39m
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:43 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfs007c4sjwsc00lxgv attempt 1 failed: fetch failed[39m
+[33m[Nest] 5900  - [39m08/10/2026, 5:41:43 PM [33m   WARN[39m [38;5;3m[StoryTaskOutboxService] [39m[33mStory task cmsniqdfe00744sjwufahslim attempt 3 failed: fetch failed[39m

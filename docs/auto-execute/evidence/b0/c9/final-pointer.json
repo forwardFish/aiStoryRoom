@@ -1,18 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "testableCandidateSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
-  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
-  "evidenceCommitSha": "618c26ed9fc560e2ca6d2b6612273118d722889d",
+  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
+  "evidenceCommitSha": null,
   "finalRemoteSha": null,
   "finalRemoteShaResolution": "external clean-clone readback because a commit cannot contain its own SHA",
-  "crossPlatformReadbackTrigger": {
-    "version": 1,
-    "requiredContexts": [
-      "b0/evidence-readback-linux",
-      "b0/evidence-readback-windows"
-    ],
-    "manifestExcludedPointer": true
-  },
   "status": "EXTERNAL_BLOCKED",
   "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED"
 }
