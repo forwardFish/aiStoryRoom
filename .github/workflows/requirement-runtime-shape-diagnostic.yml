@@ -1,0 +1,72 @@
+name: Requirement Runtime Shape Diagnostic
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/requirement-runtime-shape-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=pending \
+            -f context="dynamic-kernel-lite/requirement-runtime-shape" \
+            -f description="Exporting verified Requirement runtime shape" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate verified dependency source
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          bash .github/repair/prepare-verified-requirement-dependency.sh
+          mkdir -p /tmp/requirement-runtime-shape
+          cp packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts \
+            /tmp/requirement-runtime-shape/
+          cp packages/templates/src/story-package/requirement-dependency.ts \
+            /tmp/requirement-runtime-shape/
+          grep -n -A30 -B15 'dependency' \
+            packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts \
+            > /tmp/requirement-runtime-shape/dependency-snippets.txt || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: requirement-runtime-shape-${{ github.sha }}
+          path: /tmp/requirement-runtime-shape/
+          if-no-files-found: error
+          retention-days: 3
+      - name: Publish completion
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=success \
+            -f context="dynamic-kernel-lite/requirement-runtime-shape" \
+            -f description="Requirement runtime shape uploaded" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
