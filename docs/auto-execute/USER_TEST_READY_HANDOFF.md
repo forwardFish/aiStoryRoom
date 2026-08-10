@@ -6,21 +6,22 @@
 |---|---|
 | Repository | `forwardFish/aiStoryRoom` |
 | Remote branch | `codex/chatgpt-pro-maneuver-evidence-v1` |
-| `testableCandidateSha` | `483911272191964a22d14966163aee5f99968b1d` |
-| Candidate commit | `fix(seed): build the shared runtime on a clean checkout` |
-| Exact engineering run | `31406011925` |
-| Engineering six-window run | `31406011926` |
+| `testableCandidateSha` | `e7635c279e72ae8efaff614159447d88c7ba22d0` |
+| Candidate commit | `test(seed): add Windows clean-clone migration and seed gate` |
+| Linux exact engineering run | `31409860173` |
+| Windows seed run | `31409860255` |
+| Engineering six-window run | `31409860193` |
 | Main ancestry baseline | `86da64eea18ab773312f40c7024ace9cb393344a` |
 | User-test readiness | `READY_FOR_LOCAL_USER_TEST` |
 | Formal C8 state | `EXTERNAL_BLOCKED` |
 | Formal candidate readiness | `candidateBranchReady=false` |
 
-Test the immutable product SHA below rather than an evidence or documentation commit that may later become the branch tip.
+Test the immutable product SHA below rather than a later evidence or documentation commit.
 
 ```powershell
 git fetch origin codex/chatgpt-pro-maneuver-evidence-v1
-git checkout --detach 483911272191964a22d14966163aee5f99968b1d
-if ((git rev-parse HEAD).Trim() -ne "483911272191964a22d14966163aee5f99968b1d") {
+git checkout --detach e7635c279e72ae8efaff614159447d88c7ba22d0
+if ((git rev-parse HEAD).Trim() -ne "e7635c279e72ae8efaff614159447d88c7ba22d0") {
   throw "wrong candidate SHA"
 }
 git status --short
@@ -30,9 +31,9 @@ Expected final command output: no changed files.
 
 ## 2. Remote gates passed on this exact SHA
 
-### Exact engineering gates
+### Linux exact engineering gates
 
-Workflow run `31406011925` completed with `b0/exact-push = success`.
+Workflow run `31409860173` completed with `b0/exact-push = success`.
 
 Passed jobs include:
 
@@ -48,11 +49,11 @@ Passed jobs include:
 - Causal aggregate;
 - Shared, Templates, API, OpenNovel Runtime, Web and root builds;
 - exact candidate archive and remote-SHA verification;
-- the clean-clone seed gate described below.
+- Linux clean-clone migration, seed and database readback.
 
-### Clean-clone migration and seed proof
+### Linux clean-clone migration and seed proof
 
-Run `31406011925`, job `93512417453`, checked out the exact candidate SHA into a clean GitHub Actions workspace and used an isolated PostgreSQL 16 service.
+Run `31409860173`, job `93525285893`, checked out the exact candidate SHA into a clean GitHub Actions workspace and used an isolated PostgreSQL 16 service.
 
 The job executed:
 
@@ -67,7 +68,7 @@ Results:
 
 ```json
 {
-  "testedCodeSha": "483911272191964a22d14966163aee5f99968b1d",
+  "testedCodeSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
   "command": "pnpm db:seed",
   "exitCode": 0,
   "seedReadback": {
@@ -79,19 +80,45 @@ Results:
 }
 ```
 
-`pnpm db:seed` now loads the repository-root `.env` when it exists. On a clean checkout it also builds the Shared runtime only when `packages/shared/dist/index.js` is absent, then seeds the database. No separate manual build command is required.
+Proof artifact:
+
+```text
+b0-user-test-seed-e7635c279e72ae8efaff614159447d88c7ba22d0
+artifact id: 9071185078
+artifact SHA-256: 7223d0d51f93cd13c236b86b97d306f8573e8310f023900c0551d13ca24fd5c4
+```
+
+### Windows clean-clone migration and seed proof
+
+Run `31409860255`, job `93525029790`, used `windows-2025`, Node 22 and the preinstalled PostgreSQL 17 service. It ran the same migration and seed path from a clean checkout.
+
+```json
+{
+  "testedCodeSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
+  "command": "pnpm db:seed",
+  "exitCode": 0,
+  "seedReadback": {
+    "templateCount": 5,
+    "userCount": 1,
+    "runCount": 1
+  },
+  "changedFileSecretScan": "PASS"
+}
+```
 
 Proof artifact:
 
 ```text
-b0-user-test-seed-483911272191964a22d14966163aee5f99968b1d
-artifact id: 9069657258
-artifact SHA-256: 8f57793675e22549af0ddf7a6523c6287a6905df625a643e1251deccfb6215df
+b0-user-test-seed-windows-e7635c279e72ae8efaff614159447d88c7ba22d0
+artifact id: 9071148170
+artifact SHA-256: 11a44edffa20632553af3ae10c490d889155bfc197fcf7d836ae6d9c927e3dd6
 ```
+
+`pnpm db:seed` loads the repository-root `.env` when it exists. If `packages/shared/dist/index.js` is absent, the seed launches the active pnpm CLI through Node using `npm_execpath`; it does not directly spawn `pnpm.cmd`, so the Windows `spawnSync pnpm.cmd EINVAL` failure is removed. No manual Shared build workaround is required.
 
 ### Core real execution
 
-Workflow run `31406011926` completed with:
+Workflow run `31409860193` completed with:
 
 ```text
 b0/acceptance-contract = success
@@ -116,7 +143,7 @@ Engineering result: `PASS_ENGINEERING_ONLY`. It is not a substitute for formal m
 ## 3. Local prerequisites
 
 - Git
-- Node.js 22
+- Node.js 22 or 24
 - pnpm 10
 - Docker Desktop
 - Chrome or Edge with three isolated profiles or contexts
@@ -197,7 +224,7 @@ pnpm db:migrate:deploy
 pnpm db:seed
 ```
 
-`pnpm db:seed` must exit with code `0`. A missing `DATABASE_URL` or missing Shared runtime is a setup failure and should not be ignored.
+`pnpm db:seed` must exit with code `0`. A missing `DATABASE_URL`, dependency-build failure or database error is a setup failure and must not be ignored.
 
 ### 4.5 Start services in three terminals
 
