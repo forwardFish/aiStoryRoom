@@ -27,7 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      S0_BASE_SHA: 3771822db5dada5fc898c7c5b78cc0821a1e825b
+      S0_ROOT_BASE_SHA: 3771822db5dada5fc898c7c5b78cc0821a1e825b
+      S0_PARENT_SHA: f63027436d4e95b3d08446a16878ae6a35d1d22c
       CLEAN_CLONE_DIR: ${{ runner.temp }}/generic-endgame-v3-s0-clean-clone
       EVIDENCE_DIR: ${{ runner.temp }}/generic-endgame-v3-s0-evidence
     steps:
@@ -78,14 +79,15 @@ jobs:
           remote_sha="$(printf '%s\n' "$ls_remote_raw" | awk '{print $1}')"
           status_short="$(git status --short)"
           test "$local_sha" = "$GITHUB_SHA"
-          test "$parent_sha" = "$S0_BASE_SHA"
+          test "$parent_sha" = "$S0_PARENT_SHA"
           test "$tracking_sha" = "$GITHUB_SHA"
           test "$remote_sha" = "$GITHUB_SHA"
           test -z "$status_short"
           {
             printf 'WORKDIR=%s\n' "$CLEAN_CLONE_DIR"
             printf 'BRANCH=%s\n' "$GITHUB_REF_NAME"
-            printf 'S0_BASE_SHA=%s\n' "$S0_BASE_SHA"
+            printf 'S0_ROOT_BASE_SHA=%s\n' "$S0_ROOT_BASE_SHA"
+            printf 'S0_PARENT_SHA=%s\n' "$S0_PARENT_SHA"
             printf 'LOCAL_HEAD=%s\n' "$local_sha"
             printf 'PARENT_HEAD=%s\n' "$parent_sha"
             printf 'TRACKING_HEAD=%s\n' "$tracking_sha"
@@ -93,29 +95,62 @@ jobs:
             printf 'STATUS_SHORT=%s\n' "$status_short"
           } | tee "$EVIDENCE_DIR/git-proof.txt"
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.24.0
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+          run_install: false
+
+      - name: Verify pnpm executable before install
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm_path="$(command -v pnpm)"
+          pnpm_version="$(pnpm --version)"
+          test -n "$pnpm_path"
+          test "$pnpm_version" = "10.24.0"
+          {
+            printf 'PNPM_PATH=%s\n' "$pnpm_path"
+            printf 'PNPM_VERSION=%s\n' "$pnpm_version"
+          } | tee "$EVIDENCE_DIR/pnpm-proof.txt"
 
       - name: Install frozen workspace
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cd "$CLEAN_CLONE_DIR"
           pnpm install --frozen-lockfile 2>&1 | tee "$EVIDENCE_DIR/logs/01-install.log"
+
+      - name: Prove shared workspace filter resolves exactly one project
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$CLEAN_CLONE_DIR"
+          test -f packages/shared/package.json
+          test "$(node -p "require('./packages/shared/package.json').name")" = "@ai-story/shared"
+          pnpm --filter @ai-story/shared list --depth -1 --json \
+            > "$EVIDENCE_DIR/logs/01a-shared-filter.json"
+          cat "$EVIDENCE_DIR/logs/01a-shared-filter.json"
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const raw = readFileSync(process.env.EVIDENCE_DIR + "/logs/01a-shared-filter.json", "utf8");
+          if (/No projects matched/i.test(raw)) throw new Error("SHARED_FILTER_NO_PROJECTS_MATCHED");
+          const rows = JSON.parse(raw);
+          if (!Array.isArray(rows) || rows.length !== 1 || rows[0]?.name !== "@ai-story/shared") {
+            throw new Error(`SHARED_FILTER_INVALID:${JSON.stringify(rows)}`);
+          }
+          console.log("SHARED_FILTER_PASS projects=1 name=@ai-story/shared");
+          NODE
 
       - name: Parse formal JSON documents
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cd "$CLEAN_CLONE_DIR"
           node --input-type=module <<'NODE' 2>&1 | tee "$EVIDENCE_DIR/logs/02-json-parse.log"
           import { readFile } from "node:fs/promises";
@@ -133,7 +168,7 @@ jobs:
       - name: Check S0 reference contract syntax
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cd "$CLEAN_CLONE_DIR"
           node --check packages/shared/src/endgame/endgame-package-v1.contract.mjs \
             2>&1 | tee "$EVIDENCE_DIR/logs/03-contract-syntax.log"
@@ -141,7 +176,7 @@ jobs:
       - name: Run Generic Endgame v3 S0 contract suite
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cd "$CLEAN_CLONE_DIR"
           node --test packages/shared/tests/generic-endgame-package-v1.s0.spec.mjs \
             2>&1 | tee "$EVIDENCE_DIR/logs/04-s0-contract-tests.log"
@@ -162,25 +197,27 @@ jobs:
       - name: Shared typecheck
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cd "$CLEAN_CLONE_DIR"
           pnpm --filter @ai-story/shared typecheck \
             2>&1 | tee "$EVIDENCE_DIR/logs/05-shared-typecheck.log"
+          ! grep -qi "No projects matched" "$EVIDENCE_DIR/logs/05-shared-typecheck.log"
 
       - name: Shared build
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cd "$CLEAN_CLONE_DIR"
           pnpm --filter @ai-story/shared build \
             2>&1 | tee "$EVIDENCE_DIR/logs/06-shared-build.log"
+          ! grep -qi "No projects matched" "$EVIDENCE_DIR/logs/06-shared-build.log"
 
       - name: Check exact S0 diff for whitespace errors
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cd "$CLEAN_CLONE_DIR"
-          git diff --check "$S0_BASE_SHA..$GITHUB_SHA" \
+          git diff --check "$S0_PARENT_SHA..$GITHUB_SHA" \
             2>&1 | tee "$EVIDENCE_DIR/logs/07-git-diff-check.log"
 
       - name: Record remote evidence manifest
@@ -203,7 +240,8 @@ jobs:
             "repository": "${GITHUB_REPOSITORY}",
             "branch": "${GITHUB_REF_NAME}",
             "commitSha": "${GITHUB_SHA}",
-            "expectedBaseSha": "${S0_BASE_SHA}",
+            "rootS0BaseSha": "${S0_ROOT_BASE_SHA}",
+            "expectedParentSha": "${S0_PARENT_SHA}",
             "cleanCloneHead": "${clone_head}",
             "parentHead": "${parent_head}",
             "trackingHead": "${tracking_head}",
