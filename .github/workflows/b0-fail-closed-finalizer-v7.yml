@@ -19,6 +19,9 @@ concurrency:
 env:
   B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
   B0_MAIN_BASELINE: 86da64eea18ab773312f40c7024ace9cb393344a
+  B0_HISTORICAL_EVIDENCE_SHA: 6032972d4518f8feb57f958ff0b2e52636431be1
+  B0_PREVIOUS_EVIDENCE_REMOTE_SHA: e0a986f0f772ee750b7f7cdd5165fc25f6623923
+  B0_TESTABLE_CANDIDATE_SHA: e7635c279e72ae8efaff614159447d88c7ba22d0
   B0_V2_SHA: bb48f72d4b65a17e311ec32dffa6c5c4a2959430
   B0_ROOT: docs/auto-execute/evidence/b0
 
@@ -26,6 +29,10 @@ jobs:
   finalize:
     runs-on: ubuntu-latest
     timeout-minutes: 240
+    outputs:
+      tested_sha: ${{ steps.generate.outputs.tested_sha }}
+      evidence_sha: ${{ steps.push.outputs.evidence_sha }}
+      final_sha: ${{ steps.push.outputs.final_sha }}
     steps:
       - name: Publish locator
         uses: actions/github-script@v7
@@ -37,7 +44,7 @@ jobs:
               sha: context.sha,
               state: "pending",
               context: "b0/finalizer-v7",
-              description: `guaranteed fail-closed finalizer v7 running in ${context.runId}`,
+              description: `cross-platform fail-closed finalizer running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -55,13 +62,16 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
           git cat-file -e "$B0_MAIN_BASELINE^{commit}"
+          git cat-file -e "$B0_HISTORICAL_EVIDENCE_SHA^{commit}"
+          git cat-file -e "$B0_TESTABLE_CANDIDATE_SHA^{commit}"
           git merge-base --is-ancestor "$B0_MAIN_BASELINE" HEAD
+          git merge-base --is-ancestor "$B0_TESTABLE_CANDIDATE_SHA" HEAD
           test -z "$(git status --short)"
           printf '%s\n' "$GITHUB_SHA" > .artifacts/b0-finalizer-v7/local-head.txt
           printf '%s\n' "$(git rev-parse origin/$B0_BRANCH)" > .artifacts/b0-finalizer-v7/remote-tip-before-push.txt
           printf '%s\n' "$(git rev-parse origin/main)" > .artifacts/b0-finalizer-v7/remote-main-at-finalization.txt
 
-      - name: Observe exact, contract, and engineering statuses
+      - name: Observe exact, contract, engineering, Windows and formal statuses
         id: observe
         shell: bash
         env:
@@ -70,6 +80,7 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import json, os, pathlib, re, subprocess, time
+
           repo = os.environ["GITHUB_REPOSITORY"]
           sha = os.environ["GITHUB_SHA"]
           root = pathlib.Path(".artifacts/b0-finalizer-v7")
@@ -77,18 +88,21 @@ jobs:
               "exact": "b0/exact-push",
               "contract": "b0/acceptance-contract",
               "engineering": "b0/engineering-real-acceptance",
+              "windows": "b0/windows-seed",
+              "formal": "b0/formal-c8",
           }
           deadline = time.time() + 150 * 60
           records = {}
           while time.time() < deadline:
-              rows = json.loads(subprocess.check_output(["gh", "api", f"repos/{repo}/commits/{sha}/statuses?per_page=100"], text=True))
+              rows = json.loads(subprocess.check_output(
+                  ["gh", "api", f"repos/{repo}/commits/{sha}/statuses?per_page=100"],
+                  text=True,
+              ))
               latest = {}
               for row in rows:
-                  context = row.get("context")
-                  if context not in latest:
-                      latest[context] = row
-              records = {}
+                  latest.setdefault(row.get("context"), row)
               complete = True
+              records = {}
               for key, context in wanted.items():
                   row = latest.get(context) or {}
                   target = str(row.get("target_url") or "")
@@ -103,13 +117,18 @@ jobs:
                       "updatedAt": row.get("updated_at"),
                   }
                   complete = complete and row.get("state") in {"success", "failure", "error"}
-              (root / "status-poll.json").write_text(json.dumps({"testedCodeSha": sha, "records": records}, indent=2) + "\n")
+              (root / "status-poll.json").write_text(
+                  json.dumps({"testedCodeSha": sha, "records": records}, indent=2) + "\n"
+              )
               if complete:
                   break
               time.sleep(20)
+
           if not records:
               records = {key: {"context": context, "state": None, "runId": None} for key, context in wanted.items()}
-          (root / "status-summary.json").write_text(json.dumps({"testedCodeSha": sha, "records": records}, indent=2) + "\n")
+          (root / "status-summary.json").write_text(
+              json.dumps({"testedCodeSha": sha, "records": records}, indent=2) + "\n"
+          )
           with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a") as handle:
               for key, row in records.items():
                   handle.write(f"{key}_state={row.get('state') or ''}\n")
@@ -117,17 +136,18 @@ jobs:
           print(json.dumps(records, indent=2))
           PY
 
-      - name: Fetch jobs and selected runtime artifacts without failing on absence
+      - name: Fetch job metadata, logs and selected runtime artifacts
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           EXACT_RUN_ID: ${{ steps.observe.outputs.exact_run_id }}
           ACCEPTANCE_RUN_ID: ${{ steps.observe.outputs.engineering_run_id }}
+          WINDOWS_RUN_ID: ${{ steps.observe.outputs.windows_run_id }}
         run: |
           set -euo pipefail
           root=.artifacts/b0-finalizer-v7
           mkdir -p "$root/gates" "$root/downloads" "$root/extracted" "$root/recovery-v2"
-          for run_id in "$EXACT_RUN_ID" "$ACCEPTANCE_RUN_ID"; do
+          for run_id in "$EXACT_RUN_ID" "$ACCEPTANCE_RUN_ID" "$WINDOWS_RUN_ID"; do
             test -n "$run_id" || continue
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$root/gates/run-$run_id.json" || true
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" > "$root/gates/run-$run_id-jobs.json" || true
@@ -136,154 +156,622 @@ jobs:
           done
           gh api "repos/$GITHUB_REPOSITORY/commits/$B0_V2_SHA" > "$root/recovery-v2/commit.json" || true
           gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$B0_V2_SHA&per_page=100" > "$root/recovery-v2/runs-index.json" || true
+
           python3 - <<'PY'
-          import json, pathlib, subprocess, zipfile, os
+          import json, os, pathlib, subprocess, zipfile
+
           root = pathlib.Path(".artifacts/b0-finalizer-v7")
           repo = os.environ["GITHUB_REPOSITORY"]
-          prefixes = ("b0-engineering-real-acceptance-", "b0-formal-c8-credential-blocker-", "b0-formal-c8-real-acceptance-")
+          prefixes = (
+              "b0-engineering-real-acceptance-",
+              "b0-formal-c8-credential-blocker-",
+              "b0-formal-c8-real-acceptance-",
+              "b0-user-test-seed-",
+          )
           selected = []
           for index in root.glob("downloads/run-*-artifacts.json"):
-              try: payload = json.loads(index.read_text())
-              except Exception: continue
+              try:
+                  payload = json.loads(index.read_text())
+              except Exception:
+                  continue
               for row in payload.get("artifacts", []):
                   name = str(row.get("name", ""))
                   if name.startswith(prefixes):
-                      selected.append({"id": row.get("id"), "name": name, "sizeBytes": row.get("size_in_bytes"), "digest": row.get("digest")})
-          (root / "downloads/selected-artifacts.json").write_text(json.dumps({"artifacts": selected}, indent=2) + "\n")
+                      selected.append({
+                          "id": row.get("id"),
+                          "name": name,
+                          "sizeBytes": row.get("size_in_bytes"),
+                          "digest": row.get("digest"),
+                          "runId": row.get("workflow_run", {}).get("id"),
+                      })
+          (root / "downloads/selected-artifacts.json").write_text(
+              json.dumps({"artifacts": selected}, indent=2) + "\n"
+          )
           for row in selected:
               try:
                   archive = root / "downloads" / f"{row['name']}.zip"
                   with archive.open("wb") as stream:
-                      subprocess.run(["gh", "api", f"repos/{repo}/actions/artifacts/{row['id']}/zip"], stdout=stream, check=True)
+                      subprocess.run(
+                          ["gh", "api", f"repos/{repo}/actions/artifacts/{row['id']}/zip"],
+                          stdout=stream,
+                          check=True,
+                      )
                   target = root / "extracted" / row["name"]
                   target.mkdir(parents=True, exist_ok=True)
-                  with zipfile.ZipFile(archive) as bundle: bundle.extractall(target)
+                  with zipfile.ZipFile(archive) as bundle:
+                      bundle.extractall(target)
               except Exception as error:
                   (root / "downloads" / f"{row['name']}.error.txt").write_text(repr(error) + "\n")
-          try: v2 = json.loads((root / "recovery-v2/runs-index.json").read_text())
-          except Exception: v2 = {"workflow_runs": []}
-          chosen = [row for row in v2.get("workflow_runs", []) if "finalizer" in str(row.get("name", "")).lower() or "finalizer" in str(row.get("path", "")).lower()]
-          (root / "recovery-v2/selected-runs.json").write_text(json.dumps({"runs": chosen}, indent=2) + "\n")
+
+          try:
+              v2 = json.loads((root / "recovery-v2/runs-index.json").read_text())
+          except Exception:
+              v2 = {"workflow_runs": []}
+          chosen = [
+              row for row in v2.get("workflow_runs", [])
+              if "finalizer" in str(row.get("name", "")).lower()
+              or "finalizer" in str(row.get("path", "")).lower()
+          ]
+          (root / "recovery-v2/selected-runs.json").write_text(
+              json.dumps({"runs": chosen}, indent=2) + "\n"
+          )
           for row in chosen:
-              rid = row.get("id")
-              subprocess.run(["gh", "api", f"repos/{repo}/actions/runs/{rid}/jobs?per_page=100"], stdout=(root / f"recovery-v2/run-{rid}-jobs.json").open("wb"), check=False)
-              subprocess.run(["gh", "run", "view", str(rid), "--log"], stdout=(root / f"recovery-v2/run-{rid}.log").open("wb"), stderr=subprocess.STDOUT, check=False)
+              run_id = row.get("id")
+              subprocess.run(
+                  ["gh", "api", f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"],
+                  stdout=(root / f"recovery-v2/run-{run_id}-jobs.json").open("wb"),
+                  check=False,
+              )
+              subprocess.run(
+                  ["gh", "run", "view", str(run_id), "--log"],
+                  stdout=(root / f"recovery-v2/run-{run_id}.log").open("wb"),
+                  stderr=subprocess.STDOUT,
+                  check=False,
+              )
           PY
 
-      - name: Materialize required C8 C9 evidence regardless of PASS or blocker
+      - name: Materialize immutable history and the new C8 C9 evidence run
         id: generate
         shell: bash
         env:
           EXACT_STATE: ${{ steps.observe.outputs.exact_state }}
           CONTRACT_STATE: ${{ steps.observe.outputs.contract_state }}
           ENGINEERING_STATE: ${{ steps.observe.outputs.engineering_state }}
+          WINDOWS_STATE: ${{ steps.observe.outputs.windows_state }}
+          FORMAL_STATE: ${{ steps.observe.outputs.formal_state }}
           EXACT_RUN_ID: ${{ steps.observe.outputs.exact_run_id }}
           ACCEPTANCE_RUN_ID: ${{ steps.observe.outputs.engineering_run_id }}
+          WINDOWS_RUN_ID: ${{ steps.observe.outputs.windows_run_id }}
         run: |
           set -euo pipefail
+          git checkout "$B0_HISTORICAL_EVIDENCE_SHA" -- \
+            "$B0_ROOT/c0/baseline-test-matrix.json" \
+            "$B0_ROOT/c1/contract-gate-notes.md" \
+            "$B0_ROOT/c2/checkpoint.json" \
+            "$B0_ROOT/c3/checkpoint.json" \
+            "$B0_ROOT/c4/checkpoint.json" \
+            "$B0_ROOT/c5/checkpoint.json" \
+            "$B0_ROOT/c6/checkpoint.json"
+
           python3 - <<'PY'
           from __future__ import annotations
-          import hashlib, json, os, pathlib, re, shutil
+
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import shutil
           from datetime import datetime, timezone
-          repo = pathlib.Path.cwd(); stage = repo / ".artifacts/b0-finalizer-v7"; root = repo / os.environ["B0_ROOT"]; c8 = root / "c8"; c9 = root / "c9"
-          if root.exists(): shutil.rmtree(root)
-          for path in (c8, c9 / "gates", c9 / "runtime/engineering", c9 / "runtime/formal", c9 / "recovery/finalizer-v2", c9 / "readback"): path.mkdir(parents=True, exist_ok=True)
-          def read_json(path):
-              try: return json.loads(path.read_text(encoding="utf-8"))
-              except Exception: return None
-          def copy_tree(source, destination):
-              if not source.exists(): return
+
+          repo = pathlib.Path.cwd()
+          stage = repo / ".artifacts/b0-finalizer-v7"
+          root = repo / os.environ["B0_ROOT"]
+          c8 = root / "c8"
+          c9 = root / "c9"
+          history = root / "history" / os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"]
+
+          def read_json(path: pathlib.Path):
+              try:
+                  return json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                  return None
+
+          def copy_tree(source: pathlib.Path, destination: pathlib.Path) -> None:
+              if not source.exists():
+                  return
               for item in source.rglob("*"):
                   if item.is_file():
-                      target = destination / item.relative_to(source); target.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(item, target)
+                      target = destination / item.relative_to(source)
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.copy2(item, target)
+
           generated = datetime.now(timezone.utc).isoformat()
+
+          # Preserve the prior C8/C9 evidence run before replacing the active pointers.
+          if not history.exists():
+              if c8.exists(): copy_tree(c8, history / "c8")
+              if c9.exists(): copy_tree(c9, history / "c9")
+              history.mkdir(parents=True, exist_ok=True)
+              (history / "archive-metadata.json").write_text(json.dumps({
+                  "schemaVersion": 1,
+                  "archivedAtUtc": generated,
+                  "sourceFinalRemoteSha": os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"],
+                  "preservationRule": "historical evidence is retained under a versioned path before a new run is written",
+              }, indent=2) + "\n", encoding="utf-8")
+
+          for generated_dir in (c8, c9):
+              if generated_dir.exists():
+                  shutil.rmtree(generated_dir)
+          for path in (
+              c8,
+              c9 / "gates",
+              c9 / "runtime/engineering",
+              c9 / "runtime/formal",
+              c9 / "runtime/seed",
+              c9 / "recovery/finalizer-v2",
+              c9 / "readback",
+          ):
+              path.mkdir(parents=True, exist_ok=True)
+
           copy_tree(stage / "gates", c9 / "gates")
           copy_tree(stage / "recovery-v2", c9 / "recovery/finalizer-v2")
           shutil.copy2(stage / "status-summary.json", c9 / "gates/status-summary.json")
           shutil.copy2(stage / "downloads/selected-artifacts.json", c9 / "gates/selected-artifacts.json")
           shutil.copy2(stage / "remote-main-at-finalization.txt", c9 / "readback/remote-main-at-finalization.txt")
-          engineering_sources = sorted(p for p in (stage / "extracted").glob("b0-engineering-real-acceptance-*") if p.is_dir())
-          blocker_sources = sorted(p for p in (stage / "extracted").glob("b0-formal-c8-credential-blocker-*") if p.is_dir())
-          formal_sources = sorted(p for p in (stage / "extracted").glob("b0-formal-c8-real-acceptance-*") if p.is_dir())
-          for source in engineering_sources: copy_tree(source, c9 / "runtime/engineering" / source.name)
-          for source in blocker_sources + formal_sources: copy_tree(source, c9 / "runtime/formal" / source.name)
-          acceptance_result = None; acceptance_path = None
+
+          extracted = stage / "extracted"
+          engineering_sources = sorted(p for p in extracted.glob("b0-engineering-real-acceptance-*") if p.is_dir())
+          blocker_sources = sorted(p for p in extracted.glob("b0-formal-c8-credential-blocker-*") if p.is_dir())
+          formal_sources = sorted(p for p in extracted.glob("b0-formal-c8-real-acceptance-*") if p.is_dir())
+          seed_sources = sorted(p for p in extracted.glob("b0-user-test-seed-*") if p.is_dir())
+          for source in engineering_sources:
+              copy_tree(source, c9 / "runtime/engineering" / source.name)
+          for source in blocker_sources + formal_sources:
+              copy_tree(source, c9 / "runtime/formal" / source.name)
+          for source in seed_sources:
+              copy_tree(source, c9 / "runtime/seed" / source.name)
+
+          acceptance_result = None
+          acceptance_path = None
           for source in engineering_sources:
               for candidate in source.rglob("acceptance-result.json"):
                   payload = read_json(candidate)
-                  if isinstance(payload, dict): acceptance_result, acceptance_path = payload, candidate; break
-              if acceptance_result: break
+                  if isinstance(payload, dict):
+                      acceptance_result = payload
+                      acceptance_path = candidate
+                      break
+              if acceptance_result:
+                  break
+
           exact_pass = os.environ.get("EXACT_STATE") == "success"
           contract_pass = os.environ.get("CONTRACT_STATE") == "success"
-          engineering_pass = bool(os.environ.get("ENGINEERING_STATE") == "success" and acceptance_result and acceptance_result.get("status") == "PASS")
-          acceptance_jobs = read_json(stage / f"gates/run-{os.environ.get('ACCEPTANCE_RUN_ID')}-jobs.json") or {}
+          windows_pass = os.environ.get("WINDOWS_STATE") == "success"
+          engineering_pass = bool(
+              os.environ.get("ENGINEERING_STATE") == "success"
+              and acceptance_result
+              and acceptance_result.get("status") == "PASS"
+          )
+
+          acceptance_jobs = read_json(
+              stage / f"gates/run-{os.environ.get('ACCEPTANCE_RUN_ID')}-jobs.json"
+          ) or {}
           jobs = acceptance_jobs.get("jobs", []) if isinstance(acceptance_jobs, dict) else []
-          blocker_job = next((j for j in jobs if "credential blocker" in str(j.get("name", "")).lower()), None)
-          formal_job = next((j for j in jobs if str(j.get("name", "")).lower().startswith("formal c8 on real")), None)
-          external_blocked = bool(blocker_sources and blocker_job and blocker_job.get("conclusion") == "failure" and (not formal_job or formal_job.get("conclusion") == "skipped"))
-          formal_pass = bool(formal_sources and formal_job and formal_job.get("conclusion") == "success")
-          if exact_pass and contract_pass and engineering_pass and formal_pass: status, classification, ready = "PASS", "FULL_PASS", True
-          elif exact_pass and contract_pass and engineering_pass and external_blocked: status, classification, ready = "EXTERNAL_BLOCKED", "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED", False
-          else: status, classification, ready = "INCOMPLETE", "ENGINEERING_OR_FORMAL_VERIFICATION_INCOMPLETE", False
-          tested = os.environ["GITHUB_SHA"] if exact_pass and contract_pass and engineering_pass else None
-          # v2 exact diagnosis.
-          v2_runs = read_json(stage / "recovery-v2/selected-runs.json") or {"runs": []}; failed=[]; errors=[]
+          blocker_job = next(
+              (job for job in jobs if "credential blocker" in str(job.get("name", "")).lower()),
+              None,
+          )
+          formal_job = next(
+              (job for job in jobs if str(job.get("name", "")).lower().startswith("formal c8 on real")),
+              None,
+          )
+          external_blocked = bool(
+              os.environ.get("FORMAL_STATE") == "failure"
+              and blocker_sources
+              and blocker_job
+              and blocker_job.get("conclusion") == "failure"
+              and (not formal_job or formal_job.get("conclusion") == "skipped")
+          )
+          formal_pass = bool(
+              os.environ.get("FORMAL_STATE") == "success"
+              and formal_sources
+              and formal_job
+              and formal_job.get("conclusion") == "success"
+          )
+
+          if exact_pass and contract_pass and windows_pass and engineering_pass and formal_pass:
+              status, classification, ready = "PASS", "FULL_PASS", True
+          elif exact_pass and contract_pass and windows_pass and engineering_pass and external_blocked:
+              status = "EXTERNAL_BLOCKED"
+              classification = "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED"
+              ready = False
+          else:
+              status = "INCOMPLETE"
+              classification = "ENGINEERING_OR_FORMAL_VERIFICATION_INCOMPLETE"
+              ready = False
+
+          tested = os.environ["GITHUB_SHA"] if exact_pass and contract_pass and windows_pass and engineering_pass else None
+
+          # Preserve an exact diagnosis of the historical finalizer-v2 failure.
+          v2_runs = read_json(stage / "recovery-v2/selected-runs.json") or {"runs": []}
+          failed_steps = []
+          error_lines = []
           for path in (stage / "recovery-v2").glob("run-*-jobs.json"):
               payload = read_json(path) or {}
               for job in payload.get("jobs", []):
                   for step in job.get("steps") or []:
-                      if step.get("conclusion") == "failure": failed.append({"runId": job.get("run_id"), "jobId": job.get("id"), "job": job.get("name"), "step": step.get("name"), "stepNumber": step.get("number")})
+                      if step.get("conclusion") == "failure":
+                          failed_steps.append({
+                              "runId": job.get("run_id"),
+                              "jobId": job.get("id"),
+                              "job": job.get("name"),
+                              "step": step.get("name"),
+                              "stepNumber": step.get("number"),
+                          })
           for path in (stage / "recovery-v2").glob("run-*.log"):
               command = None
               for line in path.read_text(errors="replace").splitlines():
                   clean = re.sub(r"^\S+\s+", "", line).strip()
-                  if "##[group]Run " in clean: command = clean.split("##[group]Run ", 1)[1][:1000]
-                  if "##[error]" in clean or re.search(r"(?:Traceback|AssertionError|Error:|Process completed with exit code|fatal:|ValidationError)", clean): errors.append({"log": path.name, "command": command, "line": clean[:1600]})
-          (c9 / "recovery/finalizer-v2/diagnosis.json").write_text(json.dumps({"schemaVersion": 1, "commitSha": os.environ["B0_V2_SHA"], "runs": v2_runs.get("runs", []), "failedSteps": failed, "lastFailedCommand": next((r.get("command") for r in reversed(errors) if r.get("command")), None), "errorLines": errors[-160:]}, indent=2) + "\n")
-          screenshots = sorted(p for source in engineering_sources for p in source.rglob("*.png") if p.is_file()); screenshot_rows = [{"path": str(p.relative_to(repo)).replace("\\", "/"), "bytes": p.stat().st_size, "sha256": hashlib.sha256(p.read_bytes()).hexdigest()} for p in screenshots]
-          (c9 / "runtime/engineering/browser-evidence-index.json").write_text(json.dumps({"schemaVersion": 1, "testedCodeSha": tested, "screenshotCount": len(screenshot_rows), "screenshots": screenshot_rows}, indent=2) + "\n")
-          formal = {"status": "PASS" if formal_pass else ("EXTERNAL_BLOCKED" if external_blocked else "INCOMPLETE"), "passed": formal_pass, "externalBlocked": external_blocked, "managedNonProductionSupabaseRequired": True, "managedNonProductionSupabaseAvailable": formal_pass, "randomSchemaRequired": True, "publicSchemaForbiddenAsTestSchema": True, "selfHostedContainerMaySubstitute": False, "credentialValuesPersisted": False, "environmentsChecked": ["ourmanyworlds.com / test", "stellar-encouragement / test", "Preview"], "workflowRunId": int(os.environ["ACCEPTANCE_RUN_ID"]) if os.environ.get("ACCEPTANCE_RUN_ID") else None}
-          engineering = {"status": "PASS_ENGINEERING_ONLY" if engineering_pass else "FAIL", "passed": engineering_pass, "formalC8Substitute": False, "database": "official self-hosted supabase/postgres random isolated engineering schema", "realBrowserSessions": 3 if engineering_pass else None, "synchronizedWindows": 6 if engineering_pass else None, "desktopViewportCovered": engineering_pass, "narrow390ViewportCovered": engineering_pass, "screenshotCount": len(screenshot_rows), "acceptanceResultPath": str(acceptance_path.relative_to(repo)).replace("\\", "/") if acceptance_path else None, "workflowRunId": int(os.environ["ACCEPTANCE_RUN_ID"]) if os.environ.get("ACCEPTANCE_RUN_ID") else None}
-          (c8 / "checkpoint.json").write_text(json.dumps({"schemaVersion": 1, "generatedAtUtc": generated, "testedCodeSha": tested, "status": status, "classification": classification, "formalC8": formal, "engineeringAcceptance": engineering}, indent=2) + "\n")
-          (c9 / "managed-supabase-validation.json").write_text(json.dumps({"schemaVersion": 1, "generatedAtUtc": generated, "status": formal["status"], "externalBlocked": external_blocked, "containerClassifiedEngineeringOnly": True, "productionPublicSchemaUsed": False, "productionDatabaseTouched": False, "productionConfigurationChanged": False, "realUserDataTouched": False}, indent=2) + "\n")
-          job_rows=[]
+                  if "##[group]Run " in clean:
+                      command = clean.split("##[group]Run ", 1)[1][:1000]
+                  if "##[error]" in clean or re.search(
+                      r"(?:Traceback|AssertionError|Error:|Process completed with exit code|fatal:|ValidationError)",
+                      clean,
+                  ):
+                      error_lines.append({"log": path.name, "command": command, "line": clean[:1600]})
+          (c9 / "recovery/finalizer-v2/diagnosis.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "commitSha": os.environ["B0_V2_SHA"],
+              "runs": v2_runs.get("runs", []),
+              "failedSteps": failed_steps,
+              "lastFailedCommand": next(
+                  (row.get("command") for row in reversed(error_lines) if row.get("command")),
+                  None,
+              ),
+              "errorLines": error_lines[-160:],
+          }, indent=2) + "\n", encoding="utf-8")
+
+          screenshots = sorted(
+              path
+              for source in engineering_sources
+              for path in source.rglob("*.png")
+              if path.is_file()
+          )
+          screenshot_rows = [{
+              "path": str(path.relative_to(repo)).replace("\\", "/"),
+              "bytes": path.stat().st_size,
+              "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+          } for path in screenshots]
+          (c9 / "runtime/engineering/browser-evidence-index.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "testedCodeSha": tested,
+              "screenshotCount": len(screenshot_rows),
+              "screenshots": screenshot_rows,
+          }, indent=2) + "\n", encoding="utf-8")
+
+          formal = {
+              "status": "PASS" if formal_pass else ("EXTERNAL_BLOCKED" if external_blocked else "INCOMPLETE"),
+              "passed": formal_pass,
+              "externalBlocked": external_blocked,
+              "managedNonProductionSupabaseRequired": True,
+              "managedNonProductionSupabaseAvailable": formal_pass,
+              "randomSchemaRequired": True,
+              "publicSchemaForbiddenAsTestSchema": True,
+              "selfHostedContainerMaySubstitute": False,
+              "credentialValuesPersisted": False,
+              "environmentsChecked": [
+                  "ourmanyworlds.com / test",
+                  "stellar-encouragement / test",
+                  "Preview",
+              ],
+              "workflowRunId": int(os.environ["ACCEPTANCE_RUN_ID"]) if os.environ.get("ACCEPTANCE_RUN_ID") else None,
+          }
+          engineering = {
+              "status": "PASS_ENGINEERING_ONLY" if engineering_pass else "FAIL",
+              "passed": engineering_pass,
+              "formalC8Substitute": False,
+              "database": "official self-hosted supabase/postgres random isolated engineering schema",
+              "realBrowserSessions": 3 if engineering_pass else None,
+              "synchronizedWindows": 6 if engineering_pass else None,
+              "desktopViewportCovered": engineering_pass,
+              "narrow390ViewportCovered": engineering_pass,
+              "screenshotCount": len(screenshot_rows),
+              "acceptanceResultPath": str(acceptance_path.relative_to(repo)).replace("\\", "/") if acceptance_path else None,
+              "workflowRunId": int(os.environ["ACCEPTANCE_RUN_ID"]) if os.environ.get("ACCEPTANCE_RUN_ID") else None,
+          }
+          cross_platform_seed = {
+              "linux": {
+                  "status": "PASS" if exact_pass else "FAIL",
+                  "workflowRunId": int(os.environ["EXACT_RUN_ID"]) if os.environ.get("EXACT_RUN_ID") else None,
+              },
+              "windows": {
+                  "status": "PASS" if windows_pass else "FAIL",
+                  "workflowRunId": int(os.environ["WINDOWS_RUN_ID"]) if os.environ.get("WINDOWS_RUN_ID") else None,
+              },
+          }
+
+          (c8 / "checkpoint.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "generatedAtUtc": generated,
+              "testableCandidateSha": os.environ["B0_TESTABLE_CANDIDATE_SHA"],
+              "testedCodeSha": tested,
+              "status": status,
+              "classification": classification,
+              "formalC8": formal,
+              "engineeringAcceptance": engineering,
+              "crossPlatformSeed": cross_platform_seed,
+          }, indent=2) + "\n", encoding="utf-8")
+
+          (c9 / "managed-supabase-validation.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "generatedAtUtc": generated,
+              "status": formal["status"],
+              "externalBlocked": external_blocked,
+              "containerClassifiedEngineeringOnly": True,
+              "productionPublicSchemaUsed": False,
+              "productionDatabaseTouched": False,
+              "productionConfigurationChanged": False,
+              "realUserDataTouched": False,
+          }, indent=2) + "\n", encoding="utf-8")
+
+          job_rows = []
           for path in (c9 / "gates").glob("run-*-jobs.json"):
-              payload=read_json(path) or {}
-              for job in payload.get("jobs", []): job_rows.append({"runId":job.get("run_id"),"jobId":job.get("id"),"name":job.get("name"),"status":job.get("status"),"conclusion":job.get("conclusion"),"startedAt":job.get("started_at"),"completedAt":job.get("completed_at")})
-          (c9 / "test-matrix.json").write_text(json.dumps({"schemaVersion":1,"generatedAtUtc":generated,"testedCodeSha":tested,"overall":status,"classification":classification,"jobs":job_rows,"coverage":{"frozenInstallAndWorkspaceGates":exact_pass,"threeIsolatedBrowserSessions":engineering_pass,"sixSynchronizedWindows":engineering_pass,"worldSequenceExactlyOnce":engineering_pass,"privacyIdempotencyNarrativeWorkers":engineering_pass,"pauseResumeDeadlineLeaseCrashRecovery":engineering_pass,"desktopAnd390px":engineering_pass,"formalManagedNonProductionSupabase":formal_pass}},indent=2)+"\n")
-          (c9 / "checkpoint.json").write_text(json.dumps({"schemaVersion":1,"generatedAtUtc":generated,"testedCodeSha":tested,"status":status,"classification":classification,"candidateBranchReady":ready,"completionMarkersAllowed":ready},indent=2)+"\n")
-          result={"schemaVersion":1,"generatedAtUtc":generated,"repository":os.environ["GITHUB_REPOSITORY"],"branch":os.environ["B0_BRANCH"],"mainBaselineSha":os.environ["B0_MAIN_BASELINE"],"testedCodeSha":tested,"evidenceCommitSha":None,"finalRemoteSha":None,"finalRemoteShaResolution":"external clean-clone readback","status":status,"classification":classification,"candidateBranchReady":ready,"completionMarkersAllowed":ready,"formalC8":formal,"engineeringAcceptance":engineering,"boundaries":{"forcePushUsed":False,"pullRequestCreatedOrModified":False,"deploymentPerformed":False,"productionDatabaseTouched":False,"productionConfigurationChanged":False,"realUserDataTouched":False}}
-          (c9 / "B0_FINAL_DELIVERY_RESULT.json").write_text(json.dumps(result,indent=2)+"\n")
-          (c9 / "recovery-audit.json").write_text(json.dumps({"schemaVersion":1,"generatedAtUtc":generated,"startingRemoteSha":os.environ["GITHUB_SHA"],"mainBaselineSha":os.environ["B0_MAIN_BASELINE"],"finalizerV2DiagnosisPath":"recovery/finalizer-v2/diagnosis.json","ordinaryFastForwardOnly":True,"forcePushUsed":False},indent=2)+"\n")
-          (c9 / "final-pointer.json").write_text(json.dumps({"schemaVersion":1,"testedCodeSha":tested,"evidenceCommitSha":None,"finalRemoteSha":None,"finalRemoteShaResolution":"external clean-clone readback because a commit cannot contain its own SHA","status":status,"classification":classification},indent=2)+"\n")
-          (c9 / "HANDOFF.md").write_text(f"# B0 C8/C9 HANDOFF\n\n- main baseline: `{os.environ['B0_MAIN_BASELINE']}`\n- testedCodeSha: `{tested or 'not frozen'}`\n- exact run: `{os.environ.get('EXACT_RUN_ID') or 'unknown'}`\n- acceptance run: `{os.environ.get('ACCEPTANCE_RUN_ID') or 'unknown'}`\n- status: `{status}`\n- classification: `{classification}`\n\nExact job metadata and readable logs are under `gates/**`. Engineering API/Web, real browser sessions, synchronized windows, provider, database cleanup, privacy, idempotency, Narrative, Worker, pause/deadline/lease/crash evidence is under `runtime/engineering/**`. Formal managed Supabase proof or the credential blocker is under `runtime/formal/**`. The container remains engineering-only.\n")
-          (c9 / "B0_FINAL_DELIVERY_REPORT.md").write_text(f"# B0 Final Delivery Report\n\n- status: `{status}`\n- classification: `{classification}`\n- candidate ready: `{str(ready).lower()}`\n- tested code SHA: `{tested or 'not frozen'}`\n- exact gates: `{'PASS' if exact_pass else 'FAIL'}`\n- acceptance contract: `{'PASS' if contract_pass else 'FAIL'}`\n- engineering acceptance: `{engineering['status']}`\n- formal C8: `{formal['status']}`\n- screenshots: `{len(screenshot_rows)}`\n\nNo force push, PR operation, deployment, production database/configuration access, or real-user data operation was performed.\n")
-          # Redact text and create a strict scan.
-          rules=[(re.compile(r"postgres(?:ql)?://[^\s\"'<>`]+",re.I),"[REDACTED_DATABASE_URL]"),(re.compile(r"(?i)Bearer\s+[A-Za-z0-9._~+/-]+=*"),"Bearer [REDACTED]"),(re.compile(r"(?i)(cookie\s*[:=]\s*)[^\r\n]+"),r"\1[REDACTED]"),(re.compile(r"sk-[A-Za-z0-9_-]{16,}"),"[REDACTED_API_KEY]"),(re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),"[REDACTED_JWT]")];binary={".png",".jpg",".jpeg",".webp",".zip",".gz"}
-          for p in root.rglob("*"):
-              if not p.is_file() or p.suffix.lower() in binary: continue
-              try:text=p.read_text(encoding="utf-8")
-              except Exception:continue
-              for pattern,replacement in rules:text=pattern.sub(replacement,text)
-              p.write_text(text,encoding="utf-8")
-          findings=[];scans=[("database-url",re.compile(r"postgres(?:ql)?://[^\s\"'<>`]+",re.I)),("bearer",re.compile(r"(?i)Bearer\s+(?!\[REDACTED\])[A-Za-z0-9._~+/-]+=*")),("api-key",re.compile(r"sk-[A-Za-z0-9_-]{16,}")),("jwt",re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"))]
-          for p in root.rglob("*"):
-              if not p.is_file() or p.suffix.lower() in binary:continue
-              try:text=p.read_text(encoding="utf-8")
-              except Exception:continue
-              for kind,pattern in scans:
-                  if pattern.search(text):findings.append({"path":str(p.relative_to(repo)).replace("\\","/"),"kind":kind})
-          (c9 / "redaction-scan.json").write_text(json.dumps({"schemaVersion":1,"generatedAtUtc":generated,"status":"PASS" if not findings else "FAIL","findingCount":len(findings),"findings":findings},indent=2)+"\n")
-          if findings: raise SystemExit(str(findings))
-          exclusions={"manifest.json","manifest.sha256","final-pointer.json","B0_FINAL_DELIVERY_RESULT.json"};rows=[];total=0
-          for p in sorted(c9.rglob("*")):
-              if not p.is_file() or p.name in exclusions:continue
-              raw=p.read_bytes();total+=len(raw);rows.append({"path":str(p.relative_to(c9)).replace("\\","/"),"bytes":len(raw),"sha256":hashlib.sha256(raw).hexdigest()})
-          manifest={"schemaVersion":1,"generatedAtUtc":generated,"testedCodeSha":tested,"artifactCount":len(rows),"totalBytes":total,"selfReferentialExclusions":sorted(exclusions),"artifacts":rows};mp=c9/"manifest.json";mp.write_text(json.dumps(manifest,indent=2)+"\n");(c9/"manifest.sha256").write_text(f"{hashlib.sha256(mp.read_bytes()).hexdigest()}  manifest.json\n")
-          with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a") as h:h.write(f"status={status}\nclassification={classification}\ntested_sha={tested or ''}\n")
-          print(json.dumps({"status":status,"classification":classification,"testedCodeSha":tested,"engineeringPass":engineering_pass,"formalPass":formal_pass,"externalBlocked":external_blocked},indent=2))
+              payload = read_json(path) or {}
+              for job in payload.get("jobs", []):
+                  job_rows.append({
+                      "runId": job.get("run_id"),
+                      "jobId": job.get("id"),
+                      "name": job.get("name"),
+                      "status": job.get("status"),
+                      "conclusion": job.get("conclusion"),
+                      "startedAt": job.get("started_at"),
+                      "completedAt": job.get("completed_at"),
+                  })
+          (c9 / "test-matrix.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "generatedAtUtc": generated,
+              "testedCodeSha": tested,
+              "overall": status,
+              "classification": classification,
+              "jobs": job_rows,
+              "coverage": {
+                  "frozenInstallAndWorkspaceGates": exact_pass,
+                  "linuxCleanCloneSeed": exact_pass,
+                  "windowsCleanCloneSeed": windows_pass,
+                  "threeIsolatedBrowserSessions": engineering_pass,
+                  "sixSynchronizedWindows": engineering_pass,
+                  "worldSequenceExactlyOnce": engineering_pass,
+                  "privacyIdempotencyNarrativeWorkers": engineering_pass,
+                  "pauseResumeDeadlineLeaseCrashRecovery": engineering_pass,
+                  "desktopAnd390px": engineering_pass,
+                  "formalManagedNonProductionSupabase": formal_pass,
+              },
+          }, indent=2) + "\n", encoding="utf-8")
+
+          (c9 / "checkpoint.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "generatedAtUtc": generated,
+              "testedCodeSha": tested,
+              "status": status,
+              "classification": classification,
+              "candidateBranchReady": ready,
+              "completionMarkersAllowed": ready,
+          }, indent=2) + "\n", encoding="utf-8")
+
+          result = {
+              "schemaVersion": 1,
+              "generatedAtUtc": generated,
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "branch": os.environ["B0_BRANCH"],
+              "mainBaselineSha": os.environ["B0_MAIN_BASELINE"],
+              "testableCandidateSha": os.environ["B0_TESTABLE_CANDIDATE_SHA"],
+              "testedCodeSha": tested,
+              "evidenceCommitSha": None,
+              "finalRemoteSha": None,
+              "finalRemoteShaResolution": "external clean-clone readback",
+              "status": status,
+              "classification": classification,
+              "candidateBranchReady": ready,
+              "completionMarkersAllowed": ready,
+              "formalC8": formal,
+              "engineeringAcceptance": engineering,
+              "crossPlatformSeed": cross_platform_seed,
+              "boundaries": {
+                  "forcePushUsed": False,
+                  "pullRequestCreatedOrModified": False,
+                  "deploymentPerformed": False,
+                  "productionDatabaseTouched": False,
+                  "productionConfigurationChanged": False,
+                  "realUserDataTouched": False,
+              },
+          }
+          (c9 / "B0_FINAL_DELIVERY_RESULT.json").write_text(
+              json.dumps(result, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          (c9 / "recovery-audit.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "generatedAtUtc": generated,
+              "startingRemoteSha": os.environ["GITHUB_SHA"],
+              "mainBaselineSha": os.environ["B0_MAIN_BASELINE"],
+              "testableCandidateSha": os.environ["B0_TESTABLE_CANDIDATE_SHA"],
+              "historicalEvidenceSourceSha": os.environ["B0_HISTORICAL_EVIDENCE_SHA"],
+              "previousEvidenceRemoteSha": os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"],
+              "historicalC0ThroughC6Restored": True,
+              "previousC8C9ArchivedUnderVersionedPath": True,
+              "finalizerV2DiagnosisPath": "recovery/finalizer-v2/diagnosis.json",
+              "ordinaryFastForwardOnly": True,
+              "forcePushUsed": False,
+          }, indent=2) + "\n", encoding="utf-8")
+          (c9 / "final-pointer.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "testableCandidateSha": os.environ["B0_TESTABLE_CANDIDATE_SHA"],
+              "testedCodeSha": tested,
+              "evidenceCommitSha": None,
+              "finalRemoteSha": None,
+              "finalRemoteShaResolution": "external clean-clone readback because a commit cannot contain its own SHA",
+              "status": status,
+              "classification": classification,
+          }, indent=2) + "\n", encoding="utf-8")
+          (c9 / "HANDOFF.md").write_text(
+              "# B0 C8/C9 HANDOFF\n\n"
+              f"- main baseline: `{os.environ['B0_MAIN_BASELINE']}`\n"
+              f"- testableCandidateSha: `{os.environ['B0_TESTABLE_CANDIDATE_SHA']}`\n"
+              f"- testedCodeSha: `{tested or 'not frozen'}`\n"
+              f"- exact run: `{os.environ.get('EXACT_RUN_ID') or 'unknown'}`\n"
+              f"- Windows seed run: `{os.environ.get('WINDOWS_RUN_ID') or 'unknown'}`\n"
+              f"- acceptance run: `{os.environ.get('ACCEPTANCE_RUN_ID') or 'unknown'}`\n"
+              f"- status: `{status}`\n"
+              f"- classification: `{classification}`\n\n"
+              "Exact job metadata and readable logs are under `gates/**`. Linux and Windows seed proofs are under `runtime/seed/**`. Engineering API/Web, browser sessions, synchronized windows, provider, database cleanup, privacy, idempotency, Narrative, Worker, pause/deadline/lease/crash evidence is under `runtime/engineering/**`. Formal managed Supabase proof or the credential blocker is under `runtime/formal/**`. Historical C0-C6 and the previous C8/C9 run remain under versioned paths. The container remains engineering-only.\n",
+              encoding="utf-8",
+          )
+          (c9 / "B0_FINAL_DELIVERY_REPORT.md").write_text(
+              "# B0 Final Delivery Report\n\n"
+              f"- status: `{status}`\n"
+              f"- classification: `{classification}`\n"
+              f"- candidate ready: `{str(ready).lower()}`\n"
+              f"- testable candidate SHA: `{os.environ['B0_TESTABLE_CANDIDATE_SHA']}`\n"
+              f"- tested code SHA: `{tested or 'not frozen'}`\n"
+              f"- exact gates: `{'PASS' if exact_pass else 'FAIL'}`\n"
+              f"- Linux clean-clone seed: `{'PASS' if exact_pass else 'FAIL'}`\n"
+              f"- Windows clean-clone seed: `{'PASS' if windows_pass else 'FAIL'}`\n"
+              f"- acceptance contract: `{'PASS' if contract_pass else 'FAIL'}`\n"
+              f"- engineering acceptance: `{engineering['status']}`\n"
+              f"- formal C8: `{formal['status']}`\n"
+              f"- screenshots: `{len(screenshot_rows)}`\n\n"
+              "No force push, PR operation, deployment, production database/configuration access, or real-user data operation was performed.\n",
+              encoding="utf-8",
+          )
+
+          # Redact newly generated C8/C9 text. Historical evidence is preserved byte-for-byte.
+          rules = [
+              (re.compile(r"postgres(?:ql)?://[^\s\"'<>`]+", re.I), "[REDACTED_DATABASE_URL]"),
+              (re.compile(r"(?i)Bearer\s+[A-Za-z0-9._~+/-]+=*"), "Bearer [REDACTED]"),
+              (re.compile(r"(?i)(cookie\s*[:=]\s*)[^\r\n]+"), r"\1[REDACTED]"),
+              (re.compile(r"sk-[A-Za-z0-9_-]{16,}"), "[REDACTED_API_KEY]"),
+              (re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"), "[REDACTED_JWT]"),
+          ]
+          binary_extensions = {".png", ".jpg", ".jpeg", ".webp", ".zip", ".gz"}
+          for path in list(c8.rglob("*")) + list(c9.rglob("*")):
+              if not path.is_file() or path.suffix.lower() in binary_extensions:
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except Exception:
+                  continue
+              for pattern, replacement in rules:
+                  text = pattern.sub(replacement, text)
+              path.write_text(text, encoding="utf-8")
+
+          findings = []
+          scans = [
+              ("database-url", re.compile(r"postgres(?:ql)?://[^\s\"'<>`]+", re.I)),
+              ("bearer", re.compile(r"(?i)Bearer\s+(?!\[REDACTED\])[A-Za-z0-9._~+/-]+=*")),
+              ("api-key", re.compile(r"sk-[A-Za-z0-9_-]{16,}")),
+              ("jwt", re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}")),
+          ]
+          for path in root.rglob("*"):
+              if not path.is_file() or path.suffix.lower() in binary_extensions:
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except Exception:
+                  continue
+              for kind, pattern in scans:
+                  if pattern.search(text):
+                      findings.append({
+                          "path": str(path.relative_to(repo)).replace("\\", "/"),
+                          "kind": kind,
+                      })
+          (c9 / "redaction-scan.json").write_text(json.dumps({
+              "schemaVersion": 1,
+              "generatedAtUtc": generated,
+              "status": "PASS" if not findings else "FAIL",
+              "findingCount": len(findings),
+              "findings": findings,
+          }, indent=2) + "\n", encoding="utf-8")
+          if findings:
+              raise SystemExit(str(findings))
+
+          # The manifest covers the complete retained evidence tree, not only C9.
+          exclusions = {
+              "c9/manifest.json",
+              "c9/manifest.sha256",
+              "c9/final-pointer.json",
+              "c9/B0_FINAL_DELIVERY_RESULT.json",
+          }
+          rows = []
+          total = 0
+          for path in sorted(root.rglob("*")):
+              relative = str(path.relative_to(root)).replace("\\", "/")
+              if not path.is_file() or relative in exclusions:
+                  continue
+              raw = path.read_bytes()
+              total += len(raw)
+              rows.append({
+                  "path": relative,
+                  "bytes": len(raw),
+                  "sha256": hashlib.sha256(raw).hexdigest(),
+              })
+          manifest = {
+              "schemaVersion": 2,
+              "generatedAtUtc": generated,
+              "testableCandidateSha": os.environ["B0_TESTABLE_CANDIDATE_SHA"],
+              "testedCodeSha": tested,
+              "pathBase": "docs/auto-execute/evidence/b0",
+              "artifactCount": len(rows),
+              "totalBytes": total,
+              "selfReferentialExclusions": sorted(exclusions),
+              "artifacts": rows,
+          }
+          manifest_path = c9 / "manifest.json"
+          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          (c9 / "manifest.sha256").write_text(
+              f"{hashlib.sha256(manifest_path.read_bytes()).hexdigest()}  manifest.json\n",
+              encoding="utf-8",
+          )
+
+          with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a") as handle:
+              handle.write(f"status={status}\n")
+              handle.write(f"classification={classification}\n")
+              handle.write(f"tested_sha={tested or ''}\n")
+          print(json.dumps({
+              "status": status,
+              "classification": classification,
+              "testableCandidateSha": os.environ["B0_TESTABLE_CANDIDATE_SHA"],
+              "testedCodeSha": tested,
+              "exactPass": exact_pass,
+              "windowsSeedPass": windows_pass,
+              "engineeringPass": engineering_pass,
+              "formalPass": formal_pass,
+              "externalBlocked": external_blocked,
+              "manifestArtifactCount": len(rows),
+              "manifestTotalBytes": total,
+          }, indent=2))
           PY
-          for p in "$B0_ROOT/c8/checkpoint.json" "$B0_ROOT/c9/manifest.json" "$B0_ROOT/c9/checkpoint.json" "$B0_ROOT/c9/final-pointer.json" "$B0_ROOT/c9/HANDOFF.md" "$B0_ROOT/c9/test-matrix.json" "$B0_ROOT/c9/B0_FINAL_DELIVERY_RESULT.json" "$B0_ROOT/c9/B0_FINAL_DELIVERY_REPORT.md" "$B0_ROOT/c9/recovery-audit.json"; do test -f "$p"; done
+
+          for path in \
+            "$B0_ROOT/c0/baseline-test-matrix.json" \
+            "$B0_ROOT/c1/contract-gate-notes.md" \
+            "$B0_ROOT/c2/checkpoint.json" \
+            "$B0_ROOT/c3/checkpoint.json" \
+            "$B0_ROOT/c4/checkpoint.json" \
+            "$B0_ROOT/c5/checkpoint.json" \
+            "$B0_ROOT/c6/checkpoint.json" \
+            "$B0_ROOT/c8/checkpoint.json" \
+            "$B0_ROOT/c9/manifest.json" \
+            "$B0_ROOT/c9/manifest.sha256" \
+            "$B0_ROOT/c9/checkpoint.json" \
+            "$B0_ROOT/c9/final-pointer.json" \
+            "$B0_ROOT/c9/HANDOFF.md" \
+            "$B0_ROOT/c9/test-matrix.json" \
+            "$B0_ROOT/c9/B0_FINAL_DELIVERY_RESULT.json" \
+            "$B0_ROOT/c9/B0_FINAL_DELIVERY_REPORT.md" \
+            "$B0_ROOT/c9/recovery-audit.json" \
+            "$B0_ROOT/c9/redaction-scan.json"; do
+            test -f "$path"
+          done
           git diff --check -- "$B0_ROOT"
 
       - name: Ordinary fast-forward evidence and pointer commits
@@ -300,19 +788,24 @@ jobs:
           git diff --cached --check
           test -n "$(git diff --cached --name-only)"
           test -z "$(git diff --cached --name-only | grep -Ev '^docs/auto-execute/evidence/b0/' || true)"
-          git commit -m "docs(b0): record guaranteed fail-closed C8 C9 evidence"
+          git commit -m "docs(b0): record cross-platform C8 C9 evidence"
           evidence_sha="$(git rev-parse HEAD)"
+
           python3 - "$evidence_sha" <<'PY'
-          import json,pathlib,sys
-          for name in ("final-pointer.json","B0_FINAL_DELIVERY_RESULT.json"):
-              p=pathlib.Path("docs/auto-execute/evidence/b0/c9")/name;d=json.loads(p.read_text());d["evidenceCommitSha"]=sys.argv[1];p.write_text(json.dumps(d,indent=2)+"\n")
+          import json, pathlib, sys
+          for name in ("final-pointer.json", "B0_FINAL_DELIVERY_RESULT.json"):
+              path = pathlib.Path("docs/auto-execute/evidence/b0/c9") / name
+              payload = json.loads(path.read_text(encoding="utf-8"))
+              payload["evidenceCommitSha"] = sys.argv[1]
+              path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
           PY
           git add "$B0_ROOT/c9/final-pointer.json" "$B0_ROOT/c9/B0_FINAL_DELIVERY_RESULT.json"
           git diff --cached --check
-          git commit -m "docs(b0): seal guaranteed fail-closed pointers"
+          git commit -m "docs(b0): seal cross-platform evidence pointers"
           final_sha="$(git rev-parse HEAD)"
+
           git push origin "HEAD:$B0_BRANCH"
-          after="$(git ls-remote origin refs/heads/$B0_BRANCH|awk '{print $1}')"
+          after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
           test "$after" = "$final_sha"
           echo "evidence_sha=$evidence_sha" >> "$GITHUB_OUTPUT"
           echo "final_sha=$final_sha" >> "$GITHUB_OUTPUT"
@@ -320,7 +813,7 @@ jobs:
           {"localHead":"$final_sha","remoteTipBeforePush":"$before","evidenceCommitSha":"$evidence_sha","remoteTipAfterPush":"$after"}
           EOF
 
-      - name: Fresh-clone validate remote evidence
+      - name: Linux fresh-clone validate remote evidence
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -332,49 +825,116 @@ jobs:
           clone="$RUNNER_TEMP/b0-final-v7-fresh"
           git clone --no-tags --single-branch --branch "$B0_BRANCH" "https://github.com/$GITHUB_REPOSITORY.git" "$clone"
           cd "$clone"
-          live="$(git ls-remote origin refs/heads/$B0_BRANCH|awk '{print $1}')"
+          live="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
           test "$live" = "$FINAL_SHA"
           test "$(git rev-parse HEAD)" = "$FINAL_SHA"
           test "$(git rev-parse HEAD^)" = "$EVIDENCE_SHA"
-          if test -n "$TESTED_SHA"; then
-            git merge-base --is-ancestor "$TESTED_SHA" "$EVIDENCE_SHA"
-            git diff --name-only "$TESTED_SHA..$FINAL_SHA" > "$RUNNER_TEMP/tested-to-final.txt"
-            test -z "$(grep -Ev '^docs/auto-execute/evidence/b0/' "$RUNNER_TEMP/tested-to-final.txt" || true)"
-          else : > "$RUNNER_TEMP/tested-to-final.txt"; fi
-          git ls-tree -r --name-only "$FINAL_SHA" -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9 > "$RUNNER_TEMP/c8-c9-tree.txt"
-          test "$(wc -l < "$RUNNER_TEMP/c8-c9-tree.txt")" -gt 10
+          git merge-base --is-ancestor "$TESTED_SHA" "$EVIDENCE_SHA"
+          git diff --name-only "$TESTED_SHA..$FINAL_SHA" > "$RUNNER_TEMP/tested-to-final.txt"
+          test -z "$(grep -Ev '^docs/auto-execute/evidence/b0/' "$RUNNER_TEMP/tested-to-final.txt" || true)"
+          git ls-tree -r --name-only "$FINAL_SHA" -- docs/auto-execute/evidence/b0 > "$RUNNER_TEMP/evidence-tree.txt"
+          test "$(wc -l < "$RUNNER_TEMP/evidence-tree.txt")" -gt 20
+
           python3 - "$TESTED_SHA" "$EVIDENCE_SHA" "$FINAL_SHA" "$live" "$RUNNER_TEMP" <<'PY'
-          import hashlib,json,pathlib,sys
-          tested,evidence,final,live,temp_value=sys.argv[1:];temp=pathlib.Path(temp_value);root=pathlib.Path("docs/auto-execute/evidence/b0");c9=root/"c9";errors=[]
-          required=[root/"c8/checkpoint.json",c9/"manifest.json",c9/"manifest.sha256",c9/"checkpoint.json",c9/"final-pointer.json",c9/"HANDOFF.md",c9/"test-matrix.json",c9/"B0_FINAL_DELIVERY_RESULT.json",c9/"B0_FINAL_DELIVERY_REPORT.md",c9/"recovery-audit.json",c9/"redaction-scan.json"]
-          for p in required:
-              if not p.is_file():errors.append("missing:"+str(p))
-          for p in root.rglob("*.json"):
-              try:json.loads(p.read_text())
-              except Exception as e:errors.append("json:"+str(p)+":"+repr(e))
-          mp=c9/"manifest.json";m=json.loads(mp.read_text());total=0
-          for row in m.get("artifacts",[]):
-              p=c9/row["path"]
-              if not p.is_file():errors.append("manifest-missing:"+row["path"]);continue
-              raw=p.read_bytes();total+=len(raw)
-              if len(raw)!=row["bytes"]:errors.append("bytes:"+row["path"])
-              if hashlib.sha256(raw).hexdigest()!=row["sha256"]:errors.append("sha:"+row["path"])
-          if total!=m.get("totalBytes"):errors.append("totalBytes")
-          if hashlib.sha256(mp.read_bytes()).hexdigest()!=(c9/"manifest.sha256").read_text().split()[0]:errors.append("manifest-self-hash")
-          pointer=json.loads((c9/"final-pointer.json").read_text());result=json.loads((c9/"B0_FINAL_DELIVERY_RESULT.json").read_text());scan=json.loads((c9/"redaction-scan.json").read_text())
-          if pointer.get("evidenceCommitSha")!=evidence:errors.append("pointer-evidence")
-          if result.get("evidenceCommitSha")!=evidence:errors.append("result-evidence")
-          if tested and pointer.get("testedCodeSha")!=tested:errors.append("pointer-tested")
-          if scan.get("status")!="PASS" or scan.get("findingCount")!=0:errors.append("redaction")
-          if live!=final:errors.append("live")
-          if errors:raise SystemExit(str(errors))
-          proof={"schemaVersion":1,"status":"PASS","deliveryStatus":result.get("status"),"classification":result.get("classification"),"testedCodeSha":tested or None,"evidenceCommitSha":evidence,"finalRemoteSha":final,"liveTip":live,"liveTipMatchesFinalRemoteSha":True,"testedToFinalOnlyEvidenceDocs":bool(tested),"testedToFinalFiles":(temp/"tested-to-final.txt").read_text().splitlines(),"c8c9TrackedPathCount":len((temp/"c8-c9-tree.txt").read_text().splitlines()),"c8c9TrackedPaths":(temp/"c8-c9-tree.txt").read_text().splitlines(),"manifestArtifactCount":m.get("artifactCount"),"manifestTotalBytes":m.get("totalBytes"),"redactionStatus":scan.get("status"),"candidateBranchReady":result.get("candidateBranchReady"),"completionMarkersAllowed":result.get("completionMarkersAllowed")}
-          (temp/"fresh-clone-readback.json").write_text(json.dumps(proof,indent=2)+"\n")
+          import hashlib, json, pathlib, sys
+
+          tested, evidence, final, live, temp_value = sys.argv[1:]
+          temp = pathlib.Path(temp_value)
+          root = pathlib.Path("docs/auto-execute/evidence/b0")
+          c9 = root / "c9"
+          errors = []
+          required = [
+              root / "c0/baseline-test-matrix.json",
+              root / "c1/contract-gate-notes.md",
+              root / "c2/checkpoint.json",
+              root / "c3/checkpoint.json",
+              root / "c4/checkpoint.json",
+              root / "c5/checkpoint.json",
+              root / "c6/checkpoint.json",
+              root / "c8/checkpoint.json",
+              c9 / "manifest.json",
+              c9 / "manifest.sha256",
+              c9 / "checkpoint.json",
+              c9 / "final-pointer.json",
+              c9 / "HANDOFF.md",
+              c9 / "test-matrix.json",
+              c9 / "B0_FINAL_DELIVERY_RESULT.json",
+              c9 / "B0_FINAL_DELIVERY_REPORT.md",
+              c9 / "recovery-audit.json",
+              c9 / "redaction-scan.json",
+          ]
+          for path in required:
+              if not path.is_file(): errors.append("missing:" + str(path))
+          for path in root.rglob("*.json"):
+              try:
+                  json.loads(path.read_text(encoding="utf-8"))
+              except Exception as error:
+                  errors.append(f"json:{path}:{error!r}")
+
+          manifest_path = c9 / "manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          total = 0
+          for row in manifest.get("artifacts", []):
+              path = root / row["path"]
+              if not path.is_file():
+                  errors.append("manifest-missing:" + row["path"])
+                  continue
+              raw = path.read_bytes()
+              total += len(raw)
+              if len(raw) != row["bytes"]: errors.append("bytes:" + row["path"])
+              if hashlib.sha256(raw).hexdigest() != row["sha256"]: errors.append("sha:" + row["path"])
+          if total != manifest.get("totalBytes"): errors.append("totalBytes")
+          if len(manifest.get("artifacts", [])) != manifest.get("artifactCount"): errors.append("artifactCount")
+          expected = (c9 / "manifest.sha256").read_text(encoding="utf-8").split()[0]
+          actual = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+          if actual != expected: errors.append("manifest-self-hash")
+
+          pointer = json.loads((c9 / "final-pointer.json").read_text(encoding="utf-8"))
+          result = json.loads((c9 / "B0_FINAL_DELIVERY_RESULT.json").read_text(encoding="utf-8"))
+          scan = json.loads((c9 / "redaction-scan.json").read_text(encoding="utf-8"))
+          if pointer.get("evidenceCommitSha") != evidence: errors.append("pointer-evidence")
+          if result.get("evidenceCommitSha") != evidence: errors.append("result-evidence")
+          if pointer.get("testedCodeSha") != tested: errors.append("pointer-tested")
+          if result.get("testedCodeSha") != tested: errors.append("result-tested")
+          if scan.get("status") != "PASS" or scan.get("findingCount") != 0: errors.append("redaction")
+          if live != final: errors.append("live")
+          if errors: raise SystemExit(str(errors))
+
+          proof = {
+              "schemaVersion": 2,
+              "status": "PASS",
+              "deliveryStatus": result.get("status"),
+              "classification": result.get("classification"),
+              "testableCandidateSha": result.get("testableCandidateSha"),
+              "testedCodeSha": tested,
+              "evidenceCommitSha": evidence,
+              "finalRemoteSha": final,
+              "liveTip": live,
+              "liveTipMatchesFinalRemoteSha": True,
+              "testedToFinalOnlyEvidenceDocs": True,
+              "testedToFinalFiles": (temp / "tested-to-final.txt").read_text().splitlines(),
+              "evidenceTrackedPathCount": len((temp / "evidence-tree.txt").read_text().splitlines()),
+              "manifestArtifactCount": manifest.get("artifactCount"),
+              "manifestTotalBytes": manifest.get("totalBytes"),
+              "manifestSha256": actual,
+              "redactionStatus": scan.get("status"),
+              "candidateBranchReady": result.get("candidateBranchReady"),
+              "completionMarkersAllowed": result.get("completionMarkersAllowed"),
+          }
+          (temp / "fresh-clone-readback.json").write_text(
+              json.dumps(proof, indent=2) + "\n",
+              encoding="utf-8",
+          )
           PY
+
           cp "$RUNNER_TEMP/fresh-clone-readback.json" "$GITHUB_WORKSPACE/.artifacts/b0-finalizer-v7/fresh-clone-readback.json"
-          cp "$RUNNER_TEMP/c8-c9-tree.txt" "$GITHUB_WORKSPACE/.artifacts/b0-finalizer-v7/c8-c9-tree.txt"
+          cp "$RUNNER_TEMP/evidence-tree.txt" "$GITHUB_WORKSPACE/.artifacts/b0-finalizer-v7/evidence-tree.txt"
           cp "$RUNNER_TEMP/tested-to-final.txt" "$GITHUB_WORKSPACE/.artifacts/b0-finalizer-v7/tested-to-final.txt"
-          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$FINAL_SHA" -f state=success -f context='b0/finalizer-v7-readback' -f description="fresh-clone C8/C9 verification passed in $GITHUB_RUN_ID" -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$FINAL_SHA" \
+            -f state=success \
+            -f context='b0/finalizer-v7-readback' \
+            -f description="Linux fresh-clone evidence verification passed in $GITHUB_RUN_ID" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
 
       - name: Upload finalizer proof
         if: always()
@@ -396,5 +956,15 @@ jobs:
         with:
           script: |
             const success = process.env.JOB_STATUS === "success";
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:success?"success":"failure",context:"b0/finalizer-v7",description:success?`${process.env.DELIVERY_STATUS||"UNKNOWN"}: ${process.env.CLASSIFICATION||"UNKNOWN"}`.slice(0,140):`guaranteed finalizer v7 failed in ${context.runId}`,target_url:`${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`});
-            if (!success) core.setFailed("B0 guaranteed fail-closed finalizer v7 failed");
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/finalizer-v7",
+              description: success
+                ? `${process.env.DELIVERY_STATUS || "UNKNOWN"}: ${process.env.CLASSIFICATION || "UNKNOWN"}`.slice(0, 140)
+                : `cross-platform finalizer failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 cross-platform fail-closed finalizer failed");
