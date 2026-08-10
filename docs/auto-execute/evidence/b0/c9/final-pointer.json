@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "testableCandidateSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
   "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
-  "evidenceCommitSha": null,
+  "evidenceCommitSha": "d98c6ee983484b5ed0765ba7c0354ec5f95bcd44",
   "finalRemoteSha": null,
   "finalRemoteShaResolution": "external clean-clone readback because a commit cannot contain its own SHA",
   "status": "EXTERNAL_BLOCKED",
