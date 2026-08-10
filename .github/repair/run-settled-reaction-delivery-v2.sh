@@ -19,6 +19,7 @@ python .github/repair/run-settled-reaction-product-fix-v4.py
 python .github/repair/settled-reaction-final-wire-v5.py
 python .github/repair/settled-reaction-final-wire-v6.py
 python .github/repair/settled-reaction-final-wire-v7.py
+python .github/repair/settled-reaction-context-budget.py
 
 SANGTIAN_SKIP_SOURCE_WRITES=1 \
 SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
