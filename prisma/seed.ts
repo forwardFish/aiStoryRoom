@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { midnightStoreTemplate, templates } from "@ai-story/templates";
+import { midnightStoreTemplate, templates } from "../packages/templates/src/index.ts";
 
 const prisma = new PrismaClient();
 
