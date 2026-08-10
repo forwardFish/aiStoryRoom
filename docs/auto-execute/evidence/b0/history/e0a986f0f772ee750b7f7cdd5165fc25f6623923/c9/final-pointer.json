@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
-  "evidenceCommitSha": "edc203b05f4aa8147841d9742f6cb59d47cf51de",
-  "finalRemoteSha": null,
-  "finalRemoteShaResolution": "external clean-clone readback because a commit cannot contain its own SHA",
-  "status": "EXTERNAL_BLOCKED",
-  "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED"
-}
