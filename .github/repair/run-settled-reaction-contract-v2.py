@@ -2,6 +2,23 @@ from pathlib import Path
 
 source_path = Path(".github/repair/settled-reaction-contract-v2.py")
 source = source_path.read_text(encoding="utf-8")
+source = source.replace(
+    '''def replace_once(text: str, old: str, new: str, label: str) -> str:
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f"{label}: expected exactly one match, found {count}")
+    return text.replace(old, new, 1)
+''',
+    '''def replace_once(text: str, old: str, new: str, label: str) -> str:
+    count = text.count(old)
+    if label == "narrative plan contract inputs" and count >= 1:
+        return text.replace(old, new, 1)
+    if count != 1:
+        raise SystemExit(f"{label}: expected exactly one match, found {count}")
+    return text.replace(old, new, 1)
+''',
+    1,
+)
 start_marker = "# Dynamic selection purpose: RequirementDependency gates next decision only"
 end_marker = "# Current reaction planner and next decision planner remain independent"
 start = source.find(start_marker)
