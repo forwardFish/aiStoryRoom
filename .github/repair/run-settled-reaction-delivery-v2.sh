@@ -10,7 +10,7 @@ test "${GITHUB_REF_NAME}" = "${BRANCH_NAME}"
 git status --short | tee "${EVIDENCE_ROOT}/logs/00-status-before.log"
 pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
 
-python .github/repair/requirement-dependency-product.py
+bash .github/repair/prepare-verified-requirement-dependency.sh
 python .github/repair/requirement-dependency-due-override.py
 python .github/repair/requirement-dependency-due-test-fix.py
 python .github/repair/run-settled-reaction-contract-v2.py
@@ -18,6 +18,7 @@ python .github/repair/settled-reaction-authoring-fix.py
 python .github/repair/run-settled-reaction-product-fix-v4.py
 python .github/repair/settled-reaction-final-wire-v5.py
 python .github/repair/settled-reaction-final-wire-v6.py
+python .github/repair/settled-reaction-final-wire-v7.py
 
 SANGTIAN_SKIP_SOURCE_WRITES=1 \
 SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
