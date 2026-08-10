@@ -9,7 +9,7 @@ end = source.find(end_marker, start)
 if start < 0 or end < 0:
     raise SystemExit("settled reaction purpose section markers missing")
 
-replacement = r'''# Dynamic selection purpose: dependencies gate next decisions, not reactions.
+replacement = r"""# Dynamic selection purpose: dependencies gate next decisions, not reactions.
 path = Path("packages/templates/src/story-package/dynamic-kernel-lite-runtime.ts")
 text = path.read_text(encoding="utf-8")
 if 'purpose?: "NEXT_DECISION" | "REACTION_PROJECTION";' not in text:
@@ -107,6 +107,6 @@ if 'purpose?: "NEXT_DECISION" | "REACTION_PROJECTION";' not in text:
 path.write_text(text, encoding="utf-8")
 
 
-'''
+"""
 patched = source[:start] + replacement + source[end:]
 exec(compile(patched, str(source_path), "exec"), {"__name__": "__main__"})
