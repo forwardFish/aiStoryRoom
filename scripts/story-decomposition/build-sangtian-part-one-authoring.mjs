@@ -235,6 +235,28 @@ const requirements = requirementSeeds.map(([requirementId, sectionIds, dramaticF
   coverageStatus: "BLOCKED_MISSING_EVIDENCE",
 }));
 
+const selectionRules = {
+  schemaVersion: "requirement-selection-rules-v1",
+  requirementDependencies: [
+    {
+      schemaVersion: "requirement-dependency-v1",
+      dependencyId: "REQDEP-P1-S2-REVIEW-BEFORE-CUSTODY",
+      predecessorRequirementId: "REQ-P1-REVIEW-AUTHORITY",
+      successorRequirementId: "REQ-P1-REGISTER-CUSTODY",
+      predecessorDecisionKernelIds: ["DK-P1-REVIEW-AUTHORITY"],
+      bypassWhen: ["DIRECT_DUE_PRESSURE"],
+    },
+    {
+      schemaVersion: "requirement-dependency-v1",
+      dependencyId: "REQDEP-P1-S2-REVIEW-BEFORE-WITNESS",
+      predecessorRequirementId: "REQ-P1-REVIEW-AUTHORITY",
+      successorRequirementId: "REQ-P1-KNOWLEDGE-CHAIN",
+      predecessorDecisionKernelIds: ["DK-P1-REVIEW-AUTHORITY"],
+      bypassWhen: ["DIRECT_DUE_PRESSURE"],
+    },
+  ],
+};
+
 const adaptations = [
   ["ADAPT-P1-PLAYABLE-GOVERNOR", "preserve", ["actor.zhejiang_governor"], ["胡宗宪所代表的总督责任边界与治理压力"], ["玩家可以在制度权限内选择执行、复核、赈济与奏报路径"]],
   ["ADAPT-P1-QINGLIU-COUNTY", "invent_for_gameplay", ["place.qingliu_county", "actor.qingliu_magistrate"], ["地方县级执行与百姓承压机制"], ["清流县及县令为合成人物与地点，不冒充原著实体"]],
@@ -361,7 +383,11 @@ const manifest = {
 await writeJson(resolve(authoringRoot, "manifest.json"), manifest);
 await writeJson(resolve(authoringRoot, "world-start.json"), worldStart);
 await writeJson(resolve(authoringRoot, "core-state.schema.json"), coreStateSchema);
-await writeJson(resolve(authoringRoot, "requirements/part-01.requirements.json"), { schemaVersion: "story-capability-requirement-set-v1", requirements });
+await writeJson(resolve(authoringRoot, "requirements/part-01.requirements.json"), {
+  schemaVersion: "story-capability-requirement-set-v1",
+  selectionRules,
+  requirements,
+});
 await writeJson(resolve(authoringRoot, "adaptation/part-01.adaptation-decisions.json"), { schemaVersion: "adaptation-decision-set-v2", adaptations });
 await writeJson(resolve(authoringRoot, "narrative/style-profile.json"), styleProfile);
 

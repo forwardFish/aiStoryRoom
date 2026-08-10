@@ -8,3 +8,4 @@ export * from "./dramatic-beat-plan";
 export * from "./part-one-runtime-loader";
 export * from "./part-one-runtime-engine";
 export * from "./narrative-scene-pattern";
+export * from "./requirement-dependency";

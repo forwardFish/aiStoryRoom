@@ -545,11 +545,19 @@ export function completePartOneActionSettlement(
     current.statePatch,
     proposedState,
   );
-  const authoritativeNpcReactions = buildAuthoritativeNpcReactions({
+  const authoritativeNpcReactions = bindSettledReactionContract(
+
+    pkg,
+
+    current,
+
+    buildAuthoritativeNpcReactions({
     eventId: current.eventId,
     sceneAfter,
     reactionWorkingSet,
-  });
+  }),
+
+  );
   const authoritativeWorldMoves = buildAuthoritativeWorldMoves({
     dueConsequences: current.dueConsequences,
     reactionWorkingSet,
@@ -2506,6 +2514,48 @@ function buildAuthoritativeObservableFacts(
     }
   }
   return unique(facts);
+}
+
+/**
+ * Bind an author-reviewed reaction to the current committed Affordance. The
+ * Actor Policy resolver still owns who reacts; this helper only prevents the
+ * next Decision Point's prompt from replacing what the current Settlement
+ * already caused.
+ */
+function bindSettledReactionContract(
+  pkg: PartOneRuntimePackage,
+  current: PartOneCurrentActionSettlement,
+  reactions: PartOneCommittedEvent["authoritativeNpcReactions"],
+): PartOneCommittedEvent["authoritativeNpcReactions"] {
+  if (
+    !current.decisionKernelId
+    || !current.affordanceTemplateId
+    || reactions.length === 0
+  ) {
+    return reactions;
+  }
+  const kernel = pkg.assets.find((asset) => (
+    asset.assetType === "DECISION_KERNEL"
+    && asset.assetId === current.decisionKernelId
+  ));
+  const option = kernel?.payload.options?.find((candidate) => (
+    candidate.affordanceTemplateId === current.affordanceTemplateId
+  ));
+  const contract = option?.settledReaction;
+  if (!contract) return reactions;
+  if (
+    contract.schemaVersion !== "settled-reaction-v1"
+    || contract.sourceAffordanceTemplateId
+      !== current.affordanceTemplateId
+    || !contract.action.trim()
+  ) {
+    throw new Error("PART_ONE_SETTLED_REACTION_CONTRACT_INVALID");
+  }
+  return reactions.map((reaction, index) => (
+    index === 0
+      ? { ...reaction, action: contract.action }
+      : reaction
+  ));
 }
 
 function buildAuthoritativeNpcReactions(input: {

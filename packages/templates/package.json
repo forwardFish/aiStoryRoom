@@ -11,7 +11,7 @@
     "check:continuous-strategy-generated": "node scripts/generate-continuous-strategy.mjs --check",
     "lint:continuous-strategy": "node --import tsx src/continuous-strategy/lint.ts",
     "test:continuous-strategy": "node --import tsx --test tests/continuous-strategy.test.ts",
-    "test:story-package": "node --import tsx --test tests/story-package.test.ts tests/narrative-scene-pattern-multiworld.test.ts tests/dramatic-beat-plan-pattern.test.ts tests/capability-runtime-facade.test.ts tests/part-one-narrative-supplement.test.ts tests/part-one-dynamic-kernel-lite.test.ts tests/part-one-dynamic-kernel-continuation.test.ts tests/part-one-dynamic-kernel-prose-independence.test.ts tests/part-one-dynamic-kernel-pressure.test.ts tests/part-one-dynamic-kernel-fallback-recovery.test.ts",
+    "test:story-package": "node --import tsx --test tests/story-package.test.ts tests/requirement-dependency.test.ts tests/narrative-scene-pattern-multiworld.test.ts tests/dramatic-beat-plan-pattern.test.ts tests/capability-runtime-facade.test.ts tests/part-one-narrative-supplement.test.ts tests/part-one-dynamic-kernel-lite.test.ts tests/part-one-dynamic-kernel-continuation.test.ts tests/part-one-dynamic-kernel-prose-independence.test.ts tests/part-one-dynamic-kernel-pressure.test.ts tests/part-one-dynamic-kernel-fallback-recovery.test.ts",
     "test:games": "node --import tsx --test tests/game-registry.test.ts tests/continuous-strategy-multiworld.test.ts",
     "test:runtime-contract": "node --import tsx --test tests/runtime-contract.test.ts tests/settlement.test.ts tests/settlement.adversarial.test.ts tests/settlement.audience-adversarial.test.ts tests/settlement.round3-adversarial.test.ts tests/projection.test.ts tests/kernel-selector-lite.test.ts"
   },

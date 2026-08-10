@@ -13,6 +13,43 @@ export type PartOneStateRule = {
   description: string;
 };
 
+export type PartOneRequirementDependencyCondition = {
+  allOf: PartOneStateRule[];
+};
+
+/**
+ * Author-owned, world-agnostic ordering between two gameplay Requirements.
+ * Runtime code treats every identifier as opaque and evaluates only typed
+ * state rules plus the authoritative committed state.
+ */
+export type PartOneRequirementDependencyBypass =
+  | "DIRECT_DUE_PRESSURE";
+
+export type PartOneRequirementDependency = {
+  schemaVersion: "requirement-dependency-v1";
+  dependencyId: string;
+  predecessorRequirementId: string;
+  successorRequirementId: string;
+  /**
+   * Existing Kernels that are allowed to discharge the predecessor. This is
+   * required when one bridge Kernel belongs to both Requirements, avoiding an
+   * implicit array-order or Kernel-name interpretation in the generic core.
+   */
+  predecessorDecisionKernelIds?: string[];
+  condition?: PartOneRequirementDependencyCondition;
+  /**
+   * Explicit world-agnostic causal debt that may bypass normal ordering.
+   * The Selector receives this only from typed Pending Consequences directly
+   * linked to the candidate; prose and scores cannot activate it.
+   */
+  bypassWhen?: PartOneRequirementDependencyBypass[];
+};
+
+export type PartOneSelectionRules = {
+  schemaVersion: "requirement-selection-rules-v1";
+  requirementDependencies: PartOneRequirementDependency[];
+};
+
 export type PartOneSectionContract = {
   schemaVersion: "section-contract-v1";
   sectionId: string;
@@ -261,6 +298,13 @@ export type PartOneState = {
   [key: string]: unknown;
 };
 
+export type PartOneSettledReactionContract = {
+  schemaVersion: "settled-reaction-v1";
+  sourceAffordanceTemplateId: string;
+  /** Author-reviewed current-turn reaction; never a next-decision prompt. */
+  action: string;
+};
+
 export type PartOneAffordanceTemplate = {
   affordanceTemplateId: string;
   title: string;
@@ -291,6 +335,7 @@ export type PartOneAffordanceTemplate = {
   fallbackContinuation?: string;
   /** Complete author-reviewed player prose. Never compiled from semantic constraints. */
   playerVisibleFallback?: PartOnePlayerVisibleFallback;
+  settledReaction?: PartOneSettledReactionContract;
   createsPendingConsequence: boolean;
 };
 
@@ -432,6 +477,7 @@ export type PartOneRuntimePackage = {
   contentCounts: {
     assets: number;
     requirements: number;
+    requirementDependencies: number;
     sections: number;
     decisionKernels: number;
     causalArcs: number;
@@ -450,6 +496,7 @@ export type PartOneRuntimePackage = {
   };
   sections: PartOneSectionContract[];
   requirements: Array<Record<string, unknown> & { requirementId: string; sectionIds: string[]; decisionKernelIds: string[]; runtimeAssetIds: string[] }>;
+  selectionRules: PartOneSelectionRules;
   approvedAdaptations: Array<Record<string, unknown> & { adaptationDecisionId: string; reviewStatus: string }>;
   styleProfile: PartOneNarrativeStyleProfile;
   assets: PartOneRuntimeAsset[];

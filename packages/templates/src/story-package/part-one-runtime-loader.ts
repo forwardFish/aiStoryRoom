@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defaultStoryPackageConfigRoot } from "./loader";
+import { validatePartOneSelectionRules } from "./requirement-dependency";
+
 import type { LoadedPartOneRuntimePackage, PartOneRuntimePackage } from "./part-one-runtime-types";
 
 const cache = new Map<string, LoadedPartOneRuntimePackage>();
@@ -77,6 +79,23 @@ export function validatePartOneRuntimePackage(raw: unknown, worldId = "sangtian"
   text(worldStartScene.locationLabel, "worldStart.state.scene.locationLabel");
   array(worldStartScene.presentActorRefs, "worldStart.state.scene.presentActorRefs");
   text(worldStartScene.situation, "worldStart.state.scene.situation");
+  const selectionRules = validatePartOneSelectionRules({
+    selectionRules: value.selectionRules,
+    requirements: requirements as unknown as PartOneRuntimePackage["requirements"],
+    sections: sections as unknown as PartOneRuntimePackage["sections"],
+    assets: assets as unknown as PartOneRuntimePackage["assets"],
+    worldStartState: worldStartState as unknown as PartOneRuntimePackage["worldStart"]["state"],
+  });
+  count(
+    counts.requirementDependencies,
+    selectionRules.requirementDependencies.length,
+    "requirementDependencies",
+  );
+  count(
+    authoringManifest.requirementDependencyCount,
+    selectionRules.requirementDependencies.length,
+    "authoringManifest.requirementDependencyCount",
+  );
   equal(style.profileId, "STYLE-SANGTIAN-HISTORICAL-NOVEL", "styleProfile.profileId");
   const budget = record(style.narrativeBudget, "styleProfile.narrativeBudget");
   if (number(budget.minCharacters, "minCharacters") < 300 || number(budget.maxCharacters, "maxCharacters") > 1500) {

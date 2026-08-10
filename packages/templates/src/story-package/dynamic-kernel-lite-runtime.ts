@@ -9,6 +9,8 @@ import {
   type KernelSelectorLiteEvaluation,
   type KernelSelectorLiteResult,
 } from "../runtime-contract/kernel-selector-lite.js";
+import { resolveRequirementDependencyBlock } from "./requirement-dependency.js";
+
 import {
   buildPartOneRuntimeWorkingSet as buildLegacyWorkingSet,
   evaluatePartOneRule,
@@ -659,6 +661,7 @@ function evaluateKernelSafely(
         allowedInCurrentScope:
           section.activeDecisionKernelIds.includes(kernelId),
         structurallyResolved: false,
+        dependencyBlocked: false,
         unmetMustEstablishCount: 0,
         unmetExitGateCount: 0,
         duePressureCount: 0,
@@ -785,12 +788,23 @@ function evaluateKernel(
   );
   const pending = linkedPending(pkg, state, kernel);
   const nextTurn = turnNumber + 1;
+  const directDuePressureCount = pending.filter(
+    (item) => item.dueTurn <= nextTurn,
+  ).length;
   const present = new Set(state.scene?.presentActorRefs || []);
   const recentRequirementContinuity = countRecentRequirementContinuity(
     pkg,
     state,
     kernel,
   );
+  const dependencyBlock = resolveRequirementDependencyBlock(
+    pkg,
+    state,
+    section,
+    kernel,
+    { directDuePressureCount },
+  );
+  rejectionCodes.push(...dependencyBlock.reasonCodes);
   if (options.length < 2) rejectionCodes.push("KERNEL_OPTIONS_MISSING");
   if (affordances.length !== options.length) {
     rejectionCodes.push("AFFORDANCE_MATERIALIZATION_FAILED");
@@ -815,11 +829,10 @@ function evaluateKernel(
         && unmetMust.length === 0
         && unmetExit.length === 0
         && pending.length === 0,
+      dependencyBlocked: dependencyBlock.blocked,
       unmetMustEstablishCount: unmetMust.length,
       unmetExitGateCount: unmetExit.length,
-      duePressureCount: pending.filter(
-        (item) => item.dueTurn <= nextTurn,
-      ).length,
+      duePressureCount: directDuePressureCount,
       pendingPressureCount: pending.filter(
         (item) => item.dueTurn > nextTurn,
       ).length,

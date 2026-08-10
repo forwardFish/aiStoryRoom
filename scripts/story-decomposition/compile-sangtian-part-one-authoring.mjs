@@ -8,7 +8,9 @@ import {
   writeJson,
 } from "./lib/contract-utils.mjs";
 
-const RELEASE_VERSION = "sangtian-part-one-authoring-v1.3.0";
+import { validateRequirementSelectionRules } from "./lib/requirement-dependency.mjs";
+
+const RELEASE_VERSION = "sangtian-part-one-authoring-v1.3.1";
 const EVIDENCE_RELEASE_ID = "sangtian-part-one-evidence-v1.0.0";
 const authoringRoot = resolve(repoRoot, "packages/templates/authoring/sangtian");
 const approvedMechanismRoot = resolve(authoringRoot, "mechanisms/approved/part-01-v3");
@@ -1329,6 +1331,13 @@ for (const section of sections) {
   }
 }
 if (continuationCount !== 5) throw new Error(`Expected five non-repeating continuation decisions, found ${continuationCount}`);
+const selectionRules = validateRequirementSelectionRules({
+  selectionRules: requirementSet.selectionRules,
+  requirements: requirementSet.requirements,
+  sections,
+  kernelIds: Object.keys(kernelOptions),
+  worldStartState: worldStart.state,
+});
 const sectionByRequirement = new Map(sections.flatMap((section) => section.requiredRequirementIds.map((id) => [id, section])));
 const assets = [];
 
@@ -1606,7 +1615,18 @@ for (const kernelId of uniqueKernelIds) {
           ? { fallbackContinuation: kernelFallbackContinuations[kernelId][index] }
           : {}),
         ...(kernelPlayerVisibleFallbacks[kernelId]?.[index]
-          ? { playerVisibleFallback: kernelPlayerVisibleFallbacks[kernelId][index] }
+          ? {
+            playerVisibleFallback: kernelPlayerVisibleFallbacks[kernelId][index],
+            settledReaction: {
+              schemaVersion: "settled-reaction-v1",
+              sourceAffordanceTemplateId: `${kernelId}-OPT-0${index + 1}`,
+              action: String(
+                kernelPlayerVisibleFallbacks[kernelId][index].IMMEDIATE_REACTION
+                || kernelPlayerVisibleFallbacks[kernelId][index].WORLD_PRESSURE
+                || ""
+              ).trim(),
+            },
+          }
           : {}),
         createsPendingConsequence: true,
       })),
@@ -1624,6 +1644,14 @@ for (const asset of assets.filter((asset) => (
     throw new Error(`DECISION_KERNEL_PROTECTED_OUTCOME_MISSING:${asset.assetId}`);
   }
   for (const option of options) {
+    if (
+      !option.settledReaction
+      || option.settledReaction.schemaVersion !== "settled-reaction-v1"
+      || option.settledReaction.sourceAffordanceTemplateId !== option.affordanceTemplateId
+      || !String(option.settledReaction.action || "").trim()
+    ) {
+      throw new Error(`DECISION_KERNEL_SETTLED_REACTION_INVALID:${option.affordanceTemplateId}`);
+    }
     const refs = Array.isArray(option.protectedEffectRefs) ? option.protectedEffectRefs : [];
     if (!refs.length) {
       throw new Error(`DECISION_KERNEL_PROTECTED_EFFECT_BINDING_MISSING:${option.affordanceTemplateId}`);
@@ -1840,6 +1868,7 @@ const manifestBase = {
   causalArcCount: sections.flatMap((item) => item.activeCausalArcIds).length,
   floorObligationCount: sections.flatMap((item) => item.floorObligationIds).length,
   requirementCount: requirementSet.requirements.length,
+  requirementDependencyCount: selectionRules.requirementDependencies.length,
   assetIds: [...assetIds].sort(),
   assetHashes,
   runtimeIndexHash: computeImmutableHash(runtimeIndex),
@@ -1863,6 +1892,7 @@ const runtimePackageBase = {
   contentCounts: {
     assets: assets.length,
     requirements: requirementSet.requirements.length,
+    requirementDependencies: selectionRules.requirementDependencies.length,
     sections: sections.length,
     decisionKernels: uniqueKernelIds.length,
     causalArcs: sections.flatMap((item) => item.activeCausalArcIds).length,
@@ -1874,6 +1904,7 @@ const runtimePackageBase = {
   worldStart,
   sections,
   requirements: requirementSet.requirements,
+  selectionRules,
   approvedAdaptations: adaptationSet.adaptations,
   styleProfile,
   assets,

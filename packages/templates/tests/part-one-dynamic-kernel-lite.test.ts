@@ -334,3 +334,79 @@ test("pinned continuation recovery keeps the exact continuation decision point",
     continuation.decisionAffordances.map((item) => item.affordanceTemplateId),
   );
 });
+
+test("validated Requirement dependencies choose review authority before witness access", () => {
+  const pkg = structuredClone(packageUnderTest());
+  const state = createInitialPartOneState(pkg);
+  state.sectionId = "SEC-P1-02";
+  state.scene = partOneSceneForSection("SEC-P1-02");
+  state.turnNumber = 3;
+  state.sectionTurnNumber = 0;
+  state.completedKernelIds = [
+    "DK-P1-REVIEW-INITIATION",
+    "DK-P1-EXECUTION-SCOPE",
+    "DK-P1-RESPONSIBILITY-RECORD",
+  ];
+  state.review.authority = "UNDECIDED";
+  state.review.procedureStatus = "UNSET";
+  state.evidence.chainStatus = "UNKNOWN";
+  state.evidence.primaryCustodianRef = null;
+  state.evidence.copyStatus = "NONE";
+  state.evidence.archiveSealStatus = "UNKNOWN";
+  state.witness.accessStatus = "UNKNOWN";
+  state.pendingConsequences = [];
+
+  const normal = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 3);
+  assert.equal(normal.openDecisionKernel.assetId, "DK-P1-REVIEW-AUTHORITY");
+  const witness = normal.kernelSelection.candidates.find((candidate) => (
+    candidate.kernelId === "DK-P1-WITNESS-ACCESS"
+  ));
+  assert.ok(witness);
+  assert.equal(witness.eligible, false);
+  assert.equal(
+    witness.reasonCodes.some((code) => (
+      code.startsWith("REQUIREMENT_DEPENDENCY_BLOCKED:")
+    )),
+    true,
+  );
+
+  const reversed = structuredClone(pkg);
+  reversed.requirements.reverse();
+  reversed.selectionRules.requirementDependencies.reverse();
+  reversed.assets.reverse();
+  reversed.sections = reversed.sections.map((section) => ({
+    ...section,
+    activeDecisionKernelIds: [...section.activeDecisionKernelIds].reverse(),
+    requiredRequirementIds: [...section.requiredRequirementIds].reverse(),
+  }));
+  const reordered = buildDynamicPartOneRuntimeWorkingSet(reversed, state, 3);
+  assert.equal(reordered.openDecisionKernel.assetId, normal.openDecisionKernel.assetId);
+  assert.deepEqual(
+    reordered.decisionAffordances.map((item) => item.affordanceTemplateId),
+    normal.decisionAffordances.map((item) => item.affordanceTemplateId),
+  );
+});
+
+test("every playable Affordance carries a current-turn settled reaction contract", () => {
+  const pkg = packageUnderTest();
+  const options = pkg.assets
+    .filter((asset) => asset.assetType === "DECISION_KERNEL")
+    .flatMap((asset) => asset.payload.options || []);
+  assert.ok(options.length > 0);
+  for (const option of options) {
+    assert.equal(
+      option.settledReaction?.schemaVersion,
+      "settled-reaction-v1",
+      option.affordanceTemplateId,
+    );
+    assert.equal(
+      option.settledReaction?.sourceAffordanceTemplateId,
+      option.affordanceTemplateId,
+      option.affordanceTemplateId,
+    );
+    assert.ok(
+      String(option.settledReaction?.action || "").trim().length > 0,
+      option.affordanceTemplateId,
+    );
+  }
+});

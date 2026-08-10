@@ -1162,5 +1162,34 @@
       ],
       "coverageStatus": "SATISFIED_BY_SOURCE"
     }
-  ]
+  ],
+  "selectionRules": {
+    "schemaVersion": "requirement-selection-rules-v1",
+    "requirementDependencies": [
+      {
+        "schemaVersion": "requirement-dependency-v1",
+        "dependencyId": "REQDEP-P1-S2-REVIEW-BEFORE-CUSTODY",
+        "predecessorRequirementId": "REQ-P1-REVIEW-AUTHORITY",
+        "successorRequirementId": "REQ-P1-REGISTER-CUSTODY",
+        "predecessorDecisionKernelIds": [
+          "DK-P1-REVIEW-AUTHORITY"
+        ],
+        "bypassWhen": [
+          "DIRECT_DUE_PRESSURE"
+        ]
+      },
+      {
+        "schemaVersion": "requirement-dependency-v1",
+        "dependencyId": "REQDEP-P1-S2-REVIEW-BEFORE-WITNESS",
+        "predecessorRequirementId": "REQ-P1-REVIEW-AUTHORITY",
+        "successorRequirementId": "REQ-P1-KNOWLEDGE-CHAIN",
+        "predecessorDecisionKernelIds": [
+          "DK-P1-REVIEW-AUTHORITY"
+        ],
+        "bypassWhen": [
+          "DIRECT_DUE_PRESSURE"
+        ]
+      }
+    ]
+  }
 }

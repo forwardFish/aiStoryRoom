@@ -58,6 +58,8 @@ export type KernelSelectorLiteCandidate<TPayload = unknown> = {
   completed: boolean;
   allowedInCurrentScope: boolean;
   structurallyResolved: boolean;
+  /** Validated Requirement graph rejected this candidate before scoring. */
+  dependencyBlocked?: boolean;
   unmetMustEstablishCount: number;
   unmetExitGateCount: number;
   duePressureCount: number;
@@ -235,10 +237,12 @@ export function selectKernelLite<TPayload>(
     if (candidate.completed) reasons.push("KERNEL_COMPLETED");
     if (!candidate.allowedInCurrentScope) reasons.push("KERNEL_OUTSIDE_SCOPE");
     if (candidate.structurallyResolved) reasons.push("OBLIGATION_ALREADY_SATISFIED");
+    if (candidate.dependencyBlocked) reasons.push("REQUIREMENT_DEPENDENCY_BLOCKED");
     if (!pair) reasons.push("INSUFFICIENT_DISTINCT_OUTCOMES");
     const eligible = !candidate.completed
       && candidate.allowedInCurrentScope
       && !candidate.structurallyResolved
+      && !candidate.dependencyBlocked
       && Boolean(pair);
     return {
       kernelId: candidate.kernelId,
