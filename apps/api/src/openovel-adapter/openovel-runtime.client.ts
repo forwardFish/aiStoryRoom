@@ -30,6 +30,7 @@ export type OpenNovelPublicRun = {
     aftermath: string[];
     sourceTurnId: string;
     sourceRevision: number;
+    genericEndgame?: unknown;
   } | null;
   options: OpenNovelVisibleOption[];
   updatedAt: string;

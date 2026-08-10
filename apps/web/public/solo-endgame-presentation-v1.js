@@ -1,3 +1,9 @@
+import {
+  adaptEndgamePresentationV3ForGame,
+  enhanceEndgameResultPage,
+  normalizeEndgamePresentationV3
+} from "./endgame-result-renderer.js?v=20260810-generic-endgame-v3";
+
 const INSTALL_FLAG = Symbol.for("our-many-worlds.solo-endgame-presentation-v1");
 const RESULT_CACHE = new WeakMap();
 let latestPresentation = null;
@@ -29,7 +35,8 @@ export async function applyAuthoritativeSoloEndgame(storage, view, browser = glo
   if (!result || result.runId !== runId) {
     try {
       const payload = await storage.loadResult();
-      const presentation = normalizeEndgamePresentationV1(payload?.presentation);
+      const presentation = normalizeEndgamePresentationV3(payload?.presentation)
+        || normalizeEndgamePresentationV1(payload?.presentation);
       result = { runId, presentation, error: presentation ? "" : "终局展示合同无效。" };
       if (presentation) RESULT_CACHE.set(storage, result);
       else RESULT_CACHE.delete(storage);
@@ -49,7 +56,9 @@ export async function applyAuthoritativeSoloEndgame(storage, view, browser = glo
   publishPresentation(result.presentation, browser);
   return {
     ...view,
-    finalJudgement: adaptPresentationForExistingFinalRenderer(result.presentation),
+    finalJudgement: result.presentation.schemaVersion === "endgame_presentation_v3"
+      ? adaptEndgamePresentationV3ForGame(result.presentation)
+      : adaptPresentationForExistingFinalRenderer(result.presentation),
     endgamePresentation: result.presentation,
     replayActions: result.presentation.replayActions,
     endgameResultError: "",
@@ -226,9 +235,9 @@ export function enhanceSoloEndgamePage(documentRef, presentation) {
 
 function publishPresentation(presentation, browser) {
   latestPresentation = presentation;
-  browser.__SOLO_ENDGAME_PRESENTATION_V1__ = presentation;
+  browser.__SOLO_ENDGAME_PRESENTATION__ = presentation;
   const documentRef = browser.document;
-  if (documentRef) queueTask(browser, () => enhanceSoloEndgamePage(documentRef, presentation));
+  if (documentRef) queueTask(browser, () => enhancePresentationPage(documentRef, presentation));
 }
 
 function installPageObserver(browser) {
@@ -236,10 +245,16 @@ function installPageObserver(browser) {
   const Observer = browser?.MutationObserver;
   if (!documentRef || typeof Observer !== "function" || observer) return;
   observer = new Observer(() => {
-    const presentation = browser.__SOLO_ENDGAME_PRESENTATION_V1__ || latestPresentation;
-    if (presentation) enhanceSoloEndgamePage(documentRef, presentation);
+    const presentation = browser.__SOLO_ENDGAME_PRESENTATION__ || latestPresentation;
+    if (presentation) enhancePresentationPage(documentRef, presentation);
   });
   observer.observe(documentRef.documentElement || documentRef.body, { childList: true, subtree: true });
+}
+
+function enhancePresentationPage(documentRef, presentation) {
+  return presentation?.schemaVersion === "endgame_presentation_v3"
+    ? enhanceEndgameResultPage(documentRef, presentation)
+    : enhanceSoloEndgamePage(documentRef, presentation);
 }
 
 function appendListArticle(documentRef, parent, headingText, values, testid) {

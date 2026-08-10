@@ -11,6 +11,7 @@
     "dev:preview-api": "pnpm dev:api",
     "dev:legacy-preview-api": "tsx scripts/preview-api.ts",
     "dev:web": "pnpm --filter @apps/web dev",
+    "fixture:endgame": "node scripts/dev/generate-generic-endgame-fixtures.mjs",
     "dev:web:test": "node --env-file=.env.test apps/web/src/server.mjs",
     "dev:web:prd": "node --env-file=.env.prd apps/web/src/server.mjs",
     "dev:story-worker": "pnpm --filter @apps/api run worker",

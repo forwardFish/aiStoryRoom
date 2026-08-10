@@ -219,3 +219,83 @@
     transition: none;
   }
 }
+/* Generic Endgame v3 enriches the existing final-judgement region in place. */
+.endgame-v3-axes,
+.endgame-v3-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.endgame-v3-axes article,
+.endgame-v3-metrics article,
+.endgame-v3-section {
+  padding: 14px;
+  border: 1px solid rgba(87, 57, 29, 0.2);
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgba(255, 251, 241, 0.82), rgba(245, 232, 207, 0.48));
+  box-shadow: 0 8px 24px rgba(66, 43, 22, 0.06);
+}
+
+.endgame-v3-axes small,
+.endgame-v3-metrics span,
+.endgame-v3-metrics small {
+  display: block;
+  color: #8b6b48;
+}
+
+.endgame-v3-axes h3,
+.endgame-v3-axes p,
+.endgame-v3-section h3 {
+  margin: 5px 0;
+  color: #3a2817;
+}
+
+.endgame-v3-metrics b {
+  display: block;
+  margin: 5px 0 2px;
+  color: #4d3420;
+  font-size: 22px;
+}
+
+.endgame-v3-narrative,
+.endgame-v3-section {
+  margin: 14px 0;
+  text-align: left;
+  line-height: 1.75;
+}
+
+.endgame-v3-narrative p {
+  margin: 0 0 12px;
+}
+
+.endgame-v3-section ul,
+.endgame-v3-section ol {
+  margin: 8px 0 0;
+  padding-left: 22px;
+}
+
+.endgame-v3-section li + li {
+  margin-top: 8px;
+}
+
+.endgame-v3-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media (max-width: 680px) {
+  .final-judgement {
+    max-height: 68vh;
+  }
+
+  .endgame-v3-axes,
+  .endgame-v3-metrics {
+    grid-template-columns: 1fr;
+  }
+}

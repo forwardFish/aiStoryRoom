@@ -55,6 +55,7 @@ __pycache__/
 
 # Generated deployment/build outputs and caches
 apps/web/dist-vercel/
+apps/web/public/__local-endgame-fixtures/
 packages/shared/src/**/*.js
 packages/templates/src/**/*.js
 scripts/acceptance/generated/

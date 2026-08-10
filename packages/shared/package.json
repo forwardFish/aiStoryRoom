@@ -11,7 +11,10 @@
     "pregeneric-endgame:verify:s5": "node --check src/endgame/config-driven-ending-narrator-v1.mjs && node --check tests/generic-endgame-s5-narrator.spec.mjs",
     "generic-endgame:verify:s5": "node --test tests/generic-endgame-s5-narrator.spec.mjs",
     "generic-endgame:verify:s1-s5": "pnpm run generic-endgame:verify:s1-s4 && pnpm run generic-endgame:verify:s5",
-    "pretypecheck": "pnpm run generic-endgame:verify:s1-s5",
+    "pregeneric-endgame:verify:s6": "node --check src/endgame/config-driven-endgame-presentation-v1.mjs && node --check tests/generic-endgame-s6-presentation.spec.mjs",
+    "generic-endgame:verify:s6": "node --test tests/generic-endgame-s6-presentation.spec.mjs",
+    "generic-endgame:verify:s1-s6": "pnpm run generic-endgame:verify:s1-s5 && pnpm run generic-endgame:verify:s6",
+    "pretypecheck": "pnpm run generic-endgame:verify:s1-s6",
     "typecheck": "tsc --noEmit",
     "posttypecheck": "pnpm run build && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "test:endgame": "node --import tsx --test tests/endgame.schemas.spec.ts"

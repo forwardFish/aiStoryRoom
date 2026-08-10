@@ -21,6 +21,10 @@ import {
   type SoloResultActionRecord,
   type SoloResultRunRecord,
 } from "./solo-ending-result";
+import {
+  compileGenericOpenNovelResultV3,
+  genericEndgameArtifactFromEnding,
+} from "./generic-ending-result";
 
 @Injectable()
 export class SoloEndingResultService {
@@ -41,6 +45,19 @@ export class SoloEndingResultService {
     assertAuthoritativeResultReady(run, payload, runtimeRun);
     const role = run.players[0]?.role;
     if (!role) throw resultNotReady("VIEWER_ROLE_MISSING");
+    const genericArtifact = genericEndgameArtifactFromEnding(runtimeRun.ending);
+    if (genericArtifact) {
+      try {
+        return compileGenericOpenNovelResultV3({
+          raw: payload,
+          run,
+          roleKey: role.roleKey,
+          artifact: genericArtifact,
+        });
+      } catch {
+        throw resultNotReady("GENERIC_ENDGAME_PRESENTATION_INVALID");
+      }
+    }
     const actions = await this.resolvedActions(runId, user.id, role.id);
     try {
       return compileOpenNovelResultV2({

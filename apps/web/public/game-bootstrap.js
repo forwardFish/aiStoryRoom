@@ -14,7 +14,12 @@ export async function bootGamePage({
   navigate = (url) => win?.location?.assign?.(url)
 } = {}) {
   if (!root) throw new TypeError("game root is required");
-  const runId = new URLSearchParams(win?.location?.search || "").get("runId") || "";
+  const query = new URLSearchParams(win?.location?.search || "");
+  const localFixture = query.get("endgameFixture") || "";
+  if (localFixture && isLocalFixtureHost(win?.location?.hostname)) {
+    return renderLocalEndgameFixture({ root, key:localFixture, fetchImpl });
+  }
+  const runId = query.get("runId") || "";
   root.innerHTML = loadingView();
 
   if (!runId) {
@@ -92,6 +97,23 @@ export async function bootGamePage({
     : "We can't load this shared story room right now. Please try again in a moment.";
   renderClosedError(root, runId, message, true);
   return null;
+}
+
+async function renderLocalEndgameFixture({ root, key, fetchImpl }) {
+  if (typeof fetchImpl !== "function" || !/^[a-z0-9-]+$/u.test(key)) throw new Error("Invalid local endgame fixture request.");
+  const response = await fetchImpl(`/__local-endgame-fixtures/${encodeURIComponent(key)}.json`, { cache:"no-store", headers:{ accept:"application/json" } });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error("Local endgame fixture is unavailable. Run pnpm fixture:endgame first.");
+  const { enhanceEndgameResultPage, normalizeEndgamePresentationV3 } = await import("./endgame-result-renderer.js?v=20260810-generic-endgame-v3");
+  const presentation = normalizeEndgamePresentationV3(payload.presentation);
+  if (!presentation) throw new Error("Local endgame fixture is invalid.");
+  root.innerHTML = '<section class="decision-zone final-judgement" data-testid="final-judgement"></section>';
+  enhanceEndgameResultPage(root.ownerDocument || document, presentation);
+  return { fixture:true, presentation };
+}
+
+function isLocalFixtureHost(hostname) {
+  return ["127.0.0.1", "localhost", "::1"].includes(String(hostname || "").toLowerCase());
 }
 
 function loadingView() {
