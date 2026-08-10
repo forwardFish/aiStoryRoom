@@ -15,6 +15,7 @@ python .github/repair/requirement-dependency-due-override.py
 python .github/repair/requirement-dependency-due-test-fix.py
 python .github/repair/run-settled-reaction-contract-v2.py
 python .github/repair/settled-reaction-authoring-fix.py
+python .github/repair/settled-reaction-product-fix-v3.py
 
 SANGTIAN_SKIP_SOURCE_WRITES=1 \
 SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
