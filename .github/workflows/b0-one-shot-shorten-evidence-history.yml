@@ -1,0 +1,237 @@
+name: B0 One-Shot Shorten Evidence History
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-shorten-evidence-history.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-shorten-evidence-history
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Publish locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/shorten-evidence-history",
+              description: `evidence history path repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify exact remote state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          test -z "$(git status --short)"
+
+      - name: Replace duplicated history directories with versioned archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path(".github/workflows/b0-fail-closed-finalizer-v7.yml")
+          text = path.read_text(encoding="utf-8")
+
+          def replace_once(old: str, new: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"expected one match, found {count}: {old[:160]!r}")
+              text = text.replace(old, new)
+
+          replace_once(
+              """  B0_HISTORICAL_EVIDENCE_SHA: 6032972d4518f8feb57f958ff0b2e52636431be1
+              B0_PREVIOUS_EVIDENCE_REMOTE_SHA: e0a986f0f772ee750b7f7cdd5165fc25f6623923
+              B0_TESTABLE_CANDIDATE_SHA: e7635c279e72ae8efaff614159447d88c7ba22d0
+          """,
+              """  B0_HISTORICAL_EVIDENCE_SHA: 6032972d4518f8feb57f958ff0b2e52636431be1
+              B0_LEGACY_EVIDENCE_REMOTE_SHA: e0a986f0f772ee750b7f7cdd5165fc25f6623923
+              B0_PREVIOUS_EVIDENCE_REMOTE_SHA: 787f735673c4e738003900f00cb5676b1d074217
+              B0_TESTABLE_CANDIDATE_SHA: e7635c279e72ae8efaff614159447d88c7ba22d0
+          """,
+          )
+          replace_once(
+              """          import shutil
+              from datetime import datetime, timezone
+          """,
+              """          import shutil
+              import zipfile
+              from datetime import datetime, timezone
+          """,
+          )
+          replace_once(
+              """          history = root / "history" / os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"]
+          """,
+              """          history_root = root / "history"
+              legacy_history = history_root / os.environ["B0_LEGACY_EVIDENCE_REMOTE_SHA"]
+              legacy_history_id = os.environ["B0_LEGACY_EVIDENCE_REMOTE_SHA"][:8]
+              previous_history_id = os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"][:8]
+          """,
+          )
+          replace_once(
+              """          # Preserve the prior C8/C9 evidence run before replacing the active pointers.
+              if not history.exists():
+                  if c8.exists(): copy_tree(c8, history / "c8")
+                  if c9.exists(): copy_tree(c9, history / "c9")
+                  history.mkdir(parents=True, exist_ok=True)
+                  (history / "archive-metadata.json").write_text(json.dumps({
+                      "schemaVersion": 1,
+                      "archivedAtUtc": generated,
+                      "sourceFinalRemoteSha": os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"],
+                      "preservationRule": "historical evidence is retained under a versioned path before a new run is written",
+                  }, indent=2) + "\\n", encoding="utf-8")
+          """,
+              """          # Preserve previous evidence without creating Windows-incompatible checkout paths.
+              archive_stage = stage / "history-archives"
+              archive_stage.mkdir(parents=True, exist_ok=True)
+
+              def build_archive(sources, destination: pathlib.Path) -> None:
+                  with zipfile.ZipFile(
+                      destination,
+                      "w",
+                      compression=zipfile.ZIP_DEFLATED,
+                      compresslevel=9,
+                  ) as bundle:
+                      for prefix, source in sources:
+                          if not source.exists():
+                              continue
+                          for item in sorted(source.rglob("*")):
+                              if item.is_file():
+                                  relative = item.relative_to(source).as_posix()
+                                  bundle.write(item, arcname=f"{prefix}/{relative}")
+
+              legacy_zip = archive_stage / f"{legacy_history_id}-prior-c8-c9.zip"
+              previous_zip = archive_stage / f"{previous_history_id}-prior-c8-c9.zip"
+              if legacy_history.exists():
+                  build_archive([("legacy", legacy_history)], legacy_zip)
+              build_archive([("c8", c8), ("c9", c9)], previous_zip)
+
+              if history_root.exists():
+                  shutil.rmtree(history_root)
+              history_root.mkdir(parents=True, exist_ok=True)
+
+              def install_archive(source: pathlib.Path, label: str, source_sha: str) -> None:
+                  if not source.is_file():
+                      return
+                  destination = history_root / label
+                  destination.mkdir(parents=True, exist_ok=True)
+                  archive = destination / "prior-c8-c9.zip"
+                  shutil.copy2(source, archive)
+                  raw = archive.read_bytes()
+                  (destination / "archive-metadata.json").write_text(json.dumps({
+                      "schemaVersion": 1,
+                      "archivedAtUtc": generated,
+                      "sourceFinalRemoteSha": source_sha,
+                      "archive": archive.name,
+                      "archiveBytes": len(raw),
+                      "archiveSha256": hashlib.sha256(raw).hexdigest(),
+                      "preservationRule": "historical evidence is retained in a versioned ZIP to keep ordinary Windows checkout paths portable",
+                  }, indent=2) + "\\n", encoding="utf-8")
+
+              install_archive(
+                  legacy_zip,
+                  legacy_history_id,
+                  os.environ["B0_LEGACY_EVIDENCE_REMOTE_SHA"],
+              )
+              install_archive(
+                  previous_zip,
+                  previous_history_id,
+                  os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"],
+              )
+          """,
+          )
+          replace_once(
+              """              "historicalEvidenceSourceSha": os.environ["B0_HISTORICAL_EVIDENCE_SHA"],
+                  "previousEvidenceRemoteSha": os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"],
+                  "historicalC0ThroughC6Restored": True,
+                  "previousC8C9ArchivedUnderVersionedPath": True,
+          """,
+              """              "historicalEvidenceSourceSha": os.environ["B0_HISTORICAL_EVIDENCE_SHA"],
+                  "legacyEvidenceRemoteSha": os.environ["B0_LEGACY_EVIDENCE_REMOTE_SHA"],
+                  "previousEvidenceRemoteSha": os.environ["B0_PREVIOUS_EVIDENCE_REMOTE_SHA"],
+                  "historicalC0ThroughC6Restored": True,
+                  "previousC8C9ArchivedUnderVersionedPath": True,
+                  "historicalArchiveFormat": "zip",
+          """,
+          )
+
+          path.write_text(text, encoding="utf-8")
+          PY
+          grep -F 'import zipfile' .github/workflows/b0-fail-closed-finalizer-v7.yml
+          grep -F 'prior-c8-c9.zip' .github/workflows/b0-fail-closed-finalizer-v7.yml
+          grep -F 'historicalArchiveFormat' .github/workflows/b0-fail-closed-finalizer-v7.yml
+          git diff --check
+
+      - name: Commit and push the portable history finalizer
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          before="$(git rev-parse origin/$B0_BRANCH)"
+          test "$before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/b0-one-shot-shorten-evidence-history.yml
+          git add .github/workflows/b0-fail-closed-finalizer-v7.yml
+          git diff --cached --check
+          test "$(git diff --cached --name-only | sort)" = ".github/workflows/b0-fail-closed-finalizer-v7.yml"
+          git commit -m "ci(b0): archive evidence history with portable paths"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$B0_BRANCH"
+          after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$after" = "$local_head"
+          echo "local_head=$local_head" >> "$GITHUB_OUTPUT"
+          echo "remote_before=$before" >> "$GITHUB_OUTPUT"
+          echo "remote_after=$after" >> "$GITHUB_OUTPUT"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOCAL_HEAD: ${{ steps.push.outputs.local_head }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/shorten-evidence-history",
+              description: success
+                ? `portable evidence history pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}`
+                : `portable evidence history repair failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("Portable evidence history repair failed");
