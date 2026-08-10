@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "generic_endgame_v3_s0_package_hashes_v1",
+  "hashAlgorithm": "sha256-rfc8785-jcs-v1",
+  "packageHashFieldIncludedInDocument": false,
+  "packages": [
+    {
+      "path": "packages/templates/config/endgame/examples/sangtian.endgame.example.json",
+      "policyId": "sangtian_governor_part1",
+      "policyVersion": "1.0.0",
+      "packageHash": "8594351b1428009d3031e82c5328af061c51f7372a352b149beff43356dc4592"
+    },
+    {
+      "path": "packages/templates/config/endgame/examples/caesar.endgame.example.json",
+      "policyId": "caesar_brutus_part1",
+      "policyVersion": "1.0.0",
+      "packageHash": "c1bdfd1a5b26dc21a80a2a5e278ef1f7cdeaa92aed206aa59720fa308becaea4"
+    },
+    {
+      "path": "packages/templates/config/endgame/fixtures/neutral-synthetic.endgame.fixture.json",
+      "policyId": "neutral_operator_part1",
+      "policyVersion": "1.0.0",
+      "packageHash": "f4af504aef853485db1c3878e50da3a5334dd1a43d0d8aa1cd3d9ec53641f574"
+    }
+  ]
+}

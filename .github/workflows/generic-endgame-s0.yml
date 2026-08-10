@@ -1,0 +1,258 @@
+name: Generic Endgame v3 S0 Exact Remote Verification
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-main-game-final-v1
+    paths:
+      - docs/Our_Many_Worlds_Generic_Endgame_MVP_配置驱动通用终局引擎_完整实现测试方案_v3.0.md
+      - packages/shared/schemas/endgame/**
+      - packages/shared/src/endgame/**
+      - packages/shared/tests/generic-endgame-package-v1.s0.spec.mjs
+      - packages/templates/config/endgame/**
+      - docs/auto-execute/evidence/generic-endgame-v3-s0/**
+      - .github/workflows/generic-endgame-s0.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: generic-endgame-v3-s0-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-s0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      S0_BASE_SHA: 3771822db5dada5fc898c7c5b78cc0821a1e825b
+      CLEAN_CLONE_DIR: ${{ runner.temp }}/generic-endgame-v3-s0-clean-clone
+      EVIDENCE_DIR: ${{ runner.temp }}/generic-endgame-v3-s0-evidence
+    steps:
+      - name: Check out workflow source only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Mark S0 verification pending
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'pending',
+              context: 'generic-endgame-v3/s0-clean-clone',
+              description: 'Generic Endgame v3 S0 exact-SHA verification is running',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
+      - name: Explicitly clone the exact remote branch
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf "$CLEAN_CLONE_DIR" "$EVIDENCE_DIR"
+          mkdir -p "$EVIDENCE_DIR/logs"
+          git clone --branch "$GITHUB_REF_NAME" --single-branch \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "$CLEAN_CLONE_DIR" \
+            2>&1 | tee "$EVIDENCE_DIR/logs/00-clean-clone.log"
+
+      - name: Prove exact SHA, parent, tracking ref, ls-remote, and clean worktree
+        id: git-proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$CLEAN_CLONE_DIR"
+          git fetch origin --prune
+          local_sha="$(git rev-parse HEAD)"
+          parent_sha="$(git rev-parse HEAD^)"
+          tracking_sha="$(git rev-parse "origin/${GITHUB_REF_NAME}")"
+          ls_remote_raw="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}")"
+          remote_sha="$(printf '%s\n' "$ls_remote_raw" | awk '{print $1}')"
+          status_short="$(git status --short)"
+          test "$local_sha" = "$GITHUB_SHA"
+          test "$parent_sha" = "$S0_BASE_SHA"
+          test "$tracking_sha" = "$GITHUB_SHA"
+          test "$remote_sha" = "$GITHUB_SHA"
+          test -z "$status_short"
+          {
+            printf 'WORKDIR=%s\n' "$CLEAN_CLONE_DIR"
+            printf 'BRANCH=%s\n' "$GITHUB_REF_NAME"
+            printf 'S0_BASE_SHA=%s\n' "$S0_BASE_SHA"
+            printf 'LOCAL_HEAD=%s\n' "$local_sha"
+            printf 'PARENT_HEAD=%s\n' "$parent_sha"
+            printf 'TRACKING_HEAD=%s\n' "$tracking_sha"
+            printf 'LS_REMOTE_RAW=%s\n' "$ls_remote_raw"
+            printf 'STATUS_SHORT=%s\n' "$status_short"
+          } | tee "$EVIDENCE_DIR/git-proof.txt"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frozen workspace
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
+          pnpm install --frozen-lockfile 2>&1 | tee "$EVIDENCE_DIR/logs/01-install.log"
+
+      - name: Parse formal JSON documents
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
+          node --input-type=module <<'NODE' 2>&1 | tee "$EVIDENCE_DIR/logs/02-json-parse.log"
+          import { readFile } from "node:fs/promises";
+          const files = [
+            "packages/shared/schemas/endgame/endgame-package-v1.schema.json",
+            "packages/templates/config/endgame/examples/sangtian.endgame.example.json",
+            "packages/templates/config/endgame/examples/caesar.endgame.example.json",
+            "packages/templates/config/endgame/fixtures/neutral-synthetic.endgame.fixture.json",
+            "docs/auto-execute/evidence/generic-endgame-v3-s0/package-hashes.json",
+          ];
+          for (const file of files) JSON.parse(await readFile(file, "utf8"));
+          console.log(`JSON_PARSE_PASS files=${files.length}`);
+          NODE
+
+      - name: Check S0 reference contract syntax
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
+          node --check packages/shared/src/endgame/endgame-package-v1.contract.mjs \
+            2>&1 | tee "$EVIDENCE_DIR/logs/03-contract-syntax.log"
+
+      - name: Run Generic Endgame v3 S0 contract suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
+          node --test packages/shared/tests/generic-endgame-package-v1.s0.spec.mjs \
+            2>&1 | tee "$EVIDENCE_DIR/logs/04-s0-contract-tests.log"
+          tests="$(awk '/^# tests /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" | tail -1)"
+          pass="$(awk '/^# pass /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" | tail -1)"
+          fail="$(awk '/^# fail /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" | tail -1)"
+          skipped="$(awk '/^# skipped /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" | tail -1)"
+          todo="$(awk '/^# todo /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" | tail -1)"
+          test "$tests" -ge 92
+          test "$pass" = "$tests"
+          test "$fail" = "0"
+          test "$skipped" = "0"
+          test "$todo" = "0"
+          printf 'tests=%s\npass=%s\nfail=%s\nskipped=%s\ntodo=%s\n' \
+            "$tests" "$pass" "$fail" "$skipped" "$todo" \
+            | tee "$EVIDENCE_DIR/test-counts.txt"
+
+      - name: Shared typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
+          pnpm --filter @ai-story/shared typecheck \
+            2>&1 | tee "$EVIDENCE_DIR/logs/05-shared-typecheck.log"
+
+      - name: Shared build
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
+          pnpm --filter @ai-story/shared build \
+            2>&1 | tee "$EVIDENCE_DIR/logs/06-shared-build.log"
+
+      - name: Check exact S0 diff for whitespace errors
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$CLEAN_CLONE_DIR"
+          git diff --check "$S0_BASE_SHA..$GITHUB_SHA" \
+            2>&1 | tee "$EVIDENCE_DIR/logs/07-git-diff-check.log"
+
+      - name: Record remote evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$EVIDENCE_DIR"
+          clone_head="$(git -C "$CLEAN_CLONE_DIR" rev-parse HEAD 2>/dev/null || true)"
+          parent_head="$(git -C "$CLEAN_CLONE_DIR" rev-parse HEAD^ 2>/dev/null || true)"
+          tracking_head="$(git -C "$CLEAN_CLONE_DIR" rev-parse "origin/${GITHUB_REF_NAME}" 2>/dev/null || true)"
+          status_short="$(git -C "$CLEAN_CLONE_DIR" status --short 2>/dev/null || true)"
+          tests="$(awk '/^# tests /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" 2>/dev/null | tail -1 || true)"
+          pass="$(awk '/^# pass /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" 2>/dev/null | tail -1 || true)"
+          fail="$(awk '/^# fail /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" 2>/dev/null | tail -1 || true)"
+          skipped="$(awk '/^# skipped /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" 2>/dev/null | tail -1 || true)"
+          todo="$(awk '/^# todo /{print $3}' "$EVIDENCE_DIR/logs/04-s0-contract-tests.log" 2>/dev/null | tail -1 || true)"
+          cat > "$EVIDENCE_DIR/manifest.json" <<JSON
+          {
+            "schemaVersion": "generic_endgame_v3_s0_remote_evidence_v1",
+            "repository": "${GITHUB_REPOSITORY}",
+            "branch": "${GITHUB_REF_NAME}",
+            "commitSha": "${GITHUB_SHA}",
+            "expectedBaseSha": "${S0_BASE_SHA}",
+            "cleanCloneHead": "${clone_head}",
+            "parentHead": "${parent_head}",
+            "trackingHead": "${tracking_head}",
+            "cleanCloneStatusShort": "${status_short}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunAttempt": "${GITHUB_RUN_ATTEMPT}",
+            "tests": "${tests}",
+            "pass": "${pass}",
+            "fail": "${fail}",
+            "skipped": "${skipped}",
+            "todo": "${todo}"
+          }
+          JSON
+
+      - name: Upload exact-SHA clean-clone evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generic-endgame-v3-s0-${{ github.sha }}
+          path: ${{ env.EVIDENCE_DIR }}/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Mark S0 verification success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              context: 'generic-endgame-v3/s0-clean-clone',
+              description: 'S0 exact remote SHA, 92 contracts, typecheck and build passed',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
+      - name: Mark S0 verification failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'failure',
+              context: 'generic-endgame-v3/s0-clean-clone',
+              description: 'Generic Endgame v3 S0 exact-SHA verification failed',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
