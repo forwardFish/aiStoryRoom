@@ -1,0 +1,224 @@
+name: Generic Endgame v3 S1-S4 Exact Remote Verification
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-main-game-final-v1
+    paths:
+      - packages/shared/src/endgame/**
+      - packages/shared/tests/generic-endgame-*.spec.mjs
+      - packages/shared/tsconfig.json
+      - packages/shared/tsconfig.build.json
+      - docs/auto-execute/evidence/generic-endgame-v3-s1-s4/**
+      - .github/workflows/generic-endgame-s1-s4.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: generic-endgame-v3-s1-s4-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-exact-remote-sha:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BRANCH: codex/chatgpt-pro-main-game-final-v1
+      S0_BASE_SHA: c9d268e0c49a9f8c196820853f82d2262df3b28d
+      CLEAN_CLONE_DIR: ${{ runner.temp }}/generic-endgame-v3-s1-s4-clean
+      EVIDENCE_DIR: ${{ runner.temp }}/generic-endgame-v3-s1-s4-evidence
+    steps:
+      - name: Check out workflow source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+          run_install: false
+
+      - name: Verify pnpm executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm_path="$(command -v pnpm)"
+          pnpm_version="$(pnpm --version)"
+          test -n "$pnpm_path"
+          test "$pnpm_version" = "10.24.0"
+          printf 'PNPM_PATH=%s\nPNPM_VERSION=%s\n' "$pnpm_path" "$pnpm_version"
+
+      - name: Clone exact remote SHA and run cumulative S0-S4 gates
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf "$CLEAN_CLONE_DIR" "$EVIDENCE_DIR"
+          mkdir -p "$EVIDENCE_DIR/logs"
+
+          git clone --no-tags --single-branch --branch "$BRANCH" \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "$CLEAN_CLONE_DIR" \
+            > "$EVIDENCE_DIR/logs/00-clone.log" 2>&1
+
+          cd "$CLEAN_CLONE_DIR"
+          git fetch origin --prune
+          local_sha="$(git rev-parse HEAD)"
+          tracking_sha="$(git rev-parse "origin/${BRANCH}")"
+          ls_remote_raw="$(git ls-remote origin "refs/heads/${BRANCH}")"
+          remote_sha="$(printf '%s\n' "$ls_remote_raw" | awk '{print $1}')"
+          status_short="$(git status --short)"
+          test "$local_sha" = "$GITHUB_SHA"
+          test "$tracking_sha" = "$GITHUB_SHA"
+          test "$remote_sha" = "$GITHUB_SHA"
+          test -z "$status_short"
+          git merge-base --is-ancestor "$S0_BASE_SHA" "$GITHUB_SHA"
+          {
+            printf 'LOCAL_HEAD=%s\n' "$local_sha"
+            printf 'TRACKING_HEAD=%s\n' "$tracking_sha"
+            printf 'LS_REMOTE_RAW=%s\n' "$ls_remote_raw"
+            printf 'STATUS_SHORT=%s\n' "$status_short"
+          } | tee "$EVIDENCE_DIR/git-proof.txt"
+          git log --reverse --format='%H%x09%P%x09%s' "$S0_BASE_SHA..$GITHUB_SHA" \
+            > "$EVIDENCE_DIR/commit-chain.tsv"
+
+          pnpm install --frozen-lockfile \
+            > "$EVIDENCE_DIR/logs/01-install.log" 2>&1
+
+          specs=(packages/shared/tests/generic-endgame-package-v1.s0.spec.mjs)
+          expected=(92)
+          for stage in 1 2 3 4; do
+            case "$stage" in
+              1) file=packages/shared/tests/generic-endgame-s1-loader.spec.mjs; count=21 ;;
+              2) file=packages/shared/tests/generic-endgame-s2-metrics.spec.mjs; count=25 ;;
+              3) file=packages/shared/tests/generic-endgame-s3-adjudication.spec.mjs; count=28 ;;
+              4) file=packages/shared/tests/generic-endgame-s4-details.spec.mjs; count=35 ;;
+            esac
+            if [ -f "$file" ]; then
+              specs+=("$file")
+              expected+=("$count")
+            else
+              for later in $(seq $((stage + 1)) 4); do
+                case "$later" in
+                  2) later_file=packages/shared/tests/generic-endgame-s2-metrics.spec.mjs ;;
+                  3) later_file=packages/shared/tests/generic-endgame-s3-adjudication.spec.mjs ;;
+                  4) later_file=packages/shared/tests/generic-endgame-s4-details.spec.mjs ;;
+                  *) later_file= ;;
+                esac
+                if [ -n "$later_file" ] && [ -f "$later_file" ]; then
+                  echo "STAGE_GAP: missing $file before $later_file" >&2
+                  exit 1
+                fi
+              done
+              break
+            fi
+          done
+
+          printf 'suite\ttests\tpass\tfail\tskipped\ttodo\texit_code\n' \
+            > "$EVIDENCE_DIR/test-summary.tsv"
+          total_tests=0
+          total_pass=0
+          for index in "${!specs[@]}"; do
+            spec="${specs[$index]}"
+            minimum="${expected[$index]}"
+            label="$(basename "$spec" .mjs)"
+            log="$EVIDENCE_DIR/logs/${label}.log"
+            set +e
+            node --test "$spec" > "$log" 2>&1
+            code=$?
+            set -e
+            cat "$log"
+            tests="$(awk '/^# tests /{print $3}' "$log" | tail -1)"
+            pass="$(awk '/^# pass /{print $3}' "$log" | tail -1)"
+            fail="$(awk '/^# fail /{print $3}' "$log" | tail -1)"
+            skipped="$(awk '/^# skipped /{print $3}' "$log" | tail -1)"
+            todo="$(awk '/^# todo /{print $3}' "$log" | tail -1)"
+            test "$code" -eq 0
+            test "$tests" -ge "$minimum"
+            test "$pass" = "$tests"
+            test "$fail" = "0"
+            test "$skipped" = "0"
+            test "$todo" = "0"
+            total_tests=$((total_tests + tests))
+            total_pass=$((total_pass + pass))
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$label" "$tests" "$pass" "$fail" "$skipped" "$todo" "$code" \
+              >> "$EVIDENCE_DIR/test-summary.tsv"
+          done
+          test "$total_pass" -eq "$total_tests"
+          printf 'TOTAL_TESTS=%s\nTOTAL_PASS=%s\n' "$total_tests" "$total_pass" \
+            > "$EVIDENCE_DIR/test-totals.txt"
+
+          pnpm --filter @ai-story/shared typecheck \
+            > "$EVIDENCE_DIR/logs/90-shared-typecheck.log" 2>&1
+          ! grep -qi "No projects matched" "$EVIDENCE_DIR/logs/90-shared-typecheck.log"
+
+          pnpm --filter @ai-story/shared build \
+            > "$EVIDENCE_DIR/logs/91-shared-build.log" 2>&1
+          ! grep -qi "No projects matched" "$EVIDENCE_DIR/logs/91-shared-build.log"
+          rm -rf packages/shared/dist
+
+          git diff --check "$S0_BASE_SHA..$GITHUB_SHA" \
+            > "$EVIDENCE_DIR/logs/92-git-diff-check.log" 2>&1
+          post_build_status="$(git status --short)"
+          test -z "$post_build_status"
+          printf '%s\n' "$post_build_status" > "$EVIDENCE_DIR/post-build-status.txt"
+
+          cat > "$EVIDENCE_DIR/manifest.json" <<JSON
+          {
+            "schemaVersion": "generic_endgame_v3_s1_s4_remote_evidence_v1",
+            "repository": "${GITHUB_REPOSITORY}",
+            "branch": "${BRANCH}",
+            "commitSha": "${GITHUB_SHA}",
+            "cleanCloneHead": "${local_sha}",
+            "trackingHead": "${tracking_sha}",
+            "lsRemoteSha": "${remote_sha}",
+            "cleanCloneStatusShort": "${status_short}",
+            "postBuildStatusShort": "${post_build_status}",
+            "suiteCount": ${#specs[@]},
+            "tests": ${total_tests},
+            "pass": ${total_pass},
+            "fail": 0,
+            "skipped": 0,
+            "todo": 0,
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunAttempt": "${GITHUB_RUN_ATTEMPT}"
+          }
+          JSON
+
+      - name: Upload exact-SHA verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generic-endgame-v3-s1-s4-${{ github.sha }}
+          path: ${{ env.EVIDENCE_DIR }}/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish exact-SHA status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: '${{ job.status }}' === 'success' ? 'success' : 'failure',
+              context: 'generic-endgame-v3/s1-s4-clean-clone',
+              description: '${{ job.status }}' === 'success'
+                ? 'Exact SHA, strict S0-S4 tests, typecheck and build passed'
+                : 'Generic Endgame v3 S1-S4 exact-SHA verification failed',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
