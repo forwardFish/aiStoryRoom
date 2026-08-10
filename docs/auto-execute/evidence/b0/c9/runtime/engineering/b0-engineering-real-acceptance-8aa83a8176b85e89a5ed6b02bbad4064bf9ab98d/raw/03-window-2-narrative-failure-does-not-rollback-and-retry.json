@@ -1,0 +1,48 @@
+{
+  "name": "window-2-narrative-failure-does-not-rollback-and-retry",
+  "status": "PASS",
+  "startedAt": "2026-08-10T15:01:51.739Z",
+  "completedAt": "2026-08-10T15:02:14.577Z",
+  "result": {
+    "windowId": "id_0bdc43fef68ff54b",
+    "before": {
+      "id": "room_60690529b4f608343c8e56823f2ee542",
+      "status": "playing",
+      "worldSequence": 1,
+      "reservedWorldSequence": 0,
+      "currentDay": 2,
+      "version": 12,
+      "updatedAt": "2026-08-10T15:01:11.469Z",
+      "windows": 2,
+      "events": 9,
+      "deliveries": 6,
+      "narratives": 6,
+      "tasks": 20
+    },
+    "afterFailure": {
+      "id": "room_60690529b4f608343c8e56823f2ee542",
+      "status": "playing",
+      "worldSequence": 2,
+      "reservedWorldSequence": 0,
+      "currentDay": 3,
+      "version": 13,
+      "updatedAt": "2026-08-10T15:01:56.473Z",
+      "windows": 3,
+      "events": 23,
+      "deliveries": 12,
+      "narratives": 6,
+      "tasks": 36
+    },
+    "failedTask": {
+      "id": "id_339717e8820abc94",
+      "status": "failed",
+      "attempt": 3,
+      "errorCode": "RUNTIME_ERROR"
+    },
+    "recoveredTask": {
+      "status": "completed",
+      "attempt": 4,
+      "completedAt": "2026-08-10T15:02:14.469Z"
+    }
+  }
+}

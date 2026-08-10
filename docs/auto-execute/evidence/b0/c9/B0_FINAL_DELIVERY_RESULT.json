@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-08-10T15:04:05.857910+00:00",
+  "repository": "forwardFish/aiStoryRoom",
+  "branch": "codex/chatgpt-pro-maneuver-evidence-v1",
+  "mainBaselineSha": "86da64eea18ab773312f40c7024ace9cb393344a",
+  "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
+  "evidenceCommitSha": null,
+  "finalRemoteSha": null,
+  "finalRemoteShaResolution": "external clean-clone readback",
+  "status": "EXTERNAL_BLOCKED",
+  "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED",
+  "candidateBranchReady": false,
+  "completionMarkersAllowed": false,
+  "formalC8": {
+    "status": "EXTERNAL_BLOCKED",
+    "passed": false,
+    "externalBlocked": true,
+    "managedNonProductionSupabaseRequired": true,
+    "managedNonProductionSupabaseAvailable": false,
+    "randomSchemaRequired": true,
+    "publicSchemaForbiddenAsTestSchema": true,
+    "selfHostedContainerMaySubstitute": false,
+    "credentialValuesPersisted": false,
+    "environmentsChecked": [
+      "ourmanyworlds.com / test",
+      "stellar-encouragement / test",
+      "Preview"
+    ],
+    "workflowRunId": 31400886663
+  },
+  "engineeringAcceptance": {
+    "status": "PASS_ENGINEERING_ONLY",
+    "passed": true,
+    "formalC8Substitute": false,
+    "database": "official self-hosted supabase/postgres random isolated engineering schema",
+    "realBrowserSessions": 3,
+    "synchronizedWindows": 6,
+    "desktopViewportCovered": true,
+    "narrow390ViewportCovered": true,
+    "screenshotCount": 9,
+    "acceptanceResultPath": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/acceptance-result.json",
+    "workflowRunId": 31400886663
+  },
+  "boundaries": {
+    "forcePushUsed": false,
+    "pullRequestCreatedOrModified": false,
+    "deploymentPerformed": false,
+    "productionDatabaseTouched": false,
+    "productionConfigurationChanged": false,
+    "realUserDataTouched": false
+  }
+}

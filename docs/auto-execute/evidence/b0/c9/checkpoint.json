@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-08-10T15:04:05.857910+00:00",
+  "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
+  "status": "EXTERNAL_BLOCKED",
+  "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED",
+  "candidateBranchReady": false,
+  "completionMarkersAllowed": false
+}

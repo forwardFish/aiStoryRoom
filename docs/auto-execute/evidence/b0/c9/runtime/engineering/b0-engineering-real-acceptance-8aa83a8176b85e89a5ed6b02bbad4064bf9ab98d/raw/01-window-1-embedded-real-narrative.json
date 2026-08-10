@@ -1,0 +1,277 @@
+{
+  "name": "window-1-embedded-real-narrative",
+  "status": "PASS",
+  "startedAt": "2026-08-10T15:01:04.372Z",
+  "completedAt": "2026-08-10T15:01:51.098Z",
+  "result": {
+    "windowId": "id_598ea55178198749",
+    "before": {
+      "id": "room_60690529b4f608343c8e56823f2ee542",
+      "status": "playing",
+      "worldSequence": 0,
+      "reservedWorldSequence": 0,
+      "currentDay": 1,
+      "version": 11,
+      "updatedAt": "2026-08-10T15:01:04.348Z",
+      "windows": 1,
+      "events": 0,
+      "deliveries": 0,
+      "narratives": 0,
+      "tasks": 1
+    },
+    "after": {
+      "id": "room_60690529b4f608343c8e56823f2ee542",
+      "status": "playing",
+      "worldSequence": 1,
+      "reservedWorldSequence": 0,
+      "currentDay": 2,
+      "version": 12,
+      "updatedAt": "2026-08-10T15:01:11.469Z",
+      "windows": 2,
+      "events": 9,
+      "deliveries": 6,
+      "narratives": 6,
+      "tasks": 20
+    },
+    "narrativeBatch": {
+      "taskCount": 6,
+      "publicationCount": 6,
+      "roleIds": [
+        "id_ccb4112f2dfa2325",
+        "id_2afa66ed50040429",
+        "id_694aa3d276625f75",
+        "id_c5f6f9653a3efa57",
+        "id_d58fe5b0b98fcc66",
+        "id_7dc9ea4906966c3a"
+      ],
+      "taskDedupeHashes": [
+        "f99c4a654db71422074fb4fe9e4bd75c9db21746e909a29d0bf7389bd91d5f3a",
+        "6b60c30af3f3bbf5134626d02bbadd0a418bb0974c6d956f5e4422bf46774361",
+        "b3f10f0bdbad766f0c779b17de09ef2e1458669f77dff78b6db5a13e11651478",
+        "f2f01104eea1c7823ee22b921acd866d22901e1af808fff883464a1b03121bdb",
+        "549e54801e1cc3f6108006f83ca13b4a33733fb5055923fa09416f2456fa6347",
+        "3ad4d80cb7c2dcbd6ac1eae9f04bee15aafa522a2a32269d6e7ea27cf2af3816"
+      ],
+      "entryDedupeHashes": [
+        "f99c4a654db71422074fb4fe9e4bd75c9db21746e909a29d0bf7389bd91d5f3a",
+        "6b60c30af3f3bbf5134626d02bbadd0a418bb0974c6d956f5e4422bf46774361",
+        "b3f10f0bdbad766f0c779b17de09ef2e1458669f77dff78b6db5a13e11651478",
+        "f2f01104eea1c7823ee22b921acd866d22901e1af808fff883464a1b03121bdb",
+        "549e54801e1cc3f6108006f83ca13b4a33733fb5055923fa09416f2456fa6347",
+        "3ad4d80cb7c2dcbd6ac1eae9f04bee15aafa522a2a32269d6e7ea27cf2af3816"
+      ]
+    },
+    "projections": [
+      {
+        "schemaVersion": "b0-player-window-projection-v1",
+        "window": {
+          "id": "cmsnczz4z004m4soti3xiq5t5",
+          "ordinal": 2,
+          "situationId": "Shared situation 2",
+          "status": "OPEN",
+          "openedAt": "2026-08-10T15:01:11.453Z",
+          "locksAt": "2026-08-10T15:06:11.453Z",
+          "lockedAt": null,
+          "committedAt": null,
+          "completedAt": null,
+          "lockReason": null,
+          "rulesetVersion": "b0-rules-v1"
+        },
+        "actor": {
+          "ready": false,
+          "readyRevision": 1
+        },
+        "readyCount": 3,
+        "expectedCount": 6,
+        "settlement": {
+          "status": "NOT_STARTED"
+        },
+        "structuredResults": [
+          {
+            "resultId": "id_dca6f1e30c627aef",
+            "resultKind": "CROSS_PLAYER_IMPACT",
+            "visibility": "TARGETED",
+            "summary": "The committed settlement changed your position in the shared situation.",
+            "outcomeStatus": "SUCCESS",
+            "changes": [
+              {
+                "kind": "ACTOR",
+                "operation": "SET",
+                "numericDelta": null
+              }
+            ],
+            "reasons": [
+              {
+                "kind": "OTHER_PLAN",
+                "summary": "Another committed plan changed your position."
+              }
+            ]
+          },
+          {
+            "resultId": "id_dbc9164617644d22",
+            "resultKind": "PERSONAL_OUTCOME",
+            "visibility": "PRIVATE",
+            "summary": "Succeeded: Coordinate a bounded synchronized action with the selected counterpart.",
+            "outcomeStatus": "SUCCESS",
+            "changes": [],
+            "reasons": [
+              {
+                "kind": "OWN_PLAN",
+                "summary": "Your committed plan contributed to this result."
+              }
+            ]
+          }
+        ],
+        "narrative": {
+          "status": "AVAILABLE",
+          "contentHash": "607a1fad269b555985891700ff477de836c4329c14b44290bb8f50764571869a",
+          "characterCount": 338
+        }
+      },
+      {
+        "schemaVersion": "b0-player-window-projection-v1",
+        "window": {
+          "id": "cmsnczz4z004m4soti3xiq5t5",
+          "ordinal": 2,
+          "situationId": "Shared situation 2",
+          "status": "OPEN",
+          "openedAt": "2026-08-10T15:01:11.453Z",
+          "locksAt": "2026-08-10T15:06:11.453Z",
+          "lockedAt": null,
+          "committedAt": null,
+          "completedAt": null,
+          "lockReason": null,
+          "rulesetVersion": "b0-rules-v1"
+        },
+        "actor": {
+          "ready": false,
+          "readyRevision": 1
+        },
+        "readyCount": 3,
+        "expectedCount": 6,
+        "settlement": {
+          "status": "NOT_STARTED"
+        },
+        "structuredResults": [
+          {
+            "resultId": "id_da2a1c17997b259a",
+            "resultKind": "PERSONAL_OUTCOME",
+            "visibility": "PRIVATE",
+            "summary": "Succeeded: Coordinate a bounded synchronized action with the selected counterpart.",
+            "outcomeStatus": "SUCCESS",
+            "changes": [],
+            "reasons": [
+              {
+                "kind": "OWN_PLAN",
+                "summary": "Your committed plan contributed to this result."
+              }
+            ]
+          },
+          {
+            "resultId": "id_3e972c541eed2082",
+            "resultKind": "CROSS_PLAYER_IMPACT",
+            "visibility": "TARGETED",
+            "summary": "The committed settlement changed your position in the shared situation.",
+            "outcomeStatus": "SUCCESS",
+            "changes": [
+              {
+                "kind": "ACTOR",
+                "operation": "SET",
+                "numericDelta": null
+              }
+            ],
+            "reasons": [
+              {
+                "kind": "OTHER_PLAN",
+                "summary": "Another committed plan changed your position."
+              }
+            ]
+          }
+        ],
+        "narrative": {
+          "status": "AVAILABLE",
+          "contentHash": "f8ed19e16f926c052ebf0d595e9f9f90aceff47811900251d8b63302e8a11ede",
+          "characterCount": 207
+        }
+      },
+      {
+        "schemaVersion": "b0-player-window-projection-v1",
+        "window": {
+          "id": "cmsnczz4z004m4soti3xiq5t5",
+          "ordinal": 2,
+          "situationId": "Shared situation 2",
+          "status": "OPEN",
+          "openedAt": "2026-08-10T15:01:11.453Z",
+          "locksAt": "2026-08-10T15:06:11.453Z",
+          "lockedAt": null,
+          "committedAt": null,
+          "completedAt": null,
+          "lockReason": null,
+          "rulesetVersion": "b0-rules-v1"
+        },
+        "actor": {
+          "ready": false,
+          "readyRevision": 1
+        },
+        "readyCount": 3,
+        "expectedCount": 6,
+        "settlement": {
+          "status": "NOT_STARTED"
+        },
+        "structuredResults": [
+          {
+            "resultId": "id_119246120956f851",
+            "resultKind": "CROSS_PLAYER_IMPACT",
+            "visibility": "TARGETED",
+            "summary": "The committed settlement changed your position in the shared situation.",
+            "outcomeStatus": "SUCCESS",
+            "changes": [
+              {
+                "kind": "ACTOR",
+                "operation": "SET",
+                "numericDelta": null
+              }
+            ],
+            "reasons": [
+              {
+                "kind": "OTHER_PLAN",
+                "summary": "Another committed plan changed your position."
+              }
+            ]
+          },
+          {
+            "resultId": "id_f9ab41eca0ca0791",
+            "resultKind": "PERSONAL_OUTCOME",
+            "visibility": "PRIVATE",
+            "summary": "Succeeded: Coordinate a bounded synchronized action with the selected counterpart.",
+            "outcomeStatus": "SUCCESS",
+            "changes": [],
+            "reasons": [
+              {
+                "kind": "OWN_PLAN",
+                "summary": "Your committed plan contributed to this result."
+              }
+            ]
+          }
+        ],
+        "narrative": {
+          "status": "AVAILABLE",
+          "contentHash": "65f412adefd24f32e2f49897c4f4aa65c424bc6f7904dd30fcc06aedd71aa13a",
+          "characterCount": 373
+        }
+      }
+    ],
+    "runtimeProof": {
+      "jobCount": 6,
+      "publicationCount": 6,
+      "publicationHashes": [
+        "05ca334423f6b97289b583b26731b11d4b9d1654a5003bdafb124027ab9dc475",
+        "3017711f47ad879a6ac0cd1e21a39c7f9155a20e34b84d22f727f0ec3ebb2dd5",
+        "2ee7f4f94bdc6de9f6b8195402720f03a19592ee645a9cc8ca564a88a65d23f8",
+        "bdbb2211bf6ce93f10f1c8ccec4c329d94834310f8646a733ee13c49b4677e45",
+        "21229c59ec363fd5b9d2949a32b88d07bd932f3ee15cb6e8ce44af50db59b594",
+        "3aa7c1295160cf10e7886d9d6c58b101251a4ee4deaa42ffca8bd2d03b67ce34"
+      ]
+    }
+  }
+}

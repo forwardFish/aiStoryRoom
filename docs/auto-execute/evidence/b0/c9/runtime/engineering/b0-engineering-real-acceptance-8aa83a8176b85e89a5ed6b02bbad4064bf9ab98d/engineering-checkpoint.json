@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "B0_ENGINEERING_SELFHOSTED_ACCEPTANCE",
+  "status": "PASS",
+  "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
+  "workflowRunId": "31400886663",
+  "workflowRunAttempt": 1,
+  "acceptanceTier": "engineering-selfhosted",
+  "formalC8Eligible": false,
+  "formalC8Claimed": false,
+  "supabaseCloudUsed": false,
+  "database": {
+    "provenance": "official-supabase-postgres-container",
+    "image": "supabase/postgres:15.14.1.157-mmlb_amd64",
+    "imageDigest": "sha256:645c92581749d78931aa98403e3b536cc4a3a3c3bd73dae2bc63a7c1cdd17701",
+    "randomSchema": "cs_accept_b0_31400886663_1_5d446ff2",
+    "randomSchemaDropped": true,
+    "publicSchemaUsed": false,
+    "publicSchemaUnchanged": true
+  },
+  "provider": {
+    "provenance": "ollama-openai-compatible-local",
+    "image": "ollama/ollama:0.32.5",
+    "imageDigest": "sha256:4dea9fb511947e24a84237bb636b0203abcb2ff0d3fbc7b4ff865deb91362131",
+    "model": "qwen2.5:1.5b",
+    "modelDigest": "sha256:65ec06548149b04c096a120e4a6da9d4017ea809c91734ea5631e89f96ddc57b",
+    "postWarmupProductRequestCount": 12,
+    "deterministicProvider": false,
+    "fallbackAllowed": false
+  },
+  "note": "This is engineering evidence only. It must never be used as the formal C8 Supabase-project checkpoint."
+}

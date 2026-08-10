@@ -1,0 +1,2576 @@
+{
+  "schemaVersion": 1,
+  "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
+  "startedAt": "2026-08-10T15:01:00.686Z",
+  "environment": {
+    "node": "v22.23.1",
+    "platform": "linux",
+    "chrome": "google-chrome",
+    "apiPort": 33102,
+    "webPort": 35178,
+    "runtimePort": 33110,
+    "acceptanceTier": "engineering-selfhosted",
+    "acceptanceEnvironment": "github-hosted-isolated-engineering",
+    "databaseKind": {
+      "protocol": "postgresql",
+      "provider": "official-supabase-postgres-container",
+      "hostHash": "12ca17b49af22894",
+      "selfHostedOfficialSupabase": true,
+      "supabaseCloudNonProduction": false
+    },
+    "databaseProvenance": {
+      "kind": "official-supabase-postgres-container",
+      "environment": "github-hosted-isolated-engineering",
+      "secretName": null,
+      "image": "supabase/postgres:15.14.1.157-mmlb_amd64",
+      "imageDigest": "sha256:645c92581749d78931aa98403e3b536cc4a3a3c3bd73dae2bc63a7c1cdd17701",
+      "selfHostedOfficialSupabase": true,
+      "supabaseCloudUsed": false,
+      "publicSchemaUsed": false
+    },
+    "narrativeProvider": {
+      "protocol": "http",
+      "hostHash": "12ca17b49af22894",
+      "local": true,
+      "provenance": "ollama-openai-compatible-local",
+      "secretName": null,
+      "image": "ollama/ollama:0.32.5",
+      "imageDigest": "sha256:4dea9fb511947e24a84237bb636b0203abcb2ff0d3fbc7b4ff865deb91362131",
+      "model": "qwen2.5:1.5b",
+      "modelDigest": "sha256:65ec06548149b04c096a120e4a6da9d4017ea809c91734ea5631e89f96ddc57b",
+      "mode": "live-provider-only",
+      "fallbackAllowed": false,
+      "deterministicProvider": false
+    },
+    "schema": "cs_accept_b0_31400886663_1_5d446ff2"
+  },
+  "phases": [
+    {
+      "name": "window-1-embedded-real-narrative",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:01:04.372Z",
+      "completedAt": "2026-08-10T15:01:51.098Z",
+      "result": {
+        "windowId": "id_598ea55178198749",
+        "before": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 0,
+          "reservedWorldSequence": 0,
+          "currentDay": 1,
+          "version": 11,
+          "updatedAt": "2026-08-10T15:01:04.348Z",
+          "windows": 1,
+          "events": 0,
+          "deliveries": 0,
+          "narratives": 0,
+          "tasks": 1
+        },
+        "after": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 1,
+          "reservedWorldSequence": 0,
+          "currentDay": 2,
+          "version": 12,
+          "updatedAt": "2026-08-10T15:01:11.469Z",
+          "windows": 2,
+          "events": 9,
+          "deliveries": 6,
+          "narratives": 6,
+          "tasks": 20
+        },
+        "narrativeBatch": {
+          "taskCount": 6,
+          "publicationCount": 6,
+          "roleIds": [
+            "id_ccb4112f2dfa2325",
+            "id_2afa66ed50040429",
+            "id_694aa3d276625f75",
+            "id_c5f6f9653a3efa57",
+            "id_d58fe5b0b98fcc66",
+            "id_7dc9ea4906966c3a"
+          ],
+          "taskDedupeHashes": [
+            "f99c4a654db71422074fb4fe9e4bd75c9db21746e909a29d0bf7389bd91d5f3a",
+            "6b60c30af3f3bbf5134626d02bbadd0a418bb0974c6d956f5e4422bf46774361",
+            "b3f10f0bdbad766f0c779b17de09ef2e1458669f77dff78b6db5a13e11651478",
+            "f2f01104eea1c7823ee22b921acd866d22901e1af808fff883464a1b03121bdb",
+            "549e54801e1cc3f6108006f83ca13b4a33733fb5055923fa09416f2456fa6347",
+            "3ad4d80cb7c2dcbd6ac1eae9f04bee15aafa522a2a32269d6e7ea27cf2af3816"
+          ],
+          "entryDedupeHashes": [
+            "f99c4a654db71422074fb4fe9e4bd75c9db21746e909a29d0bf7389bd91d5f3a",
+            "6b60c30af3f3bbf5134626d02bbadd0a418bb0974c6d956f5e4422bf46774361",
+            "b3f10f0bdbad766f0c779b17de09ef2e1458669f77dff78b6db5a13e11651478",
+            "f2f01104eea1c7823ee22b921acd866d22901e1af808fff883464a1b03121bdb",
+            "549e54801e1cc3f6108006f83ca13b4a33733fb5055923fa09416f2456fa6347",
+            "3ad4d80cb7c2dcbd6ac1eae9f04bee15aafa522a2a32269d6e7ea27cf2af3816"
+          ]
+        },
+        "projections": [
+          {
+            "schemaVersion": "b0-player-window-projection-v1",
+            "window": {
+              "id": "cmsnczz4z004m4soti3xiq5t5",
+              "ordinal": 2,
+              "situationId": "Shared situation 2",
+              "status": "OPEN",
+              "openedAt": "2026-08-10T15:01:11.453Z",
+              "locksAt": "2026-08-10T15:06:11.453Z",
+              "lockedAt": null,
+              "committedAt": null,
+              "completedAt": null,
+              "lockReason": null,
+              "rulesetVersion": "b0-rules-v1"
+            },
+            "actor": {
+              "ready": false,
+              "readyRevision": 1
+            },
+            "readyCount": 3,
+            "expectedCount": 6,
+            "settlement": {
+              "status": "NOT_STARTED"
+            },
+            "structuredResults": [
+              {
+                "resultId": "id_dca6f1e30c627aef",
+                "resultKind": "CROSS_PLAYER_IMPACT",
+                "visibility": "TARGETED",
+                "summary": "The committed settlement changed your position in the shared situation.",
+                "outcomeStatus": "SUCCESS",
+                "changes": [
+                  {
+                    "kind": "ACTOR",
+                    "operation": "SET",
+                    "numericDelta": null
+                  }
+                ],
+                "reasons": [
+                  {
+                    "kind": "OTHER_PLAN",
+                    "summary": "Another committed plan changed your position."
+                  }
+                ]
+              },
+              {
+                "resultId": "id_dbc9164617644d22",
+                "resultKind": "PERSONAL_OUTCOME",
+                "visibility": "PRIVATE",
+                "summary": "Succeeded: Coordinate a bounded synchronized action with the selected counterpart.",
+                "outcomeStatus": "SUCCESS",
+                "changes": [],
+                "reasons": [
+                  {
+                    "kind": "OWN_PLAN",
+                    "summary": "Your committed plan contributed to this result."
+                  }
+                ]
+              }
+            ],
+            "narrative": {
+              "status": "AVAILABLE",
+              "contentHash": "607a1fad269b555985891700ff477de836c4329c14b44290bb8f50764571869a",
+              "characterCount": 338
+            }
+          },
+          {
+            "schemaVersion": "b0-player-window-projection-v1",
+            "window": {
+              "id": "cmsnczz4z004m4soti3xiq5t5",
+              "ordinal": 2,
+              "situationId": "Shared situation 2",
+              "status": "OPEN",
+              "openedAt": "2026-08-10T15:01:11.453Z",
+              "locksAt": "2026-08-10T15:06:11.453Z",
+              "lockedAt": null,
+              "committedAt": null,
+              "completedAt": null,
+              "lockReason": null,
+              "rulesetVersion": "b0-rules-v1"
+            },
+            "actor": {
+              "ready": false,
+              "readyRevision": 1
+            },
+            "readyCount": 3,
+            "expectedCount": 6,
+            "settlement": {
+              "status": "NOT_STARTED"
+            },
+            "structuredResults": [
+              {
+                "resultId": "id_da2a1c17997b259a",
+                "resultKind": "PERSONAL_OUTCOME",
+                "visibility": "PRIVATE",
+                "summary": "Succeeded: Coordinate a bounded synchronized action with the selected counterpart.",
+                "outcomeStatus": "SUCCESS",
+                "changes": [],
+                "reasons": [
+                  {
+                    "kind": "OWN_PLAN",
+                    "summary": "Your committed plan contributed to this result."
+                  }
+                ]
+              },
+              {
+                "resultId": "id_3e972c541eed2082",
+                "resultKind": "CROSS_PLAYER_IMPACT",
+                "visibility": "TARGETED",
+                "summary": "The committed settlement changed your position in the shared situation.",
+                "outcomeStatus": "SUCCESS",
+                "changes": [
+                  {
+                    "kind": "ACTOR",
+                    "operation": "SET",
+                    "numericDelta": null
+                  }
+                ],
+                "reasons": [
+                  {
+                    "kind": "OTHER_PLAN",
+                    "summary": "Another committed plan changed your position."
+                  }
+                ]
+              }
+            ],
+            "narrative": {
+              "status": "AVAILABLE",
+              "contentHash": "f8ed19e16f926c052ebf0d595e9f9f90aceff47811900251d8b63302e8a11ede",
+              "characterCount": 207
+            }
+          },
+          {
+            "schemaVersion": "b0-player-window-projection-v1",
+            "window": {
+              "id": "cmsnczz4z004m4soti3xiq5t5",
+              "ordinal": 2,
+              "situationId": "Shared situation 2",
+              "status": "OPEN",
+              "openedAt": "2026-08-10T15:01:11.453Z",
+              "locksAt": "2026-08-10T15:06:11.453Z",
+              "lockedAt": null,
+              "committedAt": null,
+              "completedAt": null,
+              "lockReason": null,
+              "rulesetVersion": "b0-rules-v1"
+            },
+            "actor": {
+              "ready": false,
+              "readyRevision": 1
+            },
+            "readyCount": 3,
+            "expectedCount": 6,
+            "settlement": {
+              "status": "NOT_STARTED"
+            },
+            "structuredResults": [
+              {
+                "resultId": "id_119246120956f851",
+                "resultKind": "CROSS_PLAYER_IMPACT",
+                "visibility": "TARGETED",
+                "summary": "The committed settlement changed your position in the shared situation.",
+                "outcomeStatus": "SUCCESS",
+                "changes": [
+                  {
+                    "kind": "ACTOR",
+                    "operation": "SET",
+                    "numericDelta": null
+                  }
+                ],
+                "reasons": [
+                  {
+                    "kind": "OTHER_PLAN",
+                    "summary": "Another committed plan changed your position."
+                  }
+                ]
+              },
+              {
+                "resultId": "id_f9ab41eca0ca0791",
+                "resultKind": "PERSONAL_OUTCOME",
+                "visibility": "PRIVATE",
+                "summary": "Succeeded: Coordinate a bounded synchronized action with the selected counterpart.",
+                "outcomeStatus": "SUCCESS",
+                "changes": [],
+                "reasons": [
+                  {
+                    "kind": "OWN_PLAN",
+                    "summary": "Your committed plan contributed to this result."
+                  }
+                ]
+              }
+            ],
+            "narrative": {
+              "status": "AVAILABLE",
+              "contentHash": "65f412adefd24f32e2f49897c4f4aa65c424bc6f7904dd30fcc06aedd71aa13a",
+              "characterCount": 373
+            }
+          }
+        ],
+        "runtimeProof": {
+          "jobCount": 6,
+          "publicationCount": 6,
+          "publicationHashes": [
+            "05ca334423f6b97289b583b26731b11d4b9d1654a5003bdafb124027ab9dc475",
+            "3017711f47ad879a6ac0cd1e21a39c7f9155a20e34b84d22f727f0ec3ebb2dd5",
+            "2ee7f4f94bdc6de9f6b8195402720f03a19592ee645a9cc8ca564a88a65d23f8",
+            "bdbb2211bf6ce93f10f1c8ccec4c329d94834310f8646a733ee13c49b4677e45",
+            "21229c59ec363fd5b9d2949a32b88d07bd932f3ee15cb6e8ce44af50db59b594",
+            "3aa7c1295160cf10e7886d9d6c58b101251a4ee4deaa42ffca8bd2d03b67ce34"
+          ]
+        }
+      }
+    },
+    {
+      "name": "idempotent-settlement-publication-outbox-replay",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:01:51.099Z",
+      "completedAt": "2026-08-10T15:01:51.738Z",
+      "result": {
+        "windowId": "id_598ea55178198749",
+        "taskIds": [
+          "id_6da0cd1e75c9612e",
+          "id_75e8435a7e11d670"
+        ],
+        "before": {
+          "worldSequence": 1,
+          "commitHash": "67d460156fb04ce917762cb2255086037b8e65cb3e180363d5937f533d564932",
+          "resolutionHash": "353d39eeb58251cda4aed20e512ab82ddaf7915b7eecd6718d763a04e55aa32d",
+          "storyEventCount": 9,
+          "eventDeliveryCount": 6,
+          "narrativeCount": 6
+        },
+        "after": {
+          "worldSequence": 1,
+          "commitHash": "67d460156fb04ce917762cb2255086037b8e65cb3e180363d5937f533d564932",
+          "resolutionHash": "353d39eeb58251cda4aed20e512ab82ddaf7915b7eecd6718d763a04e55aa32d",
+          "storyEventCount": 9,
+          "eventDeliveryCount": 6,
+          "narrativeCount": 6
+        },
+        "adminReplay": {
+          "schemaVersion": "b0-replay-result-v1",
+          "windowId": "cmsncztmo00214sotqyfqq0tk",
+          "storedResolutionHash": "[STOREDRESOLUTIONHASH_REDACTED]",
+          "replayedResolutionHash": "[REPLAYEDRESOLUTIONHASH_REDACTED]",
+          "matches": true
+        }
+      }
+    },
+    {
+      "name": "window-2-narrative-failure-does-not-rollback-and-retry",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:01:51.739Z",
+      "completedAt": "2026-08-10T15:02:14.577Z",
+      "result": {
+        "windowId": "id_0bdc43fef68ff54b",
+        "before": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 1,
+          "reservedWorldSequence": 0,
+          "currentDay": 2,
+          "version": 12,
+          "updatedAt": "2026-08-10T15:01:11.469Z",
+          "windows": 2,
+          "events": 9,
+          "deliveries": 6,
+          "narratives": 6,
+          "tasks": 20
+        },
+        "afterFailure": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 2,
+          "reservedWorldSequence": 0,
+          "currentDay": 3,
+          "version": 13,
+          "updatedAt": "2026-08-10T15:01:56.473Z",
+          "windows": 3,
+          "events": 23,
+          "deliveries": 12,
+          "narratives": 6,
+          "tasks": 36
+        },
+        "failedTask": {
+          "id": "id_339717e8820abc94",
+          "status": "failed",
+          "attempt": 3,
+          "errorCode": "RUNTIME_ERROR"
+        },
+        "recoveredTask": {
+          "status": "completed",
+          "attempt": 4,
+          "completedAt": "2026-08-10T15:02:14.469Z"
+        }
+      }
+    },
+    {
+      "name": "window-3-pause-current-completes-next-does-not-open-resume",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:02:14.578Z",
+      "completedAt": "2026-08-10T15:02:41.299Z",
+      "result": {
+        "windowId": "id_df08f2d1b31e1406",
+        "before": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 2,
+          "reservedWorldSequence": 0,
+          "currentDay": 3,
+          "version": 13,
+          "updatedAt": "2026-08-10T15:01:56.473Z",
+          "windows": 3,
+          "events": 23,
+          "deliveries": 12,
+          "narratives": 8,
+          "tasks": 36
+        },
+        "after": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 3,
+          "reservedWorldSequence": 0,
+          "currentDay": 4,
+          "version": 16,
+          "updatedAt": "2026-08-10T15:02:41.124Z",
+          "windows": 4,
+          "events": 32,
+          "deliveries": 18,
+          "narratives": 12,
+          "tasks": 46
+        },
+        "openedOrdinal": 3,
+        "resumedOrdinal": 4,
+        "resumedWindowId": "id_40eb24d8a80dc044",
+        "pausedOpenCount": 0
+      }
+    },
+    {
+      "name": "window-4-deadline-unconfirmed-human-becomes-hold",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:02:41.299Z",
+      "completedAt": "2026-08-10T15:02:44.876Z",
+      "result": {
+        "windowId": "id_40eb24d8a80dc044",
+        "before": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 3,
+          "reservedWorldSequence": 0,
+          "currentDay": 4,
+          "version": 16,
+          "updatedAt": "2026-08-10T15:02:41.124Z",
+          "windows": 4,
+          "events": 32,
+          "deliveries": 18,
+          "narratives": 12,
+          "tasks": 46
+        },
+        "after": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 4,
+          "reservedWorldSequence": 0,
+          "currentDay": 5,
+          "version": 17,
+          "updatedAt": "2026-08-10T15:02:44.780Z",
+          "windows": 5,
+          "events": 40,
+          "deliveries": 23,
+          "narratives": 12,
+          "tasks": 54
+        },
+        "missingRoleId": "id_694aa3d276625f75",
+        "lockedKind": "HOLD",
+        "closingReason": "DEADLINE",
+        "snapshotHash": "170a132d0c2607922eb4caa51823d6b948105411acfa55de45adec83b688f0a0",
+        "recoveryCount": 1
+      }
+    },
+    {
+      "name": "switch-to-independent-worker",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:02:44.876Z",
+      "completedAt": "2026-08-10T15:02:46.225Z",
+      "result": {
+        "apiRestartedWithEmbeddedWorker": false,
+        "apiWorkerHealth": {
+          "enabled": false,
+          "topology": "embedded",
+          "leaseMs": 30000
+        }
+      }
+    },
+    {
+      "name": "window-5-independent-worker",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:02:46.225Z",
+      "completedAt": "2026-08-10T15:02:54.950Z",
+      "result": {
+        "windowId": "id_ff3ababc2b797127",
+        "before": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 4,
+          "reservedWorldSequence": 0,
+          "currentDay": 5,
+          "version": 17,
+          "updatedAt": "2026-08-10T15:02:44.780Z",
+          "windows": 5,
+          "events": 40,
+          "deliveries": 23,
+          "narratives": 12,
+          "tasks": 54
+        },
+        "after": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 5,
+          "reservedWorldSequence": 0,
+          "currentDay": 6,
+          "version": 18,
+          "updatedAt": "2026-08-10T15:02:54.766Z",
+          "windows": 6,
+          "events": 49,
+          "deliveries": 29,
+          "narratives": 12,
+          "tasks": 65
+        },
+        "standaloneWorkerPidHash": "73410b28086811b0",
+        "beforeWorker": {
+          "boundary": "AI_ACTIONS_PARTIALLY_PREPARED",
+          "windowStatus": "OPEN",
+          "worldSequence": 4,
+          "humanParticipants": [
+            {
+              "roleId": "id_ccb4112f2dfa2325",
+              "mainStatus": "B0_READY"
+            },
+            {
+              "roleId": "id_2afa66ed50040429",
+              "mainStatus": "B0_READY"
+            },
+            {
+              "roleId": "id_694aa3d276625f75",
+              "mainStatus": "B0_READY"
+            }
+          ],
+          "aiParticipants": [
+            {
+              "roleId": "id_c5f6f9653a3efa57",
+              "mainStatus": "B0_READY"
+            },
+            {
+              "roleId": "id_d58fe5b0b98fcc66",
+              "mainStatus": "B0_READY"
+            },
+            {
+              "roleId": "id_7dc9ea4906966c3a",
+              "mainStatus": "B0_PENDING"
+            }
+          ],
+          "settlementTask": null
+        },
+        "tasks": [
+          {
+            "id": "id_583b52f2b8101839",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_WINDOW_EVENT",
+            "status": "completed",
+            "outcome": "RECORDED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_3e0822c2f03870e6",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_WINDOW_EVENT",
+            "status": "completed",
+            "outcome": "RECORDED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_d772e9e09d8030be",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_WINDOW_EVENT",
+            "status": "completed",
+            "outcome": "RECORDED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_af127f2b4162c3d7",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_WINDOW_EVENT",
+            "status": "completed",
+            "outcome": "RECORDED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_18d1d7318041326d",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_WINDOW_EVENT",
+            "status": "completed",
+            "outcome": "RECORDED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_934d6bb3532dd3a6",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_WINDOW_EVENT",
+            "status": "completed",
+            "outcome": "RECORDED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_bd74a2d8fbce4768",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_WINDOW_EVENT",
+            "status": "completed",
+            "outcome": "RECORDED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_649d762fe20622d7",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_SETTLEMENT_REQUESTED",
+            "status": "completed",
+            "outcome": "COMMITTED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_512d56bfa7652118",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_WINDOW_EVENT",
+            "status": "completed",
+            "outcome": "RECORDED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          },
+          {
+            "id": "id_ec2e9f98d9743dc1",
+            "windowId": "id_ff3ababc2b797127",
+            "roleId": null,
+            "taskType": "B0_PUBLISH_STRUCTURED_RESULTS",
+            "status": "completed",
+            "outcome": "PUBLISHED",
+            "attempt": 1,
+            "leaseVersion": 1,
+            "completed": true,
+            "errorCode": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "window-6-worker-crash-lease-expiry-recovery-and-ending",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:02:54.950Z",
+      "completedAt": "2026-08-10T15:03:26.604Z",
+      "result": {
+        "windowId": "id_8212e45abacd7849",
+        "before": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "playing",
+          "worldSequence": 5,
+          "reservedWorldSequence": 0,
+          "currentDay": 6,
+          "version": 18,
+          "updatedAt": "2026-08-10T15:02:54.766Z",
+          "windows": 6,
+          "events": 49,
+          "deliveries": 29,
+          "narratives": 12,
+          "tasks": 65
+        },
+        "after": {
+          "id": "room_60690529b4f608343c8e56823f2ee542",
+          "status": "completed",
+          "worldSequence": 6,
+          "reservedWorldSequence": 0,
+          "currentDay": 6,
+          "version": 20,
+          "updatedAt": "2026-08-10T15:03:26.336Z",
+          "windows": 6,
+          "events": 58,
+          "deliveries": 35,
+          "narratives": 18,
+          "tasks": 71
+        },
+        "crashedTask": {
+          "id": "id_232293bdbf17aa54",
+          "attempt": 1,
+          "leaseVersion": 1,
+          "leaseExpiredAt": "2026-08-10T15:03:23.466Z",
+          "killedAt": "2026-08-10T15:03:18.566Z"
+        },
+        "recoveredTask": {
+          "status": "completed",
+          "attempt": 2,
+          "leaseVersion": 3,
+          "completedAt": "2026-08-10T15:03:25.765Z"
+        },
+        "endingCount": 6
+      }
+    },
+    {
+      "name": "single-human-ai-action-contract-and-safe-abort",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:03:26.604Z",
+      "completedAt": "2026-08-10T15:03:28.091Z",
+      "result": {
+        "run": {
+          "id": "id_9c91a1e252239c00",
+          "templateKey": "sangtian",
+          "status": "playing",
+          "strategyVersion": "b0_windowed_v1",
+          "humanPlayers": 1,
+          "roleCount": 6
+        },
+        "windowId": "id_466352ad1b218f38",
+        "before": {
+          "id": "room_0b0c73d9d8e84f46e6bb69af1bb9b6b7",
+          "status": "playing",
+          "worldSequence": 0,
+          "reservedWorldSequence": 0,
+          "currentDay": 1,
+          "version": 6,
+          "updatedAt": "2026-08-10T15:03:27.772Z",
+          "windows": 0,
+          "events": 0,
+          "deliveries": 0,
+          "narratives": 0,
+          "tasks": 0
+        },
+        "after": {
+          "id": "room_0b0c73d9d8e84f46e6bb69af1bb9b6b7",
+          "status": "playing",
+          "worldSequence": 0,
+          "reservedWorldSequence": 0,
+          "currentDay": 1,
+          "version": 7,
+          "updatedAt": "2026-08-10T15:03:27.807Z",
+          "windows": 1,
+          "events": 0,
+          "deliveries": 0,
+          "narratives": 0,
+          "tasks": 6
+        },
+        "aiRoleCount": 5,
+        "controlModes": [
+          {
+            "roleId": "cmsnd2w8900144saj3pmmwr9n",
+            "mode": "HUMAN_ACTIVE"
+          },
+          {
+            "roleId": "cmsnd2w8900154saj32s37c2g",
+            "mode": "AI_ACTIVE"
+          },
+          {
+            "roleId": "cmsnd2w8900164sajj03jn69h",
+            "mode": "AI_ACTIVE"
+          },
+          {
+            "roleId": "cmsnd2w8900174sajkvno9x1n",
+            "mode": "AI_ACTIVE"
+          },
+          {
+            "roleId": "cmsnd2w8900184sajgygnkqzw",
+            "mode": "AI_ACTIVE"
+          },
+          {
+            "roleId": "cmsnd2w8900194saj1fvzxahz",
+            "mode": "AI_ACTIVE"
+          }
+        ],
+        "abort": {
+          "windowId": "cmsnd2wc5002u4sajlz71n4px",
+          "status": "ABORTED"
+        }
+      }
+    },
+    {
+      "name": "browser-dom-network-privacy-and-readback",
+      "status": "PASS",
+      "startedAt": "2026-08-10T15:03:28.091Z",
+      "completedAt": "2026-08-10T15:03:28.098Z",
+      "result": {
+        "browsers": [
+          {
+            "name": "host-desktop",
+            "mobile": false,
+            "dom": {
+              "href": "/game?runId=room_60690529b4f608343c8e56823f2ee542",
+              "viewport": {
+                "width": 1440,
+                "height": 900
+              },
+              "statusVisible": true,
+              "resultsVisible": true,
+              "statusText": "Decision Window\nThis situation is complete\n\nCurrent Situation\nShared situation 6\n\nPlan status\nPlan locked\nroles ready\n0 / 6\nTime remaining\n—",
+              "resultsText": "Situation Results\nAnother plan changed your position\nSuccess\n\nThe committed settlement changed your position in the shared situation.\n\nWhy this happened\nAnother committed plan changed your position.\nState changes\nYour outcome\nSuccess\n\nSucceeded: Coordinate a bounded synchronized action with the selected counterpart.\n\nWhy this happened\nYour committed plan contributed to this result.\n\nNarrative is being added. The authoritative result is already in effect.",
+              "horizontalOverflow": false
+            },
+            "runtimeExceptions": [],
+            "network": [
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/game",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/maneuvers/projection",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/preview",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/confirm",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/ready",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window",
+                "status": 502,
+                "type": "Fetch"
+              }
+            ]
+          },
+          {
+            "name": "player-two-desktop",
+            "mobile": false,
+            "dom": {
+              "href": "/game?runId=room_60690529b4f608343c8e56823f2ee542",
+              "viewport": {
+                "width": 1280,
+                "height": 800
+              },
+              "statusVisible": true,
+              "resultsVisible": true,
+              "statusText": "Decision Window\nThis situation is complete\n\nCurrent Situation\nShared situation 6\n\nPlan status\nPlan locked\nroles ready\n0 / 6\nTime remaining\n—",
+              "resultsText": "Situation Results\nAnother plan changed your position\nSuccess\n\nThe committed settlement changed your position in the shared situation.\n\nWhy this happened\nAnother committed plan changed your position.\nState changes\nYour outcome\nSuccess\n\nSucceeded: Coordinate a bounded synchronized action with the selected counterpart.\n\nWhy this happened\nYour committed plan contributed to this result.\n\nNarrative is being added. The authoritative result is already in effect.",
+              "horizontalOverflow": false
+            },
+            "runtimeExceptions": [],
+            "network": [
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/game",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/maneuvers/projection",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/preview",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/confirm",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/ready",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window",
+                "status": 502,
+                "type": "Fetch"
+              }
+            ]
+          },
+          {
+            "name": "player-three-narrow",
+            "mobile": true,
+            "dom": {
+              "href": "/game?runId=room_60690529b4f608343c8e56823f2ee542",
+              "viewport": {
+                "width": 390,
+                "height": 844
+              },
+              "statusVisible": true,
+              "resultsVisible": true,
+              "statusText": "\n    Decision WindowThis situation is complete\n    Current SituationShared situation 6\n    \n      Plan statusPlan locked\n      roles ready0 / 6\n      Time remaining—\n    \n    \n    \n  ",
+              "resultsText": "Situation Results\nYour outcome\nSuccess\n\nSucceeded: Coordinate a bounded synchronized action with the selected counterpart.\n\nWhy this happened\nYour committed plan contributed to this result.\nAnother plan changed your position\nSuccess\n\nThe committed settlement changed your position in the shared situation.\n\nWhy this happened\nAnother committed plan changed your position.\nState changes\n\nNarrative is being added. The authoritative result is already in effect.",
+              "horizontalOverflow": false
+            },
+            "runtimeExceptions": [],
+            "network": [
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/game",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/maneuvers/projection",
+                "status": 200,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/preview",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/confirm",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "POST",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window/ready",
+                "status": 201,
+                "type": "Fetch"
+              },
+              {
+                "method": "GET",
+                "url": "/api/v4/rooms/room_60690529b4f608343c8e56823f2ee542/b0/window",
+                "status": 502,
+                "type": "Fetch"
+              }
+            ]
+          }
+        ],
+        "eventDeliveries": [
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 1,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "8e62d2bf20c2505b019199c72e3ca6cd61da92c5be0ca7bc24e58c2ea58d113e"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 2,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "ab56a2574bc9d2ff7b88bee7d139319e2ab4e39a3520b9e09c0da3401763593e"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 3,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "b8cddbba164bb6c49be799e615639608c79c3da5a2319970b028e2dae9f9ff2a"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 4,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "8b98a8c8aa1bf081865ee1cf490415548b7038c871f511a887510020a5690f2f"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 5,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "7edf8d13762e49cc5bcc1f9b71f1db5c223d076d85f045079e411703e2ef01b1"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 6,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "b39418ef33da598b9cfdc0bac002307d95ef0769ab594cc682b0100a00987389"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 7,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "355c22c7178ea6e00dec1842f02e603d5a1706bb737a9a94c296dcf963b849f5"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 8,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "88db611ead6ce57256c710eb6a7c81acefd424ed52b43a683c0d918acfd91a97"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 9,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "2ee74b104db9d581b5a7e818f6788f256ce4039704e961f2b5ea8e1e9520a606"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 10,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "488eccba74c80e967687a94d8da906444d43f856ed29ad715fc326ba19144913"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 11,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "efe8310d8009280746fa473639ee4749bb05c4fc31d5f5708bd0e9392a40e109"
+          },
+          {
+            "userId": "id_173ea12da8aeadb1",
+            "roleId": "id_ccb4112f2dfa2325",
+            "deliverySequence": 12,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "39293150e704aa4b22ada0368846667569f43868d48990175a91141493f7ae3c"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 1,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "484a065d2045fc3e0644728e3521bb2631d6aaa94bd0dd170003ffb8d629f5ca"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 2,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "60f236e446248048db8b16626c4d3c6392aa2b6499fcd6fb1b16d2c868227ac9"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 3,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "4aac07e2c41054b188785c2ca08024bc2965d8c70ea6940a3c264055dbdf581c"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 4,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "8f259e102bbb7d722efc59ccc2d3d891f31a0deb26d6be49b1780cc15c4ae637"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 5,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "778542021023446b8e6e3081956045139f65c9b7af9c8ba66466eb307c63b2ea"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 6,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "bcfe0db00536ca7c132993a3f64a9f022eadab235aa35018192a695d975eeb13"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 7,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "deaa028ccac6311cbb9d812e11d669cda75feca95700b089981b9b772bb20f9c"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 8,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "8911bea1aa205a73b0b6fae24821e549419428e78a7358a05dde3cc0610f215e"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 9,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "affe60ff5f4eb16ffa95ba55891d513154d1eefed21148ec6a742850d69d1ff7"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 10,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "fb25a64eff259752dc8856f5fad7d771c12c791b500f35d987e250f0c6177357"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 11,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "0908e8bbcec6758dce1f3424f77c184e0184910ae73e42af8803e7bcb81477e4"
+          },
+          {
+            "userId": "id_f0b58ff6b39182fc",
+            "roleId": "id_2afa66ed50040429",
+            "deliverySequence": 12,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "628652f3131ccb25de70a078a00112ee25f60e18f8583b2497b28f93f041618c"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 1,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "c4854ab4f0e341e216d970d463faa31053a84c5fd890864f490398abcca3bfbf"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 2,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "1d545e90ba557e8c8ae1956ad3a274111a2627796863b932f95c10f2ec946729"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 3,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "9308b78446508e38f5ccfdd140fc5c0e73172d9f392ad302819a8643ef948d40"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 4,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "70ec3a573d85319723a3ca057b4fa87192a03cdd084f1cde230080ae90de9710"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 5,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "5b448be0ed2822567f60429631a46209fb3cbc918731755851efd89382a67657"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 6,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "a81f96ef2704a39425965052aa47e33db1a0b1a6e930b796d65bb7ca285517f4"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 7,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "4f4643a4dbd1eeb4e7d66cb1adfa4dd7d60bfdec005d65313e178363ce2edcb5"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 8,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "089c3021709f2144e8a53b620e58812a65b190acff5018d6fce8934dd725dd1e"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 9,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "8f04e01458669ffc9d1c6d111526a190f86cfa53c377c0dada281df576ff8033"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 10,
+            "eventType": "B0_PERSONAL_OUTCOME",
+            "payloadHash": "d4de5fa8315cd3f69068acf66e0d674d34fc84720e1c2f3fc405b10a244d94c7"
+          },
+          {
+            "userId": "id_a4b44f7390c2cc3d",
+            "roleId": "id_694aa3d276625f75",
+            "deliverySequence": 11,
+            "eventType": "B0_CROSS_PLAYER_IMPACT",
+            "payloadHash": "f60b3a0091c7bb718fe1c70f9faa2ce30786345fff9b00c7b97a40542ab7a236"
+          }
+        ],
+        "narratives": [
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 1,
+            "contentHash": "607a1fad269b555985891700ff477de836c4329c14b44290bb8f50764571869a",
+            "characterCount": 338
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 1,
+            "contentHash": "f8ed19e16f926c052ebf0d595e9f9f90aceff47811900251d8b63302e8a11ede",
+            "characterCount": 207
+          },
+          {
+            "roleId": "id_694aa3d276625f75",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 1,
+            "contentHash": "65f412adefd24f32e2f49897c4f4aa65c424bc6f7904dd30fcc06aedd71aa13a",
+            "characterCount": 373
+          },
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 1,
+            "contentHash": "cd8c6794318374a757bb71e1505611f6141899c9c6b2c85fdd6688343d16c615",
+            "characterCount": 271
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 1,
+            "contentHash": "53dbf8737eaeb8266490dcde9ab2eaf5377099bf73577c6db2d94d5c28220b02",
+            "characterCount": 478
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 1,
+            "contentHash": "53dbf8737eaeb8266490dcde9ab2eaf5377099bf73577c6db2d94d5c28220b02",
+            "characterCount": 478
+          },
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 2,
+            "contentHash": "65f412adefd24f32e2f49897c4f4aa65c424bc6f7904dd30fcc06aedd71aa13a",
+            "characterCount": 373
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 2,
+            "contentHash": "fad4ba629b9670aa3f85068161793430df7afc908932764b53a89c1f152c3317",
+            "characterCount": 462
+          },
+          {
+            "roleId": "id_694aa3d276625f75",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 2,
+            "contentHash": "34bad8c09f6771d1900c054746927538e54223868256f26b8f7bc139b180cb17",
+            "characterCount": 287
+          },
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 2,
+            "contentHash": "cd8c6794318374a757bb71e1505611f6141899c9c6b2c85fdd6688343d16c615",
+            "characterCount": 271
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 2,
+            "contentHash": "53dbf8737eaeb8266490dcde9ab2eaf5377099bf73577c6db2d94d5c28220b02",
+            "characterCount": 478
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "entryType": "B0_NARRATIVE",
+            "visibility": "private",
+            "worldSequence": 2,
+            "contentHash": "53dbf8737eaeb8266490dcde9ab2eaf5377099bf73577c6db2d94d5c28220b02",
+            "characterCount": 478
+          },
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "entryType": "B0_ENDING",
+            "visibility": "private",
+            "worldSequence": 6,
+            "contentHash": "3eeb7020d357681702671baea66c8fc66645894a19aeedf053e18eda6c59dbbe",
+            "characterCount": 211
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "entryType": "B0_ENDING",
+            "visibility": "private",
+            "worldSequence": 6,
+            "contentHash": "3eeb7020d357681702671baea66c8fc66645894a19aeedf053e18eda6c59dbbe",
+            "characterCount": 211
+          },
+          {
+            "roleId": "id_694aa3d276625f75",
+            "entryType": "B0_ENDING",
+            "visibility": "private",
+            "worldSequence": 6,
+            "contentHash": "c02c64c8b86da4aae944ba79db9c33c14092d2afc974f17c7bb63a854e3c93f0",
+            "characterCount": 211
+          },
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "entryType": "B0_ENDING",
+            "visibility": "private",
+            "worldSequence": 6,
+            "contentHash": "47c57375db72e1147f9b8c58f9e577c0a4149dbaad6e83473cd9a4598fde93d0",
+            "characterCount": 140
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "entryType": "B0_ENDING",
+            "visibility": "private",
+            "worldSequence": 6,
+            "contentHash": "47c57375db72e1147f9b8c58f9e577c0a4149dbaad6e83473cd9a4598fde93d0",
+            "characterCount": 140
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "entryType": "B0_ENDING",
+            "visibility": "private",
+            "worldSequence": 6,
+            "contentHash": "47c57375db72e1147f9b8c58f9e577c0a4149dbaad6e83473cd9a4598fde93d0",
+            "characterCount": 140
+          }
+        ]
+      }
+    }
+  ],
+  "mainRun": {
+    "id": "id_6d7c0c159a1d5e6c",
+    "templateKey": "sangtian",
+    "status": "playing",
+    "strategyVersion": "b0_windowed_v1",
+    "humanPlayers": 3,
+    "roleCount": 6
+  },
+  "finalReadback": {
+    "run": {
+      "id": "id_6d7c0c159a1d5e6c",
+      "status": "completed",
+      "worldSequence": 6,
+      "reservedWorldSequence": 0,
+      "currentDay": 6,
+      "summary": "Completed 6 synchronized settlement windows.",
+      "b0": {
+        "paused": false,
+        "status": "COMPLETED",
+        "enabled": true,
+        "completedAt": "2026-08-10T15:03:26.335Z",
+        "totalWindows": 6,
+        "acceptanceRun": true
+      }
+    },
+    "windows": [
+      {
+        "ordinal": 1,
+        "id": "id_598ea55178198749",
+        "status": "COMPLETED",
+        "closingReason": "ALL_READY",
+        "participantCount": 6,
+        "participantStates": [
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_694aa3d276625f75",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          }
+        ],
+        "commitHash": "67d460156fb04ce917762cb2255086037b8e65cb3e180363d5937f533d564932"
+      },
+      {
+        "ordinal": 2,
+        "id": "id_0bdc43fef68ff54b",
+        "status": "COMPLETED",
+        "closingReason": "ALL_READY",
+        "participantCount": 6,
+        "participantStates": [
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_694aa3d276625f75",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          }
+        ],
+        "commitHash": "3c4660780294c9e5e0112dbfe133c973f6161acf03e4ec2b1eee581dbc3b5cdb"
+      },
+      {
+        "ordinal": 3,
+        "id": "id_df08f2d1b31e1406",
+        "status": "COMPLETED",
+        "closingReason": "ALL_READY",
+        "participantCount": 6,
+        "participantStates": [
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_694aa3d276625f75",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          }
+        ],
+        "commitHash": "b4ac71202b8fc44e0c81064c33dc68283b2c1e1113fa6d015e28098f7a851994"
+      },
+      {
+        "ordinal": 4,
+        "id": "id_40eb24d8a80dc044",
+        "status": "COMPLETED",
+        "closingReason": "DEADLINE",
+        "participantCount": 6,
+        "participantStates": [
+          {
+            "roleId": "id_694aa3d276625f75",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "mainStatus": "B0_COMPLETED",
+            "version": 6
+          }
+        ],
+        "commitHash": "518d8093fdca294d6588dac801a6fd6428acd09ff49042f510a5f0de90d33357"
+      },
+      {
+        "ordinal": 5,
+        "id": "id_ff3ababc2b797127",
+        "status": "COMPLETED",
+        "closingReason": "ALL_READY",
+        "participantCount": 6,
+        "participantStates": [
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_694aa3d276625f75",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          }
+        ],
+        "commitHash": "b98895fb41f660630735ef1816e08be802805c6b27290ff3b90f664225d3830a"
+      },
+      {
+        "ordinal": 6,
+        "id": "id_8212e45abacd7849",
+        "status": "COMPLETED",
+        "closingReason": "ALL_READY",
+        "participantCount": 6,
+        "participantStates": [
+          {
+            "roleId": "id_c5f6f9653a3efa57",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_d58fe5b0b98fcc66",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_7dc9ea4906966c3a",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_ccb4112f2dfa2325",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_2afa66ed50040429",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          },
+          {
+            "roleId": "id_694aa3d276625f75",
+            "mainStatus": "B0_COMPLETED",
+            "version": 5
+          }
+        ],
+        "commitHash": "77c0299894f3706e33d4c25a6fab57c4b32f8c929c0c2dc0446d2c4e83d21570"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "id_38ebdd026e386095",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_a9487642b32450fa",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_3c7fbad1e30e83e9",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_e76f18cf2a28c8f3",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_c46a8892ff0394b8",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_7c927356c2a1c350",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_26d67f8aeef3be8b",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_75e8435a7e11d670",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_SETTLEMENT_REQUESTED",
+        "status": "completed",
+        "outcome": "ALREADY_COMMITTED",
+        "attempt": 2,
+        "leaseVersion": 2,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_53208d64906f9cb6",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_6da0cd1e75c9612e",
+        "windowId": "id_598ea55178198749",
+        "roleId": null,
+        "taskType": "B0_PUBLISH_STRUCTURED_RESULTS",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 2,
+        "leaseVersion": 2,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_37cb11b1a8624055",
+        "windowId": "id_598ea55178198749",
+        "roleId": "id_ccb4112f2dfa2325",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_1419ddd713d6781f",
+        "windowId": "id_598ea55178198749",
+        "roleId": "id_2afa66ed50040429",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_2512c3e6516a555e",
+        "windowId": "id_598ea55178198749",
+        "roleId": "id_694aa3d276625f75",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_ea039b14fcf86006",
+        "windowId": "id_598ea55178198749",
+        "roleId": "id_c5f6f9653a3efa57",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_cf8b45093f4e18db",
+        "windowId": "id_598ea55178198749",
+        "roleId": "id_d58fe5b0b98fcc66",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_17a4427517187b75",
+        "windowId": "id_598ea55178198749",
+        "roleId": "id_7dc9ea4906966c3a",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_885ed36cf3cd4035",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_ced7ae4218429730",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_0be35a6582bad69f",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_c99f93c18ed1ff7b",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_4c2cf6d2c889f505",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_6aa89c50b5ee1d76",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_18be0d9b608b8493",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_7ea07dfec2918fe1",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_SETTLEMENT_REQUESTED",
+        "status": "completed",
+        "outcome": "COMMITTED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_4ab79a8e930d4d01",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_9a3f9390cb0ae74d",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": null,
+        "taskType": "B0_PUBLISH_STRUCTURED_RESULTS",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_339717e8820abc94",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": "id_ccb4112f2dfa2325",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 4,
+        "leaseVersion": 4,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_b3af7efd6d59b226",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": "id_2afa66ed50040429",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 3,
+        "leaseVersion": 3,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_f80ea7b0b260b34b",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": "id_694aa3d276625f75",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 3,
+        "leaseVersion": 3,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_0c5e2cdb69e45953",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": "id_c5f6f9653a3efa57",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 2,
+        "leaseVersion": 2,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_a0c849688f20bda1",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": "id_d58fe5b0b98fcc66",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 2,
+        "leaseVersion": 2,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_f7d0497e4a157a83",
+        "windowId": "id_0bdc43fef68ff54b",
+        "roleId": "id_7dc9ea4906966c3a",
+        "taskType": "B0_NARRATIVE_GENERATION",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_1155242f7a4e61a3",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_77d9148f31a22cee",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_0d7af2afeedac843",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_46b72cacf3d57f61",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_f6879076bb88bd6d",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_08746e630a7a2822",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_dad3a3eb288c0d3d",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_23cbbf52c1dc1a75",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_SETTLEMENT_REQUESTED",
+        "status": "completed",
+        "outcome": "COMMITTED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_f82ba3227ab8183b",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_5eeb90c4d238b11b",
+        "windowId": "id_df08f2d1b31e1406",
+        "roleId": null,
+        "taskType": "B0_PUBLISH_STRUCTURED_RESULTS",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_ed2eaa6ce6cd9fab",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_ff8ec8add91de75a",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_290d75e9efeee17e",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_9a05844ea3de2841",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_281e2d2e94e9ca22",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_2c383dbb438a254a",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_0d7d822d4e194a13",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_SETTLEMENT_REQUESTED",
+        "status": "completed",
+        "outcome": "COMMITTED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_3750cdc4a76b5aaf",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_e8a4b0730ee90ba2",
+        "windowId": "id_40eb24d8a80dc044",
+        "roleId": null,
+        "taskType": "B0_PUBLISH_STRUCTURED_RESULTS",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 2,
+        "leaseVersion": 3,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_583b52f2b8101839",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_3e0822c2f03870e6",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_d772e9e09d8030be",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_af127f2b4162c3d7",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_18d1d7318041326d",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_934d6bb3532dd3a6",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_bd74a2d8fbce4768",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_649d762fe20622d7",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_SETTLEMENT_REQUESTED",
+        "status": "completed",
+        "outcome": "COMMITTED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_512d56bfa7652118",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_ec2e9f98d9743dc1",
+        "windowId": "id_ff3ababc2b797127",
+        "roleId": null,
+        "taskType": "B0_PUBLISH_STRUCTURED_RESULTS",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_ce41105999a55c2c",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_38c9d534b549424f",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_97d12d541c976ba1",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_217d87bfcec5249c",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_bc656331035cb604",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_58145fe1e4360fcf",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_4e93785dbbd89ee3",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_232293bdbf17aa54",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_SETTLEMENT_REQUESTED",
+        "status": "completed",
+        "outcome": "COMMITTED",
+        "attempt": 2,
+        "leaseVersion": 3,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_17bf83b6033dd4d7",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_df66e26041c7851f",
+        "windowId": "id_8212e45abacd7849",
+        "roleId": null,
+        "taskType": "B0_PUBLISH_STRUCTURED_RESULTS",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      }
+    ],
+    "controls": [
+      {
+        "roleId": "id_ccb4112f2dfa2325",
+        "mode": "HUMAN_ACTIVE",
+        "epoch": 1,
+        "human": true
+      },
+      {
+        "roleId": "id_2afa66ed50040429",
+        "mode": "HUMAN_ACTIVE",
+        "epoch": 1,
+        "human": true
+      },
+      {
+        "roleId": "id_694aa3d276625f75",
+        "mode": "HUMAN_ACTIVE",
+        "epoch": 1,
+        "human": true
+      },
+      {
+        "roleId": "id_c5f6f9653a3efa57",
+        "mode": "AI_ACTIVE",
+        "epoch": 1,
+        "human": false
+      },
+      {
+        "roleId": "id_d58fe5b0b98fcc66",
+        "mode": "AI_ACTIVE",
+        "epoch": 1,
+        "human": false
+      },
+      {
+        "roleId": "id_7dc9ea4906966c3a",
+        "mode": "AI_ACTIVE",
+        "epoch": 1,
+        "human": false
+      }
+    ]
+  },
+  "status": "PASS",
+  "completedAt": "2026-08-10T15:03:28.115Z"
+}
