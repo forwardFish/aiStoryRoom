@@ -11,8 +11,6 @@ git status --short | tee "${EVIDENCE_ROOT}/logs/00-status-before.log"
 pnpm install --frozen-lockfile 2>&1 | tee "${EVIDENCE_ROOT}/logs/01-install.log"
 
 bash .github/repair/prepare-verified-requirement-dependency.sh
-python .github/repair/requirement-dependency-due-override.py
-python .github/repair/requirement-dependency-due-test-fix.py
 python .github/repair/run-settled-reaction-contract-v2.py
 python .github/repair/settled-reaction-authoring-fix.py
 python .github/repair/run-settled-reaction-product-fix-v4.py
