@@ -1,0 +1,54 @@
+name: Settled Reaction Generated Source Diagnostic
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/settled-reaction-generated-source-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          python .github/repair/requirement-dependency-product.py
+          python .github/repair/requirement-dependency-due-override.py
+          python .github/repair/requirement-dependency-due-test-fix.py
+          python .github/repair/run-settled-reaction-contract-v2.py
+          python .github/repair/settled-reaction-authoring-fix.py
+          python .github/repair/run-settled-reaction-product-fix-v4.py
+          mkdir -p /tmp/generated/packages/templates/src/story-package
+          cp packages/templates/src/story-package/part-one-runtime-engine.ts \
+            /tmp/generated/packages/templates/src/story-package/
+          cp packages/templates/src/story-package/part-one-runtime-types.ts \
+            /tmp/generated/packages/templates/src/story-package/
+          cp packages/templates/src/story-package/settled-reaction-contract.ts \
+            /tmp/generated/packages/templates/src/story-package/
+          cp packages/templates/src/runtime-facade.ts \
+            /tmp/generated/packages/templates/src/
+          git diff -- packages/templates/src/story-package/part-one-runtime-engine.ts \
+            > /tmp/generated/engine.patch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: settled-reaction-generated-source-${{ github.sha }}
+          path: /tmp/generated/
+          if-no-files-found: error
+          retention-days: 3
