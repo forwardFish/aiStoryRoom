@@ -274,6 +274,121 @@ jobs:
       - name: Causal aggregate
         run: pnpm test:causal
 
+  user-test-seed:
+    name: USER_TEST_READY clean-clone seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ai_story
+          POSTGRES_PASSWORD: ai_story_pwd
+          POSTGRES_DB: ai_story_run
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ai_story -d ai_story_run"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Verify exact clean checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --short)"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Create the documented local environment file
+        shell: bash
+        run: |
+          cat > .env <<'EOF'
+          DATABASE_URL=postgresql://ai_story:ai_story_pwd@127.0.0.1:5432/ai_story_run?schema=public
+          EOF
+      - name: Generate client and apply migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm db:generate
+          pnpm db:migrate:deploy
+      - name: Run the documented seed command and record its exit code
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p .artifacts/user-test-seed
+          set +e
+          pnpm db:seed > .artifacts/user-test-seed/db-seed.log 2>&1
+          exit_code=$?
+          set -e
+          cat .artifacts/user-test-seed/db-seed.log
+          cat > .artifacts/user-test-seed/result.json <<EOF
+          {"testedCodeSha":"$GITHUB_SHA","command":"pnpm db:seed","exitCode":$exit_code}
+          EOF
+          test "$exit_code" -eq 0
+      - name: Read back seeded records
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --env-file=.env --import tsx --input-type=module <<'NODE'
+          import { PrismaClient } from "@prisma/client";
+          const prisma = new PrismaClient();
+          try {
+            const [templateCount, userCount, runCount] = await Promise.all([
+              prisma.worldTemplate.count(),
+              prisma.user.count({ where: { openid: "mock_openid_owner_001" } }),
+              prisma.storyRun.count({ where: { inviteCode: "LOCAL1" } }),
+            ]);
+            const result = { templateCount, userCount, runCount };
+            console.log(JSON.stringify(result));
+            if (templateCount < 1 || userCount !== 1 || runCount !== 1) {
+              throw new Error(`seed readback failed: ${JSON.stringify(result)}`);
+            }
+          } finally {
+            await prisma.$disconnect();
+          }
+          NODE
+      - name: Minimum regression and changed-file secret scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'const p=require("./package.json"); if(p.scripts["db:seed"]!=="node --env-file-if-exists=.env --import tsx prisma/seed.ts") process.exit(1)'
+          python3 - <<'PY'
+          import pathlib, re
+          paths = [pathlib.Path("package.json"), pathlib.Path(".github/workflows/causal-mvp.yml")]
+          patterns = {
+              "api-key": re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
+              "bearer": re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),
+              "jwt": re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+          }
+          findings = []
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for kind, pattern in patterns.items():
+                  if pattern.search(text): findings.append({"path": str(path), "kind": kind})
+          if findings: raise SystemExit(str(findings))
+          print("changed-file secret scan: PASS")
+          PY
+      - name: Upload clean-clone seed proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-user-test-seed-${{ github.sha }}
+          path: .artifacts/user-test-seed
+          if-no-files-found: error
+          retention-days: 14
+
   record-outcome:
     name: Record exact push outcome
     if: always()
@@ -283,6 +398,7 @@ jobs:
       - full-api-story-build
       - full-web
       - causal-aggregate
+      - user-test-seed
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -294,6 +410,7 @@ jobs:
           FULL_API_STORY_BUILD_RESULT: ${{ needs.full-api-story-build.result }}
           FULL_WEB_RESULT: ${{ needs.full-web.result }}
           CAUSAL_AGGREGATE_RESULT: ${{ needs.causal-aggregate.result }}
+          USER_TEST_SEED_RESULT: ${{ needs.user-test-seed.result }}
         with:
           script: |
             const results = {
@@ -302,6 +419,7 @@ jobs:
               apiStoryBuild: process.env.FULL_API_STORY_BUILD_RESULT,
               web: process.env.FULL_WEB_RESULT,
               causal: process.env.CAUSAL_AGGREGATE_RESULT,
+              userTestSeed: process.env.USER_TEST_SEED_RESULT,
             };
             const success = Object.values(results).every((value) => value === "success");
             await github.rest.repos.createCommitStatus({
