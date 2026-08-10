@@ -4,11 +4,8 @@ on:
   push:
     branches:
       - codex/chatgpt-pro-maneuver-evidence-v1
-    paths:
-      - prisma/seed.ts
-      - package.json
-      - pnpm-lock.yaml
-      - .github/workflows/b0-user-test-seed-windows.yml
+    paths-ignore:
+      - "docs/auto-execute/evidence/b0/**"
 
 permissions:
   contents: read
