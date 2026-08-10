@@ -93,12 +93,11 @@ docker compose up -d postgres redis
 
 ### 4.2 Create the non-production local environment
 
-Create `.env` at the repository root with the following local-only values. Change the two local secrets to any long random strings; do not commit the file.
+Create `.env` at the repository root with the following local-only values. Change the three local secrets to any long random strings; do not commit the file.
 
 ```dotenv
 NODE_ENV=development
 API_PORT=3001
-PORT=3001
 DATABASE_URL=postgresql://ai_story:ai_story_pwd@127.0.0.1:5432/ai_story_run?schema=public
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
@@ -155,6 +154,7 @@ pnpm db:seed
 Terminal A — OpenNovel runtime:
 
 ```powershell
+$env:PORT="3110"
 pnpm --filter @apps/openovel-runtime dev
 ```
 
