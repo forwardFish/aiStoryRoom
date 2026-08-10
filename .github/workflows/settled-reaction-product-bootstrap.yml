@@ -1,0 +1,195 @@
+name: Settled Reaction Product Bootstrap
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/settled-reaction-product-bootstrap.yml
+  workflow_dispatch:
+
+concurrency:
+  group: dynamic-kernel-real-product-delivery
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  materialize-commit-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
+      PRODUCT_BASE: 321a9aa03ce33201a59da63350e385b885023d77
+      EVIDENCE_ROOT: /tmp/settled-reaction-product-bootstrap
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/chatgpt-pro-dynamic-kernel-lite
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Materialize and commit real product source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          test "$(git branch --show-current)" = "${TARGET_BRANCH}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ ! -f packages/templates/src/story-package/requirement-dependency.ts ]; then
+            python .github/repair/requirement-dependency-product.py
+            python .github/repair/requirement-dependency-selection-purpose.py
+            python .github/repair/requirement-dependency-due-override.py
+            python .github/repair/requirement-dependency-due-test-fix.py
+          fi
+          if ! grep -R -q "SettledReactionContract" \
+            packages/templates apps/openovel-runtime apps/api; then
+            python .github/repair/settled-reaction-contract.py
+          fi
+
+          git diff --check
+          git diff --name-status -- packages apps scripts \
+            | tee "${EVIDENCE_ROOT}/logs/00-materialized-product-files.log"
+          test -n "$(git diff --name-only -- packages apps scripts)"
+          test -f packages/templates/src/story-package/requirement-dependency.ts
+          grep -R "SettledReactionContract" \
+            packages/templates apps/openovel-runtime apps/api \
+            > "${EVIDENCE_ROOT}/logs/01-settled-reaction-symbols.log"
+          grep -R "UnboundActionNarrativeSource" \
+            packages/templates apps/openovel-runtime apps/api \
+            > "${EVIDENCE_ROOT}/logs/02-unbound-source-symbols.log"
+
+          git add -- packages apps scripts
+          git diff --cached --check
+          git commit -m "feat(kernel-lite): freeze settled reactions before next decisions"
+          git push origin HEAD:${TARGET_BRANCH}
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/product-sha.txt"
+          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/product-tree.txt"
+          git diff --name-status "${PRODUCT_BASE}"..HEAD -- packages apps scripts \
+            | tee "${EVIDENCE_ROOT}/product-diff.txt"
+          test -n "$(cat "${EVIDENCE_ROOT}/product-diff.txt")"
+
+      - name: Install frozen workspace at exact product SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile 2>&1 \
+            | tee "${EVIDENCE_ROOT}/logs/03-install.log"
+
+      - name: Run complete deterministic matrix
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          results="${EVIDENCE_ROOT}/results.tsv"
+          : > "${results}"
+          failed=0
+          run_gate() {
+            local label="$1"
+            shift
+            local log="${EVIDENCE_ROOT}/logs/${label}.log"
+            set +e
+            "$@" 2>&1 | tee "${log}"
+            local code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
+            if [ "${code}" -ne 0 ]; then failed=1; fi
+          }
+          run_gate 04-story-v4 pnpm test:story:v4
+          run_gate 05-templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate 06-templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate 07-templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate 08-templates-build pnpm --filter @ai-story/templates build
+          run_gate 09-openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate 10-openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate 11-openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate 12-prisma-generate pnpm db:generate
+          run_gate 13-api-solo pnpm --filter @apps/api test:solo-story-engine
+          run_gate 14-api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate 15-branch-persistence pnpm test:story:branch-persistence
+          run_gate 16-story-options pnpm test:story:options
+          run_gate 17-story-convergence pnpm test:story:convergence
+          if [ "${failed}" -eq 0 ]; then
+            printf 'pass\n' > "${EVIDENCE_ROOT}/status.txt"
+          else
+            printf 'fail\n' > "${EVIDENCE_ROOT}/status.txt"
+          fi
+
+      - name: Upload exact product evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: settled-reaction-product-bootstrap-${{ github.sha }}
+          path: /tmp/settled-reaction-product-bootstrap/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Clean transport scaffolding only after green matrix
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "${EVIDENCE_ROOT}/status.txt"
+          if [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" != pass ]; then
+            exit 0
+          fi
+
+          git rm -r --ignore-unmatch \
+            .github/bootstrap/requirement-dependency-fast-forward
+          git rm -f --ignore-unmatch \
+            .github/repair/requirement-dependency-* \
+            .github/repair/settled-reaction-contract.py \
+            .github/workflows/requirement-dependency-* \
+            .github/workflows/settled-reaction-product-delivery.yml \
+            .github/workflows/settled-reaction-product-bootstrap.yml
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(kernel-lite): remove delivery scaffolding"
+            git push origin HEAD:${TARGET_BRANCH}
+          fi
+
+          test -z "$(git ls-files '.github/repair/requirement-dependency-*')"
+          test -z "$(git ls-files '.github/repair/settled-reaction-contract.py')"
+          test -z "$(git ls-files '.github/bootstrap/requirement-dependency-fast-forward/*')"
+          test -z "$(git ls-files '.github/workflows/requirement-dependency-*')"
+          test -z "$(git ls-files '.github/workflows/settled-reaction-product-*')"
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/final-sha.txt"
+          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/final-tree.txt"
+          git diff --name-status "${PRODUCT_BASE}"..HEAD -- packages apps scripts \
+            > "${EVIDENCE_ROOT}/final-product-diff.txt"
+          git diff --name-status "${PRODUCT_BASE}"..HEAD -- .github \
+            > "${EVIDENCE_ROOT}/final-github-diff.txt"
+
+      - name: Publish status
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=failure
+          description="Real product materialized; deterministic repairs remain"
+          if [ -f "${EVIDENCE_ROOT}/status.txt" ] \
+            && [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/status.txt")" = pass ] \
+            && [ -f "${EVIDENCE_ROOT}/final-sha.txt" ]; then
+            state=success
+            description="Real product pushed, tested and transport removed"
+          fi
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="${state}" \
+            -f context="dynamic-kernel-lite/settled-reaction-bootstrap" \
+            -f description="${description}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
