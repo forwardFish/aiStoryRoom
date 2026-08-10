@@ -7,6 +7,9 @@ This file records the linear stage chain that the repository workflow must verif
 - S2 metric trajectories: `3f52323f812b975af5b0b18bf642b227d26ce716`
 - S3 multi-axis adjudication: `b0119cd653844e492fccbfd2c57245bdf5b31a91`
 - S4 deterministic detail compilation: `00ca96fffe40a87ce96f893ef05a589e3d02c5a6`
+- Exact-SHA workflow definition entered the branch at: `5d286489d5a53dc7c6972c5a847db51fefc558b8`
+
+This update intentionally triggers the already-present exact-SHA workflow against the new remote commit. It is transport metadata only and does not alter S1—S4 product behavior.
 
 The exact-SHA workflow must prove all of the following before this batch can be reported ready for independent Codex review:
 
