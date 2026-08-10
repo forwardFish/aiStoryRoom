@@ -15,7 +15,6 @@ scripts=(
   dynamic-kernel-dependency-runtime-semantics.py
   dynamic-kernel-dependency-predecessor-kernels.py
   dynamic-kernel-authored-transition-surface.py
-  dynamic-kernel-context-budget.py
 )
 for script in "${scripts[@]}"; do
   git show "${HISTORICAL_IMPLEMENTATION_SHA}:.github/repair/${script}" \
