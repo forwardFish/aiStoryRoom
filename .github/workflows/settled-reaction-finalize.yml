@@ -1,0 +1,292 @@
+name: Settled Reaction Finalize
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/settled-reaction-finalize.yml
+  workflow_dispatch:
+
+concurrency:
+  group: dynamic-kernel-real-product-delivery
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
+      PRODUCT_BASE: 321a9aa03ce33201a59da63350e385b885023d77
+      EVIDENCE_ROOT: /tmp/settled-reaction-finalize
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/chatgpt-pro-dynamic-kernel-lite
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Ensure real product source is committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/logs"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          test "$(git branch --show-current)" = "${TARGET_BRANCH}"
+
+          if [ ! -f packages/templates/src/story-package/requirement-dependency.ts ]; then
+            python .github/repair/requirement-dependency-product.py
+            python .github/repair/requirement-dependency-selection-purpose.py
+            python .github/repair/requirement-dependency-due-override.py
+            python .github/repair/requirement-dependency-due-test-fix.py
+          fi
+          if ! grep -R -q "SettledReactionContract" \
+            packages/templates apps/openovel-runtime apps/api; then
+            python .github/repair/settled-reaction-contract.py
+          fi
+
+          git diff --check
+          if ! git diff --quiet -- packages apps scripts; then
+            git add -- packages apps scripts
+            git diff --cached --check
+            git commit -m "feat(kernel-lite): freeze settled reactions before next decisions"
+            git push origin HEAD:${TARGET_BRANCH}
+          fi
+
+          test -f packages/templates/src/story-package/requirement-dependency.ts
+          grep -R "SettledReactionContract" \
+            packages/templates apps/openovel-runtime apps/api \
+            > "${EVIDENCE_ROOT}/logs/00-settled-reaction-symbols.log"
+          grep -R "UnboundActionNarrativeSource" \
+            packages/templates apps/openovel-runtime apps/api \
+            > "${EVIDENCE_ROOT}/logs/01-unbound-source-symbols.log"
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/product-sha.txt"
+          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/product-tree.txt"
+          git diff --name-status "${PRODUCT_BASE}"..HEAD -- packages apps scripts \
+            | tee "${EVIDENCE_ROOT}/product-diff.txt"
+          test -n "$(cat "${EVIDENCE_ROOT}/product-diff.txt")"
+
+      - name: Install frozen workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile 2>&1 \
+            | tee "${EVIDENCE_ROOT}/logs/02-install.log"
+
+      - name: Run product deterministic matrix
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          results="${EVIDENCE_ROOT}/product-results.tsv"
+          : > "${results}"
+          failed=0
+          run_gate() {
+            local label="$1"
+            shift
+            local log="${EVIDENCE_ROOT}/logs/product-${label}.log"
+            set +e
+            "$@" 2>&1 | tee "${log}"
+            local code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
+            if [ "${code}" -ne 0 ]; then failed=1; fi
+          }
+          run_gate story-v4 pnpm test:story:v4
+          run_gate templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate templates-build pnpm --filter @ai-story/templates build
+          run_gate openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate prisma-generate pnpm db:generate
+          run_gate api-solo pnpm --filter @apps/api test:solo-story-engine
+          run_gate api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate branch-persistence pnpm test:story:branch-persistence
+          run_gate story-options pnpm test:story:options
+          run_gate story-convergence pnpm test:story:convergence
+          printf '%s\n' "$([ "${failed}" -eq 0 ] && echo pass || echo fail)" \
+            > "${EVIDENCE_ROOT}/product-status.txt"
+
+      - name: Parse exact product test evidence
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path('/tmp/settled-reaction-finalize')
+          rows = []
+          results = root / 'product-results.tsv'
+          if results.exists():
+              for line in results.read_text(encoding='utf-8').splitlines():
+                  if not line.strip():
+                      continue
+                  label, code, log_path = line.split('\t', 2)
+                  text = Path(log_path).read_text(encoding='utf-8', errors='replace') if Path(log_path).exists() else ''
+                  def last(pattern):
+                      matches = re.findall(pattern, text, flags=re.MULTILINE)
+                      return int(matches[-1]) if matches else None
+                  rows.append({
+                      'label': label,
+                      'tests': last(r'^# tests\s+(\d+)\s*$'),
+                      'pass': last(r'^# pass\s+(\d+)\s*$'),
+                      'fail': last(r'^# fail\s+(\d+)\s*$'),
+                      'skip': last(r'^# skipped\s+(\d+)\s*$'),
+                      'todo': last(r'^# todo\s+(\d+)\s*$'),
+                      'exitCode': int(code),
+                      'logPath': log_path,
+                  })
+          payload = {
+              'productSha': (root / 'product-sha.txt').read_text().strip() if (root / 'product-sha.txt').exists() else None,
+              'productTree': (root / 'product-tree.txt').read_text().strip() if (root / 'product-tree.txt').exists() else None,
+              'status': (root / 'product-status.txt').read_text().strip() if (root / 'product-status.txt').exists() else 'missing',
+              'commands': rows,
+          }
+          (root / 'product-evidence.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Preserve exact diagnostics on failure
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f "${EVIDENCE_ROOT}/product-status.txt" ] \
+            || [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/product-status.txt")" != pass ]; then
+            mkdir -p .github/diagnostics
+            cp "${EVIDENCE_ROOT}/product-evidence.json" \
+              .github/diagnostics/settled-reaction-latest.json
+            {
+              echo "# SettledReaction deterministic failure tails"
+              for log in "${EVIDENCE_ROOT}"/logs/product-*.log; do
+                echo
+                echo "## $(basename "${log}")"
+                tail -n 100 "${log}" || true
+              done
+            } > .github/diagnostics/settled-reaction-failure-tails.md
+            git add .github/diagnostics
+            if ! git diff --cached --quiet; then
+              git commit -m "test(kernel-lite): record settled reaction failures"
+              git push origin HEAD:${TARGET_BRANCH}
+            fi
+          fi
+
+      - name: Stage cleanup after green product matrix
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "${EVIDENCE_ROOT}/product-status.txt"
+          if [ "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/product-status.txt")" != pass ]; then
+            exit 0
+          fi
+
+          mkdir -p docs
+          cp "${EVIDENCE_ROOT}/product-evidence.json" \
+            docs/Dynamic_Kernel_Lite_Settled_Reaction_Deterministic_Evidence.json
+          git add docs/Dynamic_Kernel_Lite_Settled_Reaction_Deterministic_Evidence.json
+          git rm -r --ignore-unmatch \
+            .github/bootstrap/requirement-dependency-fast-forward
+          git rm -f --ignore-unmatch \
+            .github/repair/requirement-dependency-* \
+            .github/repair/settled-reaction-contract.py \
+            .github/workflows/requirement-dependency-* \
+            .github/workflows/settled-reaction-product-delivery.yml \
+            .github/workflows/settled-reaction-product-bootstrap.yml \
+            .github/workflows/settled-reaction-finalize.yml \
+            .github/diagnostics/settled-reaction-latest.json \
+            .github/diagnostics/settled-reaction-failure-tails.md
+          git diff --cached --check
+          git commit -m "chore(kernel-lite): remove delivery scaffolding"
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/cleanup-sha.txt"
+          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/cleanup-tree.txt"
+
+      - name: Run final cleanup-SHA deterministic matrix
+        if: always()
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ ! -f "${EVIDENCE_ROOT}/cleanup-sha.txt" ]; then
+            exit 0
+          fi
+          results="${EVIDENCE_ROOT}/final-results.tsv"
+          : > "${results}"
+          failed=0
+          run_gate() {
+            local label="$1"
+            shift
+            local log="${EVIDENCE_ROOT}/logs/final-${label}.log"
+            set +e
+            "$@" 2>&1 | tee "${log}"
+            local code=${PIPESTATUS[0]}
+            set -e
+            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
+            if [ "${code}" -ne 0 ]; then failed=1; fi
+          }
+          run_gate story-v4 pnpm test:story:v4
+          run_gate templates-typecheck pnpm --filter @ai-story/templates typecheck
+          run_gate templates-runtime-contract pnpm --filter @ai-story/templates test:runtime-contract
+          run_gate templates-story-package pnpm --filter @ai-story/templates test:story-package
+          run_gate templates-build pnpm --filter @ai-story/templates build
+          run_gate openovel-typecheck pnpm --filter @apps/openovel-runtime typecheck
+          run_gate openovel-test pnpm --filter @apps/openovel-runtime test
+          run_gate openovel-build pnpm --filter @apps/openovel-runtime build
+          run_gate prisma-generate pnpm db:generate
+          run_gate api-solo pnpm --filter @apps/api test:solo-story-engine
+          run_gate api-legacy-sangtian pnpm --filter @apps/api test:solo-story-engine:legacy-sangtian
+          run_gate branch-persistence pnpm test:story:branch-persistence
+          run_gate story-options pnpm test:story:options
+          run_gate story-convergence pnpm test:story:convergence
+          printf '%s\n' "$([ "${failed}" -eq 0 ] && echo pass || echo fail)" \
+            > "${EVIDENCE_ROOT}/final-status.txt"
+
+      - name: Push final cleanup SHA only when all gates are green
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f "${EVIDENCE_ROOT}/cleanup-sha.txt" ]; then
+            exit 0
+          fi
+          test "$(tr -d '\r\n' < "${EVIDENCE_ROOT}/final-status.txt")" = pass
+          test -z "$(git ls-files '.github/repair/requirement-dependency-*')"
+          test -z "$(git ls-files '.github/repair/settled-reaction-contract.py')"
+          test -z "$(git ls-files '.github/bootstrap/requirement-dependency-fast-forward/*')"
+          test -z "$(git ls-files '.github/workflows/requirement-dependency-*')"
+          test -z "$(git ls-files '.github/workflows/settled-reaction-*')"
+          git diff --name-status "${PRODUCT_BASE}"..HEAD -- packages apps scripts \
+            | tee "${EVIDENCE_ROOT}/final-product-diff.txt"
+          test -n "$(cat "${EVIDENCE_ROOT}/final-product-diff.txt")"
+          git diff --name-status "${PRODUCT_BASE}"..HEAD -- .github \
+            | tee "${EVIDENCE_ROOT}/final-github-diff.txt"
+          git push origin HEAD:${TARGET_BRANCH}
+          git rev-parse HEAD > "${EVIDENCE_ROOT}/final-sha.txt"
+          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/final-tree.txt"
+
+      - name: Upload finalizer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: settled-reaction-finalize-${{ github.sha }}
+          path: /tmp/settled-reaction-finalize/
+          if-no-files-found: error
+          retention-days: 7
