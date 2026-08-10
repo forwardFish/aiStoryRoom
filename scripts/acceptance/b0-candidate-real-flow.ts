@@ -201,8 +201,21 @@ async function main() {
       assert.equal(openCountWhilePaused, 0, "pause prevents a new window but never blocks current commit");
       await apiJson(adminUser.token, `/v4/admin/b0/runs/${encodeURIComponent(mainRun.id)}/pause`, { method: "POST", body: { paused: false } });
       const resumed = await apiJson(users[0].token, `/v4/rooms/${encodeURIComponent(mainRun.id)}/b0/window`, { method: "GET" });
-      assert.equal(resumed.window.ordinal, 4);
-      return { windowId: stableLabel(opened.windowId), before, after: await runReadback(prisma, mainRun.id), resumedWindowId: stableLabel(resumed.window.id), pausedOpenCount: openCountWhilePaused };
+      assert.equal(
+        resumed.window.ordinal,
+        opened.ordinal + 1,
+        "resuming must expose exactly the immediate successor synchronized window",
+      );
+      assert.notEqual(resumed.window.id, opened.windowId, "resuming must not reopen the completed paused window");
+      return {
+        windowId: stableLabel(opened.windowId),
+        before,
+        after: await runReadback(prisma, mainRun.id),
+        openedOrdinal: opened.ordinal,
+        resumedOrdinal: resumed.window.ordinal,
+        resumedWindowId: stableLabel(resumed.window.id),
+        pausedOpenCount: openCountWhilePaused,
+      };
     });
 
     await phase("window-4-deadline-unconfirmed-human-becomes-hold", async () => {
