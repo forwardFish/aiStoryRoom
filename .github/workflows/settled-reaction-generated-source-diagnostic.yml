@@ -1,5 +1,6 @@
 name: Settled Reaction Generated Source Diagnostic
 
+# Re-run after hardened product wiring changes.
 on:
   push:
     branches:
