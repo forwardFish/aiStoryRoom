@@ -2,7 +2,23 @@
 # stable across Windows and Unix checkouts so registry hashes remain valid.
 packages/templates/config/**/*.json text eol=lf
 
-# C8/C9 stores third-party and runtime logs byte-for-byte as evidence. These
-# files may contain legitimate padding whitespace and must not be treated as
-# source diffs by git diff --check during the fail-closed evidence commit.
-docs/auto-execute/evidence/b0/**/*.log -diff
+# B0 evidence is hash-addressed and must have identical ordinary-worktree
+# bytes on Windows and Unix. Text evidence is always LF; binary evidence is
+# never line-ending converted.
+docs/auto-execute/USER_TEST_READY_HANDOFF.md text eol=lf
+docs/auto-execute/evidence/b0/**/*.json text eol=lf
+docs/auto-execute/evidence/b0/**/*.md text eol=lf
+docs/auto-execute/evidence/b0/**/*.txt text eol=lf
+docs/auto-execute/evidence/b0/**/*.log text eol=lf -diff
+docs/auto-execute/evidence/b0/**/*.sha256 text eol=lf
+docs/auto-execute/evidence/b0/**/*.ndjson text eol=lf
+docs/auto-execute/evidence/b0/**/*.csv text eol=lf
+docs/auto-execute/evidence/b0/**/*.html text eol=lf
+docs/auto-execute/evidence/b0/**/*.yaml text eol=lf
+docs/auto-execute/evidence/b0/**/*.yml text eol=lf
+docs/auto-execute/evidence/b0/**/*.png binary
+docs/auto-execute/evidence/b0/**/*.jpg binary
+docs/auto-execute/evidence/b0/**/*.jpeg binary
+docs/auto-execute/evidence/b0/**/*.webp binary
+docs/auto-execute/evidence/b0/**/*.zip binary
+docs/auto-execute/evidence/b0/**/*.gz binary
