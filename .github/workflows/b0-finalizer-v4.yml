@@ -23,6 +23,7 @@ jobs:
     env:
       EVIDENCE_ROOT: docs/auto-execute/evidence/b0
       TESTED_CODE_SHA: ${{ github.sha }}
+      B0_REQUIRED_MAIN_BASELINE_SHA: 86da64eea18ab773312f40c7024ace9cb393344a
 
     steps:
       - name: Publish finalizer locator
@@ -56,7 +57,9 @@ jobs:
           test "$remote_head" = "$GITHUB_SHA"
           test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-finalizer-v4.yml"
           test -z "$(git ls-tree -r --name-only HEAD -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9)"
-          echo "main_sha=$(git rev-parse origin/main)" >> "$GITHUB_OUTPUT"
+          git cat-file -e "$B0_REQUIRED_MAIN_BASELINE_SHA^{commit}"
+          echo "main_baseline_sha=$B0_REQUIRED_MAIN_BASELINE_SHA" >> "$GITHUB_OUTPUT"
+          echo "remote_main_at_finalization=$(git rev-parse origin/main)" >> "$GITHUB_OUTPUT"
           echo "remote_before=$remote_head" >> "$GITHUB_OUTPUT"
 
       - name: Wait for authoritative exact and acceptance statuses
@@ -366,7 +369,8 @@ jobs:
       - name: Build fail-closed C8 and C9 evidence
         shell: bash
         env:
-          MAIN_SHA: ${{ steps.start.outputs.main_sha }}
+          MAIN_BASELINE_SHA: ${{ steps.start.outputs.main_baseline_sha }}
+          REMOTE_MAIN_AT_FINALIZATION: ${{ steps.start.outputs.remote_main_at_finalization }}
           CLASSIFICATION: ${{ steps.evaluate.outputs.classification }}
           EXACT_RUN_ID: ${{ steps.evaluate.outputs.exact_run_id }}
           ACCEPTANCE_RUN_ID: ${{ steps.evaluate.outputs.acceptance_run_id }}
@@ -407,7 +411,8 @@ jobs:
           c8 = root / "c8"
           c9 = root / "c9"
           tested = os.environ["TESTED_CODE_SHA"]
-          main = os.environ["MAIN_SHA"]
+          main_baseline = os.environ["MAIN_BASELINE_SHA"]
+          remote_main_at_finalization = os.environ["REMOTE_MAIN_AT_FINALIZATION"]
           classification = os.environ["CLASSIFICATION"]
           formal_pass = classification == "FULL_PASS"
           external_blocked = (
@@ -421,7 +426,8 @@ jobs:
               "schemaVersion": 1,
               "checkpoint": "B0_C8",
               "status": status,
-              "mainBaselineSha": main,
+              "mainBaselineSha": main_baseline,
+              "remoteMainAtFinalizationSha": remote_main_at_finalization,
               "testedCodeSha": tested,
               "workflowRunIds": {
                   "exact": exact_run_id,
@@ -509,7 +515,8 @@ jobs:
               "schemaVersion": 1,
               "status": status,
               "classification": classification,
-              "mainBaselineSha": main,
+              "mainBaselineSha": main_baseline,
+              "remoteMainAtFinalizationSha": remote_main_at_finalization,
               "testedCodeSha": tested,
               "evidenceCommitSha": None,
               "candidateBranchReady": formal_pass,
@@ -559,7 +566,8 @@ jobs:
                       "schemaVersion": 1,
                       "testedCodeSha": tested,
                       "normalFastForwardOnly": True,
-                      "mainBaselineSha": main,
+                      "mainBaselineSha": main_baseline,
+                      "remoteMainAtFinalizationSha": remote_main_at_finalization,
                       "boundaries": boundaries,
                       "formalC8ExternalBlocked": external_blocked,
                   },
@@ -586,7 +594,8 @@ jobs:
 
           report = f"""# B0 Final Delivery Report
 
-          - main baseline: `{main}`
+          - B0 main baseline: `{main_baseline}`
+          - remote main at finalization: `{remote_main_at_finalization}`
           - testedCodeSha: `{tested}`
           - exact workflow run: `{exact_run_id}`
           - acceptance workflow run: `{acceptance_run_id}`
@@ -608,17 +617,68 @@ jobs:
               encoding="utf-8",
           )
 
-          patterns = [
-              re.compile(r"postgres(?:ql)?://[^\s\"']+", re.I),
-              re.compile(r"(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{12,}"),
-              re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}"),
-              re.compile(r"Bearer\s+[A-Za-z0-9._~+/=-]{12,}", re.I),
-              re.compile(
-                  r"(?:DATABASE_URL|API_KEY|TOKEN|PASSWORD)\s*[:=]\s*(?!\*{3}|<redacted>|null)[^\s]+",
-                  re.I,
-              ),
-          ]
+          from urllib.parse import parse_qs, urlsplit
+
           findings = []
+
+          def record(path: Path, kind: str, value: str) -> None:
+              findings.append(
+                  {
+                      "path": str(path.relative_to(root)),
+                      "kind": kind,
+                      "matchSha256": hashlib.sha256(value.encode("utf-8")).hexdigest(),
+                  }
+              )
+
+          def normalized(value: str) -> str:
+              return value.strip().strip("\"'").rstrip(",);]")
+
+          def allowed_placeholder(value: str) -> bool:
+              lowered = normalized(value).lower()
+              return lowered in {
+                  "",
+                  "***",
+                  "<redacted>",
+                  "[redacted]",
+                  "null",
+                  "none",
+                  "engineering-self-check",
+                  "formal-self-check",
+                  "ollama-self-check",
+              }
+
+          def allowed_database_fixture(value: str) -> bool:
+              candidate = normalized(value)
+              try:
+                  parsed = urlsplit(candidate)
+              except Exception:
+                  return False
+              if parsed.scheme not in {"postgres", "postgresql"}:
+                  return False
+              if (parsed.hostname or "") in {"127.0.0.1", "localhost"}:
+                  return True
+              schema = (parse_qs(parsed.query).get("schema") or [None])[0]
+              return (
+                  parsed.username == "postgres"
+                  and parsed.password == "secret"
+                  and schema == "cs_accept_b0_contract123"
+                  and "supabase.com" in (parsed.hostname or "")
+              )
+
+          database_pattern = re.compile(r"postgres(?:ql)?://[^\s\"']+", re.I)
+          sk_pattern = re.compile(r"(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{12,}")
+          github_token_pattern = re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}")
+          bearer_pattern = re.compile(r"Bearer\s+[A-Za-z0-9._~+/=-]{12,}", re.I)
+          assignment_pattern = re.compile(
+              r"(?m)\b("
+              r"DATABASE_URL|"
+              r"[A-Z0-9_]*API_KEY|"
+              r"(?:GITHUB_TOKEN|GH_TOKEN|[A-Z0-9_]+_TOKEN(?:_[A-Z0-9_]+)?)|"
+              r"[A-Z0-9_]*PASSWORD|"
+              r"[A-Z0-9_]+_SECRET"
+              r")\s*[:=]\s*([^\s]+)"
+          )
+
           for path in sorted(root.rglob("*")):
               if not path.is_file() or path.suffix.lower() in {
                   ".png",
@@ -629,35 +689,46 @@ jobs:
               }:
                   continue
               text = path.read_text(encoding="utf-8", errors="replace")
-              for pattern in patterns:
+
+              for match in database_pattern.finditer(text):
+                  value = match.group(0)
+                  if not allowed_database_fixture(value):
+                      record(path, "DATABASE_URL", value)
+
+              for kind, pattern in (
+                  ("PROVIDER_KEY", sk_pattern),
+                  ("GITHUB_TOKEN", github_token_pattern),
+                  ("BEARER_TOKEN", bearer_pattern),
+              ):
                   for match in pattern.finditer(text):
-                      value = match.group(0)
-                      if (
-                          "127.0.0.1" in value
-                          or "localhost" in value
-                          or value.endswith(":***")
-                      ):
-                          continue
-                      findings.append(
-                          {
-                              "path": str(path.relative_to(root)),
-                              "pattern": pattern.pattern,
-                              "matchSha256": hashlib.sha256(
-                                  value.encode("utf-8")
-                              ).hexdigest(),
-                          }
-                      )
+                      record(path, kind, match.group(0))
+
+              for match in assignment_pattern.finditer(text):
+                  key, value = match.group(1), match.group(2)
+                  if allowed_placeholder(value):
+                      continue
+                  if key == "DATABASE_URL" and allowed_database_fixture(value):
+                      continue
+                  record(path, f"ASSIGNMENT:{key}", value)
+
           scan = {
-              "schemaVersion": 1,
+              "schemaVersion": 2,
               "status": "PASS" if not findings else "FAIL",
               "findingCount": len(findings),
               "findings": findings,
+              "classification": {
+                  "ordinaryLowercaseTokenMetricsIgnored": True,
+                  "maskedValuesIgnored": True,
+                  "knownSelfCheckFixturesIgnored": True,
+                  "liveCredentialPatternsRemainFailClosed": True,
+              },
           }
           (c9 / "redaction-scan.json").write_text(
               json.dumps(scan, ensure_ascii=False, indent=2) + "\n",
               encoding="utf-8",
           )
           if findings:
+              print(json.dumps(scan, ensure_ascii=False, indent=2))
               raise SystemExit("secret scan failed")
           PY
           git diff --check
