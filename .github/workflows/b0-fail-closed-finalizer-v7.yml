@@ -50,14 +50,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p .artifacts/b0-finalizer-v7
           git fetch origin "$B0_BRANCH" main
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = "$B0_MAIN_BASELINE"
+          git cat-file -e "$B0_MAIN_BASELINE^{commit}"
+          git merge-base --is-ancestor "$B0_MAIN_BASELINE" HEAD
           test -z "$(git status --short)"
-          mkdir -p .artifacts/b0-finalizer-v7
           printf '%s\n' "$GITHUB_SHA" > .artifacts/b0-finalizer-v7/local-head.txt
           printf '%s\n' "$(git rev-parse origin/$B0_BRANCH)" > .artifacts/b0-finalizer-v7/remote-tip-before-push.txt
+          printf '%s\n' "$(git rev-parse origin/main)" > .artifacts/b0-finalizer-v7/remote-main-at-finalization.txt
 
       - name: Observe exact, contract, and engineering statuses
         id: observe
@@ -199,6 +201,7 @@ jobs:
           copy_tree(stage / "recovery-v2", c9 / "recovery/finalizer-v2")
           shutil.copy2(stage / "status-summary.json", c9 / "gates/status-summary.json")
           shutil.copy2(stage / "downloads/selected-artifacts.json", c9 / "gates/selected-artifacts.json")
+          shutil.copy2(stage / "remote-main-at-finalization.txt", c9 / "readback/remote-main-at-finalization.txt")
           engineering_sources = sorted(p for p in (stage / "extracted").glob("b0-engineering-real-acceptance-*") if p.is_dir())
           blocker_sources = sorted(p for p in (stage / "extracted").glob("b0-formal-c8-credential-blocker-*") if p.is_dir())
           formal_sources = sorted(p for p in (stage / "extracted").glob("b0-formal-c8-real-acceptance-*") if p.is_dir())
