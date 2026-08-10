@@ -1,0 +1,190 @@
+name: B0 USER_TEST_READY Windows Seed
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - prisma/seed.ts
+      - package.json
+      - pnpm-lock.yaml
+      - .github/workflows/b0-user-test-seed-windows.yml
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: b0-user-test-seed-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-seed:
+    name: Windows clean-clone migration and seed
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - name: Publish exact run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/windows-seed",
+              description: `Windows clean-clone seed running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Verify exact clean checkout
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw "wrong checkout SHA" }
+          if ((git status --short) -ne $null) { throw "checkout is not clean" }
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Start the preinstalled PostgreSQL service
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $service = Get-Service -Name "postgresql-x64-*" | Select-Object -First 1
+          if (-not $service) { throw "No preinstalled PostgreSQL service was found" }
+          Set-Service -Name $service.Name -StartupType Manual
+          Start-Service -Name $service.Name
+          $service.WaitForStatus("Running", [TimeSpan]::FromSeconds(60))
+          if (-not $env:PGBIN) { throw "PGBIN is not configured by the Windows runner image" }
+          $env:Path = "$env:PGBIN;$env:Path"
+          $env:PGPASSWORD = "root"
+          & "$env:PGBIN\dropdb.exe" --if-exists --force --host 127.0.0.1 --username postgres ai_story_run
+          & "$env:PGBIN\createdb.exe" --host 127.0.0.1 --username postgres ai_story_run
+          & "$env:PGBIN\pg_isready.exe" --host 127.0.0.1 --port 5432 --username postgres --dbname ai_story_run
+
+      - name: Frozen install
+        shell: pwsh
+        run: pnpm install --frozen-lockfile
+
+      - name: Create the documented local environment file
+        shell: pwsh
+        run: |
+          @'
+          DATABASE_URL=postgresql://postgres:root@127.0.0.1:5432/ai_story_run?schema=public
+          '@ | Set-Content -Path .env -Encoding utf8NoBOM
+
+      - name: Generate client and apply migrations
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          pnpm db:generate
+          pnpm db:migrate:deploy
+
+      - name: Run the documented seed command and record its exit code
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          New-Item -ItemType Directory -Force -Path .artifacts/user-test-seed-windows | Out-Null
+          pnpm db:seed *>&1 | Tee-Object -FilePath .artifacts/user-test-seed-windows/db-seed.log
+          $exitCode = $LASTEXITCODE
+          @{
+            testedCodeSha = $env:GITHUB_SHA
+            command = "pnpm db:seed"
+            exitCode = $exitCode
+            os = "windows-2025"
+            node = (node --version)
+            pnpm = (pnpm --version)
+          } | ConvertTo-Json | Set-Content -Path .artifacts/user-test-seed-windows/result.json -Encoding utf8NoBOM
+          if ($exitCode -ne 0) { throw "pnpm db:seed failed with exit code $exitCode" }
+
+      - name: Read back seeded records
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          @'
+          import { PrismaClient } from "@prisma/client";
+          const prisma = new PrismaClient();
+          try {
+            const [templateCount, userCount, runCount] = await Promise.all([
+              prisma.worldTemplate.count(),
+              prisma.user.count({ where: { openid: "mock_openid_owner_001" } }),
+              prisma.storyRun.count({ where: { inviteCode: "LOCAL1" } }),
+            ]);
+            const result = { templateCount, userCount, runCount };
+            console.log(JSON.stringify(result));
+            if (templateCount !== 5 || userCount !== 1 || runCount !== 1) {
+              throw new Error(`seed readback failed: ${JSON.stringify(result)}`);
+            }
+          } finally {
+            await prisma.$disconnect();
+          }
+          '@ | node --env-file=.env --import tsx --input-type=module
+
+      - name: Minimum regression and changed-file secret scan
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          node -e 'const p=require("./package.json"); if(p.scripts["db:seed"]!=="node --env-file-if-exists=.env --import tsx prisma/seed.ts") process.exit(1)'
+          @'
+          import pathlib, re
+          paths = [
+              pathlib.Path("package.json"),
+              pathlib.Path("prisma/seed.ts"),
+              pathlib.Path(".github/workflows/b0-user-test-seed-windows.yml"),
+          ]
+          patterns = {
+              "api-key": re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
+              "bearer": re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),
+              "jwt": re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+          }
+          findings = []
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for kind, pattern in patterns.items():
+                  if pattern.search(text): findings.append({"path": str(path), "kind": kind})
+          if findings: raise SystemExit(str(findings))
+          print("changed-file secret scan: PASS")
+          '@ | python -
+
+      - name: Upload Windows seed proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-user-test-seed-windows-${{ github.sha }}
+          path: .artifacts/user-test-seed-windows
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish Windows seed outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/windows-seed",
+              description: success
+                ? `Windows clean-clone seed passed in ${context.runId}`
+                : `Windows clean-clone seed failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("Windows clean-clone migration/seed/readback failed");
