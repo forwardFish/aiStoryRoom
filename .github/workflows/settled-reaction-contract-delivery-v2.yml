@@ -1,0 +1,75 @@
+name: Settled Reaction Contract Product Delivery V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-dynamic-kernel-lite
+    paths:
+      - .github/workflows/settled-reaction-contract-delivery-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=pending \
+            -f context="dynamic-kernel-lite/settled-reaction-delivery-v2" \
+            -f description="Testing tracked settled-reaction product code" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Materialize, test, clean and push
+        shell: bash
+        continue-on-error: true
+        run: bash .github/repair/run-settled-reaction-delivery-v2.sh
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: settled-reaction-contract-delivery-v2-${{ github.sha }}
+          path: /tmp/settled-reaction-contract-delivery-v2/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          root=/tmp/settled-reaction-contract-delivery-v2
+          state=failure
+          description="Settled reaction product delivery failed"
+          if [ -f "$root/status.txt" ] \
+            && [ "$(tr -d '\r\n' < "$root/status.txt")" = pass ] \
+            && [ -f "$root/final-sha.txt" ]; then
+            state=success
+            description="Settled reaction product and all deterministic gates passed"
+          fi
+          sha="$(cat "$root/final-sha.txt" 2>/dev/null || echo "${GITHUB_SHA}")"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${sha}" \
+            -f state="$state" \
+            -f context="dynamic-kernel-lite/settled-reaction-delivery-v2" \
+            -f description="$description" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
