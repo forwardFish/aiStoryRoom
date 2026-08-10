@@ -1,0 +1,126 @@
+name: B0 Stage V7 Bearer Redaction Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage-v7-bearer-redaction-repair.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage-v7-bearer-redaction-repair
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+  B0_EXPECTED_PARENT: c7260a114f72bb9b9c0f8b3ce22c85737dd51a26
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify exact ordinary fast-forward start
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$B0_EXPECTED_PARENT"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage-v7-bearer-redaction-repair.yml"
+
+      - name: Make v7 redact every Bearer value before the strict scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/b0-fail-closed-finalizer-v7.yml')
+          source = path.read_text(encoding='utf-8')
+          old = '(re.compile(r"(?i)(authorization\\s*[:=]\\s*Bearer\\s+)[A-Za-z0-9._~+/-]+=*"),r"\\1[REDACTED]")'
+          new = '(re.compile(r"(?i)Bearer\\s+[A-Za-z0-9._~+/-]+=*"),"Bearer [REDACTED]")'
+          if source.count(old) != 1:
+              raise SystemExit(f'Bearer redaction anchor count={source.count(old)}')
+          path.write_text(source.replace(old, new, 1), encoding='utf-8')
+          PY
+          git diff --check
+          grep -F '(re.compile(r"(?i)Bearer\s+[A-Za-z0-9._~+/-]+=*"),"Bearer [REDACTED]")' .github/workflows/b0-fail-closed-finalizer-v7.yml
+          test "$(git diff --name-only)" = ".github/workflows/b0-fail-closed-finalizer-v7.yml"
+
+      - name: Verify fixture and live-looking Bearer values are redacted before scanning
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          redact = re.compile(r'(?i)Bearer\s+[A-Za-z0-9._~+/-]+=*')
+          scan = re.compile(r'(?i)Bearer\s+(?!\[REDACTED\])[A-Za-z0-9._~+/-]+=*')
+          samples = [
+              'authorization: Bearer live-secret-1234567890',
+              'expected header Bearer deepseek-key',
+              'Bearer shared-http-test-token',
+          ]
+          for sample in samples:
+              redacted = redact.sub('Bearer [REDACTED]', sample)
+              assert 'Bearer [REDACTED]' in redacted
+              assert scan.search(redacted) is None
+          assert scan.search('Bearer still-live-secret-123456')
+          PY
+
+      - name: Commit repaired v7 workflow and upload the commit object
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/b0-fail-closed-finalizer-v7.yml
+          test "$(git diff --cached --name-only)" = ".github/workflows/b0-fail-closed-finalizer-v7.yml"
+          git diff --cached --check
+          git commit -m "ci(b0): redact Bearer fixtures before evidence scan"
+          candidate="$(git rev-parse HEAD)"
+          echo "candidate_sha=$candidate" >> "$GITHUB_OUTPUT"
+          echo "V7_BEARER_REPAIR_COMMIT_SHA=$candidate"
+          set +e
+          git push origin "HEAD:$B0_BRANCH"
+          status=$?
+          set -e
+          echo "push_status=$status" >> "$GITHUB_OUTPUT"
+          if test "$status" -eq 0; then
+            test "$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')" = "$candidate"
+          else
+            echo "Workflow-token ref update rejected after object transfer; connector must perform the verified force=false fast-forward."
+          fi
+
+      - name: Publish staged object status
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          CANDIDATE_SHA: ${{ steps.commit.outputs.candidate_sha }}
+          PUSH_STATUS: ${{ steps.commit.outputs.push_status }}
+        with:
+          script: |
+            const ok = Boolean(process.env.CANDIDATE_SHA);
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: ok ? 'success' : 'failure',
+              context: 'b0/v7-bearer-redaction-repair',
+              description: ok ? `staged ${process.env.CANDIDATE_SHA.slice(0,12)} push=${process.env.PUSH_STATUS}` : `repair failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!ok) core.setFailed('v7 Bearer redaction repair failed');
