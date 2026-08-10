@@ -5,7 +5,7 @@
   "branch": "codex/chatgpt-pro-maneuver-evidence-v1",
   "mainBaselineSha": "86da64eea18ab773312f40c7024ace9cb393344a",
   "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
-  "evidenceCommitSha": null,
+  "evidenceCommitSha": "edc203b05f4aa8147841d9742f6cb59d47cf51de",
   "finalRemoteSha": null,
   "finalRemoteShaResolution": "external clean-clone readback",
   "status": "EXTERNAL_BLOCKED",
