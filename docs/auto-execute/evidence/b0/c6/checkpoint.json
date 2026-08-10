@@ -1,0 +1,207 @@
+{
+  "schemaVersion": "b0-c6-checkpoint-v1",
+  "stage": "C6",
+  "branch": "codex/chatgpt-pro-maneuver-evidence-v1",
+  "baseSha": "43e17c75b00db2853336bbc4ce5569c4957cb216",
+  "testedCodeSha": "df7ef373c336f50389b870d103406f6e48f9bf4e",
+  "workflow": {
+    "name": "Causal MVP",
+    "runId": 31132330961,
+    "jobId": 92723931961,
+    "focusedConclusion": "pass",
+    "aggregateConclusion": "known_baseline_failure",
+    "aggregateFailureStep": "pnpm test:causal"
+  },
+  "implementation": [
+    "per-recipient Narrative input is derived only from committed typed-audience publication deliveries",
+    "Narrative generation requires an authoritative Batch Commit Manifest and an appliedWorldSequence at or beyond the committed sequence",
+    "runId, batchId, windowId, resolutionHash, commitHash and publicationPlanHash remain bound through the complete job lifecycle",
+    "TRACE_ONLY and hidden-source deliveries are projected without concealed origin actor identifiers",
+    "one immutable Narrative Job Key is derived from run, batch, recipient and narrative kind",
+    "durable Narrative Job states cover PENDING, GENERATING, VALIDATING, PUBLISHED and FAILED_RETRYABLE",
+    "lease owner and epoch fencing, bounded heartbeat extension and expired-lease recovery prevent stale worker publication",
+    "Narrator output must cite every and only recipient-safe structured result and preserve exact outcome and mutation assertions",
+    "Narrator cannot create canonical facts, state mutations, relationship mutations, capability mutations or knowledge grants",
+    "older generated output cannot overwrite newer guidance",
+    "publication is idempotent and conflicting prose cannot replace an already published result",
+    "provider adapter requests strict JSON with low randomness and repairs syntactically recoverable JSON before validation",
+    "durable file repository persists immutable input, job state and publication using atomic replacement and per-job locking",
+    "provider and validation failures preserve the committed structured result and leave the same job retryable",
+    "next-window eligibility depends on committed structured publication, not Narrative success"
+  ],
+  "commits": [
+    {
+      "sha": "ae2cdc8772fdf876bb0e789887478eaaf1c3ee86",
+      "message": "feat(b0): add commit-bound narrative runtime contracts"
+    },
+    {
+      "sha": "6d07228ea2f038bfa4f74427303f38dbd9db72e9",
+      "message": "test(b0): cover commit-bound narrative projection and recovery"
+    },
+    {
+      "sha": "e5ee1d74a6fef90cd529e739188aa84986183b94",
+      "message": "build(b0): add focused OpenNovel narrative runtime gate"
+    },
+    {
+      "sha": "ff26e5426b0af22ba101b39e4671a18b9714ab2b",
+      "message": "ci(b0): verify commit-bound OpenNovel narrative projection"
+    },
+    {
+      "sha": "3838148bda7305b60045a81a1ed864f2a006cd14",
+      "message": "feat(b0): add durable OpenNovel narrative job service"
+    },
+    {
+      "sha": "d85fd593409e31cc416e2dde443cc761e0f5634f",
+      "message": "test(b0): verify durable narrative jobs and provider adapter"
+    },
+    {
+      "sha": "df7ef373c336f50389b870d103406f6e48f9bf4e",
+      "message": "build(b0): include durable narrative service tests"
+    }
+  ],
+  "commands": [
+    {
+      "command": "pnpm --filter @ai-story/shared typecheck",
+      "workspace": "packages/shared",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @ai-story/templates typecheck",
+      "workspace": "packages/templates",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @ai-story/templates test:b0-contract",
+      "workspace": "packages/templates",
+      "total": 13,
+      "pass": 13,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @ai-story/templates test:b0-batch",
+      "workspace": "packages/templates",
+      "total": 5,
+      "pass": 5,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @ai-story/templates test:b0-multi",
+      "workspace": "packages/templates",
+      "total": 8,
+      "pass": 8,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @ai-story/templates test:b0-audience",
+      "workspace": "packages/templates",
+      "total": 13,
+      "pass": 13,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/openovel-runtime test:b0-runtime",
+      "workspace": "apps/openovel-runtime",
+      "total": 17,
+      "pass": 17,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/openovel-runtime typecheck",
+      "workspace": "apps/openovel-runtime",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/api test:b0-batch",
+      "workspace": "apps/api",
+      "total": 6,
+      "pass": 6,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/api test:b0-window",
+      "workspace": "apps/api",
+      "total": 7,
+      "pass": 7,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/api typecheck",
+      "workspace": "apps/api",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @apps/web typecheck",
+      "workspace": "apps/web",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm test:causal",
+      "workspace": "root",
+      "total": 220,
+      "pass": 209,
+      "fail": 11,
+      "skip": 0,
+      "todo": 0,
+      "exitCode": 1,
+      "result": "KNOWN_BASELINE_FAILURE",
+      "failureArea": "apps/api/src/solo-story-engine/__tests__/part-one-runtime-integration.spec.ts",
+      "baselineComparison": "the same 209/220 result and eleven Solo Part One failures were recorded before C6; all C6-focused runtime tests and affected package typechecks passed"
+    }
+  ],
+  "invariantsProvedByFocusedTests": [
+    "Narrative cannot start without an authoritative commit manifest",
+    "appliedWorldSequence is the authoritative recovery and execution barrier",
+    "Narrative input contains only the recipient's structured deliveries",
+    "TRACE_ONLY material cannot disclose or name its hidden source",
+    "Narrator cannot add facts or change outcome, resource, relationship, capability or knowledge state",
+    "one job key maps to one immutable input and one immutable publication",
+    "lease owner and epoch fence concurrent or stale workers",
+    "expired work recovers as retryable without marking it successfully applied",
+    "older generated output cannot overwrite newer guidance",
+    "provider or validation failure does not block the next window after structured publication",
+    "published Narrative replay does not invoke the model a second time"
+  ],
+  "excludedUntilLaterStages": [
+    "C7 existing /game synchronization window interface",
+    "C8 diagnostics, recovery, credits and controlled rollout operations",
+    "C9 real PostgreSQL three-role six-window acceptance"
+  ],
+  "main": {
+    "modified": false,
+    "pushed": false,
+    "merged": false
+  }
+}

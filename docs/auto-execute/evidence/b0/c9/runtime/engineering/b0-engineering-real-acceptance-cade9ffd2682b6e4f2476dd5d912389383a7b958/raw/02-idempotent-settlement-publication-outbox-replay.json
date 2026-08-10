@@ -1,0 +1,36 @@
+{
+  "name": "idempotent-settlement-publication-outbox-replay",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:10:39.765Z",
+  "completedAt": "2026-08-10T17:10:40.208Z",
+  "result": {
+    "windowId": "id_2264ec45e15ed496",
+    "taskIds": [
+      "id_6f78a6f062a29c4a",
+      "id_a09f99c72a3f06c3"
+    ],
+    "before": {
+      "worldSequence": 1,
+      "commitHash": "9d7f5f8703e9446f5ae59dbf2067206ebc510ee18c7cb697f9a5392757c39a4d",
+      "resolutionHash": "aef1aac968c8a7065e2b8339a4cb7fc8109aeae25eb376ba06c8e9b6cb610ef3",
+      "storyEventCount": 9,
+      "eventDeliveryCount": 6,
+      "narrativeCount": 6
+    },
+    "after": {
+      "worldSequence": 1,
+      "commitHash": "9d7f5f8703e9446f5ae59dbf2067206ebc510ee18c7cb697f9a5392757c39a4d",
+      "resolutionHash": "aef1aac968c8a7065e2b8339a4cb7fc8109aeae25eb376ba06c8e9b6cb610ef3",
+      "storyEventCount": 9,
+      "eventDeliveryCount": 6,
+      "narrativeCount": 6
+    },
+    "adminReplay": {
+      "schemaVersion": "b0-replay-result-v1",
+      "windowId": "cmsnhlnjq00214sr95iu5md8i",
+      "storedResolutionHash": "[STOREDRESOLUTIONHASH_REDACTED]",
+      "replayedResolutionHash": "[REPLAYEDRESOLUTIONHASH_REDACTED]",
+      "matches": true
+    }
+  }
+}

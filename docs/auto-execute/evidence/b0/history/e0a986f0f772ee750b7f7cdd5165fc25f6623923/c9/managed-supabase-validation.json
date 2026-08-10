@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-08-10T15:04:05.857910+00:00",
+  "status": "EXTERNAL_BLOCKED",
+  "externalBlocked": true,
+  "containerClassifiedEngineeringOnly": true,
+  "productionPublicSchemaUsed": false,
+  "productionDatabaseTouched": false,
+  "productionConfigurationChanged": false,
+  "realUserDataTouched": false
+}

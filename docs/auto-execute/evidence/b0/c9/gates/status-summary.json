@@ -1,32 +1,50 @@
 {
-  "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
+  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
   "records": {
     "exact": {
       "context": "b0/exact-push",
       "state": "success",
-      "description": "all engineering gates passed in 31400882366",
-      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31400882366",
-      "runId": 31400882366,
-      "createdAt": "2026-08-10T15:01:28Z",
-      "updatedAt": "2026-08-10T15:01:28Z"
+      "description": "all engineering gates passed in 31412217147",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31412217147",
+      "runId": 31412217147,
+      "createdAt": "2026-08-10T17:09:37Z",
+      "updatedAt": "2026-08-10T17:09:37Z"
     },
     "contract": {
       "context": "b0/acceptance-contract",
       "state": "success",
-      "description": "acceptance contract passed in 31400886663",
-      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31400886663",
-      "runId": 31400886663,
-      "createdAt": "2026-08-10T14:58:03Z",
-      "updatedAt": "2026-08-10T14:58:03Z"
+      "description": "acceptance contract passed in 31412217066",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31412217066",
+      "runId": 31412217066,
+      "createdAt": "2026-08-10T17:07:05Z",
+      "updatedAt": "2026-08-10T17:07:05Z"
     },
     "engineering": {
       "context": "b0/engineering-real-acceptance",
       "state": "success",
-      "description": "engineering acceptance passed in 31400886663",
-      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31400886663",
-      "runId": 31400886663,
-      "createdAt": "2026-08-10T15:03:36Z",
-      "updatedAt": "2026-08-10T15:03:36Z"
+      "description": "engineering acceptance passed in 31412217066",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31412217066",
+      "runId": 31412217066,
+      "createdAt": "2026-08-10T17:12:16Z",
+      "updatedAt": "2026-08-10T17:12:16Z"
+    },
+    "windows": {
+      "context": "b0/windows-seed",
+      "state": "success",
+      "description": "Windows clean-clone seed passed in 31412217017",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31412217017",
+      "runId": 31412217017,
+      "createdAt": "2026-08-10T17:06:14Z",
+      "updatedAt": "2026-08-10T17:06:14Z"
+    },
+    "formal": {
+      "context": "b0/formal-c8",
+      "state": "failure",
+      "description": "formal C8 blocked: no complete non-production credential pair (ourmanyworlds:success,stellar:success,preview:success)",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31412217066",
+      "runId": 31412217066,
+      "createdAt": "2026-08-10T17:08:46Z",
+      "updatedAt": "2026-08-10T17:08:46Z"
     }
   }
 }

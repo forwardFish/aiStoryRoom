@@ -1,0 +1,5 @@
+AI Story Room Web MVP: http://localhost:35178
+Role selection: http://localhost:35178/role-select?story=sangtian
+Three-player AI simulation: http://localhost:35178/trio
+Game: http://localhost:35178/game
+Default API base: http://localhost:33102/api (or the local /api proxy)

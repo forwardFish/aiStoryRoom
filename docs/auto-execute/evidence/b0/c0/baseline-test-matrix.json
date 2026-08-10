@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "b0-c0-baseline-evidence-v1",
+  "repository": "forwardFish/aiStoryRoom",
+  "branch": "codex/chatgpt-pro-maneuver-evidence-v1",
+  "baseMainSha": "e60dfd8fc9dda0459edbd37fe6be52ecd8dff1d6",
+  "startingCandidateSha": "d8b143186bb214fc578479102176a051e33c3bbd",
+  "requirementSha256": "8c3e387462139bc8da07a80703ad259cd3683e756736e752572ed5dfa9af2702",
+  "auditValidation": {
+    "command": "python /tmp/validate_b0_c0.py",
+    "workspace": "C0 documentation audit",
+    "total": 48,
+    "pass": 48,
+    "fail": 0,
+    "skip": 0,
+    "todo": 0,
+    "exitCode": 0,
+    "logPath": "/tmp/b0-c0-validation.log",
+    "testedCodeSha": "d8b143186bb214fc578479102176a051e33c3bbd",
+    "scope": "audit structure, invariant IDs, bypass IDs, migration matrix and requirement digest"
+  },
+  "existingEngineeringBaseline": {
+    "source": "GitHub Actions Causal MVP workflow run 31077699510, job 92539245742",
+    "checkoutQualification": "PR merge ref; engineering baseline only, not exact-candidate B0 acceptance evidence",
+    "commands": [
+      {
+        "command": "pnpm install --frozen-lockfile",
+        "workspace": "root",
+        "result": "PASS",
+        "exitCode": 0,
+        "notes": "8 workspaces; lockfile unchanged; 1075 packages installed"
+      },
+      {
+        "command": "pnpm db:generate",
+        "workspace": "root",
+        "result": "PASS",
+        "exitCode": 0,
+        "notes": "Prisma Client 6.19.3 generated"
+      },
+      {
+        "command": "pnpm --filter @apps/api typecheck",
+        "workspace": "apps/api",
+        "result": "PASS",
+        "exitCode": 0
+      },
+      {
+        "command": "pnpm --filter @apps/web typecheck",
+        "workspace": "apps/web",
+        "result": "PASS",
+        "exitCode": 0
+      },
+      {
+        "command": "pnpm --filter @apps/api test:continuous-strategy",
+        "workspace": "apps/api",
+        "result": "PASS",
+        "exitCode": 0,
+        "notes": "ActionWindow, ActionCommand, Resolution, projection privacy, V2 and Outbox tests completed"
+      },
+      {
+        "command": "pnpm test:causal",
+        "workspace": "root",
+        "total": 220,
+        "pass": 209,
+        "fail": 11,
+        "skip": 0,
+        "todo": 0,
+        "exitCode": 1,
+        "result": "FAIL",
+        "failureArea": "apps/api/src/solo-story-engine/__tests__/part-one-runtime-integration.spec.ts",
+        "notes": "Known baseline failures; C0 does not modify or waive them. The web causal stage did not execute after this API failure."
+      }
+    ]
+  },
+  "c0Verdict": "AUDIT_READY_FOR_REMOTE_CHECKPOINT",
+  "notClaimed": [
+    "C1-C9 implementation",
+    "all-green repository regression",
+    "closed world-write bypasses",
+    "real PostgreSQL B0 acceptance",
+    "real three-role /game acceptance",
+    "main merge readiness"
+  ]
+}

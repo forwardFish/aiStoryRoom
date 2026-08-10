@@ -1,0 +1,76 @@
+{
+  "name": "single-human-ai-action-contract-and-safe-abort",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:12:06.531Z",
+  "completedAt": "2026-08-10T17:12:08.030Z",
+  "result": {
+    "run": {
+      "id": "id_e19d66324b4c4ddc",
+      "templateKey": "sangtian",
+      "status": "playing",
+      "strategyVersion": "b0_windowed_v1",
+      "humanPlayers": 1,
+      "roleCount": 6
+    },
+    "windowId": "id_30081f7e6b7a3995",
+    "before": {
+      "id": "room_739b75c7272b2fbd9d8bb3e13ad96333",
+      "status": "playing",
+      "worldSequence": 0,
+      "reservedWorldSequence": 0,
+      "currentDay": 1,
+      "version": 6,
+      "updatedAt": "2026-08-10T17:12:07.688Z",
+      "windows": 0,
+      "events": 0,
+      "deliveries": 0,
+      "narratives": 0,
+      "tasks": 0
+    },
+    "after": {
+      "id": "room_739b75c7272b2fbd9d8bb3e13ad96333",
+      "status": "playing",
+      "worldSequence": 0,
+      "reservedWorldSequence": 0,
+      "currentDay": 1,
+      "version": 7,
+      "updatedAt": "2026-08-10T17:12:07.726Z",
+      "windows": 1,
+      "events": 0,
+      "deliveries": 0,
+      "narratives": 0,
+      "tasks": 6
+    },
+    "aiRoleCount": 5,
+    "controlModes": [
+      {
+        "roleId": "cmsnhocyk000y4sar8cwgxnxn",
+        "mode": "HUMAN_ACTIVE"
+      },
+      {
+        "roleId": "cmsnhocyk000z4sarl5gp1lrf",
+        "mode": "AI_ACTIVE"
+      },
+      {
+        "roleId": "cmsnhocyk00104sar8be3o10e",
+        "mode": "AI_ACTIVE"
+      },
+      {
+        "roleId": "cmsnhocyk00114sarnmpkhzsr",
+        "mode": "AI_ACTIVE"
+      },
+      {
+        "roleId": "cmsnhocyk00124sar1anhx3gg",
+        "mode": "AI_ACTIVE"
+      },
+      {
+        "roleId": "cmsnhocyk00134sarmrolfmff",
+        "mode": "AI_ACTIVE"
+      }
+    ],
+    "abort": {
+      "windowId": "cmsnhod2a002o4sarkyfmuxtc",
+      "status": "ABORTED"
+    }
+  }
+}

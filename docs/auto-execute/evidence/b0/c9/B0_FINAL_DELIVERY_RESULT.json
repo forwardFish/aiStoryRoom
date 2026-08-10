@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAtUtc": "2026-08-10T15:04:05.857910+00:00",
+  "generatedAtUtc": "2026-08-10T17:12:35.103683+00:00",
   "repository": "forwardFish/aiStoryRoom",
   "branch": "codex/chatgpt-pro-maneuver-evidence-v1",
   "mainBaselineSha": "86da64eea18ab773312f40c7024ace9cb393344a",
-  "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
-  "evidenceCommitSha": "edc203b05f4aa8147841d9742f6cb59d47cf51de",
+  "testableCandidateSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
+  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
+  "evidenceCommitSha": null,
   "finalRemoteSha": null,
   "finalRemoteShaResolution": "external clean-clone readback",
   "status": "EXTERNAL_BLOCKED",
@@ -27,7 +28,7 @@
       "stellar-encouragement / test",
       "Preview"
     ],
-    "workflowRunId": 31400886663
+    "workflowRunId": 31412217066
   },
   "engineeringAcceptance": {
     "status": "PASS_ENGINEERING_ONLY",
@@ -39,8 +40,18 @@
     "desktopViewportCovered": true,
     "narrow390ViewportCovered": true,
     "screenshotCount": 9,
-    "acceptanceResultPath": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/acceptance-result.json",
-    "workflowRunId": 31400886663
+    "acceptanceResultPath": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/acceptance-result.json",
+    "workflowRunId": 31412217066
+  },
+  "crossPlatformSeed": {
+    "linux": {
+      "status": "PASS",
+      "workflowRunId": 31412217147
+    },
+    "windows": {
+      "status": "PASS",
+      "workflowRunId": 31412217017
+    }
   },
   "boundaries": {
     "forcePushUsed": false,

@@ -1,52 +1,52 @@
 {
   "schemaVersion": 1,
-  "testedCodeSha": "8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
+  "testedCodeSha": "cade9ffd2682b6e4f2476dd5d912389383a7b958",
   "screenshotCount": 9,
   "screenshots": [
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/final-ending-host-desktop.png",
-      "bytes": 250196,
-      "sha256": "3c566b9bfa37af5db5d82fdb698792443136c9ea1e4bb0cfe57b55fee13fe5ac"
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/final-ending-host-desktop.png",
+      "bytes": 250433,
+      "sha256": "2e6e6831b3d05c8c651c53cd5a297bba86a4f33f798e34c25be871d70a884633"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/final-ending-player-three-narrow.png",
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/final-ending-player-three-narrow.png",
       "bytes": 45958,
       "sha256": "334592cccaa1327044393a730fc302f90821f9788dc758340e8029445350be6c"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/final-ending-player-two-desktop.png",
-      "bytes": 250572,
-      "sha256": "782f96074a18168eb664c58f352815455be90bd5d66ec98f921d347cc4992c11"
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/final-ending-player-two-desktop.png",
+      "bytes": 245967,
+      "sha256": "b801019f8ab4ec7ba48358a60b5f4a3e4f81b41e5dcd81da328a657da881ec45"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/window-1-host-desktop.png",
-      "bytes": 332164,
-      "sha256": "ee88a606ba545594a60c4883c833764b0e906efed315251016ab4b1559158880"
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-host-desktop.png",
+      "bytes": 310164,
+      "sha256": "bab0efca36a1d0923a37fb7bbe07d334a211fd41c31e908187961cd71f27d0f1"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/window-1-open-host-desktop.png",
-      "bytes": 693056,
-      "sha256": "98d72c3543b94b27fd09e95ef31fbc1c519688b54ea094c4c59fc5e97229f05d"
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-open-host-desktop.png",
+      "bytes": 693035,
+      "sha256": "44378221c7a1bb7728fd5fc4d00953c38374ff555e64f40e06a07cdaf77ac4af"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/window-1-open-player-three-narrow.png",
-      "bytes": 146176,
-      "sha256": "f91166c29ab05cb746dcc9042534f04f58678b73317b967f313195d7e3243f9c"
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-open-player-three-narrow.png",
+      "bytes": 146123,
+      "sha256": "0ad1e51efbd206a51ccae720bfc60f4ad7f8478a0cfe3424eac88aa81fc56ac0"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/window-1-open-player-two-desktop.png",
-      "bytes": 527840,
-      "sha256": "19454d5981869bbc5b583e170a181389c0b9fcee61324ce3775c9590d3933611"
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-open-player-two-desktop.png",
+      "bytes": 527982,
+      "sha256": "ffc33b6e6496ad4438b988e4f666ddecc78c88656091ee7455cb421e4f8a2ffc"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/window-1-player-three-narrow.png",
-      "bytes": 125172,
-      "sha256": "d8d0def050209e13b3a9cb3aef418b56af4b8cd9d89bef9aea6d3af64f36e54d"
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-player-three-narrow.png",
+      "bytes": 125977,
+      "sha256": "90532c28b9013d1a5da649b823baf892732b402572130e378534e2da3e4c3548"
     },
     {
-      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d/screenshots/window-1-player-two-desktop.png",
-      "bytes": 280984,
-      "sha256": "696ef55d201aff16b5a6951048d4281878604d7c99011c8b0209c79027f413c9"
+      "path": ".artifacts/b0-finalizer-v7/extracted/b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958/screenshots/window-1-player-two-desktop.png",
+      "bytes": 281054,
+      "sha256": "7cf9201ce429ed173eb9ebbe6353bf13c6880872f5a2ddf6a720d18a6737a0c4"
     }
   ]
 }

@@ -1,0 +1,200 @@
+{
+  "name": "window-5-independent-worker",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:11:25.364Z",
+  "completedAt": "2026-08-10T17:11:34.554Z",
+  "result": {
+    "windowId": "id_9e73f5698c5fe553",
+    "before": {
+      "id": "room_5fa3cc27266faefb527c292ee7204acc",
+      "status": "playing",
+      "worldSequence": 4,
+      "reservedWorldSequence": 0,
+      "currentDay": 5,
+      "version": 17,
+      "updatedAt": "2026-08-10T17:11:23.650Z",
+      "windows": 5,
+      "events": 40,
+      "deliveries": 23,
+      "narratives": 11,
+      "tasks": 55
+    },
+    "after": {
+      "id": "room_5fa3cc27266faefb527c292ee7204acc",
+      "status": "playing",
+      "worldSequence": 5,
+      "reservedWorldSequence": 0,
+      "currentDay": 6,
+      "version": 18,
+      "updatedAt": "2026-08-10T17:11:34.295Z",
+      "windows": 6,
+      "events": 49,
+      "deliveries": 29,
+      "narratives": 12,
+      "tasks": 65
+    },
+    "standaloneWorkerPidHash": "01ff77a3e2353341",
+    "beforeWorker": {
+      "boundary": "SETTLEMENT_ENQUEUED",
+      "windowStatus": "LOCKED",
+      "worldSequence": 4,
+      "humanParticipants": [
+        {
+          "roleId": "id_adf71ea8c1e5b980",
+          "mainStatus": "B0_LOCKED"
+        },
+        {
+          "roleId": "id_14de4c31bd43d664",
+          "mainStatus": "B0_LOCKED"
+        },
+        {
+          "roleId": "id_2b4ca82c63b5a148",
+          "mainStatus": "B0_LOCKED"
+        }
+      ],
+      "aiParticipants": [
+        {
+          "roleId": "id_63676bf74f0fb3b0",
+          "mainStatus": "B0_LOCKED"
+        },
+        {
+          "roleId": "id_1352cf95d9dc4713",
+          "mainStatus": "B0_LOCKED"
+        },
+        {
+          "roleId": "id_240fb3e841b381a4",
+          "mainStatus": "B0_LOCKED"
+        }
+      ],
+      "settlementTask": {
+        "id": "id_e69704072b18ce74",
+        "status": "pending",
+        "attempt": 0,
+        "leaseVersion": 0,
+        "leased": false
+      }
+    },
+    "tasks": [
+      {
+        "id": "id_d3099cc49c8fdde9",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_3e93ad013506da0b",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_9036400193e08351",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_f7f2202b14b84f01",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_41a23ce03cf59ce4",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_40c0f9f4ef534a39",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_9ef027b20aa5523c",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_e69704072b18ce74",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_SETTLEMENT_REQUESTED",
+        "status": "completed",
+        "outcome": "COMMITTED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_4fabf24a06ae71bb",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_WINDOW_EVENT",
+        "status": "completed",
+        "outcome": "RECORDED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      },
+      {
+        "id": "id_a0c8835dde1ae5d2",
+        "windowId": "id_9e73f5698c5fe553",
+        "roleId": null,
+        "taskType": "B0_PUBLISH_STRUCTURED_RESULTS",
+        "status": "completed",
+        "outcome": "PUBLISHED",
+        "attempt": 1,
+        "leaseVersion": 1,
+        "completed": true,
+        "errorCode": null
+      }
+    ]
+  }
+}

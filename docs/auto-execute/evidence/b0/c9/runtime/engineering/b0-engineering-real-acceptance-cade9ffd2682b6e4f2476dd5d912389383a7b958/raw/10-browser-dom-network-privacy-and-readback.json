@@ -1,0 +1,574 @@
+{
+  "name": "browser-dom-network-privacy-and-readback",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:12:08.030Z",
+  "completedAt": "2026-08-10T17:12:08.038Z",
+  "result": {
+    "browsers": [
+      {
+        "name": "host-desktop",
+        "mobile": false,
+        "dom": {
+          "href": "/game?runId=room_5fa3cc27266faefb527c292ee7204acc",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "statusVisible": true,
+          "resultsVisible": true,
+          "statusText": "Decision Window\nResults are being delivered\n\nCurrent Situation\nShared situation 6\n\nPlan status\nPlan locked\nroles ready\n0 / 6\nTime remaining\n—",
+          "resultsText": "Situation Results\nAnother plan changed your position\nSuccess\n\nThe committed settlement changed your position in the shared situation.\n\nWhy this happened\nAnother committed plan changed your position.\nState changes\nYour outcome\nSuccess\n\nSucceeded: Coordinate a bounded synchronized action with the selected counterpart.\n\nWhy this happened\nYour committed plan contributed to this result.\n\nNarrative is being added. The authoritative result is already in effect.",
+          "horizontalOverflow": false
+        },
+        "runtimeExceptions": [],
+        "network": [
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/game",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/maneuvers/projection",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/preview",
+            "status": 201,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/confirm",
+            "status": 201,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/ready",
+            "status": 201,
+            "type": "Fetch"
+          }
+        ]
+      },
+      {
+        "name": "player-two-desktop",
+        "mobile": false,
+        "dom": {
+          "href": "/game?runId=room_5fa3cc27266faefb527c292ee7204acc",
+          "viewport": {
+            "width": 1280,
+            "height": 800
+          },
+          "statusVisible": true,
+          "resultsVisible": true,
+          "statusText": "Decision Window\nThis situation is complete\n\nCurrent Situation\nShared situation 6\n\nPlan status\nPlan locked\nroles ready\n0 / 6\nTime remaining\n—",
+          "resultsText": "Situation Results\nYour outcome\nSuccess\n\nSucceeded: Coordinate a bounded synchronized action with the selected counterpart.\n\nWhy this happened\nYour committed plan contributed to this result.\nAnother plan changed your position\nSuccess\n\nThe committed settlement changed your position in the shared situation.\n\nWhy this happened\nAnother committed plan changed your position.\nState changes\n\nNarrative is being added. The authoritative result is already in effect.",
+          "horizontalOverflow": false
+        },
+        "runtimeExceptions": [],
+        "network": [
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/game",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/maneuvers/projection",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/preview",
+            "status": 201,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/confirm",
+            "status": 201,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/ready",
+            "status": 201,
+            "type": "Fetch"
+          },
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window",
+            "status": 502,
+            "type": "Fetch"
+          }
+        ]
+      },
+      {
+        "name": "player-three-narrow",
+        "mobile": true,
+        "dom": {
+          "href": "/game?runId=room_5fa3cc27266faefb527c292ee7204acc",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "statusVisible": true,
+          "resultsVisible": true,
+          "statusText": "\n    Decision WindowResults are being delivered\n    Current SituationShared situation 6\n    \n      Plan statusPlan locked\n      roles ready0 / 6\n      Time remaining—\n    \n    \n    \n  ",
+          "resultsText": "Situation Results\nYour outcome\nSuccess\n\nSucceeded: Coordinate a bounded synchronized action with the selected counterpart.\n\nWhy this happened\nYour committed plan contributed to this result.\nAnother plan changed your position\nSuccess\n\nThe committed settlement changed your position in the shared situation.\n\nWhy this happened\nAnother committed plan changed your position.\nState changes\n\nNarrative is being added. The authoritative result is already in effect.",
+          "horizontalOverflow": false
+        },
+        "runtimeExceptions": [],
+        "network": [
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/game",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "GET",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/maneuvers/projection",
+            "status": 200,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/preview",
+            "status": 201,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/confirm",
+            "status": 201,
+            "type": "Fetch"
+          },
+          {
+            "method": "POST",
+            "url": "/api/v4/rooms/room_5fa3cc27266faefb527c292ee7204acc/b0/window/ready",
+            "status": 201,
+            "type": "Fetch"
+          }
+        ]
+      }
+    ],
+    "eventDeliveries": [
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 1,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "6fac68d67ff0d65814e3c2bfd287ff2bd295645d5860888c3b576558821123df"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 2,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "b2dd0975bdb00476267083db28e4affce97211f83e929415267c38fa7dfdbac0"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 3,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "6f86508c0b1f32aa4c70ef9ca2679bba9aaf9f7bb7c7a846a6e4a93f35ab3f29"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 4,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "2b051ee374695d0e73948ca34bbedc54a3d06d99b08188aa0a96e0d981b1916d"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 5,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "f18728f0b536e2aa352386ce667f00af67a6267082ae0c456d59db6ed1e79e26"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 6,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "61087afa1e3a3e4e865313c47538e18bafc1bfcba92af657c7899950d475a8ee"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 7,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "37f68c5161450e8af55fe962120bb63f7d7d0af96f986a7c0b04cc20a5fc1e3f"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 8,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "d73e13a157ff0539f08769cb0202bac88deec23efb57292c0a780b72de1b1024"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 9,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "6bfe39e4ce8c5cecd90ef556463f9f40a86f261ff472b039bb20c887a6c95d15"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 10,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "667f16c2ffdd5aa6fbdb6fc319c32721b2965b9e376df03f7dc484e3bb868dc7"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 11,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "8504d2ec0a7cd8654f073a5e1b9dda85be065c46fd8579708e6f15efdf9563a7"
+      },
+      {
+        "userId": "id_5d101a04e4088500",
+        "roleId": "id_adf71ea8c1e5b980",
+        "deliverySequence": 12,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "d7b338a3739020fceb357a534ce141f6fc7c9b9ab7cd9d2b1e3d6634c5fbc765"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 1,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "f29b3a8cf354c95d3269446ab374d883852e39505e12b15a469a421236b5ccfb"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 2,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "e461a5a4a60ce717b854c91984f1071416d30f378bd6711489eac87e563254b0"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 3,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "5131966659019a3e12c3dbe2c1232991d224c33553d80eb3afacd3d36595b835"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 4,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "4a0445c0895578f1cb6bb0b1651484305d2a41eba21ff04ba34c6db757ebf198"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 5,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "551e2b1395feaaa027f02781e39e788ce02485f1cb3df621ea68e8c839f6e53f"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 6,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "7276d8a5124df8577612ce90a95b9bf3a278ff04a8e74d0abd870d4d1fddfc63"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 7,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "a69a627ef6e82b6e02d20add01223637555be6841bc18d1d72aa15ed57995f44"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 8,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "25f6c097f8ac9cadb33cdeb9b9edfee7e0381a6b238bdd1c107436fcf26b5c55"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 9,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "2005f2e3cf4ce4ec6a2cad31cab41845da8800faaa98d6ac150fc3f05312ab15"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 10,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "2c4fbeb85b014628b71c144f7f648e69fc9b9de1a962ea32db03278a03c3eff2"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 11,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "5ba3d426394a8bd31abb74a22e2c0af1aca5fd13781e590f6ad82e011881ff52"
+      },
+      {
+        "userId": "id_1b965deeff44fc29",
+        "roleId": "id_14de4c31bd43d664",
+        "deliverySequence": 12,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "55d2cafe7195d6b9770a84d6864ab367234257fbe012e21bf4a6cd757d5a1ba6"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 1,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "68c4530eba9a709b48f750a2441d13870d69fa37a0c0fb5d782dd8790c3d4b72"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 2,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "784ef36bd20dd42ef728a2676ecb55f9daf135167618c3fa2b031972cdc71027"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 3,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "0ecf56e1a241798b22a0f5a556c233367575e7f4831383185df4808d8c191411"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 4,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "852befd696c2d878faeb8bd6f2bdd18b0d5a448773370c1f79731fab40e6c9d6"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 5,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "261f5225da122c0b3957a9191abfb417cf3e5a286110981d65723fe74dae4800"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 6,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "10eb508fb7dfd38a72b01639c1583f803138c5ed926b3ff823f6eeb5270ed15b"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 7,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "78215e9cf0c522df3c01da61a4c77d0a8ae4037e0992c9fcbfc125e2de23172f"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 8,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "fd14549190b2b9727b582dcc3febe947a23b289c7af9de4654ffe7729396e753"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 9,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "1901978f78f65acd93dc9e4ecc21db4ae128670b297f8da037cd2d20c3b8e215"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 10,
+        "eventType": "B0_PERSONAL_OUTCOME",
+        "payloadHash": "3b0642a48b865a95b54ba8e1ae406a7acc4b0bd68dd0fd72565f106bacfc4617"
+      },
+      {
+        "userId": "id_b631f76f61fec771",
+        "roleId": "id_2b4ca82c63b5a148",
+        "deliverySequence": 11,
+        "eventType": "B0_CROSS_PLAYER_IMPACT",
+        "payloadHash": "6b683549b7a68d7cbcd531f4fce0fb1ff1686035465da03a3108cf356b5f3491"
+      }
+    ],
+    "narratives": [
+      {
+        "roleId": "id_adf71ea8c1e5b980",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 1,
+        "contentHash": "ecb4ecacc9f0607b75f1ca991ae4878f1a89fa85d363f20362caa0dd2be5ae04",
+        "characterCount": 84
+      },
+      {
+        "roleId": "id_14de4c31bd43d664",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 1,
+        "contentHash": "fb4b92dc237e68beb7ca63a10fbc9ba76b3a83d5c12bd11383b4aaa3b3e7478f",
+        "characterCount": 87
+      },
+      {
+        "roleId": "id_2b4ca82c63b5a148",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 1,
+        "contentHash": "fb4b92dc237e68beb7ca63a10fbc9ba76b3a83d5c12bd11383b4aaa3b3e7478f",
+        "characterCount": 87
+      },
+      {
+        "roleId": "id_63676bf74f0fb3b0",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 1,
+        "contentHash": "6abd9a0790e9784abb705e7b74a75b0b35cb98294643a8405043994f0239339f",
+        "characterCount": 281
+      },
+      {
+        "roleId": "id_1352cf95d9dc4713",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 1,
+        "contentHash": "08f15b4191998b8bf58d383467ed019deb53ec768cacfb32072e980a68854bec",
+        "characterCount": 534
+      },
+      {
+        "roleId": "id_240fb3e841b381a4",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 1,
+        "contentHash": "08f15b4191998b8bf58d383467ed019deb53ec768cacfb32072e980a68854bec",
+        "characterCount": 534
+      },
+      {
+        "roleId": "id_adf71ea8c1e5b980",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 2,
+        "contentHash": "dea6eaefaf404121f369aee671c31f21e006bbcf247cf9b896147e9edcfb5682",
+        "characterCount": 316
+      },
+      {
+        "roleId": "id_14de4c31bd43d664",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 2,
+        "contentHash": "97e303885188c2980d35efb90e1bed235ec3a6ab5b66a9c4895fbb32978f9d7e",
+        "characterCount": 334
+      },
+      {
+        "roleId": "id_2b4ca82c63b5a148",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 2,
+        "contentHash": "e0e66a6489b2544b43040bb44f0a24ebc653b57da678e500a454e1b0dd944f2e",
+        "characterCount": 267
+      },
+      {
+        "roleId": "id_63676bf74f0fb3b0",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 2,
+        "contentHash": "6abd9a0790e9784abb705e7b74a75b0b35cb98294643a8405043994f0239339f",
+        "characterCount": 281
+      },
+      {
+        "roleId": "id_1352cf95d9dc4713",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 2,
+        "contentHash": "08f15b4191998b8bf58d383467ed019deb53ec768cacfb32072e980a68854bec",
+        "characterCount": 534
+      },
+      {
+        "roleId": "id_240fb3e841b381a4",
+        "entryType": "B0_NARRATIVE",
+        "visibility": "private",
+        "worldSequence": 2,
+        "contentHash": "08f15b4191998b8bf58d383467ed019deb53ec768cacfb32072e980a68854bec",
+        "characterCount": 534
+      },
+      {
+        "roleId": "id_adf71ea8c1e5b980",
+        "entryType": "B0_ENDING",
+        "visibility": "private",
+        "worldSequence": 6,
+        "contentHash": "3eeb7020d357681702671baea66c8fc66645894a19aeedf053e18eda6c59dbbe",
+        "characterCount": 211
+      },
+      {
+        "roleId": "id_14de4c31bd43d664",
+        "entryType": "B0_ENDING",
+        "visibility": "private",
+        "worldSequence": 6,
+        "contentHash": "c02c64c8b86da4aae944ba79db9c33c14092d2afc974f17c7bb63a854e3c93f0",
+        "characterCount": 211
+      },
+      {
+        "roleId": "id_2b4ca82c63b5a148",
+        "entryType": "B0_ENDING",
+        "visibility": "private",
+        "worldSequence": 6,
+        "contentHash": "c02c64c8b86da4aae944ba79db9c33c14092d2afc974f17c7bb63a854e3c93f0",
+        "characterCount": 211
+      },
+      {
+        "roleId": "id_63676bf74f0fb3b0",
+        "entryType": "B0_ENDING",
+        "visibility": "private",
+        "worldSequence": 6,
+        "contentHash": "47c57375db72e1147f9b8c58f9e577c0a4149dbaad6e83473cd9a4598fde93d0",
+        "characterCount": 140
+      },
+      {
+        "roleId": "id_1352cf95d9dc4713",
+        "entryType": "B0_ENDING",
+        "visibility": "private",
+        "worldSequence": 6,
+        "contentHash": "47c57375db72e1147f9b8c58f9e577c0a4149dbaad6e83473cd9a4598fde93d0",
+        "characterCount": 140
+      },
+      {
+        "roleId": "id_240fb3e841b381a4",
+        "entryType": "B0_ENDING",
+        "visibility": "private",
+        "worldSequence": 6,
+        "contentHash": "47c57375db72e1147f9b8c58f9e577c0a4149dbaad6e83473cd9a4598fde93d0",
+        "characterCount": 140
+      }
+    ]
+  }
+}

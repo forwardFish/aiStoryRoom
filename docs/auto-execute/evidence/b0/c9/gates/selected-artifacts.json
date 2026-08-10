@@ -1,16 +1,32 @@
 {
   "artifacts": [
     {
-      "id": 9067815608,
-      "name": "b0-engineering-real-acceptance-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
-      "sizeBytes": 2706762,
-      "digest": "sha256:3c5e57489f3c1d539d280b01c8e77877a5a72d43c868aae8cb1f76d8e8b0b46a"
+      "id": 9072036197,
+      "name": "b0-user-test-seed-cade9ffd2682b6e4f2476dd5d912389383a7b958",
+      "sizeBytes": 499,
+      "digest": "sha256:12e99276fd7216ce0884b04875407186c0ce83012486d7794bc83b65fe80f94c",
+      "runId": 31412217147
     },
     {
-      "id": 9067665444,
-      "name": "b0-formal-c8-credential-blocker-8aa83a8176b85e89a5ed6b02bbad4064bf9ab98d",
-      "sizeBytes": 786,
-      "digest": "sha256:f3b9c5b0d2d13bf247db25efe9285068966bfc3b983187b881b0bfd4ba69c257"
+      "id": 9072053183,
+      "name": "b0-user-test-seed-windows-cade9ffd2682b6e4f2476dd5d912389383a7b958",
+      "sizeBytes": 545,
+      "digest": "sha256:0ca1855a736007dae79c54f52dc6728d15a98dd631ba4096e90520ce6284fad5",
+      "runId": 31412217017
+    },
+    {
+      "id": 9072242651,
+      "name": "b0-engineering-real-acceptance-cade9ffd2682b6e4f2476dd5d912389383a7b958",
+      "sizeBytes": 2682255,
+      "digest": "sha256:97dc2c57aebd5ab2fd83e19d9aca6673706c396dd2f8e75f54d54a4b7525ced9",
+      "runId": 31412217066
+    },
+    {
+      "id": 9072134111,
+      "name": "b0-formal-c8-credential-blocker-cade9ffd2682b6e4f2476dd5d912389383a7b958",
+      "sizeBytes": 788,
+      "digest": "sha256:a8769a337fdd31fd41b3949f18e0f3162e09808cab14923b52958eec9f811d6e",
+      "runId": 31412217066
     }
   ]
 }
