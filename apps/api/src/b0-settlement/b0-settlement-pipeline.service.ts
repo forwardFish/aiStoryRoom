@@ -823,17 +823,21 @@ export class B0SettlementPipelineService {
         if (!current?.lastConfirmed) {
           const now = new Date().toISOString();
           const candidate = aiIntent(window, control.roleId, now);
+          const replayingPersistedDraft = current?.latestDraft?.clientRequestId === candidate.clientRequestId;
+          const expectedDraftRevision = replayingPersistedDraft
+            ? Math.max(0, current.latestRevision - 1)
+            : (current?.latestRevision ?? 0);
           await this.windows.saveDraft({
             windowId: window.id,
             actorId: control.roleId,
             controlEpoch: control.epoch,
-            expectedRevision: current?.latestRevision ?? 0,
+            expectedRevision: expectedDraftRevision,
             candidate,
             now,
           });
-          const confirmedRevision = current?.latestDraft?.clientRequestId === candidate.clientRequestId
+          const confirmedRevision = replayingPersistedDraft
             ? current.latestRevision
-            : (current?.latestRevision ?? 0) + 1;
+            : expectedDraftRevision + 1;
           await this.windows.confirmDraft({
             windowId: window.id,
             actorId: control.roleId,

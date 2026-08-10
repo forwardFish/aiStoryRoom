@@ -309,6 +309,46 @@ test("C8 AI recovery creates, confirms, and readies the same ActionContract used
   assert.equal(calls[2].input.controlEpoch, 3);
 });
 
+test("C8 AI recovery replays a persisted unconfirmed draft with its original expected revision", async () => {
+  const calls: Array<{ method: string; input: any }> = [];
+  const draft = {
+    ...aiAction(),
+    status: "DRAFT" as const,
+    confirmedAt: null,
+  };
+  const prisma = {
+    actionWindow: { findUnique: async () => ({ nodeId: "node.1", status: "OPEN" }) },
+    roleControl: { findMany: async () => [{ roleId: "role.ai", epoch: 3 }] },
+    actionWindowParticipant: { findUnique: async () => ({ mainStatus: "B0_PENDING", version: 4 }) },
+    playerAction: { findUnique: async () => ({
+      normalizedJson: {
+        schemaVersion: "b0-intent-revision-envelope-v1",
+        windowId: "window.ai",
+        roomId: "run.1",
+        runId: "run.1",
+        actorId: "role.ai",
+        latestRevision: 1,
+        latestDraft: draft,
+        lastConfirmed: null,
+        lockedIntent: null,
+        latestRequestHash: "a".repeat(64),
+      },
+    }) },
+  };
+  const windows = {
+    saveDraft: async (input: any) => { calls.push({ method: "saveDraft", input }); },
+    confirmDraft: async (input: any) => { calls.push({ method: "confirmDraft", input }); },
+    ready: async (input: any) => { calls.push({ method: "ready", input }); },
+  };
+  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any, {} as any);
+  await (service as any).prepareAiPlans(aiWindow());
+  assert.deepEqual(calls.map((entry) => entry.method), ["saveDraft", "confirmDraft", "ready"]);
+  assert.equal(calls[0].input.expectedRevision, 0, "replay must reuse the revision that originally created the draft");
+  assert.equal(calls[0].input.candidate.clientRequestId, "ai-plan:window.ai:role.ai");
+  assert.equal(calls[1].input.expectedRevision, 1, "recovery confirms the already persisted revision");
+  assert.equal(calls[2].input.controlEpoch, 3);
+});
+
 test("C8 AI recovery preserves an already confirmed plan and only restores READY", async () => {
   const calls: string[] = [];
   const action = aiAction();
