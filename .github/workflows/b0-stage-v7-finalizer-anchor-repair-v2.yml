@@ -1,0 +1,132 @@
+name: B0 Stage Exact V7 Anchor Repair V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage-v7-finalizer-anchor-repair-v2.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage-v7-finalizer-anchor-repair-v2
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+  B0_EXPECTED_PARENT: 3fab23033668e90c8beb92032584af1ccf6d096e
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact start
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH" main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$B0_EXPECTED_PARENT"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage-v7-finalizer-anchor-repair-v2.yml"
+
+      - name: Apply four exact v7 replacements
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/b0-fail-closed-finalizer-v7.yml')
+          source = path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  '          set -euo pipefail\n          git fetch origin "$B0_BRANCH" main\n',
+                  '          set -euo pipefail\n          mkdir -p .artifacts/b0-finalizer-v7\n          git fetch origin "$B0_BRANCH" main\n',
+              ),
+              (
+                  '          test "$(git rev-parse origin/main)" = "$B0_MAIN_BASELINE"\n',
+                  '          git cat-file -e "$B0_MAIN_BASELINE^{commit}"\n          git merge-base --is-ancestor "$B0_MAIN_BASELINE" HEAD\n',
+              ),
+              (
+                  '          mkdir -p .artifacts/b0-finalizer-v7\n          printf \'%s\\n\' "$GITHUB_SHA" > .artifacts/b0-finalizer-v7/local-head.txt\n',
+                  '          printf \'%s\\n\' "$GITHUB_SHA" > .artifacts/b0-finalizer-v7/local-head.txt\n',
+              ),
+              (
+                  '          printf \'%s\\n\' "$(git rev-parse origin/$B0_BRANCH)" > .artifacts/b0-finalizer-v7/remote-tip-before-push.txt\n',
+                  '          printf \'%s\\n\' "$(git rev-parse origin/$B0_BRANCH)" > .artifacts/b0-finalizer-v7/remote-tip-before-push.txt\n          printf \'%s\\n\' "$(git rev-parse origin/main)" > .artifacts/b0-finalizer-v7/remote-main-at-finalization.txt\n',
+              ),
+              (
+                  '          shutil.copy2(stage / "downloads/selected-artifacts.json", c9 / "gates/selected-artifacts.json")\n',
+                  '          shutil.copy2(stage / "downloads/selected-artifacts.json", c9 / "gates/selected-artifacts.json")\n          shutil.copy2(stage / "remote-main-at-finalization.txt", c9 / "readback/remote-main-at-finalization.txt")\n',
+              ),
+          ]
+          for old, new in replacements:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'exact replacement count={count}: {old!r}')
+              source = source.replace(old, new, 1)
+          path.write_text(source, encoding='utf-8')
+          PY
+          git diff --check
+          test "$(grep -c 'mkdir -p .artifacts/b0-finalizer-v7' .github/workflows/b0-fail-closed-finalizer-v7.yml)" -eq 1
+          grep -F 'git merge-base --is-ancestor "$B0_MAIN_BASELINE" HEAD' .github/workflows/b0-fail-closed-finalizer-v7.yml
+          test "$(grep -c 'remote-main-at-finalization.txt' .github/workflows/b0-fail-closed-finalizer-v7.yml)" -eq 2
+          test "$(git diff --name-only)" = ".github/workflows/b0-fail-closed-finalizer-v7.yml"
+
+      - name: Commit and attempt ordinary ref update
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/b0-fail-closed-finalizer-v7.yml
+          test "$(git diff --cached --name-only)" = ".github/workflows/b0-fail-closed-finalizer-v7.yml"
+          git diff --cached --check
+          git commit -m "ci(b0): anchor v7 to required baseline ancestry"
+          candidate="$(git rev-parse HEAD)"
+          echo "candidate_sha=$candidate" >> "$GITHUB_OUTPUT"
+          echo "V7_REPAIRED_COMMIT_SHA=$candidate"
+          set +e
+          git push origin "HEAD:$B0_BRANCH"
+          status=$?
+          set -e
+          echo "push_status=$status" >> "$GITHUB_OUTPUT"
+          if test "$status" -eq 0; then
+            test "$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')" = "$candidate"
+          else
+            echo "Expected workflow-scope ref rejection after object transfer; connector will verify ancestry and update ref with force=false."
+          fi
+
+      - name: Record staged object
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          CANDIDATE_SHA: ${{ steps.commit.outputs.candidate_sha }}
+          PUSH_STATUS: ${{ steps.commit.outputs.push_status }}
+        with:
+          script: |
+            const ok = Boolean(process.env.CANDIDATE_SHA);
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: ok ? 'success' : 'failure',
+              context: 'b0/v7-anchor-repair-v2',
+              description: ok ? `staged ${process.env.CANDIDATE_SHA.slice(0,12)} push=${process.env.PUSH_STATUS}` : `repair failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!ok) core.setFailed('v7 anchor repair v2 failed');
