@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type {
   PartOneCommittedEvent,
@@ -34,6 +35,13 @@ type PlayerEndingEvidenceV1 = {
 
 type EndingWithEvidence = EndingPresentation & {
   playerEvidence: PlayerEndingEvidenceV1;
+  genericEndgame: GenericEndgameResultArtifactV1;
+};
+
+type GenericEndgameResultArtifactV1 = {
+  schemaVersion: "generic_endgame_result_artifact_v1";
+  sourceRevision: number;
+  presentation: Record<string, unknown>;
 };
 
 type SangtianOutcome = {
@@ -90,16 +98,199 @@ export class SangtianEndingModule implements EndingModule {
     // turns. The current T20 Settlement event is added explicitly because the
     // Ending is compiled before the final atomic Head advances.
     const committedHistory = this.readCommittedEvents(input.runId);
+    const playerEvidence = buildPlayerEndingEvidence(
+      input,
+      settlement,
+      state,
+      outcome,
+      committedHistory,
+    );
     return Object.assign(ending, {
-      playerEvidence: buildPlayerEndingEvidence(
-        input,
-        settlement,
-        state,
-        outcome,
-        committedHistory,
-      ),
-    } satisfies Pick<EndingWithEvidence, "playerEvidence">);
+      playerEvidence,
+      genericEndgame: buildGenericEndgameArtifact(ending, state, outcome),
+    } satisfies Pick<EndingWithEvidence, "playerEvidence" | "genericEndgame">);
   }
+}
+
+function buildGenericEndgameArtifact(
+  ending: EndingPresentation,
+  state: PartOneState,
+  outcome: SangtianOutcome,
+): GenericEndgameResultArtifactV1 {
+  const axes = genericOutcomeAxes(state, outcome);
+  const metrics = genericEndingMetrics(state);
+  const dynamicSubtitle = genericResultSentence(state, outcome.key);
+  const sections = genericEndingSections(ending);
+  const fingerprint = createHash("sha256")
+    .update(JSON.stringify({
+      sourceRevision: ending.sourceRevision,
+      endingKey: ending.endingKey,
+      axes: axes.map((axis) => [axis.axisId, axis.outcomeId]),
+      metrics: metrics.map((metric) => [metric.metricId, metric.value]),
+      aftermath: ending.aftermath,
+    }))
+    .digest("hex");
+  return {
+    schemaVersion: "generic_endgame_result_artifact_v1",
+    sourceRevision: ending.sourceRevision,
+    presentation: {
+      schemaVersion: "endgame_presentation_v3",
+      resultType: "SOLO_PART_END",
+      world: { worldId: "sangtian", worldTitle: "《桑田诏》" },
+      role: { roleId: "zhejiang_governor", roleTitle: "浙江总督" },
+      title: "第一部分终章",
+      axes,
+      metrics,
+      dynamicSubtitle,
+      style: genericEndingStyle(outcome.key),
+      narrative: ending.finalSceneNarrative.trim(),
+      sections,
+      replayHint: "换一种责任与利益的排序，浙江会留下不同的结果。",
+      endingFingerprint: fingerprint,
+      replayActions: [
+        {
+          type: "RESTART_SAME_STORY",
+          label: "重新开始",
+          href: "/role-select?story=sangtian&start=new",
+          enabled: true,
+          disabledReason: null,
+        },
+        {
+          type: "CHANGE_ROLE",
+          label: "更换角色",
+          href: "/role-select?story=sangtian&start=new",
+          enabled: true,
+          disabledReason: null,
+        },
+        {
+          type: "CONTINUE_NEXT_PART",
+          label: "进入下一部分",
+          href: null,
+          enabled: false,
+          disabledReason: "下一部分尚未开放",
+        },
+        {
+          type: "BACK_TO_WORLDS",
+          label: "返回世界",
+          href: "/worlds",
+          enabled: true,
+          disabledReason: null,
+        },
+      ],
+    },
+  };
+}
+
+function genericOutcomeAxes(state: PartOneState, outcome: SangtianOutcome) {
+  const protectedPeople = state.land.safeguardStatus === "ACTIVE"
+    && state.grain.immediatePressure !== "UNRELIEVED";
+  const highExposure = Number(state.responsibility.governorExposure || 0) >= 8;
+  return [
+    {
+      axisId: "world_outcome",
+      label: "浙江局势",
+      outcomeId: protectedPeople ? "guarded" : "people_exposed",
+      title: protectedPeople ? "暂得喘息" : "危局未解",
+      summary: protectedPeople
+        ? "最急迫的粮食与民田风险暂时受到约束。"
+        : "粮食或民田风险仍在继续逼近百姓。",
+    },
+    {
+      axisId: "protagonist_fate",
+      label: "你的处境",
+      outcomeId: highExposure ? "accepted_burden" : "political_room_retained",
+      title: outcome.title,
+      summary: highExposure
+        ? "你承担了首报与执行边界的责任，也走入了更直接的问责。"
+        : "你保留了周旋余地，但责任归属仍会被继续追问。",
+    },
+  ];
+}
+
+function genericEndingMetrics(state: PartOneState) {
+  const reportDeparted = reportHasDeparted(state);
+  const evidenceStrong = state.evidence.chainStatus === "TRACEABLE"
+    && state.report.attachmentStrength !== "NONE";
+  const peopleProtected = state.land.safeguardStatus === "ACTIVE";
+  const grainRelieved = state.grain.immediatePressure !== "UNRELIEVED";
+  const values = {
+    imperial_trust: clampMetric(43 + (reportDeparted ? 8 : -8) + (evidenceStrong ? 7 : -7)),
+    court_support: clampMetric(42 + (state.report.authorshipMode === "JOINT" ? 6 : 0) - (state.report.dispatchStatus === "SPLIT" ? 3 : 0)),
+    reform_progress: clampMetric(peopleProtected ? 65 : 35),
+    grain_price: clampMetric(72 + (grainRelieved ? -18 : 8)),
+    public_support: clampMetric(55 + (peopleProtected ? 10 : -12) + (grainRelieved ? 8 : -8)),
+  };
+  const definitions = [
+    ["imperial_trust", "皇帝信任", "HIGH_GOOD", 43],
+    ["court_support", "朝中支持", "HIGH_GOOD", 42],
+    ["reform_progress", "改桑进度", "CONTEXTUAL", 0],
+    ["grain_price", "粮价", "LOW_GOOD", 72],
+    ["public_support", "民心", "HIGH_GOOD", 55],
+  ] as const;
+  return definitions.map(([metricId, label, direction, initialValue]) => ({
+    metricId,
+    label,
+    value: values[metricId],
+    formattedValue: String(values[metricId]),
+    direction,
+    initialValue,
+  }));
+}
+
+function clampMetric(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function genericResultSentence(state: PartOneState, endingKey: string) {
+  const protectedPeople = state.land.safeguardStatus === "ACTIVE"
+    && state.grain.immediatePressure !== "UNRELIEVED";
+  const evidenceStrong = state.evidence.chainStatus === "TRACEABLE";
+  if (protectedPeople && evidenceStrong && endingKey === "guarded_people_bore_responsibility") {
+    return "你守住了民田与证据，也把随之而来的问责留在了自己名下。";
+  }
+  if (protectedPeople && evidenceStrong) {
+    return "你让浙江暂得喘息，但真正的裁定仍在来路上。";
+  }
+  if (evidenceStrong) {
+    return "证据已经上路，百姓付出的代价却还没有停止。";
+  }
+  return "这场危局没有被真正截住，你只能带着未竟之责等待下一次追问。";
+}
+
+function genericEndingStyle(endingKey: string) {
+  if (endingKey === "guarded_people_bore_responsibility") {
+    return { styleId: "bittersweet", label: "悲欣交集" };
+  }
+  if (endingKey === "guarded_people_preserved_evidence") {
+    return { styleId: "restrained_celebration", label: "克制庆贺" };
+  }
+  if (endingKey === "executed_policy_lost_people") {
+    return { styleId: "restrained_sorrow", label: "克制悲怆" };
+  }
+  return { styleId: "solemn_open", label: "沉郁未决" };
+}
+
+function genericEndingSections(ending: EndingPresentation) {
+  const aftermathItems = ending.aftermath.map((text, index) => ({
+    title: index === ending.aftermath.length - 1 ? "未完局势" : `局势 ${index + 1}`,
+    text,
+    actorName: null,
+    stageIndex: null,
+  }));
+  return [
+    {
+      sectionId: "result",
+      label: "本局结果",
+      layout: "LIST",
+      items: [{ title: ending.title, text: ending.protagonistFate, actorName: null, stageIndex: null }],
+    },
+    {
+      sectionId: "open",
+      label: "未完局势",
+      layout: "LIST",
+      items: aftermathItems,
+    },
+  ];
 }
 
 function sangtianSettlement(input: EndingModuleInput) {

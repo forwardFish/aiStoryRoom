@@ -301,6 +301,12 @@ export type EndingPresentation = {
   aftermath: string[];
   sourceTurnId: string;
   sourceRevision: number;
+  /**
+   * Player-safe generic presentation compiled from the same authoritative
+   * terminal revision. Older runs may omit it and continue through the
+   * legacy result projection.
+   */
+  genericEndgame?: unknown;
 };
 
 export type TurnEvent =

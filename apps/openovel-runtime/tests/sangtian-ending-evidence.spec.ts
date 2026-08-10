@@ -96,6 +96,15 @@ test("T20 Ending atomically carries one merged cause for one committed action", 
   assert.match(ending.playerEvidence.causes[0].factText, /问责范围/);
   assert.match(ending.playerEvidence.causes[0].factText, /离开浙江/);
   assert.equal(ending.playerEvidence.reveal, null);
+  assert.equal(ending.genericEndgame.schemaVersion, "generic_endgame_result_artifact_v1");
+  assert.equal(ending.genericEndgame.sourceRevision, 20);
+  assert.equal(ending.genericEndgame.presentation.schemaVersion, "endgame_presentation_v3");
+  assert.equal(ending.genericEndgame.presentation.resultType, "SOLO_PART_END");
+  assert.equal(ending.genericEndgame.presentation.world.worldId, "sangtian");
+  assert.equal(ending.genericEndgame.presentation.role.roleId, "zhejiang_governor");
+  assert.equal(ending.genericEndgame.presentation.narrative, ending.finalSceneNarrative);
+  assert.match(ending.genericEndgame.presentation.dynamicSubtitle, /民田|证据|问责/u);
+  assert.match(ending.genericEndgame.presentation.endingFingerprint, /^[0-9a-f]{64}$/u);
   assert.doesNotMatch(JSON.stringify(ending.playerEvidence), /文学正文|Prompt|note/);
 });
 
@@ -179,6 +188,8 @@ test("negative historical predicates produce HURT or DECISIVE rather than univer
   ], decision);
 
   assert.equal(ending.endingKey, "executed_policy_lost_people");
+  assert.equal(ending.genericEndgame.presentation.style.styleId, "restrained_sorrow");
+  assert.match(ending.genericEndgame.presentation.dynamicSubtitle, /危局|未竟|代价/u);
   assert.deepEqual(
     ending.playerEvidence.causes.map((cause: any) => cause.direction),
     ["DECISIVE", "DECISIVE", "HURT"],

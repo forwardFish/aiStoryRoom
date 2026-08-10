@@ -55,6 +55,7 @@ import {
 import type {
   BoundOption,
   EventMirror,
+  ModelMessage,
   OpenNovelOption,
   OpenNovelProvider,
   ProviderResult,
@@ -535,6 +536,10 @@ export class OpenNovelRuntime {
       }),
       onRecord: (record) => this.recordModuleExecution(input.runId, record),
     });
+    const narratorMessages = endingAwareNarratorMessages(
+      narratorProjection.messages,
+      preparedDecision?.storyComplete === true,
+    );
     let narrator: ProviderResult;
     const modelLedger: unknown[] = [];
     let atomicNarrative: AtomicNarrativeEvidence;
@@ -548,7 +553,7 @@ export class OpenNovelRuntime {
         const rendererInput = {
           runId: input.runId,
           turnId,
-          messages: narratorProjection.messages,
+          messages: narratorMessages,
           previousOpening,
           // Provider streaming stays inside the runtime until the atomic Head
           // owns both the prose and the settled state. A player must never see
@@ -564,7 +569,7 @@ export class OpenNovelRuntime {
             mode: "REQUIRED",
           },
           value: {
-            messages: narratorProjection.messages,
+            messages: narratorMessages,
             previousOpening,
           },
           execute: () => renderer.render(rendererInput),
@@ -1127,6 +1132,26 @@ function optionsKnownContext(
     compiled.recentCanonExcerpt,
     narration,
   ].filter(Boolean).join("\n");
+}
+
+export function endingAwareNarratorMessages(
+  messages: ModelMessage[],
+  storyComplete: boolean,
+): ModelMessage[] {
+  if (!storyComplete) return messages;
+  return [
+    ...messages,
+    {
+      role: "system",
+      content: [
+        "这是本部分最后一回，请把正文写成小说终章，而不是结算报告、任务清单或说明文字。",
+        "只使用本轮已经提供并由服务器结算的事实，不新增人物、命令、数字、转折或未来事件。",
+        "正文自然完成三件事：收住最后现场；让读者感到玩家最终保住了什么并付出了什么；以一个仍未解决的局势或具体画面收尾。",
+        "若结果有利，庆祝要克制；若代价沉重，悲伤要克制；得失并存时保持悲欣交集的余韵。",
+        "不要输出标题、指标、选项或按钮文案，只输出可直接放进游戏中央阅读区的终章正文。",
+      ].join(" "),
+    },
+  ];
 }
 
 function normalizeSubmissionId(value: unknown) {
