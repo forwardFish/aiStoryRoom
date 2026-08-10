@@ -13,6 +13,11 @@ test("localhost fixture renders in the real /game root without calling game API"
   assert.equal(result.fixture, true);
   assert.deepEqual(paths, ["/__local-endgame-fixtures/neutral.json"]);
   assert.match(dom.window.document.body.textContent, /Ending/);
+  assert.ok(dom.window.document.querySelector('[data-testid="story-shell"]'));
+  assert.ok(dom.window.document.querySelector(".causal-left"));
+  assert.ok(dom.window.document.querySelector(".causal-center"));
+  assert.ok(dom.window.document.querySelector(".causal-right"));
+  assert.ok(dom.window.document.querySelector('[data-testid="ending-main"]'));
   assert.ok(dom.window.document.querySelector('[data-testid="final-judgement"]'));
 });
 

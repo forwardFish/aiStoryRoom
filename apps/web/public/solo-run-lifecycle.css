@@ -219,74 +219,217 @@
     transition: none;
   }
 }
-/* Generic Endgame v3 enriches the existing final-judgement region in place. */
-.endgame-v3-axes,
-.endgame-v3-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-  margin: 16px 0;
+/* Generic Endgame v3 stays inside the existing game shell and reads like a final chapter. */
+.endgame-shell .endgame-topbar {
+  grid-template-columns: minmax(290px, 1fr) 150px minmax(240px, 1fr) minmax(180px, .7fr);
+}
+
+.endgame-world-title {
+  color: #262d5a;
+  font-size: 16px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.endgame-topbar .top-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.endgame-topbar .top-actions a {
+  color: #32395f;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.endgame-player {
+  min-height: 274px;
+}
+
+.endgame-center {
+  display: block;
+  grid-template-rows: none;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(250,250,255,.85)), var(--game-scene-background, url('/assets/game/sangtian/background.png')) center / cover no-repeat;
+}
+
+.endgame-center .final-judgement {
+  height: 100%;
+  max-height: none;
+  overflow-y: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: #b9a9ff transparent;
+}
+
+.endgame-story {
+  width: min(820px, calc(100% - 72px));
+  margin: 0 auto;
+  padding: 56px 10px 64px;
+  color: #30375f;
   text-align: left;
 }
 
-.endgame-v3-axes article,
-.endgame-v3-metrics article,
-.endgame-v3-section {
-  padding: 14px;
-  border: 1px solid rgba(87, 57, 29, 0.2);
-  border-radius: 9px;
-  background: linear-gradient(145deg, rgba(255, 251, 241, 0.82), rgba(245, 232, 207, 0.48));
-  box-shadow: 0 8px 24px rgba(66, 43, 22, 0.06);
+.endgame-story .final-kicker {
+  margin: 0 0 15px;
+  color: #7564cb;
+  font: 650 13px/1.4 Inter, "Noto Sans SC", sans-serif;
+  letter-spacing: .18em;
+  text-align: center;
 }
 
-.endgame-v3-axes small,
-.endgame-v3-metrics span,
-.endgame-v3-metrics small {
-  display: block;
-  color: #8b6b48;
+.endgame-story h1 {
+  margin: 0;
+  color: #20274e;
+  font-family: "Songti SC", STSong, SimSun, serif;
+  font-size: clamp(31px, 3.1vw, 46px);
+  line-height: 1.25;
+  text-align: center;
 }
 
-.endgame-v3-axes h3,
-.endgame-v3-axes p,
-.endgame-v3-section h3 {
-  margin: 5px 0;
-  color: #3a2817;
+.endgame-story .final-global {
+  max-width: 680px;
+  margin: 20px auto 34px;
+  color: #626987;
+  font-size: 16px;
+  line-height: 1.8;
+  text-align: center;
 }
 
-.endgame-v3-metrics b {
-  display: block;
-  margin: 5px 0 2px;
-  color: #4d3420;
-  font-size: 22px;
-}
-
-.endgame-v3-narrative,
-.endgame-v3-section {
-  margin: 14px 0;
-  text-align: left;
-  line-height: 1.75;
+.endgame-v3-narrative {
+  padding-top: 28px;
+  border-top: 1px solid #e2e2f4;
+  font-family: "Songti SC", STSong, SimSun, serif;
+  font-size: 19px;
+  line-height: 1.95;
 }
 
 .endgame-v3-narrative p {
-  margin: 0 0 12px;
+  margin: 0 0 20px;
+  text-indent: 2em;
+}
+
+.endgame-outcome-line {
+  margin: 28px 0 0;
+  padding: 17px 19px;
+  border-left: 4px solid #7253ed;
+  border-radius: 0 10px 10px 0;
+  background: rgba(241, 238, 255, .76);
+  color: #3d436c;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.endgame-outcome-line span {
+  display: block;
+  margin-bottom: 4px;
+  color: #6648df;
+  font-weight: 750;
+}
+
+.endgame-result-details {
+  margin-top: 20px;
+  padding-top: 17px;
+  border-top: 1px solid #e1e2f1;
+}
+
+.endgame-result-details summary {
+  color: #5d49bb;
+  font: 700 15px/1.5 Inter, "Noto Sans SC", sans-serif;
+  cursor: pointer;
+}
+
+.endgame-v3-section {
+  margin: 18px 0 0;
+  line-height: 1.7;
+}
+
+.endgame-v3-section h3 {
+  margin: 0 0 7px;
+  color: #30375f;
+  font-size: 17px;
 }
 
 .endgame-v3-section ul,
 .endgame-v3-section ol {
-  margin: 8px 0 0;
+  margin: 0;
   padding-left: 22px;
 }
 
 .endgame-v3-section li + li {
-  margin-top: 8px;
+  margin-top: 10px;
+}
+
+.endgame-v3-section li p {
+  margin: 3px 0;
 }
 
 .endgame-v3-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 18px;
+  display: none;
+}
+
+.endgame-side-panel {
+  padding-bottom: 14px;
+}
+
+.endgame-side-result {
+  margin: 0 13px;
+  padding: 14px 3px;
+  border-top: 1px solid #e5e6f3;
+}
+
+.endgame-side-result:first-of-type {
+  border-top: 0;
+}
+
+.endgame-side-result small,
+.endgame-side-result b {
+  display: block;
+}
+
+.endgame-side-result small {
+  color: #8a8fac;
+  font-size: 12px;
+}
+
+.endgame-side-result b {
+  margin-top: 5px;
+  color: #292f59;
+  font-size: 17px;
+}
+
+.endgame-side-result p {
+  margin: 6px 0 0;
+  color: #6b718e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.endgame-side-actions {
+  display: grid;
+  gap: 9px;
+  margin: 10px 13px 0;
+}
+
+.endgame-side-actions a {
+  display: block;
+  padding: 11px 12px;
+  border: 1px solid #d8d9ed;
+  border-radius: 9px;
+  background: #fff;
+  color: #5141b1;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.endgame-side-actions a:first-child {
+  border-color: #6d4beb;
+  background: linear-gradient(135deg, #5d3de0, #7654ee);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(91, 61, 217, .2);
 }
 
 @media (max-width: 680px) {
@@ -294,8 +437,12 @@
     max-height: 68vh;
   }
 
-  .endgame-v3-axes,
-  .endgame-v3-metrics {
-    grid-template-columns: 1fr;
+  .endgame-story {
+    width: calc(100% - 32px);
+    padding: 38px 0 48px;
+  }
+
+  .endgame-v3-narrative {
+    font-size: 17px;
   }
 }

@@ -104,11 +104,10 @@ async function renderLocalEndgameFixture({ root, key, fetchImpl }) {
   const response = await fetchImpl(`/__local-endgame-fixtures/${encodeURIComponent(key)}.json`, { cache:"no-store", headers:{ accept:"application/json" } });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error("Local endgame fixture is unavailable. Run pnpm fixture:endgame first.");
-  const { enhanceEndgameResultPage, normalizeEndgamePresentationV3 } = await import("./endgame-result-renderer.js?v=20260810-generic-endgame-v3");
+  const { normalizeEndgamePresentationV3, renderEndgameFixtureShell } = await import("./endgame-result-renderer.js?v=20260810-endgame-text-v1");
   const presentation = normalizeEndgamePresentationV3(payload.presentation);
   if (!presentation) throw new Error("Local endgame fixture is invalid.");
-  root.innerHTML = '<section class="decision-zone final-judgement" data-testid="final-judgement"></section>';
-  enhanceEndgameResultPage(root.ownerDocument || document, presentation);
+  root.innerHTML = renderEndgameFixtureShell(presentation);
   return { fixture:true, presentation };
 }
 

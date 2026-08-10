@@ -72,6 +72,9 @@ test("S5 builds a closed configuration-driven prompt", () => {
   assert.deepEqual(prompt.payload.finalMetrics, route.adjudication.finalMetrics);
   assert.equal(prompt.payload.contract.paragraphPlan.length, 3);
   assert.match(prompt.system, /Do not create facts/);
+  assert.match(prompt.system, /final passage of a novel/);
+  assert.match(prompt.system, /restrained celebration/);
+  assert.match(prompt.system, /restrained sorrow/);
 });
 
 test("S5 prompt is deeply frozen", () => {

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   adaptEndgamePresentationV3ForGame,
   normalizeEndgamePresentationV3,
+  renderEndgameFixtureShell,
   renderEndgamePresentationV3Html
 } from "../public/endgame-result-renderer.js";
 
@@ -33,7 +34,21 @@ test("normalizes and renders Presentation V3 arrays", () => {
   assert.match(html, /System outcome/);
   assert.match(html, /signal survived/iu);
   assert.match(html, /data-replay-action="RESTART_SAME_STORY"/);
+  assert.match(html, /class="endgame-story"/);
+  assert.match(html, /<details class="endgame-result-details">/);
+  assert.doesNotMatch(html, /endgame-v3-metrics/);
   assert.doesNotMatch(html, /packageHash|factId|outcomeId/);
+});
+
+test("renders the local preview inside the existing three-column game shell", () => {
+  const value = normalizeEndgamePresentationV3(fixture());
+  const html = renderEndgameFixtureShell(value);
+  assert.match(html, /data-testid="story-shell"/);
+  assert.match(html, /class="causal-left"/);
+  assert.match(html, /class="causal-center endgame-center"/);
+  assert.match(html, /class="causal-right"/);
+  assert.match(html, /data-testid="ending-main"/);
+  assert.match(html, /A Configured Ending/);
 });
 
 test("adapts V3 to the existing final judgement region", () => {

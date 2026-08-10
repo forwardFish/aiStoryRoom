@@ -61,6 +61,9 @@ export function buildConfigDrivenEndingNarratorPromptV1(input) {
       "Render only the supplied authoritative ending blueprint.",
       "Return one JSON object matching the closed narrated_ending_v1 contract.",
       "Do not create facts, people, organizations, places, objects, numbers, outcomes, metrics, or future events.",
+      "Write the ending as a final passage of a novel, not as a settlement report, task list, dashboard, or instruction.",
+      "Let the emotional temperature follow the supplied resolved outcomes and costs: restrained celebration for a clearly favorable result, restrained sorrow for a costly or failed result, and bittersweet restraint when gain and loss coexist.",
+      "End on one concrete image or unresolved pressure that fits the supplied scene and scope; do not add a new event.",
       "Do not expose internal identifiers. Every factual sentence must be supported by its paragraph factRefs.",
       "A PART ending must remain open when the configured scope requires an unresolved hook."
     ].join(" "),
