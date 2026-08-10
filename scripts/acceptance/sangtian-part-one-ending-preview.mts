@@ -29,7 +29,10 @@ const workspaceRoot = path.resolve(
 const reportPath = path.resolve(
   argument("--report-path") || path.join(workspaceRoot, "ending-player-report.md"),
 );
-const realTurnsArgument = argument("--real-turns") || "1,2,20";
+// Acceptance is intentionally player-visible for only four turns. The middle
+// sixteen turns are settled deterministically so the normal twenty-turn
+// product contract and T20 ending authority remain unchanged.
+const realTurnsArgument = argument("--real-turns") || "1,2,19,20";
 const realTurns = new Set(
   (realTurnsArgument.toLowerCase() === "none" ? "" : realTurnsArgument)
     .split(",")
@@ -174,6 +177,9 @@ const output = {
   testOnly: true,
   normalProductFlowChanged: false,
   previewMode: realTurns.size > 0 ? "REAL_PREFIX_AND_ENDING" : "STRUCTURAL_ONLY",
+  visibleAcceptanceTurns: [...realTurns].sort((left, right) => left - right),
+  normalProductTurnCount: 20,
+  playerVisibleAcceptanceTurnCount: realTurns.size,
   runId,
   routeProfile,
   workspace: workspace.paths(runId).root,

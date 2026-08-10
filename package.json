@@ -12,6 +12,8 @@
     "dev:legacy-preview-api": "tsx scripts/preview-api.ts",
     "dev:web": "pnpm --filter @apps/web dev",
     "fixture:endgame": "node scripts/dev/generate-generic-endgame-fixtures.mjs",
+    "test:story:endgame:four-turn": "tsx scripts/acceptance/sangtian-part-one-ending-preview.mts --real-turns=1,2,19,20",
+    "test:story:endgame:four-turn:structural": "tsx scripts/acceptance/sangtian-part-one-ending-preview.mts --real-turns=none",
     "dev:web:test": "node --env-file=.env.test apps/web/src/server.mjs",
     "dev:web:prd": "node --env-file=.env.prd apps/web/src/server.mjs",
     "dev:story-worker": "pnpm --filter @apps/api run worker",
