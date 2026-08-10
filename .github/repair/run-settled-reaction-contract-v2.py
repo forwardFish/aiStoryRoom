@@ -67,6 +67,36 @@ if 'purpose?: "NEXT_DECISION" | "REACTION_PROJECTION";' not in text:
     )
     text = replace_once(
         text,
+        '''      "LEGACY_FALLBACK",
+      selection,
+    );''',
+        '''      "LEGACY_FALLBACK",
+      selection,
+      enforceRequirementDependencies,
+    );''',
+        "purpose-aware fallback call",
+    )
+    text = replace_once(
+        text,
+        '''  mode: "LEGACY_FIXED" | "LEGACY_FALLBACK",
+  selection: KernelSelectorLiteResult<Preview> | null = null,
+): DynamicPartOneRuntimeWorkingSet {''',
+        '''  mode: "LEGACY_FIXED" | "LEGACY_FALLBACK",
+  selection: KernelSelectorLiteResult<Preview> | null = null,
+  enforceRequirementDependencies = true,
+): DynamicPartOneRuntimeWorkingSet {''',
+        "purpose-aware fallback signature",
+    )
+    text = replace_once(
+        text,
+        '''      if (mode === "LEGACY_FALLBACK") {
+        const dependencyBlocks = dependencyBlocksForKernel(''',
+        '''      if (mode === "LEGACY_FALLBACK" && enforceRequirementDependencies) {
+        const dependencyBlocks = dependencyBlocksForKernel(''',
+        "purpose-aware legacy dependency gate",
+    )
+    text = replace_once(
+        text,
         '''  kernelId: string,
   turnNumber: number,
 ): Evaluation {
@@ -102,24 +132,15 @@ if 'purpose?: "NEXT_DECISION" | "REACTION_PROJECTION";' not in text:
     )
     text = replace_once(
         text,
-        '''  const dependencyBlock = resolveRequirementDependencyBlock(
+        '''  const blockedByRequirementDependencyIds = dependencyBlocksForKernel(
     pkg,
     state,
     section,
     kernel,
-    { directDuePressureCount },
-  );
-  rejectionCodes.push(...dependencyBlock.reasonCodes);''',
-        '''  const dependencyBlock = enforceRequirementDependencies
-    ? resolveRequirementDependencyBlock(
-      pkg,
-      state,
-      section,
-      kernel,
-      { directDuePressureCount },
-    )
-    : { blocked: false, dependencyIds: [], reasonCodes: [] };
-  rejectionCodes.push(...dependencyBlock.reasonCodes);''',
+  );''',
+        '''  const blockedByRequirementDependencyIds = enforceRequirementDependencies
+    ? dependencyBlocksForKernel(pkg, state, section, kernel)
+    : [];''',
         "purpose-aware dependency gate",
     )
 path.write_text(text, encoding="utf-8")
