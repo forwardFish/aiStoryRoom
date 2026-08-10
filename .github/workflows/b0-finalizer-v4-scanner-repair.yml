@@ -1,0 +1,122 @@
+name: B0 One-Shot Finalizer Scanner Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-finalizer-v4-scanner-repair.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-finalizer-v4-scanner-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Publish repair locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/finalizer-scanner-repair",
+              description: `finalizer scanner repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify exact ordinary fast-forward start
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "626673d120edbb63d4e21177f63ec44a7bce43d8"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-finalizer-v4-scanner-repair.yml"
+          test "$(git hash-object .github/workflows/b0-finalizer-v4.yml)" = "9843728784d36dfd3f979b742b589afebb710dab"
+          test "$(sha256sum .github/workflows/b0-finalizer-v4.yml | cut -d' ' -f1)" = "a50591fb26c0e348579b296c9e8019e4e8956b75e3db97f6e2fead8b194b1994"
+
+      - name: Apply the reviewed scanner and baseline patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/b0-finalizer-v4.patch.gz.b64 <<'PATCH'
+          H4sICNEXeWoAA2IwLWZpbmFsaXplci12NC5wYXRjaADdGmtT20jyO79iVrdVJ2FL2IYY7FuSGGM2riXAGbN7u8Bqx9LY1iFLzkgiEOL77dc9kmy9cVL36ZSqSNb0a/rdI1RVJXRPm1n+PJjsfXb5w9R2P3t7k4Y6tRxqW18YVx8PtOeFvVOr1chkS9j374na2q+3SQ3+PyTv3+8QvJjz2A2fCBn8OjwdXPQH+ujyctwlpmt4ezTwXZU9MSPw2R57tEzmGAwYxDjjwfV4cKr3L08H+vWHXpf8+PJCQoE0b07JarVTCyFPGvpo8M+b4QjAP/aGF/pJ73pwPryI8I7aJm0fMEabR3RyeLi/32xNDxrGYaN1QA3WMSb7nf39gwO6Q0LWns+W3lp0lTh0wbrkKpjYljcn6+0T2zWo73Kx/zdt2HntzWG9s95/ePnM84n0I2cL12f6nFFTIsfw4ufh+MPNCQooFYDLsE9iWtMpUVVkr7qO/Uw+DHqnf2oa3hRBZSv75OmrX2IWtqf6nDGi8hwjeFFtpz3j6DWAjiLtqBvmzJi7RFpQy9HBgMehCJw9qkvKPUZcbs0sZw/XYXtv3260dHkzvroZS7G98UJUUD/s1gbxGcBWesGfL4a7WFj+KkUkIdCEesy2HBZKVknrVdlCspHJBXXq65FZqG+5zndsnZSQn7Cpy9lx2sEKCWQd+jcKIgAyAfvNQQAfRHtkhD1RwyfUMQk1DLb0KRgTQoL6gcc84ev7beHs++1O/Sjh7THdk8CyTTKllq0atusxk/SPBL1+h8TesdmON2e23SWg/vnmpUgdCccRJljnABGfGojEfc0N/GXge1rsVImssEZMZ4NKCkkvyJAaDT5ejgehN/TG+tnwonc+/KM3Hl5elBOt8AEknzBq/7x3fT08G/ZzFNkjtQPqszVRw6aeZ00to4jO4F+9/lgf3Vzow9NKKsLOOg8c3TIzNHr9/uBq3BP5+nVCGzdJUEM/OWgcop8cNJspP8ELUscx4a7rkz0iGUcp9zY6ybVOLn2BQx0TFwRxHi3uOrdSplBI90nXQdVn4GNvAsBaGnBt/yKMVApIoVZZOU2owomAZFIJaRunqaR9JY0IAb2gtr4EdMDKkoGacXZzfq5fAYF0TnnyGQex9QlUtQehYjk0YqspjNhq54yIl+QZc7agvzLuAQOpS5r1HAhAGA9L13J8WJcgtfaPpDxUmGIAInyoJ40oAFC9J5F9rucUIPFNPWmICri1afMIofk+AlDPP0vYLkSuMG5+E6F/9l0z4hz+zsPFBXsUOEMTN/2SBRFgIkZhNRmr9bDfaHREw9F8891mySk8C5B2HgBMv/j/tlBcqfqibQhhL1wULqcmqG2WCRnxhEMSnI+gAj8DcCIQI5O9CU3WLo6kbzDdt25mDe8Imc6o55+5/DPl5iV0e4A35gHLmXONtaVZX4EvN+8a8X9n5jXJiRs4JuUWQ0ff/ChHCM3WPxpECfEkzIciCNMpspDGKrL1UTgPdA4iWydhOVu63IcMO5Uk6W8wvRCxWXIK6nlk/JmMBAAgJSyihpUsVmKX/PWCL1Z/JbWpIrFCuLX2swihVkMk6pOkVhG3QulAiSQppZwRccMXWbCwv4wTIIGkhrDJDJfFSPShWbRc7wG4qP9246jeBAO0m4f1dlG0QWi7puXMjqXAn6qZeqSkVb+kPloe6+ltNkg402CwWMIQInNp6Xr+jDNPftf9ZCvvunt7t3/eeXfS3+9rUh1Bh0ouylIE5Hc//XDbU/+g6peG2rlXvAd181NX71+arfpKeoXIbH67dAOP3+sJUi+txuuYJ4xyxu+82gZR0/9T2zuOOW+xiaIsghvrnvbGPWyh9JvR+dfe1VD/ZfD71/HlL4OLr9iN/HY5OlXuvN3b7vE93OR3P9ztvuyvvv7EmQmuwcy3X53AthXUKKqzkA8Il1tIS5vq26bcXZCA27Y10cI5zFqI0BQ/9E9eHVe9pW35O7VUk2U56DzCI4BikqbJpiCH4XJTBr+Zd8kV/F8nD4CBlZbXCfbPTDwrRH0riko3mxJjBhpdLpljykUp86U0jyJjUde5kAGmEFvMdrrvythYK0p5DkZBARdvVRneN+YQ5a03bYCdw+yGKvTEC1nsTxMBxuQovBRFm7Mn05pBSpCLua+yL5W8YsP6ZX1hppzRItxzSuTMD7gT6hvmMm4tZSW6SxCUkqLx6Fdd+ce9VMCP2pBrmKkvbWqwuWubjGcZT1zXznFGLC6a6KzEiibWZKVE2BgTsnGhfSWpUHnS7u5uycomgEoAbmOA+xIAjLuyJXDekiXmzKDcMA5urELpmapiDCgBDqvu63CubdMFrYRblZsRmjSKdRDK2BNom21ly3V7V2TNLLDPn3ME8BIJBf0hzifymmyOBnvCmkYG4oZluIhg5C5n1PZYdt2aRvw00UoyENsXDrUuUJDI18+fbGn1PSzkiMcc6ODBD3E5eKcSMmq2DrUG/GsiJzwntRGsmhE2odnlsBfGYTROyTHbTwF0Soo2Y74cdczAG0S4xXx6r9w27ksirDCXRkQDDzs82AsOymtlFSHgeVaEhB0+9CWmQPKYAXxKUeL9AKTh6WH3ok8auuE6PocgbLb2S3ElL1gK98VaK6GeS0zwWiKNoyDqa/C05Ru7mCQ576GM0JbdTOZUdx5MoE49MKeMbFV/k6Q1Ed1MGZVte50kRZx+Z86COX4x1ZzHgQoWyt1EztmUS6l2qGAdxUI13e/GvVIBEJgoOuUNG6mfP0QPa+xa+AIA9c075Z1SzTJuyCqhavr1oD8ajAtgko1c2LApKSgl006B32Kjgj7tQf8F6RXbFI3PbBeUtwvtQzfbwFtTkdZEf2N5On4GkEUCEG+8YAo5Pq61YTUl+UvSls5MCke2dqtT338DI8NRp37QLhgZVjkZ8MLItZyAZdd8GBfBO6L+i5o6vpBzYwdhnLvcO4bZVzQZ4MKZ/jVSjvA22Ec8jHTTQR1Dis4M4bJRromWEp5kFEQpTMSipoHQgog2426wlBu5dJLQfnVhLWaCV6JBhvqQDAUp6o+V4u2JtjSpjsJsLktXo0v84jjCwAGSmxxV3HvKUjKMAKEoD5Whngx6I+AUo6bTTh4p78rx5ta2KzNZyQFNidlKoLF0l63hlajdKIsgXgWPNWdT4bdFiYcE0/sMqpalLjawpTKX7x2vdQiWwOSGqQpaL1WLeG01XG1BAw0MZGJTR/fXUStHr9ew8Socz15DzIxvFdCrUhtulQzCAE97ckkuWIdLvixvk+we2HO9MHSaSlqAVlkGLJ0OyxPf2lWLKYJMojdMZcTwW+x3ZtoqhinFTyX8pvTzxcfBxbj7AoKskqk4geXB5AIaywVK0bl19hw/C9Kq+CohiW9UcaVZn7gwmEaIdNYbnhd8Q4qg+m4gvjXZzJFjRKUUGpnFj3mRcx9BisdyUKTlUP58jh2HAQYaY+n4yHxuGd5wBoOjOEMOD9qLCCyo98DMX1HhW8E/OO5n5xrm4D6OwWehN2yFiYfMfQCCeLGofRX1EyOGZ7xn1LL74qN9GYlVSo+pz8ay0cFPtuFxAihLRVfR/u2B2hTtM4d4DJugrCEQQjODxdKTEQN6IseDzejUMyzrWMyfdYhzFPi4pZAake6cvPFfO9HdXOBSsb1zcbPkluPL3yaRkhWFUwuc9PrZ89li8GThhCrGwjB28C8jQL8prKvfk78Sf/wjDjl2/guaNDzxuiUAAA==
+          PATCH
+          sed 's/^          //' /tmp/b0-finalizer-v4.patch.gz.b64 | base64 -d | gzip -dc > /tmp/b0-finalizer-v4.patch
+          test "$(sha256sum /tmp/b0-finalizer-v4.patch | cut -d' ' -f1)" = "35177625cdcbcdf82e773f44930f538fce4cf05b02b1f5f838a804964c510d72"
+          git apply --check /tmp/b0-finalizer-v4.patch
+          git apply /tmp/b0-finalizer-v4.patch
+          git diff --check
+          test "$(sha256sum .github/workflows/b0-finalizer-v4.yml | cut -d' ' -f1)" = "e2f66b3d6a0271c8256514a395123efc40fede6b9ccc96b4b72ae40203d9c4c7"
+          grep -F 'B0_REQUIRED_MAIN_BASELINE_SHA: 86da64eea18ab773312f40c7024ace9cb393344a' .github/workflows/b0-finalizer-v4.yml
+          grep -F 'ordinaryLowercaseTokenMetricsIgnored' .github/workflows/b0-finalizer-v4.yml
+
+      - name: Verify scanner remains fail-closed without matching model metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          pattern = re.compile(
+              r"(?m)\b("
+              r"DATABASE_URL|"
+              r"[A-Z0-9_]*API_KEY|"
+              r"(?:GITHUB_TOKEN|GH_TOKEN|[A-Z0-9_]+_TOKEN(?:_[A-Z0-9_]+)?)|"
+              r"[A-Z0-9_]*PASSWORD|"
+              r"[A-Z0-9_]+_SECRET"
+              r")\s*[:=]\s*([^\s]+)"
+          )
+          assert pattern.search("token = 151643") is None
+          assert pattern.search("token: 128247") is None
+          assert pattern.search("DATABASE_URL=postgresql://live.example/db")
+          assert pattern.search("DEEPSEEK_API_KEY=sk-exampleabcdefghijkl")
+          PY
+
+      - name: Commit the completed repair as an ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/b0-finalizer-v4.yml
+          test "$(git diff --cached --name-only)" = ".github/workflows/b0-finalizer-v4.yml"
+          git diff --cached --check
+          git commit -m "ci(b0): distinguish model token metrics from secrets"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish repair outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/finalizer-scanner-repair",
+              description: `finalizer scanner repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 finalizer scanner repair failed");
