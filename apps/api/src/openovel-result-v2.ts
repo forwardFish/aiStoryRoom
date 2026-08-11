@@ -162,6 +162,7 @@ export function projectHistoricalOpenNovelResultV2(input: {
       roleName: input.role.roleName,
       outcome: "RESOLVED",
       title: ending.title,
+      endingTitle: ending.title,
       summary: ending.protagonistFate,
       causes: ending.aftermath,
     }) : null,
@@ -173,6 +174,12 @@ export function projectHistoricalOpenNovelResultV2(input: {
       updatedAt: input.runtimeRun.updatedAt,
       message: null,
     }),
+    chapter: Object.freeze({
+      title: ending.title,
+      content,
+      highlights: ending.aftermath,
+    }),
+    completedNodes: Number(input.runtimeRun.turnNumber ?? 20),
   });
 }
 
