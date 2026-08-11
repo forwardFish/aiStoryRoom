@@ -2,6 +2,7 @@ import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-stor
 import { renderTransitionScreen } from "./transition-screen.js";
 import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260806-play-again-v3";
 import { bindManeuverInputs, buildManeuverCommand, clearManeuverDraft, emptyManeuverDrafts, prepareManeuverDraft, renderFourManeuverPanel, renderLeverageHand, validateManeuverCommand } from "./maneuver-four-ui.js?v=20260809-remaining-count-v1";
+import { createPressureActionState, createPressureConfirmCommand, createPressurePreviewCommand, isPressureGameProjection, pressureActionAvailability, pressurePreviewFromResponse, pressureProjectionFromConfirmResponse, renderPressureGameShell } from "./sangtian-pressure-game.js";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
@@ -47,13 +48,15 @@ export function createStoryApp({
     resultScroll: { top: 0, follow: true },
     openingScroll: { top: 0, follow: true },
     panelScroll: { left: 0, right: 0 },
-    openingStream: null
+    openingStream: null,
+    pressureAction: createPressureActionState()
   };
 
   let resultTimer = null;
   let resultAdvanceTimer = null;
   let openingTimer = null;
   let openingAdvanceTimer = null;
+  let pressureRequestSequence = 0;
 
   async function boot() {
     state.loading = true;
@@ -86,13 +89,14 @@ export function createStoryApp({
   }
 
   async function refresh({ conflict = false, silent = false } = {}) {
-    if (!state.view?.run?.id && !storage.savedRunId) return boot();
+    const activeRunId = state.view?.run?.id || state.view?.run?.runId || storage.savedRunId;
+    if (!activeRunId) return boot();
     if (!silent) state.busy = true;
     state.error = "";
     if (!silent) render();
     try {
       const previousView = state.view;
-      const nextView = await storage.getRun(state.view?.run?.id || storage.savedRunId);
+      const nextView = await storage.getRun(activeRunId);
       const revealCompletedResult = completedResultKind(previousView, nextView);
       acceptView(nextView);
       if (revealCompletedResult === "maneuver") startManeuverResultStream(nextView);
@@ -150,6 +154,109 @@ export function createStoryApp({
       state.busy = false;
       render();
     }
+  }
+
+  async function previewPressureAction() {
+    if (!isPressureGameProjection(state.view) || state.busy) return false;
+    const availability = pressureActionAvailability(state.view);
+    if (!availability.actionable) {
+      state.pressureAction.error = availability.reason;
+      render();
+      return false;
+    }
+    const draft = String(state.pressureAction.draft || "").trim();
+    state.pressureAction.preview = null;
+    state.pressureAction.previewInput = "";
+    state.pressureAction.confirmIdempotencyKey = "";
+    state.pressureAction.error = "";
+    state.error = "";
+    state.notice = "";
+    state.busy = true;
+    render();
+    try {
+      const command = createPressurePreviewCommand(state.view, draft, {
+        idempotencyKey: pressureRequestKey("preview")
+      });
+      const operation = pressureStorageOperation("previewPressureAction");
+      const response = await operation(state.view, command);
+      state.pressureAction.preview = pressurePreviewFromResponse(response, {
+        expectedProjectionRevision: Number(state.view.projectionRevision)
+      });
+      state.pressureAction.previewInput = draft;
+      state.pressureAction.confirmIdempotencyKey = pressureRequestKey("confirm");
+      return true;
+    } catch (error) {
+      if (isPressureProjectionConflict(error)) {
+        state.busy = false;
+        await refresh({ conflict: true });
+        return false;
+      }
+      state.pressureAction.error = errorMessage(error);
+      return false;
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
+  async function confirmPressureAction() {
+    if (!isPressureGameProjection(state.view) || state.busy) return false;
+    state.pressureAction.error = "";
+    state.error = "";
+    state.notice = "";
+    state.busy = true;
+    render();
+    try {
+      const idempotencyKey = state.pressureAction.confirmIdempotencyKey || pressureRequestKey("confirm");
+      state.pressureAction.confirmIdempotencyKey = idempotencyKey;
+      const command = createPressureConfirmCommand(state.view, state.pressureAction.preview, { idempotencyKey });
+      const operation = pressureStorageOperation("confirmPressureAction");
+      const response = await operation(state.view, command);
+      const projection = pressureProjectionFromConfirmResponse(response);
+      if (!projection) throw new Error("服务端确认了行动，但没有返回可恢复的 viewer projection。");
+      acceptView(projection);
+      state.notice = "行动已经写入世界；时间、各席反应与下一压力均以服务端结算为准。";
+      return true;
+    } catch (error) {
+      if (isPressureProjectionConflict(error)) {
+        state.busy = false;
+        await refresh({ conflict: true });
+        return false;
+      }
+      state.pressureAction.error = errorMessage(error);
+      return false;
+    } finally {
+      state.busy = false;
+      render();
+    }
+  }
+
+  async function choosePressureSuggestion(button) {
+    if (!button || state.busy || !isPressureGameProjection(state.view)) return false;
+    if (button.dataset.requiresPreview !== "true") {
+      state.pressureAction.error = "这条建议缺少 Preview 约束，页面已拒绝直接提交。";
+      render();
+      return false;
+    }
+    state.pressureAction.draft = String(button.dataset.pressureSuggestionText || "");
+    state.pressureAction.preview = null;
+    state.pressureAction.previewInput = "";
+    state.pressureAction.confirmIdempotencyKey = "";
+    state.pressureAction.error = "";
+    render();
+    return previewPressureAction();
+  }
+
+  function pressureStorageOperation(primaryName) {
+    const operation = typeof storage?.[primaryName] === "function" ? storage[primaryName].bind(storage) : null;
+    if (!operation) throw new Error("当前客户端尚未接入桑田诏统一 Preview/Confirm API，请刷新或稍后重试。");
+    return operation;
+  }
+
+  function pressureRequestKey(kind) {
+    pressureRequestSequence += 1;
+    const uuid = browserWindow?.crypto?.randomUUID?.();
+    return `${kind}:${uuid || `${Date.now()}-${pressureRequestSequence}`}`;
   }
 
   async function submitManeuver() {
@@ -328,6 +435,7 @@ export function createStoryApp({
     state.guard = null;
     state.selectedOption = activePromptForView(view)?.options?.[0]?.optionKey || view.activeDecision?.options?.[0]?.key || "A";
     state.customText = "";
+    if (isPressureGameProjection(view)) state.pressureAction = createPressureActionState();
   }
 
   async function resolveRoomRound() {
@@ -534,6 +642,15 @@ export function createStoryApp({
     }
 
     const view = state.view;
+    if (isPressureGameProjection(view)) {
+      root.innerHTML = renderPressureGameShell(view, state.pressureAction, {
+        busy: state.busy,
+        error: state.error,
+        notice: state.notice
+      });
+      bindEvents();
+      return;
+    }
     const showOpening = state.showOpening && (view.continuousV2 === true
       ? view.run.status !== "finished"
       : array(view.decisionHistory).length === 0 && Number(view.run.currentDay) === 1);
@@ -609,6 +726,23 @@ export function createStoryApp({
       };
     });
     root.querySelector("#refreshBtn")?.addEventListener("click", () => refresh());
+    root.querySelector("#pressureRefreshBtn")?.addEventListener("click", () => refresh());
+    root.querySelector("#pressurePreviewBtn")?.addEventListener("click", () => { void previewPressureAction(); });
+    root.querySelector("#pressureConfirmBtn")?.addEventListener("click", () => { void confirmPressureAction(); });
+    root.querySelectorAll("[data-pressure-suggestion-id]").forEach((button) => button.addEventListener("click", () => { void choosePressureSuggestion(button); }));
+    root.querySelector("#pressureActionInput")?.addEventListener("input", (event) => {
+      state.pressureAction.draft = event.target.value;
+      state.pressureAction.preview = null;
+      state.pressureAction.previewInput = "";
+      state.pressureAction.confirmIdempotencyKey = "";
+      state.pressureAction.error = "";
+      const counter = root.querySelector("#pressureActionCount");
+      if (counter) counter.textContent = `${event.target.value.length}/300`;
+      const previewButton = root.querySelector("#pressurePreviewBtn");
+      if (previewButton) previewButton.disabled = state.busy || !event.target.value.trim();
+      root.querySelector("[data-testid=\"pressure-preview\"]")?.remove();
+      root.querySelector("#pressureConfirmBtn")?.remove();
+    });
     root.querySelector("#v2RoomBtn")?.addEventListener("click", () => browserWindow?.location?.assign?.("/"));
     root.querySelector("#playAgainBtn")?.addEventListener("click", openPlayAgain);
     root.querySelector("#playAgainCancelBtn")?.addEventListener("click", closePlayAgain);
@@ -658,6 +792,8 @@ export function createStoryApp({
     boot,
     refresh,
     submitDecision,
+    previewPressureAction,
+    confirmPressureAction,
     advanceDay,
     finalize,
     resolveRoomRound,
@@ -1476,6 +1612,10 @@ function errorMessage(error) {
 
 function isVersionConflict(error) {
   return Boolean(error && error.code === "VERSION_CONFLICT");
+}
+
+function isPressureProjectionConflict(error) {
+  return new Set(["PREVIEW_STALE", "RUN_VERSION_CONFLICT", "OBJECT_VERSION_CONFLICT", "CONTROL_EPOCH_CHANGED", "VERSION_CONFLICT"]).has(error?.code);
 }
 
 function array(value) {

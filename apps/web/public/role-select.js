@@ -42,7 +42,8 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
   async function createRun() {
     const role = selectedRole(state);
     if (!role || role.playableSolo === false || state.busy) return;
-    const pendingKey = `many-worlds:solo-create:${state.story.id}:${role.key}`;
+    const runtimeProfile = state.story.id === "sangtian" ? "SANGTIAN_PRESSURE_SPINE_V1" : undefined;
+    const pendingKey = `many-worlds:solo-create:${state.story.id}:${role.key}:${runtimeProfile || "default"}`;
     const storage = browserWindow?.localStorage;
     const idempotencyKey = storage?.getItem?.(pendingKey) || newIdempotencyKey(browserWindow);
     storage?.setItem?.(pendingKey, idempotencyKey);
@@ -55,7 +56,7 @@ export function createRoleSelectApp({ root, window: browserWindow = globalThis.w
         method: "POST",
         credentials: "include",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ worldId: state.story.id, roleKey: role.key, idempotencyKey, resumeExisting: !startFresh })
+        body: JSON.stringify({ worldId: state.story.id, roleKey: role.key, idempotencyKey, resumeExisting: !startFresh, ...(runtimeProfile ? { runtimeProfile } : {}) })
       });
       const payload = await response.json().catch(() => null);
       if (requiresAuthentication(response, payload)) {

@@ -2,6 +2,8 @@ import { renderTransitionScreen } from "./transition-screen.js";
 
 const CONTINUOUS_SCHEMA = "continuous_game_projection_v1";
 const CONTINUOUS_STORY_V2_SCHEMA = "continuous_game_projection_v2";
+const PRESSURE_SCHEMA = "pressure_game_projection_v1";
+const PRESSURE_RUNTIME_PROFILE = "SANGTIAN_PRESSURE_SPINE_V1";
 
 export async function bootGamePage({
   root = document.getElementById("app"),
@@ -10,6 +12,7 @@ export async function bootGamePage({
   loadContinuousStoryV2 = () => import("./continuous-story-v2-maneuver-client.js?v=20260809-remaining-count-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
+  loadPressureStorage = () => import("./pressure-game-storage.js?v=20260811-sangtian-pressure-v1"),
   loadSolo = () => import("./app.js?v=20260809-remaining-count-v1"),
   navigate = (url) => win?.location?.assign?.(url)
 } = {}) {
@@ -53,6 +56,15 @@ export async function bootGamePage({
   if (response.ok && payload?.schemaVersion === CONTINUOUS_SCHEMA) {
     const { createContinuousGameApp } = await loadContinuous();
     const app = createContinuousGameApp({ root, window: win, runId, initialProjection: payload, fetchImpl, navigate });
+    await app.boot();
+    return app;
+  }
+
+  if (response.ok && payload?.schemaVersion === PRESSURE_SCHEMA && payload?.runtimeProfile === PRESSURE_RUNTIME_PROFILE) {
+    win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
+    const [{ PressureGameStorage }, { createStoryApp }] = await Promise.all([loadPressureStorage(), loadSolo()]);
+    const storage = new PressureGameStorage({ roomId: runId, initialProjection: payload, fetchImpl });
+    const app = createStoryApp({ root, window: win, storage });
     await app.boot();
     return app;
   }

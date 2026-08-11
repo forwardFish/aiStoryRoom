@@ -1,0 +1,16 @@
+{
+  "mode": "native-subagents",
+  "runtime_surface": "codex-app",
+  "orchestrator": "/root",
+  "agents": [
+    {"id":"parallel_d3_map","role":"Architect/Explorer","assigned_tasks":["D3-MAP"],"allowed_paths":[],"evidence":["agent-return:D3-MAP"]},
+    {"id":"parallel_d4_map","role":"Frontend Explorer","assigned_tasks":["D4-MAP"],"allowed_paths":[],"evidence":["agent-return:D4-MAP"]},
+    {"id":"parallel_test_map","role":"Test Engineer","assigned_tasks":["TEST-MAP"],"allowed_paths":[],"evidence":["agent-return:TEST-MAP"]},
+    {"id":"parallel_architecture","role":"Architect","assigned_tasks":["ARCH"],"allowed_paths":[],"evidence":["agent-return:ARCH"]},
+    {"id":"d3_builder","role":"Backend/AI Builder","assigned_tasks":["D3-IMPL"],"allowed_paths":["apps/openovel-runtime/src/sangtian-pressure-*.ts","apps/openovel-runtime/tests/sangtian-pressure-*.spec.ts"],"evidence":[]},
+    {"id":"d4_builder","role":"Frontend Builder","assigned_tasks":["D4-IMPL"],"allowed_paths":["apps/web/public/sangtian-pressure-game.js","apps/web/public/app.js","apps/web/public/*.css","apps/web/tests/sangtian-pressure-*.test.mjs"],"evidence":[]}
+  ],
+  "handoff_paths": ["docs/auto-execute/sangtian-runtime-v1/HANDOFF.md"],
+  "verification_paths": ["docs/auto-execute/sangtian-runtime-v1/verification-results.md"],
+  "fallback_reason": null
+}

@@ -382,6 +382,94 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   .decision-composer .actions button { gap: 42px; }
 }
 
+/* Sangtian pressure runtime: a profile-selected adapter inside the existing
+   three-column game surface. Facts and deltas shown here come from the
+   viewer-safe projection; the browser does not derive settlement state. */
+.pressure-game-shell { color: #303766; }
+.pressure-game-shell .pressure-topbar { grid-template-columns: minmax(310px, 1.2fr) minmax(320px, 1fr) minmax(180px, .7fr); }
+.pressure-topbar .top-context-cluster,
+.pressure-topbar .top-phase-cluster,
+.pressure-topbar .top-utility-cluster { display: flex; align-items: center; gap: 12px; }
+.pressure-topbar .top-phase-cluster { justify-content: center; }
+.pressure-topbar .top-utility-cluster { justify-content: flex-end; }
+.pressure-topbar button { padding: 8px 13px; border: 1px solid #dddff1; border-radius: 9px; background: #fff; color: #535b83; cursor: pointer; }
+.pressure-topbar button:disabled { opacity: .55; cursor: wait; }
+.pressure-status-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pressure-status-strip span { justify-content: center; }
+.pressure-identity-column,
+.pressure-seats-column { overflow-y: auto; }
+.pressure-private-scene p { margin: 0; color: #61698b; font-family: "Noto Serif SC", "Songti SC", STSong, serif; font-size: 14px; line-height: 1.75; }
+.pressure-center { display: grid; grid-template-rows: minmax(170px, auto) minmax(0, 1fr) auto; overflow: hidden; }
+.pressure-public-scene { min-height: 0; overflow-y: auto; padding: 28px 52px; background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.45)), var(--game-scene-background, url('/assets/game/sangtian/background.png')) center / cover no-repeat; }
+.pressure-public-scene > span { color: #7356e7; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.pressure-public-scene p { max-width: 760px; margin: 18px auto 0; color: #303766; font-family: "Noto Serif SC", "Songti SC", STSong, serif; font-size: 17px; line-height: 1.95; }
+.pressure-action-composer { max-height: 420px; overflow-y: auto; padding: 14px 24px 16px; }
+.pressure-action-composer .decision-zone-head { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.pressure-action-composer .decision-zone-head h2 { margin: 0; text-align: center; }
+.pressure-action-composer .decision-zone-head > span:last-child { font-size: 11px; }
+.pressure-suggestions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+.pressure-suggestions button { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border: 1px solid #dedff1; border-radius: 9px; background: #fff; color: #343b66; text-align: left; cursor: pointer; }
+.pressure-suggestions button:hover { border-color: #8975ed; background: #fbfaff; }
+.pressure-suggestions button:disabled { opacity: .55; cursor: not-allowed; }
+.pressure-suggestions small { flex: 0 0 auto; color: #7356e7; font-size: 10px; }
+.pressure-free-input { display: block; margin-bottom: 4px; color: #60688a; font-size: 12px; font-weight: 700; }
+.pressure-action-composer textarea { width: 100%; height: 62px; min-height: 62px; max-height: 100px; resize: vertical; }
+.pressure-preview { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 10px; padding: 9px; border: 1px solid #dedff1; border-radius: 9px; background: #fafaff; }
+.pressure-preview div { min-width: 0; }
+.pressure-preview span,
+.pressure-preview b { display: block; overflow-wrap: anywhere; }
+.pressure-preview span { margin-bottom: 3px; color: #878da8; font-size: 10px; }
+.pressure-preview b { color: #343b66; font-size: 11px; }
+.pressure-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.pressure-actions button { min-width: 132px; }
+.pressure-feedback { min-height: 0; overflow-y: auto; padding: 18px 28px; border-top: 1px solid #e8e9f6; background: #fbfcff; }
+.pressure-feedback-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.pressure-feedback-head span { color: #7356e7; font-size: 12px; font-weight: 700; }
+.pressure-feedback h2 { margin: 0; font-size: 18px; }
+.pressure-feedback h3 { margin: 8px 0 4px; color: #444b74; font-size: 12px; }
+.pressure-feedback p,
+.pressure-feedback li { color: #666e90; font-size: 12px; line-height: 1.55; }
+.pressure-feedback ul { margin: 4px 0; padding-left: 20px; }
+.pressure-change-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin-top: 8px; }
+.pressure-change-grid article { padding: 7px 9px; border: 1px solid #e4e6f4; border-radius: 8px; background: #fff; }
+.pressure-next { padding: 9px 12px; border-left: 3px solid #7356e7; background: #f4f1ff; }
+.pressure-feedback > small { display: block; margin-top: 8px; color: #a1a5b8; font-size: 9px; overflow-wrap: anywhere; }
+.pressure-seat-list { display: grid; gap: 7px; padding: 8px 12px 14px; }
+.pressure-seat { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border: 1px solid #e3e5f2; border-radius: 8px; background: #fff; }
+.pressure-seat.current { border-color: #8d7aee; background: #faf8ff; }
+.pressure-seat b,
+.pressure-seat small { display: block; }
+.pressure-seat b { color: #343b66; font-size: 12px; }
+.pressure-seat small { margin-top: 2px; color: #989db3; font-size: 9px; }
+.pressure-seat > span { flex: 0 0 auto; padding: 3px 7px; border-radius: 999px; background: #f0edff; color: #6848d9; font-size: 10px; }
+.pressure-projection-error { margin: auto; max-width: 620px; border: 1px solid #ead7d7; border-radius: 12px; }
+.pressure-projection-error button { padding: 9px 16px; border: 0; border-radius: 8px; background: #6b4ce6; color: #fff; }
+
+@media (max-width: 1180px) and (min-width: 861px) {
+  .pressure-game-shell { grid-template-columns: 280px minmax(0, 1fr) 290px; }
+  .pressure-suggestions { grid-template-columns: 1fr; }
+  .pressure-preview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pressure-change-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 860px) {
+  .pressure-game-shell .causal-left,
+  .pressure-game-shell .causal-right { display: block; }
+  .pressure-game-shell .pressure-topbar { grid-template-columns: 1fr; }
+  .pressure-topbar .top-phase-cluster,
+  .pressure-topbar .top-utility-cluster { justify-content: flex-start; }
+  .pressure-status-strip { grid-template-columns: 1fr; }
+  .pressure-game-shell .causal-left,
+  .pressure-game-shell .causal-center,
+  .pressure-game-shell .causal-right { grid-column: 1; max-height: none; }
+  .pressure-center { overflow: visible; }
+  .pressure-suggestions,
+  .pressure-preview,
+  .pressure-change-grid { grid-template-columns: 1fr; }
+  .pressure-actions { grid-template-columns: 1fr; }
+  .pressure-actions button { width: 100%; }
+}
+
 /* The narrow game view shows the decision card as a complete reading surface. */
 @media (max-width: 860px) {
   .causal-shell { width: 100%; height: auto; min-height: 100vh; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; gap: 0; padding: 8px; overflow: visible; }
@@ -1512,3 +1600,10 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .maneuver-counter { justify-self: end; color: #8a745a; font-size: 11px; }
 .leverage-panel li { display: grid; gap: 3px; margin: 8px 0; }
 .leverage-panel li small { color: #75624d; font-size: 11px; line-height: 1.4; }
+.pressure-game-shell .pressure-finale { border: 1px solid rgba(205,174,112,.38); background: rgba(20,17,13,.82); padding: 22px; }
+.pressure-game-shell .pressure-finale h2 { margin: 6px 0 10px; color: #ead9b6; letter-spacing: .04em; }
+.pressure-game-shell .pressure-finale-verdict { display: flex; justify-content: space-between; gap: 16px; margin: 18px 0; padding: 12px 14px; border-left: 3px solid #b99455; background: rgba(185,148,85,.08); }
+.pressure-game-shell .pressure-finale-tracks { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; }
+.pressure-game-shell .pressure-finale-tracks article { display: grid; gap: 5px; padding: 10px; background: rgba(255,255,255,.035); }
+.pressure-game-shell .pressure-finale-tracks span { overflow-wrap: anywhere; font-size: 11px; color: var(--muted); }
+.pressure-game-shell .pressure-finale-tracks b { color: #ead9b6; }

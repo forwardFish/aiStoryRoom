@@ -1384,7 +1384,7 @@ async function startSoloFromWorld(worldId, element) {
   const idempotencyKey = lobbyMutationKey(storageKey, "solo-entry");
   return runMutationOnce(`solo-entry:${worldId}`, element, "Opening story…", async () => {
     try {
-      const started = await request("/api/v4/rooms/solo", { method:"POST", body:JSON.stringify({ worldId, idempotencyKey, resumeExisting:true }) });
+      const started = await request("/api/v4/rooms/solo", { method:"POST", body:JSON.stringify({ worldId, idempotencyKey, resumeExisting:true, ...(worldId === "sangtian" ? { runtimeProfile:"SANGTIAN_PRESSURE_SPINE_V1" } : {}) }) });
       const runId = started.id || started.runId || started.roomId;
       if (!runId) throw new Error("The Solo story did not return a run id.");
       localStorage.removeItem(storageKey);

@@ -1,0 +1,10 @@
+{
+  "goalId": "SANGTIAN-RUNTIME-MVP-V1",
+  "status": "active",
+  "phase": "parallel_mapping_and_d2_repair",
+  "mode": "native-subagents",
+  "runtimeSurface": "codex-app",
+  "branch": "codex/chatgpt-pro-sangtian-runtime-v1",
+  "baselineSha": "99031a083310f113457e210cf5a391e680d0a5d2",
+  "finalVerdict": null
+}
