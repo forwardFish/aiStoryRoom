@@ -1,0 +1,507 @@
+name: B0 One-Shot Window Initialization Singleflight
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-window-initialization-singleflight.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-window-initialization-singleflight
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Publish run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/window-init-singleflight",
+              description: `window initialization fix running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify exact remote state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          test -z "$(git status --short)"
+
+      - name: Apply one-owner initialization and gate maneuver reads
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          pipeline_path = Path("apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts")
+          pipeline = pipeline_path.read_text(encoding="utf-8")
+
+          def replace_once(text: str, old: str, new: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"expected one match, found {count}: {old[:140]!r}")
+              return text.replace(old, new, 1)
+
+          pipeline = replace_once(
+              pipeline,
+              "export class B0SettlementPipelineService {\n  constructor(",
+              "export class B0SettlementPipelineService {\n"
+              "  private readonly runWindowInitializers = new Map<string, Promise<B0SettlementWindowV1 | null>>();\n"
+              "  private readonly aiPlanPreparations = new Map<string, Promise<void>>();\n\n"
+              "  constructor(",
+          )
+          pipeline = replace_once(
+              pipeline,
+              "  async ensureRunWindow(runId: string): Promise<B0SettlementWindowV1 | null> {\n"
+              "    const run = await this.prisma.storyRun.findUnique({",
+              "  async ensureRunWindow(runId: string): Promise<B0SettlementWindowV1 | null> {\n"
+              "    const existing = this.runWindowInitializers.get(runId);\n"
+              "    if (existing) return existing;\n\n"
+              "    const initialization = this.ensureRunWindowOwned(runId);\n"
+              "    this.runWindowInitializers.set(runId, initialization);\n"
+              "    try {\n"
+              "      return await initialization;\n"
+              "    } finally {\n"
+              "      if (this.runWindowInitializers.get(runId) === initialization) {\n"
+              "        this.runWindowInitializers.delete(runId);\n"
+              "      }\n"
+              "    }\n"
+              "  }\n\n"
+              "  private async ensureRunWindowOwned(runId: string): Promise<B0SettlementWindowV1 | null> {\n"
+              "    const run = await this.prisma.storyRun.findUnique({",
+          )
+          pipeline = replace_once(
+              pipeline,
+              "    if (active) return mapStoredWindow(active);\n"
+              "    if (b0RunPaused(run.stateJson)) return null;",
+              "    if (active) {\n"
+              "      const authoritative = mapStoredWindow(active);\n"
+              "      if (authoritative.status === \"OPEN\") await this.prepareAiPlans(authoritative);\n"
+              "      return authoritative;\n"
+              "    }\n"
+              "    if (b0RunPaused(run.stateJson)) return null;",
+          )
+          pipeline = replace_once(
+              pipeline,
+              "      const found = concurrent.find((window) => jsonRecord(window.configJson)?.schemaVersion === \"b0-window-config-v1\");\n"
+              "      if (!found) throw error;\n"
+              "      return mapStoredWindow(found);",
+              "      const found = concurrent.find((window) => jsonRecord(window.configJson)?.schemaVersion === \"b0-window-config-v1\");\n"
+              "      if (!found) throw error;\n"
+              "      const authoritative = mapStoredWindow(found);\n"
+              "      if (authoritative.status === \"OPEN\") await this.prepareAiPlans(authoritative);\n"
+              "      return authoritative;",
+          )
+          pipeline = replace_once(
+              pipeline,
+              "  private async prepareAiPlans(window: B0SettlementWindowV1) {\n"
+              "    const storedWindow = await this.prisma.actionWindow.findUnique({",
+              "  private async prepareAiPlans(window: B0SettlementWindowV1): Promise<void> {\n"
+              "    const existing = this.aiPlanPreparations.get(window.id);\n"
+              "    if (existing) return existing;\n\n"
+              "    const preparation = this.prepareAiPlansOwned(window);\n"
+              "    this.aiPlanPreparations.set(window.id, preparation);\n"
+              "    try {\n"
+              "      await preparation;\n"
+              "    } finally {\n"
+              "      if (this.aiPlanPreparations.get(window.id) === preparation) {\n"
+              "        this.aiPlanPreparations.delete(window.id);\n"
+              "      }\n"
+              "    }\n"
+              "  }\n\n"
+              "  private async prepareAiPlansOwned(window: B0SettlementWindowV1): Promise<void> {\n"
+              "    const storedWindow = await this.prisma.actionWindow.findUnique({",
+          )
+          pipeline_path.write_text(pipeline, encoding="utf-8")
+
+          controller_path = Path("apps/api/src/maneuver-v1/maneuver-v1.controller.ts")
+          controller = controller_path.read_text(encoding="utf-8")
+          controller = replace_once(
+              controller,
+              'import { CurrentUser, type AuthenticatedUser } from "../auth/current-user.decorator";\n',
+              'import { CurrentUser, type AuthenticatedUser } from "../auth/current-user.decorator";\n'
+              'import { B0SettlementPipelineService } from "../b0-settlement/b0-settlement-pipeline.service";\n',
+          )
+          controller = replace_once(
+              controller,
+              "  constructor(@Inject(ManeuverV1Service) private readonly maneuvers: ManeuverV1Service) {}",
+              "  constructor(\n"
+              "    @Inject(ManeuverV1Service) private readonly maneuvers: ManeuverV1Service,\n"
+              "    @Inject(B0SettlementPipelineService) private readonly b0Pipeline: B0SettlementPipelineService,\n"
+              "  ) {}",
+          )
+          controller = replace_once(
+              controller,
+              "  projection(\n"
+              "    @CurrentUser() user: AuthenticatedUser,\n"
+              "    @Param(\"runId\") runId: string,\n"
+              "  ) {\n"
+              "    return this.maneuvers.projection(user, runId);\n"
+              "  }",
+              "  async projection(\n"
+              "    @CurrentUser() user: AuthenticatedUser,\n"
+              "    @Param(\"runId\") runId: string,\n"
+              "  ) {\n"
+              "    await this.b0Pipeline.ensureRunWindow(runId);\n"
+              "    return this.maneuvers.projection(user, runId);\n"
+              "  }",
+          )
+          controller = replace_once(
+              controller,
+              "  preview(\n"
+              "    @CurrentUser() user: AuthenticatedUser,\n"
+              "    @Param(\"runId\") runId: string,\n"
+              "    @Body() body: unknown,\n"
+              "  ) {\n"
+              "    return this.maneuvers.preview(user, runId, body);\n"
+              "  }",
+              "  async preview(\n"
+              "    @CurrentUser() user: AuthenticatedUser,\n"
+              "    @Param(\"runId\") runId: string,\n"
+              "    @Body() body: unknown,\n"
+              "  ) {\n"
+              "    await this.b0Pipeline.ensureRunWindow(runId);\n"
+              "    return this.maneuvers.preview(user, runId, body);\n"
+              "  }",
+          )
+          controller = replace_once(
+              controller,
+              "  commit(\n"
+              "    @CurrentUser() user: AuthenticatedUser,\n"
+              "    @Param(\"runId\") runId: string,\n"
+              "    @Body() body: unknown,\n"
+              "  ) {\n"
+              "    return this.maneuvers.commit(user, runId, body);\n"
+              "  }",
+              "  async commit(\n"
+              "    @CurrentUser() user: AuthenticatedUser,\n"
+              "    @Param(\"runId\") runId: string,\n"
+              "    @Body() body: unknown,\n"
+              "  ) {\n"
+              "    await this.b0Pipeline.ensureRunWindow(runId);\n"
+              "    return this.maneuvers.commit(user, runId, body);\n"
+              "  }",
+          )
+          controller_path.write_text(controller, encoding="utf-8")
+
+          package_path = Path("apps/api/package.json")
+          package = json.loads(package_path.read_text(encoding="utf-8"))
+          old = "node --import tsx --test src/b0-settlement/b0-window-coordinator.core.spec.ts src/b0-settlement/b0-window-coordinator.prisma.spec.ts"
+          new = old + " src/b0-settlement/b0-window-initialization-concurrency.spec.ts"
+          if package["scripts"]["test:b0-window"] != old:
+              raise SystemExit("unexpected test:b0-window script")
+          package["scripts"]["test:b0-window"] = new
+          package_path.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
+          PY
+
+          cat > apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts <<'TS'
+          import assert from "node:assert/strict";
+          import test from "node:test";
+          import { createB0RoomRulesetV1 } from "@ai-story/templates";
+          import { ManeuverV1Controller } from "../maneuver-v1/maneuver-v1.controller";
+          import { B0WindowPlayerController } from "./b0-window-player.controller";
+          import { createB0WindowConfigV1 } from "./b0-window-coordinator.core";
+          import { B0SettlementPipelineService } from "./b0-settlement-pipeline.service";
+
+          function deferred<T = void>() {
+            let resolve!: (value: T | PromiseLike<T>) => void;
+            let reject!: (reason?: unknown) => void;
+            const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+              resolve = resolvePromise;
+              reject = rejectPromise;
+            });
+            return { promise, resolve, reject };
+          }
+
+          function pipeline() {
+            return new B0SettlementPipelineService({} as never, {} as never, {} as never, {} as never);
+          }
+
+          function authoritativeWindow() {
+            return {
+              schemaVersion: "b0-settlement-window-v1",
+              id: "window.shared",
+              roomId: "run.shared",
+              runId: "run.shared",
+              mode: "WINDOWED",
+              ordinal: 1,
+              situationId: "situation.shared",
+              baseWorldSequence: 0,
+              expectedActorIds: ["role.a", "role.b", "role.c"],
+              readyActorIds: [],
+              openedAt: "2026-08-11T00:00:00.000Z",
+              locksAt: "2026-08-11T00:05:00.000Z",
+              lockedAt: null,
+              committedAt: null,
+              completedAt: null,
+              status: "OPEN",
+              lockReason: null,
+              rulesetVersion: "b0-rules-v1",
+              schemaRevision: 1,
+            } as const;
+          }
+
+          test("three isolated sessions and maneuver reads wait for one run initialization owner", async () => {
+            const service = pipeline();
+            const started = deferred();
+            const release = deferred();
+            const window = authoritativeWindow();
+            let ownerCalls = 0;
+            let b0ProjectionCalls = 0;
+            let maneuverProjectionCalls = 0;
+
+            (service as any).ensureRunWindowOwned = async (runId: string) => {
+              assert.equal(runId, "run.shared");
+              ownerCalls += 1;
+              started.resolve();
+              await release.promise;
+              return window;
+            };
+
+            const b0Controller = new B0WindowPlayerController({
+              projection: async () => {
+                b0ProjectionCalls += 1;
+                return { source: "b0" };
+              },
+            } as never, service);
+            const maneuverController = new ManeuverV1Controller({
+              projection: async () => {
+                maneuverProjectionCalls += 1;
+                return { source: "maneuver" };
+              },
+            } as never, service);
+            const users = [{ id: "user.a" }, { id: "user.b" }, { id: "user.c" }] as any[];
+
+            const requests = [
+              ...users.map((user) => b0Controller.projection(user, "run.shared")),
+              ...users.map((user) => maneuverController.projection(user, "run.shared")),
+            ];
+
+            await started.promise;
+            await Promise.resolve();
+            assert.equal(ownerCalls, 1, "one API process must execute one lazy initialization write path per run");
+            assert.equal(b0ProjectionCalls, 0, "B0 reads must not compete with the initialization owner for pool connections");
+            assert.equal(maneuverProjectionCalls, 0, "maneuver reads must not bypass B0 initialization ownership");
+
+            release.resolve();
+            const responses = await Promise.all(requests);
+            assert.equal(responses.length, 6);
+            assert.equal(ownerCalls, 1);
+            assert.equal(b0ProjectionCalls, 3);
+            assert.equal(maneuverProjectionCalls, 3);
+          });
+
+          test("a failed initialization owner is evicted so the next request can recover", async () => {
+            const service = pipeline();
+            const window = authoritativeWindow();
+            let ownerCalls = 0;
+
+            (service as any).ensureRunWindowOwned = async () => {
+              ownerCalls += 1;
+              if (ownerCalls === 1) throw new Error("simulated process interruption after a recoverable boundary");
+              return window;
+            };
+
+            await assert.rejects(() => service.ensureRunWindow("run.shared"), /simulated process interruption/);
+            assert.equal(await service.ensureRunWindow("run.shared"), window);
+            assert.equal(ownerCalls, 2, "a rejected owner promise must never poison future recovery");
+          });
+
+          test("an existing OPEN window resumes AI preparation once before concurrent waiters are released", async () => {
+            const now = new Date("2026-08-11T00:00:00.000Z");
+            const ruleset = createB0RoomRulesetV1({
+              rulesetVersion: "b0-rules-v1",
+              settlementMode: "WINDOWED",
+              totalWindows: 6,
+              windowDurationSeconds: 300,
+              maxHumanPlayers: 3,
+            });
+            const config = createB0WindowConfigV1({
+              situationId: "situation.shared",
+              ruleset,
+              expectedActorIds: ["role.a", "role.b", "role.c"],
+              roleBindings: ["role.a", "role.b", "role.c"].map((actorId) => ({
+                actorId,
+                roleId: actorId,
+                controlEpoch: 1,
+                controlMode: "HUMAN_ACTIVE" as const,
+              })),
+              createdAt: now.toISOString(),
+            });
+            const dbWindow = {
+              id: "window.shared",
+              runId: "run.shared",
+              nodeId: "node.shared",
+              status: "OPEN",
+              openingSnapshotVersion: 0,
+              projectionVersion: 1,
+              version: 1,
+              configJson: config,
+              mainOpenedAt: now,
+              mainClosesAt: new Date(now.getTime() + 300_000),
+              graceOpenedAt: null,
+              closingReason: null,
+              resolvedAt: null,
+              createdAt: now,
+              node: { nodeIndex: 1 },
+              participants: ["role.a", "role.b", "role.c"].map((roleId) => ({ roleId, mainStatus: "B0_PENDING" })),
+            };
+            const prisma = {
+              storyRun: {
+                findUnique: async () => ({
+                  id: "run.shared",
+                  status: "playing",
+                  strategyVersion: "b0_windowed_v1",
+                  stateJson: { b0: { enabled: true } },
+                  roles: [],
+                  players: [],
+                  nodes: [],
+                }),
+              },
+              actionWindow: {
+                findMany: async () => [dbWindow],
+              },
+            };
+            const service = new B0SettlementPipelineService(prisma as never, {} as never, {} as never, {} as never);
+            const preparationStarted = deferred();
+            const releasePreparation = deferred();
+            let preparationOwners = 0;
+            (service as any).prepareAiPlansOwned = async () => {
+              preparationOwners += 1;
+              preparationStarted.resolve();
+              await releasePreparation.promise;
+            };
+
+            const requests = [1, 2, 3].map(() => service.ensureRunWindow("run.shared"));
+            await preparationStarted.promise;
+            assert.equal(preparationOwners, 1, "active-window crash recovery must also have one AI preparation owner");
+            releasePreparation.resolve();
+            const windows = await Promise.all(requests);
+            assert.deepEqual(windows.map((entry) => entry?.id), ["window.shared", "window.shared", "window.shared"]);
+            assert.equal(preparationOwners, 1);
+          });
+          TS
+          sed -i 's/^          //' apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Run focused regression, contracts, typecheck and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api test:maneuver-v1
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api build
+          python3 - <<'PY'
+          import pathlib, re
+          paths = [
+              pathlib.Path("apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts"),
+              pathlib.Path("apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts"),
+              pathlib.Path("apps/api/src/maneuver-v1/maneuver-v1.controller.ts"),
+              pathlib.Path("apps/api/package.json"),
+          ]
+          patterns = [
+              re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
+              re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),
+              re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+          ]
+          findings = []
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for pattern in patterns:
+                  if pattern.search(text): findings.append(str(path))
+          if findings: raise SystemExit(f"changed-file secret scan failed: {findings}")
+          print("changed-file secret scan: PASS")
+          PY
+
+      - name: Commit and push the product fix
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          remote_before="$(git rev-parse origin/$B0_BRANCH)"
+          test "$remote_before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts \
+            apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts \
+            apps/api/src/maneuver-v1/maneuver-v1.controller.ts \
+            apps/api/package.json
+          git diff --cached --check
+          mapfile -t staged < <(git diff --cached --name-only | sort)
+          test "${#staged[@]}" -eq 4
+          test "${staged[0]}" = "apps/api/package.json"
+          test "${staged[1]}" = "apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts"
+          test "${staged[2]}" = "apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts"
+          test "${staged[3]}" = "apps/api/src/maneuver-v1/maneuver-v1.controller.ts"
+          git commit -m "fix(b0): serialize lazy window initialization per run"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$B0_BRANCH"
+          remote_after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$remote_after" = "$local_head"
+          echo "local_head=$local_head" >> "$GITHUB_OUTPUT"
+          echo "remote_before=$remote_before" >> "$GITHUB_OUTPUT"
+          echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOCAL_HEAD: ${{ steps.push.outputs.local_head }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/window-init-singleflight",
+              description: success
+                ? `window initialization fix pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}`
+                : `window initialization fix failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 window initialization singleflight fix failed");
