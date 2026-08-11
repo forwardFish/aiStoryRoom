@@ -77,13 +77,13 @@ export type OpenNovelResultV2 = Readonly<{
     message: string | null;
   }>;
   /** Read-only compatibility projection for completed historical clients. */
-  chapter?: Readonly<{
+  chapter: Readonly<{
     title: string;
     content: string;
     highlights: readonly string[];
   }>;
   /** Read-only compatibility projection for completed historical clients. */
-  completedNodes?: number;
+  completedNodes: number;
 }>;
 
 export type OpenNovelNarrativeReadV2 = Readonly<{
@@ -122,6 +122,8 @@ export function projectOpenNovelResultV2(
     ? narrative.status
     : stored.narrativeStatus;
   const published = status === "PUBLISHED" || status === "FALLBACK_PUBLISHED";
+  const player = roleId ? stored.seatResults.find((seat) => seat.roleId === roleId) ?? null : null;
+  const publishedContent = published ? String(narrative.content ?? "").trim() : "";
   return Object.freeze({
     schemaVersion: OPENOVEL_RESULT_SCHEMA_V2,
     authoritativeResultStatus: AUTHORITATIVE_RESULT_STATUS_FINALIZED,
@@ -135,15 +137,21 @@ export function projectOpenNovelResultV2(
     ending: stored.ending,
     canon: stored.canon,
     result: stored.result,
-    player: roleId ? stored.seatResults.find((seat) => seat.roleId === roleId) ?? null : null,
+    player,
     narrativeStatus: status,
     narrative: Object.freeze({
       status,
-      content: published ? String(narrative.content ?? "") || null : null,
+      content: publishedContent || null,
       presentationHash: published ? narrative.presentationHash ?? null : null,
       updatedAt: narrative.updatedAt ?? null,
       message: published ? null : NARRATIVE_PENDING_MESSAGE_ZH,
     }),
+    chapter: Object.freeze({
+      title: stored.ending.title,
+      content: publishedContent || stored.ending.summary,
+      highlights: player?.causes ?? stored.ending.aftermath,
+    }),
+    completedNodes: stored.worldSequence,
   });
 }
 
