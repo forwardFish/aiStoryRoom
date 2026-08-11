@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Prisma } from "@prisma/client";
+import { createB0RoomRulesetV1 } from "@ai-story/templates";
+import { createB0WindowConfigV1 } from "./b0-window-coordinator.core";
 import { B0WindowCoordinatorService } from "./b0-window-coordinator.prisma";
 
 type TransactionOptions = {
@@ -10,7 +12,6 @@ type TransactionOptions = {
 };
 
 type CoordinatorInternals = {
-  projectionTransaction<T>(operation: (tx: any) => Promise<T>): Promise<T>;
   serializable<T>(operation: (tx: any) => Promise<T>): Promise<T>;
 };
 
@@ -25,55 +26,104 @@ function admissionTimeout(): Error & { code: string } {
   );
 }
 
-test("projection delegates to the bounded read transaction wrapper", async () => {
-  const service = new B0WindowCoordinatorService({} as never);
-  const expected = { schemaVersion: "b0-window-projection-v1" } as never;
-  let wrapperCalls = 0;
-  (service as any).projectionTransaction = async () => {
-    wrapperCalls += 1;
-    return expected;
+function windowRow(version = 1, projectionVersion = 1) {
+  const openedAt = new Date("2026-08-11T00:00:00.000Z");
+  return {
+    id: "window.remote.pool",
+    runId: "run.remote.pool",
+    nodeId: "node.remote.pool",
+    status: "OPEN",
+    mainOpenedAt: openedAt,
+    mainClosesAt: new Date(openedAt.getTime() + 300_000),
+    graceOpenedAt: null,
+    resolvedAt: null,
+    closingReason: null,
+    openingSnapshotVersion: 0,
+    projectionVersion,
+    version,
+    createdAt: openedAt,
+    configJson: createB0WindowConfigV1({
+      situationId: "situation.remote.pool",
+      ruleset: createB0RoomRulesetV1({
+        rulesetVersion: "b0-rules-v1",
+        settlementMode: "WINDOWED",
+        totalWindows: 6,
+        windowDurationSeconds: 300,
+        maxHumanPlayers: 3,
+      }),
+      expectedActorIds: ["actor.a"],
+      roleBindings: [{ actorId: "actor.a", roleId: "actor.a", controlEpoch: 1, controlMode: "HUMAN_ACTIVE" }],
+      createdAt: openedAt.toISOString(),
+    }),
+    participants: [{ roleId: "actor.a", mainStatus: "B0_PENDING", version: 1 }],
+    node: { nodeIndex: 1 },
+    resolutionWorkflow: null,
   };
+}
 
-  assert.equal(await service.projection("window.remote.pool", "actor.a"), expected);
-  assert.equal(wrapperCalls, 1);
+test("projection uses optimistic ordinary reads and never opens an interactive transaction", async () => {
+  const row = windowRow();
+  let windowReads = 0;
+  let playerReads = 0;
+  let transactions = 0;
+  const service = new B0WindowCoordinatorService({
+    actionWindow: {
+      findUnique: async (args: any) => {
+        windowReads += 1;
+        return args.select ? { version: row.version, projectionVersion: row.projectionVersion } : row;
+      },
+    },
+    playerAction: {
+      findUnique: async () => {
+        playerReads += 1;
+        return null;
+      },
+    },
+    $transaction: async () => {
+      transactions += 1;
+      throw new Error("read projection must not reserve an interactive transaction connection");
+    },
+  } as never);
+
+  const projection = await service.projection(row.id, "actor.a");
+  assert.equal(projection.window.id, row.id);
+  assert.equal(windowReads, 2);
+  assert.equal(playerReads, 1);
+  assert.equal(transactions, 0);
 });
 
-test("projection read transactions use remote-pool options and retry only admission failures", async () => {
-  let transactionAttempts = 0;
-  let operationCalls = 0;
-  const observedOptions: TransactionOptions[] = [];
+test("projection retries a changed optimistic snapshot without duplicating writes", async () => {
+  const first = windowRow(1, 1);
+  const second = windowRow(2, 2);
+  let fullReads = 0;
+  let versionReads = 0;
+  let playerReads = 0;
   const service = new B0WindowCoordinatorService({
-    $transaction: async (operation: (tx: any) => Promise<string>, options: TransactionOptions) => {
-      transactionAttempts += 1;
-      observedOptions.push(options);
-      if (transactionAttempts < 3) throw admissionTimeout();
-      operationCalls += 1;
-      return operation({});
+    actionWindow: {
+      findUnique: async (args: any) => {
+        if (args.select) {
+          versionReads += 1;
+          return versionReads === 1
+            ? { version: second.version, projectionVersion: second.projectionVersion }
+            : { version: second.version, projectionVersion: second.projectionVersion };
+        }
+        fullReads += 1;
+        return fullReads === 1 ? first : second;
+      },
+    },
+    playerAction: {
+      findUnique: async () => {
+        playerReads += 1;
+        return null;
+      },
     },
   } as never);
 
-  const result = await internals(service).projectionTransaction(async () => "projection-ready");
-  assert.equal(result, "projection-ready");
-  assert.equal(transactionAttempts, 3, "read-only projection may retry bounded pool-admission failures");
-  assert.equal(operationCalls, 1, "failed admission attempts must not enter the transaction callback");
-  assert.deepEqual(observedOptions, Array.from({ length: 3 }, () => ({
-    isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-    maxWait: 10_000,
-    timeout: 30_000,
-  })));
-
-  let nonAdmissionAttempts = 0;
-  const nonAdmissionService = new B0WindowCoordinatorService({
-    $transaction: async () => {
-      nonAdmissionAttempts += 1;
-      throw Object.assign(new Error("Transaction API error: Transaction already closed."), { code: "P2028" });
-    },
-  } as never);
-  await assert.rejects(
-    () => internals(nonAdmissionService).projectionTransaction(async () => "unreachable"),
-    /Transaction already closed/,
-  );
-  assert.equal(nonAdmissionAttempts, 1, "unrelated P2028 failures must fail closed without retries");
+  const projection = await service.projection(first.id, "actor.a");
+  assert.equal(projection.window.id, first.id);
+  assert.equal(fullReads, 2, "a changed projection version should retry the ordinary read snapshot");
+  assert.equal(versionReads, 2);
+  assert.equal(playerReads, 2);
 });
 
 test("write transactions do not retry P2028 after their callback may have run", async () => {

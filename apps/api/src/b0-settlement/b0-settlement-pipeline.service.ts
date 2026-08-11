@@ -73,6 +73,8 @@ export class B0PipelineErrorV1 extends Error {
 export class B0SettlementPipelineService {
   private readonly runWindowInitializers = new Map<string, Promise<B0SettlementWindowV1 | null>>();
   private readonly aiPlanPreparations = new Map<string, Promise<void>>();
+  private readonly playerRequestReads = new B0BoundedReadLimiter(2);
+  private readonly playerReadFlights = new Map<string, Promise<unknown>>();
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -80,6 +82,25 @@ export class B0SettlementPipelineService {
     @Inject(B0WindowCoordinatorService) private readonly windows: B0WindowCoordinatorService,
     @Inject(OpenNovelRuntimeClient) private readonly openNovel: OpenNovelRuntimeClient,
   ) {}
+
+  async withBoundedPlayerRead<T>(key: string, operation: () => Promise<T>): Promise<T> {
+    const existing = this.playerReadFlights.get(key) as Promise<T> | undefined;
+    if (existing) return existing;
+
+    const flight = this.playerRequestReads.run(operation);
+    this.playerReadFlights.set(key, flight);
+    try {
+      return await flight;
+    } finally {
+      if (this.playerReadFlights.get(key) === flight) {
+        this.playerReadFlights.delete(key);
+      }
+    }
+  }
+
+  async withBoundedPlayerOperation<T>(operation: () => Promise<T>): Promise<T> {
+    return this.playerRequestReads.run(operation);
+  }
 
   /**
    * Window deadline recovery is intentionally separate from settlement work.
@@ -1205,6 +1226,41 @@ function narrativeKey(batchId: string, roleId: string) {
 
 function jsonRecord(value: unknown): JsonRecord | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as JsonRecord : null;
+}
+
+class B0BoundedReadLimiter {
+  private active = 0;
+  private readonly waiters: Array<() => void> = [];
+
+  constructor(private readonly limit: number) {
+    if (!Number.isInteger(limit) || limit < 1) throw new Error("B0_READ_LIMIT_INVALID");
+  }
+
+  async run<T>(operation: () => Promise<T>): Promise<T> {
+    await this.acquire();
+    try {
+      return await operation();
+    } finally {
+      this.release();
+    }
+  }
+
+  private acquire(): Promise<void> {
+    if (this.active < this.limit) {
+      this.active += 1;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => this.waiters.push(resolve));
+  }
+
+  private release(): void {
+    const next = this.waiters.shift();
+    if (next) {
+      next();
+      return;
+    }
+    this.active -= 1;
+  }
 }
 
 function required(value: string | null | undefined, label: string): string {

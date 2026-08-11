@@ -27,7 +27,8 @@ export class B0WindowPlayerController {
     @Param("runId") runId: string,
   ) {
     await this.pipeline.ensureRunWindow(runId);
-    return this.windows.projection(user, runId);
+    return this.pipeline.withBoundedPlayerRead(`b0-window:${runId}:${user.id}`, () =>
+      this.windows.projection(user, runId));
   }
 
   @Post(":runId/b0/window/preview")
@@ -37,7 +38,7 @@ export class B0WindowPlayerController {
     @Body() body: unknown,
   ) {
     await this.pipeline.ensureRunWindow(runId);
-    return this.windows.preview(user, runId, body);
+    return this.pipeline.withBoundedPlayerOperation(() => this.windows.preview(user, runId, body));
   }
 
   @Post(":runId/b0/window/confirm")
@@ -47,7 +48,7 @@ export class B0WindowPlayerController {
     @Body() body: unknown,
   ) {
     await this.pipeline.ensureRunWindow(runId);
-    return this.windows.confirm(user, runId, body);
+    return this.pipeline.withBoundedPlayerOperation(() => this.windows.confirm(user, runId, body));
   }
 
   @Post(":runId/b0/window/ready")
@@ -57,7 +58,7 @@ export class B0WindowPlayerController {
     @Body() body: unknown,
   ) {
     await this.pipeline.ensureRunWindow(runId);
-    return this.windows.ready(user, runId, body);
+    return this.pipeline.withBoundedPlayerOperation(() => this.windows.ready(user, runId, body));
   }
 
   @Delete(":runId/b0/window/ready")
@@ -67,6 +68,6 @@ export class B0WindowPlayerController {
     @Body() body: unknown,
   ) {
     await this.pipeline.ensureRunWindow(runId);
-    return this.windows.unready(user, runId, body);
+    return this.pipeline.withBoundedPlayerOperation(() => this.windows.unready(user, runId, body));
   }
 }

@@ -18,7 +18,8 @@ export class ManeuverV1Controller {
     @Param("runId") runId: string,
   ) {
     await this.b0Pipeline.ensureRunWindow(runId);
-    return this.maneuvers.projection(user, runId);
+    return this.b0Pipeline.withBoundedPlayerRead(`maneuver-projection:${runId}:${user.id}`, () =>
+      this.maneuvers.projection(user, runId));
   }
 
   @Post("preview")
@@ -28,7 +29,7 @@ export class ManeuverV1Controller {
     @Body() body: unknown,
   ) {
     await this.b0Pipeline.ensureRunWindow(runId);
-    return this.maneuvers.preview(user, runId, body);
+    return this.b0Pipeline.withBoundedPlayerOperation(() => this.maneuvers.preview(user, runId, body));
   }
 
   @Post("commit")
@@ -38,6 +39,6 @@ export class ManeuverV1Controller {
     @Body() body: unknown,
   ) {
     await this.b0Pipeline.ensureRunWindow(runId);
-    return this.maneuvers.commit(user, runId, body);
+    return this.b0Pipeline.withBoundedPlayerOperation(() => this.maneuvers.commit(user, runId, body));
   }
 }

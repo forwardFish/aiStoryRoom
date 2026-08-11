@@ -183,3 +183,85 @@ test("an existing OPEN window resumes AI preparation once before concurrent wait
   assert.deepEqual(windows.map((entry) => entry?.id), ["window.shared", "window.shared", "window.shared"]);
   assert.equal(preparationOwners, 1);
 });
+
+test("three sessions can repeatedly dual-poll against a three-connection pool without fan-out", async () => {
+  const service = pipeline();
+  const window = authoritativeWindow();
+  (service as any).ensureRunWindow = async () => window;
+
+  let activeQueries = 0;
+  let maxActiveQueries = 0;
+  let completedQueries = 0;
+  const query = async (source: string) => {
+    activeQueries += 1;
+    maxActiveQueries = Math.max(maxActiveQueries, activeQueries);
+    assert.ok(activeQueries <= 3, `${source} exceeded the bounded pool capacity`);
+    await new Promise((resolve) => setTimeout(resolve, 1));
+    completedQueries += 1;
+    activeQueries -= 1;
+    return { source };
+  };
+
+  const b0Controller = new B0WindowPlayerController({
+    projection: async () => {
+      await query("b0-context");
+      await query("b0-window");
+      await query("b0-result");
+      return { source: "b0" };
+    },
+  } as never, service);
+  const maneuverController = new ManeuverV1Controller({
+    projection: async () => {
+      await query("maneuver-context");
+      await query("maneuver-assets");
+      await query("maneuver-result");
+      return { source: "maneuver" };
+    },
+  } as never, service);
+  const users = [{ id: "user.a" }, { id: "user.b" }, { id: "user.c" }] as any[];
+
+  for (let round = 0; round < 12; round += 1) {
+    const responses = await Promise.all([
+      ...users.map((user) => b0Controller.projection(user, "run.shared")),
+      ...users.map((user) => maneuverController.projection(user, "run.shared")),
+    ]);
+    assert.equal(responses.length, 6);
+  }
+
+  assert.equal(completedQueries, 12 * 6 * 3);
+  assert.ok(maxActiveQueries <= 2, "the request-graph limiter must leave one pool connection free for writes and workers");
+  assert.equal(activeQueries, 0, "the limiter must not leak an acquired slot");
+});
+
+test("a failed bounded player read releases its slot for later polling", async () => {
+  const service = pipeline();
+  await assert.rejects(
+    () => service.withBoundedPlayerRead("failed-read", async () => {
+      throw new Error("simulated read failure");
+    }),
+    /simulated read failure/,
+  );
+  assert.equal(await service.withBoundedPlayerRead("recovered-read", async () => "recovered"), "recovered");
+});
+
+test("overlapping poll requests for the same player and endpoint share one read flight", async () => {
+  const service = pipeline();
+  const started = deferred();
+  const release = deferred();
+  let calls = 0;
+
+  const requests = Array.from({ length: 8 }, () => service.withBoundedPlayerRead("b0-window:run.shared:user.a", async () => {
+    calls += 1;
+    started.resolve();
+    await release.promise;
+    return { status: "ok" };
+  }));
+
+  await started.promise;
+  await Promise.resolve();
+  assert.equal(calls, 1, "overlapping poll retries must not multiply the database read graph");
+  release.resolve();
+  const responses = await Promise.all(requests);
+  assert.equal(responses.length, 8);
+  assert.ok(responses.every((response) => response.status === "ok"));
+});

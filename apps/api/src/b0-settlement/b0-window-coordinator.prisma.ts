@@ -28,11 +28,7 @@ import {
 
 type Tx = Prisma.TransactionClient;
 
-const B0_PROJECTION_TRANSACTION_OPTIONS = {
-  isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-  maxWait: 10_000,
-  timeout: 30_000,
-} as const;
+const B0_PROJECTION_STABILITY_ATTEMPTS = 4;
 
 export type CreateB0WindowCommandV1 = {
   runId: string;
@@ -291,23 +287,73 @@ export class B0WindowCoordinatorService {
   }
 
   async projection(windowId: string, actorId: string): Promise<B0WindowProjectionV1> {
-  return this.projectionTransaction(async (tx) => {
-    const store = new PrismaB0WindowFreezeStoreV1(tx);
-    const record = await store.readWindow(windowId);
-    if (!record) throw new NotFoundException({ code: "WINDOW_NOT_FOUND", message: "B0 window not found" });
-    return this.projectionInTx(tx, record, actorId, await store.readFreeze(windowId));
-  });
-}
+    for (let attempt = 0; attempt < B0_PROJECTION_STABILITY_ATTEMPTS; attempt += 1) {
+      const dbWindow = await this.prisma.actionWindow.findUnique({
+        where: { id: windowId },
+        include: {
+          participants: true,
+          node: true,
+          resolutionWorkflow: { select: { rulesOutputJson: true } },
+        },
+      });
+      if (!dbWindow) {
+        throw new NotFoundException({ code: "WINDOW_NOT_FOUND", message: "B0 window not found" });
+      }
 
-private async projectionInTx(
+      const record = mapWindowRecord(dbWindow);
+      const row = await this.prisma.playerAction.findUnique({
+        where: {
+          nodeId_roleId_actionSlot: {
+            nodeId: dbWindow.nodeId,
+            roleId: actorId,
+            actionSlot: "B0_PRIMARY",
+          },
+        },
+      });
+      const stable = await this.prisma.actionWindow.findUnique({
+        where: { id: windowId },
+        select: { version: true, projectionVersion: true },
+      });
+      if (!stable) {
+        throw new NotFoundException({ code: "WINDOW_NOT_FOUND", message: "B0 window not found" });
+      }
+      if (stable.version !== dbWindow.version || stable.projectionVersion !== dbWindow.projectionVersion) {
+        await new Promise((resolve) => setTimeout(resolve, 10 * (attempt + 1)));
+        continue;
+      }
+
+      const output = jsonRecord(dbWindow.resolutionWorkflow?.rulesOutputJson);
+      const freeze = output?.schemaVersion === "b0-freeze-envelope-v1"
+        ? output as unknown as B0FreezeEnvelopeV1
+        : null;
+      return projectB0WindowV1({
+        record,
+        actorId,
+        intent: row?.normalizedJson ? assertB0StoredIntentEnvelopeV1(row.normalizedJson) : null,
+        freeze,
+      });
+    }
+    throw new ConflictException({
+      code: "PROJECTION_CHANGED_RETRY",
+      message: "The synchronized window changed while it was being read. Retry the projection.",
+      recoverable: true,
+    });
+  }
+
+  private async projectionInTx(
     tx: Tx,
     record: B0WindowStoreRecordV1,
     actorId: string,
     freeze: B0FreezeEnvelopeV1 | null,
   ): Promise<B0WindowProjectionV1> {
+    const window = await tx.actionWindow.findUnique({
+      where: { id: record.window.id },
+      select: { nodeId: true },
+    });
+    if (!window) throw domain("WINDOW_NOT_FOUND", "B0 window not found.");
     const row = await tx.playerAction.findUnique({
       where: { nodeId_roleId_actionSlot: {
-        nodeId: await nodeIdForWindow(tx, record.window.id),
+        nodeId: window.nodeId,
         roleId: actorId,
         actionSlot: "B0_PRIMARY",
       } },
@@ -320,19 +366,7 @@ private async projectionInTx(
     });
   }
 
-  private async projectionTransaction<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    try {
-      return await this.prisma.$transaction(operation, B0_PROJECTION_TRANSACTION_OPTIONS);
-    } catch (error) {
-      if (!projectionAdmissionRetryable(error) || attempt === 3) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1) ** 2));
-    }
-  }
-  throw new Error("UNREACHABLE_B0_PROJECTION_RETRY");
-}
-
-private async serializable<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {
+  private async serializable<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {
     for (let attempt = 0; attempt < 4; attempt += 1) {
       try {
         return await this.prisma.$transaction(operation, {
@@ -360,20 +394,7 @@ export class PrismaB0WindowFreezeStoreV1 implements B0WindowFreezeStoreV1 {
     });
     if (!dbWindow) return null;
     this.cache.set(windowId, dbWindow);
-    const config = assertB0WindowConfigV1(dbWindow.configJson);
-    const participants: B0ParticipantReadyStateV1[] = dbWindow.participants
-      .map((participant: any) => ({
-        actorId: participant.roleId,
-        ready: participant.mainStatus === "B0_READY" || participant.mainStatus === "B0_LOCKED",
-        version: participant.version,
-      }))
-      .sort((left: B0ParticipantReadyStateV1, right: B0ParticipantReadyStateV1) => left.actorId.localeCompare(right.actorId));
-    return {
-      window: mapWindow(dbWindow, config, participants),
-      storageVersion: dbWindow.version,
-      config,
-      participants,
-    };
+    return mapWindowRecord(dbWindow);
   }
 
   async claimOpenWindow(input: {
@@ -687,10 +708,21 @@ function mapWindow(dbWindow: any, config: B0WindowConfigV1, participants: B0Part
   return validation.value;
 }
 
-async function nodeIdForWindow(tx: Tx | any, windowId: string): Promise<string> {
-  const window = await tx.actionWindow.findUnique({ where: { id: windowId }, select: { nodeId: true } });
-  if (!window) throw domain("WINDOW_NOT_FOUND", "B0 window not found.");
-  return window.nodeId;
+function mapWindowRecord(dbWindow: any): B0WindowStoreRecordV1 {
+  const config = assertB0WindowConfigV1(dbWindow.configJson);
+  const participants: B0ParticipantReadyStateV1[] = dbWindow.participants
+    .map((participant: any) => ({
+      actorId: participant.roleId,
+      ready: participant.mainStatus === "B0_READY" || participant.mainStatus === "B0_LOCKED",
+      version: participant.version,
+    }))
+    .sort((left: B0ParticipantReadyStateV1, right: B0ParticipantReadyStateV1) => left.actorId.localeCompare(right.actorId));
+  return {
+    window: mapWindow(dbWindow, config, participants),
+    storageVersion: dbWindow.version,
+    config,
+    participants,
+  };
 }
 
 async function enqueueWindowEvent(tx: Tx | any, input: {
@@ -737,15 +769,6 @@ function date(value: unknown, path: string): Date {
 
 function domain(code: string, message: string): ConflictException {
   return new ConflictException({ code, message });
-}
-
-function projectionAdmissionRetryable(error: unknown): boolean {
-  const candidate = error as any;
-  if (String(candidate?.code || "") !== "P2028") return false;
-  const details = [candidate?.message, candidate?.meta?.error, candidate?.meta?.message]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ");
-  return /Unable to start a transaction in the given time/i.test(details);
 }
 
 function retryable(error: unknown): boolean {

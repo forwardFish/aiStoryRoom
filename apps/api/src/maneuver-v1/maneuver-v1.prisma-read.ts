@@ -87,48 +87,49 @@ export async function readManeuverContextV1(
   });
   if (!turn) throw domain("MANEUVER_WINDOW_CLOSED", "No active role turn is available.", 409);
 
-  const [mainlineSubmission, actions, roleAssets, contactRoles, confirmedFacts] = await Promise.all([
-    (db as any).decisionSubmission.findUnique({ where: { turnId: turn.id }, select: { id: true } }),
-    (db as any).playerAction.findMany({
-      where: {
-        runId,
-        nodeId: run.currentNodeId,
-        roleId: player.roleId,
-        actionKey: `maneuver:${turn.id}`,
-        actionSlot: { in: MANEUVER_SLOTS },
-        status: { in: COMMITTED_ACTION_STATUSES },
-      },
-      select: { actionSlot: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    (db as any).roleAsset.findMany({
-      where: {
-        runId,
-        ownerRoleId: player.roleId,
-        status: "ACTIVE",
-        quantity: { gt: 0 },
-      },
-      select: { id: true, assetKey: true, stateJson: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    (db as any).storyRole.findMany({
-      where: { runId, id: { not: player.roleId } },
-      select: { id: true, roleName: true, identity: true, publicInfo: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    (db as any).canonFact.findMany({
-      where: { runId, status: "confirmed" },
-      select: {
-        factKey: true,
-        content: true,
-        visibility: true,
-        knownByRoleIdsJson: true,
-        sourceEventIdsJson: true,
-        sourceActionIdsJson: true,
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
+  const mainlineSubmission = await (db as any).decisionSubmission.findUnique({
+    where: { turnId: turn.id },
+    select: { id: true },
+  });
+  const actions = await (db as any).playerAction.findMany({
+    where: {
+      runId,
+      nodeId: run.currentNodeId,
+      roleId: player.roleId,
+      actionKey: `maneuver:${turn.id}`,
+      actionSlot: { in: MANEUVER_SLOTS },
+      status: { in: COMMITTED_ACTION_STATUSES },
+    },
+    select: { actionSlot: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const roleAssets = await (db as any).roleAsset.findMany({
+    where: {
+      runId,
+      ownerRoleId: player.roleId,
+      status: "ACTIVE",
+      quantity: { gt: 0 },
+    },
+    select: { id: true, assetKey: true, stateJson: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const contactRoles = await (db as any).storyRole.findMany({
+    where: { runId, id: { not: player.roleId } },
+    select: { id: true, roleName: true, identity: true, publicInfo: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const confirmedFacts = await (db as any).canonFact.findMany({
+    where: { runId, status: "confirmed" },
+    select: {
+      factKey: true,
+      content: true,
+      visibility: true,
+      knownByRoleIdsJson: true,
+      sourceEventIdsJson: true,
+      sourceActionIdsJson: true,
+    },
+    orderBy: { createdAt: "asc" },
+  });
 
   const stateRevision = Number(run.worldSequence || 0);
   const turnRevision = Number(turn.revision || 0);
@@ -188,16 +189,14 @@ export async function readB0ManeuverContextV1(
   const window = windows.find((entry: any) => optionalRecord(entry.configJson)?.schemaVersion === "b0-window-config-v1");
   if (!window) return null;
 
-  const [run, player] = await Promise.all([
-    (db as any).storyRun.findUnique({
-      where: { id: runId },
-      select: { id: true, currentChapter: true, worldSequence: true, status: true },
-    }),
-    (db as any).storyPlayer.findFirst({
-      where: { runId, userId, playerType: "human", status: "active" },
-      select: { id: true, roleId: true },
-    }),
-  ]);
+  const run = await (db as any).storyRun.findUnique({
+    where: { id: runId },
+    select: { id: true, currentChapter: true, worldSequence: true, status: true },
+  });
+  const player = await (db as any).storyPlayer.findFirst({
+    where: { runId, userId, playerType: "human", status: "active" },
+    select: { id: true, roleId: true },
+  });
   if (!run) throw domain("RUN_NOT_FOUND", "The story run was not found.", 404, false);
   if (!player?.roleId) throw domain("ROLE_CONTROL_REQUIRED", "Choose and control a role before using a maneuver.", 403, false);
   if (!window.participants.some((entry: any) => entry.roleId === player.roleId)) {
@@ -212,30 +211,28 @@ export async function readB0ManeuverContextV1(
     throw domain("ROLE_CONTROL_REQUIRED", "The current user no longer controls this role.", 403, false);
   }
 
-  const [roleAssets, contactRoles, confirmedFacts] = await Promise.all([
-    (db as any).roleAsset.findMany({
-      where: { runId, ownerRoleId: player.roleId, status: "ACTIVE", quantity: { gt: 0 } },
-      select: { id: true, assetKey: true, stateJson: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    (db as any).storyRole.findMany({
-      where: { runId, id: { not: player.roleId } },
-      select: { id: true, roleName: true, identity: true, publicInfo: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    (db as any).canonFact.findMany({
-      where: { runId, status: "confirmed" },
-      select: {
-        factKey: true,
-        content: true,
-        visibility: true,
-        knownByRoleIdsJson: true,
-        sourceEventIdsJson: true,
-        sourceActionIdsJson: true,
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
+  const roleAssets = await (db as any).roleAsset.findMany({
+    where: { runId, ownerRoleId: player.roleId, status: "ACTIVE", quantity: { gt: 0 } },
+    select: { id: true, assetKey: true, stateJson: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const contactRoles = await (db as any).storyRole.findMany({
+    where: { runId, id: { not: player.roleId } },
+    select: { id: true, roleName: true, identity: true, publicInfo: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const confirmedFacts = await (db as any).canonFact.findMany({
+    where: { runId, status: "confirmed" },
+    select: {
+      factKey: true,
+      content: true,
+      visibility: true,
+      knownByRoleIdsJson: true,
+      sourceEventIdsJson: true,
+      sourceActionIdsJson: true,
+    },
+    orderBy: { createdAt: "asc" },
+  });
 
   const stateRevision = Number(run.worldSequence || 0);
   const turnRevision = Number(window.version || 1);
@@ -278,51 +275,49 @@ export async function readManeuverProjectionV1(
 ): Promise<ManeuverProjectionV1> {
   const context = await readB0ManeuverContextV1(db, userId, runId)
     ?? await readManeuverContextV1(db, userId, runId);
-  const [actions, incomingRows, evidenceRows] = await Promise.all([
-    (db as any).playerAction.findMany({
-      where: {
-        runId,
-        roleId: context.roleId,
-        actionKey: `maneuver:${context.actorTurnId}`,
-        actionSlot: { in: MANEUVER_SLOTS },
-        status: { in: ["PENDING", "COMMITTED", "IN_PROGRESS"] },
-      },
-      select: { id: true, status: true, normalizedJson: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    (db as any).playerAction.findMany({
-      where: {
-        runId,
-        nodeId: context.nodeId,
-        targetRoleId: context.roleId,
-        actionType: "CONVERSATION",
-        actionKey: { startsWith: "maneuver:" },
-        visibility: { in: ["TARGETED", "PUBLIC"] },
-        status: { in: COMMITTED_ACTION_STATUSES },
-      },
-      select: {
-        id: true,
-        status: true,
-        freeText: true,
-        intent: true,
-        visibility: true,
-        role: { select: { roleName: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-    (db as any).roleAsset.findMany({
-      where: {
-        runId,
-        ownerRoleId: context.roleId,
-        kind: "PRIVATE_EVIDENCE_V1",
-        status: "ACTIVE",
-        visibility: "PRIVATE",
-        quantity: { gt: 0 },
-      },
-      select: { id: true, ownerRoleId: true, visibility: true, stateJson: true },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
+  const actions = await (db as any).playerAction.findMany({
+    where: {
+      runId,
+      roleId: context.roleId,
+      actionKey: `maneuver:${context.actorTurnId}`,
+      actionSlot: { in: MANEUVER_SLOTS },
+      status: { in: ["PENDING", "COMMITTED", "IN_PROGRESS"] },
+    },
+    select: { id: true, status: true, normalizedJson: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const incomingRows = await (db as any).playerAction.findMany({
+    where: {
+      runId,
+      nodeId: context.nodeId,
+      targetRoleId: context.roleId,
+      actionType: "CONVERSATION",
+      actionKey: { startsWith: "maneuver:" },
+      visibility: { in: ["TARGETED", "PUBLIC"] },
+      status: { in: COMMITTED_ACTION_STATUSES },
+    },
+    select: {
+      id: true,
+      status: true,
+      freeText: true,
+      intent: true,
+      visibility: true,
+      role: { select: { roleName: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  const evidenceRows = await (db as any).roleAsset.findMany({
+    where: {
+      runId,
+      ownerRoleId: context.roleId,
+      kind: "PRIVATE_EVIDENCE_V1",
+      status: "ACTIVE",
+      visibility: "PRIVATE",
+      quantity: { gt: 0 },
+    },
+    select: { id: true, ownerRoleId: true, visibility: true, stateJson: true },
+    orderBy: { createdAt: "asc" },
+  });
 
   return {
     schemaVersion: "maneuver_projection_v1",
