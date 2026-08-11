@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 
-const source = (relative: string) => readFileSync(new URL(relative, import.meta.url), "utf8");
+const sourceRoot = resolve(process.cwd(), "src/openovel-terminal");
+const source = (relative: string) => readFileSync(resolve(sourceRoot, relative), "utf8");
 
 test("authoritative legacy committer has no narrative renderer provider or truth guard port", () => {
   const committer = source("./authoritative-legacy-terminal-committer.ts");
