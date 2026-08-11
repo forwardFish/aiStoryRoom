@@ -1,5 +1,5 @@
 name: B0 One-Shot Narrative Task Atomicity Trigger
-# trigger-revision: 1
+# trigger-revision: 2
 
 on:
   push:
@@ -57,12 +57,14 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
-          from textwrap import dedent
 
           lines = Path(".github/workflows/b0-one-shot-narrative-task-atomicity.yml").read_text(encoding="utf-8").splitlines()
           start = next(index for index, line in enumerate(lines) if line.strip() == "python3 - <<'PY'") + 1
           end = next(index for index in range(start, len(lines)) if lines[index].strip() == "PY")
-          code = dedent("\n".join(lines[start:end]))
+          prefix = " " * 10
+          if any(line and not line.startswith(prefix) for line in lines[start:end]):
+              raise SystemExit("embedded patch contains a line outside the YAML block indentation")
+          code = "\n".join(line[10:] if line else "" for line in lines[start:end])
           exec(compile(code, "narrative-task-atomicity", "exec"), {})
           PY
           git diff --check
