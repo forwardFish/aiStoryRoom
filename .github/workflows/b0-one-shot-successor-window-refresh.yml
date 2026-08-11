@@ -1,0 +1,315 @@
+name: B0 One-Shot Successor Window Refresh
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-successor-window-refresh.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-successor-window-refresh
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+  B0_BASELINE: 1de2ac14d1afa5799611c75dd936ecd3eb222e6d
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Publish run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/successor-window-refresh",
+              description: `successor refresh repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 50
+
+      - name: Verify exact remote state and apply minimal product fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$B0_BASELINE" HEAD
+          test -z "$(git status --short)"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          controller_path = Path("apps/web/public/maneuver-v1/maneuver-v1-controller.js")
+          controller = controller_path.read_text(encoding="utf-8")
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected one match, found {count}")
+              return source.replace(old, new, 1)
+
+          controller = replace_once(
+              controller,
+              "  let countdownTimer = null;\n  let pollTimer = null;\n",
+              "  let countdownTimer = null;\n  let pollTimer = null;\n  let b0PollFlight = null;\n",
+              "poll flight state",
+          )
+          controller = replace_once(
+              controller,
+              "  async function pollB0() {\n"
+              "    if (destroyed || b0State.busy || !state.active) return;\n"
+              "    await refreshB0({ suppressError: true, renderAfter: true });\n"
+              "  }\n",
+              "  function pollB0() {\n"
+              "    if (destroyed || b0State.busy || !state.active) return Promise.resolve(null);\n"
+              "    if (b0PollFlight) return b0PollFlight;\n\n"
+              "    const flight = pollB0Owned().finally(() => {\n"
+              "      if (b0PollFlight === flight) b0PollFlight = null;\n"
+              "    });\n"
+              "    b0PollFlight = flight;\n"
+              "    return flight;\n"
+              "  }\n\n"
+              "  async function pollB0Owned() {\n"
+              "    const beforeWindow = b0WindowIdentity(b0State.projection);\n"
+              "    const beforeEditable = b0CanEdit(b0State);\n"
+              "    await refreshB0({ suppressError: true, renderAfter: false });\n"
+              "    if (destroyed || !state.active) return null;\n\n"
+              "    const afterWindow = b0WindowIdentity(b0State.projection);\n"
+              "    const successorChanged = Boolean(afterWindow && afterWindow !== beforeWindow);\n"
+              "    const editingReopened = !beforeEditable && b0CanEdit(b0State);\n"
+              "    if (successorChanged || editingReopened) {\n"
+              "      await refreshManeuver({ suppressError: true });\n"
+              "      render();\n"
+              "    } else {\n"
+              "      renderB0Surfaces();\n"
+              "    }\n"
+              "    return b0State.projection;\n"
+              "  }\n",
+              "successor-aware poll",
+          )
+          controller = replace_once(
+              controller,
+              "function b0DraftRequestId() {\n",
+              "function b0WindowIdentity(projection) {\n"
+              "  const id = String(projection?.window?.id || \"\").trim();\n"
+              "  if (!id) return \"\";\n"
+              "  return `${id}:${Number(projection?.window?.ordinal || 0)}`;\n"
+              "}\n"
+              "function b0DraftRequestId() {\n",
+              "window identity helper",
+          )
+          controller_path.write_text(controller, encoding="utf-8")
+
+          test_path = Path("apps/web/tests/b0-window-web.test.mjs")
+          tests = test_path.read_text(encoding="utf-8")
+          anchor = "function response(payload, status = 200) {\n"
+          regression = r'''test("C7 completed replay opens the successor maneuver for a 390px player", async () => {
+            const dom = new JSDOM(`<!doctype html><html lang="en"><head></head><body><main id="game">
+              <aside class="causal-left"></aside>
+              <section class="causal-center"><div class="decision-zone" data-testid="decision-zone">Main decision</div></section>
+              <aside class="causal-right"><section data-testid="maneuver-panel">Legacy maneuver panel</section></aside>
+            </main></body></html>`, { url: "https://example.test/game?runId=run.successor" });
+            const win = dom.window;
+            Object.defineProperty(win, "innerWidth", { configurable: true, value: 390 });
+            const intervals = [];
+            win.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
+            win.clearInterval = () => undefined;
+
+            const completed = windowProjection({
+              status: "COMPLETED",
+              planValue: plan("LOCKED", 2),
+              ready: true,
+              readyRevision: 3,
+              readyCount: 6,
+              results: [result()],
+              narrative: { status: "AVAILABLE", content: "Window one resolved.", updatedAt: "2026-08-07T00:05:10.000Z" },
+            });
+            completed.window.id = "window.one";
+            completed.window.ordinal = 1;
+            completed.expectedCount = 6;
+
+            const successor = windowProjection({
+              status: "OPEN",
+              planValue: null,
+              ready: false,
+              readyRevision: 1,
+              readyCount: 3,
+              serverNow: "2026-08-07T00:05:12.000Z",
+            });
+            successor.window.id = "window.two";
+            successor.window.ordinal = 2;
+            successor.expectedCount = 6;
+
+            let b0 = completed;
+            let maneuver = { ...maneuverProjection(), windowState: "CLOSED", stateRevision: 8, turnRevision: 3 };
+            let b0ProjectionCalls = 0;
+            let maneuverProjectionCalls = 0;
+            const fetchImpl = async (url, init) => {
+              if (url.endsWith("/b0/window") && init.method === "GET") {
+                b0ProjectionCalls += 1;
+                return response(b0);
+              }
+              if (url.endsWith("/maneuvers/projection")) {
+                maneuverProjectionCalls += 1;
+                return response(maneuver);
+              }
+              return response({ code: "NOT_FOUND" }, 404);
+            };
+
+            const controller = createManeuverV1Controller({
+              root: win.document.querySelector("#game"),
+              window: win,
+              runId: "run.successor",
+              fetchImpl,
+            });
+            await controller.boot();
+            const poll = intervals.find(({ delay }) => delay === 2_500)?.callback;
+            assert.equal(typeof poll, "function");
+            assert.equal(win.document.querySelector('[data-mv1-kind="CONTACT"]').disabled, true);
+            assert.equal(maneuverProjectionCalls, 1);
+
+            await Promise.all([poll(), poll()]);
+            assert.equal(b0ProjectionCalls, 2, "overlapping interval ticks must share one B0 poll flight");
+            assert.equal(maneuverProjectionCalls, 1, "an idempotent completed-window replay must not reload maneuver context");
+
+            b0 = successor;
+            maneuver = { ...maneuverProjection(), windowState: "OPEN", stateRevision: 9, turnRevision: 1 };
+            await poll();
+            await settled();
+
+            const contact = win.document.querySelector('[data-mv1-kind="CONTACT"]');
+            assert.equal(contact.disabled, false, "the 390px player must receive the successor maneuver state");
+            assert.equal(maneuverProjectionCalls, 2, "a new B0 window must refresh the maneuver projection exactly once");
+            assert.equal(controller.getState().b0Window.status, "OPEN");
+            assert.equal(controller.getState().b0Window.readyCount, 3);
+            assert.equal(controller.getState().b0Window.expectedCount, 6);
+
+            controller.destroy();
+            dom.window.close();
+          });
+
+          '''
+          if tests.count(anchor) != 1 or "completed replay opens the successor maneuver" in tests:
+              raise SystemExit("unexpected web regression insertion state")
+          test_path.write_text(tests.replace(anchor, regression + anchor, 1), encoding="utf-8")
+          PY
+
+          node --check apps/web/public/maneuver-v1/maneuver-v1-controller.js
+          node --check apps/web/tests/b0-window-web.test.mjs
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Run focused web gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web build
+
+      - name: Scan changed product files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import re
+
+          paths = [
+              pathlib.Path("apps/web/public/maneuver-v1/maneuver-v1-controller.js"),
+              pathlib.Path("apps/web/tests/b0-window-web.test.mjs"),
+          ]
+          patterns = [
+              re.compile(r"postgres(?:ql)?://[^\s\"']+", re.I),
+              re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
+              re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),
+              re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+          ]
+          findings = []
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for pattern in patterns:
+                  if pattern.search(text):
+                      findings.append({"path": str(path), "pattern": pattern.pattern})
+          if findings:
+              raise SystemExit(f"secret scan failed: {findings}")
+          print("changed-file secret scan: PASS")
+          PY
+
+      - name: Commit and push product files only
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            apps/web/public/maneuver-v1/maneuver-v1-controller.js
+            apps/web/tests/b0-window-web.test.mjs
+          )
+          git fetch origin "$B0_BRANCH"
+          remote_before="$(git rev-parse origin/$B0_BRANCH)"
+          test "$remote_before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${files[@]}"
+          git diff --cached --check
+          printf '%s\n' "${files[@]}" | LC_ALL=C sort > /tmp/expected
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(web): refresh maneuver state for successor windows"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$B0_BRANCH"
+          remote_after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$remote_after" = "$local_head"
+          echo "local_head=$local_head" >> "$GITHUB_OUTPUT"
+          echo "remote_before=$remote_before" >> "$GITHUB_OUTPUT"
+          echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
+          echo "REMOTE_PRODUCT_FIX_PUSHED=$local_head"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOCAL_HEAD: ${{ steps.push.outputs.local_head }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/successor-window-refresh",
+              description: success
+                ? `product fix pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}`
+                : `successor refresh repair failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("successor window refresh repair failed");
