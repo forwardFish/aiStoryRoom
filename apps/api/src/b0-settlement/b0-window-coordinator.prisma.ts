@@ -28,6 +28,12 @@ import {
 
 type Tx = Prisma.TransactionClient;
 
+const B0_PROJECTION_TRANSACTION_OPTIONS = {
+  isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+  maxWait: 10_000,
+  timeout: 30_000,
+} as const;
+
 export type CreateB0WindowCommandV1 = {
   runId: string;
   nodeId: string;
@@ -285,15 +291,15 @@ export class B0WindowCoordinatorService {
   }
 
   async projection(windowId: string, actorId: string): Promise<B0WindowProjectionV1> {
-    return this.prisma.$transaction(async (tx: Tx) => {
-      const store = new PrismaB0WindowFreezeStoreV1(tx);
-      const record = await store.readWindow(windowId);
-      if (!record) throw new NotFoundException({ code: "WINDOW_NOT_FOUND", message: "B0 window not found" });
-      return this.projectionInTx(tx, record, actorId, await store.readFreeze(windowId));
-    });
-  }
+  return this.projectionTransaction(async (tx) => {
+    const store = new PrismaB0WindowFreezeStoreV1(tx);
+    const record = await store.readWindow(windowId);
+    if (!record) throw new NotFoundException({ code: "WINDOW_NOT_FOUND", message: "B0 window not found" });
+    return this.projectionInTx(tx, record, actorId, await store.readFreeze(windowId));
+  });
+}
 
-  private async projectionInTx(
+private async projectionInTx(
     tx: Tx,
     record: B0WindowStoreRecordV1,
     actorId: string,
@@ -314,7 +320,19 @@ export class B0WindowCoordinatorService {
     });
   }
 
-  private async serializable<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {
+  private async projectionTransaction<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      return await this.prisma.$transaction(operation, B0_PROJECTION_TRANSACTION_OPTIONS);
+    } catch (error) {
+      if (!projectionAdmissionRetryable(error) || attempt === 3) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1) ** 2));
+    }
+  }
+  throw new Error("UNREACHABLE_B0_PROJECTION_RETRY");
+}
+
+private async serializable<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {
     for (let attempt = 0; attempt < 4; attempt += 1) {
       try {
         return await this.prisma.$transaction(operation, {
@@ -719,6 +737,15 @@ function date(value: unknown, path: string): Date {
 
 function domain(code: string, message: string): ConflictException {
   return new ConflictException({ code, message });
+}
+
+function projectionAdmissionRetryable(error: unknown): boolean {
+  const candidate = error as any;
+  if (String(candidate?.code || "") !== "P2028") return false;
+  const details = [candidate?.message, candidate?.meta?.error, candidate?.meta?.message]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ");
+  return /Unable to start a transaction in the given time/i.test(details);
 }
 
 function retryable(error: unknown): boolean {
