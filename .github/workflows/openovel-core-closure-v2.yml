@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "c70fa7a2eba267916fe3985dae5b73dac994f2b2"
+          test "$(git rev-parse HEAD^)" = "aadbd3b558ea2c9312eaf3f4053f65b649a695c6"
           git merge-base --is-ancestor 4189aae4525401cfa39c2593658ab50275784fdd HEAD
 
       - name: Apply product closure
@@ -34,6 +34,11 @@ jobs:
         run: |
           set -euo pipefail
           python .github/openovel-core-closure.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('apps/web/public/platform.css')
+          path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
+          PY
           git diff --check
 
       - uses: actions/setup-node@v4
