@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 import { StoryTaskOutboxService } from "./story-task-outbox.service";
@@ -10,6 +10,16 @@ import { Observable } from "rxjs";
 import { CONTINUOUS_ENGINE_VERSION, CONTINUOUS_STORY_ENGINE_VERSION, type ControlCommandV1, type HeartbeatCommandV1, type LayoutCommandV1, type SlotCommandV1, type TurnDecisionCommandV2 } from "@ai-story/shared";
 import { findGameDefinition } from "@ai-story/templates";
 import { readContinuousStrategyConfig, selectRunVersions } from "./config/continuous-strategy.config";
+import { shouldFreezeAEmotionM1ForNewRun } from "./config/a-emotion-m1.config";
+import { readAEmotionM2Config, shouldFreezeAEmotionM2ForNewRun } from "./config/a-emotion-m2.config";
+import { readAEmotionM3Config, shouldFreezeAEmotionM3ForNewRun } from "./config/a-emotion-m3.config";
+import { AEmotionKeyModalService } from "./continuous-story-v2/a-emotion-key-modal.service";
+import { readAEmotionM4Config, shouldFreezeAEmotionM4ForNewRun } from "./config/a-emotion-m4.config";
+import { readAEmotionM5Config, shouldFreezeAEmotionM5ForNewRun } from "./config/a-emotion-m5.config";
+import { buildAEmotionM6RoomPolicy, readAEmotionM6Config, shouldFreezeAEmotionM6ForNewRun } from "./config/a-emotion-m6.config";
+import { aEmotionViewerState, defaultPauseState } from "./config/a-emotion-room-flags";
+import { AEmotionM5Service } from "./continuous-story-v2/a-emotion-m5.service";
+import { AEmotionM6Service, A_EMOTION_M6_TASK_TYPES } from "./continuous-story-v2/a-emotion-m6.service";
 import { ActionWindowService } from "./continuous-strategy/action-window.service";
 import { ActionCommandService } from "./continuous-strategy/action-command.service";
 import { ContinuousEventDeliveryService } from "./continuous-strategy/event-delivery.service";
@@ -124,6 +134,13 @@ type RoomState = {
   };
 };
 function roomState(value: unknown): RoomState { return value && typeof value === "object" && !Array.isArray(value) ? value as RoomState : {}; }
+function parseInteractionLimit(value: string | undefined) {
+  if (value === undefined || value === "") return 10;
+  if (!/^\d+$/.test(value)) throw new BadRequestException({ code: "INTERACTION_LIMIT_INVALID", message: "interactionLimit must be between 1 and 10" });
+  const limit = Number(value);
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 10) throw new BadRequestException({ code: "INTERACTION_LIMIT_INVALID", message: "interactionLimit must be between 1 and 10" });
+  return limit;
+}
 function lobbyTimes(room: RoomState["room"], now = Date.now()) {
   const createdAt = Date.parse(String(room?.createdAt || "")) || now;
   const deadlineAt = Date.parse(String(room?.lobbyDeadlineAt || "")) || createdAt + LOBBY_WAIT_MS;
@@ -177,7 +194,10 @@ export class RoomsService {
     @Inject(SoloStoryEngineService) private readonly soloStory: SoloStoryEngineService = null as never,
     @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never,
     @Inject(RunSponsorshipService) private readonly sponsorships: RunSponsorshipService = null as never,
-    @Inject(OpenNovelAdapterService) private readonly openNovel: OpenNovelAdapterService = null as never
+    @Inject(OpenNovelAdapterService) private readonly openNovel: OpenNovelAdapterService = null as never,
+    @Optional() @Inject(AEmotionKeyModalService) private readonly aEmotionKeyModals?: AEmotionKeyModalService,
+    @Optional() @Inject(AEmotionM5Service) private readonly aEmotionM5?: AEmotionM5Service,
+    @Optional() @Inject(AEmotionM6Service) private readonly aEmotionM6?: AEmotionM6Service
   ) {}
 
   async list(worldId?: string, user?: AuthenticatedUser) {
@@ -287,8 +307,57 @@ export class RoomsService {
         { ...versions, runId: deterministicRunId, billingPolicyVersion, billingPriceJson }
       );
       const createdAt = new Date();
+      const initialState = roomState(created.stateJson) as RoomState & { featureFlags?: Record<string, unknown> };
+      const m1EnabledForRoom = shouldFreezeAEmotionM1ForNewRun({
+        templateKey: world.worldId,
+        mode: "room",
+        maxPlayers: isInternalSoloCreate ? 1 : maxPlayers,
+        engineVersion: versions.engineVersion
+      });
+      const m2EnabledForRoom = shouldFreezeAEmotionM2ForNewRun({
+        processEnabled: readAEmotionM2Config().masterEnabled,
+        m1Enabled: m1EnabledForRoom,
+        templateKey: world.worldId,
+        mode: "room",
+        maxPlayers: isInternalSoloCreate ? 1 : maxPlayers
+      });
+      const m3Config = readAEmotionM3Config();
+      const m3EnabledForRoom = shouldFreezeAEmotionM3ForNewRun({ processEnabled: m3Config.masterEnabled, keyModalsEnabled: m3Config.keyModalsEnabled, m2Enabled: m2EnabledForRoom, templateKey: world.worldId, mode: "room", maxPlayers: isInternalSoloCreate ? 1 : maxPlayers });
+      const m4Config = readAEmotionM4Config();
+      const m4EnabledForRoom = shouldFreezeAEmotionM4ForNewRun({ processEnabled: m4Config.masterEnabled, simplePromiseEnabled: m4Config.simplePromiseEnabled, m2Enabled: m2EnabledForRoom, templateKey: world.worldId, mode: "room", maxPlayers: isInternalSoloCreate ? 1 : maxPlayers });
+      const m5Config = readAEmotionM5Config();
+      const m5EnabledForRoom = shouldFreezeAEmotionM5ForNewRun({ processEnabled: m5Config.masterEnabled, stageMilestonesEnabled: m5Config.stageMilestonesEnabled, interactionHistoryEnabled: m5Config.interactionHistoryEnabled, m4Enabled: m4EnabledForRoom, templateKey: world.worldId, mode: "room", maxPlayers: isInternalSoloCreate ? 1 : maxPlayers });
+      const m6Config = readAEmotionM6Config();
+      const m6EnabledForRoom = shouldFreezeAEmotionM6ForNewRun({ processEnabled: m6Config.masterEnabled, recoveryEnabled: m6Config.recoveryEnabled, m5Enabled: m5EnabledForRoom, templateKey: world.worldId, mode: "room", maxPlayers: isInternalSoloCreate ? 1 : maxPlayers });
+      const aEmotionRuleset = buildAEmotionM6RoomPolicy({
+        m1Enabled: m1EnabledForRoom,
+        m2Enabled: m2EnabledForRoom,
+        m3Enabled: m3EnabledForRoom,
+        m4Enabled: m4EnabledForRoom,
+        m5Enabled: m5EnabledForRoom,
+        m6Enabled: m6EnabledForRoom,
+        pollIntervalMs: m6Config.pollIntervalMs,
+        frozenAt: createdAt
+      });
       const state = {
-        ...roomState(created.stateJson),
+        ...initialState,
+        aEmotionRuleset,
+        aEmotionM6Recovery: defaultPauseState(createdAt),
+        featureFlags: {
+          ...(initialState.featureFlags || {}),
+          aEmotionM1: m1EnabledForRoom,
+          aEmotionM2: m2EnabledForRoom,
+          aEmotionM3: m3EnabledForRoom,
+          aEmotionKeyModals: m3EnabledForRoom || m4EnabledForRoom,
+          aEmotionM4: m4EnabledForRoom,
+          aEmotionSimplePromise: m4EnabledForRoom,
+          aEmotionM5: m5EnabledForRoom,
+          aEmotionStageMilestones: m5EnabledForRoom,
+          aEmotionInteractionHistory: m5EnabledForRoom,
+          aEmotionM6: m6EnabledForRoom,
+          aEmotionRecovery: m6EnabledForRoom,
+          aEmotionPollIntervalMs: m6Config.pollIntervalMs
+        },
         room: {
           worldId: world.worldId,
           readyUserIds: [],
@@ -861,7 +930,7 @@ export class RoomsService {
   }
 
   /** Member-scoped incremental events. Never include another player's actions or private projection. */
-  async events(user: AuthenticatedUser, roomId: string, after?: string) {
+  async events(user: AuthenticatedUser, roomId: string, after?: string, interactionCursor?: string, interactionLimit?: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) {
       const sequence = after && /^\d+$/.test(after) ? Number(after) : 0;
@@ -869,7 +938,13 @@ export class RoomsService {
     }
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
       const sequence = after && /^\d+$/.test(after) ? Number(after) : 0;
-      return this.continuousEvents.page(user, roomId, sequence);
+      const limit = parseInteractionLimit(interactionLimit);
+      const page = await this.continuousEvents.page(user, roomId, sequence, 100, { cursor: interactionCursor, limit });
+      const runtime = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { stateJson: true } });
+      const viewerState = runtime ? aEmotionViewerState(runtime.stateJson) : undefined;
+      if (viewerState?.paused || viewerState?.features.keyModalsEnabled === false || !this.aEmotionKeyModals) return page;
+      const keyModals = await this.aEmotionKeyModals.pending(user, roomId);
+      return keyModals.length ? { ...page, keyModals } : page;
     }
     const room = await this.get(user, roomId);
     const cursor = after && !Number.isNaN(Date.parse(after)) ? new Date(after) : undefined;
@@ -920,6 +995,80 @@ export class RoomsService {
     });
   }
 
+  interactionSummary(user: AuthenticatedUser, roomId: string) {
+    if (!this.aEmotionM5) throw new NotFoundException({ code: "INTERACTION_HISTORY_DISABLED", message: "Interaction history is not enabled" });
+    return this.aEmotionM5.interactionSummary(user, roomId);
+  }
+
+  async aEmotionRecoveryStatus(user: AuthenticatedUser, roomId: string) {
+    const run = await this.prisma.storyRun.findUnique({
+      where: { id: roomId },
+      select: {
+        id: true, mode: true, ownerUserId: true, version: true, stateJson: true,
+        players: { where: { userId: user.id, status: "active", playerType: "human" }, select: { id: true, roleId: true } }
+      }
+    });
+    if (!run || run.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    if (!run.players.some((player) => player.roleId)) throw new ForbiddenException({ code: "ROOM_MEMBERSHIP_REQUIRED", message: "Room membership required" });
+    const state = roomState(run.stateJson) as RoomState & { featureFlags?: Record<string, unknown>; aEmotionM6Recovery?: Record<string, unknown>; aEmotionM6Rollback?: Record<string, unknown> };
+    const viewerState = aEmotionViewerState(run.stateJson);
+    const [pending, running, failed] = await Promise.all([
+      this.prisma.storyTaskOutbox.count({ where: { runId: roomId, taskType: { in: [...A_EMOTION_M6_TASK_TYPES] }, status: "PENDING" } }),
+      this.prisma.storyTaskOutbox.count({ where: { runId: roomId, taskType: { in: [...A_EMOTION_M6_TASK_TYPES] }, status: "RUNNING" } }),
+      this.prisma.storyTaskOutbox.count({ where: { runId: roomId, taskType: { in: [...A_EMOTION_M6_TASK_TYPES] }, status: "FAILED" } })
+    ]);
+    return {
+      roomId,
+      version: run.version,
+      runVersion: run.version,
+      enabled: viewerState?.features.recoveryEnabled === true,
+      paused: viewerState?.paused ?? true,
+      pauseVersion: viewerState?.pauseVersion ?? 0,
+      featureFlags: state.featureFlags || {},
+      recovery: state.aEmotionM6Recovery || null,
+      rollback: state.aEmotionM6Rollback || null,
+      tasks: { pending, running, failed }
+    };
+  }
+
+  async setAEmotionRecoveryPaused(user: AuthenticatedUser, roomId: string, input: { expectedVersion?: number; reason?: string; paused: boolean }) {
+    if (!this.aEmotionM6) throw new NotFoundException({ code: "A_EMOTION_RECOVERY_DISABLED", message: "A-Emotion recovery is not enabled" });
+    const run = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { id: true, mode: true, ownerUserId: true, version: true } });
+    if (!run || run.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    if (run.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the room owner can pause A-Emotion recovery" });
+    const expectedVersion = Number(input.expectedVersion);
+    if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1 || expectedVersion !== run.version) throw new ConflictException({ code: "A_EMOTION_M6_RUN_VERSION_MISMATCH", message: "Run version changed" });
+    const reason = String(input.reason || "").trim();
+    if (input.paused && !reason) throw new BadRequestException({ code: "A_EMOTION_M6_REASON_REQUIRED", message: "A recovery reason is required" });
+    return this.aEmotionM6.setRoomPaused(user, { roomId, expectedVersion, paused: input.paused, reason });
+  }
+
+  interactionDetail(user: AuthenticatedUser, roomId: string, eventId: string, projectionVersion: number) {
+    return this.continuousEvents.interactionDetail(user, roomId, eventId, projectionVersion);
+  }
+
+  markInteractionSeen(user: AuthenticatedUser, roomId: string, eventId: string, projectionVersion: number) {
+    return this.continuousEvents.markInteractionSeen(user, roomId, eventId, projectionVersion);
+  }
+
+  acknowledgeInteraction(user: AuthenticatedUser, roomId: string, eventId: string, projectionVersion: number) {
+    return this.continuousEvents.acknowledgeInteraction(user, roomId, eventId, projectionVersion);
+  }
+
+  resolveInteraction(user: AuthenticatedUser, roomId: string, eventId: string, projectionVersion: number) {
+    return this.continuousEvents.resolveInteraction(user, roomId, eventId, projectionVersion);
+  }
+
+  markKeyModalShown(user: AuthenticatedUser, roomId: string, modalId: string, projectionVersion: number, triggerVersion: number) {
+    if (!this.aEmotionKeyModals) throw new NotFoundException({ code: "KEY_MODAL_NOT_FOUND", message: "Key modal not found" });
+    return this.aEmotionKeyModals.markShown(user, roomId, modalId, projectionVersion, triggerVersion);
+  }
+
+  acknowledgeKeyModal(user: AuthenticatedUser, roomId: string, modalId: string, projectionVersion: number, triggerVersion: number) {
+    if (!this.aEmotionKeyModals) throw new NotFoundException({ code: "KEY_MODAL_NOT_FOUND", message: "Key modal not found" });
+    return this.aEmotionKeyModals.acknowledge(user, roomId, modalId, projectionVersion, triggerVersion);
+  }
+
   submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) { return this.commands.submitMain(user, roomId, command); }
   async submitTurnDecision(user: AuthenticatedUser, roomId: string, turnId: string, command: TurnDecisionCommandV2) {
     if (await this.usesOpenNovel(roomId)) return this.openNovel.submitDecision(user, roomId, turnId, command);
@@ -942,6 +1091,7 @@ export class RoomsService {
   async retryTurnGeneration(user: AuthenticatedUser, roomId: string) {
     return await this.usesSoloStory(roomId) ? this.soloStory.retryLatest(user, roomId) : this.storyV2.retryResultGeneration(user, roomId);
   }
+
   async replyToInteraction(user: AuthenticatedUser, roomId: string, interactionId: string, command: TurnDecisionCommandV2) {
     if (await this.usesSoloStory(roomId)) throw new ConflictException({ code: "SOLO_INTERACTION_ENDPOINT_DISABLED", message: "Solo 人物交谈通过当前回合决策提交，不创建等待回应的另一条线程。" });
     return this.storyV2.replyInteraction(user, roomId, interactionId, command);

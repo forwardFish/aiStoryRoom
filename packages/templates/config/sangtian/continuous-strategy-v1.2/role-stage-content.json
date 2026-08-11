@@ -553,15 +553,15 @@
         },
         {
           "actionKey": "main_s2_xunfu_seize_drafts",
-          "title": "收缴催办底稿",
-          "objective": "先控制可能与密信互证的底稿，防止责任链外流。",
+          "title": "扣留原册，只送转抄副本",
+          "objective": "把原始粮册留在巡抚控制链，只向总督交付可核验但不完整的转抄副本，以维持奏报口径。",
           "visibility": "LIMITED",
           "risk": "HIGH",
           "fallbackActionKey": "fallback_s2_xunfu_preserve_position",
           "targetRoleKey": "zhejiang_governor",
           "receipt": {
             "receiptKey": "receipt_main_s2_xunfu_seize_drafts",
-            "text": "巡抚衙门收拢底稿，总督可见的原始材料减少。"
+            "text": "原始粮册没有进入总督府核验链，送达的是转抄副本。"
           },
           "effect": {
             "effectKey": "effect_main_s2_xunfu_seize_drafts",

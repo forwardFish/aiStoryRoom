@@ -37,6 +37,8 @@ model User {
   eventDeliveryCursors   EventDeliveryCursor[]
   presenceSessions       PresenceSession[]
   decisionSubmissions    DecisionSubmission[]
+  aEmotionMetricTransitions AEmotionMetricTransition[]
+  aEmotionKeyModals          AEmotionKeyModal[]
 
   @@index([status])
   @@index([createdAt])
@@ -204,6 +206,9 @@ model StoryRun {
   storyContextSnapshotsV2 StoryContextSnapshotV2[]
   promptExecutionRecords  PromptExecutionRecord[]
   soloGenerationAttempts  SoloGenerationAttempt[]
+  aEmotionStageMilestones AEmotionStageMilestone[]
+  aEmotionMetricTransitions AEmotionMetricTransition[]
+  aEmotionKeyModals          AEmotionKeyModal[]
 
   @@index([templateId])
   @@index([ownerUserId])
@@ -320,6 +325,9 @@ model StoryRole {
   receivedCommitmentsV2       CommitmentV2[]                  @relation("CommitmentV2Receiver")
   storyContextSnapshotsV2     StoryContextSnapshotV2[]
   promptExecutionRecords      PromptExecutionRecord[]
+  stageMilestonesBenefited AEmotionStageMilestone[]
+  aEmotionMetricTransitions   AEmotionMetricTransition[]
+  aEmotionKeyModals            AEmotionKeyModal[]
 
   @@unique([runId, roleKey])
   @@index([runId, status])
@@ -724,14 +732,26 @@ model EventDeliveryCursor {
 }
 
 model EventDelivery {
-  id               String   @id @default(cuid())
-  eventId          String
-  roomId           String
-  userId           String
-  roleId           String?
-  deliverySequence Int
-  payloadJson      Json
-  deliveredAt      DateTime @default(now())
+  id                    String   @id @default(cuid())
+  eventId               String
+  roomId                String
+  userId                String
+  roleId                String?
+  deliverySequence      Int
+  payloadJson           Json
+  aggregateKey          String?
+  aggregateId           String?
+  stageId               String?
+  sharedObjectId        String?
+  eventFamily           String?
+  category              String?
+  disclosure            String?
+  projectionVersion     Int      @default(1)
+  stateVersion          Int      @default(1)
+  seenAt                DateTime?
+  acknowledgedAt        DateTime?
+  resolvedAt            DateTime?
+  deliveredAt           DateTime @default(now())
 
   event StoryEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
   room  StoryRun   @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -740,6 +760,9 @@ model EventDelivery {
 
   @@unique([roomId, userId, deliverySequence])
   @@unique([eventId, userId])
+  @@unique([roomId, userId, aggregateKey, projectionVersion])
+  @@index([roomId, userId, roleId, deliverySequence])
+  @@index([roomId, userId, aggregateKey, projectionVersion])
   @@index([userId, deliveredAt])
   @@index([roleId])
 }
@@ -1270,6 +1293,17 @@ model CommitmentV2 {
   fulfilledAt        DateTime?
   breachedAt         DateTime?
   expiredAt          DateTime?
+  promiseCode        String?
+  relatedObjectId    String?
+  sourceActionId     String?
+  fulfillmentActionId String?
+  breachActionId     String?
+  revealedAt         DateTime?
+  evidenceRefsJson   Json?
+  termsJson          Json?
+  lifecycleVersion   Int       @default(1)
+  revealVersion      Int       @default(0)
+  simplePromiseSlotKey String?  @unique
   updatedAt          DateTime  @updatedAt
 
   run              StoryRun         @relation(fields: [runId], references: [id], onDelete: Cascade)
@@ -1280,6 +1314,8 @@ model CommitmentV2 {
   @@index([runId, status, expiresAtStage])
   @@index([issuerRoleId, status])
   @@index([receiverRoleId, status])
+  @@index([runId, promiseCode, status])
+  @@index([runId, relatedObjectId, status])
 }
 
 /// Item-level explainable quality evidence for story beats and decision sets.
@@ -1546,6 +1582,100 @@ model AiTask {
 /// Durable command queue for story resolution.  The unique node relation makes
 /// command retries idempotent while a worker lease prevents concurrent consumers
 /// from applying the same resolution twice.
+
+/// World-agnostic authoritative metric movement. A trigger is allocated only
+/// for a non-DANGER -> DANGER crossing.
+model AEmotionMetricTransition {
+  id                 String   @id
+  roomId             String
+  runId              String
+  viewerRoleId       String
+  viewerUserId       String
+  metricKey          String
+  metricLabel        String
+  previousValue      Int
+  currentValue       Int
+  delta              Int
+  thresholdBefore    String
+  thresholdAfter     String
+  triggerCode        String
+  sourceResolutionId String
+  sourceEventId      String?
+  stateVersion       Int
+  triggerVersion     Int?
+  stageId            String
+  occurredAt         DateTime
+  createdAt          DateTime @default(now())
+
+  run  StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  role StoryRole @relation(fields: [viewerRoleId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [viewerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, viewerRoleId, metricKey, sourceResolutionId])
+  @@unique([runId, viewerRoleId, metricKey, stateVersion])
+  @@unique([runId, viewerRoleId, metricKey, triggerCode, triggerVersion])
+  @@index([runId, viewerRoleId, metricKey, occurredAt])
+  @@index([sourceResolutionId])
+  @@index([sourceEventId])
+}
+
+/// Viewer-safe modal queue. M3 stores CRISIS; later stages extend modalType.
+
+model AEmotionStageMilestone {
+  id                   String   @id
+  roomId               String
+  runId                String
+  stageId              String
+  milestoneCode        String
+  beneficiaryRoleId    String
+  status               String   @default("INACTIVE")
+  stateVersion         Int      @default(1)
+  evidenceRefsJson     Json
+  rewardJson           Json
+  sourceResolutionId   String?
+  sourceEventId        String?
+  achievedAt           DateTime?
+  revokedAt            DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  run             StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  beneficiaryRole StoryRole @relation(fields: [beneficiaryRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, stageId, milestoneCode, beneficiaryRoleId])
+  @@index([runId, beneficiaryRoleId, status, stageId])
+  @@index([sourceResolutionId])
+  @@index([sourceEventId])
+}
+
+model AEmotionKeyModal {
+  id                String   @id
+  roomId            String
+  runId             String
+  viewerUserId      String
+  viewerRoleId      String
+  eventId           String   @unique
+  modalType         String
+  triggerCode       String
+  triggerVersion    Int
+  projectionVersion Int
+  stateVersion      Int
+  priority          Int
+  projectionJson    Json
+  shownAt           DateTime?
+  acknowledgedAt    DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  run  StoryRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  role StoryRole @relation(fields: [viewerRoleId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [viewerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, viewerUserId, modalType, triggerCode, triggerVersion])
+  @@unique([eventId, viewerUserId])
+  @@index([runId, viewerUserId, viewerRoleId, acknowledgedAt, priority])
+}
+
 model StoryTaskOutbox {
   id             String    @id @default(cuid())
   runId          String

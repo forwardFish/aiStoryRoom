@@ -17,7 +17,13 @@
     "pretypecheck": "pnpm run generic-endgame:verify:s1-s6",
     "typecheck": "tsc --noEmit",
     "posttypecheck": "pnpm run build && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "test:endgame": "node --import tsx --test tests/endgame.schemas.spec.ts"
+    "test:endgame": "node --import tsx --test tests/endgame.schemas.spec.ts",
+    "test:a-emotion-m1": "node --import tsx --test tests/a-emotion-m1.schemas.spec.ts",
+    "test:a-emotion-m2": "node --import tsx --test tests/a-emotion-m2.schemas.spec.ts",
+    "test:a-emotion-m3": "node --import tsx --test tests/a-emotion-m3.schemas.spec.ts",
+    "test:a-emotion-m4": "node --import tsx --test tests/a-emotion-m4.schemas.spec.ts",
+    "test:a-emotion-m5": "node --import tsx --test tests/a-emotion-m5.schemas.spec.ts",
+    "test:a-emotion-m6": "node --import tsx --test tests/a-emotion-m6.schemas.spec.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

@@ -1483,3 +1483,115 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   text-align: center;
   white-space: nowrap;
 }
+
+/* A-Emotion M1: viewer-safe cross-player impact vertical slice. */
+.aemotion-m1-feed { margin: 10px 12px 12px; padding: 12px; border: 1px solid #e2e5f5; border-radius: 12px; background: #faf9ff; }
+.aemotion-m1-feed-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; color: #35305f; }
+.aemotion-m1-feed-head span { padding: 3px 8px; border-radius: 999px; background: #eeeaff; color: #6044d9; font-size: 12px; }
+.aemotion-m1-feed-list { display: grid; gap: 7px; }
+.aemotion-m1-feed-list button { display: grid; gap: 4px; width: 100%; padding: 10px; border: 1px solid #ececfa; border-radius: 10px; background: #fff; color: #30365e; text-align: left; cursor: pointer; }
+.aemotion-m1-feed-list button:hover, .aemotion-m1-feed-list button:focus-visible { border-color: #8a74eb; outline: none; box-shadow: 0 0 0 3px rgba(111,77,228,.11); }
+.aemotion-m1-feed-list strong { font-size: 13px; line-height: 1.5; }
+.aemotion-m1-feed-list small { color: #7a7f9b; }
+.aemotion-world-situation { margin-top: 12px; }
+.aemotion-world-situation .aemotion-m1-feed-head > div { display: flex; align-items: center; gap: 8px; }
+.aemotion-world-situation-detail { margin-top: 10px; padding: 12px; border: 1px solid #ddd9f3; border-radius: 12px; background: #fff; }
+.aemotion-world-situation-detail header { border-left: 3px solid #7557e8; padding-left: 10px; }
+.aemotion-world-situation-detail header > span { color: #6b4ce0; font-size: 11px; font-weight: 700; }
+.aemotion-world-situation-detail h3 { margin: 5px 0; color: #30365e; font-size: 15px; line-height: 1.45; }
+.aemotion-world-situation-detail header p { margin: 0; color: #626985; font-size: 12px; line-height: 1.55; }
+.aemotion-world-situation-status { margin: 10px 0 0; color: #5e6380; font-size: 12px; }
+.aemotion-world-situation-grid { display: grid; gap: 8px; margin-top: 10px; }
+.aemotion-world-situation-grid section { padding: 10px; border: 1px solid #eceefa; border-radius: 10px; background: #fcfcff; }
+.aemotion-world-situation-grid h4 { margin: 0 0 6px; color: #41486f; font-size: 12px; }
+.aemotion-world-situation-grid p { display: grid; gap: 2px; margin: 5px 0; color: #525976; font-size: 12px; line-height: 1.45; }
+.aemotion-world-situation-grid small { color: #7d839d; }
+.aemotion-world-situation-actions { display: grid; gap: 7px; margin-top: 10px; }
+.aemotion-world-situation-actions button { min-height: 36px; padding: 0 12px; border: 1px solid #d7d9eb; border-radius: 9px; background: #fff; color: #3e456a; cursor: pointer; }
+.aemotion-world-situation-actions button.primary { border-color: #7254e7; background: #7254e7; color: #fff; }
+
+/* A-Emotion M2: durable aggregate feed, read receipts and disclosure upgrades. */
+.aemotion-m2-feed { position: relative; overflow: hidden; }
+.aemotion-m2-feed .aemotion-m1-feed-head button,
+.aemotion-new-events {
+  min-height: 30px;
+  border: 1px solid #d9d9ef;
+  border-radius: 999px;
+  background: #fff;
+  color: #5d4bc8;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.aemotion-m2-feed .aemotion-m1-feed-head button { padding: 0 10px; }
+.aemotion-new-events {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 4px 10px;
+  background: #f1edff;
+  border-color: #ded5ff;
+  font-weight: 700;
+}
+.aemotion-m2-feed .aemotion-m1-feed-list {
+  max-height: 286px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 3px;
+}
+.aemotion-m2-feed .aemotion-m1-feed-list::-webkit-scrollbar { width: 8px; }
+.aemotion-m2-feed .aemotion-m1-feed-list::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: #cec7ed; background-clip: padding-box; }
+.aemotion-m2-feed .aemotion-m1-feed-list button.unread { border-color: #cfc4ff; box-shadow: inset 3px 0 0 #7254e7; }
+.aemotion-m2-feed .aemotion-m1-feed-list button.resolved { opacity: .68; background: #f7f7fb; }
+.aemotion-m2-feed .aemotion-m1-feed-list button.resolved strong::after { content: " · 已处理"; color: #7b8298; font-size: 11px; font-weight: 600; }
+.aemotion-card-related header { border-left-color: #7557e8; }
+.aemotion-card-public header { border-left-color: #4b9169; }
+.aemotion-card-suspicious header { border-left-color: #c78839; }
+@media (max-width: 1100px) {
+  .aemotion-m2-feed .aemotion-m1-feed-list { max-height: 240px; }
+}
+
+/* A-Emotion key modals are the only M3+ UI allowed outside the right-rail
+   世界局势 module. They do not modify the central stage or top metric strip. */
+/* A-Emotion M3: owner-approved document modal only. No central/top layout changes. */
+.aemotion-key-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(24 25 42 / 42%);
+  backdrop-filter: blur(2px);
+}
+.aemotion-key-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 32px));
+  overflow: auto;
+  border: 1px solid rgb(202 111 69 / 42%);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 26px 80px rgb(35 30 49 / 28%);
+}
+.aemotion-key-modal > header {
+  padding: 24px 26px 20px;
+  border-radius: 21px 21px 0 0;
+  background: linear-gradient(135deg, #fff5ee, #fff9f5);
+  border-bottom: 1px solid rgb(202 111 69 / 20%);
+}
+.aemotion-key-modal > header > span { color: #a7472d; font-weight: 700; letter-spacing: .08em; }
+.aemotion-key-modal > header h2 { margin: 8px 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
+.aemotion-key-modal > header p { margin: 0; line-height: 1.65; color: #4f4657; }
+.aemotion-key-modal-facts { display: grid; gap: 10px; padding: 20px 26px; }
+.aemotion-key-modal-facts p { margin: 0; padding: 12px 14px; border: 1px solid #ece8ef; border-radius: 12px; background: #fbfafc; }
+.aemotion-key-modal-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 26px 26px; }
+.aemotion-key-modal-actions button { min-height: 44px; padding: 0 18px; border: 1px solid #dcd5e5; border-radius: 12px; background: #fff; cursor: pointer; }
+.aemotion-key-modal-actions button.primary { border-color: #6f52d9; background: #6f52d9; color: #fff; }
+@media (max-width: 480px) {
+  .aemotion-key-modal-overlay { align-items: end; padding: 12px; }
+  .aemotion-key-modal { width: 100%; max-height: calc(100vh - 24px); border-radius: 18px; }
+  .aemotion-key-modal > header { padding: 20px 18px 16px; }
+  .aemotion-key-modal-facts { padding: 16px 18px; }
+  .aemotion-key-modal-actions { padding: 0 18px 18px; }
+  .aemotion-key-modal-actions button { flex: 1 1 100%; }
+}

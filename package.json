@@ -97,7 +97,17 @@
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
     "test:story:convergence": "pnpm --filter @ai-story/templates build && node scripts/acceptance/verify-ai-story-convergence.mjs",
     "test:story:real-model": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs",
-    "test:story:real-model:g00-t20": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs"
+    "test:story:real-model:g00-t20": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs",
+    "test:a-emotion-m1": "pnpm --filter @ai-story/shared test:a-emotion-m1 && pnpm --filter @apps/api test:a-emotion-m1 && pnpm --filter @apps/web test:a-emotion-m1",
+    "test:a-emotion-m2": "pnpm --filter @ai-story/shared test:a-emotion-m2 && pnpm --filter @apps/api test:a-emotion-m2 && pnpm --filter @apps/web test:a-emotion-m2",
+    "test:a-emotion-m3": "pnpm --filter @ai-story/shared test:a-emotion-m3 && pnpm --filter @apps/api test:a-emotion-m3 && pnpm --filter @apps/web test:a-emotion-m3",
+    "test:a-emotion-m4": "pnpm --filter @ai-story/shared test:a-emotion-m4 && pnpm --filter @apps/api test:a-emotion-m4 && pnpm --filter @apps/web test:a-emotion-m4",
+    "test:a-emotion-m5": "pnpm --filter @ai-story/shared test:a-emotion-m5 && pnpm --filter @apps/api test:a-emotion-m5 && pnpm --filter @apps/web test:a-emotion-m5",
+    "test:a-emotion-m6": "pnpm --filter @ai-story/shared test:a-emotion-m6 && pnpm --filter @apps/api test:a-emotion-m6 && pnpm --filter @apps/web test:a-emotion-m6",
+    "test:a-emotion-m6:supabase": "tsx scripts/acceptance/a-emotion-m6-supabase-random-schema.mts",
+    "test:a-emotion-m6:e2e": "node --experimental-strip-types scripts/e2e/a-emotion-m6-real-e2e-orchestrator.mts",
+    "test:a-emotion-m6:browser": "node --experimental-strip-types scripts/e2e/a-emotion-m6-real-e2e-orchestrator.mts",
+    "test:a-emotion-m6:e2e:contract": "node --experimental-strip-types --test scripts/e2e/a-emotion-m6-e2e-contract.spec.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

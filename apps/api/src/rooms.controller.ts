@@ -67,7 +67,25 @@ export class RoomsController {
   @Post(":roomId/game/resolve") resolve(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.resolveGameNode(user, roomId); }
   @Post(":roomId/game/resolve-async") @HttpCode(202) resolveAsync(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.resolveGameNodeAsync(user, roomId); }
   @Get(":roomId/game/tasks/:taskId") task(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("taskId") taskId: string) { return this.rooms.resolutionTask(user, roomId, taskId); }
-  @Get(":roomId/events") events(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("afterDeliverySequence") afterDeliverySequence?: string, @Query("after") legacyAfter?: string) { return this.rooms.events(user, roomId, afterDeliverySequence ?? legacyAfter); }
+  @Get(":roomId/events")
+  events(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("roomId") roomId: string,
+    @Query("afterDeliverySequence") afterDeliverySequence?: string,
+    @Query("after") legacyAfter?: string,
+    @Query("interactionCursor") interactionCursor?: string,
+    @Query("interactionLimit") interactionLimit?: string
+  ) { return this.rooms.events(user, roomId, afterDeliverySequence ?? legacyAfter, interactionCursor, interactionLimit); }
+  @Get(":roomId/a-emotion/interaction-summary") interactionSummary(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.interactionSummary(user, roomId); }
+  @Get(":roomId/a-emotion/recovery/status") aEmotionRecoveryStatus(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.aEmotionRecoveryStatus(user, roomId); }
+  @Post(":roomId/a-emotion/recovery/pause") aEmotionRecoveryPause(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { expectedVersion?: number; reason?: string }) { return this.rooms.setAEmotionRecoveryPaused(user, roomId, { ...body, paused: true }); }
+  @Post(":roomId/a-emotion/recovery/resume") aEmotionRecoveryResume(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { expectedVersion?: number; reason?: string }) { return this.rooms.setAEmotionRecoveryPaused(user, roomId, { ...body, paused: false }); }
+  @Get(":roomId/events/:eventId") interactionDetail(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("eventId") eventId: string, @Query("projectionVersion") projectionVersion?: string) { return this.rooms.interactionDetail(user, roomId, eventId, parseProjectionVersion(projectionVersion)); }
+  @Post(":roomId/events/:eventId/seen") interactionSeen(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("eventId") eventId: string, @Body() body: { projectionVersion?: number }) { return this.rooms.markInteractionSeen(user, roomId, eventId, parseProjectionVersion(body.projectionVersion)); }
+  @Post(":roomId/events/:eventId/ack") interactionAck(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("eventId") eventId: string, @Body() body: { projectionVersion?: number }) { return this.rooms.acknowledgeInteraction(user, roomId, eventId, parseProjectionVersion(body.projectionVersion)); }
+  @Post(":roomId/events/:eventId/resolved") interactionResolved(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("eventId") eventId: string, @Body() body: { projectionVersion?: number }) { return this.rooms.resolveInteraction(user, roomId, eventId, parseProjectionVersion(body.projectionVersion)); }
+  @Post(":roomId/a-emotion/modals/:modalId/shown") keyModalShown(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("modalId") modalId: string, @Body() body: { projectionVersion?: number; triggerVersion?: number }) { return this.rooms.markKeyModalShown(user, roomId, modalId, parseProjectionVersion(body.projectionVersion), parseProjectionVersion(body.triggerVersion)); }
+  @Post(":roomId/a-emotion/modals/:modalId/ack") keyModalAck(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("modalId") modalId: string, @Body() body: { projectionVersion?: number; triggerVersion?: number }) { return this.rooms.acknowledgeKeyModal(user, roomId, modalId, parseProjectionVersion(body.projectionVersion), parseProjectionVersion(body.triggerVersion)); }
   @Sse(":roomId/events/stream") eventsStream(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("afterDeliverySequence") afterDeliverySequence?: string, @Query("after") legacyAfter?: string): Observable<MessageEvent> { return this.rooms.eventStream(user, roomId, afterDeliverySequence ?? legacyAfter); }
   @Get(":roomId") get(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.get(user, roomId); }
   @Post(":roomId/role") selectRole(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { roleId?: string }) { return this.rooms.selectRole(user, roomId, String(body.roleId || "")); }
@@ -75,6 +93,14 @@ export class RoomsController {
   @Post(":roomId/ready") ready(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { ready?: boolean }) { return this.rooms.ready(user, roomId, body.ready !== false); }
   @Post(":roomId/start") start(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.start(user, roomId); }
   @Post(":roomId/close") close(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.close(user, roomId); }
+}
+
+function parseProjectionVersion(value: unknown) {
+  const version = typeof value === "number" ? value : typeof value === "string" && /^\d+$/.test(value) ? Number(value) : NaN;
+  if (!Number.isSafeInteger(version) || version < 1) {
+    throw new HttpException({ code: "INTERACTION_PROJECTION_VERSION_INVALID", message: "A valid projectionVersion is required" }, 400);
+  }
+  return version;
 }
 
 function writeNdjson(response: any, value: unknown) {

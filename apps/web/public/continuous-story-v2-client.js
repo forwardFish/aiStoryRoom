@@ -1,4 +1,5 @@
 import { ContinuousStoryV2LegacyStorage } from "./continuous-story-v2-legacy-storage.js?v=20260806-opening-sequence-v1";
+import { createAEmotionM1Ui } from "./a-emotion-m1-ui.js?v=20260810-m2-v1";
 
 export function createContinuousStoryV2App({ root, window: win, runId, initialProjection, fetchImpl }) {
   if (!root || !runId || typeof fetchImpl !== "function") throw new TypeError("continuous story v2 requires root, runId and fetch");
@@ -6,13 +7,17 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
   let storyApp = null;
   let pollTimer = null;
   let heartbeatTimer = null;
+  let aEmotionTransport = null;
   let refreshInFlight = false;
   let heartbeatInFlight = false;
   let heartbeatSequence = 0;
   let openingRetryStatus = "";
   let creditMountObserver = null;
+  let aEmotionM1Ui = null;
   const sessionInstanceId = sessionId(win, runId);
   const onCreditsRequired = (event) => { void showCreditsRequired(event.detail || {}); };
+  const onWindowFocus = () => { if (!storyApp?.getState()?.busy) void aEmotionTransport?.refreshNow("focus"); };
+  const onNetworkOnline = () => { if (!storyApp?.getState()?.busy) void aEmotionTransport?.refreshNow("online"); };
 
   async function loadOldMainGame() {
     const previous = win.__AI_STORY_DISABLE_AUTO_BOOT__;
@@ -34,7 +39,10 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       if (draft) restoreCustomDraft(root, win, draft);
       renderCreditChrome();
       renderOpeningRecovery();
-      if (!isSoloProjection(storage.projection)) void refreshHostRequests();
+      if (!isSoloProjection(storage.projection)) {
+        await aEmotionM1Ui?.refresh();
+        void refreshHostRequests();
+      }
     } finally {
       refreshInFlight = false;
     }
@@ -176,19 +184,48 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       // existing refresh/retry controls. Multiplayer keeps its presence and
       // convergence timers until its transport is migrated separately.
       if (!isSoloProjection(storage.projection)) {
+        aEmotionM1Ui = createAEmotionM1Ui({
+          root,
+          window: win,
+          runId,
+          fetchImpl,
+          getProjection: () => storage.projection,
+          prefillWorkbench: ({ maneuverType, targetRoleKey, intentKey, prefillText }) => {
+            storyApp?.chooseManeuver(maneuverType, targetRoleKey, "", intentKey);
+            const textarea = root.querySelector("#maneuverCustomText");
+            if (textarea && prefillText) {
+              textarea.value = prefillText;
+              textarea.dispatchEvent(new win.Event("input", { bubbles: true }));
+            }
+          }
+        });
+        await aEmotionM1Ui.refresh();
         void refreshHostRequests();
+        win.addEventListener("focus", onWindowFocus);
+        win.addEventListener("online", onNetworkOnline);
+        const frozenPollIntervalMs = aEmotionPollInterval(storage.projection);
+        aEmotionTransport = createAEmotionM6Transport({
+          window: win,
+          runId,
+          pollIntervalMs: frozenPollIntervalMs,
+          isBusy: () => Boolean(storyApp?.getState()?.busy),
+          onRefresh: () => aEmotionM1Ui?.refresh()
+        });
+        aEmotionTransport.start();
+        // Opening recovery is separate from the interaction transport. It only
+        // refreshes the full projection when no player draft or focused
+        // workbench would be disturbed.
         pollTimer = win.setInterval(() => {
           const state = storyApp?.getState();
+          if (state?.busy) return;
           const openingNeedsRecoveryPoll = Boolean(!storage.projection?.completed && !storage.projection?.currentTurn);
           const hasDraft = Boolean(
             root.querySelector("#customDecision")?.value?.trim()
             || root.querySelector("#maneuverCustomText")?.value?.trim()
             || root.querySelector(".maneuver-panel :focus")
           );
-          if (!state?.busy
-            && (openingNeedsRecoveryPoll || (!state?.showOpening && !state?.openingStream && !state?.resultStream))
-            && !hasDraft) void refresh(true);
-        }, 1_500);
+          if (openingNeedsRecoveryPoll && !hasDraft) void refresh(true);
+        }, frozenPollIntervalMs);
         heartbeatTimer = win.setInterval(() => void heartbeat(), 10_000);
       }
       return this;
@@ -198,20 +235,104 @@ export function createContinuousStoryV2App({ root, window: win, runId, initialPr
       if (heartbeatTimer) win.clearInterval(heartbeatTimer);
       creditMountObserver?.disconnect();
       creditMountObserver = null;
+      aEmotionTransport?.stop();
+      aEmotionTransport = null;
+      aEmotionM1Ui?.destroy();
+      aEmotionM1Ui = null;
       win.removeEventListener("worldcreditsrequired", onCreditsRequired);
+      win.removeEventListener("focus", onWindowFocus);
+      win.removeEventListener("online", onNetworkOnline);
       win.document.querySelectorAll(`[data-v2-credit-chrome="${cssEscape(runId)}"], [data-v2-opening-recovery="${cssEscape(runId)}"], [data-credit-required-for="${cssEscape(runId)}"]`).forEach((node) => node.remove());
     },
     refresh,
     submitDecision: () => storyApp?.submitDecision(),
-    submitManeuver: () => storyApp?.submitManeuver(),
+    async submitManeuver() {
+      const beforeSequence = Number(storage.projection?.worldSequence || 0);
+      await storyApp?.submitManeuver();
+      const afterSequence = Number(storage.projection?.worldSequence || 0);
+      if (afterSequence > beforeSequence) {
+        await aEmotionM1Ui?.refresh();
+      }
+    },
     handoff: () => changeControl("handoff"),
     reclaim: () => changeControl("reclaim"),
     loadResult: () => storage.loadResult(),
     getState: () => ({
       ...(storyApp?.getState() || {}),
       projection: storage.projection,
+      aEmotionM1: aEmotionM1Ui?.getState() || null,
       customAction: root.querySelector("#customDecision")?.value || ""
     })
+  };
+}
+
+function aEmotionPollInterval(projection) {
+  const value = Number(projection?.aEmotionFeatures?.features?.pollIntervalMs);
+  return Number.isInteger(value) && value >= 3_000 && value <= 30_000 ? value : 7_000;
+}
+
+
+/**
+ * M6 transport prefers the production SSE endpoint and falls back to bounded
+ * polling after an unsupported constructor or stream failure. It never touches
+ * decision/workbench DOM, so reconnects cannot clear player drafts or focus.
+ */
+export function createAEmotionM6Transport({ window: win, runId, onRefresh, isBusy = () => false, pollIntervalMs = 7_000 }) {
+  if (!win || !runId || typeof onRefresh !== "function") throw new TypeError("M6 transport requires window, runId and onRefresh");
+  const interval = Number.isInteger(pollIntervalMs) && pollIntervalMs >= 3_000 && pollIntervalMs <= 30_000 ? pollIntervalMs : 7_000;
+  let stream = null;
+  let poll = null;
+  let stopped = true;
+  let inFlight = false;
+  let mode = "stopped";
+
+  async function refreshNow(_reason = "manual") {
+    if (stopped || inFlight || isBusy()) return false;
+    inFlight = true;
+    try { await onRefresh(); return true; }
+    finally { inFlight = false; }
+  }
+
+  function startPolling() {
+    if (stopped || poll) return;
+    mode = "poll";
+    poll = win.setInterval(() => { void refreshNow("poll"); }, interval);
+    poll?.unref?.();
+  }
+
+  function startStream() {
+    if (typeof win.EventSource !== "function") { startPolling(); return; }
+    try {
+      stream = new win.EventSource(`/api/v4/rooms/${encodeURIComponent(runId)}/events/stream`);
+      mode = "sse";
+      stream.onmessage = () => { void refreshNow("sse"); };
+      stream.onerror = () => {
+        try { stream?.close?.(); } catch {}
+        stream = null;
+        startPolling();
+      };
+    } catch {
+      stream = null;
+      startPolling();
+    }
+  }
+
+  return {
+    start() {
+      if (!stopped) return;
+      stopped = false;
+      startStream();
+    },
+    stop() {
+      stopped = true;
+      mode = "stopped";
+      try { stream?.close?.(); } catch {}
+      stream = null;
+      if (poll) win.clearInterval(poll);
+      poll = null;
+    },
+    refreshNow,
+    getState: () => ({ mode, inFlight, stopped, pollIntervalMs: interval })
   };
 }
 

@@ -4,6 +4,7 @@ import {
   CONTINUOUS_STORY_ENGINE_VERSION,
   GAME_PROJECTION_V2_SCHEMA_VERSION,
   validateGameProjectionV2,
+  validateAEmotionSimplePromiseCommandV1,
   type ControlCommandV1,
   type DecisionCandidateV2,
   type DecisionFormV2,
@@ -47,10 +48,16 @@ import {
   planIntentAction,
   type PlannedIntentAction
 } from "./player-intent";
+import { applyAuthoritativeAEmotionLifecycle } from "./a-emotion-authoritative-lifecycle";
 import { StoryContextComposerV2 } from "./story-context.composer";
 import { StoryGenerationErrorV2 } from "./story-generation.pipeline";
 import { StoryNarrativeProvider } from "./story-narrative.provider";
 import { operationalMetrics } from "../observability/operational-metrics";
+import { aEmotionM6ViewerProjection } from "../config/a-emotion-m6.config";
+import { AEmotionM1Service } from "./a-emotion-m1.service";
+import { AEmotionM2Service } from "./a-emotion-m2.service";
+import { AEmotionM4Service } from "./a-emotion-m4.service";
+import { AEmotionM5Service } from "./a-emotion-m5.service";
 
 type Tx = Prisma.TransactionClient;
 
@@ -102,7 +109,11 @@ export class ContinuousStoryV2Service {
     @Inject(StoryAccessService) private readonly access: StoryAccessService,
     @Inject(StoryContextComposerV2) private readonly storyContexts: StoryContextComposerV2,
     @Inject(StoryNarrativeProvider) private readonly narrator: StoryNarrativeProvider,
-    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never
+    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never,
+    @Inject(AEmotionM1Service) private readonly aEmotionM1: AEmotionM1Service | null = null,
+    @Inject(AEmotionM2Service) private readonly aEmotionM2: AEmotionM2Service | null = null,
+    @Inject(AEmotionM4Service) private readonly aEmotionM4: AEmotionM4Service | null = null,
+    @Inject(AEmotionM5Service) private readonly aEmotionM5: AEmotionM5Service | null = null
   ) {}
 
   async start(user: AuthenticatedUser, roomId: string) {
@@ -444,7 +455,9 @@ export class ContinuousStoryV2Service {
       generatedAt: new Date().toISOString(),
       worldSequence: run.worldSequence,
       room: { id: run.id, title: run.title, worldId: run.templateKey, status: run.status, mode: run.maxPlayers === 1 ? "solo" : "multiplayer", ownerUserId: run.ownerUserId },
-      world: gamePageProjection(run.templateKey),
+      world: this.aEmotionM1
+        ? this.aEmotionM1.applyMetricProjection(run, membership.role.id, gamePageProjection(run.templateKey))
+        : gamePageProjection(run.templateKey),
       player: {
         userId: user.id,
         roleId: membership.role.id,
@@ -547,6 +560,7 @@ export class ContinuousStoryV2Service {
         worldSequence: entry.worldSequence || 0,
         createdAt: entry.createdAt.toISOString()
       })),
+      ...(aEmotionM6ViewerProjection(run) ? { aEmotionFeatures: aEmotionM6ViewerProjection(run) } : {}),
       access: {
         state: activeActionBilling ? "UNLOCKED" : access.unlocked ? "UNLOCKED" : access.requiresUnlock ? "REQUIRES_UNLOCK" : "FREE",
         requiresUnlock: activeActionBilling ? false : access.requiresUnlock,
@@ -2328,6 +2342,7 @@ export class ContinuousStoryV2Service {
             baseWorldSequence: run.worldSequence,
             nextWorldSequence: appliedSequence,
             interactionId: input.command.interactionId || null,
+            simplePromise: input.command.simplePromise || null,
             nextStateKey: input.action.nextStateKey,
             fromStageIndex: turn.stageIndex,
             toStageIndex: input.stageProgress.nextStageIndex,
@@ -2454,20 +2469,6 @@ export class ContinuousStoryV2Service {
         }
       });
     }
-    if (action.targetRoleId && /承诺|答应|保证|立誓|允诺|约定|交换条件/.test(`${action.normalizedIntent.objective} ${action.normalizedIntent.method}`)) {
-      await tx.commitmentV2.create({
-        data: {
-          runId: run.id,
-          sourceResolutionId: resolution.id,
-          issuerRoleId: turn.roleId,
-          receiverRoleId: action.targetRoleId,
-          content: `${context.role.roleName}向${action.targetRoleName || "对方"}承诺：${action.normalizedIntent.objective}；执行方式为${action.normalizedIntent.method}`,
-          visibility: action.visibility,
-          expiresAtStage: action.normalizedIntent.condition?.expiresAtStage || Math.min(run.totalDays, turn.stageIndex + 2),
-          dedupeKey: `commitment-v2:${resolution.id}:${action.targetRoleId}`
-        }
-      });
-    }
     if (!isSoloNpcRun(run) && action.requiresTargetResponse && action.targetRoleId) {
       await tx.interactionRequestV2.create({
         data: {
@@ -2489,7 +2490,7 @@ export class ContinuousStoryV2Service {
       });
     }
     await tx.conditionalActionV2.updateMany({ where: { runId: run.id, status: "ARMED", expiresAtStage: { lt: turn.stageIndex } }, data: { status: "EXPIRED", expiredAt: new Date() } });
-    await tx.commitmentV2.updateMany({ where: { runId: run.id, status: "ACTIVE", expiresAtStage: { lt: turn.stageIndex } }, data: { status: "EXPIRED", expiredAt: new Date() } });
+    await tx.commitmentV2.updateMany({ where: { runId: run.id, status: "ACTIVE", promiseCode: null, expiresAtStage: { lt: turn.stageIndex } }, data: { status: "EXPIRED", expiredAt: new Date() } });
 
     const allRoleIds = context.allRoles.map((role) => role.id);
     for (const factKey of action.effectFactKeys) {
@@ -2497,9 +2498,16 @@ export class ContinuousStoryV2Service {
       const affectedRoleKeys = new Set(action.influenceEdges.map((edge) => edge.affectedRoleKey));
       const affectedRoleIds = context.allRoles.filter((role) => affectedRoleKeys.has(role.roleKey)).map((role) => role.id);
       const knownBy = factAudience(factVisibility, action, turn.roleId, allRoleIds, affectedRoleIds);
-      const factContent = factVisibility === "OBSERVABLE"
+      const m1SafeFactContent = this.aEmotionM1?.safeCanonicalFactContent({
+        run,
+        sourceRole: context.role,
+        stageIndex: turn.stageIndex,
+        action,
+        factKey
+      });
+      const factContent = m1SafeFactContent || (factVisibility === "OBSERVABLE"
         ? action.observableTraceText || `有人在${context.situationInput.stage.title}留下了可核验但尚不能确认来源的行动痕迹。`
-        : action.receiptText;
+        : action.receiptText);
       const existingFact = await tx.canonFact.findUnique({ where: { runId_factKey: { runId: run.id, factKey } } });
       if (existingFact) {
         await tx.canonFact.update({
@@ -2529,6 +2537,54 @@ export class ContinuousStoryV2Service {
       }
     }
     await this.ensureStageAssets(tx, run.id, stageProgress.nextStageIndex || turn.stageIndex, context.allRoles);
+    const m1Impact = this.aEmotionM1
+      ? await this.aEmotionM1.applyAuthoritativeImpact(tx, {
+        run,
+        sourceRole: context.role,
+        allRoles: context.allRoles,
+        resolutionId: resolution.id,
+        playerActionId: playerAction.id,
+        stageIndex: turn.stageIndex,
+        appliedWorldSequence: resolution.appliedWorldSequence,
+        action
+      })
+      : { handledTargetRoleIds: [], stateVersion: null };
+    if (this.aEmotionM2) {
+      await this.aEmotionM2.applyAuthoritativeUpgrade(tx, {
+        run,
+        sourceRole: context.role,
+        allRoles: context.allRoles,
+        resolutionId: resolution.id,
+        playerActionId: playerAction.id,
+        stageIndex: turn.stageIndex,
+        appliedWorldSequence: resolution.appliedWorldSequence,
+        action
+      });
+    }
+    if (this.aEmotionM4) {
+      const promiseCommand = plan.simplePromise;
+      if (promiseCommand && action.targetRoleId) {
+        await this.aEmotionM4.createFromCommittedAction(tx, {
+          run,
+          sourceResolutionId: resolution.id,
+          sourceActionId: playerAction.id,
+          issuerRoleId: context.role.id,
+          receiverRoleId: action.targetRoleId,
+          stageIndex: turn.stageIndex,
+          command: promiseCommand
+        });
+      }
+    }
+    await applyAuthoritativeAEmotionLifecycle(tx, {
+      run,
+      sourceRoleId: context.role.id,
+      sourceResolutionId: resolution.id,
+      sourceActionId: playerAction.id,
+      stageIndex: turn.stageIndex,
+      action,
+      m4: this.aEmotionM4,
+      m5: this.aEmotionM5
+    });
     await this.publishCrossImpacts(tx, {
       runId: run.id,
       nodeId,
@@ -2538,7 +2594,8 @@ export class ContinuousStoryV2Service {
       appliedSequence: resolution.appliedWorldSequence,
       playerActionId: playerAction.id,
       allRoles: context.allRoles,
-      soloNpcMode: isSoloNpcRun(run)
+      soloNpcMode: isSoloNpcRun(run),
+      excludeRoleIds: new Set(m1Impact.handledTargetRoleIds)
     });
     await this.enqueueMatchingConditionTasks(tx, {
       runId: run.id,
@@ -3008,20 +3065,6 @@ export class ContinuousStoryV2Service {
           }
         });
       }
-      if (input.action.targetRoleId && /承诺|答应|保证|立誓|允诺|约定|交换条件/.test(`${input.action.normalizedIntent.objective} ${input.action.normalizedIntent.method}`)) {
-        await tx.commitmentV2.create({
-          data: {
-            runId: run.id,
-            sourceResolutionId: resolution.id,
-            issuerRoleId: turn.roleId,
-            receiverRoleId: input.action.targetRoleId,
-            content: `${input.context.role.roleName}向${input.action.targetRoleName || "对方"}承诺：${input.action.normalizedIntent.objective}；执行方式为${input.action.normalizedIntent.method}`,
-            visibility: input.action.visibility,
-            expiresAtStage: input.action.normalizedIntent.condition?.expiresAtStage || Math.min(input.context.run.totalDays, turn.stageIndex + 2),
-            dedupeKey: `commitment-v2:${resolution.id}:${input.action.targetRoleId}`
-          }
-        });
-      }
       if (!isSoloNpcRun(run) && input.action.requiresTargetResponse && input.action.targetRoleId) {
         await tx.interactionRequestV2.create({
           data: {
@@ -3047,7 +3090,7 @@ export class ContinuousStoryV2Service {
         data: { status: "EXPIRED", expiredAt: new Date() }
       });
       await tx.commitmentV2.updateMany({
-        where: { runId: run.id, status: "ACTIVE", expiresAtStage: { lt: turn.stageIndex } },
+        where: { runId: run.id, status: "ACTIVE", promiseCode: null, expiresAtStage: { lt: turn.stageIndex } },
         data: { status: "EXPIRED", expiredAt: new Date() }
       });
       await tx.decisionSubmission.update({ where: { id: submission.id }, data: { status: "RESOLVED", resolvedAt: new Date() } });
@@ -3092,6 +3135,29 @@ export class ContinuousStoryV2Service {
           });
         }
       }
+      if (this.aEmotionM4) {
+        if (input.command.simplePromise && input.action.targetRoleId) {
+          await this.aEmotionM4.createFromCommittedAction(tx, {
+            run,
+            sourceResolutionId: resolution.id,
+            sourceActionId: playerAction.id,
+            issuerRoleId: input.context.role.id,
+            receiverRoleId: input.action.targetRoleId,
+            stageIndex: turn.stageIndex,
+            command: input.command.simplePromise
+          });
+        }
+      }
+      await applyAuthoritativeAEmotionLifecycle(tx, {
+        run,
+        sourceRoleId: input.context.role.id,
+        sourceResolutionId: resolution.id,
+        sourceActionId: playerAction.id,
+        stageIndex: turn.stageIndex,
+        action: input.action,
+        m4: this.aEmotionM4,
+        m5: this.aEmotionM5
+      });
       const resultingStageIndex = input.stageProgress.nextStageIndex || turn.stageIndex;
       await this.ensureStageAssets(tx, run.id, resultingStageIndex, input.context.allRoles);
       await tx.storyRun.update({ where: { id: run.id }, data: { worldSequence: appliedSequence, currentDay: Math.max(run.currentDay, resultingStageIndex), version: { increment: 1 } } });
@@ -3205,6 +3271,7 @@ export class ContinuousStoryV2Service {
   private async publishCrossImpacts(tx: Tx, input: {
     runId: string; nodeId: string; sourceRole: StoryRole; action: PlannedIntentAction; stageIndex: number;
     appliedSequence: number; playerActionId: string; allRoles: StoryRole[]; soloNpcMode: boolean;
+    excludeRoleIds?: ReadonlySet<string>;
   }) {
     // Solo non-human roles are story NPCs, not independently scheduled actors.
     // Their reactions are written into the human result and next situation.
@@ -3213,6 +3280,7 @@ export class ContinuousStoryV2Service {
     const broadlyObservable = input.action.visibility === "PUBLIC" || input.action.visibility === "OBSERVABLE";
     const directedPrivateResponse = input.action.visibility === "PRIVATE" && input.action.requiresTargetResponse;
     const targets = input.allRoles.filter((role) => role.id !== input.sourceRole.id
+      && !input.excludeRoleIds?.has(role.id)
       && (broadlyObservable || (explicitKeys.has(role.roleKey) && (input.action.visibility === "LIMITED" || directedPrivateResponse))));
     if (!targets.length) return;
     for (const target of targets) {
@@ -3821,6 +3889,13 @@ function validateCommand(command: TurnDecisionCommandV2) {
   if (command.interactionId && !/^[A-Za-z0-9_-]{8,160}$/.test(command.interactionId)) {
     throw new BadRequestException({ code: "INVALID_COMMAND", message: "interactionId is invalid" });
   }
+  if (command.simplePromise) {
+    if (command.decisionForm !== "CONVERSATION") {
+      throw new BadRequestException({ code: "INVALID_COMMAND", message: "Formal promises require a conversation decision" });
+    }
+    const validatedPromise = validateAEmotionSimplePromiseCommandV1(command.simplePromise);
+    if (!validatedPromise.ok) throw new BadRequestException({ code: "INVALID_COMMAND", message: "Formal promise command is invalid" });
+  }
 }
 
 // Solo v2 has already passed the context-aware Writer/Decision publication
@@ -3967,6 +4042,7 @@ function conditionMatches(rawValue: unknown, actorRoleId: string, action: Planne
   const anchors = eventType.split(/[，。；、：:\s]/).map((part) => normalizeEvent(part)).filter((part) => part.length >= 4);
   return anchors.length > 0 && anchors.every((anchor) => corpus.includes(anchor));
 }
+
 
 
 function isSoloNpcRun(

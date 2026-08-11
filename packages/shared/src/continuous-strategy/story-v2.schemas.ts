@@ -1,6 +1,8 @@
 import { GAME_PROJECTION_V2_SCHEMA_VERSION } from "./constants";
 import { fail, integerAtLeast, isRecord, nonEmptyString, pass, type ValidationResult } from "./schema-utils";
 import type { CreditControlProjection } from "./credit-control.schemas";
+import type { AEmotionSimplePromiseCommandV1 } from "./a-emotion-m4.schemas";
+import { validateAEmotionM6ViewerStateV1, type AEmotionM6ViewerStateV1 } from "./a-emotion-m6.schemas";
 
 export type IntentTargetTypeV2 = "ROLE" | "PERSON" | "DOCUMENT" | "EVIDENCE" | "RESOURCE" | "LOCATION" | "INSTITUTION" | "PUBLIC_FRAME";
 export type IntentVisibilityV2 = "PRIVATE" | "LIMITED" | "OBSERVABLE" | "PUBLIC";
@@ -216,6 +218,7 @@ export type GameProjectionV2 = {
   armedConditions: ArmedConditionProjectionV2[];
   pendingInteractions: PendingInteractionProjectionV2[];
   observableTraces: ObservableTraceProjectionV2[];
+  aEmotionFeatures?: AEmotionM6ViewerStateV1;
   access: { state: string; requiresUnlock: boolean; requiredCredits: number; canCurrentUserUnlock: boolean; unlockEndpoint: string | null };
   creditControl: CreditControlProjection;
   completed: boolean;
@@ -230,6 +233,7 @@ export type TurnDecisionCommandV2 = {
   customAction?: string;
   interactionId?: string;
   decisionForm?: DecisionFormV2;
+  simplePromise?: AEmotionSimplePromiseCommandV1;
   intent: PlayerIntentV2;
 };
 
@@ -263,6 +267,10 @@ export function validateGameProjectionV2(value: unknown): ValidationResult<GameP
   if (!Array.isArray(value.otherActors)) errors.push("otherActors must be an array");
   for (const key of ["visibleAssets", "evidenceHoldings", "commitments", "armedConditions", "pendingInteractions", "observableTraces"] as const) {
     if (!Array.isArray(value[key])) errors.push(`${key} must be an array`);
+  }
+  if (value.aEmotionFeatures !== undefined) {
+    const features = validateAEmotionM6ViewerStateV1(value.aEmotionFeatures);
+    if (!features.ok) errors.push(...features.errors.map((error) => `aEmotionFeatures: ${error}`));
   }
   if (typeof value.completed !== "boolean") errors.push("completed must be boolean");
   if (value.resultUrl !== null && typeof value.resultUrl !== "string") errors.push("resultUrl must be string or null");

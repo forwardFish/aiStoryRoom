@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 import {
@@ -11,6 +11,18 @@ import { WindowLifecycleService } from "./continuous-strategy/window-lifecycle.s
 import { WindowResolutionService } from "./continuous-strategy/window-resolution.service";
 import { RoleAgentTaskService } from "./continuous-strategy/role-agent-task.service";
 import { ContinuousStoryV2Service } from "./continuous-story-v2/continuous-story-v2.service";
+import { AEmotionM1Service } from "./continuous-story-v2/a-emotion-m1.service";
+import { AEmotionM2Service, A_EMOTION_M2_TASK_TYPE } from "./continuous-story-v2/a-emotion-m2.service";
+import { AEmotionM3Service, A_EMOTION_M3_TASK_TYPE } from "./continuous-story-v2/a-emotion-m3.service";
+import { AEmotionM4Service, A_EMOTION_M4_TASK_TYPE } from "./continuous-story-v2/a-emotion-m4.service";
+import { AEmotionM5Service, A_EMOTION_M5_TASK_TYPE } from "./continuous-story-v2/a-emotion-m5.service";
+import {
+  AEmotionM6Service,
+  A_EMOTION_M6_PAUSED_CODE,
+  A_EMOTION_M6_TASK_TYPES,
+  isAEmotionM6PausedError,
+  isAEmotionM6TaskType
+} from "./continuous-story-v2/a-emotion-m6.service";
 import { readCreditConsumptionConfig } from "./config/credit-consumption.config";
 import { SoloStoryEngineService } from "./solo-story-engine/solo-story-engine.service";
 
@@ -24,7 +36,7 @@ export function requiresOutboxHeartbeat(taskType: string) {
   return taskType !== "RESOLVE_WINDOW";
 }
 
-const V2_TASK_TYPES = ["ACTOR_OPENING_V2", "ACTOR_AGENT_TURN_V2", "ACTOR_RESULT_V2", "ACTOR_IMPACT_V2", "CONDITIONAL_ACTION_V2", "SOLO_AI_WORLD_TICK_V1", "SOLO_PUBLISH_RECOVERY_V1"];
+const V2_TASK_TYPES = ["ACTOR_OPENING_V2", "ACTOR_AGENT_TURN_V2", "ACTOR_RESULT_V2", "ACTOR_IMPACT_V2", "INTERACTION_COMPILE_REQUESTED", A_EMOTION_M2_TASK_TYPE, A_EMOTION_M3_TASK_TYPE, A_EMOTION_M4_TASK_TYPE, A_EMOTION_M5_TASK_TYPE, "CONDITIONAL_ACTION_V2", "SOLO_AI_WORLD_TICK_V1", "SOLO_PUBLISH_RECOVERY_V1"];
 function isV2Task(taskType: string) { return V2_TASK_TYPES.includes(taskType); }
 function pendingStatus(taskType: string) { return isV2Task(taskType) ? "PENDING" : "pending"; }
 function runningStatus(taskType: string) { return isV2Task(taskType) ? "RUNNING" : "running"; }
@@ -79,7 +91,13 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
     @Inject(WindowResolutionService) private readonly continuousResolution: WindowResolutionService,
     @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService,
     @Inject(ContinuousStoryV2Service) private readonly continuousStoryV2: ContinuousStoryV2Service,
-    @Inject(SoloStoryEngineService) private readonly soloStoryEngine: SoloStoryEngineService
+    @Inject(SoloStoryEngineService) private readonly soloStoryEngine: SoloStoryEngineService,
+    @Inject(AEmotionM1Service) private readonly aEmotionM1: AEmotionM1Service | null = null,
+    @Inject(AEmotionM2Service) private readonly aEmotionM2: AEmotionM2Service | null = null,
+    @Inject(AEmotionM3Service) private readonly aEmotionM3: AEmotionM3Service | null = null,
+    @Inject(AEmotionM4Service) private readonly aEmotionM4: AEmotionM4Service | null = null,
+    @Inject(AEmotionM5Service) private readonly aEmotionM5: AEmotionM5Service | null = null,
+    @Inject(AEmotionM6Service) private readonly aEmotionM6: AEmotionM6Service | null = null
   ) {}
 
   onModuleInit() {
@@ -179,12 +197,13 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
     this.draining = true;
     try {
       const now = new Date();
+      if (this.aEmotionM6) await this.aEmotionM6.recoverStaleTasks(undefined, now);
       await this.prisma.storyTaskOutbox.updateMany({
         where: { status: "running", leaseExpiresAt: { lt: now } },
         data: { status: "pending", leaseOwner: null, leaseExpiresAt: null, nextRetryAt: now, leaseVersion: { increment: 1 } }
       });
       await this.prisma.storyTaskOutbox.updateMany({
-        where: { status: "RUNNING", taskType: { in: V2_TASK_TYPES }, leaseExpiresAt: { lt: now } },
+        where: { status: "RUNNING", taskType: { in: V2_TASK_TYPES, notIn: [...A_EMOTION_M6_TASK_TYPES] }, leaseExpiresAt: { lt: now } },
         data: { status: "PENDING", leaseOwner: null, leaseExpiresAt: null, nextRetryAt: now, leaseVersion: { increment: 1 } }
       });
       // Independent V2 actor turns are player-facing continuation work. Do not
@@ -206,6 +225,13 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         orderBy: { createdAt: "asc" }
       });
       if (!first) return;
+      if (this.aEmotionM6 && isAEmotionM6TaskType(first.taskType) && await this.aEmotionM6.isRunPaused(first.runId)) {
+        await this.prisma.storyTaskOutbox.updateMany({
+          where: { id: first.id, status: pendingStatus(first.taskType), nextRetryAt: { lte: now } },
+          data: { nextRetryAt: new Date(now.getTime() + 30_000), lastError: A_EMOTION_M6_PAUSED_CODE }
+        });
+        return;
+      }
       const creditConfig = readCreditConsumptionConfig();
       const requestedLimit = Math.max(1, Math.trunc(roleAgentConcurrency || 1));
       const limit = creditConfig.aiBatchingEnabled
@@ -340,7 +366,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
       // a slow earlier result cannot create an endless chain of replacement
       // AI actions behind it.
       const sequenceWait = task.taskType === "ACTOR_RESULT_V2" && isResultSequenceWait(error);
-      const exhausted = !sequenceWait && (nonRetryable || task.attempt >= task.maxAttempts);
+      const pausedByM6 = isAEmotionM6TaskType(task.taskType) && isAEmotionM6PausedError(error);
+      const exhausted = !sequenceWait && !pausedByM6 && (nonRetryable || task.attempt >= task.maxAttempts);
       const delayMs = Math.min(30_000, 500 * 2 ** Math.max(0, task.attempt - 1));
       const recorded = await this.prisma.storyTaskOutbox.updateMany({
         where: {
@@ -352,6 +379,8 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         },
         data: exhausted
           ? { status: failedStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, lastError: message }
+          : pausedByM6
+            ? { status: pendingStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, attempt: { decrement: 1 }, nextRetryAt: new Date(Date.now() + 30_000), lastError: A_EMOTION_M6_PAUSED_CODE }
           : sequenceWait
             ? { status: pendingStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, attempt: { decrement: 1 }, nextRetryAt: new Date(Date.now() + Math.max(1_000, delayMs)), lastError: message }
           : { status: pendingStatus(task.taskType), leaseOwner: null, leaseExpiresAt: null, nextRetryAt: new Date(Date.now() + delayMs), lastError: message }
@@ -388,7 +417,13 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async executeTask(task: { id: string; nodeId: string; windowId: string | null; taskType: string }, fence: { taskId: string; leaseOwner: string; leaseVersion: number }) {
+  private async executeTask(task: { id: string; runId: string; nodeId: string; windowId: string | null; taskType: string }, fence: { taskId: string; leaseOwner: string; leaseVersion: number }) {
+    if (this.aEmotionM6 && isAEmotionM6TaskType(task.taskType) && await this.aEmotionM6.isRunPaused(task.runId)) {
+      throw new ServiceUnavailableException({
+        code: A_EMOTION_M6_PAUSED_CODE,
+        message: "A-Emotion processing is paused for this room"
+      });
+    }
     switch (task.taskType) {
       case "RESOLVE_WINDOW":
         return this.continuousResolution.resolve(String(task.windowId), fence);
@@ -402,6 +437,21 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         return this.continuousStoryV2.executeResultTask(task.id, fence);
       case "ACTOR_IMPACT_V2":
         return this.continuousStoryV2.executeImpactTask(task.id, fence);
+      case "INTERACTION_COMPILE_REQUESTED":
+        if (!this.aEmotionM1) throw new Error("A_EMOTION_M1_SERVICE_UNAVAILABLE");
+        return this.aEmotionM1.executeCompileTask(task.id, fence);
+      case A_EMOTION_M2_TASK_TYPE:
+        if (!this.aEmotionM2) throw new Error("A_EMOTION_M2_SERVICE_UNAVAILABLE");
+        return this.aEmotionM2.executeCompileTask(task.id, fence);
+      case A_EMOTION_M3_TASK_TYPE:
+        if (!this.aEmotionM3) throw new Error("A_EMOTION_M3_SERVICE_UNAVAILABLE");
+        return this.aEmotionM3.executeCompileTask(task.id, fence);
+      case A_EMOTION_M4_TASK_TYPE:
+        if (!this.aEmotionM4) throw new Error("A_EMOTION_M4_SERVICE_UNAVAILABLE");
+        return this.aEmotionM4.executeCompileTask(task.id, fence);
+      case A_EMOTION_M5_TASK_TYPE:
+        if (!this.aEmotionM5) throw new Error("A_EMOTION_M5_SERVICE_UNAVAILABLE");
+        return this.aEmotionM5.executeCompileTask(task.id, fence);
       case "CONDITIONAL_ACTION_V2":
         return this.continuousStoryV2.executeConditionalTask(task.id, fence);
       case "SOLO_AI_WORLD_TICK_V1":
