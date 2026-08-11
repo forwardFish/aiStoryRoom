@@ -116,3 +116,54 @@ test("B0 projection derives an authoritative compiler context from ActionWindow 
   assert.equal(projection.turnRevision, 1);
   assert.equal(JSON.stringify(projection).includes(privateFact.content), false);
 });
+
+
+test("B0 projection selects the successor OPEN window over a completed predecessor", async () => {
+  const db = fakeB0Db() as any;
+  db.storyRun.findUnique = async () => ({
+    id: "run.1",
+    currentNodeId: "node.b0.one",
+    currentChapter: 1,
+    worldSequence: 5,
+    status: "playing",
+  });
+  db.actionWindow.findMany = async () => [
+    {
+      id: "window.b0.one",
+      runId: "run.1",
+      nodeId: "node.b0.one",
+      status: "COMPLETED",
+      openingSnapshotVersion: 4,
+      projectionVersion: 8,
+      version: 8,
+      configJson: { schemaVersion: "b0-window-config-v1" },
+      node: { chapterIndex: 1, nodeIndex: 1 },
+      participants: [{ roleId: "role.viewer" }, { roleId: "role.contact" }],
+    },
+    {
+      id: "window.b0.two",
+      runId: "run.1",
+      nodeId: "node.b0.two",
+      status: "OPEN",
+      openingSnapshotVersion: 5,
+      projectionVersion: 1,
+      version: 1,
+      configJson: { schemaVersion: "b0-window-config-v1" },
+      node: { chapterIndex: 1, nodeIndex: 2 },
+      participants: [{ roleId: "role.viewer" }, { roleId: "role.contact" }],
+    },
+  ];
+
+  const context = await readB0ManeuverContextV1(db, "user.viewer", "run.1");
+  assert.ok(context);
+  assert.equal(context.b0WindowId, "window.b0.two");
+  assert.equal(context.actorTurnId, "b0-window:window.b0.two");
+  assert.equal(context.windowState, "OPEN");
+  assert.equal(context.turnRevision, 1);
+
+  const projection = await readManeuverProjectionV1(db, "user.viewer", "run.1");
+  assert.equal(projection.windowState, "OPEN");
+  assert.equal(projection.stateRevision, 5);
+  assert.equal(projection.turnRevision, 1);
+  assert.equal(projection.contacts[0]?.id, "role.contact");
+});

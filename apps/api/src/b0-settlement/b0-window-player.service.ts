@@ -18,6 +18,7 @@ import {
 } from "../maneuver-v1/maneuver-v1.core";
 import {
   readB0ManeuverContextV1,
+  selectCurrentB0WindowV1,
   type B0AuthoritativeManeuverContextV1,
 } from "../maneuver-v1/maneuver-v1.prisma-read";
 import { ManeuverV1Service } from "../maneuver-v1/maneuver-v1.service";
@@ -212,7 +213,7 @@ export class B0WindowPlayerService {
       orderBy: { createdAt: "desc" },
       take: 12,
     });
-    const window = windows.find((entry) => jsonRecord(entry.configJson)?.schemaVersion === "b0-window-config-v1");
+    const window = selectCurrentB0WindowV1(windows, windowId ?? null);
     if (!window) {
       throw new NotFoundException({
         code: "B0_WINDOW_NOT_AVAILABLE",

@@ -37,6 +37,44 @@ const ACTIVE_B0_WINDOW_STATUSES = [
   "OPEN", "LOCKED", "SETTLING", "COMMITTED", "PUBLISHING", "COMPLETED", "FAILED_RETRYABLE", "FAILED_HARD",
 ] as const;
 
+const CURRENT_B0_WINDOW_STATUSES = new Set<string>([
+  "OPEN", "LOCKED", "SETTLING", "COMMITTED", "PUBLISHING", "FAILED_RETRYABLE", "FAILED_HARD",
+]);
+
+type B0WindowCandidateV1 = {
+  id: string;
+  nodeId: string;
+  status: string;
+  configJson: unknown;
+  node?: { chapterIndex?: number | null; nodeIndex?: number | null } | null;
+};
+
+export function selectCurrentB0WindowV1<T extends B0WindowCandidateV1>(
+  windows: readonly T[],
+  currentNodeId?: string | null,
+): T | null {
+  const candidates = windows
+    .filter((entry) => optionalRecord(entry.configJson)?.schemaVersion === "b0-window-config-v1")
+    .slice()
+    .sort(compareB0WindowPositionV1);
+  const current = currentNodeId
+    ? candidates.find((entry) => entry.nodeId === currentNodeId) ?? null
+    : null;
+  if (current && CURRENT_B0_WINDOW_STATUSES.has(current.status)) return current;
+  return candidates.find((entry) => CURRENT_B0_WINDOW_STATUSES.has(entry.status))
+    ?? current
+    ?? candidates[0]
+    ?? null;
+}
+
+function compareB0WindowPositionV1(left: B0WindowCandidateV1, right: B0WindowCandidateV1): number {
+  const chapter = Number(right.node?.chapterIndex ?? 0) - Number(left.node?.chapterIndex ?? 0);
+  if (chapter) return chapter;
+  const node = Number(right.node?.nodeIndex ?? 0) - Number(left.node?.nodeIndex ?? 0);
+  if (node) return node;
+  return right.id.localeCompare(left.id);
+}
+
 export type B0AuthoritativeManeuverContextV1 = AuthoritativeManeuverContextV1 & {
   b0WindowId: string;
 };
@@ -169,30 +207,32 @@ export async function readB0ManeuverContextV1(
   userId: string,
   runId: string,
 ): Promise<B0AuthoritativeManeuverContextV1 | null> {
-  const windows = await (db as any).actionWindow.findMany({
-    where: { runId, status: { in: [...ACTIVE_B0_WINDOW_STATUSES] } },
-    select: {
-      id: true,
-      runId: true,
-      nodeId: true,
-      status: true,
-      openingSnapshotVersion: true,
-      projectionVersion: true,
-      version: true,
-      configJson: true,
-      node: { select: { chapterIndex: true } },
-      participants: { select: { roleId: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 12,
-  });
-  const window = windows.find((entry: any) => optionalRecord(entry.configJson)?.schemaVersion === "b0-window-config-v1");
-  if (!window) return null;
-
   const run = await (db as any).storyRun.findUnique({
-    where: { id: runId },
-    select: { id: true, currentChapter: true, worldSequence: true, status: true },
-  });
+  where: { id: runId },
+  select: { id: true, currentNodeId: true, currentChapter: true, worldSequence: true, status: true },
+});
+if (!run) throw domain("RUN_NOT_FOUND", "The story run was not found.", 404, false);
+
+const windows = await (db as any).actionWindow.findMany({
+  where: { runId, status: { in: [...ACTIVE_B0_WINDOW_STATUSES] } },
+  select: {
+    id: true,
+    runId: true,
+    nodeId: true,
+    status: true,
+    openingSnapshotVersion: true,
+    projectionVersion: true,
+    version: true,
+    configJson: true,
+    node: { select: { chapterIndex: true, nodeIndex: true } },
+    participants: { select: { roleId: true } },
+  },
+  orderBy: { createdAt: "desc" },
+  take: 12,
+});
+const window = selectCurrentB0WindowV1<any>(windows, run.currentNodeId);
+if (!window) return null;
+
   const player = await (db as any).storyPlayer.findFirst({
     where: { runId, userId, playerType: "human", status: "active" },
     select: { id: true, roleId: true },
