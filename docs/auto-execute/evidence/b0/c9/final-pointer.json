@@ -1,10 +1,14 @@
 {
-  "schemaVersion": 2,
-  "testableCandidateSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
-  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
-  "evidenceCommitSha": "d98c6ee983484b5ed0765ba7c0354ec5f95bcd44",
+  "schemaVersion": 3,
+  "testableCandidateSha": null,
+  "testedCodeSha": null,
+  "evidenceCommitSha": null,
   "finalRemoteSha": null,
-  "finalRemoteShaResolution": "external clean-clone readback because a commit cannot contain its own SHA",
+  "formalProbeSha": "df9deb4337260b7edc3c78bde480e4efe8d06f55",
   "status": "EXTERNAL_BLOCKED",
-  "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED"
+  "classification": "FORMAL_MANAGED_SUPABASE_AND_PROVIDER_CREDENTIALS_MISSING",
+  "userTestReady": false,
+  "candidateBranchReady": false,
+  "completionMarkersAllowed": false,
+  "pointerResolution": "No formal tested/evidence/final SHA chain may be frozen until managed non-production Supabase and real Provider acceptance succeeds."
 }
