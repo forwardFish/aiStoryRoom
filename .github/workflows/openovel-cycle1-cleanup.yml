@@ -1,0 +1,57 @@
+name: OpenNovel Cycle 1 Transport Cleanup
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/openovel-cycle1-cleanup.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: openovel-cycle1-transport-cleanup
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+  PRODUCT_SHA: 3067a8ba196a22dac5eed479c9cf02376b500635
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 250
+      - name: Remove cycle 1 transport files and push normally
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$PRODUCT_SHA" HEAD
+          files=(
+            .github/workflows/openovel-cycle1-cleanup.yml
+            .github/workflows/openovel-authoritative-narrative-cycle1-rerun.yml
+            .github/openovel-cycle1-patch/chunk-00.b64
+            .github/openovel-cycle1-patch/chunk-01.b64
+            .github/openovel-cycle1-patch/chunk-02.b64
+            .github/openovel-cycle1-patch/chunk-03.b64
+            .github/openovel-cycle1-patch/chunk-04.b64
+            .github/openovel-cycle1-patch/chunk-05.b64
+          )
+          for path in "${files[@]}"; do test -f "$path"; done
+          git rm "${files[@]}"
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "ci(openovel): remove cycle 1 transport files"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$TARGET_BRANCH"
+          remote_after="$(git ls-remote origin refs/heads/$TARGET_BRANCH | awk '{print $1}')"
+          test "$remote_after" = "$local_head"
+          echo "CYCLE1_TRANSPORT_CLEANED=$local_head"
