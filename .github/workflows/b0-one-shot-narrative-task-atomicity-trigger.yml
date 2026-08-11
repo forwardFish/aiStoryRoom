@@ -1,4 +1,5 @@
 name: B0 One-Shot Narrative Task Atomicity Trigger
+# trigger-revision: 1
 
 on:
   push:
