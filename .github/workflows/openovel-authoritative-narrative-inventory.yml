@@ -1,0 +1,128 @@
+name: OpenNovel Authoritative Narrative Inventory
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/openovel-authoritative-narrative-inventory.yml
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: openovel-authoritative-narrative-inventory
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Publish run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "openovel/narrative-inventory",
+              description: `inventory running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 200
+
+      - name: Build exact branch and architecture inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/openovel-inventory
+          {
+            echo "REMOTE_TIP_WITH_INVENTORY_WORKFLOW=$(git rev-parse HEAD)"
+            echo "REMOTE_TIP_BEFORE_WORK=$(git rev-parse HEAD^)"
+            echo "BRANCH_REMOTE=$(git ls-remote origin refs/heads/codex/chatgpt-pro-maneuver-evidence-v1 | awk '{print $1}')"
+            echo "MAIN_REMOTE=$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+            echo "BRANCH=$(git branch --show-current || true)"
+            echo "STATUS_BEGIN"
+            git status --short
+            echo "STATUS_END"
+          } > /tmp/openovel-inventory/git-state.txt
+
+          for required in AGENTS.md CLAUDE.md README.md package.json; do
+            if test -f "$required"; then
+              printf 'PRESENT\t%s\n' "$required"
+            else
+              printf 'MISSING\t%s\n' "$required"
+            fi
+          done > /tmp/openovel-inventory/required-files.txt
+
+          find apps packages prisma scripts docs -type f \
+            \( -iname '*narrat*' -o -iname '*finale*' -o -iname '*ending*' -o -iname '*result*' -o -iname '*t20*' -o -iname '*openovel*' -o -iname '*outbox*' -o -iname '*canon*' \) \
+            | LC_ALL=C sort > /tmp/openovel-inventory/product-paths.txt
+
+          rg -n --hidden --glob '!node_modules/**' --glob '!docs/auto-execute/evidence/**' \
+            '(Narrator|Narrative|narrative|Finale|Ending|ending|T20|LEG-002|ADR-005|sourceCommitHash|resultJson|Run completed|status: "completed"|status: "COMPLETED")' \
+            apps packages prisma scripts docs > /tmp/openovel-inventory/semantic-hits.txt || true
+
+          rg -n --hidden --glob '!node_modules/**' --glob '!docs/auto-execute/evidence/**' \
+            '(\$transaction|transaction\(|rollback|ROLLBACK|generate.*Narrative|generate.*Ending|generate.*Finale|render.*Narrative|await .*narrat|await .*Narrat|NARRATIVE_.*FAIL|LEG-002)' \
+            apps packages prisma scripts docs > /tmp/openovel-inventory/rollback-hits.txt || true
+
+          rg -n --hidden --glob '!node_modules/**' \
+            '(model (Narrative|Ending|Finale|StoryTaskOutbox|StoryRun|SceneNode|Canon)|enum .*Narrative|narrativeStatus|authoritativeResultStatus|sourceCommitHash|presentationHash)' \
+            prisma packages apps > /tmp/openovel-inventory/data-model-hits.txt || true
+
+          find docs -type f | LC_ALL=C sort | rg '(ADR|architecture|架构|OpenNovel|openovel|Narrative|narrative|终局|结局|ending|finale|T20|LEG)' \
+            > /tmp/openovel-inventory/architecture-docs.txt || true
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('/tmp/openovel-inventory')
+          def lines(name):
+              path = root / name
+              return path.read_text(encoding='utf-8', errors='replace').splitlines() if path.exists() else []
+          payload = {
+              'gitState': lines('git-state.txt'),
+              'requiredFiles': lines('required-files.txt'),
+              'productPaths': lines('product-paths.txt'),
+              'architectureDocs': lines('architecture-docs.txt'),
+              'semanticHits': lines('semantic-hits.txt'),
+              'rollbackHits': lines('rollback-hits.txt'),
+              'dataModelHits': lines('data-model-hits.txt'),
+          }
+          (root / 'inventory.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openovel-authoritative-narrative-inventory-${{ github.sha }}
+          path: /tmp/openovel-inventory
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "openovel/narrative-inventory",
+              description: success ? `inventory complete in ${context.runId}` : `inventory failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("inventory failed");
