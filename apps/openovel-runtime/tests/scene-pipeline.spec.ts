@@ -56,6 +56,20 @@ test("model slot-list transport is normalized without changing prose", () => {
     WORLD_PRESSURE: "The envoy refuses the signature.",
     DECISION_STOP: "The council waits for a decision.",
   });
+
+  const textAlias = JSON.stringify({
+    schemaVersion: SCENE_DRAFT_SCHEMA,
+    draftId: "T03.draft.original",
+    owner: "NARRATOR",
+    slots: [
+      { slot: "WORLD_PRESSURE", text: "The envoy refuses the signature." },
+      { slot: "DECISION_STOP", text: "The council waits for a decision." },
+    ],
+  });
+  assert.deepEqual(parseSceneDraft(textAlias, "T03.draft.original").slots, {
+    WORLD_PRESSURE: "The envoy refuses the signature.",
+    DECISION_STOP: "The council waits for a decision.",
+  });
 });
 
 test("model slot-list transport rejects duplicates and unknown fields", () => {
@@ -107,13 +121,14 @@ test("P0 review retries one transport failure without regenerating the scene", a
   assert.deepEqual(provider.profiles, ["reviewer", "reviewer"]);
 });
 
-test("invalid Reviewer structure safely selects the Story Package fallback", async () => {
+test("invalid Reviewer structure remains advisory and preserves the valid Narrator scene", async () => {
   const provider = new ReviewProvider("INVALID_P0_SHAPE");
   const input = fixture();
   const result = await new SceneExpressionPipeline(provider, "ENFORCING").resolve(input);
-  assert.equal(result.disposition.kind, "USE_FALLBACK");
-  assert.match(result.fallbackReason || "", /^REVIEW_UNAVAILABLE_SAFE_DEGRADE:SCENE_REVIEW_INVALID:/u);
-  assert.equal(result.finalText, Object.values(input.fallbackDraft.slots).join("\n\n"));
+  assert.equal(result.disposition.kind, "USE_ORIGINAL");
+  assert.equal(result.finalText, Object.values(input.narratorDraft.slots).join("\n\n"));
+  assert.equal(result.reviewObservation.status, "UNAVAILABLE");
+  assert.match(result.reviewObservation.nonCriticalFindings[0] || "", /^SCENE_REVIEW_INVALID:/u);
   assert.deepEqual(result.reviewObservation.criticalFindings, []);
 });
 

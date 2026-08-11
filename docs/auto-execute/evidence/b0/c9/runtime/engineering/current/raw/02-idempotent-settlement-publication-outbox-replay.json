@@ -1,0 +1,36 @@
+{
+  "name": "idempotent-settlement-publication-outbox-replay",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:41:35.778Z",
+  "completedAt": "2026-08-10T17:41:36.416Z",
+  "result": {
+    "windowId": "id_023edd6f94c06302",
+    "taskIds": [
+      "id_be8bdc3e82797595",
+      "id_1acb4f14e1fefcf4"
+    ],
+    "before": {
+      "worldSequence": 1,
+      "commitHash": "ce1f7709108a2fa947af3f613b9bd7103c5f238cbed694ef38ed7e3de4946c03",
+      "resolutionHash": "6411f98588c13a92ba395c17c5fe14e72b33685e3f4fda758ca54479e1bbe08e",
+      "storyEventCount": 9,
+      "eventDeliveryCount": 6,
+      "narrativeCount": 6
+    },
+    "after": {
+      "worldSequence": 1,
+      "commitHash": "ce1f7709108a2fa947af3f613b9bd7103c5f238cbed694ef38ed7e3de4946c03",
+      "resolutionHash": "6411f98588c13a92ba395c17c5fe14e72b33685e3f4fda758ca54479e1bbe08e",
+      "storyEventCount": 9,
+      "eventDeliveryCount": 6,
+      "narrativeCount": 6
+    },
+    "adminReplay": {
+      "schemaVersion": "b0-replay-result-v1",
+      "windowId": "cmsnipbtb00214sjw9r4t6lis",
+      "storedResolutionHash": "[STOREDRESOLUTIONHASH_REDACTED]",
+      "replayedResolutionHash": "[REPLAYEDRESOLUTIONHASH_REDACTED]",
+      "matches": true
+    }
+  }
+}

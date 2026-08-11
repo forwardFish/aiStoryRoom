@@ -1364,6 +1364,7 @@ function buildNextStoryBeat(input: {
   }, 2).map((asset) => {
     const pattern = asset.payload as unknown as import("./narrative-scene-pattern").NarrativeScenePattern;
     return {
+      patternId: pattern.patternId,
       dramaticFunction: pattern.dramaticFunction,
       openingPressure: pattern.openingPressure,
       orderedBeats: pattern.orderedBeats,
@@ -1487,6 +1488,15 @@ function buildNextStoryBeat(input: {
   if (!worldPressure) {
     throw new Error(`PART_ONE_VISIBLE_PRESSURE_MISSING:${input.decisionKernelId}`);
   }
+  const visibleConsequence = unique([
+    ...input.authoritativeObservableFacts,
+    ...(input.sceneAfter.observableFacts || []),
+    input.sceneAfter.situation,
+    worldPressure,
+  ])
+    .map((value) => String(value || "").trim())
+    .find((value) => value && value !== playerOutcome && value !== decisionStop)
+    || worldPressure;
   // The deterministic planner owns the actual next decision. Author-written
   // fallback prose may supply the literary result and pressure, but it must
   // never carry an older stop point across a newly inserted continuation
@@ -1519,9 +1529,12 @@ function buildNextStoryBeat(input: {
     sceneObjective: input.nextDecisionPoint.prompt,
     presentActorRefs: input.sceneAfter.presentActorRefs,
     actorLabelsByRef,
+    playerActorRef: input.pkg.perspectiveRoleKey,
     pressureActorRefs: input.nextDecisionPoint.actorRefs,
     actorPolicies,
+    playerResultMeaning: playerVisibleFallback.PLAYER_RESULT,
     pressureMeaning: playerVisibleFallback.WORLD_PRESSURE,
+    visibleConsequenceMeaning: visibleConsequence,
     decisionStopMeaning: playerVisibleFallback.DECISION_STOP
   });
   return {
@@ -1533,6 +1546,7 @@ function buildNextStoryBeat(input: {
     ].join("|" )).slice(0, 18)}`,
     playerOutcome,
     npcOrWorldPressure,
+    visibleConsequence,
     sourceEventIds,
     deferredEventIds,
     presentMoves,

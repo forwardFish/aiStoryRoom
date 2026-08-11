@@ -60,3 +60,14 @@ packages/templates/src/**/*.js
 scripts/acceptance/generated/
 *.tsbuildinfo
 .omx/
+
+# B0 finalizer v7 records the evidence body first, then seals only these
+# two pointers in a second commit. Keep all other generated evidence ignored.
+!docs/auto-execute/evidence/
+docs/auto-execute/evidence/*
+!docs/auto-execute/evidence/b0/
+docs/auto-execute/evidence/b0/*
+!docs/auto-execute/evidence/b0/c9/
+docs/auto-execute/evidence/b0/c9/*
+!docs/auto-execute/evidence/b0/c9/final-pointer.json
+!docs/auto-execute/evidence/b0/c9/B0_FINAL_DELIVERY_RESULT.json

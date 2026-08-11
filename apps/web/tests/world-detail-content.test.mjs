@@ -88,7 +88,7 @@ test("Sangtian and Caesar use one detail template and every visible asset/conten
   assert.equal(signatures[0], signatures[1], "both games share the same top-level detail template structure");
 });
 
-test("detail implementation has no Sangtian/Caesar template switch or fixed world route", async () => {
+test("detail implementation keeps one runtime template while serving indexable SEO shells", async () => {
   const [platform, server] = await Promise.all([
     readFile(new URL("../public/platform.js", import.meta.url), "utf8"),
     readFile(new URL("../src/server.mjs", import.meta.url), "utf8")
@@ -99,6 +99,8 @@ test("detail implementation has no Sangtian/Caesar template switch or fixed worl
   assert.ok(detailStart >= 0 && detailEnd > detailStart);
   assert.doesNotMatch(detailSource, /sangtian|caesar/i);
   assert.doesNotMatch(platform, /renderSangtianWorld|hydrateWorldRegistry/);
-  assert.doesNotMatch(server, /\["\/worlds\/(sangtian|caesar)"/);
+  assert.match(server, /\["\/worlds\/caesar", "\/worlds-caesar\.html"\]/);
+  assert.match(server, /\["\/worlds\/sangtian", "\/worlds-sangtian\.html"\]/);
   assert.match(server, /\^\\\/worlds\\\/\[\^\/\]\+\$/);
+  assert.match(server, /pageRoutes\.get\(normalizedPathname\) \|\| "\/platform\.html"/);
 });

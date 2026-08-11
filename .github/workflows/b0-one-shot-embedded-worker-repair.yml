@@ -1,0 +1,269 @@
+name: B0 One-Shot Embedded Worker Acceptance Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-embedded-worker-repair.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-embedded-worker-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+      B0_EVIDENCE_ROOT: .artifacts/b0-worker-repair/${{ github.sha }}
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Publish repair locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/embedded-worker-repair",
+              description: `embedded worker repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact fast-forward branch tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-one-shot-embedded-worker-repair.yml"
+          test -n "$(find docs/auto-execute/diagnostics/b0/engineering -name diagnosis.json -type f -print -quit)"
+
+      - name: Derive actual worker enable switches and patch only the acceptance API environment
+        id: patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$B0_EVIDENCE_ROOT"
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json, re, os
+          from pathlib import Path
+
+          root = Path('.')
+          harness_path = root / 'scripts/acceptance/b0-candidate-real-flow.ts'
+          harness = harness_path.read_text(encoding='utf-8')
+          records = []
+          patterns = [
+              re.compile(r'process\.env(?:\.([A-Z0-9_]+)|\[\s*["\']([A-Z0-9_]+)["\']\s*\])'),
+              re.compile(r'(?:get|read|env|config)\s*\(\s*["\']([A-Z][A-Z0-9_]{5,})["\']'),
+          ]
+          for path in (root / 'apps/api/src').rglob('*.ts'):
+              text = path.read_text(encoding='utf-8', errors='replace')
+              for pattern in patterns:
+                  for match in pattern.finditer(text):
+                      name = next((g for g in match.groups() if g), None)
+                      if not name or 'WORKER' not in name:
+                          continue
+                      context = text[max(0, match.start()-500):min(len(text), match.end()+700)]
+                      lower = context.lower()
+                      enable_semantics = (
+                          '=== "true"' in lower
+                          or "=== 'true'" in lower
+                          or 'enabled' in lower
+                          or 'enable' in lower
+                          or 'parseboolean' in lower
+                          or 'booleanenv' in lower
+                      )
+                      if not enable_semantics:
+                          continue
+                      if not any(token in name for token in ('B0', 'SETTLEMENT', 'OUTBOX', 'STORY_TASK', 'OPENOVEL')):
+                          continue
+                      records.append({'name': name, 'file': str(path), 'contextHash': __import__('hashlib').sha256(context.encode()).hexdigest()})
+
+          candidates = sorted({item['name'] for item in records})
+          missing = [name for name in candidates if name not in harness]
+          report = {
+              'schemaVersion': 1,
+              'headSha': os.environ.get('GITHUB_SHA'),
+              'detectedEnableSwitches': candidates,
+              'missingFromAcceptanceHarness': missing,
+              'sourceRecords': records,
+          }
+          Path(os.environ['B0_EVIDENCE_ROOT'], 'worker-env-scan.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+          if not missing:
+              Path(os.environ['B0_EVIDENCE_ROOT'], 'patch-status.txt').write_text('NOT_APPLICABLE\n', encoding='utf-8')
+              raise SystemExit(20)
+          if len(missing) > 8:
+              raise SystemExit(f'refusing broad worker env patch: {missing}')
+
+          # Locate the API process env object by two authoritative keys. The patch
+          # changes only the acceptance harness; no product default is weakened.
+          api_anchor = harness.index('OPENOVEL_PROVIDER_BASE_URL')
+          object_start = harness.rfind('{', 0, api_anchor)
+          if object_start < 0 or 'DATABASE_URL' not in harness[object_start:api_anchor]:
+              raise SystemExit('could not locate the acceptance API env object')
+          indent_match = re.search(r'\n(\s*)OPENOVEL_PROVIDER_BASE_URL', harness[object_start:])
+          if not indent_match:
+              raise SystemExit('could not derive API env indentation')
+          indent = indent_match.group(1)
+          insertion = ''.join(f'\n{indent}{name}: "true",' for name in missing)
+          harness = harness[:object_start+1] + insertion + harness[object_start+1:]
+          harness_path.write_text(harness, encoding='utf-8')
+          Path(os.environ['B0_EVIDENCE_ROOT'], 'patch-status.txt').write_text('PATCHED\n', encoding='utf-8')
+          PY
+        continue-on-error: true
+
+      - name: Reject an inapplicable or unsafe patch without marking it PASS
+        if: steps.patch.outcome != 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(cat "$B0_EVIDENCE_ROOT/patch-status.txt" 2>/dev/null || echo FAILED)
+          echo "worker env patch status: $status"
+          exit 1
+
+      - name: Frozen install and focused contract verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-worker
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web build
+
+      - name: Prepare isolated engineering infrastructure
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
+
+      - name: Prove the patched harness completes the real six-window engineering flow
+        id: acceptance
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p "$B0_EVIDENCE_ROOT"
+          set +e
+          pnpm test:b0:real-acceptance >"$B0_EVIDENCE_ROOT/acceptance-console.log" 2>&1
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$rc" > "$B0_EVIDENCE_ROOT/acceptance-exit-code.txt"
+          exit "$rc"
+
+      - name: Prove product traffic reached the real engineering provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
+
+      - name: Clean isolated infrastructure
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup
+
+      - name: Redact and scan evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
+
+      - name: Commit the verified acceptance-harness repair as an ordinary fast-forward
+        if: steps.acceptance.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          destination="docs/auto-execute/diagnostics/b0/worker-env-repair/${GITHUB_SHA}"
+          mkdir -p "$destination"
+          cp "$B0_EVIDENCE_ROOT/worker-env-scan.json" "$destination/worker-env-scan.json"
+          cp "$B0_EVIDENCE_ROOT/acceptance-exit-code.txt" "$destination/acceptance-exit-code.txt"
+          cat > "$destination/README.md" <<EOF
+          # Verified B0 embedded worker acceptance repair
+
+          - triggerSha: \`${GITHUB_SHA}\`
+          - workflowRunId: \`${GITHUB_RUN_ID}\`
+          - validation: real six-window engineering flow completed
+          - databaseTier: official self-hosted \`supabase/postgres\`, engineering-only
+          - formalC8: not claimed
+          EOF
+          git rm .github/workflows/b0-one-shot-embedded-worker-repair.yml
+          git add scripts/acceptance/b0-candidate-real-flow.ts "$destination"
+          git diff --cached --check
+          cat > /tmp/expected <<EOF
+          .github/workflows/b0-one-shot-embedded-worker-repair.yml
+          scripts/acceptance/b0-candidate-real-flow.ts
+          ${destination}/README.md
+          ${destination}/acceptance-exit-code.txt
+          ${destination}/worker-env-scan.json
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(b0): enable authoritative embedded workers in acceptance"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish repair outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          ACCEPTANCE_OUTCOME: ${{ steps.acceptance.outcome }}
+        with:
+          script: |
+            const success = process.env.ACCEPTANCE_OUTCOME === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/embedded-worker-repair",
+              description: `embedded worker repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("embedded worker repair did not pass the engineering real flow");

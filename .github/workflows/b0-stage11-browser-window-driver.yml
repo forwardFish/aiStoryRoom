@@ -1,0 +1,372 @@
+name: B0 Stage 11 Real Browser Six-Window Repair V3
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage11-browser-window-driver.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage11-real-browser-v3
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+      B0_EVIDENCE_ROOT: .artifacts/b0-stage11-v3/${{ github.sha }}
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Publish locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage11-real-browser-v3",
+              description: `real browser six-window repair v3 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 3
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact input
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "957c1ab358297c560fc7ea6fc95671089d522432"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-browser-window-driver.yml"
+          test "$(git hash-object scripts/acceptance/b0-candidate-real-flow.ts)" = "f434c6bf4c2d6d26d1231fd9343e87672ad58bef"
+
+      - name: Patch deterministic browser driver and consistent worker boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
+          source = path.read_text(encoding="utf-8")
+
+          special = '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });'
+          if source.count(special) != 1:
+              raise SystemExit(f"duplicate-confirm browser anchor count={source.count(special)}")
+          source = source.replace(
+              special,
+              '      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });',
+              1,
+          )
+
+          generic = '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);'
+          if source.count(generic) != 4:
+              raise SystemExit(f"three-human browser anchor count={source.count(generic)}")
+          source = source.replace(
+              generic,
+              '      await submitCyclicPlansThroughBrowser(browsers, mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+          )
+
+          partial = '      await submitCyclicPlans(mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));'
+          if source.count(partial) != 1:
+              raise SystemExit(f"deadline browser anchor count={source.count(partial)}")
+          source = source.replace(
+              partial,
+              '      await submitCyclicPlansThroughBrowser(browsers.slice(0, 2), mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));',
+              1,
+          )
+
+          boundary_start = source.index('      await sleep(1_500);\n      const participantsBeforeWorker')
+          boundary_end = source.index('\n      await startWorker(commonEnv, "worker"', boundary_start)
+          boundary = '''      await sleep(1_500);
+          const snap = await prisma.$transaction(async (tx) => ({
+            participants: await tx.actionWindowParticipant.findMany({
+              where: { windowId: opened.windowId },
+              select: { roleId: true, mainStatus: true },
+              orderBy: { roleId: "asc" },
+            }),
+            settlement: await tx.storyTaskOutbox.findFirst({
+              where: { windowId: opened.windowId, taskType: "B0_SETTLEMENT_REQUESTED" },
+              select: { id: true, status: true, attempt: true, leaseVersion: true, leaseOwner: true },
+            }),
+            window: await tx.actionWindow.findUniqueOrThrow({
+              where: { id: opened.windowId },
+              select: { status: true },
+            }),
+            run: await tx.storyRun.findUniqueOrThrow({
+              where: { id: mainRun.id },
+              select: { worldSequence: true },
+            }),
+          }), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+          const humanRoleIds = new Set(opened.humanRoleIds);
+          const humanParticipants = snap.participants.filter((entry) => humanRoleIds.has(entry.roleId));
+          const aiParticipants = snap.participants.filter((entry) => !humanRoleIds.has(entry.roleId));
+          const preparedStatuses = new Set(["B0_READY", "B0_LOCKED"]);
+          assert.equal(humanParticipants.length, opened.humanRoleIds.length, "all human roles must have synchronized window participants");
+          assert(humanParticipants.every((entry) => preparedStatuses.has(entry.mainStatus)), "all humans must have browser-confirmed ActionContracts before standalone worker startup");
+          assert(aiParticipants.length >= 1, "the multiplayer run must retain AI-filled vacant roles");
+          assert(aiParticipants.every((entry) => ["B0_PENDING", "B0_READY", "B0_LOCKED"].includes(entry.mainStatus)), "AI roles must remain inside the bounded ActionContract lifecycle");
+          assert.equal(snap.run.worldSequence, before.worldSequence, "without a standalone worker the world cannot advance");
+          const aiPending = aiParticipants.filter((entry) => entry.mainStatus === "B0_PENDING").length;
+          const aiLocked = aiParticipants.filter((entry) => entry.mainStatus === "B0_LOCKED").length;
+          let preWorkerBoundary: "AI_ACTIONS_UNPREPARED" | "AI_ACTIONS_PARTIALLY_PREPARED" | "SETTLEMENT_ENQUEUED";
+          if (snap.settlement === null) {
+            assert.equal(snap.window.status, "OPEN", "without settlement the synchronized window remains OPEN");
+            assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "humans remain READY before freeze");
+            assert.equal(aiLocked, 0, "an OPEN window cannot expose a partially locked AI roster");
+            preWorkerBoundary = aiPending === aiParticipants.length
+              ? "AI_ACTIONS_UNPREPARED"
+              : "AI_ACTIONS_PARTIALLY_PREPARED";
+          } else {
+            assert(humanParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "humans lock with the frozen roster");
+            assert.equal(aiLocked, aiParticipants.length, "all AI roles lock atomically after freeze");
+            assert.equal(snap.window.status, "LOCKED");
+            assert.equal(snap.settlement.status, "pending");
+            assert.equal(snap.settlement.leaseOwner, null);
+            assert.equal(snap.settlement.leaseVersion, 0);
+            preWorkerBoundary = "SETTLEMENT_ENQUEUED";
+          }
+          const settlementBeforeWorker = snap.settlement;
+          const preWorkerWindow = snap.window;
+          const preWorkerRun = snap.run;
+          '''.replace("          ", "")
+          source = source[:boundary_start] + boundary + source[boundary_end:]
+
+          helper = '''async function submitCyclicPlansThroughBrowser(
+            browsers: BrowserSession[],
+            runId: string,
+            users: Array<{ id: string; token: string }>,
+            roleIds: string[],
+            options: { duplicateConfirm?: boolean } = {},
+          ) {
+            assert.equal(browsers.length, users.length);
+            assert.equal(users.length, roleIds.length);
+            for (let index = 0; index < users.length; index += 1) {
+              const browser = browsers[index];
+              const desiredTarget = roleIds[(index + 1) % roleIds.length] || roleIds[0];
+              await browser.reload();
+              await browser.waitForSelector("[data-b0-window-status]", 60_000);
+              await browser.waitFor(
+                () => browser.evaluate(`Boolean(document.querySelector('[data-mv1-kind="CONTACT"]:not([disabled]))')`),
+                60_000,
+                `${browser.name} CONTACT enabled`,
+              );
+              await browser.evaluate(`document.querySelector('[data-mv1-kind="CONTACT"]:not([disabled])')?.click()`);
+              await browser.waitForSelector('[data-mv1-for="CONTACT"][data-mv1-field="targetId"]', 30_000);
+              const selectedTarget = await browser.evaluate(`(() => {
+                const element = document.querySelector('[data-mv1-for="CONTACT"][data-mv1-field="targetId"]');
+                if (!element || element.disabled) return "";
+                const values = Array.from(element.options).filter((option) => !option.disabled && option.value).map((option) => option.value);
+                const desired = ${JSON.stringify(desiredTarget)};
+                element.value = values.includes(desired) ? desired : (values[0] || "");
+                element.dispatchEvent(new Event("change", { bubbles: true }));
+                return element.value;
+              })()`);
+              assert(String(selectedTarget).length > 0, `${browser.name} must select a legal CONTACT target`);
+              await browser.waitForSelector('[data-mv1-for="CONTACT"][data-mv1-field="rawText"]', 30_000);
+              const rawText = "Coordinate a bounded synchronized action with the selected counterpart.";
+              const textApplied = await browser.evaluate(`(() => {
+                const element = document.querySelector('[data-mv1-for="CONTACT"][data-mv1-field="rawText"]');
+                if (!element || element.disabled) return false;
+                const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+                if (setter) setter.call(element, ${JSON.stringify(rawText)}); else element.value = ${JSON.stringify(rawText)};
+                element.dispatchEvent(new Event("input", { bubbles: true }));
+                return true;
+              })()`);
+              assert.equal(textApplied, true, `${browser.name} must enter a CONTACT message`);
+              await browser.waitFor(
+                () => browser.evaluate(`Boolean(document.querySelector('[data-mv1-preview]:not([disabled]))')`),
+                30_000,
+                `${browser.name} preview enabled`,
+              );
+              await browser.evaluate(`document.querySelector('[data-mv1-preview]:not([disabled])')?.click()`);
+              await browser.waitFor(
+                () => browser.evaluate(`Boolean(document.querySelector('[data-mv1-confirm]:not([disabled]))') || Boolean(document.querySelector('[role="alert"]'))`),
+                90_000,
+                `${browser.name} preview response`,
+              );
+              const previewState = await browser.evaluate(`(() => ({
+                confirmable: Boolean(document.querySelector('[data-mv1-confirm]:not([disabled])')),
+                error: document.querySelector('[role="alert"]')?.textContent || "",
+              }))()`);
+              assert.equal(previewState.confirmable, true, `${browser.name} preview must be confirmable: ${previewState.error}`);
+              await browser.evaluate(`document.querySelector('[data-mv1-confirm]:not([disabled])')?.click()`);
+              await waitFor(async () => {
+                const projection = await apiJson(users[index].token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+                return ["CONFIRMED", "LOCKED"].includes(projection.plan?.status) || projection.window?.status !== "OPEN";
+              }, 90_000, `${browser.name} confirmation persisted`);
+              if (options.duplicateConfirm && index === 0) {
+                const projection = await apiJson(users[index].token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+                const revision = Number(projection.plan?.revision);
+                assert(Number.isInteger(revision) && revision > 0);
+                const replay = await apiJson(users[index].token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window/confirm`, { method: "POST", body: { expectedRevision: revision } });
+                assert.equal(replay.plan?.status, "CONFIRMED");
+              }
+              await browser.waitFor(
+                () => browser.evaluate(`Boolean(document.querySelector('[data-b0-ready]:not([disabled]))')`),
+                60_000,
+                `${browser.name} ready enabled`,
+              );
+              await browser.evaluate(`document.querySelector('[data-b0-ready]:not([disabled])')?.click()`);
+              await waitFor(async () => {
+                const projection = await apiJson(users[index].token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+                return projection.actor?.ready === true || projection.window?.status !== "OPEN";
+              }, 90_000, `${browser.name} ready persisted`);
+            }
+          }
+
+          '''.replace("          ", "")
+          helper_anchor = 'async function submitCyclicPlans(\n'
+          if source.count(helper_anchor) != 1:
+              raise SystemExit(f"browser helper insertion anchor count={source.count(helper_anchor)}")
+          source = source.replace(helper_anchor, helper + helper_anchor, 1)
+
+          network_anchor = '        assert(report.network.some((entry: any) => entry.url.includes("/b0/window") && entry.status >= 200 && entry.status < 300), `${report.name} must observe successful real B0 network traffic`);\n'
+          if source.count(network_anchor) != 1:
+              raise SystemExit(f"browser network assertion anchor count={source.count(network_anchor)}")
+          network_assertions = network_anchor + '        for (const suffix of ["/b0/window/preview", "/b0/window/confirm", "/b0/window/ready"]) {\n          assert(report.network.some((entry: any) => entry.method === "POST" && entry.url.endsWith(suffix) && entry.status >= 200 && entry.status < 300), `${report.name} must drive ${suffix} through the real browser`);\n        }\n'
+          source = source.replace(network_anchor, network_assertions, 1)
+
+          if 'preWorkerWindow' not in source or 'preWorkerRun' not in source:
+              raise SystemExit('worker snapshot aliases missing after patch')
+          if source.count('async function submitCyclicPlansThroughBrowser(') != 1:
+              raise SystemExit('browser driver helper count is not one')
+          path.write_text(source, encoding="utf-8")
+          PY
+
+          git diff --check
+          grep -F 'const preWorkerWindow = snap.window;' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'const preWorkerRun = snap.run;' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'async function submitCyclicPlansThroughBrowser(' scripts/acceptance/b0-candidate-real-flow.ts
+
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @apps/web test
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-ops
+
+      - name: Build exact runtime binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web build
+
+      - name: Start isolated Supabase PostgreSQL
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
+
+      - name: Start real local Ollama
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
+
+      - name: Execute real three-browser six-window acceptance
+        shell: bash
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: pnpm test:b0:real-acceptance
+
+      - name: Prove product traffic reached provider
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
+
+      - name: Clean isolated infrastructure
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup || true
+
+      - name: Redact engineering evidence
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact || true
+
+      - name: Finalize engineering evidence
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize
+
+      - name: Upload engineering evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-stage11-real-browser-v3-${{ github.sha }}
+          path: ${{ env.B0_EVIDENCE_ROOT }}
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Commit verified repair as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git rm .github/workflows/b0-stage11-browser-window-driver.yml
+          git rm .github/workflows/b0-stage11-browser-alias-fix.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-stage11-browser-alias-fix.yml
+          .github/workflows/b0-stage11-browser-window-driver.yml
+          scripts/acceptance/b0-candidate-real-flow.ts
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "test(b0): drive all synchronized windows through real browsers"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage11-real-browser-v3",
+              description: `real browser six-window repair v3 ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("real browser six-window repair v3 failed");

@@ -1,0 +1,107 @@
+name: B0 Stage 2 Managed Runtime Verifier
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage2-runtime-verifier.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage2-runtime-verifier
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Publish verifier locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+              sha: context.sha, state: "pending", context: "b0/stage2-runtime-verifier",
+              description: `stage 2 verifier running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Verify exact branch and required files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage2-runtime-verifier.yml"
+          test -f .github/workflows/b0-engineering-selfhosted-acceptance.yml
+          test -f .github/workflows/b0-candidate-real-acceptance.yml
+          test -f scripts/acceptance/b0-managed-real-acceptance.sh
+          test -f scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          test -f scripts/acceptance/b0-managed-acceptance-contract.mjs
+          bash -n scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          bash -n scripts/acceptance/b0-managed-real-acceptance.sh
+          node scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          node scripts/acceptance/b0-managed-acceptance-contract.mjs
+          grep -Fq 'B0_ACCEPTANCE_TIER: engineering-selfhosted' .github/workflows/b0-engineering-selfhosted-acceptance.yml
+          grep -Fq 'B0_ACCEPTANCE_TIER: formal-c8' .github/workflows/b0-candidate-real-acceptance.yml
+          ! grep -Fq 'supabase/postgres:' .github/workflows/b0-candidate-real-acceptance.yml
+          ! grep -Fq 'ollama/ollama:' .github/workflows/b0-candidate-real-acceptance.yml
+      - name: Frozen install and driver typecheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+      - name: Record verified stage and ordinary fast-forward push
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > docs/auto-execute/B0_STAGE2_MANAGED_RUNTIME_COMPLETE.md <<EOF
+          # B0 Stage 2 Managed Runtime Complete
+
+          - verifiedInputSha: \`$GITHUB_SHA\`
+          - engineeringTier: \`engineering-selfhosted\`
+          - formalTier: \`formal-c8\`
+          - formalDatabaseRequirement: real managed non-production Supabase random schema
+          - formalProviderRequirement: real DeepSeek API
+          - containerClassification: engineering-only
+          - productionPublicSchema: forbidden
+          - credentialValuesPersisted: false
+          EOF
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/auto-execute/B0_STAGE2_MANAGED_RUNTIME_COMPLETE.md
+          git rm .github/workflows/b0-stage2-runtime-verifier.yml
+          git diff --cached --check
+          git commit -m "test(b0): verify managed C8 runtime boundary"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Publish verifier outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const ok = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+              sha: context.sha, state: ok ? "success" : "failure", context: "b0/stage2-runtime-verifier",
+              description: `stage 2 verifier ${ok ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+            if (!ok) core.setFailed('Stage 2 runtime verifier failed');

@@ -191,6 +191,10 @@ importers:
         version: 5.9.3
 
   packages/templates:
+    dependencies:
+      '@ai-story/shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       typescript:
         specifier: ^5.9.3

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
+  "screenshotCount": 9,
+  "screenshots": [
+    {
+      "path": "c9/runtime/engineering/current/screenshots/final-ending-host-desktop.png",
+      "bytes": 250411,
+      "sha256": "dcf8d76c31886e0f4ee96bc031c06ec4f398f241aa803b99d3fd93cffd09e2a9"
+    },
+    {
+      "path": "c9/runtime/engineering/current/screenshots/final-ending-player-three-narrow.png",
+      "bytes": 45038,
+      "sha256": "ede85f909f318c6508332da7df730812850b40dd3c9b0cc0c14ce0090330a2f9"
+    },
+    {
+      "path": "c9/runtime/engineering/current/screenshots/final-ending-player-two-desktop.png",
+      "bytes": 240946,
+      "sha256": "917f440091b8d22af7e933529012509320465346ed5e99dcf998ee9b1c2f769b"
+    },
+    {
+      "path": "c9/runtime/engineering/current/screenshots/window-1-host-desktop.png",
+      "bytes": 328758,
+      "sha256": "be4e5b9903fc312624a5157e0faab067fcf3c8924c1dcda852b06088002fc596"
+    },
+    {
+      "path": "c9/runtime/engineering/current/screenshots/window-1-open-host-desktop.png",
+      "bytes": 693267,
+      "sha256": "ed9d823ad3581e60d12fb29b004cd816a73be5f68abac55f6a9454ad580db748"
+    },
+    {
+      "path": "c9/runtime/engineering/current/screenshots/window-1-open-player-three-narrow.png",
+      "bytes": 146123,
+      "sha256": "0ad1e51efbd206a51ccae720bfc60f4ad7f8478a0cfe3424eac88aa81fc56ac0"
+    },
+    {
+      "path": "c9/runtime/engineering/current/screenshots/window-1-open-player-two-desktop.png",
+      "bytes": 528165,
+      "sha256": "bf3af6e1702741414cc63aacf5798e87c1909348ae989e5bce876994944c3cee"
+    },
+    {
+      "path": "c9/runtime/engineering/current/screenshots/window-1-player-three-narrow.png",
+      "bytes": 125429,
+      "sha256": "31321faa31afa604c5d481117bb41ef5101f41747995501e65011fdebbf8e23a"
+    },
+    {
+      "path": "c9/runtime/engineering/current/screenshots/window-1-player-two-desktop.png",
+      "bytes": 280963,
+      "sha256": "603fe63fbb67f62ae06960ee2e6a112eee70ce606c62e54b9734710305fe3cf7"
+    }
+  ]
+}

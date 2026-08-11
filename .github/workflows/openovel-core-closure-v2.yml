@@ -1,0 +1,109 @@
+name: OpenNovel Core Closure V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: openovel-core-closure-v2
+  cancel-in-progress: false
+
+jobs:
+  close-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/chatgpt-pro-maneuver-evidence-v1
+          fetch-depth: 0
+
+      - name: Verify immutable ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "cd0d00205b7ee27d3b763f1cde9ad4e8d91c67e7"
+          git merge-base --is-ancestor 4189aae4525401cfa39c2593658ab50275784fdd HEAD
+
+      - name: Apply product closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/openovel-core-closure.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('apps/web/public/platform.css')
+          path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
+          PY
+          git diff --check
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        shell: bash
+        run: |
+          corepack enable
+          corepack prepare pnpm@10 --activate
+          pnpm --version
+
+      - name: Frozen install and Prisma generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+
+      - name: Directed contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/shared typecheck
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @apps/api test:openovel-result-v2
+          pnpm --filter @apps/api test:legacy-terminal
+          pnpm --filter @apps/api test:authoritative-terminal-order
+          pnpm --filter @apps/api test:narrative-projector
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api test:openovel
+          pnpm --filter @apps/web test:openovel-result-v2
+          pnpm --filter @apps/web test:b0-window
+
+      - name: Typecheck and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/openovel-runtime typecheck
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/web build
+          pnpm --filter @apps/openovel-runtime build
+
+      - name: Product and secret guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -RInE '(sk-[A-Za-z0-9_-]{20,}|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}|postgres(ql)?://[^[:space:]]+:[^[:space:]]+@)' packages/shared/src/openovel-result-v2.ts apps/api/src/openovel-result-v2.ts apps/api/src/openovel-terminal apps/api/src/openovel-adapter/openovel-adapter.service.ts apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts apps/api/src/openovel-narrative-projector/narrative-source-reader.ts apps/web/public/platform.js apps/web/public/platform.css apps/web/tests/openovel-result-v2.test.mjs
+          node -e "const fs=require('fs');const p=fs.readFileSync('apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts','utf8');const b=p.slice(p.indexOf('  private async finalizeRun('),p.indexOf('\n  private async rulesetForWindow(',p.indexOf('  private async finalizeRun(')));if(!b.includes('storyTaskOutbox.upsert')||!b.includes('openNovelResultV2')||b.includes('narrativeEntry'))process.exit(1);"
+          node -e "const fs=require('fs');const a=fs.readFileSync('apps/api/src/openovel-adapter/openovel-adapter.service.ts','utf8');if(a.indexOf('shouldAdaptUnfinished')<0||a.indexOf('shouldAdaptUnfinished')>=a.indexOf('runtime.streamAction'))process.exit(1);"
+          node -e "const fs=require('fs');const w=fs.readFileSync('apps/web/public/platform.js','utf8');for(const x of ['A Republic Without a Master','The Reluctant Architect','Fragile Stability','Brutus','fixture-caesar-finished'])if(w.includes(x))process.exit(1);"
+
+      - name: Commit and push product closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/openovel-core-closure.py .github/workflows/openovel-core-closure-once.yml .github/workflows/openovel-core-closure-v2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages/shared/src/index.ts apps/api/package.json apps/web/package.json apps/api/src/rooms.service.ts apps/api/src/openovel-narrative-projector/narrative-source-reader.ts apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts apps/api/src/openovel-adapter/openovel-adapter.service.ts apps/web/public/platform.js apps/web/public/platform.css .github/openovel-core-closure.py .github/workflows/openovel-core-closure-once.yml .github/workflows/openovel-core-closure-v2.yml
+          git diff --cached --check
+          git commit -m 'feat(openovel): close result and legacy terminal authority'
+          git push origin HEAD:codex/chatgpt-pro-maneuver-evidence-v1
+          git rev-parse HEAD

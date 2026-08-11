@@ -21,14 +21,19 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
   }
 
   static fromEnv(env: NodeJS.ProcessEnv = process.env, fetchImpl?: typeof fetch) {
-    const explicitBase = String(env.OPENOVEL_PROVIDER_BASE_URL || env.SOLO_STORY_BASE_URL || "").trim();
-    const baseUrl = normalizeBaseUrl(explicitBase || String(env.DEEPSEEK_BASE_URL || "https://api.deepseek.com"));
+    // OpenNovel has its own provider contract. Legacy Solo variables may still
+    // exist in .env.test, but they must never silently redirect the V4 runtime
+    // to GLM or another provider. A non-DeepSeek provider remains possible only
+    // through the explicit OPENOVEL_* variables.
+    const explicitBase = String(env.OPENOVEL_PROVIDER_BASE_URL || "").trim();
+    const baseUrl = normalizeBaseUrl(
+      explicitBase || String(env.DEEPSEEK_BASE_URL || "https://api.deepseek.com"),
+    );
     const apiKey = providerApiKey(env, baseUrl);
     const defaultModel = String(
-      env.OPENOVEL_MODEL
-      || env.SOLO_STORY_MODEL
-      || defaultModelForBaseUrl(baseUrl),
+      env.OPENOVEL_MODEL || defaultModelForBaseUrl(baseUrl),
     ).trim();
+    const officialDeepSeek = isOfficialDeepSeek(baseUrl);
     return new OpenAICompatibleProvider({
       apiKey,
       baseUrl,
@@ -37,12 +42,17 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
       optionsModel: String(env.OPENOVEL_OPTIONS_MODEL || defaultModel).trim(),
       storykeeperModel: String(env.OPENOVEL_STORYKEEPER_MODEL || defaultModel).trim(),
       timeoutMs: boundedInteger(
-        env.OPENOVEL_PROVIDER_TIMEOUT_MS || env.SOLO_STORY_PROVIDER_TIMEOUT_MS,
+        env.OPENOVEL_PROVIDER_TIMEOUT_MS,
         180_000,
         5_000,
         300_000,
       ),
-      thinkingMode: env.OPENOVEL_DEEPSEEK_THINKING === "disabled" ? "disabled" : "enabled",
+      // MVP freeze: official DeepSeek calls never enter reasoning transport.
+      // Direct constructor use remains configurable for protocol tests and a
+      // future, separately approved thinking-mode implementation.
+      thinkingMode: officialDeepSeek
+        ? "disabled"
+        : env.OPENOVEL_DEEPSEEK_THINKING === "disabled" ? "disabled" : "enabled",
       reasoningEffort: env.OPENOVEL_DEEPSEEK_REASONING_EFFORT === "max" ? "max" : "high",
       fetchImpl,
     });
@@ -107,7 +117,11 @@ export class OpenAICompatibleProvider implements OpenNovelProvider {
         max_tokens: request.maxTokens,
         stream: request.stream,
         ...(request.stream ? { stream_options: { include_usage: true } } : {}),
-        ...(request.jsonSchema && supportsStructuredOutputs(this.config.baseUrl, model)
+        ...(request.jsonSchema && supportsStructuredOutputs(
+          this.config.baseUrl,
+          model,
+          request.jsonSchema.schema,
+        )
           ? {
               response_format: {
                 type: "json_schema",
@@ -186,8 +200,11 @@ function providerApiKey(env: NodeJS.ProcessEnv, baseUrl: string) {
 }
 
 function defaultModelForBaseUrl(baseUrl: string) {
-  const host = new URL(baseUrl).hostname.toLowerCase();
-  return host.endsWith("deepseek.com") ? "deepseek-v4-pro" : "zai-org/GLM-5.2";
+  return isOfficialDeepSeek(baseUrl) ? "deepseek-v4-pro" : "zai-org/GLM-5.2";
+}
+
+function isOfficialDeepSeek(baseUrl: string) {
+  return new URL(baseUrl).hostname.toLowerCase().endsWith("deepseek.com");
 }
 
 async function readStream(response: Response, onDelta?: (text: string) => void) {
@@ -251,13 +268,37 @@ function thinkingFields(
   return {};
 }
 
-function supportsStructuredOutputs(baseUrl: string, model: string) {
+function supportsStructuredOutputs(
+  baseUrl: string,
+  model: string,
+  schema?: Record<string, unknown>,
+) {
   const host = new URL(baseUrl).hostname.toLowerCase();
+  // Ollama compiles JSON Schema into a llama.cpp grammar. Large bounded string
+  // repetitions (for example prose{20,6000}) are rejected before generation,
+  // even though the same endpoint supports ordinary JSON Schema. In that case
+  // use JSON Object transport and keep the authoritative application validator.
+  if (isLoopbackHost(host)) return !hasUnsafeLoopbackGrammarRepetition(schema);
   if (!host.includes("siliconflow")) return false;
   // SiliconFlow exposes JSON Schema for supported models, but GLM-5.x rejects
   // response_format at transport level. The complete schema remains embedded
   // in the Reviewer contract and the response is validated after generation.
   return !/^zai-org\/GLM-5(?:\.|$)/i.test(model);
+}
+
+function isLoopbackHost(host: string) {
+  return host === "localhost" || host === "::1" || /^127(?:\.\d{1,3}){3}$/u.test(host);
+}
+
+function hasUnsafeLoopbackGrammarRepetition(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasUnsafeLoopbackGrammarRepetition);
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  if (record.type === "string") {
+    const maxLength = Number(record.maxLength);
+    if (Number.isFinite(maxLength) && maxLength > 1_000) return true;
+  }
+  return Object.values(record).some(hasUnsafeLoopbackGrammarRepetition);
 }
 
 function supportsJsonMode(baseUrl: string, model: string) {

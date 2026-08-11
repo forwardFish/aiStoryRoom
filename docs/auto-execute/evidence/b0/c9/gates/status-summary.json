@@ -1,0 +1,40 @@
+{
+  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
+  "records": {
+    "exact": {
+      "context": "b0/exact-push",
+      "state": "success",
+      "description": "all engineering gates passed in 31414693742",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31414693742",
+      "runId": 31414693742
+    },
+    "windows": {
+      "context": "b0/windows-seed",
+      "state": "success",
+      "description": "Windows clean-clone seed passed in 31414693761",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31414693761",
+      "runId": 31414693761
+    },
+    "contract": {
+      "context": "b0/acceptance-contract",
+      "state": "success",
+      "description": "acceptance contract passed in 31414693756",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31414693756",
+      "runId": 31414693756
+    },
+    "engineering": {
+      "context": "b0/engineering-real-acceptance",
+      "state": "success",
+      "description": "engineering acceptance passed in 31414693756",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31414693756",
+      "runId": 31414693756
+    },
+    "formal": {
+      "context": "b0/formal-c8",
+      "state": "failure",
+      "description": "formal C8 blocked: no complete non-production credential pair (ourmanyworlds:success,stellar:success,preview:success)",
+      "targetUrl": "https://github.com/forwardFish/aiStoryRoom/actions/runs/31414693756",
+      "runId": 31414693756
+    }
+  }
+}

@@ -1,0 +1,153 @@
+name: B0 Stage V7 Successor Contract Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage-v7-successor-contract-repair.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage-v7-successor-contract-repair
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+  B0_EXPECTED_PARENT: 53cf31e22b3bef4f12f8e35570583f93948304e7
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Publish repair locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/v7-successor-repair",
+              description: `successor contract repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify exact ordinary fast-forward start
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$B0_EXPECTED_PARENT"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage-v7-successor-contract-repair.yml"
+          test -z "$(git status --short)"
+
+      - name: Replace the stale absolute ordinal assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/acceptance/b0-candidate-real-flow.ts")
+          source = path.read_text(encoding="utf-8")
+          old = '''      const resumed = await apiJson(users[0].token, `/v4/rooms/${encodeURIComponent(mainRun.id)}/b0/window`, { method: "GET" });
+                assert.equal(resumed.window.ordinal, 4);
+                return { windowId: stableLabel(opened.windowId), before, after: await runReadback(prisma, mainRun.id), resumedWindowId: stableLabel(resumed.window.id), pausedOpenCount: openCountWhilePaused };
+          '''.replace("              ", "")
+          new = '''      const resumed = await apiJson(users[0].token, `/v4/rooms/${encodeURIComponent(mainRun.id)}/b0/window`, { method: "GET" });
+                assert.equal(
+                  resumed.window.ordinal,
+                  opened.ordinal + 1,
+                  "resuming must expose exactly the immediate successor synchronized window",
+                );
+                assert.notEqual(resumed.window.id, opened.windowId, "resuming must not reopen the completed paused window");
+                return {
+                  windowId: stableLabel(opened.windowId),
+                  before,
+                  after: await runReadback(prisma, mainRun.id),
+                  openedOrdinal: opened.ordinal,
+                  resumedOrdinal: resumed.window.ordinal,
+                  resumedWindowId: stableLabel(resumed.window.id),
+                  pausedOpenCount: openCountWhilePaused,
+                };
+          '''.replace("              ", "")
+          if source.count(old) != 1:
+              raise SystemExit(f"successor contract anchor count={source.count(old)}")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          PY
+          git diff --check
+          grep -F 'resuming must expose exactly the immediate successor synchronized window' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'resumedOrdinal: resumed.window.ordinal' scripts/acceptance/b0-candidate-real-flow.ts
+          test "$(git diff --name-only)" = "scripts/acceptance/b0-candidate-real-flow.ts"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Focused acceptance-driver verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+
+      - name: Commit and push the minimal harness repair
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          before="$(git rev-parse origin/$B0_BRANCH)"
+          test "$before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          test "$(git diff --cached --name-only)" = "scripts/acceptance/b0-candidate-real-flow.ts"
+          git diff --cached --check
+          git commit -m "test(b0): assert the immediate successor after resume"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$B0_BRANCH"
+          after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$after" = "$local_head"
+          echo "local_head=$local_head" >> "$GITHUB_OUTPUT"
+          echo "remote_before=$before" >> "$GITHUB_OUTPUT"
+          echo "remote_after=$after" >> "$GITHUB_OUTPUT"
+
+      - name: Publish repair outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOCAL_HEAD: ${{ steps.push.outputs.local_head }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/v7-successor-repair",
+              description: success ? `successor repair pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}` : `successor repair failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 successor contract repair failed");

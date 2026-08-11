@@ -1,0 +1,258 @@
+name: B0 Stage 3 Engineering Validation
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage3-engineering-validation.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage3-engineering-validation
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_EVIDENCE_ROOT: docs/auto-execute/evidence/b0/engineering/runtime
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+              sha: context.sha, state: "pending", context: "b0/stage3-engineering",
+              description: `engineering validation running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Verify exact branch and provenance boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage3-engineering-validation.yml"
+          test -f .github/workflows/b0-engineering-selfhosted-acceptance.yml
+          test -f scripts/acceptance/b0-managed-real-acceptance.sh
+          node scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          node scripts/acceptance/b0-managed-acceptance-contract.mjs
+      - name: Frozen install and Prisma generation
+        run: pnpm install --frozen-lockfile && pnpm db:generate
+      - name: Run all exact-SHA engineering gates
+        id: gates
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p "$B0_EVIDENCE_ROOT/logs"
+          log="$B0_EVIDENCE_ROOT/logs/engineering-gates.log"
+          : > "$log"
+          commands=(
+            'pnpm typecheck'
+            'pnpm --filter @ai-story/shared typecheck'
+            'pnpm --filter @ai-story/templates typecheck'
+            'pnpm --filter @ai-story/templates test:b0-contract'
+            'pnpm --filter @ai-story/templates test:b0-batch'
+            'pnpm --filter @ai-story/templates test:b0-multi'
+            'pnpm --filter @ai-story/templates test:b0-audience'
+            'pnpm --filter @ai-story/shared build'
+            'pnpm --filter @ai-story/templates build'
+            'pnpm --filter @apps/openovel-runtime test:b0-runtime'
+            'pnpm --filter @apps/openovel-runtime typecheck'
+            'pnpm --filter @apps/api test:b0-batch'
+            'pnpm --filter @apps/api test:b0-window'
+            'pnpm --filter @apps/api test:b0-player-window'
+            'pnpm --filter @apps/api test:b0-pipeline'
+            'pnpm --filter @apps/api test:b0-ops'
+            'pnpm --filter @apps/api typecheck'
+            'pnpm --filter @apps/web typecheck'
+            'pnpm --filter @apps/web test:b0-window'
+            'pnpm --filter @apps/api test'
+            'pnpm --filter @ai-story/openovel-runtime test'
+            'pnpm --filter @ai-story/openovel-runtime typecheck'
+            'pnpm test:story:v4'
+            'pnpm test:maneuver'
+            'pnpm --filter @apps/web test'
+            'pnpm test:causal'
+            'pnpm --filter @apps/api build'
+            'pnpm --filter @apps/openovel-runtime build'
+            'pnpm --filter @apps/web build'
+            'pnpm build'
+          )
+          failures=0
+          : > /tmp/b0-gate-results.ndjson
+          for command in "${commands[@]}"; do
+            started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            echo "::group::$command"
+            set +e
+            bash -lc "$command" 2>&1 | tee -a "$log"
+            code=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+            completed=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            COMMAND="$command" STARTED="$started" COMPLETED="$completed" CODE="$code" python3 - <<'PY' >> /tmp/b0-gate-results.ndjson
+          import json, os
+          print(json.dumps({'command': os.environ['COMMAND'], 'startedAt': os.environ['STARTED'],
+                            'completedAt': os.environ['COMPLETED'], 'exitCode': int(os.environ['CODE']),
+                            'status': 'PASS' if os.environ['CODE'] == '0' else 'FAIL'}))
+          PY
+            if [ "$code" -ne 0 ]; then failures=$((failures + 1)); fi
+          done
+          GITHUB_SHA="$GITHUB_SHA" GITHUB_RUN_ID="$GITHUB_RUN_ID" FAILURES="$failures" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          rows=[json.loads(line) for line in Path('/tmp/b0-gate-results.ndjson').read_text().splitlines() if line]
+          payload={'schemaVersion':1,'testedCodeSha':os.environ['GITHUB_SHA'],'workflowRunId':os.environ['GITHUB_RUN_ID'],
+                   'status':'PASS' if int(os.environ['FAILURES']) == 0 else 'FAIL','failureCount':int(os.environ['FAILURES']),
+                   'commands':rows}
+          root=Path(os.environ['B0_EVIDENCE_ROOT']); root.mkdir(parents=True,exist_ok=True)
+          (root/'engineering-gates.json').write_text(json.dumps(payload,indent=2)+'\n')
+          PY
+          exit "$failures"
+      - name: Build runtime binaries for engineering acceptance
+        if: steps.gates.outcome == 'success'
+        run: pnpm --filter @ai-story/shared build && pnpm --filter @ai-story/templates build && pnpm --filter @apps/api build && pnpm --filter @apps/openovel-runtime build && pnpm --filter @apps/web build
+      - name: Prepare official self-hosted Supabase PostgreSQL
+        id: database
+        if: steps.gates.outcome == 'success'
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
+      - name: Prepare real local Ollama provider
+        id: provider
+        if: steps.gates.outcome == 'success'
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
+      - name: Execute engineering six-window browser acceptance
+        id: acceptance
+        if: steps.gates.outcome == 'success'
+        continue-on-error: true
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          CHROME_PATH: /usr/bin/google-chrome
+        run: pnpm test:b0:real-acceptance
+      - name: Prove provider traffic
+        id: provider_proof
+        if: always() && steps.provider.outcome == 'success'
+        continue-on-error: true
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
+      - name: Cleanup isolated engineering infrastructure
+        id: cleanup
+        if: always() && steps.database.outcome == 'success'
+        continue-on-error: true
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup
+      - name: Redact engineering evidence
+        id: redaction
+        if: always()
+        continue-on-error: true
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
+      - name: Finalize engineering-only checkpoint
+        id: finalize
+        if: steps.gates.outcome == 'success' && steps.acceptance.outcome == 'success' && steps.provider_proof.outcome == 'success' && steps.cleanup.outcome == 'success' && steps.redaction.outcome == 'success'
+        continue-on-error: true
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize
+      - name: Build fail-closed stage result
+        if: always()
+        shell: bash
+        env:
+          GATES: ${{ steps.gates.outcome }}
+          DATABASE: ${{ steps.database.outcome }}
+          PROVIDER: ${{ steps.provider.outcome }}
+          ACCEPTANCE: ${{ steps.acceptance.outcome }}
+          PROVIDER_PROOF: ${{ steps.provider_proof.outcome }}
+          CLEANUP: ${{ steps.cleanup.outcome }}
+          REDACTION: ${{ steps.redaction.outcome }}
+          FINALIZE: ${{ steps.finalize.outcome }}
+        run: |
+          set -euo pipefail
+          mkdir -p docs/auto-execute/evidence/b0/engineering
+          python3 - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          names=['GATES','DATABASE','PROVIDER','ACCEPTANCE','PROVIDER_PROOF','CLEANUP','REDACTION','FINALIZE']
+          outcomes={name.lower():os.environ.get(name,'') for name in names}
+          required=['gates','database','provider','acceptance','provider_proof','cleanup','redaction','finalize']
+          passed=all(outcomes.get(name)=='success' for name in required)
+          payload={'schemaVersion':1,'classification':'PASS_ENGINEERING_ONLY' if passed else 'FAIL_ENGINEERING',
+                   'status':'PASS_ENGINEERING_ONLY' if passed else 'FAIL','testedCodeSha':os.environ['GITHUB_SHA'],
+                   'workflowRunId':os.environ['GITHUB_RUN_ID'],'generatedAt':datetime.now(timezone.utc).isoformat(),
+                   'formalC8Satisfied':False,'managedSupabaseUsed':False,'containerUsed':True,
+                   'outcomes':outcomes}
+          path=Path('docs/auto-execute/evidence/b0/engineering/stage3-result.json')
+          path.write_text(json.dumps(payload,indent=2)+'\n')
+          PY
+      - name: Upload engineering evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-engineering-stage3-${{ github.sha }}
+          path: docs/auto-execute/evidence/b0/engineering
+          if-no-files-found: error
+          retention-days: 14
+      - name: Commit honest engineering result as ordinary fast-forward
+        if: always()
+        shell: bash
+        env:
+          GATES: ${{ steps.gates.outcome }}
+          ACCEPTANCE: ${{ steps.acceptance.outcome }}
+          PROVIDER_PROOF: ${{ steps.provider_proof.outcome }}
+          CLEANUP: ${{ steps.cleanup.outcome }}
+          REDACTION: ${{ steps.redaction.outcome }}
+          FINALIZE: ${{ steps.finalize.outcome }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/auto-execute/evidence/b0/engineering
+          git rm .github/workflows/b0-stage3-engineering-validation.yml
+          git diff --cached --check
+          pass=false
+          if [ "$GATES" = success ] && [ "$ACCEPTANCE" = success ] && [ "$PROVIDER_PROOF" = success ] && [ "$CLEANUP" = success ] && [ "$REDACTION" = success ] && [ "$FINALIZE" = success ]; then pass=true; fi
+          if [ "$pass" = true ]; then
+            git commit -m "test(b0): record engineering acceptance pass"
+          else
+            git commit -m "test(b0): record engineering acceptance failure"
+          fi
+          git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          GATES: ${{ steps.gates.outcome }}
+          ACCEPTANCE: ${{ steps.acceptance.outcome }}
+          PROVIDER_PROOF: ${{ steps.provider_proof.outcome }}
+          CLEANUP: ${{ steps.cleanup.outcome }}
+          REDACTION: ${{ steps.redaction.outcome }}
+          FINALIZE: ${{ steps.finalize.outcome }}
+        with:
+          script: |
+            const ok = [process.env.GATES, process.env.ACCEPTANCE, process.env.PROVIDER_PROOF,
+              process.env.CLEANUP, process.env.REDACTION, process.env.FINALIZE].every(v => v === "success");
+            await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+              sha: context.sha, state: ok ? "success" : "failure", context: "b0/stage3-engineering",
+              description: `engineering validation ${ok ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+            if (!ok) core.setFailed('Engineering validation failed; failure evidence was committed without claiming PASS');

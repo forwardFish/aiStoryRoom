@@ -1,0 +1,389 @@
+name: B0 Deterministic Browser Driver V3
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-browser-driver-v3.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-browser-driver-v3
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+      B0_EVIDENCE_ROOT: .artifacts/b0-browser-v3/${{ github.sha }}
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/browser-driver-v3",
+              description: `deterministic browser driver v3 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify exact branch tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-browser-driver-v3.yml"
+
+      - name: Prepare compilable exact-DOM browser driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path=Path('scripts/acceptance/b0-candidate-real-flow.ts')
+          source=path.read_text(encoding='utf-8')
+
+          def replace_in_phase(name: str, old: str, new: str) -> None:
+              global source
+              start=source.find(f'await phase("{name}"')
+              if start < 0: raise SystemExit(f'phase not found: {name}')
+              end=source.find('\n    await phase("',start+1)
+              if end < 0: end=len(source)
+              segment=source[start:end]
+              if new in segment: return
+              if segment.count(old)!=1: raise SystemExit(f'{name} anchor count={segment.count(old)}')
+              source=source[:start]+segment.replace(old,new,1)+source[end:]
+
+          if 'async function driveSynchronizedWindowUi(' not in source:
+              replace_in_phase('window-1-embedded-real-narrative',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds, { duplicateConfirm: true });',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds, { duplicateConfirmFirst: true });')
+              replace_in_phase('window-2-narrative-failure-does-not-rollback-and-retry',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds);')
+              replace_in_phase('window-3-pause-current-completes-next-does-not-open-resume',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds);')
+              replace_in_phase('window-4-deadline-unconfirmed-human-becomes-hold',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 2), opened.humanRoleIds.slice(0, 2));',
+                  '      await driveSynchronizedWindowUi(browsers.slice(0, 2), users.slice(0, 2), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds.slice(0, 2));')
+              replace_in_phase('window-5-independent-worker',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds);')
+              replace_in_phase('window-6-worker-crash-lease-expiry-recovery-and-ending',
+                  '      await submitCyclicPlans(mainRun.id, users.slice(0, 3), opened.humanRoleIds);',
+                  '      await driveSynchronizedWindowUi(browsers, users.slice(0, 3), mainRun.id, opened.windowId, opened.ordinal, opened.humanRoleIds);')
+
+              anchor=source.find('async function assertBrowserWindowVisible(')
+              if anchor < 0: raise SystemExit('browser helper insertion anchor not found')
+              helper=r'''
+          async function driveSynchronizedWindowUi(
+            sessions: BrowserSession[],
+            users: Array<{ token: string }>,
+            runId: string,
+            windowId: string,
+            ordinal: number,
+            roleIds: string[],
+            options: { duplicateConfirmFirst?: boolean } = {},
+          ): Promise<void> {
+            assert.equal(sessions.length, users.length, "each browser session requires one authenticated user");
+            assert.equal(users.length, roleIds.length, "each browser-driven user requires one authoritative role");
+            assert(sessions.length > 0, "at least one real browser session is required");
+
+            await Promise.all(sessions.map(async (session) => {
+              await session.reload();
+              await session.waitForSelector("[data-maneuver-v1-root]", 60_000);
+              await session.waitForSelector("[data-b0-window-status]", 60_000);
+              await session.capture(join(SCREENSHOT_ROOT, `window-${ordinal}-open-${session.name}.png`));
+            }));
+
+            for (let index = 0; index < sessions.length; index += 1) {
+              const session = sessions[index];
+              const user = users[index];
+              const targetRoleId = roleIds[(index + 1) % roleIds.length] || roleIds[0];
+              await waitFor(async () => Boolean(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-kind="CONTACT"]');
+                return button instanceof HTMLButtonElement && !button.disabled;
+              })()`)), 60_000, `${session.name} CONTACT control enabled for window ${ordinal}`);
+              assert.equal(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-kind="CONTACT"]');
+                if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+                button.click(); return true;
+              })()`), true, `${session.name} must select CONTACT through the real DOM`);
+
+              await session.waitForSelector('[data-mv1-field="targetId"][data-mv1-for="CONTACT"]', 30_000);
+              await session.waitForSelector('[data-mv1-field="rawText"][data-mv1-for="CONTACT"]', 30_000);
+              const prepared = object(await session.evaluate(`(() => {
+                const select = document.querySelector('[data-mv1-field="targetId"][data-mv1-for="CONTACT"]');
+                const textarea = document.querySelector('[data-mv1-field="rawText"][data-mv1-for="CONTACT"]');
+                if (!(select instanceof HTMLSelectElement) || !(textarea instanceof HTMLTextAreaElement)) return { ok: false, reason: 'CONTACT_FIELDS_MISSING' };
+                const requested = ${JSON.stringify(targetRoleId)};
+                const option = Array.from(select.options).find((entry) => entry.value === requested && !entry.disabled)
+                  || Array.from(select.options).find((entry) => Boolean(entry.value) && !entry.disabled);
+                if (!option) return { ok: false, reason: 'CONTACT_TARGET_MISSING' };
+                select.value = option.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                const text = ${JSON.stringify(`Coordinate one bounded action through the visible evidence in synchronized window ${ordinal}.`)};
+                const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+                if (setter) setter.call(textarea, text); else textarea.value = text;
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.dispatchEvent(new Event('change', { bubbles: true }));
+                return { ok: true, selectedTarget: select.value, characterCount: textarea.value.length };
+              })()`));
+              assert.equal(prepared.ok, true, `${session.name} must prepare a legal CONTACT draft through the real DOM`);
+
+              await waitFor(async () => Boolean(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-preview]');
+                return button instanceof HTMLButtonElement && !button.disabled;
+              })()`)), 60_000, `${session.name} preview control enabled for window ${ordinal}`);
+              assert.equal(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-preview]');
+                if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+                button.click(); return true;
+              })()`), true, `${session.name} must preview through the real DOM`);
+
+              await session.waitForSelector("[data-mv1-confirm]", 60_000);
+              await waitFor(async () => Boolean(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-confirm]');
+                return button instanceof HTMLButtonElement && !button.disabled;
+              })()`)), 60_000, `${session.name} confirm control enabled for window ${ordinal}`);
+              assert.equal(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-mv1-confirm]');
+                if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+                button.click(); return true;
+              })()`), true, `${session.name} must confirm through the real DOM`);
+
+              const confirmed = await waitForValue(async () => {
+                const projection = await apiJson(user.token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+                if (projection.window?.id !== windowId || projection.plan?.status !== "CONFIRMED") return null;
+                return projection;
+              }, 60_000, `${session.name} confirmed ActionContract readback for window ${ordinal}`);
+
+              if (options.duplicateConfirmFirst && index === 0) {
+                const revision = Number(confirmed.plan?.revision);
+                assert(Number.isInteger(revision) && revision > 0, "confirmed browser plan requires a positive revision");
+                const replayed = await apiJson(user.token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window/confirm`, {
+                  method: "POST", body: { expectedRevision: revision },
+                });
+                assert.equal(replayed.plan?.status, "CONFIRMED", "duplicate confirmation must remain idempotent");
+              }
+
+              await session.waitForSelector("[data-b0-ready]", 60_000);
+              await waitFor(async () => Boolean(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-b0-ready]');
+                return button instanceof HTMLButtonElement && !button.disabled;
+              })()`)), 60_000, `${session.name} ready control enabled for window ${ordinal}`);
+              assert.equal(await session.evaluate(`(() => {
+                const button = document.querySelector('[data-b0-ready]');
+                if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+                button.click(); return true;
+              })()`), true, `${session.name} must mark ready through the real DOM`);
+
+              await waitFor(async () => {
+                const projection = await apiJson(user.token, `/v4/rooms/${encodeURIComponent(runId)}/b0/window`, { method: "GET" });
+                return projection.window?.id !== windowId || projection.actor?.ready === true || projection.window?.status !== "OPEN";
+              }, 60_000, `${session.name} ready readback for window ${ordinal}`);
+              await session.capture(join(SCREENSHOT_ROOT, `window-${ordinal}-ready-${session.name}.png`));
+            }
+          }
+
+          '''.replace('          ','')
+              source=source[:anchor]+helper+source[anchor:]
+          else:
+              source=source.replace('await session.waitFor(', 'await waitFor(')
+              source=source.replace(
+                  'const text = `Coordinate one bounded action through the visible evidence in synchronized window ${ordinal}.`;',
+                  'const text = ${JSON.stringify(`Coordinate one bounded action through the visible evidence in synchronized window ${ordinal}.`)};'
+              )
+
+          if 'AI_ACTIONS_PARTIALLY_PREPARED' not in source:
+              old='''      const aiAllPending = aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING");
+                const aiAllPrepared = aiParticipants.every((entry) => preparedStatuses.has(entry.mainStatus));
+                assert(aiAllPending || aiAllPrepared, "the pre-worker crash boundary must be either wholly before or wholly after AI ActionContract preparation");
+                const settlementBeforeWorker = await prisma.storyTaskOutbox.findFirst({
+          '''.replace('              ','')
+              new='''      const aiAllPending = aiParticipants.every((entry) => entry.mainStatus === "B0_PENDING");
+                const aiAnyPending = aiParticipants.some((entry) => entry.mainStatus === "B0_PENDING");
+                const aiAllPrepared = aiParticipants.every((entry) => preparedStatuses.has(entry.mainStatus));
+                const settlementBeforeWorker = await prisma.storyTaskOutbox.findFirst({
+          '''.replace('              ','')
+              if source.count(old)!=1: raise SystemExit(f'AI boundary anchor count={source.count(old)}')
+              source=source.replace(old,new,1)
+              old='''      let preWorkerBoundary: "AI_ACTIONS_UNPREPARED" | "SETTLEMENT_ENQUEUED";
+                if (aiAllPending) {
+                  assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "human roles must remain READY while every AI-filled role is pending");
+                  assert.equal(preWorkerWindow.status, "OPEN", "the synchronized window must remain OPEN while AI-filled roles are unprepared");
+                  assert.equal(settlementBeforeWorker, null, "unprepared AI-filled roles cannot freeze the window or enqueue settlement");
+                  preWorkerBoundary = "AI_ACTIONS_UNPREPARED";
+                } else {
+                  assert(humanParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "human roles must be LOCKED once the prepared roster freezes");
+                  assert(aiParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "AI-filled roles must use the same LOCKED participant state");
+                  assert.equal(preWorkerWindow.status, "LOCKED", "a fully prepared roster must freeze before settlement execution");
+                  assert.equal(settlementBeforeWorker?.status, "pending", "the disabled embedded worker must leave settlement pending");
+                  assert.equal(settlementBeforeWorker?.leaseOwner, null, "no worker may own the pending settlement before standalone startup");
+                  assert.equal(settlementBeforeWorker?.leaseVersion, 0, "the pending settlement must not have been leased before standalone startup");
+                  preWorkerBoundary = "SETTLEMENT_ENQUEUED";
+                }
+          '''.replace('              ','')
+              new='''      let preWorkerBoundary: "AI_ACTIONS_UNPREPARED" | "AI_ACTIONS_PARTIALLY_PREPARED" | "SETTLEMENT_ENQUEUED";
+                if (preWorkerWindow.status === "OPEN") {
+                  assert(humanParticipants.every((entry) => entry.mainStatus === "B0_READY"), "human roles must remain READY before the prepared roster freezes");
+                  assert(aiParticipants.every((entry) => ["B0_PENDING", "B0_READY"].includes(entry.mainStatus)), "AI-filled roles may only be pending or ready while the window remains open");
+                  assert(aiAnyPending, "an OPEN pre-worker window requires at least one AI-filled role still pending");
+                  assert.equal(settlementBeforeWorker, null, "an OPEN pre-worker window cannot enqueue settlement");
+                  preWorkerBoundary = aiAllPending ? "AI_ACTIONS_UNPREPARED" : "AI_ACTIONS_PARTIALLY_PREPARED";
+                } else {
+                  assert.equal(preWorkerWindow.status, "LOCKED", "the only valid non-OPEN pre-worker boundary is LOCKED");
+                  assert(aiAllPrepared, "a locked pre-worker window requires every AI-filled role prepared");
+                  assert(humanParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "human roles must be LOCKED once the roster freezes");
+                  assert(aiParticipants.every((entry) => entry.mainStatus === "B0_LOCKED"), "AI-filled roles must use the same LOCKED state");
+                  assert.equal(settlementBeforeWorker?.status, "pending", "the disabled embedded worker must leave settlement pending");
+                  assert.equal(settlementBeforeWorker?.leaseOwner, null, "no worker may own settlement before standalone startup");
+                  assert.equal(settlementBeforeWorker?.leaseVersion, 0, "settlement must not have been leased before standalone startup");
+                  preWorkerBoundary = "SETTLEMENT_ENQUEUED";
+                }
+          '''.replace('              ','')
+              if source.count(old)!=1: raise SystemExit(f'AI branch anchor count={source.count(old)}')
+              source=source.replace(old,new,1)
+
+          path.write_text(source,encoding='utf-8')
+          PY
+          git diff --check
+          grep -F 'async function driveSynchronizedWindowUi' scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F 'AI_ACTIONS_PARTIALLY_PREPARED' scripts/acceptance/b0-candidate-real-flow.ts
+          test "$(grep -c 'driveSynchronizedWindowUi' scripts/acceptance/b0-candidate-real-flow.ts)" -eq 7
+
+      - name: Create local exact candidate commit
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          for workflow in .github/workflows/b0-stage11-browser-window-driver.yml .github/workflows/b0-browser-driver-v3.yml; do
+            if test -e "$workflow"; then git rm "$workflow"; fi
+          done
+          illegal=$(git diff --cached --name-only | grep -Ev '^(scripts/acceptance/b0-candidate-real-flow\.ts|\.github/workflows/b0-stage11-browser-window-driver\.yml|\.github/workflows/b0-browser-driver-v3\.yml)$' || true)
+          test -z "$illegal"
+          git diff --cached --check
+          git commit -m "test(b0): drive six windows through exact browser controls"
+          echo "tested_code_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          test -z "$(git status --porcelain)"
+
+      - name: Frozen install and focused verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ steps.candidate.outputs.tested_code_sha }}"
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-worker
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web build
+
+      - name: Start official self-hosted Supabase PostgreSQL
+        id: database
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
+
+      - name: Start real local Ollama model
+        id: provider
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
+
+      - name: Execute engineering three-browser six-window acceptance
+        id: acceptance
+        shell: bash
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: pnpm test:b0:real-acceptance
+
+      - name: Prove provider traffic
+        if: always() && steps.provider.outcome == 'success'
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
+
+      - name: Clean isolated infrastructure
+        if: always() && steps.database.outcome == 'success'
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup
+
+      - name: Redact engineering evidence
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact
+
+      - name: Finalize engineering evidence
+        if: success()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize-engineering
+
+      - name: Push tested candidate by ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "${{ steps.candidate.outputs.tested_code_sha }}"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success=process.env.JOB_STATUS==="success";
+            await github.rest.repos.createCommitStatus({
+              owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,
+              state:success?"success":"failure",context:"b0/browser-driver-v3",
+              description:`browser driver v3 ${success?"passed":"failed"} in ${context.runId}`,
+              target_url:`${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if(!success) core.setFailed("B0 browser driver v3 failed");

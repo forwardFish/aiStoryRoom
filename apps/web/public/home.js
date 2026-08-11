@@ -10,14 +10,16 @@ function carouselRole(itemIndex, activeIndex, itemCount) {
 }
 
 const faqItems = [
-  ["What is a world in Our Many Worlds?", "A world is a shared situation with roles, private information, relationships, resources, and an open-ended outcome."],
-  ["How does a world begin?", "Every run starts with a designed situation and role briefings. What happens next comes from the choices people make inside it."],
-  ["Can I play by myself?", "Yes. Start Solo and AI-controlled characters fill the remaining roles, so you can explore the world at your own pace."],
-  ["Can I invite real people into my world?", "Yes. Invite your group to take different roles. Everyone sees what their role would realistically know and contributes to one shared outcome."],
-  ["What does the AI do during a run?", "The AI responds to decisions, simulates the other roles when needed, and helps the world evolve without forcing a fixed storyline."],
-  ["What are World Credits?", "Under the active-action policy, World Credits pay for successful player-directed story actions: 20 Credits to create a run, 1 for a suggested action, and 2 for a custom or complex action. Reading, AI-controlled actions, system progress, retries, and failed generations cost 0 Credits. A world still using the legacy unlock policy shows that policy before you create its room."],
-  ["How can I get World Credits?", "You can buy 300 World Credits for $7.99 or 650 World Credits for $14.99. New accounts receive 50 World Credits, and eligible referrals can earn 25 World Credits."],
-  ["Can I create a room for my group?", "Yes. Open a world, create a shared room, and invite people to take different roles. AI can support any roles your group does not fill."]
+  ["What is a world in Our Many Worlds?", "A world is a designed crisis shared by several roles.<br/><br/>Each role enters with its own goals, private information, relationships, resources, and limited point of view. Everyone acts inside the same world, so one player’s decision can change the choices, risks, and opportunities faced by everyone else."],
+  ["How is this different from a normal interactive story?", "You are not following branches written for a single protagonist, and players are not having separate conversations with AI.<br/><br/>Each person makes decisions from a different perspective. AI resolves those decisions together into one evolving world, where your actions can change what other characters know, believe, and are able to do.<br/><br/>There is no predetermined path, but every world still has rules, limits, and consequences."],
+  ["How does a world begin?", "Every run begins with a designed situation, a cast of roles, world rules, and a private briefing for each character.<br/><br/>You know what your role would realistically know—not the whole truth. From that point onward, the situation evolves through player decisions, AI-controlled characters, and consequences already set in motion."],
+  ["What can I do during a run?", "You can talk to characters, investigate claims or events, use leverage, or make your own move in your own words.<br/><br/>Leverage may include favors, evidence, authority, relationships, resources, or promises. Every action can carry a cost, a risk, a level of visibility, and consequences for you, other characters, or the shared world."],
+  ["Do all players see the same information?", "No. Players share one world, but they do not share one complete version of the truth.<br/><br/>Public events may be visible to everyone, while private messages, clues, commitments, suspicions, and intentions are shown only to the roles that could realistically know them.<br/><br/>What you reveal, hide, trade, misunderstand, or choose to believe becomes part of the game."],
+  ["Can I play by myself?", "Yes. In Solo, you choose one role and AI controls the remaining characters.<br/><br/>You still experience private information, competing goals, changing relationships, and consequences created by other roles, but you can move through the world at your own pace."],
+  ["Can I create a room and invite real people?", "Yes. Choose a world, create a shared room, and invite people to take different roles.<br/><br/>Each player receives their own goals, briefing, and private information. AI can fill any roles your group leaves open, so you do not need a full human cast to begin.<br/><br/>Human and AI-controlled characters all act inside the same evolving world."],
+  ["What does the AI do during a run?", "AI acts as the world simulator, the performer for unfilled roles, and the narrator of consequences.<br/><br/>It interprets actions, resolves conflicting intentions, updates relationships and world conditions, and shows how decisions affect different characters.<br/><br/>AI does not make choices for human players, and it does not force every run toward the same storyline or ending."],
+  ["What are World Credits?", "Under the active-action policy, World Credits pay for creating a run and for successful player-directed actions.<br/><br/>Creating a run costs 20 Credits. A suggested action costs 1 Credit, and a custom or complex action costs 2 Credits.<br/><br/>Reading, AI-controlled actions, system-driven progress, retries, and failed generations cost 0 Credits.<br/><br/>Some worlds may still use the previous one-time unlock policy. If so, that policy and its cost will be shown clearly before you create the room."],
+  ["How can I get World Credits?", "You can purchase 300 World Credits for $7.99 or 650 World Credits for $14.99.<br/><br/>New accounts receive 50 bonus World Credits, and eligible referrals can earn 25 bonus World Credits.<br/><br/>The current purchase and referral terms are always shown before you confirm."]
 ];
 
 function asset(group, index) {
@@ -217,11 +219,11 @@ function renderPage(activeIndex = 0, account = null, worlds = [], carouselWorlds
     <main>
       <section class="mw-hero" id="explore">
         <div class="hero-copy">
-          <span class="eyebrow">AI-POWERED STORY ROOMS</span>
-          <h1>Every situation looks <em>different</em><br/>from the inside.</h1>
-          <p>Enter a world already in motion. Take a role, see the information only you would know, and make decisions in your own words. AI turns every choice into the next chapter of the shared story.</p>
-          <div class="hero-actions"><button class="mw-primary" data-open-world>Explore Worlds ${icon(3)}</button><a class="mw-secondary" href="#how-it-works">${icon(4)} See How It Works</a></div>
-          <div class="hero-proof"><span>${icon(5)} Solo or Multiplayer</span><span>${icon(6)} Different information for every role</span><span>${icon(7)} No fixed storyline</span></div>
+          <span class="eyebrow">AI-POWERED SHARED WORLDS</span>
+          <h1>Everyone sees a <em>different truth</em>.<br/>Everyone changes the <em>same world</em>.</h1>
+          <p>Enter a living world as a character with your own goals, secrets, relationships, and limited point of view. Talk, investigate, bargain, or act in your own words. AI resolves everyone's moves into one shared world—and every choice can change what others know, believe, and do.</p>
+          <div class="hero-actions"><button class="mw-primary" data-open-world>Explore Worlds ${icon(3)}</button><a class="mw-secondary" href="#how-it-works">${icon(4)} See How It Plays</a></div>
+          <div class="hero-proof"><span>${icon(5)} Solo or Multiplayer</span><span>${icon(6)} Different goals and secrets</span><span>${icon(7)} Your choices affect other players</span></div>
         </div>
         ${renderHeroCarousel(activeIndex, carouselWorlds)}
       </section>
@@ -234,9 +236,9 @@ function renderPage(activeIndex = 0, account = null, worlds = [], carouselWorlds
 
       <section class="how-it-works-showcase" id="how-it-works" aria-labelledby="how-it-works-title">
         <header class="how-showcase-head">
-          <span class="how-kicker">How It Works</span>
-          <h2 id="how-it-works-title"><span>Not a story with branches.</span><em>A situation with people.</em></h2>
-          <p>Choose a role. Act in your own words. See how one shared world changes.</p>
+          <span class="how-kicker">How It Plays</span>
+          <h2 id="how-it-works-title"><span>Not a story with branches.</span><em>One shared world shaped by everyone.</em></h2>
+          <p>Choose a role. Make your move. Watch private goals and decisions collide in one shared world.</p>
         </header>
         <div class="how-steps">
           <span class="how-connector" aria-hidden="true"><i></i><i></i></span>
@@ -244,26 +246,26 @@ function renderPage(activeIndex = 0, account = null, worlds = [], carouselWorlds
             ${howItWorksIcon("world")}
             <span class="how-step-number">Step 01</span>
             <h3>Choose a World and Role</h3>
-            <p>Enter a world already in motion. Receive the private information, goals, and relationships only your role would know.</p>
+            <p>Enter as a character with your own goal, private information, relationships, and leverage.</p>
           </article>
           <article class="how-step">
             ${howItWorksIcon("shared")}
             <span class="how-step-number">Step 02</span>
-            <h3>Shape One Shared World</h3>
-            <p>Act in your own words. AI responds to every decision and moves the shared world forward.</p>
+            <h3>Make Your Move</h3>
+            <p>Talk, investigate, bargain, use leverage, or describe your own action in your own words.</p>
           </article>
           <article class="how-step">
             ${howItWorksIcon("changed")}
             <span class="how-step-number">Step 03</span>
-            <h3>See What Changed</h3>
-            <p>Reach an open ending and review the key decisions and consequences that shaped it.</p>
+            <h3>Face the Consequences</h3>
+            <p>See how your move changes your position, other players' choices, and the shared world.</p>
           </article>
         </div>
       </section>
 
       <section class="pricing wallet-pricing" id="pricing"><div class="section-head pricing-head"><div><span class="entry-label">World Credits</span><h2>Add World Credits to your account.</h2><p>Use World Credits for eligible paid experiences across Our Many Worlds. The exact Credit cost is shown before you confirm any use.</p></div><a href="/credits">Open Credits wallet ${icon(3)}</a></div><div class="wallet-offer-grid"><article class="wallet-pack-card"><small>Credit pack</small><div class="wallet-pack-amount"><h3>300</h3><span>World Credits</span></div><strong>$7.99</strong><p>A simple way to add Credits to your balance.</p><a class="mw-primary" href="/credits?confirm=credits_300">Buy 300 Credits</a></article><article class="wallet-pack-card wallet-pack-best"><small>Best value</small><div class="wallet-pack-amount"><h3>650</h3><span>World Credits</span></div><strong>$14.99</strong><p>More Credits at a lower price per Credit.</p><a class="mw-primary" href="/credits?confirm=credits_650">Buy 650 Credits</a></article><aside class="wallet-rewards" aria-label="World Credits rewards"><div><span class="reward-icon">${icon(31)}</span><div><small>New account reward</small><b>+50 World Credits</b><p>Create an account and receive 50 World Credits.</p></div></div><div><span class="reward-icon">${icon(42)}</span><div><small>Referral reward</small><b>+25 World Credits</b><p>Earn 25 World Credits through an eligible referral. Terms apply.</p></div></div></aside></div></section>
 
-      <section class="faq-section faq-simple mw-panel" id="faq"><div class="faq-simple-head"><span class="entry-label">FAQ</span><h2>Frequently asked questions.</h2><p>Clear answers about worlds, roles, AI, and World Credits.</p></div><div class="faq-grid">${faqItems.map(([q,a]) => `<details><summary>${q}${icon(39)}</summary><p>${a}</p></details>`).join("")}</div></section>
+      <section class="faq-section faq-simple mw-panel" id="faq"><div class="faq-simple-head"><span class="entry-label">FAQ</span><h2>Frequently Asked Questions</h2><p>Clear answers about shared worlds, private roles, Solo and Multiplayer play, AI resolution, and World Credits.</p></div><div class="faq-grid">${faqItems.map(([q,a]) => `<details><summary>${q}${icon(39)}</summary><p>${a}</p></details>`).join("")}</div></section>
     </main>
     ${renderLegalFooter()}
   </div>`;

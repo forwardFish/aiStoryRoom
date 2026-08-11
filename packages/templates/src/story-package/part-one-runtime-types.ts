@@ -138,6 +138,7 @@ export type PartOneDramaticGuidance = {
   sourceMechanisms: string[];
   scenePatterns: Array<Pick<
     NarrativeScenePattern,
+    | "patternId"
     | "dramaticFunction"
     | "openingPressure"
     | "orderedBeats"
@@ -171,6 +172,7 @@ export type PartOneNextStoryBeat = {
   presentMoves: string[];
   playerOutcome: string;
   npcOrWorldPressure: string;
+  visibleConsequence: string;
   stopCondition: string;
   evidencePacket: PartOneSceneEvidencePacket;
   dramaticGuidance: PartOneDramaticGuidance;
@@ -376,6 +378,29 @@ export type PartOneRuntimeIndex = {
   byVisibilityClass: Record<string, string[]>;
 };
 
+export type PartOneNarrativeSupplement = {
+  schemaVersion: "sangtian-part-one-narrative-supplement-v1";
+  worldId: "sangtian";
+  partId: "PART-01";
+  baseRuntimeImmutableHash: string;
+  sourcePatternSets: Array<{
+    path: string;
+    sha256: string;
+    scopeId: string;
+    version: string;
+    patternCount: number;
+  }>;
+  contentCounts: {
+    assets: number;
+    narrativeScenePatterns: number;
+    coveredDecisionKernels: number;
+  };
+  coveredDecisionKernelIds: string[];
+  assets: PartOneRuntimeAsset[];
+  runtimeIndexDelta: PartOneRuntimeIndex;
+  immutableHash: string;
+};
+
 export type PartOneNarrativeStyleProfile = {
   schemaVersion: "narrative-style-profile-v1";
   profileId: string;
@@ -429,6 +454,12 @@ export type PartOneRuntimePackage = {
   styleProfile: PartOneNarrativeStyleProfile;
   assets: PartOneRuntimeAsset[];
   runtimeIndex: PartOneRuntimeIndex;
+  narrativeSupplement?: {
+    baseRuntimeImmutableHash: string;
+    immutableHash: string;
+    assetCount: number;
+    coveredDecisionKernelIds: string[];
+  };
   immutableHash: string;
 };
 

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 4,
+  "generatedAtUtc": "2026-08-11T00:32:00Z",
+  "status": "EXTERNAL_BLOCKED",
+  "classification": "FORMAL_MANAGED_SUPABASE_AND_PROVIDER_CREDENTIALS_MISSING",
+  "formalProbeSha": "df9deb4337260b7edc3c78bde480e4efe8d06f55",
+  "formalProbeRunId": 31445997490,
+  "testableCandidateSha": null,
+  "testedCodeSha": null,
+  "evidenceCommitSha": null,
+  "finalRemoteSha": null,
+  "hashesFrozen": false,
+  "artifactCount": 0,
+  "totalBytes": 0,
+  "activeBlockerEvidence": [
+    "c8/formal-blockers/df9deb4337260b7edc3c78bde480e4efe8d06f55/credential-presence.json",
+    "c8/formal-blockers/df9deb4337260b7edc3c78bde480e4efe8d06f55/EXTERNAL_BLOCKED.md",
+    "c8/checkpoint.json",
+    "c9/checkpoint.json",
+    "c9/B0_FINAL_DELIVERY_RESULT.json",
+    "c9/B0_FINAL_DELIVERY_REPORT.md",
+    "c9/HANDOFF.md",
+    "c9/final-pointer.json"
+  ],
+  "previousEngineeringManifest": {
+    "status": "HISTORICAL_AUXILIARY_ONLY",
+    "previousFinalRemoteSha": "9c8297dacfc00d59b58ddd48d15834b2862983c5",
+    "mayEstablishUserTestReady": false,
+    "mayEstablishFormalC8OrC9": false,
+    "historyPaths": [
+      "history/legacy/prior-history.zip",
+      "history/787f7356/prior-c8-c9.zip"
+    ]
+  },
+  "formalManifestRule": "A complete artifact manifest with frozen file sizes and SHA-256 values may be generated only after managed non-production Supabase and real Provider formal C8 succeeds.",
+  "candidateBranchReady": false,
+  "completionMarkersAllowed": false
+}

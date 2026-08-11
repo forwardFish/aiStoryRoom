@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "../../apps/api/node_modules/@types"
+    ]
+  },
+  "include": [
+    "./b0-candidate-real-flow.ts"
+  ]
+}

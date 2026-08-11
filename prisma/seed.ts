@@ -1,7 +1,40 @@
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { PrismaClient } from "@prisma/client";
-import { midnightStoreTemplate, templates } from "@ai-story/templates";
+
+type SeedTemplatesModule = typeof import("../packages/templates/src/index.ts");
 
 const prisma = new PrismaClient();
+const repositoryRoot = process.cwd();
+let midnightStoreTemplate: SeedTemplatesModule["midnightStoreTemplate"];
+let templates: SeedTemplatesModule["templates"];
+
+function ensureSharedRuntime(): void {
+  const sharedRuntimeEntry = resolve(repositoryRoot, "packages/shared/dist/index.js");
+  if (existsSync(sharedRuntimeEntry)) return;
+
+  const pnpmCli = process.env.npm_execpath;
+  if (!pnpmCli || !existsSync(pnpmCli)) {
+    throw new Error(
+      "Unable to locate pnpm through npm_execpath. Run the seed with `pnpm db:seed` from the repository root."
+    );
+  }
+
+  const build = spawnSync(
+    process.execPath,
+    [pnpmCli, "--filter", "@ai-story/shared", "build"],
+    {
+      cwd: repositoryRoot,
+      stdio: "inherit"
+    }
+  );
+
+  if (build.error) throw build.error;
+  if (build.status !== 0 || !existsSync(sharedRuntimeEntry)) {
+    throw new Error(`Unable to build @ai-story/shared before seeding (exit ${build.status ?? "unknown"}).`);
+  }
+}
 
 function inviteCode(seed: string): string {
   return seed.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6).padEnd(6, "A");
@@ -115,6 +148,9 @@ async function createRunForTemplate(ownerUserId: string) {
 }
 
 async function main() {
+  ensureSharedRuntime();
+  ({ midnightStoreTemplate, templates } = await import("../packages/templates/src/index.ts"));
+
   for (const template of templates) {
     await prisma.worldTemplate.upsert({
       where: { id: template.id },

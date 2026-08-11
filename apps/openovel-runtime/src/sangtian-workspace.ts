@@ -25,6 +25,7 @@ type OpeningAsset = {
     intent?: string;
     method?: string;
     protectedNarrative: string;
+    playerResultExpressionOwner?: "NARRATOR" | "PROTECTED";
     fallbackContinuation: string;
     playerVisibleFallback?: {
       PLAYER_RESULT: string;
@@ -196,6 +197,9 @@ export async function seedSangtianWorkspace(
               sourceRef: evidenceProfile.assetId,
               ...evidenceProfile.payload.openingBeatContract,
               settledNarrative: decision.protectedNarrative.trim(),
+              ...(decision.playerResultExpressionOwner
+                ? { playerResultExpressionOwner: decision.playerResultExpressionOwner }
+                : {}),
               fallbackContinuation: decision.fallbackContinuation.trim(),
               playerVisibleFallback: decision.playerVisibleFallback,
             },
@@ -213,6 +217,9 @@ export async function seedSangtianWorkspace(
               moves: [decision.description],
               requiredAnchorGroups: [],
               settledNarrative: decision.protectedNarrative.trim(),
+              ...(decision.playerResultExpressionOwner
+                ? { playerResultExpressionOwner: decision.playerResultExpressionOwner }
+                : {}),
               fallbackContinuation: decision.fallbackContinuation.trim(),
               playerVisibleFallback: decision.playerVisibleFallback,
               stopCondition: decision.description,
@@ -239,6 +246,10 @@ export async function seedSangtianWorkspace(
     "",
     opening.story.nextSituationNarrative.trim(),
   ].join("\n");
+  // Keep the world prologue and the first actionable scene as separate public
+  // responsibilities. The projection presents the prologue first, then uses
+  // Recent Canon as the authored scene that leads into the opening decision.
+  const openingPresentationNarrative = opening.prologueNarrative.trim();
 
   await Promise.all([
     writeAtomic(paths.brief, sangtianBrief()),
@@ -396,7 +407,7 @@ export async function seedSangtianWorkspace(
     openingOptions,
     openingCanon,
     recentOpening,
-    prologueNarrative: opening.prologueNarrative.trim(),
+    prologueNarrative: openingPresentationNarrative,
   };
 }
 

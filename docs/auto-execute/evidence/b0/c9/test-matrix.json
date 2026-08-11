@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 2,
+  "generatedAtUtc": "2026-08-10T17:43:41.935825+00:00",
+  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
+  "overall": "EXTERNAL_BLOCKED",
+  "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED",
+  "runs": {
+    "exact": "31414693742",
+    "windowsSeed": "31414693761",
+    "acceptance": "31414693756"
+  },
+  "coverage": {
+    "exactEngineeringGates": true,
+    "linuxCleanCloneSeed": true,
+    "windowsCleanCloneSeed": true,
+    "threeSessionsSixWindows": true,
+    "privacyIdempotencyNarrativeWorkers": true,
+    "pauseResumeDeadlineLeaseCrashRecovery": true,
+    "desktopAnd390px": true,
+    "formalManagedNonProductionSupabase": false
+  }
+}

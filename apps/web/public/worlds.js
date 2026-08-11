@@ -1,4 +1,4 @@
-import { fetchWorldCatalog, normalizeWorldCatalog } from "./world-api.js";
+import { DEFAULT_WORLD_CATALOG, fetchWorldCatalog, normalizeWorldCatalog } from "./world-api.js";
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -8,7 +8,7 @@ function esc(value) {
 
 function worldCard(world) {
   const body = `<div class="world-card-art">
-      <img src="${esc(world.imageUrl)}" alt="" />
+      <img src="${esc(world.imageUrl)}" alt="${esc(world.title)}" />
       <span class="world-category">${esc(world.category)}</span>
       ${world.playable ? "" : '<span class="world-coming-badge">Coming Soon</span>'}
     </div>
@@ -36,21 +36,23 @@ export function renderWorldCatalog(documentRef = document, catalog = []) {
 export async function loadWorldCatalog(documentRef = document, windowRef = window) {
   const grid = documentRef.querySelector("[data-world-catalog]");
   if (!grid) return [];
+  const fallbackWorlds = normalizeWorldCatalog(DEFAULT_WORLD_CATALOG);
+  if (!grid.querySelector(".world-card")) renderWorldCatalog(documentRef, fallbackWorlds);
   grid.setAttribute("aria-busy", "true");
-  grid.innerHTML = '<p class="worlds-loading" role="status">Loading worlds…</p>';
   try {
     const worlds = await fetchWorldCatalog({ fetch: windowRef.fetch.bind(windowRef) });
     renderWorldCatalog(documentRef, worlds);
     return worlds;
   } catch (error) {
-    grid.innerHTML = `<div class="worlds-error" role="alert"><p>We could not load the worlds.</p><button type="button" data-worlds-retry>Try again</button></div>`;
-    grid.querySelector("[data-worlds-retry]")?.addEventListener("click", () => void loadWorldCatalog(documentRef, windowRef).catch(() => {}));
-    throw error;
+    renderWorldCatalog(documentRef, fallbackWorlds);
+    grid.insertAdjacentHTML("beforeend", '<p class="worlds-fallback-note" role="status">Showing the latest verified world catalog.</p>');
+    return fallbackWorlds;
   } finally {
     grid.removeAttribute("aria-busy");
   }
 }
 
 if (typeof document !== "undefined" && typeof window !== "undefined") {
-  void loadWorldCatalog(document, window).catch(() => {});
+  renderWorldCatalog(document, DEFAULT_WORLD_CATALOG);
+  void loadWorldCatalog(document, window);
 }

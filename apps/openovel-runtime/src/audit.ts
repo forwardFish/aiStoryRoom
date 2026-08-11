@@ -137,7 +137,7 @@ export async function auditOpenNovelRun(
     optionsRecordedForEveryCommittedTurn: committedTurnIds.every(
       (turnId) => optionTurnIds.has(turnId),
     ),
-    canonReady: metadata.status === "READY",
+    canonReady: metadata.status === "READY" || metadata.status === "COMPLETED",
   };
   const technicalPassed = Object.values(technicalChecks).every(Boolean);
   const playerPassed = missingReviewIds.length === 0

@@ -1,0 +1,165 @@
+name: B0 Evidence Cross-Platform Readback
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - "docs/auto-execute/evidence/b0/**"
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: b0-evidence-cross-platform-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: ${{ matrix.label }} ordinary-worktree evidence hashes
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: Linux
+            context: b0/evidence-readback-linux
+          - os: windows-2025
+            label: Windows
+            context: b0/evidence-readback-windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Publish locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "${{ matrix.context }}",
+              description: `${{ matrix.label }} evidence readback running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify manifest, history and ordinary worktree bytes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw "wrong checkout SHA" }
+          @'
+          import hashlib
+          import json
+          import os
+          import pathlib
+
+          root = pathlib.Path("docs/auto-execute/evidence/b0")
+          c9 = root / "c9"
+          errors = []
+          required = [
+              root / "c0/baseline-test-matrix.json",
+              root / "c1/contract-gate-notes.md",
+              root / "c2/checkpoint.json",
+              root / "c3/checkpoint.json",
+              root / "c4/checkpoint.json",
+              root / "c5/checkpoint.json",
+              root / "c6/checkpoint.json",
+              root / "c8/checkpoint.json",
+              c9 / "manifest.json",
+              c9 / "manifest.sha256",
+              c9 / "checkpoint.json",
+              c9 / "final-pointer.json",
+              c9 / "HANDOFF.md",
+              c9 / "test-matrix.json",
+              c9 / "B0_FINAL_DELIVERY_RESULT.json",
+              c9 / "B0_FINAL_DELIVERY_REPORT.md",
+              c9 / "recovery-audit.json",
+              c9 / "redaction-scan.json",
+          ]
+          for path in required:
+              if not path.is_file(): errors.append("missing:" + path.as_posix())
+
+          for path in root.rglob("*.json"):
+              try:
+                  json.loads(path.read_text(encoding="utf-8"))
+              except Exception as error:
+                  errors.append(f"json:{path.as_posix()}:{error!r}")
+
+          manifest_path = c9 / "manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          total = 0
+          for row in manifest.get("artifacts", []):
+              path = root / row["path"]
+              if not path.is_file():
+                  errors.append("manifest-missing:" + row["path"])
+                  continue
+              raw = path.read_bytes()
+              total += len(raw)
+              if len(raw) != row["bytes"]: errors.append("bytes:" + row["path"])
+              if hashlib.sha256(raw).hexdigest() != row["sha256"]: errors.append("sha256:" + row["path"])
+          if total != manifest.get("totalBytes"): errors.append("totalBytes")
+          if len(manifest.get("artifacts", [])) != manifest.get("artifactCount"): errors.append("artifactCount")
+
+          expected_manifest_hash = (c9 / "manifest.sha256").read_text(encoding="utf-8").split()[0]
+          actual_manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+          if actual_manifest_hash != expected_manifest_hash: errors.append("manifest-self-hash")
+
+          redaction = json.loads((c9 / "redaction-scan.json").read_text(encoding="utf-8"))
+          if redaction.get("status") != "PASS" or redaction.get("findingCount") != 0:
+              errors.append("redaction")
+
+          result = {
+              "schemaVersion": 1,
+              "os": os.environ.get("RUNNER_OS"),
+              "finalRemoteSha": os.environ["GITHUB_SHA"],
+              "artifactCount": manifest.get("artifactCount"),
+              "totalBytes": total,
+              "manifestSha256": actual_manifest_hash,
+              "errors": errors,
+              "status": "PASS" if not errors else "FAIL",
+          }
+          pathlib.Path("b0-evidence-readback.json").write_text(
+              json.dumps(result, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(result, indent=2))
+          if errors: raise SystemExit(str(errors))
+          '@ | python -
+
+      - name: Upload readback proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-evidence-readback-${{ matrix.label }}-${{ github.sha }}
+          path: b0-evidence-readback.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "${{ matrix.context }}",
+              description: success
+                ? `${{ matrix.label }} ordinary-worktree evidence hashes passed in ${context.runId}`
+                : `${{ matrix.label }} ordinary-worktree evidence hashes failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("${{ matrix.label }} evidence readback failed");

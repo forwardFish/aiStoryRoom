@@ -16,7 +16,8 @@ test("user-facing surfaces use the Our Many Worlds brand and tagline", async () 
     readFile(new URL("../public/room-role-selection-view.js", import.meta.url), "utf8")
   ]);
 
-  assert.match(homeHtml, /<title>Our Many Worlds \| Real players\. Living worlds\.<\/title>/);
+  assert.match(homeHtml, /<title>AI Multiplayer Story Game with Private Roles \| Our Many Worlds<\/title>/);
+  assert.match(homeHtml, /<meta name="application-name" content="Our Many Worlds \| Real players\. Living worlds\." \/>/);
   assert.match(homeJs, /Our Many Worlds<small>Real players\. Living worlds\.<\/small>/);
   assert.match(homeJs, /© 2026 Our Many Worlds/);
   assert.match(platformHtml, /<title>Our Many Worlds<\/title>/);
@@ -25,7 +26,7 @@ test("user-facing surfaces use the Our Many Worlds brand and tagline", async () 
   assert.match(standardHeader, /<strong>Our Many Worlds<\/strong>/);
   assert.match(standardHeader, /<small>Real players\. Living worlds\.<\/small>/);
   assert.match(credits, /<standard-page-header back-href="\/" dynamic-return>/);
-  assert.match(worlds, /Explore Worlds \| Our Many Worlds/);
+  assert.match(worlds, /<title>AI Story Worlds to Play Solo or Multiplayer \| Our Many Worlds<\/title>/);
   assert.match(roleSelect, /renderRoomSelectionPage/);
   assert.doesNotMatch(roleSelectionView, /mw-room-brand|<strong>Our Many Worlds<\/strong>/);
 

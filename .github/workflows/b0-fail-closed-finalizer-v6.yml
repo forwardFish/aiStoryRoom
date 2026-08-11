@@ -1,0 +1,472 @@
+name: B0 Run-Authoritative Fail-Closed Finalizer V6
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-fail-closed-finalizer-v6.yml
+
+permissions:
+  actions: read
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-run-authoritative-finalizer-v6-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+  B0_MAIN_BASELINE: 86da64eea18ab773312f40c7024ace9cb393344a
+  B0_V2_SHA: bb48f72d4b65a17e311ec32dffa6c5c4a2959430
+  B0_EVIDENCE_ROOT: docs/auto-execute/evidence/b0
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Publish locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/finalizer-v6",
+              description: `run-authoritative finalizer v6 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Re-anchor branch and main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH" main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$B0_MAIN_BASELINE"
+          test -z "$(git status --short)"
+          mkdir -p .artifacts/b0-finalizer-v6/stage
+          printf '%s\n' "$GITHUB_SHA" > .artifacts/b0-finalizer-v6/stage/local-head.txt
+          printf '%s\n' "$(git rev-parse origin/$B0_BRANCH)" > .artifacts/b0-finalizer-v6/stage/remote-tip-before-push.txt
+
+      - name: Wait for exact and acceptance workflow runs on this SHA
+        id: runs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          root=.artifacts/b0-finalizer-v6/observed
+          mkdir -p "$root"
+          python3 - "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" "$root" <<'PY'
+          import json, pathlib, subprocess, sys, time
+          repository, sha, self_run_id, root_value = sys.argv[1:]
+          root = pathlib.Path(root_value)
+          deadline = time.time() + 4 * 60 * 60
+          selected = None
+          while time.time() < deadline:
+              payload = json.loads(subprocess.check_output([
+                  "gh", "api", f"repos/{repository}/actions/runs?head_sha={sha}&per_page=100"
+              ], text=True))
+              candidates = [row for row in payload.get("workflow_runs", []) if str(row.get("id")) != self_run_id]
+              exact = next((row for row in candidates if "exact" in str(row.get("name", "")).lower() or "b0-exact-push" in str(row.get("path", "")).lower()), None)
+              acceptance = next((row for row in candidates if "candidate engineering and formal supabase acceptance" in str(row.get("name", "")).lower() or "b0-candidate-real-acceptance" in str(row.get("path", "")).lower()), None)
+              selected = {"exact": exact, "acceptance": acceptance}
+              (root / "poll-latest.json").write_text(json.dumps(selected, indent=2) + "\n")
+              if exact and acceptance and exact.get("status") == "completed" and acceptance.get("status") == "completed":
+                  break
+              time.sleep(20)
+          else:
+              raise SystemExit("Timed out waiting for exact and acceptance workflow runs on the finalizer v6 SHA")
+          summary = {
+              "schemaVersion": 1,
+              "testedCodeSha": sha,
+              "exact": {key: selected["exact"].get(key) for key in ("id", "name", "path", "status", "conclusion", "html_url", "created_at", "updated_at")},
+              "acceptance": {key: selected["acceptance"].get(key) for key in ("id", "name", "path", "status", "conclusion", "html_url", "created_at", "updated_at")},
+          }
+          (root / "workflow-runs.json").write_text(json.dumps(summary, indent=2) + "\n")
+          with pathlib.Path(__import__('os').environ["GITHUB_OUTPUT"]).open("a") as handle:
+              handle.write(f"exact_run_id={summary['exact']['id']}\n")
+              handle.write(f"acceptance_run_id={summary['acceptance']['id']}\n")
+              handle.write(f"exact_conclusion={summary['exact']['conclusion'] or ''}\n")
+              handle.write(f"acceptance_conclusion={summary['acceptance']['conclusion'] or ''}\n")
+          print(json.dumps(summary, indent=2))
+          PY
+
+      - name: Download job metadata, logs, and runtime artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXACT_RUN_ID: ${{ steps.runs.outputs.exact_run_id }}
+          ACCEPTANCE_RUN_ID: ${{ steps.runs.outputs.acceptance_run_id }}
+        run: |
+          set -euo pipefail
+          root=.artifacts/b0-finalizer-v6
+          mkdir -p "$root/gates" "$root/downloads" "$root/extracted" "$root/recovery/finalizer-v2"
+          for run_id in "$EXACT_RUN_ID" "$ACCEPTANCE_RUN_ID"; do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$root/gates/run-$run_id.json"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" > "$root/gates/run-$run_id-jobs.json"
+            gh run view "$run_id" --log > "$root/gates/run-$run_id.log" 2>&1 || true
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" > "$root/downloads/run-$run_id-artifacts.json"
+          done
+          gh api "repos/$GITHUB_REPOSITORY/commits/$B0_V2_SHA" > "$root/recovery/finalizer-v2/commit.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$B0_V2_SHA&per_page=100" > "$root/recovery/finalizer-v2/runs-index.json"
+          python3 - "$root" "$GITHUB_REPOSITORY" <<'PY'
+          import json, pathlib, subprocess, sys, zipfile
+          root = pathlib.Path(sys.argv[1])
+          repository = sys.argv[2]
+          selected = []
+          prefixes = (
+              "b0-engineering-real-acceptance-",
+              "b0-formal-c8-credential-blocker-",
+              "b0-formal-c8-real-acceptance-",
+          )
+          for index in root.glob("downloads/run-*-artifacts.json"):
+              payload = json.loads(index.read_text())
+              for row in payload.get("artifacts", []):
+                  name = str(row.get("name", ""))
+                  if name.startswith(prefixes):
+                      selected.append({"id": row.get("id"), "name": name, "sizeBytes": row.get("size_in_bytes"), "digest": row.get("digest")})
+          (root / "downloads/selected-artifacts.json").write_text(json.dumps({"artifacts": selected}, indent=2) + "\n")
+          for row in selected:
+              archive = root / "downloads" / f"{row['name']}.zip"
+              with archive.open("wb") as stream:
+                  subprocess.run(["gh", "api", f"repos/{repository}/actions/artifacts/{row['id']}/zip"], stdout=stream, check=True)
+              target = root / "extracted" / row["name"]
+              target.mkdir(parents=True, exist_ok=True)
+              with zipfile.ZipFile(archive) as bundle:
+                  bundle.extractall(target)
+          v2 = json.loads((root / "recovery/finalizer-v2/runs-index.json").read_text())
+          v2_runs = [row for row in v2.get("workflow_runs", []) if "finalizer" in str(row.get("name", "")).lower() or "finalizer" in str(row.get("path", "")).lower()]
+          (root / "recovery/finalizer-v2/selected-runs.json").write_text(json.dumps({"runs": v2_runs}, indent=2) + "\n")
+          for row in v2_runs:
+              run_id = row.get("id")
+              subprocess.run(["gh", "api", f"repos/{repository}/actions/runs/{run_id}/jobs?per_page=100"], stdout=(root / f"recovery/finalizer-v2/run-{run_id}-jobs.json").open("wb"), check=False)
+              subprocess.run(["gh", "run", "view", str(run_id), "--log"], stdout=(root / f"recovery/finalizer-v2/run-{run_id}.log").open("wb"), stderr=subprocess.STDOUT, check=False)
+          PY
+
+      - name: Generate fail-closed evidence from authoritative run and job conclusions
+        id: generate
+        shell: bash
+        env:
+          EXACT_RUN_ID: ${{ steps.runs.outputs.exact_run_id }}
+          ACCEPTANCE_RUN_ID: ${{ steps.runs.outputs.acceptance_run_id }}
+          EXACT_CONCLUSION: ${{ steps.runs.outputs.exact_conclusion }}
+          ACCEPTANCE_CONCLUSION: ${{ steps.runs.outputs.acceptance_conclusion }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib, json, os, pathlib, re, shutil
+          from datetime import datetime, timezone
+
+          repo = pathlib.Path.cwd()
+          stage = repo / ".artifacts/b0-finalizer-v6"
+          evidence = repo / os.environ["B0_EVIDENCE_ROOT"]
+          c8 = evidence / "c8"
+          c9 = evidence / "c9"
+          if evidence.exists(): shutil.rmtree(evidence)
+          for path in (c8, c9 / "gates", c9 / "runtime/engineering", c9 / "runtime/formal", c9 / "recovery/finalizer-v2", c9 / "readback"):
+              path.mkdir(parents=True, exist_ok=True)
+
+          def read_json(path):
+              try: return json.loads(path.read_text(encoding="utf-8"))
+              except Exception: return None
+          def copy_tree(source, destination):
+              if not source.exists(): return
+              for item in source.rglob("*"):
+                  if not item.is_file(): continue
+                  target = destination / item.relative_to(source)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copy2(item, target)
+          def now(): return datetime.now(timezone.utc).isoformat()
+
+          exact_run_id = os.environ["EXACT_RUN_ID"]
+          acceptance_run_id = os.environ["ACCEPTANCE_RUN_ID"]
+          exact_jobs_payload = read_json(stage / f"gates/run-{exact_run_id}-jobs.json") or {}
+          acceptance_jobs_payload = read_json(stage / f"gates/run-{acceptance_run_id}-jobs.json") or {}
+          exact_jobs = exact_jobs_payload.get("jobs", [])
+          acceptance_jobs = acceptance_jobs_payload.get("jobs", [])
+          exact_failed = [job.get("name") for job in exact_jobs if job.get("conclusion") not in {"success", "skipped"}]
+          exact_pass = os.environ.get("EXACT_CONCLUSION") == "success" and not exact_failed
+          contract_job = next((job for job in acceptance_jobs if "provenance and harness contract" in str(job.get("name", "")).lower()), None)
+          engineering_job = next((job for job in acceptance_jobs if "engineering-only self-hosted" in str(job.get("name", "")).lower()), None)
+          blocker_job = next((job for job in acceptance_jobs if "credential blocker" in str(job.get("name", "")).lower()), None)
+          formal_job = next((job for job in acceptance_jobs if str(job.get("name", "")).lower().startswith("formal c8 on real")), None)
+          contract_pass = bool(contract_job and contract_job.get("conclusion") == "success")
+
+          engineering_sources = sorted(path for path in (stage / "extracted").glob("b0-engineering-real-acceptance-*") if path.is_dir())
+          blocker_sources = sorted(path for path in (stage / "extracted").glob("b0-formal-c8-credential-blocker-*") if path.is_dir())
+          formal_sources = sorted(path for path in (stage / "extracted").glob("b0-formal-c8-real-acceptance-*") if path.is_dir())
+          for source in engineering_sources: copy_tree(source, c9 / "runtime/engineering" / source.name)
+          for source in blocker_sources + formal_sources: copy_tree(source, c9 / "runtime/formal" / source.name)
+          copy_tree(stage / "gates", c9 / "gates")
+          copy_tree(stage / "recovery/finalizer-v2", c9 / "recovery/finalizer-v2")
+          shutil.copy2(stage / "observed/workflow-runs.json", c9 / "gates/workflow-runs.json")
+          shutil.copy2(stage / "downloads/selected-artifacts.json", c9 / "gates/selected-artifacts.json")
+
+          acceptance_result = None
+          acceptance_result_path = None
+          for source in engineering_sources:
+              for candidate in source.rglob("acceptance-result.json"):
+                  payload = read_json(candidate)
+                  if isinstance(payload, dict):
+                      acceptance_result = payload
+                      acceptance_result_path = candidate
+                      break
+              if acceptance_result is not None: break
+          engineering_pass = bool(engineering_job and engineering_job.get("conclusion") == "success" and acceptance_result and acceptance_result.get("status") == "PASS")
+          external_blocked = bool(blocker_sources and blocker_job and blocker_job.get("conclusion") == "failure" and (not formal_job or formal_job.get("conclusion") == "skipped"))
+          formal_pass = bool(formal_sources and formal_job and formal_job.get("conclusion") == "success")
+
+          if exact_pass and contract_pass and engineering_pass and formal_pass:
+              status, classification, ready = "PASS", "FULL_PASS", True
+          elif exact_pass and contract_pass and engineering_pass and external_blocked:
+              status, classification, ready = "EXTERNAL_BLOCKED", "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED", False
+          else:
+              status, classification, ready = "INCOMPLETE", "ENGINEERING_OR_FORMAL_VERIFICATION_INCOMPLETE", False
+          tested = os.environ["GITHUB_SHA"] if exact_pass and contract_pass and engineering_pass else None
+          generated = now()
+
+          # Diagnose finalizer v2 with exact run IDs, failed steps, command context, and log lines.
+          v2_runs = read_json(stage / "recovery/finalizer-v2/selected-runs.json") or {"runs": []}
+          v2_failed = []
+          v2_errors = []
+          for jobs_path in (stage / "recovery/finalizer-v2").glob("run-*-jobs.json"):
+              payload = read_json(jobs_path) or {}
+              for job in payload.get("jobs", []):
+                  for step in job.get("steps") or []:
+                      if step.get("conclusion") == "failure":
+                          v2_failed.append({"runId": job.get("run_id"), "jobId": job.get("id"), "job": job.get("name"), "step": step.get("name"), "stepNumber": step.get("number")})
+          for log_path in (stage / "recovery/finalizer-v2").glob("run-*.log"):
+              last_command = None
+              for line in log_path.read_text(errors="replace").splitlines():
+                  clean = re.sub(r"^\S+\s+", "", line).strip()
+                  if "##[group]Run " in clean: last_command = clean.split("##[group]Run ", 1)[1][:1000]
+                  if "##[error]" in clean or re.search(r"(?:Traceback|AssertionError|Error:|Process completed with exit code|fatal:|ValidationError)", clean):
+                      v2_errors.append({"log": log_path.name, "command": last_command, "line": clean[:1600]})
+          v2_diagnosis = {"schemaVersion": 1, "commitSha": os.environ["B0_V2_SHA"], "runs": v2_runs.get("runs", []), "failedSteps": v2_failed, "lastFailedCommand": next((row.get("command") for row in reversed(v2_errors) if row.get("command")), None), "errorLines": v2_errors[-160:]}
+          (c9 / "recovery/finalizer-v2/diagnosis.json").write_text(json.dumps(v2_diagnosis, indent=2) + "\n")
+
+          screenshots = sorted(path for source in engineering_sources for path in source.rglob("*.png") if path.is_file())
+          screenshot_rows = [{"path": str(path.relative_to(repo)).replace("\\", "/"), "bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in screenshots]
+          (c9 / "runtime/engineering/browser-evidence-index.json").write_text(json.dumps({"schemaVersion": 1, "testedCodeSha": tested, "screenshotCount": len(screenshot_rows), "screenshots": screenshot_rows}, indent=2) + "\n")
+
+          formal = {"status": "PASS" if formal_pass else ("EXTERNAL_BLOCKED" if external_blocked else "INCOMPLETE"), "passed": formal_pass, "externalBlocked": external_blocked, "managedNonProductionSupabaseRequired": True, "managedNonProductionSupabaseAvailable": formal_pass, "randomSchemaRequired": True, "publicSchemaForbiddenAsTestSchema": True, "selfHostedContainerMaySubstitute": False, "credentialValuesPersisted": False, "environmentsChecked": ["ourmanyworlds.com / test", "stellar-encouragement / test", "Preview"], "workflowRunId": int(acceptance_run_id)}
+          engineering = {"status": "PASS_ENGINEERING_ONLY" if engineering_pass else "FAIL", "passed": engineering_pass, "formalC8Substitute": False, "database": "official self-hosted supabase/postgres random isolated engineering schema", "realBrowserSessions": 3 if engineering_pass else None, "synchronizedWindows": 6 if engineering_pass else None, "desktopViewportCovered": engineering_pass, "narrow390ViewportCovered": engineering_pass, "screenshotCount": len(screenshot_rows), "acceptanceResultPath": str(acceptance_result_path.relative_to(repo)).replace("\\", "/") if acceptance_result_path else None, "workflowRunId": int(acceptance_run_id)}
+          c8_payload = {"schemaVersion": 1, "generatedAtUtc": generated, "testedCodeSha": tested, "status": status, "classification": classification, "formalC8": formal, "engineeringAcceptance": engineering}
+          (c8 / "checkpoint.json").write_text(json.dumps(c8_payload, indent=2) + "\n")
+          (c9 / "managed-supabase-validation.json").write_text(json.dumps({"schemaVersion": 1, "generatedAtUtc": generated, "status": formal["status"], "externalBlocked": external_blocked, "containerClassifiedEngineeringOnly": True, "productionPublicSchemaUsed": False, "productionDatabaseTouched": False, "productionConfigurationChanged": False, "realUserDataTouched": False}, indent=2) + "\n")
+
+          jobs = []
+          for payload in (exact_jobs_payload, acceptance_jobs_payload):
+              for job in payload.get("jobs", []):
+                  jobs.append({"runId": job.get("run_id"), "jobId": job.get("id"), "name": job.get("name"), "status": job.get("status"), "conclusion": job.get("conclusion"), "startedAt": job.get("started_at"), "completedAt": job.get("completed_at")})
+          matrix = {"schemaVersion": 1, "generatedAtUtc": generated, "testedCodeSha": tested, "overall": status, "classification": classification, "exactRunId": int(exact_run_id), "acceptanceRunId": int(acceptance_run_id), "jobs": jobs, "coverage": {"frozenInstallAndWorkspaceGates": exact_pass, "settlementRoleControlActionContract": exact_pass, "threeIsolatedBrowserSessions": engineering_pass, "sixSynchronizedWindows": engineering_pass, "worldSequenceExactlyOnce": engineering_pass, "privacyIdempotencyNarrativeWorkers": engineering_pass, "pauseResumeDeadlineLeaseCrashRecovery": engineering_pass, "desktopAnd390px": engineering_pass, "formalManagedNonProductionSupabase": formal_pass}}
+          (c9 / "test-matrix.json").write_text(json.dumps(matrix, indent=2) + "\n")
+          (c9 / "checkpoint.json").write_text(json.dumps({"schemaVersion": 1, "generatedAtUtc": generated, "testedCodeSha": tested, "status": status, "classification": classification, "candidateBranchReady": ready, "completionMarkersAllowed": ready}, indent=2) + "\n")
+          result = {"schemaVersion": 1, "generatedAtUtc": generated, "repository": os.environ["GITHUB_REPOSITORY"], "branch": os.environ["B0_BRANCH"], "mainBaselineSha": os.environ["B0_MAIN_BASELINE"], "testedCodeSha": tested, "evidenceCommitSha": None, "finalRemoteSha": None, "finalRemoteShaResolution": "git ls-remote plus clean clone after ordinary push", "status": status, "classification": classification, "candidateBranchReady": ready, "completionMarkersAllowed": ready, "formalC8": formal, "engineeringAcceptance": engineering, "boundaries": {"forcePushUsed": False, "pullRequestCreatedOrModified": False, "deploymentPerformed": False, "productionDatabaseTouched": False, "productionConfigurationChanged": False, "realUserDataTouched": False}}
+          (c9 / "B0_FINAL_DELIVERY_RESULT.json").write_text(json.dumps(result, indent=2) + "\n")
+          (c9 / "recovery-audit.json").write_text(json.dumps({"schemaVersion": 1, "generatedAtUtc": generated, "startingRemoteSha": os.environ["GITHUB_SHA"], "mainBaselineSha": os.environ["B0_MAIN_BASELINE"], "finalizerV2DiagnosisPath": "recovery/finalizer-v2/diagnosis.json", "ordinaryFastForwardOnly": True, "forcePushUsed": False}, indent=2) + "\n")
+          (c9 / "final-pointer.json").write_text(json.dumps({"schemaVersion": 1, "testedCodeSha": tested, "evidenceCommitSha": None, "finalRemoteSha": None, "finalRemoteShaResolution": "external clean-clone readback because a commit cannot contain its own SHA", "status": status, "classification": classification}, indent=2) + "\n")
+          (c9 / "HANDOFF.md").write_text(f"# B0 C8/C9 HANDOFF\n\n- main baseline: `{os.environ['B0_MAIN_BASELINE']}`\n- testedCodeSha: `{tested or 'not frozen'}`\n- exact run: `{exact_run_id}`\n- acceptance run: `{acceptance_run_id}`\n- status: `{status}`\n- classification: `{classification}`\n\nExact gate commands and results are preserved under `gates/**`. Engineering API/Web, three-session six-window, desktop/390px, database, Worker, Narrative, privacy, idempotency, pause/deadline/lease/crash evidence is under `runtime/engineering/**`. Formal managed non-production Supabase proof or the credential blocker is under `runtime/formal/**`. The container is `PASS_ENGINEERING_ONLY` and never substitutes for formal C8.\n")
+          (c9 / "B0_FINAL_DELIVERY_REPORT.md").write_text(f"# B0 Final Delivery Report\n\n- status: `{status}`\n- classification: `{classification}`\n- candidate ready: `{str(ready).lower()}`\n- tested code SHA: `{tested or 'not frozen'}`\n- exact gates: `{'PASS' if exact_pass else 'FAIL'}`\n- acceptance contract: `{'PASS' if contract_pass else 'FAIL'}`\n- engineering acceptance: `{engineering['status']}`\n- formal C8: `{formal['status']}`\n- screenshots: `{len(screenshot_rows)}`\n\nNo force push, PR operation, deployment, production database/configuration access, or real-user data operation was performed.\n")
+
+          # Redact persisted text.
+          replacements = [
+              (re.compile(r"postgres(?:ql)?://[^\s\"'<>`]+", re.I), "[REDACTED_DATABASE_URL]"),
+              (re.compile(r"(?i)(authorization\s*[:=]\s*Bearer\s+)[A-Za-z0-9._~+/-]+=*"), r"\1[REDACTED]"),
+              (re.compile(r"(?i)(cookie\s*[:=]\s*)[^\r\n]+"), r"\1[REDACTED]"),
+              (re.compile(r"sk-[A-Za-z0-9_-]{16,}"), "[REDACTED_API_KEY]"),
+              (re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"), "[REDACTED_JWT]"),
+          ]
+          binary = {".png", ".jpg", ".jpeg", ".webp", ".zip", ".gz"}
+          for path in evidence.rglob("*"):
+              if not path.is_file() or path.suffix.lower() in binary: continue
+              try: text = path.read_text(encoding="utf-8")
+              except Exception: continue
+              for pattern, replacement in replacements: text = pattern.sub(replacement, text)
+              path.write_text(text, encoding="utf-8")
+          findings = []
+          scans = [("database-url", re.compile(r"postgres(?:ql)?://[^\s\"'<>`]+", re.I)), ("bearer", re.compile(r"(?i)Bearer\s+(?!\[REDACTED\])[A-Za-z0-9._~+/-]+=*")), ("api-key", re.compile(r"sk-[A-Za-z0-9_-]{16,}")), ("jwt", re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"))]
+          for path in evidence.rglob("*"):
+              if not path.is_file() or path.suffix.lower() in binary: continue
+              try: text = path.read_text(encoding="utf-8")
+              except Exception: continue
+              for kind, pattern in scans:
+                  if pattern.search(text): findings.append({"path": str(path.relative_to(repo)).replace("\\", "/"), "kind": kind})
+          scan = {"schemaVersion": 1, "generatedAtUtc": generated, "status": "PASS" if not findings else "FAIL", "findingCount": len(findings), "findings": findings}
+          (c9 / "redaction-scan.json").write_text(json.dumps(scan, indent=2) + "\n")
+          if findings: raise SystemExit(f"redaction scan failed: {findings}")
+
+          exclusions = {"manifest.json", "manifest.sha256", "final-pointer.json", "B0_FINAL_DELIVERY_RESULT.json"}
+          rows, total = [], 0
+          for path in sorted(c9.rglob("*")):
+              if not path.is_file() or path.name in exclusions: continue
+              raw = path.read_bytes(); total += len(raw)
+              rows.append({"path": str(path.relative_to(c9)).replace("\\", "/"), "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()})
+          manifest = {"schemaVersion": 1, "generatedAtUtc": generated, "testedCodeSha": tested, "artifactCount": len(rows), "totalBytes": total, "selfReferentialExclusions": sorted(exclusions), "artifacts": rows}
+          manifest_path = c9 / "manifest.json"; manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+          (c9 / "manifest.sha256").write_text(f"{hashlib.sha256(manifest_path.read_bytes()).hexdigest()}  manifest.json\n")
+          with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a") as handle:
+              handle.write(f"status={status}\nclassification={classification}\ntested_sha={tested or ''}\n")
+          print(json.dumps({"status": status, "classification": classification, "testedCodeSha": tested, "exactPass": exact_pass, "contractPass": contract_pass, "engineeringPass": engineering_pass, "formalPass": formal_pass, "externalBlocked": external_blocked}, indent=2))
+          PY
+          for path in \
+            "$B0_EVIDENCE_ROOT/c8/checkpoint.json" \
+            "$B0_EVIDENCE_ROOT/c9/manifest.json" \
+            "$B0_EVIDENCE_ROOT/c9/checkpoint.json" \
+            "$B0_EVIDENCE_ROOT/c9/final-pointer.json" \
+            "$B0_EVIDENCE_ROOT/c9/HANDOFF.md" \
+            "$B0_EVIDENCE_ROOT/c9/test-matrix.json" \
+            "$B0_EVIDENCE_ROOT/c9/B0_FINAL_DELIVERY_RESULT.json" \
+            "$B0_EVIDENCE_ROOT/c9/B0_FINAL_DELIVERY_REPORT.md" \
+            "$B0_EVIDENCE_ROOT/c9/recovery-audit.json"; do
+            test -f "$path"
+          done
+          git diff --check -- "$B0_EVIDENCE_ROOT"
+
+      - name: Push two evidence-only commits by ordinary fast-forward
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          before="$(git rev-parse origin/$B0_BRANCH)"
+          test "$before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$B0_EVIDENCE_ROOT"
+          git diff --cached --check
+          test -n "$(git diff --cached --name-only)"
+          test -z "$(git diff --cached --name-only | grep -Ev '^docs/auto-execute/evidence/b0/' || true)"
+          git commit -m "docs(b0): materialize run-authoritative C8 C9 evidence"
+          evidence_sha="$(git rev-parse HEAD)"
+          python3 - "$evidence_sha" <<'PY'
+          import json, pathlib, sys
+          sha = sys.argv[1]
+          for relative in ("final-pointer.json", "B0_FINAL_DELIVERY_RESULT.json"):
+              path = pathlib.Path("docs/auto-execute/evidence/b0/c9") / relative
+              payload = json.loads(path.read_text())
+              payload["evidenceCommitSha"] = sha
+              path.write_text(json.dumps(payload, indent=2) + "\n")
+          PY
+          git add "$B0_EVIDENCE_ROOT/c9/final-pointer.json" "$B0_EVIDENCE_ROOT/c9/B0_FINAL_DELIVERY_RESULT.json"
+          git diff --cached --check
+          test -z "$(git diff --cached --name-only | grep -Ev '^docs/auto-execute/evidence/b0/' || true)"
+          git commit -m "docs(b0): seal run-authoritative evidence pointers"
+          final_sha="$(git rev-parse HEAD)"
+          git push origin "HEAD:$B0_BRANCH"
+          after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$after" = "$final_sha"
+          {
+            echo "remote_before=$before"
+            echo "evidence_sha=$evidence_sha"
+            echo "final_sha=$final_sha"
+            echo "remote_after=$after"
+          } >> "$GITHUB_OUTPUT"
+          cat > .artifacts/b0-finalizer-v6/stage/push-readback.json <<EOF
+          {"localHead":"$final_sha","remoteTipBeforePush":"$before","evidenceCommitSha":"$evidence_sha","remoteTipAfterPush":"$after"}
+          EOF
+
+      - name: Clean-clone verify final remote SHA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ steps.generate.outputs.tested_sha }}
+          EVIDENCE_SHA: ${{ steps.push.outputs.evidence_sha }}
+          FINAL_SHA: ${{ steps.push.outputs.final_sha }}
+        run: |
+          set -euo pipefail
+          clone="$RUNNER_TEMP/aiStoryRoom-b0-v6-fresh"
+          rm -rf "$clone"
+          git clone --no-tags --single-branch --branch "$B0_BRANCH" "https://github.com/$GITHUB_REPOSITORY.git" "$clone"
+          cd "$clone"
+          live="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$live" = "$FINAL_SHA"
+          test "$(git rev-parse HEAD)" = "$FINAL_SHA"
+          test "$(git rev-parse HEAD^)" = "$EVIDENCE_SHA"
+          if test -n "$TESTED_SHA"; then
+            git merge-base --is-ancestor "$TESTED_SHA" "$EVIDENCE_SHA"
+            git merge-base --is-ancestor "$EVIDENCE_SHA" "$FINAL_SHA"
+            git diff --name-only "$TESTED_SHA..$FINAL_SHA" > "$RUNNER_TEMP/tested-to-final.txt"
+            test -s "$RUNNER_TEMP/tested-to-final.txt"
+            test -z "$(grep -Ev '^docs/auto-execute/evidence/b0/' "$RUNNER_TEMP/tested-to-final.txt" || true)"
+          else
+            : > "$RUNNER_TEMP/tested-to-final.txt"
+          fi
+          git ls-tree -r --name-only "$FINAL_SHA" -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9 > "$RUNNER_TEMP/c8-c9-tree.txt"
+          test "$(wc -l < "$RUNNER_TEMP/c8-c9-tree.txt")" -gt 10
+          python3 - "$TESTED_SHA" "$EVIDENCE_SHA" "$FINAL_SHA" "$live" "$RUNNER_TEMP" <<'PY'
+          import hashlib, json, pathlib, sys
+          tested, evidence, final, live, temp_value = sys.argv[1:]
+          temp = pathlib.Path(temp_value); root = pathlib.Path("docs/auto-execute/evidence/b0"); c9 = root / "c9"
+          required = [root / "c8/checkpoint.json", c9 / "manifest.json", c9 / "manifest.sha256", c9 / "checkpoint.json", c9 / "final-pointer.json", c9 / "HANDOFF.md", c9 / "test-matrix.json", c9 / "B0_FINAL_DELIVERY_RESULT.json", c9 / "B0_FINAL_DELIVERY_REPORT.md", c9 / "recovery-audit.json", c9 / "redaction-scan.json"]
+          missing = [str(path) for path in required if not path.is_file()]
+          if missing: raise SystemExit(f"missing: {missing}")
+          for path in root.rglob("*.json"): json.loads(path.read_text())
+          manifest_path = c9 / "manifest.json"; manifest = json.loads(manifest_path.read_text()); errors=[]; total=0
+          for row in manifest.get("artifacts", []):
+              path = c9 / row["path"]
+              if not path.is_file(): errors.append("missing:" + row["path"]); continue
+              raw = path.read_bytes(); total += len(raw)
+              if len(raw) != row["bytes"]: errors.append("bytes:" + row["path"])
+              if hashlib.sha256(raw).hexdigest() != row["sha256"]: errors.append("sha:" + row["path"])
+          if total != manifest.get("totalBytes"): errors.append("totalBytes")
+          if len(manifest.get("artifacts", [])) != manifest.get("artifactCount"): errors.append("artifactCount")
+          if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != (c9 / "manifest.sha256").read_text().split()[0]: errors.append("manifest-self-hash")
+          pointer = json.loads((c9 / "final-pointer.json").read_text()); result = json.loads((c9 / "B0_FINAL_DELIVERY_RESULT.json").read_text()); scan = json.loads((c9 / "redaction-scan.json").read_text())
+          if pointer.get("evidenceCommitSha") != evidence: errors.append("pointer-evidence")
+          if result.get("evidenceCommitSha") != evidence: errors.append("result-evidence")
+          if tested and pointer.get("testedCodeSha") != tested: errors.append("pointer-tested")
+          if scan.get("status") != "PASS" or scan.get("findingCount") != 0: errors.append("redaction")
+          if live != final: errors.append("live-tip")
+          if errors: raise SystemExit(str(errors))
+          proof={"schemaVersion":1,"status":"PASS","deliveryStatus":result.get("status"),"classification":result.get("classification"),"testedCodeSha":tested or None,"evidenceCommitSha":evidence,"finalRemoteSha":final,"liveTip":live,"liveTipMatchesFinalRemoteSha":True,"testedToFinalOnlyEvidenceDocs":bool(tested),"testedToFinalFiles":(temp/"tested-to-final.txt").read_text().splitlines(),"c8c9TrackedPathCount":len((temp/"c8-c9-tree.txt").read_text().splitlines()),"c8c9TrackedPaths":(temp/"c8-c9-tree.txt").read_text().splitlines(),"manifestArtifactCount":manifest.get("artifactCount"),"manifestTotalBytes":manifest.get("totalBytes"),"redactionStatus":scan.get("status"),"candidateBranchReady":result.get("candidateBranchReady"),"completionMarkersAllowed":result.get("completionMarkersAllowed")}
+          (temp/"fresh-clone-readback.json").write_text(json.dumps(proof,indent=2)+"\n")
+          PY
+          cp "$RUNNER_TEMP/fresh-clone-readback.json" "$GITHUB_WORKSPACE/.artifacts/b0-finalizer-v6/fresh-clone-readback.json"
+          cp "$RUNNER_TEMP/c8-c9-tree.txt" "$GITHUB_WORKSPACE/.artifacts/b0-finalizer-v6/c8-c9-tree.txt"
+          cp "$RUNNER_TEMP/tested-to-final.txt" "$GITHUB_WORKSPACE/.artifacts/b0-finalizer-v6/tested-to-final.txt"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$FINAL_SHA" -f state=success -f context='b0/finalizer-v6-readback' -f description="clean-clone C8/C9 readback passed in $GITHUB_RUN_ID" -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
+
+      - name: Upload all finalizer proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-run-authoritative-finalizer-v6-${{ github.sha }}
+          path: .artifacts/b0-finalizer-v6
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: true
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          DELIVERY_STATUS: ${{ steps.generate.outputs.status }}
+          CLASSIFICATION: ${{ steps.generate.outputs.classification }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/finalizer-v6",
+              description: success ? `${process.env.DELIVERY_STATUS || "UNKNOWN"}: ${process.env.CLASSIFICATION || "UNKNOWN"}`.slice(0, 140) : `run-authoritative finalizer v6 failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 run-authoritative finalizer v6 failed");

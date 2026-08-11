@@ -1,0 +1,8 @@
+
+> ai-story-room@0.1.0 db:seed D:\a\aiStoryRoom\aiStoryRoom
+> node --env-file-if-exists=.env --import tsx prisma/seed.ts
+
+
+> @ai-story/shared@0.1.0 build D:\a\aiStoryRoom\aiStoryRoom\packages\shared
+> tsc -p tsconfig.build.json
+

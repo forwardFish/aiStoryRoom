@@ -1,0 +1,122 @@
+name: B0 Stage 11 Browser Repair Alias Fix
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage11-browser-alias-fix.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage11-browser-alias-fix
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Publish locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage11-browser-alias-fix",
+              description: `browser repair alias fix running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 3
+
+      - name: Repair exact aliases and cleanup contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "bb3a08037b751acdf535189e874233af929a479e"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-browser-alias-fix.yml"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/b0-stage11-browser-window-driver.yml')
+          source = path.read_text(encoding='utf-8')
+
+          old_parent = '          test "$(git rev-parse HEAD^)" = d2f30adb30e89c90fcab1904e72e5973da361f22'
+          new_parent = '          git merge-base --is-ancestor d2f30adb30e89c90fcab1904e72e5973da361f22 HEAD^'
+          if source.count(old_parent) != 1:
+              raise SystemExit(f'parent guard anchor count={source.count(old_parent)}')
+          source = source.replace(old_parent, new_parent, 1)
+
+          alias_anchor = '          const settlementBeforeWorker = snap.settlement;\n'
+          alias_block = (
+              '          const settlementBeforeWorker = snap.settlement;\n'
+              '          const preWorkerWindow = snap.window;\n'
+              '          const preWorkerRun = snap.run;\n'
+          )
+          if source.count(alias_anchor) != 1:
+              raise SystemExit(f'snapshot alias anchor count={source.count(alias_anchor)}')
+          source = source.replace(alias_anchor, alias_block, 1)
+
+          rm_anchor = '          git rm .github/workflows/b0-stage11-browser-window-driver.yml\n'
+          rm_block = (
+              '          git rm .github/workflows/b0-stage11-browser-window-driver.yml\n'
+              '          git rm .github/workflows/b0-stage11-browser-alias-fix.yml\n'
+          )
+          if source.count(rm_anchor) != 1:
+              raise SystemExit(f'workflow cleanup anchor count={source.count(rm_anchor)}')
+          source = source.replace(rm_anchor, rm_block, 1)
+
+          expected_old = '          test "$(git diff --cached --name-only | LC_ALL=C sort | tr \'\\n\' \' \')" = ".github/workflows/b0-stage11-browser-window-driver.yml scripts/acceptance/b0-candidate-real-flow.ts "'
+          expected_new = '          test "$(git diff --cached --name-only | LC_ALL=C sort | tr \'\\n\' \' \')" = ".github/workflows/b0-stage11-browser-alias-fix.yml .github/workflows/b0-stage11-browser-window-driver.yml scripts/acceptance/b0-candidate-real-flow.ts "'
+          if source.count(expected_old) != 1:
+              raise SystemExit(f'expected file list anchor count={source.count(expected_old)}')
+          source = source.replace(expected_old, expected_new, 1)
+
+          path.write_text(source, encoding='utf-8')
+          PY
+
+          git diff --check
+          grep -F 'const preWorkerWindow = snap.window;' .github/workflows/b0-stage11-browser-window-driver.yml
+          grep -F 'const preWorkerRun = snap.run;' .github/workflows/b0-stage11-browser-window-driver.yml
+          grep -F 'git merge-base --is-ancestor d2f30adb30e89c90fcab1904e72e5973da361f22 HEAD^' .github/workflows/b0-stage11-browser-window-driver.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/b0-stage11-browser-window-driver.yml
+          git diff --cached --check
+          test "$(git diff --cached --name-only)" = ".github/workflows/b0-stage11-browser-window-driver.yml"
+          git commit -m "ci(b0): fix browser driver snapshot aliases"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage11-browser-alias-fix",
+              description: `browser repair alias fix ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("browser repair alias fix failed");

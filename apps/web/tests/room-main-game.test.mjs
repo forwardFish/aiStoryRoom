@@ -99,12 +99,50 @@ test("game bootstrap injects room storage into the original story app", async ()
     root: dom.window.document.querySelector("#app"), window: dom.window,
     fetchImpl: async () => new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } }),
     loadRoomStorage: async () => ({ RoomStoryStorage: class { constructor({ initialModel }) { storageConstructed = initialModel?.room?.id === "room-1"; } } }),
-    loadSolo: async () => ({ createStoryApp: ({ storage }) => ({ boot: async () => { formalAppBooted = Boolean(storage); }, getState: () => ({ view: null }), refresh: async () => {} }) })
+    loadSolo: async () => ({ createStoryApp: ({ storage }) => ({ boot: async () => { formalAppBooted = Boolean(storage); }, getState: () => ({ view: null }), refresh: async () => {} }) }),
+    loadManeuverV1: async () => { throw new Error("ordinary historical rooms must not mount B0 controls"); }
   });
 
   assert.equal(storageConstructed, true);
   assert.equal(formalAppBooted, true);
   dom.window.dispatchEvent(new dom.window.Event("pagehide"));
+  dom.window.close();
+});
+
+test("game bootstrap mounts synchronized B0 controls after the historical room renderer", async () => {
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', { url: "http://127.0.0.1:5200/game?runId=room-1" });
+  dom.window.document.cookie = "many_worlds_session_hint=1; Path=/";
+  const payload = roomModel();
+  payload.room.strategyVersion = "b0_windowed_v1";
+  let appBooted = false;
+  let controllerAttached = false;
+
+  const app = await bootGamePage({
+    root: dom.window.document.querySelector("#app"),
+    window: dom.window,
+    fetchImpl: async () => new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } }),
+    loadRoomStorage: async () => ({ RoomStoryStorage: class {} }),
+    loadSolo: async () => ({ createStoryApp: () => ({
+      boot: async () => { appBooted = true; },
+      getState: () => ({ view: null }),
+      refresh: async () => {},
+      destroy: () => {},
+    }) }),
+    loadManeuverV1: async () => ({
+      attachManeuverV1Controller: async ({ app: mountedApp, root, runId, fetchImpl }) => {
+        assert.equal(appBooted, true, "the existing game renderer must boot before B0 mounts");
+        assert.equal(mountedApp?.boot instanceof Function, true);
+        assert.equal(root, dom.window.document.querySelector("#app"));
+        assert.equal(runId, "room-1");
+        assert.equal(typeof fetchImpl, "function");
+        controllerAttached = true;
+      },
+    }),
+  });
+
+  assert.equal(appBooted, true);
+  assert.equal(controllerAttached, true);
+  assert.equal(app?.boot instanceof Function, true);
   dom.window.close();
 });
 

@@ -1,0 +1,42 @@
+{
+  "name": "window-4-deadline-unconfirmed-human-becomes-hold",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:42:26.988Z",
+  "completedAt": "2026-08-10T17:42:30.884Z",
+  "result": {
+    "windowId": "id_0b8dedaf482e6804",
+    "before": {
+      "id": "room_63ae674ab09c08fe7a504dc32c40525b",
+      "status": "playing",
+      "worldSequence": 3,
+      "reservedWorldSequence": 0,
+      "currentDay": 4,
+      "version": 16,
+      "updatedAt": "2026-08-10T17:42:26.820Z",
+      "windows": 4,
+      "events": 32,
+      "deliveries": 18,
+      "narratives": 12,
+      "tasks": 46
+    },
+    "after": {
+      "id": "room_63ae674ab09c08fe7a504dc32c40525b",
+      "status": "playing",
+      "worldSequence": 4,
+      "reservedWorldSequence": 0,
+      "currentDay": 5,
+      "version": 17,
+      "updatedAt": "2026-08-10T17:42:30.774Z",
+      "windows": 5,
+      "events": 40,
+      "deliveries": 23,
+      "narratives": 12,
+      "tasks": 54
+    },
+    "missingRoleId": "id_92721a4b809abef4",
+    "lockedKind": "HOLD",
+    "closingReason": "DEADLINE",
+    "snapshotHash": "6e85d3edd85df15baebe953f5cf46fdc5756d80ca4042f45bd854708e5b86398",
+    "recoveryCount": 1
+  }
+}

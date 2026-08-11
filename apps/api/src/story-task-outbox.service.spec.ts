@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { isNonRetryableStoryTaskError, isResultSequenceWait, normalizeStoryTaskLeaseMs, requiresOutboxHeartbeat, ROLE_AGENT_TASK_CONCURRENCY, StoryTaskOutboxService } from "./story-task-outbox.service";
+import { STORY_TASK_SOURCE_FINALIZATION_SCHEMA_V1 } from "./story-task-outbox.contract";
 
 function futureLease() {
   return new Date(Date.now() + 60_000);
@@ -486,11 +487,40 @@ async function v2ActorContinuationIsNotBlockedByLegacyBacklog() {
   assert.deepEqual(executed, [actor.id], "a ready independent actor turn must be claimed before unrelated legacy work");
 }
 
+async function sourceFinalizedTaskSkipsGenericCompletion() {
+  const updates: any[] = [];
+  const current = task({ taskType: "B0_NARRATIVE_GENERATION" });
+  const prisma = {
+    storyTaskOutbox: {
+      findUnique: async () => current,
+      updateMany: async (args: any) => { updates.push(args); return { count: 1 }; },
+    },
+    storyRun: { updateMany: async () => ({ count: 0 }) },
+  };
+  const { service, workerId } = serviceWith(prisma);
+  current.leaseOwner = workerId;
+  (service as any).executeTask = async () => ({
+    outcome: "PUBLISHED",
+    narrativeEntryId: "entry.1",
+    sourceFinalization: {
+      schemaVersion: STORY_TASK_SOURCE_FINALIZATION_SCHEMA_V1,
+      taskId: current.id,
+      leaseOwner: workerId,
+      leaseVersion: current.leaseVersion,
+    },
+  });
+
+  await (service as any).process(current.id);
+
+  assert.deepEqual(updates, [], "a source-finalized task must not receive a second non-atomic completion write");
+}
+
 async function run() {
   leaseConfigurationIsBounded();
   await v2TasksNeverFallBackToLegacyResolution();
   await v2ActorContinuationIsNotBlockedByLegacyBacklog();
   await claimUsesPostClaimFence();
+  await sourceFinalizedTaskSkipsGenericCompletion();
   await retryBoundaryUsesIncrementedAttempt();
   await qualityRejectionNeverRepeatsTheFullModelCall();
   await sequenceOrderingWaitDoesNotConsumeTheGenerationRetryBudget();

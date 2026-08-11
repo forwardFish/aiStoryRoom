@@ -1,0 +1,119 @@
+name: OpenNovel Authoritative Narrative Source Snapshot
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/openovel-authoritative-narrative-source-snapshot.yml
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Publish run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "openovel/narrative-source-snapshot",
+              description: `source snapshot running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 200
+
+      - name: Build source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/openovel-source
+          mkdir -p "$root"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$root/head-sha.txt"
+          git ls-remote origin refs/heads/codex/chatgpt-pro-maneuver-evidence-v1 > "$root/ls-remote.txt"
+          git status --short > "$root/git-status.txt"
+
+          copy_path() {
+            local source="$1"
+            if test -e "$source"; then
+              mkdir -p "$root/$(dirname "$source")"
+              cp -a "$source" "$root/$source"
+            fi
+          }
+
+          copy_path AGENTS.md
+          copy_path CLAUDE.md
+          copy_path README.md
+          copy_path package.json
+          copy_path pnpm-workspace.yaml
+          copy_path prisma/schema.prisma
+          copy_path prisma/migrations
+          copy_path apps/api/package.json
+          copy_path apps/api/src
+          copy_path apps/openovel-runtime/package.json
+          copy_path apps/openovel-runtime/src
+          copy_path apps/openovel-runtime/tests
+          copy_path apps/web/package.json
+          copy_path apps/web/public
+          copy_path apps/web/src
+          copy_path apps/web/tests
+          copy_path packages/shared/package.json
+          copy_path packages/shared/src
+          copy_path packages/templates/package.json
+          copy_path packages/templates/src
+          copy_path packages/templates/tests
+          copy_path scripts/acceptance
+          copy_path scripts/e2e
+          copy_path docs/Our_Many_Worlds_原著证据层与Openovel运行时架构融合设计_v1.0.md
+          copy_path docs/Our_Many_Worlds_B0同步结算多人博弈_完整实施开发测试与受控上线方案_v1.0.md
+          copy_path docs/b0/B0_C0_requirement_source_manifest.md
+          copy_path docs/auto-execute/openovel-authoritative-narrative-projection-v1.md
+          copy_path docs/auto-execute/openovel-authoritative-narrative-projection-v1-tasks
+
+          grep -RInE --exclude-dir=node_modules --exclude-dir=evidence \
+            'Narrator|Narrative|narrative|Finale|Ending|ending|T20|LEG-002|ADR-005|sourceCommitHash|presentationHash|authoritativeResultStatus|narrativeStatus|StoryTaskOutbox|NarrativeEntry' \
+            apps packages prisma scripts docs > "$root/semantic-hits.txt" || true
+
+          grep -RInE --exclude-dir=node_modules --exclude-dir=evidence \
+            '\$transaction|rollback|ROLLBACK|generate[A-Za-z]*(Narrative|Ending|Finale)|await .*narrat|await .*Narrat|LEG-002' \
+            apps packages prisma scripts docs > "$root/rollback-hits.txt" || true
+
+          tar -C /tmp -czf /tmp/openovel-authoritative-narrative-source.tgz openovel-source
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openovel-authoritative-narrative-source-${{ github.sha }}
+          path: /tmp/openovel-authoritative-narrative-source.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "openovel/narrative-source-snapshot",
+              description: success ? `source snapshot complete in ${context.runId}` : `source snapshot failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("source snapshot failed");

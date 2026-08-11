@@ -122,7 +122,7 @@ export class BoundedModelSceneTruthObserver implements SceneTruthObserverModule 
     try {
       const review = parseAndCompareBoundedReviews({
         coverageRaw: undefined,
-        p0Raw: p0Call.result.text,
+        p0Raw: normalizeP0NoneSentinels(p0Call.result.text),
         reviewerModel: p0Call.result.model,
         runId: input.runId,
         worldRevision: input.worldRevision,
@@ -169,12 +169,11 @@ export class CriticalOnlySceneReviewPolicy implements SceneReviewPolicyModule {
 
   decide(observation: SceneTruthObservation): SceneReviewDecision {
     if (observation.status === "UNAVAILABLE") {
-      return {
-        kind: "FALLBACK",
-        policyModuleId: this.moduleId,
-        reason: `REVIEW_UNAVAILABLE_SAFE_DEGRADE:${observation.reason}`,
-        observation,
-      };
+      // Reviewer transport or schema failure is not evidence of a causal
+      // conflict. Preserve the already valid Narrator scene and surface the
+      // observation as an auditable warning; only a successfully observed,
+      // server-compared P0 may replace player-visible prose.
+      return { kind: "ACCEPT", policyModuleId: this.moduleId, observation };
     }
     if (observation.criticalFindings.length) {
       return {
@@ -186,6 +185,64 @@ export class CriticalOnlySceneReviewPolicy implements SceneReviewPolicyModule {
     }
     return { kind: "ACCEPT", policyModuleId: this.moduleId, observation };
   }
+}
+
+/**
+ * The Reviewer prompt intentionally uses the unique string sentinel `NONE`
+ * for an absent category. Older fixtures used a fully expanded object. This
+ * boundary normalizer accepts either uniform representation, and also accepts
+ * a FOUND object mixed with string sentinels. It deliberately rejects a
+ * response that mixes string NONE with legacy object NONE because that is an
+ * ambiguous transport contract rather than model evidence.
+ */
+export function normalizeP0NoneSentinels(raw: string) {
+  const stripped = String(raw || "")
+    .trim()
+    .replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/iu, "$1");
+  let value: unknown;
+  try {
+    value = JSON.parse(stripped);
+  } catch {
+    return raw;
+  }
+  if (!isRecord(value) || !isRecord(value.candidates)) return raw;
+  const categories = [
+    "causalIntroduction",
+    "keyEntityState",
+    "secretLeak",
+    "playerAction",
+  ] as const;
+  let stringNoneCount = 0;
+  let objectNoneCount = 0;
+  for (const category of categories) {
+    const candidate = value.candidates[category];
+    if (candidate === "NONE") stringNoneCount += 1;
+    else if (isRecord(candidate) && candidate.presence === "NONE") objectNoneCount += 1;
+  }
+  if (!stringNoneCount || objectNoneCount) return raw;
+  const candidates = { ...value.candidates };
+  for (const category of categories) {
+    if (candidates[category] === "NONE") candidates[category] = emptyP0Candidate();
+  }
+  return JSON.stringify({ ...value, candidates });
+}
+
+function emptyP0Candidate() {
+  return {
+    presence: "NONE",
+    slot: null,
+    start: null,
+    end: null,
+    claimMode: null,
+    explicitness: null,
+    predicate: null,
+    unknownEntity: null,
+    confidence: null,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, any> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function unavailable(

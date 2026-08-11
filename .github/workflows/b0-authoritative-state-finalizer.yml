@@ -1,0 +1,341 @@
+name: B0 Authoritative State Finalizer
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-authoritative-state-finalizer.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-authoritative-state-finalizer
+  cancel-in-progress: false
+
+jobs:
+  finalize-state:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Publish state-finalizer locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/state-finalizer",
+              description: `authoritative state finalizer running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact remote tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-authoritative-state-finalizer.yml"
+          git merge-base --is-ancestor d5905ed2661bd72635d2e2c4ce6559bc94ada6cd HEAD
+
+      - name: Normalize complete or blocked evidence without changing verdict
+        id: verdict
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, re, subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root=Path('docs/auto-execute/evidence/b0')
+          c8=root/'c8'; c9=root/'c9'; readback=c9/'readback'
+          for path in (c8,c9,readback): path.mkdir(parents=True,exist_ok=True)
+          result_path=c9/'B0_FINAL_DELIVERY_RESULT.json'
+          existing=json.loads(result_path.read_text()) if result_path.exists() else {
+              'status':'BLOCKED',
+              'code':'B0_AUTHORITATIVE_RESULT_MISSING',
+              'formalC8Passed':False,
+          }
+          verdict=str(existing.get('status') or 'BLOCKED').upper()
+          passed=verdict == 'PASS'
+
+          tested=''
+          for path in (c8/'checkpoint.json',c9/'final-pointer.json',c9/'test-matrix.json',c8/'authoritative-blocker.json'):
+              if not path.exists(): continue
+              try: value=json.loads(path.read_text()).get('testedCodeSha')
+              except Exception: value=None
+              if isinstance(value,str) and len(value)==40:
+                  tested=value; break
+          if not tested:
+              try:
+                  tested=subprocess.check_output([
+                      'git','log','--format=%H','--grep=^ci(b0): freeze authoritative final validation baseline$','-1'
+                  ],text=True).strip()
+              except Exception:
+                  tested=''
+          if len(tested)!=40:
+              tested=subprocess.check_output(['git','rev-parse','HEAD^'],text=True).strip()
+
+          generated=datetime.now(timezone.utc).isoformat()
+          if not passed:
+              code=str(existing.get('code') or existing.get('checkpoint') or 'B0_C8_NOT_COMPLETED')
+              blocker_path=c8/'authoritative-blocker.json'
+              blocker=json.loads(blocker_path.read_text()) if blocker_path.exists() else {}
+              status='BLOCKED' if ('BLOCKED' in verdict or 'BLOCKED' in code) else 'FAIL'
+              c8_checkpoint={
+                  'schemaVersion':1,
+                  'checkpoint':'B0_C8_NOT_COMPLETED',
+                  'status':status,
+                  'code':code,
+                  'testedCodeSha':tested,
+                  'formalC8Passed':False,
+                  'completionMarkersAllowed':False,
+                  'managedNonProductionSupabaseRequired':True,
+                  'selfHostedContainerCannotSatisfyFormalC8':True,
+                  'productionCredentialsPublicSchemaAndUserDataForbidden':True,
+                  'generatedAt':generated,
+                  'details':blocker,
+              }
+              (c8/'checkpoint.json').write_text(json.dumps(c8_checkpoint,indent=2)+'\n')
+              matrix={
+                  'schemaVersion':1,
+                  'status':status,
+                  'testedCodeSha':tested,
+                  'formalC8Passed':False,
+                  'engineeringGatesStatus':blocker.get('engineeringGatesStatus') or existing.get('engineeringGatesStatus'),
+                  'blockerCode':code,
+                  'requiredCoverage':{
+                      'managedNonProductionSupabase':False,
+                      'randomSchemaDropped':False,
+                      'publicSchemaUnchanged':False,
+                      'threeRolesThreeSessionsSixWindows':False,
+                      'desktopAnd390pxBrowser':False,
+                  },
+                  'generatedAt':generated,
+              }
+              (c9/'test-matrix.json').write_text(json.dumps(matrix,indent=2)+'\n')
+              checkpoint={
+                  'schemaVersion':1,
+                  'checkpoint':'B0_C9_NOT_COMPLETED',
+                  'status':status,
+                  'code':code,
+                  'testedCodeSha':tested,
+                  'completionMarkersAllowed':False,
+                  'generatedAt':generated,
+              }
+              (c9/'checkpoint.json').write_text(json.dumps(checkpoint,indent=2)+'\n')
+              delivery={
+                  'schemaVersion':1,
+                  'status':status,
+                  'checkpoint':'B0_C9_NOT_COMPLETED',
+                  'code':code,
+                  'testedCodeSha':tested,
+                  'formalC8Passed':False,
+                  'completionMarkersAllowed':False,
+                  'generatedAt':generated,
+              }
+              result_path.write_text(json.dumps(delivery,indent=2)+'\n')
+              (c9/'B0_FINAL_DELIVERY_REPORT.md').write_text(
+                  f'# B0 Final Delivery Report\n\nStatus: **{status}**\n\nCode: `{code}`. Formal C8 has not passed. A self-hosted `supabase/postgres` container remains engineering-only and cannot satisfy formal C8. Production credentials, the production `public` schema, production configuration and real user data remain forbidden.\n')
+              (c9/'HANDOFF.md').write_text(
+                  '# B0 Incomplete Handoff\n\nRead `c8/checkpoint.json`, `c9/test-matrix.json`, and `c9/readiness/`. Resume only with an explicitly non-production managed Supabase PostgreSQL credential and a real DeepSeek API credential. Do not issue C8/C9 completion markers while status is not PASS.\n')
+              (c9/'recovery-audit.json').write_text(json.dumps({
+                  'schemaVersion':1,
+                  'status':status,
+                  'startingRemoteSha':'d5905ed2661bd72635d2e2c4ce6559bc94ada6cd',
+                  'testedCodeSha':tested,
+                  'ordinaryFastForwardOnly':True,
+                  'mainModified':False,
+                  'pullRequestOperated':False,
+                  'forcePushUsed':False,
+                  'productionTouched':False,
+                  'generatedAt':generated,
+              },indent=2)+'\n')
+              (c9/'final-pointer.json').write_text(json.dumps({
+                  'schemaVersion':1,
+                  'status':status,
+                  'testedCodeSha':tested,
+                  'evidenceCommitSha':'RESOLVED_AFTER_STATE_COMMIT',
+                  'finalRemoteSha':'RESOLVED_BY_FRESH_LS_REMOTE',
+                  'completionMarkersAllowed':False,
+                  'generatedAt':generated,
+              },indent=2)+'\n')
+          else:
+              required=[c8/'checkpoint.json',c9/'checkpoint.json',c9/'test-matrix.json',c9/'manifest.json',
+                        c9/'HANDOFF.md',c9/'B0_FINAL_DELIVERY_REPORT.md',c9/'recovery-audit.json',c9/'final-pointer.json']
+              missing=[str(path) for path in required if not path.exists()]
+              if missing: raise SystemExit('PASS verdict lacks required evidence: '+','.join(missing))
+              c8_checkpoint=json.loads((c8/'checkpoint.json').read_text())
+              if c8_checkpoint.get('status')!='PASS' or c8_checkpoint.get('acceptanceTier')!='formal-c8':
+                  raise SystemExit('PASS verdict lacks formal C8 checkpoint')
+              if c8_checkpoint.get('selfHostedContainerUsedForFormalC8') is not False:
+                  raise SystemExit('PASS verdict incorrectly uses self-hosted container')
+
+          readback_payload={
+              'schemaVersion':1,
+              'status':'PASS' if passed else verdict,
+              'testedCodeSha':tested,
+              'sourceTip':subprocess.check_output(['git','rev-parse','HEAD^'],text=True).strip(),
+              'generatedAt':generated,
+              'completionMarkersAllowed':passed,
+          }
+          (readback/'state-finalizer-precommit.json').write_text(json.dumps(readback_payload,indent=2)+'\n')
+
+          # fail closed on leaked connection strings, bearer tokens or obvious secrets
+          suffixes={'.json','.jsonl','.log','.md','.txt','.sha256'}
+          patterns=[
+              re.compile(r'postgres(?:ql)?://',re.I),
+              re.compile(r'Bearer\s+(?!\[REDACTED\])',re.I),
+              re.compile(r'(?:api[_-]?key|password|cookie|token)\s*[:=]\s*[\"\']?(?!\[REDACTED\]|false|true|null)[A-Za-z0-9._~+/=-]{12,}',re.I),
+          ]
+          findings=[]
+          for path in root.rglob('*'):
+              if path.is_file() and path.suffix.lower() in suffixes:
+                  text=path.read_text(encoding='utf-8',errors='replace')
+                  for pattern in patterns:
+                      if pattern.search(text): findings.append({'path':str(path),'pattern':pattern.pattern})
+          if findings: raise SystemExit('redaction findings: '+json.dumps(findings))
+          (c9/'redaction-scan.json').write_text(json.dumps({
+              'schemaVersion':1,
+              'status':'PASS',
+              'findingCount':0,
+              'scannedAt':generated,
+          },indent=2)+'\n')
+
+          files=[]
+          for path in sorted(p for p in root.rglob('*') if p.is_file() and p.name not in {'manifest.json','manifest.json.sha256'}):
+              data=path.read_bytes()
+              files.append({'path':str(path).replace('\\','/'),'sizeBytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+          manifest={
+              'schemaVersion':1,
+              'status':'PASS' if passed else 'INCOMPLETE',
+              'testedCodeSha':tested,
+              'generatedAt':generated,
+              'fileCount':len(files),
+              'totalSizeBytes':sum(row['sizeBytes'] for row in files),
+              'files':files,
+          }
+          manifest_path=c9/'manifest.json'
+          manifest_path.write_text(json.dumps(manifest,indent=2)+'\n')
+          (c9/'manifest.json.sha256').write_text(hashlib.sha256(manifest_path.read_bytes()).hexdigest()+'  manifest.json\n')
+
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as handle:
+              handle.write(f"passed={'true' if passed else 'false'}\n")
+              handle.write(f"verdict={verdict}\n")
+              handle.write(f"tested_sha={tested}\n")
+          PY
+          git diff --check
+
+      - name: Commit normalized state as docs-only fast-forward
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/auto-execute/evidence/b0
+          git rm .github/workflows/b0-authoritative-state-finalizer.yml
+          git diff --cached --check
+          if git diff --cached --name-only | grep -Ev '^(docs/|\.github/workflows/b0-authoritative-state-finalizer\.yml$)'; then
+            echo 'Unexpected non-doc path in state-finalizer commit.' >&2
+            exit 1
+          fi
+          if [ "${{ steps.verdict.outputs.passed }}" = true ]; then
+            git commit -m "test(b0): seal authoritative PASS state"
+          else
+            git commit -m "test(b0): seal authoritative incomplete state"
+          fi
+          final_sha="$(git rev-parse HEAD)"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          echo "final_sha=$final_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Fresh clone and exact remote proof
+        shell: bash
+        env:
+          PASSED: ${{ steps.verdict.outputs.passed }}
+          VERDICT: ${{ steps.verdict.outputs.verdict }}
+          TESTED_SHA: ${{ steps.verdict.outputs.tested_sha }}
+          FINAL_SHA: ${{ steps.commit.outputs.final_sha }}
+        run: |
+          set -euo pipefail
+          live="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | awk '{print $1}')"
+          test "$live" = "$FINAL_SHA"
+          rm -rf /tmp/b0-state-final-fresh
+          git clone -q --filter=blob:none --branch "$GITHUB_REF_NAME" "https://github.com/$GITHUB_REPOSITORY.git" /tmp/b0-state-final-fresh
+          count="$(git -C /tmp/b0-state-final-fresh ls-tree -r --name-only "$FINAL_SHA" -- docs/auto-execute/evidence/b0/c8 docs/auto-execute/evidence/b0/c9 | wc -l | tr -d ' ')"
+          test "$count" -gt 8
+          if [ "$PASSED" = true ]; then
+            git -C /tmp/b0-state-final-fresh cat-file -e "$TESTED_SHA^{commit}"
+            non_docs="$(git -C /tmp/b0-state-final-fresh diff --name-only "$TESTED_SHA..$FINAL_SHA" | grep -Ev '^docs/' || true)"
+            test -z "$non_docs"
+          fi
+          PASSED="$PASSED" VERDICT="$VERDICT" LIVE="$live" COUNT="$count" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload={
+              'schemaVersion':1,
+              'status':'PASS' if os.environ['PASSED']=='true' else os.environ['VERDICT'],
+              'testedCodeSha':os.environ.get('TESTED_SHA') or None,
+              'finalRemoteSha':os.environ['FINAL_SHA'],
+              'lsRemoteTip':os.environ['LIVE'],
+              'lsRemoteMatchesFinal':os.environ['LIVE']==os.environ['FINAL_SHA'],
+              'c8c9TrackedPathCount':int(os.environ['COUNT']),
+              'completionMarkersAllowed':os.environ['PASSED']=='true',
+          }
+          Path('/tmp/b0-authoritative-state-final-readback.json').write_text(json.dumps(payload,indent=2)+'\n')
+          print(json.dumps(payload,indent=2))
+          PY
+
+      - name: Publish final verdict status
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          PASSED: ${{ steps.verdict.outputs.passed }}
+          FINAL_SHA: ${{ steps.commit.outputs.final_sha }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const passed = process.env.PASSED === "true" && process.env.JOB_STATUS === "success";
+            if (process.env.FINAL_SHA) {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: process.env.FINAL_SHA,
+                state: passed ? "success" : "failure",
+                context: "b0/final-readback",
+                description: passed ? "authoritative C8/C9 PASS sealed" : "authoritative C8/C9 remains incomplete",
+                target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              });
+            }
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: passed ? "success" : "failure",
+              context: "b0/state-finalizer",
+              description: `authoritative state ${passed ? "PASS" : "incomplete"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!passed) core.setFailed('State finalizer sealed an incomplete or blocked result without issuing completion markers');
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b0-authoritative-state-${{ steps.commit.outputs.final_sha }}
+          path: /tmp/b0-authoritative-state-final-readback.json
+          if-no-files-found: warn
+          retention-days: 14

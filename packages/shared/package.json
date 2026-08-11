@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:maneuver-v1": "node --import tsx --test tests/maneuver-v1.schemas.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

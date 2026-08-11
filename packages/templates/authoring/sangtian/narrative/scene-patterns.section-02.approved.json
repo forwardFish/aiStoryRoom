@@ -1,0 +1,319 @@
+{
+  "schemaVersion": "narrative-scene-pattern-set-v1",
+  "worldId": "sangtian",
+  "scopeId": "SEC-P1-02",
+  "version": "1.0.0",
+  "patterns": [
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-KNOWLEDGE-BOUNDARY-REFUSAL",
+      "sourceSceneId": "DM1566-C03-GOVERNOR-POLITICAL-BOUNDARY",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C03",
+          "paragraphStartId": "DM1566-C03-P0020",
+          "paragraphEndId": "DM1566-C03-P0039",
+          "lineStart": 1608,
+          "lineEnd": 1646,
+          "textSpanSha256": "25CF67106953A52C2DD2D41ED32974D796D6F319A32330FB2C3174A4F1782974"
+        }
+      ],
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-KNOWLEDGE-CHAIN",
+        "REQ-P1-REVIEW-AUTHORITY"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-WITNESS-ACCESS",
+        "DK-P1-DISCLOSURE-SCOPE"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.xunfu_aide",
+        "actor.reform_clerk"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C03-CL-GOVERNOR-INVARIANT",
+        "DM1566-C03-CL-GRADUAL-EXECUTION-OPTION",
+        "DM1566-C03-CL-KNOWLEDGE-REFUSAL"
+      ],
+      "dramaticFunction": "把知道更多是否反而扩大责任写成一场主动的知识边界争夺，并迫使玩家决定谁能接触哪一层材料。",
+      "openingPressure": "一名经手人带着可继续展开的文书停在案前；另一方明确表示，多看一页就多承担一层无法撤回的知情责任。",
+      "runtimeActivationCues": [
+        "witness.accessStatus 仍为 UNKNOWN",
+        "玩家正在决定接触、询问或披露范围",
+        "现有证据只允许分层知情，不能直接定罪"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "material_holder",
+          "observableMove": "只展示已授权的一层文书或口述，并把尚未展开的其余材料留在手边。",
+          "sceneFunction": "把抽象的知识权限变成可见的物理边界。",
+          "reactionCue": "在场者的注意力应落在谁看见了什么，而不是直接讨论幕后真相。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "boundary_setter",
+          "observableMove": "主动拒绝继续接触，说明额外知情会改变自身责任、证言价值或行动空间。",
+          "sceneFunction": "让拒绝信息成为有目的的政治行动。",
+          "reactionCue": "拒绝者必须有明确代价，而不能被写成单纯畏缩。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "authority_contender",
+          "observableMove": "要求玩家明确接触顺序、见证人和记录方式，否则不承认后续复核的合法性。",
+          "sceneFunction": "把知识边界推进为复核主持权问题。",
+          "reactionCue": "场景停在玩家能够决定的接触规则上。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "boundary_setter",
+          "surfaceMove": "用‘我不再看’或‘先说清谁负责记录’限制知识进入。",
+          "hiddenRisk": "一旦知道更多，日后可能被认定为知情、默许或参与。",
+          "cadenceRule": "先短句拒绝，再用一条具体责任说明原因，不作长篇制度解释。"
+        }
+      ],
+      "blockingPrinciples": [
+        "未获准展开的文书始终保持合拢、封存或由原持有人控制。",
+        "人物位置要体现接触距离：靠近案面代表已进入知情链，退开代表主动保留边界。",
+        "不能因为有人拒看就自动证明文书真实或对方有罪。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "未展开的公文或副本",
+          "observableUse": "持有人把它压在已展示材料下方，等待玩家决定是否继续展开。",
+          "powerMeaning": "谁授权下一层材料进入现场，谁就同时扩大知情链和责任链。"
+        }
+      ],
+      "transferableTechniques": [
+        "以主动拒知制造政治张力",
+        "把信息权限写成物理距离和开启顺序",
+        "让接触规则成为下一步可执行决策"
+      ],
+      "forbiddenFlattening": [
+        "不得写成所有人一起阅读完整卷宗的会议摘要。",
+        "不得把人物判断、口述和未展开文书合并成客观事实。",
+        "不得在本场直接确认幕后主使或完整暗账。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-REVIEW-AUTHORITY-SIGNATURE-CONTEST",
+      "sourceSceneId": "DM1566-C04-JOINT-REPORT-CONTEST",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C04",
+          "paragraphStartId": "DM1566-C04-P0074",
+          "paragraphEndId": "DM1566-C04-P0110",
+          "lineStart": 2513,
+          "lineEnd": 2585,
+          "textSpanSha256": "82E4D23A57B1FC46E50C7D09EC083050EF94066193CC599983747358F3B5E39C"
+        }
+      ],
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-REVIEW-AUTHORITY",
+        "REQ-P1-KNOWLEDGE-CHAIN"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-REVIEW-AUTHORITY",
+        "DK-P1-DISCLOSURE-SCOPE"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.xunfu_aide",
+        "actor.qingliu_magistrate"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C04-CL-REPORT-OMITS-DELAY",
+        "DM1566-C04-CL-GOVERNOR-DEMANDS-REPORT-CHANGE",
+        "DM1566-C04-CL-WEAVING-REFUSES-SIGNATURE",
+        "DM1566-C04-CL-CONFESSION-CHANGES-NEGOTIATION"
+      ],
+      "dramaticFunction": "用署名、改稿和拒签把复核主持权变成一场可见的责任争夺，而不是抽象制度问答。",
+      "openingPressure": "案上已有一份未完成的共同记录；一方要求补入关键责任边界，另一方以拒签或另起记录相威胁。",
+      "runtimeActivationCues": [
+        "review.authority 仍为 UNDECIDED",
+        "两方都试图控制记录和复核顺序",
+        "当前材料只能支持有限叙述，不能越界定性"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "draft_controller",
+          "observableMove": "把待签记录推到案中，只指出一处必须增删的责任表述。",
+          "sceneFunction": "让叙述控制权落到具体字句和纸面位置。",
+          "reactionCue": "其他人先看纸面，再看谁愿意落名。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "signature_resister",
+          "observableMove": "不争全部事实，只拒绝为当前写法背书，并提出另行复核或另起记录。",
+          "sceneFunction": "把拒签变成争夺主持权的筹码。",
+          "reactionCue": "拒绝必须改变下一步程序，而不能只是情绪冲突。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "evidence_interruptor",
+          "observableMove": "带来一项已获准的新材料或证言状态，使双方必须重新计算谁主持、谁记录、谁见证。",
+          "sceneFunction": "让证据链改变谈判，而不自动决定真相。",
+          "reactionCue": "场景停在玩家指定复核主持者和记录规则之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "signature_resister",
+          "surfaceMove": "用‘这句话由谁负责’替代直接否认全部事实。",
+          "hiddenRisk": "一旦落名，后续京师或地方追责会把记录解释为共同承诺。",
+          "cadenceRule": "每次只争一项可执行边界；避免把对话写成一次说完全部立场。"
+        }
+      ],
+      "blockingPrinciples": [
+        "待签记录始终处于可被推回、压住或单独取走的位置。",
+        "谁站在纸面正前方，谁就在争夺叙述和主持权。",
+        "新材料只能改变谈判条件，不能自动证明任何人的幕后责任。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "待签复核记录",
+          "observableUse": "一方把纸推到对方面前，另一方用手指压住署名处却不落笔。",
+          "powerMeaning": "署名不是装饰，而是对程序、叙述和责任的共同承担。"
+        }
+      ],
+      "transferableTechniques": [
+        "用拒签争夺程序控制权",
+        "让新证据改变谈判而非直接给出答案",
+        "把责任范围压缩到一处可见字句"
+      ],
+      "forbiddenFlattening": [
+        "不得把复核权写成系统自动分配。",
+        "不得让一份新材料立即确认完整因果链。",
+        "不得用长段政策说明代替人物互相施压。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-EVIDENCE-SEAL-WITNESS-CHAIN",
+      "sourceSceneId": "DM1566-C23-TESTIMONY-SEALED",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C23",
+          "paragraphStartId": "DM1566-C23-P0125",
+          "paragraphEndId": "DM1566-C23-P0147",
+          "lineStart": 17690,
+          "lineEnd": 17734,
+          "textSpanSha256": "F6D3646491F267C86AB60B9CF617D4D2889D911411D4E884A7021ECE6C93DBF9"
+        }
+      ],
+      "sectionIds": [
+        "SEC-P1-02"
+      ],
+      "requirementIds": [
+        "REQ-P1-REGISTER-CUSTODY",
+        "REQ-P1-KNOWLEDGE-CHAIN"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-EVIDENCE-CUSTODY",
+        "DK-P1-WITNESS-ACCESS"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.qingliu_magistrate",
+        "actor.reform_clerk",
+        "actor.xunfu_aide"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C23-CL-TESTIMONY-SIGNED-BY-TWO-WITNESSES",
+        "DM1566-C23-CL-ORIGINAL-RETRACTIONS-WITNESS-STATEMENTS-COMBINED",
+        "DM1566-C23-CL-HAI-SEALS-BUNDLE-WITH-THREE-FEATHERS",
+        "DM1566-C23-CL-WANG-SEAL-NOT-ADDED"
+      ],
+      "dramaticFunction": "把原件、副本、证言、封条、见证人与未完成印记组合成一条仍可受损的证据链。",
+      "openingPressure": "多份材料已被并置，但谁签、谁封、谁保管、谁拒绝加印仍未完成；任何一步都会改变证据链的可追溯性。",
+      "runtimeActivationCues": [
+        "evidence.primaryCustodianRef 尚未确定",
+        "evidence.chainStatus 需要落为 TRACEABLE、FRAGILE 或 COMPROMISED",
+        "witness.accessStatus 需要通过实际接触和见证规则确定"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "document_assembler",
+          "observableMove": "逐件点明材料类别与当前状态，把原件、退改、证言和副本分开放置。",
+          "sceneFunction": "让证据链的组成和缺口可见。",
+          "reactionCue": "人物只能确认眼前看见的材料，不能补出缺失内容。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "witness_controller",
+          "observableMove": "要求见证人在指定位置签认接触事实，而不是签认全部内容真实。",
+          "sceneFunction": "区分见证接触、内容认定和责任承担。",
+          "reactionCue": "拒签或缺席会让证据链变脆弱，但不自动证明伪造。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "custody_decider",
+          "observableMove": "提出封缄、编号和保管方案，同时说明谁可以在何种条件下再次开启。",
+          "sceneFunction": "把证据保全转化为玩家可执行的权力选择。",
+          "reactionCue": "场景停在玩家指定主保管人与开启规则之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "witness_controller",
+          "surfaceMove": "反复区分‘我见到它被封’与‘我证明里面都是真的’。",
+          "hiddenRisk": "若把见证范围说得过满，后续任何差异都会反噬整条证据链。",
+          "cadenceRule": "用短问短答逐项限定见证范围，避免概括性宣誓。"
+        }
+      ],
+      "blockingPrinciples": [
+        "原件、副本、证言和封缄物必须在画面上分区摆放。",
+        "未加的印、未到的见证人和未完成的编号也要作为缺口可见。",
+        "封缄只证明当时的保管动作，不能证明材料内容全部真实。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "封缄材料束",
+          "observableUse": "把不同材料合束、加封并留下可识别的外部记号，同时保留未加印的位置。",
+          "powerMeaning": "完整封缄建立可追溯保管链；缺失印记则保留争议和后续攻击面。"
+        }
+      ],
+      "transferableTechniques": [
+        "把证据链拆成材料、接触、见证、封缄和保管五层",
+        "用缺失印记制造持续风险",
+        "让封缄动作产生可供后续检索的关键状态"
+      ],
+      "forbiddenFlattening": [
+        "不得把封缄写成证据已经被法院式确认。",
+        "不得把拒绝加印自动写成有罪或共谋。",
+        "不得混淆原件、副本、口述和见证范围。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    }
+  ]
+}

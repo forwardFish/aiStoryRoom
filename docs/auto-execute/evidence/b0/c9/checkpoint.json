@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 3,
+  "generatedAtUtc": "2026-08-11T00:30:00Z",
+  "formalProbeSha": "df9deb4337260b7edc3c78bde480e4efe8d06f55",
+  "testedCodeSha": null,
+  "status": "EXTERNAL_BLOCKED",
+  "classification": "FORMAL_MANAGED_SUPABASE_AND_PROVIDER_CREDENTIALS_MISSING",
+  "userTestReady": false,
+  "candidateBranchReady": false,
+  "completionMarkersAllowed": false,
+  "formalC8Executed": false,
+  "completeCredentialPairFound": false,
+  "blockerEvidence": "../c8/formal-blockers/df9deb4337260b7edc3c78bde480e4efe8d06f55/credential-presence.json"
+}

@@ -1,0 +1,108 @@
+name: B0 One-Shot Finalizer V4 Artifact Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-finalizer-v4-artifact-repair.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-finalizer-v4-artifact-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Publish repair locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/finalizer-v4-artifact-repair",
+              description: `finalizer artifact repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify exact branch tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-finalizer-v4-artifact-repair.yml"
+
+      - name: Remove non-evidence code snapshot and duplicate artifact copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/b0-fail-closed-finalizer-v4.yml')
+          source = path.read_text(encoding='utf-8')
+          source = source.replace(', "b0-candidate-code-"', '')
+          source = source.replace('          copy_files(stage / "extracted", c9 / "recovery/downloaded-artifacts")\n', '')
+          marker = '# artifact-boundary: runtime evidence only; code snapshots are excluded\n'
+          if marker not in source:
+              source = source.replace('name: B0 Fail-Closed C8 C9 Finalizer V4\n', 'name: B0 Fail-Closed C8 C9 Finalizer V4\n' + marker, 1)
+          path.write_text(source, encoding='utf-8')
+          PY
+          git diff --check
+          ! grep -F 'b0-candidate-code-' .github/workflows/b0-fail-closed-finalizer-v4.yml
+          ! grep -F 'copy_files(stage / "extracted", c9 / "recovery/downloaded-artifacts")' .github/workflows/b0-fail-closed-finalizer-v4.yml
+
+      - name: Commit verified repair as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/b0-fail-closed-finalizer-v4.yml
+          git rm .github/workflows/b0-finalizer-v4-artifact-repair.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-fail-closed-finalizer-v4.yml
+          .github/workflows/b0-finalizer-v4-artifact-repair.yml
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "ci(b0): keep finalizer evidence runtime-only"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish repair outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/finalizer-v4-artifact-repair",
+              description: `finalizer artifact repair ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 finalizer artifact repair failed");

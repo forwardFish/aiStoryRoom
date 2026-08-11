@@ -5,7 +5,7 @@
   "sourceEvidence": {
     "packageId": "dm1566-sangtian-evidence-mvp-v1",
     "packageVersion": "2026-07-21.v1",
-    "sourceSha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238"
+    "sourceSha256": "87df165c22e22335e49dd1ea80654e9d2ae731e3034ffc2d95e9cfdf513493df"
   },
   "reviewGate": "PENDING",
   "shadowOnly": true,
@@ -448,5 +448,5 @@
       ]
     }
   ],
-  "manifestHash": "17d7069e975e4333f2b1479517cb641534b3bacee23e51b821d8fb7a559d30f5"
+  "manifestHash": "38575e854b6385433f08167ab30d1419170cfec66ca0ec8828781d99c3bad9dd"
 }

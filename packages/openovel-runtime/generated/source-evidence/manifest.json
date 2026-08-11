@@ -6,7 +6,7 @@
   "compilerVersion": "openovel-evidence-compiler-v1",
   "source": {
     "path": "docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt",
-    "sha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238",
+    "sha256": "87df165c22e22335e49dd1ea80654e9d2ae731e3034ffc2d95e9cfdf513493df",
     "lineCount": 30547,
     "chapterCount": 39
   },
@@ -22,7 +22,7 @@
   "files": {
     "chapter-index.json": "165def96fdc6816ca86431196f132528c1e8606dbea9b53e267f556e313265af",
     "scenes.json": "810d061183257864ba49b2d183afe24974c70413a134831d5be2ea35f3c10316",
-    "claims.jsonl": "56f4cb98bc33fe9b64b144a9a9757010ee439d6cfa4355edc59c119f70c0ca16",
+    "claims.jsonl": "2a9df0624c4ed6a4d5e744a2fd02b839b4ee65dc08460021c50bccd81aec6df9",
     "continuity.json": "72fff9626f95641de2abfadd3478f4a3e3c851e6ed4ca51e5fe204b11f3ae970"
   }
 }

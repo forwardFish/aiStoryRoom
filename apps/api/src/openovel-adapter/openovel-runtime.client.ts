@@ -132,6 +132,13 @@ export class OpenNovelRuntimeClient {
     );
   }
 
+  async generateB0Narrative(input: unknown): Promise<any> {
+    return this.requestJson("/internal/openovel/b0/narratives", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
   async streamAction(
     input: {
       runId: string;

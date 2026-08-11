@@ -15,6 +15,7 @@ import type {
   MirrorEvent,
   OpenNovelProvider,
   ProviderRequest,
+  TurnResult,
 } from "../src/types.js";
 
 test("P07 authored G00-T20 commits one server beat and one atomic Head per turn", async () => {
@@ -37,27 +38,58 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     },
   );
   try {
-    await runtime.createRun({
+    const opening = await runtime.createRun({
       runId,
       worldId: "sangtian",
       roleId: "zhejiang_governor",
     });
+    assert.match(opening.prologueNarrative, /天下仍披着太平的外衣/u);
+    assert.match(opening.recentCanon, /杭州总督府内厅/u);
+    assert.match(opening.recentCanon, /巡抚书吏/u);
+    assert.match(opening.recentCanon, /县令亲随/u);
     let options = (await workspace.snapshot(runId)).previousOptions;
     const preferredOpening = options.find((option) => option.id === "opening_d1");
     assert.ok(preferredOpening);
     let selected = preferredOpening;
+    let finalSubmissionId = "";
+    let finalAction = "";
+    let finalBoundOption: { id: string; label: string } | null = null;
+    let finalTurnResult: TurnResult | null = null;
 
     for (let turn = 1; turn <= 20; turn += 1) {
+      const submissionId = `authored_t${String(turn).padStart(2, "0")}_submission`;
+      const freeTextAction = turn === 1
+        ? "暂不签发，先让两边把各自知道的事说清。"
+        : "";
+      const submittedAction = freeTextAction || selected.label;
+      const submittedBoundOption = freeTextAction
+        ? null
+        : { id: selected.id, label: selected.label };
+      if (turn === 20) {
+        finalSubmissionId = submissionId;
+        finalAction = submittedAction;
+        finalBoundOption = submittedBoundOption;
+      }
       const result = await runtime.processAction({
         runId,
-        action: selected.label,
-        submissionId: `authored_t${String(turn).padStart(2, "0")}_submission`,
-        boundOption: { id: selected.id, label: selected.label },
+        action: submittedAction,
+        submissionId,
+        boundOption: submittedBoundOption,
       });
+      if (turn === 20) finalTurnResult = result;
       assert.equal(result.turnNumber, turn);
       assert.ok(result.narration.trim().length > 0);
       assert.ok(result.causalDelta.beatContract?.narrativeSeed);
       assert.ok(result.causalDelta.beatContract?.sceneEvidence?.evidenceItems.length);
+      if (turn === 1) {
+        const firstEvent = JSON.parse((await readFile(
+          workspace.paths(runId).partOneEvents,
+          "utf8",
+        )).trim().split(/\r?\n/u).at(-1)!);
+        assert.ok(String(firstEvent.decisionKernelId || "").trim());
+        assert.equal(firstEvent.affordanceTemplateId, null);
+        assert.equal(result.causalDelta.readerAction, freeTextAction);
+      }
       if (turn === 2) {
         assert.doesNotMatch(result.narration, /只写|不得写|内部状态|验收关键词/u);
         assert.doesNotMatch(result.narration, /随即交由.*持有/u);
@@ -154,11 +186,26 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     assert.equal(state.turnNumber, 20);
     assert.equal(state.partCompletionStatus, "HANDOFF_READY");
     const publicRun = await workspace.readPublicRun(runId);
+    assert.ok(finalTurnResult);
     assert.equal(publicRun.status, "COMPLETED");
+    assert.equal(finalTurnResult.storyComplete, true);
+    assert.deepEqual(finalTurnResult.ending, publicRun.ending);
     assert.equal(publicRun.ending?.sourceTurnId, "T20");
     assert.ok(publicRun.ending?.finalSceneNarrative.trim());
     assert.ok(publicRun.ending?.protagonistFate.trim());
     assert.ok(publicRun.ending?.aftermath.length);
+    assert.deepEqual(publicRun.options, []);
+    for (const privateField of [
+      "causalDelta",
+      "worldState",
+      "durableTurnEnvelope",
+      "allowedPredicates",
+      "narrativeSeed",
+      "truthReview",
+      "reviewerConfidence",
+    ]) {
+      assert.equal(Object.hasOwn(publicRun, privateField), false);
+    }
     assert.equal(events.length, 20);
     assert.equal((canon.match(/\*\*读者选择\*\*/gu) || []).length, 20);
     assert.equal((await readdir(paths.headsDir)).length, 20);
@@ -174,6 +221,51 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
     );
     await assert.rejects(() => runtime.recoverOptions(runId), /RUN_COMPLETED/u);
     assert.equal((await workspace.readPublicRun(runId)).status, "COMPLETED");
+
+    const restartedProvider = new UnavailableNarrator();
+    const restartedWorkspace = new FileStoryWorkspace(
+      root,
+      projectRoot,
+      "test-upstream",
+      sangtianWorkspaceSeeder,
+    );
+    const restartedRuntime = new OpenNovelRuntime(
+      restartedWorkspace,
+      restartedProvider,
+      { kick: async () => {} },
+      new NoopMirror(),
+      {
+        decisionMode: "AUTHORED_WHEN_AVAILABLE",
+        authoredDecisionAdapter: sangtianDecisionAdapter,
+        endingModule: sangtianEndingModule,
+      },
+    );
+    const afterRestart = await restartedRuntime.getRun(runId);
+    assert.deepEqual(afterRestart.ending, publicRun.ending);
+    assert.deepEqual(afterRestart.options, []);
+    const replayedFinalTurn = await restartedRuntime.processAction({
+      runId,
+      action: finalAction,
+      submissionId: finalSubmissionId,
+      boundOption: finalBoundOption,
+    });
+    assert.deepEqual(replayedFinalTurn.ending, publicRun.ending);
+    assert.equal(restartedProvider.narratorAttempts, 0);
+    assert.equal((await readdir(paths.headsDir)).length, 20);
+    assert.equal((await restartedWorkspace.readPublicRun(runId)).status, "COMPLETED");
+    await assert.rejects(() => restartedRuntime.processAction({
+      runId,
+      action: "相同幂等键不得改写成另一项行动。",
+      submissionId: finalSubmissionId,
+    }), /IDEMPOTENCY_KEY_REUSED/u);
+    await assert.rejects(() => restartedRuntime.processAction({
+      runId,
+      action: finalAction,
+      submissionId: "a-new-submission-after-ending",
+      boundOption: finalBoundOption,
+    }), /RUN_COMPLETED/u);
+    assert.equal(restartedProvider.narratorAttempts, 0);
+    assert.equal((await readdir(paths.headsDir)).length, 20);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

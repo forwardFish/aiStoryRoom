@@ -1,0 +1,51 @@
+{
+  "name": "window-6-worker-crash-lease-expiry-recovery-and-ending",
+  "status": "PASS",
+  "startedAt": "2026-08-10T17:42:40.942Z",
+  "completedAt": "2026-08-10T17:43:12.882Z",
+  "result": {
+    "windowId": "id_17365f7ea54ea67c",
+    "before": {
+      "id": "room_63ae674ab09c08fe7a504dc32c40525b",
+      "status": "playing",
+      "worldSequence": 5,
+      "reservedWorldSequence": 0,
+      "currentDay": 6,
+      "version": 18,
+      "updatedAt": "2026-08-10T17:42:40.714Z",
+      "windows": 6,
+      "events": 49,
+      "deliveries": 29,
+      "narratives": 12,
+      "tasks": 65
+    },
+    "after": {
+      "id": "room_63ae674ab09c08fe7a504dc32c40525b",
+      "status": "completed",
+      "worldSequence": 6,
+      "reservedWorldSequence": 0,
+      "currentDay": 6,
+      "version": 19,
+      "updatedAt": "2026-08-10T17:43:12.520Z",
+      "windows": 6,
+      "events": 58,
+      "deliveries": 35,
+      "narratives": 18,
+      "tasks": 71
+    },
+    "crashedTask": {
+      "id": "id_a49fdae6133140c6",
+      "attempt": 1,
+      "leaseVersion": 1,
+      "leaseExpiredAt": "2026-08-10T17:43:09.364Z",
+      "killedAt": "2026-08-10T17:43:04.517Z"
+    },
+    "recoveredTask": {
+      "status": "completed",
+      "attempt": 2,
+      "leaseVersion": 3,
+      "completedAt": "2026-08-10T17:43:11.644Z"
+    },
+    "endingCount": 6
+  }
+}

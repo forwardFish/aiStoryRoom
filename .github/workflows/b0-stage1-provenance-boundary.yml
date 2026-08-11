@@ -1,0 +1,328 @@
+name: B0 Stage 1 Formal and Engineering Provenance Boundary
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage1-provenance-boundary.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage1-provenance-boundary
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage1-provenance-boundary",
+              description: `stage 1 provenance boundary running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify live remote baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "d5905ed2661bd72635d2e2c4ce6559bc94ada6cd"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage1-provenance-boundary.yml"
+
+      - name: Separate engineering-only and formal managed acceptance surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          old_workflow = Path('.github/workflows/b0-candidate-real-acceptance.yml')
+          engineering_workflow = Path('.github/workflows/b0-engineering-selfhosted-acceptance.yml')
+          selfhosted = Path('scripts/acceptance/b0-selfhosted-real-acceptance.sh')
+          contract = Path('scripts/acceptance/b0-acceptance-provenance-contract.mjs')
+
+          source = old_workflow.read_text(encoding='utf-8')
+          required = [
+              'supabase/postgres:',
+              'ollama/ollama:',
+              'docs/auto-execute/evidence/b0/c9/runtime',
+              'b0/real-acceptance',
+          ]
+          for token in required:
+              if token not in source:
+                  raise SystemExit(f'missing expected self-hosted workflow token: {token}')
+
+          engineering = source
+          engineering = engineering.replace(
+              'name: B0 Candidate Real Supabase and Browser Acceptance',
+              'name: B0 Engineering Self-Hosted Acceptance',
+              1,
+          )
+          engineering = engineering.replace('b0/real-acceptance', 'b0/engineering-acceptance')
+          engineering = engineering.replace('b0-real-acceptance-', 'b0-engineering-acceptance-')
+          engineering = engineering.replace(
+              'docs/auto-execute/evidence/b0/c9/runtime',
+              'docs/auto-execute/evidence/b0/engineering/runtime',
+          )
+          engineering = engineering.replace(
+              'docs/auto-execute/evidence/b0/c8/checkpoint.json',
+              'docs/auto-execute/evidence/b0/engineering/checkpoint.json',
+          )
+          engineering = engineering.replace('Finalize C8 checkpoint', 'Finalize engineering-only checkpoint')
+          engineering = engineering.replace('Commit passing C8 and runtime evidence as docs only', 'Commit passing engineering-only evidence as docs only')
+          engineering = engineering.replace('record real Supabase and browser evidence', 'record engineering self-hosted evidence')
+          engineering = engineering.replace('real acceptance passed', 'engineering acceptance passed')
+          engineering = engineering.replace('real acceptance failed', 'engineering acceptance failed')
+          engineering = engineering.replace('real acceptance did not close', 'engineering acceptance did not close')
+          anchor = '      B0_PROJECT_ROOT: ${{ github.workspace }}\n'
+          if anchor not in engineering:
+              raise SystemExit('missing B0_PROJECT_ROOT workflow anchor')
+          engineering = engineering.replace(
+              anchor,
+              anchor + '      B0_ACCEPTANCE_TIER: engineering-selfhosted\n'
+                       + '      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering\n',
+              1,
+          )
+          if 'docs/auto-execute/evidence/b0/c8' in engineering or 'docs/auto-execute/evidence/b0/c9' in engineering:
+              raise SystemExit('engineering workflow still targets formal C8/C9 evidence paths')
+          engineering_workflow.write_text(engineering, encoding='utf-8')
+
+          formal = r'''name: B0 Formal Managed Supabase C8 Credential Boundary
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - docs/auto-execute/B0_FORMAL_C8_TRIGGER.md
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  B0_EVIDENCE_ROOT: docs/auto-execute/evidence/b0/c9/runtime
+
+jobs:
+  credential-boundary:
+    name: Resolve non-production credentials by name only
+    environment: "ourmanyworlds.com / test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CANDIDATE_SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      CANDIDATE_SUPABASE_TEST_DATABASE_URL: ${{ secrets.SUPABASE_TEST_DATABASE_URL }}
+      CANDIDATE_TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      CANDIDATE_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      CANDIDATE_DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      CANDIDATE_OPENOVEL_DEEPSEEK_API_KEY: ${{ secrets.OPENOVEL_DEEPSEEK_API_KEY }}
+    steps:
+      - name: Publish formal run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/formal-c8-credential-boundary",
+              description: `formal C8 credential boundary running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Select configured names without printing values
+        id: credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_name=''
+          provider_name=''
+          if [ -n "${CANDIDATE_SUPABASE_DATABASE_URL:-}" ]; then database_name='SUPABASE_DATABASE_URL';
+          elif [ -n "${CANDIDATE_SUPABASE_TEST_DATABASE_URL:-}" ]; then database_name='SUPABASE_TEST_DATABASE_URL';
+          elif [ -n "${CANDIDATE_TEST_DATABASE_URL:-}" ]; then database_name='TEST_DATABASE_URL';
+          elif [ -n "${CANDIDATE_DATABASE_URL:-}" ]; then database_name='DATABASE_URL'; fi
+          if [ -n "${CANDIDATE_DEEPSEEK_API_KEY:-}" ]; then provider_name='DEEPSEEK_API_KEY';
+          elif [ -n "${CANDIDATE_OPENOVEL_DEEPSEEK_API_KEY:-}" ]; then provider_name='OPENOVEL_DEEPSEEK_API_KEY'; fi
+          echo "database_secret_name=$database_name" >> "$GITHUB_OUTPUT"
+          echo "provider_secret_name=$provider_name" >> "$GITHUB_OUTPUT"
+          echo "database_secret_present=$([ -n "$database_name" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "provider_secret_present=$([ -n "$provider_name" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Fail closed until both managed non-production credentials exist
+        shell: bash
+        env:
+          DATABASE_SECRET_NAME: ${{ steps.credentials.outputs.database_secret_name }}
+          PROVIDER_SECRET_NAME: ${{ steps.credentials.outputs.provider_secret_name }}
+        run: |
+          set -euo pipefail
+          test -n "$DATABASE_SECRET_NAME" || { echo 'No supported managed non-production Supabase secret name is configured.' >&2; exit 1; }
+          test -n "$PROVIDER_SECRET_NAME" || { echo 'No supported real DeepSeek secret name is configured.' >&2; exit 1; }
+          echo "Managed credential names are available; values remain masked."
+          echo "Formal execution is enabled only by the later managed-runtime stage."
+
+      - name: Publish boundary outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/formal-c8-credential-boundary",
+              description: `formal C8 credential boundary ${success ? "passed" : "failed closed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed('Formal C8 credential boundary is not satisfied');
+'''
+          old_workflow.write_text(formal, encoding='utf-8')
+
+          script = selfhosted.read_text(encoding='utf-8')
+          replacements = {
+              'c8 = root.parent.parent / "c8"': 'engineering = root.parent',
+              'c8.mkdir(parents=True, exist_ok=True)': 'engineering.mkdir(parents=True, exist_ok=True)',
+              '(c8 / "checkpoint.json")': '(engineering / "checkpoint.json")',
+              '"checkpoint": "B0_C8_REAL_OPERATIONS_VALIDATED"': '"checkpoint": "B0_ENGINEERING_SELFHOSTED_VALIDATED"',
+          }
+          for old, new in replacements.items():
+              if script.count(old) != 1:
+                  raise SystemExit(f'expected exactly one self-hosted token: {old}')
+              script = script.replace(old, new, 1)
+          marker = '"checkpoint": "B0_ENGINEERING_SELFHOSTED_VALIDATED"'
+          marker_index = script.index(marker)
+          status_index = script.index('"status": "PASS",', marker_index)
+          script = script[:status_index] + script[status_index:].replace(
+              '"status": "PASS",',
+              '"status": "PASS_ENGINEERING_ONLY",',
+              1,
+          )
+          selfhosted.write_text(script, encoding='utf-8')
+
+          contract.write_text(r'''import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const formal = readFileSync(".github/workflows/b0-candidate-real-acceptance.yml", "utf8");
+const engineering = readFileSync(".github/workflows/b0-engineering-selfhosted-acceptance.yml", "utf8");
+const helper = readFileSync("scripts/acceptance/b0-selfhosted-real-acceptance.sh", "utf8");
+
+assert.match(formal, /environment: "ourmanyworlds\.com \/ test"/);
+assert.match(formal, /secrets\.SUPABASE_DATABASE_URL/);
+assert.match(formal, /secrets\.DEEPSEEK_API_KEY/);
+assert.doesNotMatch(formal, /supabase\/postgres:/);
+assert.doesNotMatch(formal, /ollama\/ollama:/);
+assert.doesNotMatch(formal, /engineering-selfhosted/);
+
+assert.match(engineering, /B0_ACCEPTANCE_TIER: engineering-selfhosted/);
+assert.match(engineering, /supabase\/postgres:/);
+assert.match(engineering, /ollama\/ollama:/);
+assert.match(engineering, /evidence\/b0\/engineering\/runtime/);
+assert.doesNotMatch(engineering, /evidence\/b0\/c8/);
+assert.doesNotMatch(engineering, /evidence\/b0\/c9/);
+
+assert.match(helper, /B0_ENGINEERING_SELFHOSTED_VALIDATED/);
+assert.match(helper, /PASS_ENGINEERING_ONLY/);
+assert.doesNotMatch(helper, /B0_C8_REAL_OPERATIONS_VALIDATED/);
+console.log("B0_ACCEPTANCE_PROVENANCE_CONTRACT_PASS");
+''', encoding='utf-8')
+          PY
+
+          chmod +x scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          bash -n scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          node scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          git diff --check
+
+      - name: Frozen install and acceptance-driver verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh self-check
+
+      - name: Commit completed stage 1 as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/b0-candidate-real-acceptance.yml \
+            .github/workflows/b0-engineering-selfhosted-acceptance.yml \
+            scripts/acceptance/b0-selfhosted-real-acceptance.sh \
+            scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          git rm .github/workflows/b0-stage1-provenance-boundary.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-candidate-real-acceptance.yml
+          .github/workflows/b0-engineering-selfhosted-acceptance.yml
+          .github/workflows/b0-stage1-provenance-boundary.yml
+          scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "ci(b0): separate engineering and formal C8 acceptance"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage1-provenance-boundary",
+              description: `stage 1 provenance boundary ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed('Stage 1 provenance boundary failed');

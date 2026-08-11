@@ -9,6 +9,15 @@ import {
   type BeatManifest,
   type PlayerVisibleFallbackDraft,
 } from "./scene-expression.js";
+import {
+  DeterministicAffordanceIntentResolver,
+  type IntentResolverModule,
+  type ResolvedIntent,
+} from "./intent-resolver.js";
+import { actionRejected } from "./runtime-errors.js";
+
+const CAPABILITY_ACTION_PREFIX = "\u2063OMW_CAPABILITY_V1:";
+const CAPABILITY_ACTION_SUFFIX = "\u2063";
 
 export type PreparedAuthoredDecision = {
   selectedOption: OpenNovelOption | null;
@@ -75,18 +84,26 @@ export interface NextBeatPlannerModule {
 export type AuthoredTurnModules = {
   settlement: FactSettlementModule;
   nextBeat: NextBeatPlannerModule;
+  intentResolver?: IntentResolverModule;
 };
 
 /**
- * Compatibility adapter assembled from two independently replaceable modules.
+ * Compatibility adapter assembled from independently replaceable modules.
  * Settlement is the sole world-fact writer; NextBeat only plans what the
  * Narrator is allowed to render and cannot mutate settlement payloads.
+ * Unbound player language is resolved against the exact Affordances already
+ * published to the player before either module runs, so free text and option
+ * clicks enter the same authoritative Settlement / Kernel path without a
+ * recomputation race at G00 or after recovery.
  */
 export function composeAuthoredDecisionModules(
   modules: AuthoredTurnModules,
 ): AuthoredDecisionAdapter {
+  const intentResolver = modules.intentResolver
+    || new DeterministicAffordanceIntentResolver();
   return {
     moduleIds: {
+      intentResolver: intentResolver.moduleId,
       factSettlement: modules.settlement.moduleId,
       nextBeatPlanner: modules.nextBeat.moduleId,
     },
@@ -99,6 +116,13 @@ export function composeAuthoredDecisionModules(
           { type: "turn_module_execution", ...entry },
         ).catch(() => {});
       };
+      const resolved = await resolveAuthoredAction({
+        workspace,
+        input,
+        turnId,
+        settlement: modules.settlement,
+        intentResolver,
+      });
       const settlement = await executeTurnModule({
         runId: input.runId,
         turnId,
@@ -107,8 +131,8 @@ export function composeAuthoredDecisionModules(
           moduleId: modules.settlement.moduleId,
           mode: "REQUIRED",
         },
-        value: input,
-        execute: () => modules.settlement.settle(workspace, input),
+        value: resolved.input,
+        execute: () => modules.settlement.settle(workspace, resolved.input),
         onRecord: record,
       });
       if (!settlement) return null;
@@ -124,7 +148,19 @@ export function composeAuthoredDecisionModules(
         execute: () => modules.nextBeat.plan(settlement),
         onRecord: record,
       });
-      return validatePreparedAuthoredDecision(planned);
+      const prepared = validatePreparedAuthoredDecision(planned);
+      if (!resolved.resolution) return prepared;
+      return {
+        ...prepared,
+        audit: {
+          ...prepared.audit,
+          intentResolution: auditIntentResolution(
+            resolved.resolution,
+            input.action,
+            resolved.affordanceSource,
+          ),
+        },
+      };
     },
     commit: (workspace, runId, prepared) => modules.settlement.commit(
       workspace,
@@ -140,6 +176,152 @@ export function composeAuthoredDecisionModules(
   };
 }
 
+async function resolveAuthoredAction(input: {
+  workspace: FileStoryWorkspace;
+  input: {
+    runId: string;
+    turnNumber: number;
+    action: string;
+    selectedOption: OpenNovelOption | null;
+  };
+  turnId: string;
+  settlement: FactSettlementModule;
+  intentResolver: IntentResolverModule;
+}) {
+  if (input.input.selectedOption) {
+    return {
+      input: input.input,
+      resolution: null as ResolvedIntent | null,
+      affordanceSource: null as "DISPLAYED_OPTIONS" | "COMMITTED_WORLD_STATE" | null,
+    };
+  }
+  const snapshot = await input.workspace.snapshot(input.input.runId);
+  const displayedAffordances = snapshot.previousOptions;
+  const committedAffordances = displayedAffordances.length
+    ? null
+    : await input.settlement.currentOptions(input.workspace, input.input.runId);
+  const affordances = displayedAffordances.length
+    ? displayedAffordances
+    : committedAffordances;
+  const affordanceSource = displayedAffordances.length
+    ? "DISPLAYED_OPTIONS" as const
+    : "COMMITTED_WORLD_STATE" as const;
+  if (!affordances?.length) {
+    return {
+      input: input.input,
+      resolution: null as ResolvedIntent | null,
+      affordanceSource,
+    };
+  }
+  const resolution = await input.intentResolver.resolve({
+    action: input.input.action,
+    affordances,
+  });
+  await input.workspace.recordSceneEvent(input.input.runId, {
+    type: "intent_resolution",
+    turnId: input.turnId,
+    moduleId: input.intentResolver.moduleId,
+    originalAction: input.input.action,
+    affordanceSource,
+    status: resolution.status,
+    intentType: resolution.intentType,
+    matchedAffordanceId: resolution.matchedAffordanceId,
+    capabilityRef: resolution.capabilityRef,
+    targetRefs: resolution.targetRefs,
+    confidence: resolution.confidence,
+    reason: resolution.reason,
+    alternatives: resolution.alternatives,
+  }).catch(() => {});
+
+  if (resolution.status === "BOUND_CAPABILITY") {
+    const decisionPointId = resolution.targetRefs[0];
+    if (!decisionPointId || !resolution.canonicalAction) {
+      throw new Error("INTENT_CAPABILITY_BINDING_INVALID");
+    }
+    const selectedOption: OpenNovelOption = {
+      id: `opt_capability_${input.turnId.toLowerCase()}`,
+      label: resolution.canonicalAction,
+      key: true,
+      effect: {
+        decisionPointId,
+        intent: resolution.canonicalAction,
+        reversible: true,
+        beatContract: {
+          sourceRef: `intent-resolution:${input.turnId}`,
+          objective: "在当前公开决策点内执行一次能力级观察或准备行动，不替代尚未完成的正式决策。",
+          moves: [resolution.canonicalAction],
+          requiredAnchorGroups: [],
+          requiredDurableAnchorGroups: [],
+          constraints: resolution.constraints,
+          settledNarrative: resolution.canonicalAction,
+          stopCondition: "回到同一公开决策点，由玩家决定是否执行一项会改变权威状态的正式行动。",
+        },
+      },
+    };
+    return {
+      input: {
+        ...input.input,
+        action: encodeCapabilityAction(decisionPointId, resolution.canonicalAction),
+        selectedOption,
+      },
+      resolution,
+      affordanceSource,
+    };
+  }
+
+  if (resolution.status !== "BOUND_AFFORDANCE") {
+    throw actionRejected(
+      resolution.status === "CLARIFICATION_REQUIRED"
+        ? "INTENT_CLARIFICATION_REQUIRED"
+        : "INTENT_CAPABILITY_UNAVAILABLE",
+    );
+  }
+  const selectedOption = affordances.find((option) => (
+    option.id === resolution.matchedAffordanceId
+  ));
+  if (!selectedOption || !resolution.canonicalAction) {
+    throw new Error("INTENT_RESOLUTION_BINDING_INVALID");
+  }
+  return {
+    input: {
+      ...input.input,
+      action: resolution.canonicalAction,
+      selectedOption,
+    },
+    resolution,
+    affordanceSource,
+  };
+}
+
+function encodeCapabilityAction(decisionPointId: string, action: string) {
+  const envelope = Buffer.from(JSON.stringify({
+    schemaVersion: "omw-capability-action-v1",
+    decisionPointId,
+    action,
+  }), "utf8").toString("base64url");
+  return `${CAPABILITY_ACTION_PREFIX}${envelope}${CAPABILITY_ACTION_SUFFIX}`;
+}
+
+function auditIntentResolution(
+  resolution: ResolvedIntent,
+  originalAction: string,
+  affordanceSource: "DISPLAYED_OPTIONS" | "COMMITTED_WORLD_STATE" | null,
+) {
+  return {
+    schemaVersion: resolution.schemaVersion,
+    moduleStatus: resolution.status,
+    intentType: resolution.intentType,
+    capabilityRef: resolution.capabilityRef,
+    targetRefs: resolution.targetRefs,
+    constraints: resolution.constraints,
+    matchedAffordanceId: resolution.matchedAffordanceId,
+    confidence: resolution.confidence,
+    reason: resolution.reason,
+    affordanceSource,
+    originalAction,
+  };
+}
+
 function factSettlementFromPrepared(
   prepared: PreparedAuthoredDecision,
 ): PreparedFactSettlement {
@@ -152,6 +334,7 @@ function factSettlementFromPrepared(
 }
 export interface AuthoredDecisionAdapter {
   readonly moduleIds?: {
+    intentResolver?: string;
     factSettlement: string;
     nextBeatPlanner: string;
   };
@@ -194,9 +377,10 @@ export function validatePreparedAuthoredDecision(
   prepared: PreparedAuthoredDecision,
 ): PreparedAuthoredDecision {
   const manifest = validateBeatManifest(prepared.beatManifest);
-  validatePlayerVisibleFallbackDraft(prepared.fallbackDraft, manifest);
   const resultTicket = manifest.tickets.find((ticket) => ticket.slot === "PLAYER_RESULT");
   const stopTicket = manifest.tickets.find((ticket) => ticket.slot === "DECISION_STOP");
+  // Settlement and the server-selected stop point are semantic authority.
+  // Validate those bindings before literary fallback surfaces.
   if (!resultTicket || normalize(resultTicket.requiredMeaning) !== normalize(prepared.settledNarrative)) {
     throw new Error("BEAT_MANIFEST_PLAYER_RESULT_MISMATCH");
   }
@@ -204,6 +388,7 @@ export function validatePreparedAuthoredDecision(
     !== normalize(prepared.truthContexts.afterPhase.stopCondition || "")) {
     throw new Error("BEAT_MANIFEST_STOP_POINT_MISMATCH");
   }
+  validatePlayerVisibleFallbackDraft(prepared.fallbackDraft, manifest);
   return prepared;
 }
 

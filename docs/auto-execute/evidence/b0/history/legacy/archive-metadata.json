@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-08-10T17:29:59.724907+00:00",
+  "sourceCommitSha": "a1d5e031c328119769b3f6565c1a1c2d4bf6c1b4",
+  "archive": "prior-history.zip",
+  "archiveBytes": 2948102,
+  "archiveSha256": "0e3e6c7f0234aac23ef8a6b330db4064b5e57e486c38ae3fd350a42ad2029501",
+  "archivedFileCount": 80,
+  "sourceTopLevelEntries": [
+    "e0a986f0f772ee750b7f7cdd5165fc25f6623923"
+  ],
+  "preservationRule": "the complete prior history tree is retained in a versioned ZIP so ordinary Windows checkouts remain portable"
+}

@@ -1,0 +1,139 @@
+name: B0 Stage 9A Validation Workflow Stabilization
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage9a-validation-stabilization.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage9a-validation-stabilization
+  cancel-in-progress: false
+
+jobs:
+  stabilize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage9a-stabilization",
+              description: `validation workflow stabilization running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact candidate tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage9a-validation-stabilization.yml"
+          git merge-base --is-ancestor d5905ed2661bd72635d2e2c4ce6559bc94ada6cd HEAD
+
+      - name: Make branch-mutating validators manual and remove stale one-shot stages
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          workflow_paths = [
+              Path('.github/workflows/b0-engineering-selfhosted-acceptance.yml'),
+              Path('.github/workflows/b0-candidate-real-acceptance.yml'),
+              Path('.github/workflows/b0-finalize-evidence.yml'),
+          ]
+          for path in workflow_paths:
+              if not path.exists():
+                  continue
+              source = path.read_text(encoding='utf-8')
+              updated, count = re.subn(
+                  r'(?ms)^on:\n.*?\npermissions:',
+                  'on:\n  workflow_dispatch:\n\npermissions:',
+                  source,
+                  count=1,
+              )
+              if count != 1:
+                  raise SystemExit(f'cannot stabilize trigger block in {path}')
+              path.write_text(updated, encoding='utf-8')
+
+          docs = Path('docs/auto-execute/B0_VALIDATION_WORKFLOW_STABILIZED.md')
+          docs.parent.mkdir(parents=True, exist_ok=True)
+          docs.write_text(
+              '# B0 Validation Workflow Stabilized\n\n'
+              '- branch: `codex/chatgpt-pro-maneuver-evidence-v1`\n'
+              '- branch-mutating engineering workflow: `workflow_dispatch` only\n'
+              '- branch-mutating formal C8 workflow: `workflow_dispatch` only\n'
+              '- branch-mutating evidence finalizer: `workflow_dispatch` only\n'
+              '- authoritative final convergence: one isolated one-shot workflow\n'
+              '- production deployment/data/config: forbidden\n',
+              encoding='utf-8',
+          )
+          PY
+
+          find .github/workflows -maxdepth 1 -type f -name 'b0-stage*.yml' \
+            ! -name 'b0-stage9a-validation-stabilization.yml' -print -delete
+
+          if [ -f scripts/acceptance/b0-acceptance-provenance-contract.mjs ]; then
+            node scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          fi
+          if [ -f scripts/acceptance/b0-managed-acceptance-contract.mjs ]; then
+            node scripts/acceptance/b0-managed-acceptance-contract.mjs
+          fi
+          bash -n scripts/acceptance/b0-selfhosted-real-acceptance.sh
+          if [ -f scripts/acceptance/b0-managed-real-acceptance.sh ]; then
+            bash -n scripts/acceptance/b0-managed-real-acceptance.sh
+          fi
+          git diff --check
+
+      - name: Commit stabilized validation baseline as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A .github/workflows docs/auto-execute/B0_VALIDATION_WORKFLOW_STABILIZED.md
+          git rm .github/workflows/b0-stage9a-validation-stabilization.yml
+          git diff --cached --check
+          git commit -m "ci(b0): stabilize final validation workflows"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const ok = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: ok ? "success" : "failure",
+              context: "b0/stage9a-stabilization",
+              description: `validation workflow stabilization ${ok ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!ok) core.setFailed('Validation workflow stabilization failed');

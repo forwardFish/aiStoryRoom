@@ -17,6 +17,12 @@ test("正式入口只加载唯一 API 客户端，首屏不会白屏", async () 
   assert.match(gameStyles, /\.result-narrative \{[^}]*overflow-y: auto/);
   assert.match(gameStyles, /\.opening-narrative \{[^}]*overflow-y: auto/);
   assert.match(appSource, /rememberResultScroll\(\).*restoreResultScroll\(\)/s);
+  assert.match(appSource, /rememberOpeningScroll\(\).*restoreOpeningScroll\(\)/s);
+  assert.match(appSource, /STORY_STREAM_CHARACTER_DELAY_MS\s*=\s*38/);
+  assert.match(appSource, /STORY_STREAM_PUNCTUATION_DELAY_MS\s*=\s*140/);
+  assert.match(gameStyles, /\.opening-narrative \{[^}]*scrollbar-width:\s*auto/);
+  assert.match(gameStyles, /\.opening-narrative::\-webkit-scrollbar \{[^}]*width:\s*12px/);
+  assert.doesNotMatch(gameStyles, /\.opening-copy p:first-child[^}]*font-size:\s*16px/);
   assert.match(gameStyles, /\.kv:has\(> \.kv-icon\)\s*\{[^}]*column-gap:\s*12px;/s);
 
   const harness = setup();
@@ -48,6 +54,9 @@ test("首屏前情介绍流式完成后保留进入局势入口，再释放第�
 
   assert.ok(harness.app.getState().openingStream, "opening story should start revealing");
   assert.equal(harness.root.querySelector('[data-testid="decision-zone"]'), null, "opening choices stay hidden while intro reveals");
+  assert.equal(harness.root.querySelector(".opening-copy h1"), null, "the prologue must not invent a separate product title");
+  assert.equal(harness.root.querySelectorAll(".opening-copy > p").length, 1, "the prologue surface contains only the authored opening copy");
+  assert.equal(harness.root.querySelectorAll(".opening-copy > i").length, 0, "date and title dividers do not belong above the prologue");
   await new Promise((resolve) => setTimeout(resolve, 100));
   assert.ok(harness.root.querySelector(".opening-stream-copy").textContent.length > 0);
 
@@ -63,6 +72,31 @@ test("首屏前情介绍流式完成后保留进入局势入口，再释放第�
   assert.ok(harness.root.querySelector(".opening-decision"), "opening decision should stay on the story surface");
   assert.equal(harness.root.querySelector(".decision-narrative"), null, "old decision prose should be replaced");
   assert.ok(harness.root.querySelector("#customDecision"));
+});
+
+test("开场白自动跟随最新文字，同时保留玩家主动上滑的位置", async () => {
+  const harness = setup({ opening: true });
+  Object.defineProperty(harness.dom.window.HTMLElement.prototype, "scrollHeight", {
+    configurable: true,
+    get() { return this.classList?.contains("opening-narrative") ? 1200 : 0; }
+  });
+  Object.defineProperty(harness.dom.window.HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    get() { return this.classList?.contains("opening-narrative") ? 400 : 0; }
+  });
+
+  await harness.app.boot();
+  let panel = harness.root.querySelector('[data-testid="role-opening"]');
+  assert.equal(panel.scrollTop, 800, "new opening text should stay in view while the player follows the stream");
+
+  panel.scrollTop = 180;
+  panel.dispatchEvent(new harness.dom.window.Event("scroll"));
+  assert.equal(harness.app.getState().openingScroll.follow, false);
+  harness.app.render();
+
+  panel = harness.root.querySelector('[data-testid="role-opening"]');
+  assert.equal(panel.scrollTop, 180, "a player reading earlier prose must not be forced back to the bottom");
+  harness.dom.window.close();
 });
 
 test("提交主线决策后先流式展示结果故事，结果完成前不出现下一决策", async () => {

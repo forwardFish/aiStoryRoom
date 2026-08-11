@@ -1,0 +1,425 @@
+{
+  "schemaVersion": "narrative-scene-pattern-set-v1",
+  "worldId": "sangtian",
+  "scopeId": "SEC-P1-03",
+  "version": "1.0.0",
+  "patterns": [
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-GRAIN-LIABILITY-COURTYARD",
+      "sourceSceneId": "DM1566-C02-GOVERNOR-GRAIN-RESPONSIBILITY",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C02",
+          "paragraphStartId": "DM1566-C02-P0198",
+          "paragraphEndId": "DM1566-C02-P0241",
+          "lineStart": 1221,
+          "lineEnd": 1307,
+          "textSpanSha256": "C2DE1D80210AC35EF7ECD0392ED3B2CCEDD3298F672EC98FAC812EFC91428115"
+        }
+      ],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-LAND-RISK"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-GRAIN-SOURCE",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.qingliu_magistrate",
+        "actor.xunfu_aide"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C02-CL-GOVERNOR-PETITIONERS",
+        "DM1566-C02-CL-GRAIN-SOURCES-INSUFFICIENT",
+        "DM1566-C02-CL-GOVERNOR-ASSUMES-LIABILITY"
+      ],
+      "dramaticFunction": "让粮源选择同时面对衙门外可见民生压力、地方库存不足和不同机构的责任追索。",
+      "openingPressure": "门外已有等待粮食与灌溉的人群，案内各渠道却只带来不足、延迟或附带责任的答复。",
+      "runtimeActivationCues": [
+        "grain.reliefChannel 仍为 UNDECIDED",
+        "grain.immediatePressure 已进入现场",
+        "玩家必须在不同粮源和救急顺序间承担责任"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "pressure_bearer",
+          "observableMove": "让玩家看见门外等待者、空缺仓单或无法满足需求的数量边界。",
+          "sceneFunction": "把粮荒从状态数值变成当前现场压力。",
+          "reactionCue": "人物不能只讨论制度，必须对门外时间压力作出反应。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "channel_reporter",
+          "observableMove": "逐一报告官仓、借粮或外调渠道的现实缺口，并明确谁要为借据、调拨或延误负责。",
+          "sceneFunction": "让每条粮路都带有不同能力和责任。",
+          "reactionCue": "报告不能把未到粮食写成已经可用。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "counterpressure_actor",
+          "observableMove": "以另一项朝廷、织造或地方责任施压，要求玩家不要只解决眼前一端。",
+          "sceneFunction": "形成救急与长期责任的真实冲突。",
+          "reactionCue": "场景停在玩家决定粮源与优先顺序之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "channel_reporter",
+          "surfaceMove": "用一项具体缺口回应每条粮路，不作笼统的‘有粮/无粮’判断。",
+          "hiddenRisk": "任何承诺都可能形成借据、印信、调拨或延误责任。",
+          "cadenceRule": "先报告眼前缺口，再补一句由谁承担后果。"
+        }
+      ],
+      "blockingPrinciples": [
+        "门外压力与案内文书必须同时存在，避免场景退化为会议摘要。",
+        "未到的粮食只以回报、借据或调拨承诺出现，不能写成已入仓。",
+        "不同粮路应由不同人物或物件代表。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "空缺仓单与待押借据",
+          "observableUse": "报告者把空缺处和待盖印处并列摆在玩家面前。",
+          "powerMeaning": "眼前能否救急与谁承担信用、印信和追责被绑在同一选择上。"
+        }
+      ],
+      "transferableTechniques": [
+        "让资源不足通过现场等待者可见",
+        "给每条资源渠道绑定不同责任",
+        "用第二机构的压力阻止单线最优解"
+      ],
+      "forbiddenFlattening": [
+        "不得把未到粮食写成已完成赈济。",
+        "不得把门外百姓只写成背景噪声。",
+        "不得用一段政策说明同时解决粮源和土地风险。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-GRAIN-LAND-CONDITIONAL-RELIEF",
+      "sourceSceneId": "DM1566-C05-GRAIN-LAND-SAFEGUARD",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C05",
+          "paragraphStartId": "DM1566-C05-P0308",
+          "paragraphEndId": "DM1566-C05-P0325",
+          "lineStart": 3766,
+          "lineEnd": 3800,
+          "textSpanSha256": "57B19E869B868C3E6A8548F2241AB0F3314F31E09C0E2A7885BDCB6BC45EF27D"
+        }
+      ],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-MERCHANT-CONDITIONS",
+        "REQ-P1-LAND-RISK"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.jiangnan_merchant_head",
+        "actor.qingliu_magistrate"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C05-CL-LAND-PRICE-AUTHORITY-QUESTION",
+        "DM1566-C05-CL-LAND-MINIMUM-PRICE-SAFEGUARD",
+        "DM1566-C05-CL-DISTRIBUTED-REFORM-SCOPE",
+        "DM1566-C05-CL-GOVERNOR-SEEKS-EXTERNAL-GRAIN"
+      ],
+      "dramaticFunction": "把粮食救急条件和卖田风险绑在同一张交易桌上，使短期救命与长期失田不能被拆开计算。",
+      "openingPressure": "商会或中间人愿意提供一项现实粮源，但同时要求土地、价格、优先权或办理节奏上的回报。",
+      "runtimeActivationCues": [
+        "merchant.entryStatus 仍需确定",
+        "land.riskLevel 已被看见但 safeguard 尚未落地",
+        "粮食条件可能创建延迟土地后果"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "conditional_supplier",
+          "observableMove": "先给出可验证的粮源能力，再把土地或价格条件放到同一份承诺旁。",
+          "sceneFunction": "证明对方不是空谈，同时暴露交换条件。",
+          "reactionCue": "粮食能力只能按已确认范围呈现，不能无限扩大。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "land_risk_voice",
+          "observableMove": "指出条件将如何改变田价、买田顺序或灾民下一季生计。",
+          "sceneFunction": "让长期土地风险进入眼前谈判。",
+          "reactionCue": "风险应通过具体受影响路径表达，而不是道德口号。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "bargaining_countermove",
+          "observableMove": "以粮食时限反制保护条件，迫使玩家选择接受、限制、延后或寻找替代渠道。",
+          "sceneFunction": "把两难压成真正不同的可执行行动。",
+          "reactionCue": "场景停在玩家设定交易边界之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "conditional_supplier",
+          "surfaceMove": "先说能在何时提供什么，再把条件说成‘保证交易能够发生’。",
+          "hiddenRisk": "条件可能把救急渠道转化为土地和市场控制入口。",
+          "cadenceRule": "能力与条件必须相邻出现，禁止先许诺后在尾句藏条件。"
+        }
+      ],
+      "blockingPrinciples": [
+        "粮单、田契条件或价格条款要在同一视觉区域出现。",
+        "商会代表不能被写成纯善意救援者或纯粹反派。",
+        "土地风险是待兑现后果，不得提前写成全县兼并完成。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "粮单与土地条件单",
+          "observableUse": "对方把两张纸并排放下，明确一张不能脱离另一张生效。",
+          "powerMeaning": "短期资源进入与长期土地权力被同一次签认绑定。"
+        }
+      ],
+      "transferableTechniques": [
+        "把救急能力与交换条件并置",
+        "让延迟后果在谈判当场可见但不提前兑现",
+        "用交易边界生成真正不同的玩家行动"
+      ],
+      "forbiddenFlattening": [
+        "不得把商会条件写成已经发生的土地兼并。",
+        "不得让一项口头承诺立即产生完整粮食库存。",
+        "不得把玩家的限制条件改写成无条件接受。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-LAND-PRICE-DEADLINE-CONTEST",
+      "sourceSceneId": "DM1566-C06-LAND-PRICE-DEBATE",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C06",
+          "paragraphStartId": "DM1566-C06-P0133",
+          "paragraphEndId": "DM1566-C06-P0173",
+          "lineStart": 4141,
+          "lineEnd": 4221,
+          "textSpanSha256": "3B024661F040A870A74A73AA7B59BA64DD226EF1BBC8BB670A1DA0BC2A9DF99F"
+        }
+      ],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-LAND-RISK",
+        "REQ-P1-GRAIN-RELIEF",
+        "REQ-P1-MERCHANT-CONDITIONS"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-LAND-SAFEGUARD",
+        "DK-P1-RELIEF-PRIORITY"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.zhejiang_xunfu",
+        "actor.qingliu_magistrate",
+        "actor.jiangnan_merchant_head"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C06-CL-PLAN-OMITS-LAND-COST",
+        "DM1566-C06-CL-PUBLIC-PRICE-FLOOR",
+        "DM1566-C06-CL-GRAIN-DEADLINE-COUNTERMOVE"
+      ],
+      "dramaticFunction": "让土地保护底线与粮食只够维持数日的时限正面冲突，并保留延期复议这一有成本的程序选择。",
+      "openingPressure": "现有方案能推动救急，却没有处理田价和下一季生计；反对者刚提出保护底线，另一方立即以粮食倒计时反击。",
+      "runtimeActivationCues": [
+        "land.safeguardStatus 尚未确定",
+        "grain.immediatePressure 提供具体倒计时",
+        "玩家可选择立即裁决、附加保护、延期复议或分拆措施"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "omission_exposer",
+          "observableMove": "指向方案中缺失的田价、买田范围或灾民下一季安排。",
+          "sceneFunction": "让保护缺口从抽象风险变成文书空白。",
+          "reactionCue": "其他人必须回应缺口，不能只重复方案目标。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "deadline_counter",
+          "observableMove": "以现有粮食只能维持的期限压缩讨论空间。",
+          "sceneFunction": "让长期保护和眼前生存发生不可回避的冲突。",
+          "reactionCue": "倒计时必须来自已授权状态，不得临时造数。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "procedure_holder",
+          "observableMove": "提出立即裁决或定时复议，并要求玩家明确复议前哪些措施可以先行。",
+          "sceneFunction": "把争论转化为程序和执行边界。",
+          "reactionCue": "场景停在玩家选择保护强度与时间安排之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "deadline_counter",
+          "surfaceMove": "不否认土地风险，只问保护措施生效前谁来承担下一顿粮。",
+          "hiddenRisk": "用紧急性压过保护边界会把土地损失推迟到后续兑现。",
+          "cadenceRule": "一句承认风险，一句给出时限，再把决定推回玩家。"
+        }
+      ],
+      "blockingPrinciples": [
+        "方案文书的空白处和粮食倒计时要同时可见。",
+        "任何延期都必须留下下一次复议时间或先行措施。",
+        "田价保护不能被写成已经执行，除非 Settlement 已授权。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "待补条款的议案",
+          "observableUse": "反对者把指尖停在土地保护空白处，催促者则把粮食期限写在页边。",
+          "powerMeaning": "同一份文书同时承载长期保护缺口和短期生存时限。"
+        }
+      ],
+      "transferableTechniques": [
+        "用文书空白表现政策遗漏",
+        "让时间压力反制长期保护",
+        "把延期写成带先行措施的程序选择"
+      ],
+      "forbiddenFlattening": [
+        "不得把讨论写成善恶辩论。",
+        "不得凭空给出粮食数量或截止日。",
+        "不得让延期自动等于问题解决。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    },
+    {
+      "schemaVersion": "narrative-scene-pattern-v1",
+      "patternId": "NSP-P1-MERCHANT-LEDGER-PRIVATE-BARGAIN",
+      "sourceSceneId": "DM1566-C07-MERCHANT-LEDGER-BARGAIN",
+      "sourceRefs": [
+        {
+          "sourceId": "dm1566-liuheping",
+          "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+          "chapterId": "DM1566-C07",
+          "paragraphStartId": "DM1566-C07-P0074",
+          "paragraphEndId": "DM1566-C07-P0110",
+          "lineStart": 5022,
+          "lineEnd": 5094,
+          "textSpanSha256": "75E1A2FEBF6D6FD5C20E87A0C31327AE195CC1C28F2C8418D9AB377E36B326E1"
+        }
+      ],
+      "sectionIds": [
+        "SEC-P1-03"
+      ],
+      "requirementIds": [
+        "REQ-P1-MERCHANT-CONDITIONS",
+        "REQ-P1-LAND-RISK"
+      ],
+      "decisionKernelIds": [
+        "DK-P1-MERCHANT-CONDITIONS",
+        "DK-P1-LAND-SAFEGUARD"
+      ],
+      "actorRefs": [
+        "actor.zhejiang_governor",
+        "actor.jiangnan_merchant_head",
+        "actor.xunfu_aide",
+        "actor.qingliu_magistrate"
+      ],
+      "sourceClaimIds": [
+        "DM1566-C07-CL-LEDGER-ACCESS-RESTRICTED",
+        "DM1566-C07-CL-LEDGER-PARTIAL-ORAL-TRANSFER",
+        "DM1566-C07-CL-MERCHANT-OFFERS-CAREER-EXIT",
+        "DM1566-C07-CL-MERCHANT-ARGUES-EMPLOYMENT-OFFSET"
+      ],
+      "dramaticFunction": "让商会以受限账册知识、个人保护和未来雇佣承诺组合出一场私下交易，同时保持实物保管权与口述知识的区别。",
+      "openingPressure": "商会代表掌握一份不愿交出的账册，只愿口述局部内容，并把更多信息与土地方案或个人去留绑定。",
+      "runtimeActivationCues": [
+        "merchant.entryStatus 仍可被拒绝、限制或激活",
+        "玩家需要区分账册存在、查看权、口述内容和可验证事实",
+        "商会提出超出单纯粮食价格的政治交换"
+      ],
+      "orderedBeats": [
+        {
+          "ordinal": 1,
+          "actorRole": "information_holder",
+          "observableMove": "让账册保持在自己控制下，只口述一段可核查但不完整的信息。",
+          "sceneFunction": "建立实物保管、接触权和听闻内容的三层差异。",
+          "reactionCue": "玩家获得的只是有限知识，不能被写成已经取得账册。"
+        },
+        {
+          "ordinal": 2,
+          "actorRole": "political_bargainer",
+          "observableMove": "把更多信息或粮路与土地条件、个人保护或职位去留相连。",
+          "sceneFunction": "显示商会筹码不仅是资源，也包括政治渠道。",
+          "reactionCue": "承诺必须保持为对方主张，不得自动成为可兑现事实。"
+        },
+        {
+          "ordinal": 3,
+          "actorRole": "public_duty_resister",
+          "observableMove": "拒绝以个人利益换取公共处置，同时提出可接受的公开条件或验证方式。",
+          "sceneFunction": "让玩家能够拒绝、限缩或改造交易，而非只有接受/离开。",
+          "reactionCue": "场景停在玩家规定商会入口和信息验证条件之前。"
+        }
+      ],
+      "dialogueTactics": [
+        {
+          "actorRole": "political_bargainer",
+          "surfaceMove": "把私人保护说成让对方能‘无后顾之忧地办事’。",
+          "hiddenRisk": "一旦接受，公共政策可能被解释为私人交换的结果。",
+          "cadenceRule": "先给一段有限真信息，再提出一项看似体面的交换。"
+        }
+      ],
+      "blockingPrinciples": [
+        "账册始终留在原持有人可控制的位置，除非 Settlement 明确转移保管。",
+        "口述内容、账册内容和客观事实不得合并。",
+        "私人保护承诺只能作为人物主张和风险，不得写成已经生效。"
+      ],
+      "objectPowerMoves": [
+        {
+          "objectLabel": "未交付的商会账册",
+          "observableUse": "持有人翻到某页却不把账册推过界线，只从中选择性口述。",
+          "powerMeaning": "信息可以被交换，实物保管权仍然是独立筹码。"
+        }
+      ],
+      "transferableTechniques": [
+        "分离信息存在、接触权和实物保管",
+        "用局部真信息建立谈判可信度",
+        "把私人保护作为公共决策的污染风险"
+      ],
+      "forbiddenFlattening": [
+        "不得写成玩家已看完整账册。",
+        "不得把商会的未来雇佣说法当作客观保证。",
+        "不得把拒绝私人交易写成拒绝一切粮食合作。"
+      ],
+      "verbatimPolicy": "MECHANISM_ONLY_NO_VERBATIM_REUSE",
+      "reviewStatus": "APPROVED",
+      "reviewerId": "chatgpt-pro-ai-story-convergence",
+      "approvedAt": "2026-08-05T09:00:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,592 @@
+name: B0 Stage 2 Managed Non-Production C8 Runtime
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage2-managed-c8-runtime.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage2-managed-c8-runtime
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Publish stage locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage2-managed-runtime",
+              description: `stage 2 managed runtime running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify stage 1 remote result and exact tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage2-managed-c8-runtime.yml"
+          test -f .github/workflows/b0-engineering-selfhosted-acceptance.yml
+          test -f scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          grep -Fq 'B0_ACCEPTANCE_TIER: engineering-selfhosted' .github/workflows/b0-engineering-selfhosted-acceptance.yml
+          grep -Fq 'PASS_ENGINEERING_ONLY' scripts/acceptance/b0-selfhosted-real-acceptance.sh
+
+      - name: Install managed Supabase helper and full formal workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > scripts/acceptance/b0-managed-real-acceptance.sh <<'B0_MANAGED_SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          command_name="${1:-}"
+          shift || true
+
+          required() {
+            local name="$1"
+            if [ -z "${!name:-}" ]; then
+              echo "$name is required" >&2
+              exit 1
+            fi
+          }
+
+          ensure_root() {
+            required B0_EVIDENCE_ROOT
+            mkdir -p "$B0_EVIDENCE_ROOT/logs"
+          }
+
+          fingerprint_public() {
+            required B0_MANAGED_ADMIN_URL
+            PGPASSWORD='' psql "$B0_MANAGED_ADMIN_URL" -v ON_ERROR_STOP=1 -At -c "
+              SELECT line FROM (
+                SELECT 'table|' || table_schema || '|' || table_name AS line
+                  FROM information_schema.tables WHERE table_schema = 'public'
+                UNION ALL
+                SELECT 'column|' || table_schema || '|' || table_name || '|' || column_name || '|' || ordinal_position::text || '|' || data_type
+                  FROM information_schema.columns WHERE table_schema = 'public'
+                UNION ALL
+                SELECT 'view|' || table_schema || '|' || table_name
+                  FROM information_schema.views WHERE table_schema = 'public'
+                UNION ALL
+                SELECT 'routine|' || routine_schema || '|' || routine_name || '|' || routine_type
+                  FROM information_schema.routines WHERE routine_schema = 'public'
+              ) fingerprint ORDER BY line;
+            "
+          }
+
+          prepare() {
+            ensure_root
+            required SUPABASE_DATABASE_URL
+            required B0_DATABASE_SECRET_NAME
+            required B0_PROVIDER_SECRET_NAME
+            required B0_ACCEPTANCE_ENVIRONMENT
+            required GITHUB_RUN_ID
+            required GITHUB_RUN_ATTEMPT
+            required GITHUB_ENV
+
+            local schema="cs_accept_b0_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_$(openssl rand -hex 4)"
+            local generated
+            generated="$(SUPABASE_DATABASE_URL="$SUPABASE_DATABASE_URL" B0_ACCEPTANCE_SCHEMA="$schema" python3 - <<'PY'
+          import os
+          from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+          raw = os.environ['SUPABASE_DATABASE_URL'].strip()
+          schema = os.environ['B0_ACCEPTANCE_SCHEMA']
+          split = urlsplit(raw)
+          host = (split.hostname or '').lower()
+          if split.scheme not in {'postgres', 'postgresql'}:
+              raise SystemExit('managed Supabase URL must use PostgreSQL')
+          if host in {'localhost', '127.0.0.1', '::1'} or 'supabase.' not in host:
+              raise SystemExit('managed C8 URL must target a Supabase-managed non-local host')
+          query = [(k, v) for k, v in parse_qsl(split.query, keep_blank_values=True)
+                   if k.lower() not in {'schema', 'connection_limit', 'sslmode'}]
+          admin_query = query + [('sslmode', 'require'), ('connection_limit', '2')]
+          runtime_query = query + [('sslmode', 'require'), ('schema', schema), ('connection_limit', '3')]
+          admin = urlunsplit((split.scheme, split.netloc, split.path, urlencode(admin_query), split.fragment))
+          runtime = urlunsplit((split.scheme, split.netloc, split.path, urlencode(runtime_query), split.fragment))
+          print(admin)
+          print(runtime)
+          print(host)
+          PY
+            )"
+            local admin_url runtime_url host
+            admin_url="$(printf '%s\n' "$generated" | sed -n '1p')"
+            runtime_url="$(printf '%s\n' "$generated" | sed -n '2p')"
+            host="$(printf '%s\n' "$generated" | sed -n '3p')"
+            test -n "$admin_url"
+            test -n "$runtime_url"
+            echo "::add-mask::$SUPABASE_DATABASE_URL"
+            echo "::add-mask::$admin_url"
+            echo "::add-mask::$runtime_url"
+
+            printf 'CREATE SCHEMA "%s";\n' "$schema" | psql "$admin_url" -v ON_ERROR_STOP=1 >/dev/null
+            export B0_MANAGED_ADMIN_URL="$admin_url"
+            fingerprint_public > "$B0_EVIDENCE_ROOT/public-schema-before.txt"
+            local before_sha before_lines host_sha model_sha
+            before_sha="$(sha256sum "$B0_EVIDENCE_ROOT/public-schema-before.txt" | cut -d' ' -f1)"
+            before_lines="$(wc -l < "$B0_EVIDENCE_ROOT/public-schema-before.txt" | tr -d ' ')"
+            host_sha="$(printf '%s' "$host" | sha256sum | cut -d' ' -f1)"
+            model_sha="sha256:$(printf '%s' 'deepseek-chat' | sha256sum | cut -d' ' -f1)"
+
+            {
+              echo "DATABASE_URL=$runtime_url"
+              echo "MANY_WORLDS_DB_SCHEMA=$schema"
+              echo "B0_ACCEPTANCE_SCHEMA=$schema"
+              echo "B0_MANAGED_ADMIN_URL=$admin_url"
+              echo "B0_DATABASE_PROVENANCE=supabase-cloud-nonproduction-random-schema"
+              echo "B0_PROVIDER_PROVENANCE=deepseek-api-real"
+              echo "B0_PROVIDER_MODEL_DIGEST=$model_sha"
+              echo "B0_PUBLIC_SCHEMA_BEFORE_SHA=$before_sha"
+              echo "B0_PUBLIC_SCHEMA_BEFORE_LINES=$before_lines"
+            } >> "$GITHUB_ENV"
+
+            B0_HOST_SHA="$host_sha" B0_BEFORE_SHA="$before_sha" B0_BEFORE_LINES="$before_lines" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['B0_EVIDENCE_ROOT'])
+          payload = {
+            'schemaVersion': 1,
+            'status': 'READY',
+            'provenance': 'supabase-cloud-nonproduction-random-schema',
+            'environment': os.environ['B0_ACCEPTANCE_ENVIRONMENT'],
+            'databaseSecretName': os.environ['B0_DATABASE_SECRET_NAME'],
+            'providerSecretName': os.environ['B0_PROVIDER_SECRET_NAME'],
+            'managedHostSha256': os.environ['B0_HOST_SHA'],
+            'randomSchema': os.environ['B0_ACCEPTANCE_SCHEMA'],
+            'publicSchemaUsed': False,
+            'productionDataUsed': False,
+            'selfHostedContainerUsedForFormalC8': False,
+            'publicSchemaBeforeSha256': os.environ['B0_BEFORE_SHA'],
+            'publicSchemaBeforeLineCount': int(os.environ['B0_BEFORE_LINES']),
+          }
+          (root / 'database-provenance.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+          PY
+          }
+
+          cleanup() {
+            ensure_root
+            required B0_MANAGED_ADMIN_URL
+            required B0_ACCEPTANCE_SCHEMA
+            required B0_PUBLIC_SCHEMA_BEFORE_SHA
+            required B0_PUBLIC_SCHEMA_BEFORE_LINES
+            local schema="$B0_ACCEPTANCE_SCHEMA"
+            if ! [[ "$schema" =~ ^cs_accept_b0_[A-Za-z0-9_]{8,}$ ]] || [ "${schema,,}" = public ]; then
+              echo 'refusing cleanup for invalid or public schema' >&2
+              exit 1
+            fi
+            fingerprint_public > "$B0_EVIDENCE_ROOT/public-schema-after.txt"
+            local after_sha after_lines
+            after_sha="$(sha256sum "$B0_EVIDENCE_ROOT/public-schema-after.txt" | cut -d' ' -f1)"
+            after_lines="$(wc -l < "$B0_EVIDENCE_ROOT/public-schema-after.txt" | tr -d ' ')"
+            test "$after_sha" = "$B0_PUBLIC_SCHEMA_BEFORE_SHA"
+            test "$after_lines" = "$B0_PUBLIC_SCHEMA_BEFORE_LINES"
+            cmp "$B0_EVIDENCE_ROOT/public-schema-before.txt" "$B0_EVIDENCE_ROOT/public-schema-after.txt"
+            printf 'DROP SCHEMA "%s" CASCADE;\n' "$schema" | psql "$B0_MANAGED_ADMIN_URL" -v ON_ERROR_STOP=1 >/dev/null
+            local remaining
+            remaining="$(psql "$B0_MANAGED_ADMIN_URL" -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM pg_namespace WHERE nspname = '$schema';")"
+            test "$remaining" = 0
+            B0_AFTER_SHA="$after_sha" B0_AFTER_LINES="$after_lines" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['B0_EVIDENCE_ROOT'])
+          payload = {
+            'schemaVersion': 1,
+            'status': 'PASS',
+            'randomSchema': os.environ['B0_ACCEPTANCE_SCHEMA'],
+            'randomSchemaDropped': True,
+            'publicSchemaUsed': False,
+            'publicSchemaUnchanged': True,
+            'productionDataUsed': False,
+            'publicSchemaBeforeSha256': os.environ['B0_PUBLIC_SCHEMA_BEFORE_SHA'],
+            'publicSchemaAfterSha256': os.environ['B0_AFTER_SHA'],
+            'publicSchemaBeforeLineCount': int(os.environ['B0_PUBLIC_SCHEMA_BEFORE_LINES']),
+            'publicSchemaAfterLineCount': int(os.environ['B0_AFTER_LINES']),
+          }
+          (root / 'schema-cleanup.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+          path = root / 'database-provenance.json'
+          database = json.loads(path.read_text(encoding='utf-8'))
+          database.update({'status': 'PASS', 'randomSchemaDropped': True, 'publicSchemaUnchanged': True,
+                           'publicSchemaAfterSha256': os.environ['B0_AFTER_SHA']})
+          path.write_text(json.dumps(database, indent=2) + '\n', encoding='utf-8')
+          PY
+          }
+
+          redact() {
+            ensure_root
+            python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          root = Path(os.environ['B0_EVIDENCE_ROOT'])
+          secrets = [os.environ.get(name, '') for name in (
+            'SUPABASE_DATABASE_URL', 'DATABASE_URL', 'B0_MANAGED_ADMIN_URL', 'DEEPSEEK_API_KEY', 'OPENOVEL_API_KEY'
+          )]
+          suffixes = {'.json', '.jsonl', '.log', '.md', '.txt'}
+          for path in root.rglob('*'):
+            if not path.is_file() or path.suffix.lower() not in suffixes:
+              continue
+            text = path.read_text(encoding='utf-8', errors='replace')
+            for value in sorted((value for value in secrets if value), key=len, reverse=True):
+              text = text.replace(value, '[REDACTED]')
+            text = re.sub(r'postgres(?:ql)?://[^\s\"\']+', '[REDACTED_DATABASE_URL]', text, flags=re.I)
+            text = re.sub(r'Bearer\s+[A-Za-z0-9._~+/=-]+', 'Bearer [REDACTED]', text, flags=re.I)
+            path.write_text(text, encoding='utf-8')
+          patterns = [re.compile(r'postgres(?:ql)?://', re.I), re.compile(r'Bearer\s+(?!\[REDACTED\])', re.I)]
+          failures = []
+          for path in root.rglob('*'):
+            if not path.is_file() or path.suffix.lower() not in suffixes:
+              continue
+            text = path.read_text(encoding='utf-8', errors='replace')
+            for pattern in patterns:
+              if pattern.search(text): failures.append(f'{path}:{pattern.pattern}')
+          if failures: raise SystemExit('redaction scan failed\n' + '\n'.join(failures))
+          (root / 'redaction-scan.txt').write_text('PASS\n', encoding='utf-8')
+          PY
+          }
+
+          finalize() {
+            ensure_root
+            required GITHUB_SHA
+            required GITHUB_RUN_ID
+            required GITHUB_RUN_ATTEMPT
+            python3 - <<'PY'
+          import hashlib, json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          root = Path(os.environ['B0_EVIDENCE_ROOT'])
+          result = json.loads((root / 'acceptance-result.json').read_text(encoding='utf-8'))
+          database = json.loads((root / 'database-provenance.json').read_text(encoding='utf-8'))
+          cleanup = json.loads((root / 'schema-cleanup.json').read_text(encoding='utf-8'))
+          if result.get('status') != 'PASS': raise SystemExit('formal acceptance result is not PASS')
+          if database.get('status') != 'PASS' or cleanup.get('status') != 'PASS': raise SystemExit('managed database cleanup is not PASS')
+          if database.get('selfHostedContainerUsedForFormalC8') is not False: raise SystemExit('container provenance cannot satisfy formal C8')
+          c8 = root.parent.parent / 'c8'
+          c8.mkdir(parents=True, exist_ok=True)
+          checkpoint = {
+            'schemaVersion': 1,
+            'checkpoint': 'B0_C8_MANAGED_NONPRODUCTION_VALIDATED',
+            'status': 'PASS',
+            'testedCodeSha': os.environ['GITHUB_SHA'],
+            'workflowRunId': os.environ['GITHUB_RUN_ID'],
+            'workflowRunAttempt': int(os.environ['GITHUB_RUN_ATTEMPT']),
+            'acceptanceTier': 'formal-c8',
+            'databaseProvenance': database['provenance'],
+            'environment': database['environment'],
+            'databaseSecretName': database['databaseSecretName'],
+            'providerSecretName': database['providerSecretName'],
+            'randomSchema': database['randomSchema'],
+            'randomSchemaDropped': True,
+            'publicSchemaUsed': False,
+            'publicSchemaUnchanged': True,
+            'productionDataUsed': False,
+            'selfHostedContainerUsedForFormalC8': False,
+            'evidenceRoot': str(root).replace('\\', '/'),
+          }
+          (c8 / 'checkpoint.json').write_text(json.dumps(checkpoint, indent=2) + '\n', encoding='utf-8')
+          rows = []
+          for path in sorted(p for p in root.rglob('*') if p.is_file() and p.name != 'artifact-catalog.json'):
+            data = path.read_bytes()
+            rows.append({'path': str(path).replace('\\', '/'), 'sizeBytes': len(data),
+                         'sha256': hashlib.sha256(data).hexdigest()})
+          catalog = {'schemaVersion': 1, 'testedCodeSha': os.environ['GITHUB_SHA'],
+                     'workflowRunId': os.environ['GITHUB_RUN_ID'],
+                     'generatedAt': datetime.now(timezone.utc).isoformat(), 'files': rows}
+          (root / 'artifact-catalog.json').write_text(json.dumps(catalog, indent=2) + '\n', encoding='utf-8')
+          PY
+          }
+
+          self_check() {
+            bash -n "$0"
+            echo B0_MANAGED_REAL_ACCEPTANCE_SELF_CHECK_OK
+          }
+
+          case "$command_name" in
+            prepare) prepare ;;
+            cleanup) cleanup ;;
+            redact) redact ;;
+            finalize) finalize ;;
+            self-check) self_check ;;
+            *) echo "Usage: $0 {prepare|cleanup|redact|finalize|self-check}" >&2; exit 2 ;;
+          esac
+          B0_MANAGED_SCRIPT
+          sed -i 's/^          //' scripts/acceptance/b0-managed-real-acceptance.sh
+          chmod +x scripts/acceptance/b0-managed-real-acceptance.sh
+
+          cat > .github/workflows/b0-candidate-real-acceptance.yml <<'B0_FORMAL_WORKFLOW'
+          name: B0 Formal Managed Supabase and Browser Acceptance
+
+          on:
+            workflow_dispatch:
+            push:
+              branches:
+                - codex/chatgpt-pro-maneuver-evidence-v1
+              paths:
+                - docs/auto-execute/B0_FORMAL_C8_TRIGGER.md
+
+          permissions:
+            contents: write
+            statuses: write
+
+          concurrency:
+            group: b0-formal-c8-${{ github.ref }}
+            cancel-in-progress: false
+
+          jobs:
+            formal-c8:
+              name: Managed non-production Supabase, DeepSeek, API, Web and browser
+              environment: "ourmanyworlds.com / test"
+              runs-on: ubuntu-latest
+              timeout-minutes: 240
+              env:
+                B0_EVIDENCE_ROOT: docs/auto-execute/evidence/b0/c9/runtime
+                B0_PROJECT_ROOT: ${{ github.workspace }}
+                B0_ACCEPTANCE_TIER: formal-c8
+                B0_ACCEPTANCE_ENVIRONMENT: "ourmanyworlds.com / test"
+                CANDIDATE_SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+                CANDIDATE_SUPABASE_TEST_DATABASE_URL: ${{ secrets.SUPABASE_TEST_DATABASE_URL }}
+                CANDIDATE_TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+                CANDIDATE_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+                CANDIDATE_DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+                CANDIDATE_OPENOVEL_DEEPSEEK_API_KEY: ${{ secrets.OPENOVEL_DEEPSEEK_API_KEY }}
+              steps:
+                - name: Publish exact run locator
+                  uses: actions/github-script@v7
+                  with:
+                    script: |
+                      await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+                        sha: context.sha, state: "pending", context: "b0/formal-c8",
+                        description: `formal managed C8 running in ${context.runId}`,
+                        target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+
+                - uses: actions/checkout@v4
+                  with:
+                    ref: ${{ github.sha }}
+                    fetch-depth: 2
+
+                - name: Verify exact candidate checkout
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+                    git fetch origin "$GITHUB_REF_NAME"
+                    test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+
+                - name: Select non-production credentials by name without printing values
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    database_value=''; database_name=''; provider_value=''; provider_name=''
+                    if [ -n "${CANDIDATE_SUPABASE_DATABASE_URL:-}" ]; then database_value="$CANDIDATE_SUPABASE_DATABASE_URL"; database_name='SUPABASE_DATABASE_URL';
+                    elif [ -n "${CANDIDATE_SUPABASE_TEST_DATABASE_URL:-}" ]; then database_value="$CANDIDATE_SUPABASE_TEST_DATABASE_URL"; database_name='SUPABASE_TEST_DATABASE_URL';
+                    elif [ -n "${CANDIDATE_TEST_DATABASE_URL:-}" ]; then database_value="$CANDIDATE_TEST_DATABASE_URL"; database_name='TEST_DATABASE_URL';
+                    elif [ -n "${CANDIDATE_DATABASE_URL:-}" ]; then database_value="$CANDIDATE_DATABASE_URL"; database_name='DATABASE_URL'; fi
+                    if [ -n "${CANDIDATE_DEEPSEEK_API_KEY:-}" ]; then provider_value="$CANDIDATE_DEEPSEEK_API_KEY"; provider_name='DEEPSEEK_API_KEY';
+                    elif [ -n "${CANDIDATE_OPENOVEL_DEEPSEEK_API_KEY:-}" ]; then provider_value="$CANDIDATE_OPENOVEL_DEEPSEEK_API_KEY"; provider_name='OPENOVEL_DEEPSEEK_API_KEY'; fi
+                    test -n "$database_value" || { echo 'No supported managed non-production Supabase secret is configured.' >&2; exit 1; }
+                    test -n "$provider_value" || { echo 'No supported real DeepSeek secret is configured.' >&2; exit 1; }
+                    echo "::add-mask::$database_value"; echo "::add-mask::$provider_value"
+                    {
+                      echo "SUPABASE_DATABASE_URL=$database_value"
+                      echo "DEEPSEEK_API_KEY=$provider_value"
+                      echo "OPENOVEL_API_KEY=$provider_value"
+                      echo "B0_DATABASE_SECRET_NAME=$database_name"
+                      echo "B0_PROVIDER_SECRET_NAME=$provider_name"
+                    } >> "$GITHUB_ENV"
+                    echo "Using configured names $database_name and $provider_name; values remain masked."
+
+                - uses: pnpm/action-setup@v4
+                  with:
+                    version: 10
+                - uses: actions/setup-node@v4
+                  with:
+                    node-version: 22
+                    cache: pnpm
+                - name: Install PostgreSQL client
+                  run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+                - name: Frozen install and Prisma generation
+                  run: pnpm install --frozen-lockfile && pnpm db:generate && pnpm typecheck:b0:real-acceptance
+                - name: Build exact runtime binaries
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    pnpm --filter @ai-story/shared build
+                    pnpm --filter @ai-story/templates build
+                    pnpm --filter @apps/api build
+                    pnpm --filter @apps/openovel-runtime build
+                    pnpm --filter @apps/web typecheck
+                    pnpm --filter @apps/web build
+                - name: Prepare random managed Supabase schema
+                  run: scripts/acceptance/b0-managed-real-acceptance.sh prepare
+                - name: Apply migrations only to random schema
+                  run: pnpm prisma migrate deploy
+                - name: Execute formal six-window acceptance
+                  id: acceptance
+                  env:
+                    GITHUB_SHA: ${{ github.sha }}
+                    CHROME_PATH: /usr/bin/google-chrome
+                    OPENOVEL_PROVIDER_BASE_URL: https://api.deepseek.com
+                    OPENOVEL_MODEL: deepseek-chat
+                    B0_DATABASE_PROVENANCE: supabase-cloud-nonproduction-random-schema
+                    B0_PROVIDER_PROVENANCE: deepseek-api-real
+                  run: pnpm test:b0:real-acceptance
+                - name: Clean random schema and prove public schema unchanged
+                  id: cleanup
+                  if: always() && env.B0_MANAGED_ADMIN_URL != ''
+                  run: scripts/acceptance/b0-managed-real-acceptance.sh cleanup
+                - name: Redact and scan evidence
+                  id: redaction
+                  if: always()
+                  run: scripts/acceptance/b0-managed-real-acceptance.sh redact
+                - name: Finalize managed C8 runtime evidence
+                  id: finalize
+                  if: success()
+                  run: scripts/acceptance/b0-managed-real-acceptance.sh finalize
+                - name: Upload sanitized evidence
+                  if: always()
+                  uses: actions/upload-artifact@v4
+                  with:
+                    name: b0-formal-c8-${{ github.sha }}
+                    path: |
+                      docs/auto-execute/evidence/b0/c8/checkpoint.json
+                      docs/auto-execute/evidence/b0/c9/runtime
+                    if-no-files-found: warn
+                    retention-days: 14
+                - name: Commit passing runtime evidence as docs only
+                  id: evidence_commit
+                  if: success()
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    git fetch origin "$GITHUB_REF_NAME"
+                    test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+                    git config user.name "github-actions[bot]"
+                    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                    git add docs/auto-execute/evidence/b0/c8/checkpoint.json docs/auto-execute/evidence/b0/c9/runtime
+                    git diff --cached --check
+                    test -n "$(git diff --cached --name-only)"
+                    if git diff --cached --name-only | grep -Ev '^docs/auto-execute/evidence/b0/'; then exit 1; fi
+                    git commit -m "test(b0): record formal managed C8 runtime evidence"
+                    git push origin "HEAD:$GITHUB_REF_NAME"
+                - name: Publish formal outcome
+                  if: always()
+                  uses: actions/github-script@v7
+                  env:
+                    ACCEPTANCE: ${{ steps.acceptance.outcome }}
+                    CLEANUP: ${{ steps.cleanup.outcome }}
+                    REDACTION: ${{ steps.redaction.outcome }}
+                    FINALIZE: ${{ steps.finalize.outcome }}
+                    EVIDENCE: ${{ steps.evidence_commit.outcome }}
+                    JOB_STATUS: ${{ job.status }}
+                  with:
+                    script: |
+                      const ok = process.env.JOB_STATUS === "success" && process.env.ACCEPTANCE === "success"
+                        && process.env.CLEANUP === "success" && process.env.REDACTION === "success"
+                        && process.env.FINALIZE === "success" && process.env.EVIDENCE === "success";
+                      await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+                        sha: context.sha, state: ok ? "success" : "failure", context: "b0/formal-c8",
+                        description: `formal managed C8 ${ok ? "passed" : "failed closed"} in ${context.runId}`,
+                        target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+                      if (!ok) core.setFailed(`formal C8 did not close: acceptance=${process.env.ACCEPTANCE}, cleanup=${process.env.CLEANUP}, redaction=${process.env.REDACTION}, finalize=${process.env.FINALIZE}, evidence=${process.env.EVIDENCE}`);
+          B0_FORMAL_WORKFLOW
+          sed -i 's/^          //' .github/workflows/b0-candidate-real-acceptance.yml
+
+          cat > scripts/acceptance/b0-managed-acceptance-contract.mjs <<'B0_CONTRACT'
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          const workflow = readFileSync(".github/workflows/b0-candidate-real-acceptance.yml", "utf8");
+          const helper = readFileSync("scripts/acceptance/b0-managed-real-acceptance.sh", "utf8");
+          assert.match(workflow, /environment: "ourmanyworlds\.com \/ test"/);
+          assert.match(workflow, /B0_ACCEPTANCE_TIER: formal-c8/);
+          assert.match(workflow, /supabase-cloud-nonproduction-random-schema/);
+          assert.match(workflow, /OPENOVEL_PROVIDER_BASE_URL: https:\/\/api\.deepseek\.com/);
+          assert.match(workflow, /docs\/auto-execute\/evidence\/b0\/c8\/checkpoint\.json/);
+          assert.doesNotMatch(workflow, /supabase\/postgres:/);
+          assert.doesNotMatch(workflow, /ollama\/ollama:/);
+          assert.match(helper, /selfHostedContainerUsedForFormalC8/);
+          assert.match(helper, /publicSchemaUnchanged/);
+          assert.match(helper, /randomSchemaDropped/);
+          console.log("B0_MANAGED_ACCEPTANCE_CONTRACT_PASS");
+          B0_CONTRACT
+          sed -i 's/^          //' scripts/acceptance/b0-managed-acceptance-contract.mjs
+
+          bash -n scripts/acceptance/b0-managed-real-acceptance.sh
+          scripts/acceptance/b0-managed-real-acceptance.sh self-check
+          node scripts/acceptance/b0-acceptance-provenance-contract.mjs
+          node scripts/acceptance/b0-managed-acceptance-contract.mjs
+          git diff --check
+
+      - name: Frozen install and compile verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+
+      - name: Commit completed stage 2 as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/b0-candidate-real-acceptance.yml \
+            scripts/acceptance/b0-managed-real-acceptance.sh \
+            scripts/acceptance/b0-managed-acceptance-contract.mjs
+          git rm .github/workflows/b0-stage2-managed-c8-runtime.yml
+          git diff --cached --check
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/b0-candidate-real-acceptance.yml
+          .github/workflows/b0-stage2-managed-c8-runtime.yml
+          scripts/acceptance/b0-managed-acceptance-contract.mjs
+          scripts/acceptance/b0-managed-real-acceptance.sh
+          EOF
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          LC_ALL=C sort -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "ci(b0): install managed non-production C8 runtime"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish stage outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({ owner: context.repo.owner, repo: context.repo.repo,
+              sha: context.sha, state: success ? "success" : "failure", context: "b0/stage2-managed-runtime",
+              description: `stage 2 managed runtime ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` });
+            if (!success) core.setFailed('Stage 2 managed runtime failed');

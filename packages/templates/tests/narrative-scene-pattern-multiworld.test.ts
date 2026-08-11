@@ -68,23 +68,31 @@ test("the dramatic-beat planner binds a second world without story vocabulary", 
       "actor.inspector": "Port Inspector",
       "actor.engineer": "Chief Engineer",
     },
+    playerActorRef: "actor.captain",
     pressureActorRefs: ["actor.inspector"],
     actorPolicies: [
       { actorRef: "actor.inspector", goal: "Keep the quarantine legally enforceable." },
       { actorRef: "actor.engineer", goal: "Prevent the reactor from losing coolant." },
     ],
+    playerResultMeaning: "The captain holds the cargo lift closed pending inspection.",
     pressureMeaning: "The inspector seals the cargo lift and asks for the manifest.",
+    visibleConsequenceMeaning: "The sealed lift now blocks the engineer's emergency access.",
     decisionStopMeaning: "The captain must decide whether to surrender the manifest or open the lift for emergency repairs.",
   });
 
   assert.equal(plan.sceneRef, "orbital-dock.control-room");
   assert.deepEqual(plan.steps.map((step) => step.kind), [
+    "PLAYER_RESULT",
     "COUNTERMOVE",
     "REACTION_WINDOW",
+    "VISIBLE_CONSEQUENCE",
     "DECISION_PRESSURE",
   ]);
-  assert.deepEqual(plan.steps[0]?.actorLabels, ["Port Inspector"]);
-  assert.match(plan.steps[0]?.requiredMeaning || "", /seals the cargo lift/u);
+  assert.deepEqual(plan.steps[0]?.actorLabels, ["Captain"]);
+  assert.match(
+    plan.steps.find((step) => step.kind === "COUNTERMOVE")?.requiredMeaning || "",
+    /seals the cargo lift/u,
+  );
   assert.equal(plan.steps.every((step) => step.durableMutationAllowed === false), true);
   assert.doesNotMatch(JSON.stringify(plan), /县册|巡抚|回文|桑田/u);
 });

@@ -1,0 +1,233 @@
+name: B0 Stage 11 Real Browser Six-Window Repair V6 Selector Fix
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-stage11-browser-v4-node24.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-stage11-real-browser-v6-selector-fix
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    env:
+      B0_DATABASE_IMAGE: supabase/postgres:15.14.1.157-mmlb_amd64
+      B0_PROVIDER_IMAGE: ollama/ollama:0.32.5
+      B0_PROVIDER_MODEL: qwen2.5:1.5b
+      B0_ACCEPTANCE_TIER: engineering-selfhosted
+      B0_ACCEPTANCE_ENVIRONMENT: github-hosted-isolated-engineering
+      B0_EVIDENCE_ROOT: .artifacts/b0-stage11-v6/${{ github.sha }}
+      B0_PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Publish locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/stage11-real-browser-v6",
+              description: `real browser selector repair v6 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 3
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Verify exact input and apply reviewed browser patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "eaf1de4f08c318c2abb3b6fa43566d61868e3fa5"
+          test "$(git diff --name-only HEAD^..HEAD)" = ".github/workflows/b0-stage11-browser-v4-node24.yml"
+          test "$(git hash-object scripts/acceptance/b0-candidate-real-flow.ts)" = "f434c6bf4c2d6d26d1231fd9343e87672ad58bef"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/b0-stage11-browser-window-driver.yml').read_text(encoding='utf-8')
+          start_marker = "          python3 - <<'PY'\n"
+          start = workflow.index(start_marker) + len(start_marker)
+          end = workflow.index("\n          PY", start)
+          block = workflow[start:end].splitlines()
+          script = "\n".join(line[10:] if line.startswith("          ") else line for line in block) + "\n"
+          Path('/tmp/b0-stage11-reviewed-patch.py').write_text(script, encoding='utf-8')
+          PY
+
+          python3 /tmp/b0-stage11-reviewed-patch.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/acceptance/b0-candidate-real-flow.ts')
+          source = path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  "`Boolean(document.querySelector('[data-mv1-kind=\"CONTACT\"]:not([disabled]))')`",
+                  "`(() => { const element = document.querySelector('[data-mv1-kind=\"CONTACT\"]'); return Boolean(element && !element.disabled); })()`",
+              ),
+              (
+                  "`Boolean(document.querySelector('[data-mv1-preview]:not([disabled]))')`",
+                  "`(() => { const element = document.querySelector('[data-mv1-preview]'); return Boolean(element && !element.disabled); })()`",
+              ),
+              (
+                  "`Boolean(document.querySelector('[data-mv1-confirm]:not([disabled]))') || Boolean(document.querySelector('[role=\"alert\"]'))`",
+                  "`(() => { const element = document.querySelector('[data-mv1-confirm]'); return Boolean((element && !element.disabled) || document.querySelector('[role=\"alert\"]')); })()`",
+              ),
+              (
+                  "`Boolean(document.querySelector('[data-b0-ready]:not([disabled]))')`",
+                  "`(() => { const element = document.querySelector('[data-b0-ready]'); return Boolean(element && !element.disabled); })()`",
+              ),
+          ]
+          for old, new in replacements:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'CDP selector repair anchor count={count}: {old}')
+              source = source.replace(old, new, 1)
+
+          old_exception = '    if (result.exceptionDetails) throw new Error(`${this.name}: ${result.exceptionDetails.text || "browser evaluation failed"}`);'
+          new_exception = '''    if (result.exceptionDetails) {
+              const details = object(result.exceptionDetails);
+              const exception = object(details.exception);
+              const description = String(exception.description || exception.value || details.text || "browser evaluation failed");
+              throw new Error(`${this.name}: ${description}`);
+            }'''.replace('            ', '')
+          if source.count(old_exception) != 1:
+              raise SystemExit(f'CDP exception detail anchor count={source.count(old_exception)}')
+          source = source.replace(old_exception, new_exception, 1)
+
+          if ":not([disabled]))')" in source:
+              raise SystemExit('invalid selector parenthesis remains in browser driver')
+          path.write_text(source, encoding='utf-8')
+          PY
+
+          git diff --check
+          grep -F "const element = document.querySelector('[data-mv1-kind=\"CONTACT\"]');" scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F "const element = document.querySelector('[data-mv1-preview]');" scripts/acceptance/b0-candidate-real-flow.ts
+          grep -F "const description = String(exception.description" scripts/acceptance/b0-candidate-real-flow.ts
+          ! grep -F ":not([disabled]))')" scripts/acceptance/b0-candidate-real-flow.ts
+
+      - name: Frozen install and complete focused verification on Node 24
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @apps/web test
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-pipeline
+          pnpm --filter @apps/api test:b0-ops
+
+      - name: Build exact runtime binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/openovel-runtime build
+          pnpm --filter @apps/web build
+
+      - name: Start isolated Supabase PostgreSQL
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-database
+
+      - name: Start real local Ollama
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh prepare-provider
+
+      - name: Execute real three-browser six-window acceptance
+        shell: bash
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: pnpm test:b0:real-acceptance
+
+      - name: Prove product traffic reached provider
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh provider-proof
+
+      - name: Clean isolated infrastructure
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh cleanup || true
+
+      - name: Redact engineering evidence
+        if: always()
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh redact || true
+
+      - name: Finalize engineering evidence
+        shell: bash
+        run: scripts/acceptance/b0-selfhosted-real-acceptance.sh finalize
+
+      - name: Upload engineering evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-stage11-real-browser-v6-${{ github.sha }}
+          path: ${{ env.B0_EVIDENCE_ROOT }}
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Commit verified repair as ordinary fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$GITHUB_REF_NAME"
+          test "$(git rev-parse origin/$GITHUB_REF_NAME)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/acceptance/b0-candidate-real-flow.ts
+          git diff --cached --check
+          test "$(git diff --cached --name-only)" = "scripts/acceptance/b0-candidate-real-flow.ts"
+          git commit -m "test(b0): drive synchronized windows through real browsers"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/stage11-real-browser-v6",
+              description: `real browser selector repair v6 ${success ? "passed" : "failed"} in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("real browser selector repair v6 failed");
