@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "aadbd3b558ea2c9312eaf3f4053f65b649a695c6"
+          test "$(git rev-parse HEAD^)" = "ba55f6f7e21c493256a817679f22c999bf335681"
           git merge-base --is-ancestor 4189aae4525401cfa39c2593658ab50275784fdd HEAD
 
       - name: Apply product closure
