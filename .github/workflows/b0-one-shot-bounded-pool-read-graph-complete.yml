@@ -115,6 +115,8 @@ jobs:
           valid = False
           decoded = b""
           combined = ""
+          recovery_strategy = None
+          excision_offset = None
           if chosen is not None:
               combined = parts[0]
               for part, overlap in zip(parts[1:], chosen):
@@ -122,8 +124,35 @@ jobs:
               try:
                   decoded = base64.b64decode(combined, validate=True)
                   valid = len(decoded) == expected_bytes and hashlib.sha256(decoded).hexdigest() == expected_sha
+                  if valid:
+                      recovery_strategy = "adjacent-overlap-removal"
               except Exception:
                   valid = False
+
+          # The remote diagnostic proved that chunk-03 is the only anomalously
+          # long segment: 12,144 characters versus the expected 8,774 after
+          # removing the exact 3,370-character excess. Search that one bounded
+          # corruption surface and accept only the immutable byte size + SHA.
+          if not valid and len(parts[3]) - removal_target >= 0:
+              original = parts[3]
+              prefix = "".join(parts[:3])
+              suffix = "".join(parts[4:])
+              for offset in range(len(original) - removal_target + 1):
+                  candidate = prefix + original[:offset] + original[offset + removal_target:] + suffix
+                  try:
+                      candidate_bytes = base64.b64decode(candidate, validate=True)
+                  except Exception:
+                      continue
+                  if len(candidate_bytes) != expected_bytes:
+                      continue
+                  if hashlib.sha256(candidate_bytes).hexdigest() != expected_sha:
+                      continue
+                  combined = candidate
+                  decoded = candidate_bytes
+                  valid = True
+                  recovery_strategy = "chunk-03-contiguous-excision"
+                  excision_offset = offset
+                  break
 
           diagnostic = {
               "schemaVersion": 1,
@@ -134,6 +163,8 @@ jobs:
               "requiredOverlapRemoval": removal_target,
               "candidateOverlapLengths": candidates,
               "chosenOverlaps": list(chosen) if chosen is not None else None,
+              "recoveryStrategy": recovery_strategy,
+              "chunk03ExcisionOffset": excision_offset,
               "reconstructedBase64Length": len(combined),
               "decodedBytes": len(decoded),
               "decodedSha256": hashlib.sha256(decoded).hexdigest() if decoded else None,
@@ -159,6 +190,7 @@ jobs:
           path: |
             /tmp/chunk-diagnostic.json
             /tmp/b0.patch
+            docs/auto-execute/evidence/b0/_tmp/bounded-pool-read-graph/*.b64
           if-no-files-found: warn
           retention-days: 3
 
