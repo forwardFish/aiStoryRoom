@@ -154,3 +154,101 @@ test("write transactions do not retry P2028 after their callback may have run", 
     timeout: 30_000,
   });
 });
+
+
+
+test("deadline recovery reports the exact window when a background sweep already completed it", async () => {
+  const now = new Date("2026-08-11T12:00:00.000Z");
+  const row = windowRow();
+  let freezeCalls = 0;
+  let observedQuery: any;
+  const service = new B0WindowCoordinatorService({
+    actionWindow: {
+      findMany: async (args: any) => {
+        observedQuery = args;
+        return [
+{
+  id: row.id,
+  status: "COMPLETED",
+  closingReason: "DEADLINE",
+  mainClosesAt: new Date(now.getTime() - 1_000),
+  configJson: row.configJson,
+},
+{
+  id: "window.legacy",
+  status: "COMPLETED",
+  closingReason: "DEADLINE",
+  mainClosesAt: new Date(now.getTime() - 1_000),
+  configJson: { schemaVersion: "legacy-window-v1" },
+},
+        ];
+      },
+    },
+  } as never);
+  (service as any).freezeDeadline = async () => {
+    freezeCalls += 1;
+    throw new Error("completed deadline rows must not be frozen twice");
+  };
+
+  const recovered = await service.recoverExpired(now);
+
+  assert.deepEqual(recovered, [{ windowId: row.id, status: "ALREADY_FROZEN" }]);
+  assert.equal(freezeCalls, 0);
+  assert.equal(observedQuery.where.mainClosesAt.lte, now);
+  assert.equal(observedQuery.where.OR.length, 3);
+});
+
+test("deadline recovery reconciles an OPEN scan lost to a concurrent recovery owner", async () => {
+  const now = new Date("2026-08-11T12:00:00.000Z");
+  const row = windowRow();
+  const service = new B0WindowCoordinatorService({
+    actionWindow: {
+      findMany: async () => [{
+        id: row.id,
+        status: "OPEN",
+        closingReason: null,
+        mainClosesAt: new Date(now.getTime() - 1_000),
+        configJson: row.configJson,
+      }],
+      findUnique: async () => ({
+        status: "SETTLING",
+        closingReason: "DEADLINE",
+        mainClosesAt: new Date(now.getTime() - 1_000),
+        configJson: row.configJson,
+      }),
+    },
+  } as never);
+  (service as any).freezeDeadline = async () => {
+    throw new Error("WINDOW_ALREADY_LOCKED");
+  };
+
+  const recovered = await service.recoverExpired(now);
+
+  assert.deepEqual(recovered, [{ windowId: row.id, status: "ALREADY_FROZEN" }]);
+});
+
+test("deadline recovery still freezes an expired OPEN B0 window exactly once", async () => {
+  const now = new Date("2026-08-11T12:00:00.000Z");
+  const row = windowRow();
+  const calls: Array<{ windowId: string; now: Date }> = [];
+  const service = new B0WindowCoordinatorService({
+    actionWindow: {
+      findMany: async () => [{
+        id: row.id,
+        status: "OPEN",
+        closingReason: null,
+        mainClosesAt: new Date(now.getTime() - 1_000),
+        configJson: row.configJson,
+      }],
+    },
+  } as never);
+  (service as any).freezeDeadline = async (windowId: string, observedNow: Date) => {
+    calls.push({ windowId, now: observedNow });
+    return { status: "FROZEN", envelope: null };
+  };
+
+  const recovered = await service.recoverExpired(now);
+
+  assert.deepEqual(recovered, [{ windowId: row.id, status: "FROZEN" }]);
+  assert.deepEqual(calls, [{ windowId: row.id, now }]);
+});

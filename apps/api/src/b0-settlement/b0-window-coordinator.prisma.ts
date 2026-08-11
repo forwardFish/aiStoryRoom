@@ -29,6 +29,15 @@ import {
 type Tx = Prisma.TransactionClient;
 
 const B0_PROJECTION_STABILITY_ATTEMPTS = 4;
+const B0_DEADLINE_RECOVERY_ACKNOWLEDGEMENT_MS = 60_000;
+const B0_DEADLINE_IN_FLIGHT_STATUSES = [
+  "LOCKED",
+  "SETTLING",
+  "COMMITTED",
+  "PUBLISHING",
+  "FAILED_RETRYABLE",
+  "FAILED_HARD",
+] as const;
 
 export type CreateB0WindowCommandV1 = {
   runId: string;
@@ -273,15 +282,69 @@ export class B0WindowCoordinatorService {
   }
 
   async recoverExpired(now = new Date()): Promise<Array<{ windowId: string; status: string }>> {
+    const acknowledgedAfter = new Date(now.getTime() - B0_DEADLINE_RECOVERY_ACKNOWLEDGEMENT_MS);
     const windows = await this.prisma.actionWindow.findMany({
-      where: { status: "OPEN", mainClosesAt: { lte: now } },
-      select: { id: true },
+      where: {
+        mainClosesAt: { lte: now },
+        OR: [
+{ status: "OPEN" },
+{
+  closingReason: "DEADLINE",
+  status: { in: [...B0_DEADLINE_IN_FLIGHT_STATUSES] },
+},
+{
+  closingReason: "DEADLINE",
+  status: "COMPLETED",
+  updatedAt: { gte: acknowledgedAfter },
+},
+        ],
+      },
+      select: {
+        id: true,
+        status: true,
+        closingReason: true,
+        mainClosesAt: true,
+        configJson: true,
+      },
       orderBy: { createdAt: "asc" },
     });
     const results: Array<{ windowId: string; status: string }> = [];
     for (const window of windows) {
-      const result = await this.freezeDeadline(window.id, now);
-      results.push({ windowId: window.id, status: result.status });
+      if (jsonRecord(window.configJson)?.schemaVersion !== "b0-window-config-v1") continue;
+      if (window.status !== "OPEN") {
+        if (window.closingReason === "DEADLINE") {
+results.push({ windowId: window.id, status: "ALREADY_FROZEN" });
+        }
+        continue;
+      }
+      try {
+        const result = await this.freezeDeadline(window.id, now);
+        results.push({ windowId: window.id, status: result.status });
+      } catch (error) {
+        // The embedded or independent recovery worker may win after the OPEN
+        // scan but before this caller enters the serializable freeze. Re-read
+        // the durable row and acknowledge only a proven deadline winner; all
+        // unrelated failures remain fail-closed.
+        const current = await this.prisma.actionWindow.findUnique({
+where: { id: window.id },
+select: {
+  status: true,
+  closingReason: true,
+  mainClosesAt: true,
+  configJson: true,
+},
+        });
+        const deadlineRecovered = Boolean(
+current
+&& current.status !== "OPEN"
+&& current.closingReason === "DEADLINE"
+&& current.mainClosesAt
+&& current.mainClosesAt.getTime() <= now.getTime()
+&& jsonRecord(current.configJson)?.schemaVersion === "b0-window-config-v1",
+        );
+        if (!deadlineRecovered) throw error;
+        results.push({ windowId: window.id, status: "ALREADY_FROZEN" });
+      }
     }
     return results;
   }
