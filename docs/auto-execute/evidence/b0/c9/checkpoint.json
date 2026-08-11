@@ -1,9 +1,14 @@
 {
-  "schemaVersion": 2,
-  "generatedAtUtc": "2026-08-10T17:43:41.935825+00:00",
-  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
+  "schemaVersion": 3,
+  "generatedAtUtc": "2026-08-11T00:30:00Z",
+  "formalProbeSha": "df9deb4337260b7edc3c78bde480e4efe8d06f55",
+  "testedCodeSha": null,
   "status": "EXTERNAL_BLOCKED",
-  "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED",
+  "classification": "FORMAL_MANAGED_SUPABASE_AND_PROVIDER_CREDENTIALS_MISSING",
+  "userTestReady": false,
   "candidateBranchReady": false,
-  "completionMarkersAllowed": false
+  "completionMarkersAllowed": false,
+  "formalC8Executed": false,
+  "completeCredentialPairFound": false,
+  "blockerEvidence": "../c8/formal-blockers/df9deb4337260b7edc3c78bde480e4efe8d06f55/credential-presence.json"
 }
