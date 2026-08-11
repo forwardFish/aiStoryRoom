@@ -116,7 +116,19 @@ function parseSeat(raw: Record<string, any>): PressureContentSeat {
   return {
     seatId: String(raw.seatId || ""),
     roleKey: String(raw.roleKey || ""),
+    displayName: String(raw.displayName || ""),
     currentActorId: String(raw.currentActorId || ""),
+    institutionalMission: String(raw.institutionalMission || ""),
+    privatePressure: String(raw.privatePressure || ""),
+    misbeliefs: strings(raw.misbeliefs),
+    ruleHint: String(raw.ruleHint || ""),
+    dialogueSeeds: array<Record<string, any>>(raw.dialogueSeeds).map((seed) => ({
+      dialogueSeedId: String(seed.dialogueSeedId || ""),
+      text: String(seed.text || ""),
+      purpose: String(seed.purpose || ""),
+      signatureLine: Boolean(seed.signatureLine),
+      applicableObjectIds: strings(seed.applicableObjectIds),
+    })),
     knownFactIds: knownFactIds.length ? knownFactIds : knownFacts.map((fact) => fact.factId),
     unknownFactIds: strings(raw.unknownFactIds),
     knownFacts,
@@ -241,7 +253,9 @@ export function loadPressureRuntimeContent(registryPath: string, strategyVersion
     const selectorMap = record(selector.selectors);
     const runtimeSeats = array<Record<string, any>>(seatContent.seats).map(parseSeat);
     for (const runtimeSeat of runtimeSeats) {
-      if (!runtimeSeat.roleKey) runtimeSeat.roleKey = String(seatsById.get(runtimeSeat.seatId)?.roleKey || "");
+      const globalSeat = seatsById.get(runtimeSeat.seatId);
+      if (!runtimeSeat.roleKey) runtimeSeat.roleKey = String(globalSeat?.roleKey || "");
+      if (!runtimeSeat.displayName) runtimeSeat.displayName = String(globalSeat?.displayName || runtimeSeat.roleKey || runtimeSeat.seatId);
     }
     const budget = record(node.actionBudget);
     const startState = record(node.startState);

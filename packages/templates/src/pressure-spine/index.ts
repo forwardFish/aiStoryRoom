@@ -6,3 +6,7 @@ export * from "./loader";
 export * from "./types";
 export * from "./validator";
 export * from "./runtime/index";
+
+export * from "./presentation/narrative";
+export * from "./presentation/projection";
+export * from "./presentation/finale";

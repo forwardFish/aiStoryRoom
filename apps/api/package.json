@@ -22,7 +22,7 @@
     "test:credits-consumption": "node --import tsx --test src/config/credit-consumption.config.spec.ts src/credits/credit-policy.spec.ts src/credits/credits.service.spec.ts src/credits/credit-consumption.service.spec.ts src/credits/run-sponsorship.service.spec.ts src/credits/credit-charge-reconciler.service.spec.ts src/observability/operational-metrics.spec.ts",
     "test:world-credits": "tsx ../../scripts/e2e/world-credits-local.ts",
     "test:openovel": "node --import tsx --test src/openovel-adapter/*.spec.ts",
-    "test:pressure-runtime": "cd ../.. && tsx --tsconfig apps/api/tsconfig.json --test apps/api/src/continuous-strategy/pressure-spine-runtime.service.spec.ts apps/api/src/continuous-strategy/pressure-spine-viewer.spec.ts"
+    "test:pressure-runtime": "cd ../.. && tsx --tsconfig apps/api/tsconfig.json --test apps/api/src/continuous-strategy/pressure-spine-runtime.service.spec.ts apps/api/src/continuous-strategy/pressure-spine-viewer.spec.ts apps/api/src/continuous-strategy/pressure-role-agent-live.spec.ts apps/api/src/continuous-strategy/pressure-narrative-runtime.service.spec.ts"
   },
   "dependencies": {
     "@ai-story/shared": "workspace:*",

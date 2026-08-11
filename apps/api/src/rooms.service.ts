@@ -694,10 +694,13 @@ export class RoomsService {
     }
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.start(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.start(user, roomId);
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION && engine.strategyVersion === PRESSURE_STRATEGY_VERSION) {
+      return this.commands.startPressureRun(user, roomId);
+    }
     const room = await this.requireWaitingMember(user, roomId);
     if (room.engineVersion === CONTINUOUS_ENGINE_VERSION) {
       const started = await this.actionWindows.start(user, roomId);
-      return { ...started, gameProjection: engine.strategyVersion === PRESSURE_STRATEGY_VERSION ? await this.commands.pressureGame(user, roomId) : await this.memberProjections.game(user, roomId) };
+      return { ...started, gameProjection: await this.memberProjections.game(user, roomId) };
     }
     if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the host can start the game" });
     const state = roomState(room.stateJson);
@@ -803,6 +806,10 @@ export class RoomsService {
       },
       submittedRoleIds: actions.filter((action: any) => action.status === "accepted").map((action: any) => action.roleId)
     };
+  }
+
+  async acknowledgePressurePrologue(user: AuthenticatedUser, roomId: string, command: unknown) {
+    return this.commands.acknowledgePressurePrologue(user, roomId, command);
   }
 
   async previewPressureAction(user: AuthenticatedUser, roomId: string, command: unknown) {

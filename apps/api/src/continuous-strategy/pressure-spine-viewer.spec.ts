@@ -39,3 +39,22 @@ test("accepted content produces a six-seat actionable viewer projection", () => 
   assert.match(projection.publicScene.text, /总督府|河图|急报/);
   assert.match(projection.privateScene.text, /胡宗宪|海防|堰口/);
 });
+
+test("P0 projects a viewer-safe locked prologue with no action suggestions", () => {
+  const content = loadPressureRuntimeContent(registryPath, "sangtian_pressure_v1_0");
+  const state = initializePressureRuntime(content, { runId: "run.prologue", runSeed: "seed.prologue", nowEpochMs: 1_000 });
+  const roles = content.seatIds.map((seatId) => ({ id: `role.${seatId}`, roleKey: state.seats[seatId].roleKey }));
+  const projection = buildPressureGameProjection({
+    run: { id: state.runId, version: 2, status: "playing", roles, roleControls: [] },
+    state,
+    content,
+    viewerSeatId: "seat.zhejiang_governor",
+  }) as any;
+  assert.equal(projection.run.phase, "P0_PROJECTING");
+  assert.equal(projection.prologue.status, "AWAITING_ACK");
+  assert.equal(projection.prologue.locked, true);
+  assert.equal(projection.actionSurface.locked, true);
+  assert.deepEqual(projection.actionSurface.suggestedInputs, []);
+  assert.match(projection.publicScene.text, /国库|桑田|浙江|诏/u);
+  assert.match(projection.privateScene.text, /总督|军务|责任/u);
+});

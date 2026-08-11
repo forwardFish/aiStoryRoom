@@ -224,10 +224,24 @@ export type PressureContentKnownFact = {
   eventId: string | null;
 };
 
+export type PressureContentDialogueSeed = {
+  dialogueSeedId: string;
+  text: string;
+  purpose: string;
+  signatureLine: boolean;
+  applicableObjectIds: string[];
+};
+
 export type PressureContentSeat = {
   seatId: string;
   roleKey: string;
+  displayName: string;
   currentActorId: string;
+  institutionalMission: string;
+  privatePressure: string;
+  misbeliefs: string[];
+  ruleHint: string;
+  dialogueSeeds: PressureContentDialogueSeed[];
   knownFactIds: string[];
   unknownFactIds: string[];
   knownFacts: PressureContentKnownFact[];

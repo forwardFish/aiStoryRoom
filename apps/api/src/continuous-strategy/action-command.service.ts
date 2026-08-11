@@ -64,6 +64,16 @@ export class ActionCommandService {
     return this.pressureRuntime.confirm(user, roomId, command, previewToken);
   }
 
+  async startPressureRun(user: AuthenticatedUser, roomId: string) {
+    if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
+    return this.pressureRuntime.startRun(user, roomId);
+  }
+
+  async acknowledgePressurePrologue(user: AuthenticatedUser, roomId: string, command: unknown) {
+    if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
+    return this.pressureRuntime.acknowledgePrologue(user, roomId, command);
+  }
+
   async pressureGame(user: AuthenticatedUser, roomId: string) {
     if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
     return this.pressureRuntime.gameProjection(user, roomId);

@@ -5,6 +5,12 @@ import type {
   PressureRuntimeContent,
   PressureRuntimeState,
 } from "@ai-story/templates";
+import {
+  buildViewerSafeSuggestedInputs,
+  projectLatestActionFeedback,
+  type LatestActionFeedbackV1,
+  type SuggestedInputCandidateV1,
+} from "@ai-story/templates";
 import { sha256Canonical } from "./canonical";
 
 type ViewerBuildInput = {
@@ -13,6 +19,17 @@ type ViewerBuildInput = {
   content: PressureRuntimeContent;
   viewerSeatId: string;
   presentationRoot?: string;
+  latestNarrative?: {
+    id: string;
+    content: string;
+    threadKeysJson?: unknown;
+    sourceEventIdsJson?: unknown;
+    createdAt?: Date | string;
+  } | null;
+  liveGeneration?: {
+    aiSeats: { pending: number; running: number; completed: number; failed: number };
+    narrative: { status: "IDLE" | "GENERATING" | "MODEL" | "AUTHORED_FALLBACK" | "FAILED"; source?: string | null };
+  } | null;
 };
 
 type PresentationSeat = {
@@ -71,12 +88,25 @@ export function buildPressureGameProjection(input: ViewerBuildInput): Record<str
     || { seatId: viewerSeatId };
   const runtimeSeat = state.seats[viewerSeatId];
   const actionPhase = ACTION_PHASE[state.phase] || null;
-  const publicScene = choosePublicScene(presentation.scenes, state, viewerSeatId);
+  const authoredPublicScene = choosePublicScene(presentation.scenes, state, viewerSeatId);
+  const narrativeMeta = record(input.latestNarrative?.threadKeysJson);
+  const narrativeMatches = Boolean(input.latestNarrative && (
+    narrativeMeta.projectedNodeId === state.nodeId
+    || narrativeMeta.nodeId === state.nodeId
+    || (state.phase === "COMPLETED" && narrativeMeta.generationKind === "FINALE")
+  ));
+  const publicScene = narrativeMatches ? {
+    sceneId: String(narrativeMeta.sceneId || input.latestNarrative?.id || authoredPublicScene.sceneId),
+    title: String(authoredPublicScene.title || content.nodes[state.nodeId]?.title || state.nodeId),
+    text: String(input.latestNarrative?.content || authoredPublicScene.text),
+    narrativeEntryId: input.latestNarrative?.id || null,
+    source: String(narrativeMeta.source || "MODEL"),
+  } : authoredPublicScene;
   const privateScene = choosePrivateScene(presentation.scenes, viewerSeatId, viewerSeat);
-  const latestActionFeedback = buildLatestActionFeedback(state, viewerSeatId, publicScene);
+  const latestActionFeedback = buildLatestActionFeedback(state, viewerSeatId, publicScene, narrativeMeta);
   const roleByKey = new Map((run.roles || []).map((role: any) => [role.roleKey, role]));
   const controlByRoleId = new Map((run.roleControls || []).map((control: any) => [control.roleId, control]));
-  const suggestions = actionPhase ? buildSuggestions(viewerSeat, actionPhase) : [];
+  const suggestions = actionPhase ? buildSuggestions(viewerSeat, actionPhase, state.nodeId) : [];
 
   return {
     schemaVersion: "pressure_game_projection_v1",
@@ -97,7 +127,25 @@ export function buildPressureGameProjection(input: ViewerBuildInput): Record<str
       coreQuestion: viewerSeat.coreQuestion || "",
       currentActorId: runtimeSeat?.currentActorId || null,
     },
+    prologue: state.phase === "P0_PROJECTING" ? {
+      status: "AWAITING_ACK",
+      locked: true,
+      title: content.nodes.P0?.title || publicScene.title,
+      nextNodeId: content.nodes.P0?.nextNodeId || "N1",
+      nextNodeTitle: content.nodes[content.nodes.P0?.nextNodeId || "N1"]?.title || "N1",
+      crisisLabel: publicScene.title,
+      acknowledgeEndpoint: `/api/v4/rooms/${encodeURIComponent(state.runId)}/game/prologue/acknowledge`,
+    } : {
+      status: "ACKNOWLEDGED",
+      locked: false,
+      title: content.nodes.P0?.title || "P0",
+      nextNodeId: content.nodes.P0?.nextNodeId || "N1",
+      nextNodeTitle: content.nodes[content.nodes.P0?.nextNodeId || "N1"]?.title || "N1",
+      crisisLabel: null,
+      acknowledgeEndpoint: null,
+    },
     publicScene,
+    currentScene: publicScene,
     privateScene,
     worldClock: {
       minutes: state.worldTimeMinutes,
@@ -110,6 +158,14 @@ export function buildPressureGameProjection(input: ViewerBuildInput): Record<str
     actionSurface: {
       phase: actionPhase,
       suggestedInputs: suggestions,
+      locked: !actionPhase,
+      lockedReason: state.phase === "P0_PROJECTING"
+        ? "序章尚未确认，世界行动暂未开放。"
+        : actionPhase ? null : "当前行动已经密封或正在结算。",
+    },
+    liveGeneration: input.liveGeneration || {
+      aiSeats: { pending: 0, running: 0, completed: 0, failed: 0 },
+      narrative: { status: narrativeMatches ? String(narrativeMeta.source || "MODEL") : "IDLE", source: narrativeMatches ? String(narrativeMeta.source || "MODEL") : null },
     },
     seats: content.seatIds.map((seatId) => {
       const runtime = state.seats[seatId];
@@ -138,6 +194,15 @@ export function buildPressureGameProjection(input: ViewerBuildInput): Record<str
       .filter((knowledge) => knowledge.knownBySeatIds.includes(viewerSeatId))
       .map((knowledge) => ({ evidenceId: knowledge.factId, objectVersionId: knowledge.objectVersionId, provenance: knowledge.provenance })),
     latestActionFeedback,
+    latestNarrative: narrativeMatches ? {
+      narrativeEntryId: input.latestNarrative?.id,
+      sceneId: publicScene.sceneId,
+      source: String(narrativeMeta.source || "MODEL"),
+      coveredBeatIds: stringArray(narrativeMeta.coveredBeatIds),
+      generatedAt: input.latestNarrative?.createdAt instanceof Date
+        ? input.latestNarrative.createdAt.toISOString()
+        : String(input.latestNarrative?.createdAt || ""),
+    } : null,
     finale: state.phase === "FINALE_COMPUTING" || state.phase === "COMPLETED"
       ? buildFinaleReadModel(state, content)
       : null,
@@ -206,20 +271,44 @@ function choosePrivateScene(scenes: PresentationScene[], viewerSeatId: string, v
   };
 }
 
-function buildSuggestions(seat: PresentationSeat, phase: "PREPARE" | "COMMIT" | "REACTION") {
-  const authored = phase === "PREPARE" ? seat.defaultPrepare : seat.defaultCommit;
-  const candidates = [
-    authored,
-    seat.keyLeverage,
-    ...(seat.dialogueSeeds || []).map((seed) => seed.text),
-  ].map((value) => String(value || "").trim()).filter(Boolean);
-  const unique = [...new Set(candidates)].slice(0, 3);
-  while (unique.length < 2) unique.push(unique.length ? "暂不追加命令，但承担时间推进的后果" : "先核实当前现场再作决定");
-  return unique.map((displayText, index) => ({
-    id: `suggestion.${seat.seatId}.${phase.toLowerCase()}.${index + 1}`,
-    displayText,
-    requiresPreview: true,
-  }));
+function buildSuggestions(
+  seat: PresentationSeat,
+  phase: "PREPARE" | "COMMIT" | "REACTION",
+  nodeId: string,
+) {
+  const candidates: SuggestedInputCandidateV1[] = [];
+  const add = (displayText: unknown, sourceKind: SuggestedInputCandidateV1["sourceKind"], sourceRef: string) => {
+    const normalized = String(displayText || "").trim();
+    if (!normalized || candidates.some((item) => item.displayText === normalized) || candidates.length >= 3) return;
+    candidates.push({
+      id: `suggestion.${seat.seatId}.${phase.toLowerCase()}.${candidates.length + 1}`,
+      displayText: normalized,
+      sourceRefs: [sourceRef],
+      sourceKind,
+    });
+  };
+  if (phase === "PREPARE") {
+    add(seat.defaultPrepare, "DEFAULT_PREPARE", `seat-content:${nodeId}:${seat.seatId}:defaultPrepare`);
+  } else {
+    add(seat.defaultCommit, "DEFAULT_COMMIT", `seat-content:${nodeId}:${seat.seatId}:defaultCommit`);
+  }
+  add(seat.keyLeverage, "KEY_LEVERAGE", `seat-content:${nodeId}:${seat.seatId}:keyLeverage`);
+  for (const seed of seat.dialogueSeeds || []) {
+    add(seed.text, "DIALOGUE_SEED", `dialogue-seed:${seed.dialogueSeedId || `${nodeId}:${seat.seatId}`}`);
+  }
+  if (candidates.length < 2) {
+    add(phase === "PREPARE" ? "先核实眼前材料，再决定如何投入本席资源" : "暂不追加命令，并承担时限推进后的默认结果", "DETERMINISTIC_DERIVATION", `deterministic:${nodeId}:${seat.seatId}:${phase}`);
+  }
+  if (candidates.length < 2) {
+    add("先与当前在场人物确认边界，再提交不可撤销行动", "DETERMINISTIC_DERIVATION", `deterministic:${nodeId}:${seat.seatId}:${phase}:secondary`);
+  }
+  const allowedSourceRefs = candidates.flatMap((item) => [...item.sourceRefs]);
+  return buildViewerSafeSuggestedInputs({
+    actionPhaseOpen: true,
+    candidates: candidates.slice(0, 3),
+    allowedSourceRefs,
+    forbiddenStableIds: [],
+  });
 }
 
 function publicSeatStatus(state: PressureRuntimeState, seatId: string, actionPhase: string | null): string {
@@ -229,29 +318,46 @@ function publicSeatStatus(state: PressureRuntimeState, seatId: string, actionPha
   return state.sealedActions[actionId]?.command.isDefault ? "DEFAULTED" : "SEALED";
 }
 
-function buildLatestActionFeedback(state: PressureRuntimeState, viewerSeatId: string, publicScene: { text: string }) {
+function buildLatestActionFeedback(
+  state: PressureRuntimeState,
+  viewerSeatId: string,
+  publicScene: { text: string; title?: string },
+  narrativeMeta: Record<string, any>,
+): LatestActionFeedbackV1 | null {
   const actions = Object.values(state.sealedActions)
     .filter((action) => action.command.seatId === viewerSeatId && action.resolution)
     .sort((left, right) => right.sealedAt.localeCompare(left.sealedAt));
   const action = actions[0];
   if (!action?.resolution) return null;
   const resolution = action.resolution;
-  const events = state.rootEvents.filter((event) => event.sourceActionIds.includes(action.command.actionId));
-  return {
-    actionEcho: action.command.intentText,
-    visibleReactions: [publicScene.text],
+  const visibleEvents = state.rootEvents.filter((event) =>
+    event.sourceActionIds.includes(action.command.actionId)
+    && (event.visibility === "PUBLIC" || event.visibility === "OBSERVABLE" || event.audienceSeatIds.includes(viewerSeatId))
+  );
+  const forbiddenIds = Object.values(state.knowledge)
+    .filter((knowledge) => !knowledge.knownBySeatIds.includes(viewerSeatId))
+    .flatMap((knowledge) => [knowledge.factId, knowledge.objectVersionId || ""])
+    .filter(Boolean);
+  const visibleReactions = stringArray(narrativeMeta.visibleReactions);
+  if (!visibleReactions.length) visibleReactions.push("其他席位已经按各自职责完成本时段行动，只有可观察部分进入你的现场。 ".trim());
+  return projectLatestActionFeedback({
+    actionEcho: String(narrativeMeta.actionEcho || action.command.intentText || "本席位已提交行动。"),
+    visibleReactions,
     changes: {
       consequence: [`行动结果：${resolution.status}（${resolution.reasonCode}）`],
       resource: resolution.resourceLedgerEntries.map((entry) => `${entry.resourceId} ${entry.delta >= 0 ? "+" : ""}${entry.delta}`),
       time: resolution.worldTimeDeltaMinutes ? [`世界时间推进 ${resolution.worldTimeDeltaMinutes} 分钟`] : [],
       pressure: resolution.pressureDelta ? [`压力 ${resolution.pressureDelta >= 0 ? "+" : ""}${resolution.pressureDelta}`] : [],
-      object: resolution.objectVersionIds.map((versionId) => `对象版本更新：${versionId}`),
+      object: resolution.objectVersionIds.map((versionId) => `对象状态已经形成新版本：${versionId}`),
     },
-    nextPressure: publicScene.text,
+    nextPressure: String(narrativeMeta.nextPressure || publicScene.title || publicScene.text || "历史压力继续推进。"),
     sourceActionIds: [action.command.actionId],
-    settledEventIds: events.map((event) => event.eventId),
-    projectionHash: sha256Canonical({ actionId: action.command.actionId, resolution, eventIds: events.map((event) => event.eventId) }),
-  };
+    settledEventIds: visibleEvents.map((event) => event.eventId),
+    snapshotHash: state.inputSnapshotHash,
+    allowedActionIds: [action.command.actionId],
+    allowedSettledEventIds: visibleEvents.map((event) => event.eventId),
+    forbiddenStableIds: forbiddenIds,
+  });
 }
 
 function buildFinaleReadModel(state: PressureRuntimeState, content: PressureRuntimeContent) {
@@ -280,6 +386,16 @@ function buildFinaleReadModel(state: PressureRuntimeState, content: PressureRunt
     causes: frozen.slice(-3).map((result) => ({ nodeId: result.nodeId, branchId: result.branchId, branchLevel: result.branchLevel })),
     contentHash: sha256Canonical({ trackBands, frozen: frozen.map((result) => result.contentHash) }),
   };
+}
+
+function record(value: unknown): Record<string, any> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+    : [];
 }
 
 function formatWorldClock(minutes: number): string {

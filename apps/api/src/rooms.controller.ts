@@ -20,6 +20,7 @@ export class RoomsController {
   @Post(":roomId/waiting/extend") extendWaiting(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string }) { return this.rooms.extendWaiting(user, roomId, body); }
   @Post(":roomId/play-solo") playSolo(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string; confirmReadyPlayersChanged?: boolean }) { return this.rooms.playSoloFromWaitingRoom(user, roomId, body); }
   @Get(":roomId/game") game(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.game(user, roomId); }
+  @Post(":roomId/game/prologue/acknowledge") acknowledgePressurePrologue(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: unknown) { return this.rooms.acknowledgePressurePrologue(user, roomId, body); }
   @Post(":roomId/game/actions/preview") previewPressureAction(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: unknown) { return this.rooms.previewPressureAction(user, roomId, body); }
   @Post(":roomId/game/actions/confirm") confirmPressureAction(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: unknown) { return this.rooms.confirmPressureAction(user, roomId, body); }
   @Get(":roomId/result") result(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.result(user, roomId); }
