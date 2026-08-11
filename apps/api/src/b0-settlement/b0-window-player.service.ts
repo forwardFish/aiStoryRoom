@@ -26,10 +26,11 @@ import {
   buildB0PublicationPlanV1,
   type B0PublicationDeliveryV1,
 } from "@ai-story/templates";
-import type {
-  B0ActionContractV1,
-  B0SettlementResolutionV1,
-  B0SettlementSnapshotV1,
+import {
+  isNarrativeProjectionStatus,
+  type B0ActionContractV1,
+  type B0SettlementResolutionV1,
+  type B0SettlementSnapshotV1,
 } from "@ai-story/shared";
 import {
   assertB0StoredIntentEnvelopeV1,
@@ -233,8 +234,9 @@ export class B0WindowPlayerService {
       select: { immediateJson: true },
     });
     const presentation = presentationFrom(action?.immediateJson);
-    const structuredResults = await this.structuredResults(window, actorId);
-    const narrative = await this.narrativeProjection(window.runId, actorId, projection);
+    const resultEnvelope = await this.structuredResultEnvelope(window);
+    const structuredResults = await this.structuredResults(window, actorId, resultEnvelope);
+    const narrative = await this.narrativeProjection(window.runId, actorId, resultEnvelope);
     return projectB0PlayerWindowV1({
       projection,
       participantVersion: participant.version,
@@ -245,8 +247,11 @@ export class B0WindowPlayerService {
     });
   }
 
-  private async structuredResults(window: NonNullable<WindowRow>, actorId: string): Promise<B0PublicationDeliveryV1[]> {
-    const envelope = await this.structuredResultEnvelope(window);
+  private async structuredResults(
+    window: NonNullable<WindowRow>,
+    actorId: string,
+    envelope: Record<string, any> | null,
+  ): Promise<B0PublicationDeliveryV1[]> {
     if (!envelope) return [];
     const snapshot = envelope.snapshot as B0SettlementSnapshotV1;
     const resolution = envelope.resolution as B0SettlementResolutionV1;
@@ -300,32 +305,67 @@ export class B0WindowPlayerService {
   private async narrativeProjection(
     runId: string,
     actorId: string,
-    projection: B0WindowProjectionV1,
-  ): Promise<B0PlayerNarrativeProjectionV1> {
+    committedEnvelope: Record<string, any> | null,
+  ): Promise<B0PlayerNarrativeProjectionV1 | null> {
+    const sourceCommitHash = String(committedEnvelope?.manifest?.commitHash ?? "").trim();
+    if (!sourceCommitHash) return null;
     const entry = await this.prisma.narrativeEntry.findFirst({
       where: {
         runId,
         roleId: actorId,
         entryType: "B0_NARRATIVE",
-        ...(projection.window.committedAt ? { worldSequence: { gte: projection.window.baseWorldSequence + 1 } } : {}),
+        sourceCommitHash,
       },
-      select: { content: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    });
-    if (entry) return { status: "AVAILABLE", content: entry.content, updatedAt: entry.createdAt.toISOString() };
-    const failed = await this.prisma.storyTaskOutbox.findFirst({
-      where: {
-        runId,
-        windowId: projection.window.id,
-        taskType: "B0_NARRATIVE_GENERATION",
-        status: { in: ["failed", "dead_letter", "FAILED_RETRYABLE"] },
+      select: {
+        content: true,
+        updatedAt: true,
+        sourceCommitHash: true,
+        presentationHash: true,
+        projectionStatus: true,
       },
-      select: { updatedAt: true },
       orderBy: { updatedAt: "desc" },
     });
-    if (failed) return { status: "FAILED_RETRYABLE", content: null, updatedAt: failed.updatedAt.toISOString() };
-    const committed = ["COMMITTED", "PUBLISHING", "COMPLETED"].includes(projection.window.status);
-    return { status: committed ? "PENDING" : "NOT_REQUESTED", content: null, updatedAt: null };
+    if (entry && isNarrativeProjectionStatus(entry.projectionStatus)) {
+      return {
+        schemaVersion: "openovel-narrative-projection-v1",
+        authoritativeResultStatus: "FINALIZED",
+        structuredResultReady: true,
+        status: entry.projectionStatus,
+        sourceCommitHash: entry.sourceCommitHash || sourceCommitHash,
+        presentationHash: entry.presentationHash,
+        content: ["PUBLISHED", "FALLBACK_PUBLISHED"].includes(entry.projectionStatus) ? entry.content : null,
+        updatedAt: entry.updatedAt.toISOString(),
+      };
+    }
+
+    const task = await this.prisma.storyTaskOutbox.findFirst({
+      where: {
+        runId,
+        windowId: committedEnvelope?.manifest?.windowId,
+        roleId: actorId,
+        taskType: "B0_NARRATIVE_GENERATION",
+      },
+      select: { status: true, resultJson: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    const taskResult = jsonRecord(task?.resultJson);
+    const storedStatus = isNarrativeProjectionStatus(taskResult?.narrativeStatus)
+      ? taskResult.narrativeStatus
+      : null;
+    const outboxStatus = taskNarrativeStatus(task?.status);
+    const status = outboxStatus === "FAILED_RETRYABLE"
+      ? outboxStatus
+      : storedStatus ?? outboxStatus ?? "PENDING";
+    return {
+      schemaVersion: "openovel-narrative-projection-v1",
+      authoritativeResultStatus: "FINALIZED",
+      structuredResultReady: true,
+      status,
+      sourceCommitHash,
+      presentationHash: typeof taskResult?.presentationHash === "string" ? taskResult.presentationHash : null,
+      content: null,
+      updatedAt: task?.updatedAt?.toISOString() ?? null,
+    };
   }
 
   private async persistPresentation(
@@ -408,6 +448,14 @@ function identifier(value: unknown, label: string): string {
 
 function jsonRecord(value: unknown): Record<string, any> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : null;
+}
+
+function taskNarrativeStatus(status: unknown): B0PlayerNarrativeProjectionV1["status"] | null {
+  const value = String(status ?? "").toLowerCase();
+  if (value === "running") return "GENERATING";
+  if (value === "failed" || value === "dead_letter" || value === "failed_retryable") return "FAILED_RETRYABLE";
+  if (value === "pending") return "PENDING";
+  return null;
 }
 
 function domain(code: string, message: string): ConflictException {

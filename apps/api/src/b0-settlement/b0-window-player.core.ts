@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type {
   B0ActionContractV1,
   B0SettlementWindowV1,
+  NarrativeProjectionStatus,
 } from "@ai-story/shared";
 import type {
   B0PublicationDeliveryV1,
@@ -34,7 +35,12 @@ export type B0PlayerStructuredResultV1 = {
 };
 
 export type B0PlayerNarrativeProjectionV1 = {
-  status: "NOT_REQUESTED" | "PENDING" | "AVAILABLE" | "FAILED_RETRYABLE";
+  schemaVersion: "openovel-narrative-projection-v1";
+  authoritativeResultStatus: "FINALIZED";
+  structuredResultReady: true;
+  status: NarrativeProjectionStatus;
+  sourceCommitHash: string;
+  presentationHash: string | null;
   content: string | null;
   updatedAt: string | null;
 };
@@ -71,7 +77,7 @@ export type B0PlayerWindowProjectionV1 = {
     status: "NOT_STARTED" | "PREPARED" | "RESOLVING" | "COMMITTED" | "PUBLISHED" | "COMPLETED" | "FAILED_RETRYABLE" | "FAILED_HARD";
   };
   structuredResults: B0PlayerStructuredResultV1[];
-  narrative: B0PlayerNarrativeProjectionV1;
+  narrative: B0PlayerNarrativeProjectionV1 | null;
 };
 
 export class B0PlayerWindowErrorV1 extends Error {
@@ -214,13 +220,7 @@ export function projectB0PlayerWindowV1(input: {
         })),
         reasons: delivery.explanation.reasons.map((reason) => ({ kind: reason.kind, summary: reason.summary })),
       })),
-    narrative: input.narrative ?? {
-      status: input.projection.window.status === "COMMITTED" || input.projection.window.status === "PUBLISHING" || input.projection.window.status === "COMPLETED"
-        ? "PENDING"
-        : "NOT_REQUESTED",
-      content: null,
-      updatedAt: null,
-    },
+    narrative: input.narrative ?? null,
   };
 }
 

@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { readContinuousStrategyConfig } from "../config/continuous-strategy.config";
 import { StoryTaskOutboxService } from "../story-task-outbox.service";
+import { OpenNovelNarrativeProjector } from "../openovel-narrative-projector/openovel-narrative-projector.service";
 import { B0SettlementPipelineService } from "./b0-settlement-pipeline.service";
 
 const B0_TASK_TYPES = new Set([
@@ -46,6 +47,7 @@ export class B0OutboxBridgeService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(StoryTaskOutboxService) private readonly outbox: StoryTaskOutboxService,
     @Inject(B0SettlementPipelineService) private readonly pipeline: B0SettlementPipelineService,
+    @Inject(OpenNovelNarrativeProjector) private readonly narrativeProjector: OpenNovelNarrativeProjector,
   ) {}
 
   onModuleInit(): void {
@@ -61,19 +63,24 @@ export class B0OutboxBridgeService implements OnModuleInit, OnModuleDestroy {
           case "B0_PUBLISH_STRUCTURED_RESULTS":
             return await this.pipeline.executePublicationTask(task.id, fence);
           case "B0_NARRATIVE_GENERATION":
-            return await this.pipeline.executeNarrativeTask(task.id, fence);
+            return await this.narrativeProjector.projectTask(task.id, fence);
           case "B0_WINDOW_EVENT":
             return await this.pipeline.executeWindowEventTask(task.id, fence);
           default:
             throw new Error(`UNKNOWN_B0_TASK_TYPE:${task.taskType}`);
         }
       } catch (error) {
-        await this.pipeline.failTask(
-          task.id,
-          error instanceof Error ? error.message : String(error),
-        ).catch((failure) => {
-          this.logger.error(`Failed to record B0 task failure ${task.id}: ${String(failure)}`);
-        });
+        // Narrative projection is post-authoritative presentation work. The
+        // leased outbox records its retry state; it must never rewrite the
+        // synchronized window, Canon, Result, or run lifecycle.
+        if (task.taskType !== "B0_NARRATIVE_GENERATION") {
+          await this.pipeline.failTask(
+            task.id,
+            error instanceof Error ? error.message : String(error),
+          ).catch((failure) => {
+            this.logger.error(`Failed to record B0 task failure ${task.id}: ${String(failure)}`);
+          });
+        }
         throw error;
       }
     };

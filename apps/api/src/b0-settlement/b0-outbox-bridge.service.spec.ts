@@ -25,19 +25,21 @@ function createFixture(overrides: Partial<Record<string, unknown>> = {}) {
       calls.push(`publication:${taskId}`);
       return { outcome: "PUBLISHED" };
     },
-    executeNarrativeTask: async (taskId: string) => {
-      calls.push(`narrative:${taskId}`);
-      return { outcome: "NARRATED" };
-    },
     executeWindowEventTask: async (taskId: string) => {
       calls.push(`event:${taskId}`);
       return { outcome: "RECORDED" };
     },
     ...overrides,
   };
-  const bridge = new B0OutboxBridgeService(outbox as any, pipeline as any);
+  const narrativeProjector = {
+    projectTask: async (taskId: string) => {
+      calls.push(`narrative:${taskId}`);
+      return { outcome: "PUBLISHED" };
+    },
+  };
+  const bridge = new B0OutboxBridgeService(outbox as any, pipeline as any, narrativeProjector as any);
   bridge.onModuleInit();
-  return { bridge, outbox, calls, failures, legacyCalls };
+  return { bridge, outbox, pipeline, narrativeProjector, calls, failures, legacyCalls };
 }
 
 const fence = { taskId: "fence", leaseOwner: "worker", leaseVersion: 1 };
@@ -48,7 +50,7 @@ test("routes every B0 task through the existing leased outbox worker and preserv
     for (const [taskType, expected] of [
       ["B0_SETTLEMENT_REQUESTED", "COMMITTED"],
       ["B0_PUBLISH_STRUCTURED_RESULTS", "PUBLISHED"],
-      ["B0_NARRATIVE_GENERATION", "NARRATED"],
+      ["B0_NARRATIVE_GENERATION", "PUBLISHED"],
       ["B0_WINDOW_EVENT", "RECORDED"],
     ] as const) {
       const result = await (fixture.outbox as any).executeTask(
@@ -95,6 +97,26 @@ test("records a B0 task failure without consuming the legacy handler or hiding t
       reason: "SETTLEMENT_VALIDATION_FAILED",
     }]);
     assert.deepEqual(fixture.legacyCalls, []);
+  } finally {
+    fixture.bridge.onModuleDestroy();
+  }
+});
+
+
+test("narrative projection failure remains outbox-only and never rewrites the authoritative window", async () => {
+  const fixture = createFixture();
+  fixture.narrativeProjector.projectTask = async () => {
+    throw new Error("NARRATIVE_PROVIDER_TIMEOUT");
+  };
+  try {
+    await assert.rejects(
+      () => (fixture.outbox as any).executeTask(
+        { id: "task.narrative.failed", nodeId: "n", windowId: "w", taskType: "B0_NARRATIVE_GENERATION" },
+        fence,
+      ),
+      /NARRATIVE_PROVIDER_TIMEOUT/,
+    );
+    assert.deepEqual(fixture.failures, [], "presentation failure must not invoke the authoritative B0 failure path");
   } finally {
     fixture.bridge.onModuleDestroy();
   }

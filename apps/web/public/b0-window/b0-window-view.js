@@ -30,8 +30,8 @@ const COPY = Object.freeze({
     knowledge: "你获得的新信息",
     reasons: "主要原因",
     changes: "状态变化",
-    narrativePending: "故事化内容正在补充，权威结果已经生效。",
-    narrativeFailed: "故事化内容暂时不可用，权威结果和下一局势不受影响。",
+    narrativePending: "权威结局已确认，故事化结局正在生成。",
+    narrativeFailed: "权威结局已确认，故事化展示暂时失败，系统将在后台重试。",
     narrative: "故事回响",
   },
   en: {
@@ -63,8 +63,8 @@ const COPY = Object.freeze({
     knowledge: "New information",
     reasons: "Why this happened",
     changes: "State changes",
-    narrativePending: "Narrative is being added. The authoritative result is already in effect.",
-    narrativeFailed: "Narrative is temporarily unavailable. The authoritative result and next window are unaffected.",
+    narrativePending: "The authoritative result is final. Its story presentation is being generated.",
+    narrativeFailed: "The authoritative result is final. Its story presentation will retry in the background.",
     narrative: "Story Echo",
   },
 });
@@ -96,21 +96,21 @@ export function renderB0WindowResultsV1(state, locale = "zh") {
   if (!state?.active || !state.projection) return "";
   const copy = COPY[locale] || COPY.zh;
   const { structuredResults, narrative } = state.projection;
-  if (!structuredResults.length && narrative.status === "NOT_REQUESTED") return "";
+  if (!structuredResults.length && !narrative) return "";
   const results = structuredResults.map((result) => `<article class="b0-result-card b0-result-${escAttr(result.resultKind.toLowerCase())}" data-testid="b0-result-${escAttr(result.resultId)}">
     <div class="b0-result-heading"><span>${esc(resultLabel(result.resultKind, copy))}</span>${result.outcomeStatus ? `<b>${esc(outcomeLabel(result.outcomeStatus, locale))}</b>` : ""}</div>
     <p>${esc(result.summary)}</p>
     ${result.reasons.length ? `<details open><summary>${esc(copy.reasons)}</summary><ul>${result.reasons.map((reason) => `<li>${esc(reason.summary)}</li>`).join("")}</ul></details>` : ""}
     ${result.changes.length ? `<details><summary>${esc(copy.changes)}</summary><ul>${result.changes.map((change) => `<li>${esc(changeLabel(change, locale))}</li>`).join("")}</ul></details>` : ""}
   </article>`).join("");
-  const narrativeHtml = narrative.status === "AVAILABLE" && narrative.content
-    ? `<article class="b0-narrative-card" data-testid="b0-narrative"><h3>${esc(copy.narrative)}</h3><p>${esc(narrative.content)}</p></article>`
-    : narrative.status === "PENDING"
-      ? `<p class="b0-narrative-status" role="status">${esc(copy.narrativePending)}</p>`
+  const narrativeHtml = !narrative
+    ? ""
+    : ["PUBLISHED", "FALLBACK_PUBLISHED"].includes(narrative.status) && narrative.content
+      ? `<article class="b0-narrative-card" data-b0-narrative-status="${escAttr(narrative.status)}" data-testid="b0-narrative"><h3>${esc(copy.narrative)}</h3><p>${esc(narrative.content)}</p></article>`
       : narrative.status === "FAILED_RETRYABLE"
-        ? `<p class="b0-narrative-status warning" role="status">${esc(copy.narrativeFailed)}</p>`
-        : "";
-  return `<section class="b0-window-results" data-b0-window-results data-testid="b0-window-results"><h2>${esc(copy.results)}</h2>${results}${narrativeHtml}</section>`;
+        ? `<p class="b0-narrative-status warning" data-b0-narrative-status="FAILED_RETRYABLE" role="status">${esc(copy.narrativeFailed)}</p>`
+        : `<p class="b0-narrative-status" data-b0-narrative-status="${escAttr(narrative.status)}" role="status">${esc(copy.narrativePending)}</p>`;
+  return `<section class="b0-window-results" data-b0-authoritative-result-status="FINALIZED" data-b0-window-results data-testid="b0-window-results"><h2>${esc(copy.results)}</h2>${results}${narrativeHtml}</section>`;
 }
 
 function statusText(status, copy) {

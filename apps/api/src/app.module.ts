@@ -35,6 +35,13 @@ import { B0OutboxBridgeService } from "./b0-settlement/b0-outbox-bridge.service"
 import { B0WindowCoordinatorService } from "./b0-settlement/b0-window-coordinator.prisma";
 import { B0WindowPlayerController } from "./b0-settlement/b0-window-player.controller";
 import { B0WindowPlayerService } from "./b0-settlement/b0-window-player.service";
+import { OpenNovelNarrativeProjector } from "./openovel-narrative-projector/openovel-narrative-projector.service";
+import { NarrativeSourceReader } from "./openovel-narrative-projector/narrative-source-reader";
+import { NarrativeContextCompiler } from "./openovel-narrative-projector/narrative-context-compiler";
+import { NarrativeRenderer } from "./openovel-narrative-projector/narrative-renderer";
+import { NarrativeTruthGuard } from "./openovel-narrative-projector/narrative-truth-guard";
+import { NarrativeFallbackRenderer } from "./openovel-narrative-projector/narrative-fallback-renderer";
+import { NarrativePublisher } from "./openovel-narrative-projector/narrative-publisher";
 
 @Module({
   imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
@@ -53,7 +60,14 @@ import { B0WindowPlayerService } from "./b0-settlement/b0-window-player.service"
     B0WindowCoordinatorService,
     B0SettlementPipelineService,
     B0OutboxBridgeService,
-    B0WindowPlayerService
+    B0WindowPlayerService,
+    OpenNovelNarrativeProjector,
+    NarrativeSourceReader,
+    NarrativeContextCompiler,
+    NarrativeRenderer,
+    NarrativeTruthGuard,
+    NarrativeFallbackRenderer,
+    NarrativePublisher
   ]
 })
 export class AppModule {}

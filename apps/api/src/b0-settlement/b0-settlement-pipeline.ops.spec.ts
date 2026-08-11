@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { ConflictException } from "@nestjs/common";
 import test from "node:test";
 import { B0SettlementPipelineService, b0ExceptionCode, b0RunEnabled, b0RunPaused } from "./b0-settlement-pipeline.service";
-import { STORY_TASK_SOURCE_FINALIZATION_SCHEMA_V1 } from "../story-task-outbox.contract";
 
 type Json = Record<string, any>;
 
@@ -98,7 +97,6 @@ function fixture(overrides: Json = {}) {
     prisma as any,
     {} as any,
     windows as any,
-    {} as any,
   );
   return { service, prisma, calls };
 }
@@ -222,6 +220,39 @@ test("C8 retry only requeues a failed B0 task and clears its lease without reset
   assert.equal("attempt" in update.data, false);
 });
 
+test("fallback narrative projection can be requeued without changing authoritative state", async () => {
+  const updates: any[] = [];
+  const { service, calls } = fixture({
+    storyTaskOutbox: {
+      findUnique: async () => ({
+        id: "task.fallback",
+        taskType: "B0_NARRATIVE_GENERATION",
+        status: "completed",
+        outcome: "FALLBACK_PUBLISHED",
+        resultJson: {
+          schemaVersion: "openovel-narrative-task-result-v1",
+          authoritativeResultStatus: "FINALIZED",
+          structuredResultReady: true,
+          narrativeStatus: "FALLBACK_PUBLISHED",
+          sourceCommitHash: "a".repeat(64),
+        },
+      }),
+      update: async (input: any) => { updates.push(input); return { id: "task.fallback", ...input.data }; },
+    },
+    actionWindow: {
+      findMany: async () => [],
+      updateMany: async (input: any) => { calls.push({ method: "actionWindow.updateMany", input }); return { count: 0 }; },
+    },
+  });
+
+  const result = await service.retryTask("task.fallback");
+
+  assert.equal(result.status, "pending");
+  assert.equal(updates[0].data.resultJson.narrativeStatus, "PENDING");
+  assert.equal(updates[0].data.resultJson.authoritativeResultStatus, "FINALIZED");
+  assert.equal(calls.some((entry) => entry.method === "actionWindow.updateMany"), false);
+});
+
 test("C8 retry rejects non-B0 task vocabulary", async () => {
   const { service } = fixture({
     storyTaskOutbox: {
@@ -301,7 +332,7 @@ test("C8 AI recovery creates, confirms, and readies the same ActionContract used
     confirmDraft: async (input: any) => { calls.push({ method: "confirmDraft", input }); },
     ready: async (input: any) => { calls.push({ method: "ready", input }); },
   };
-  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any, {} as any);
+  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any);
   await (service as any).prepareAiPlans(aiWindow());
   assert.deepEqual(calls.map((entry) => entry.method), ["saveDraft", "confirmDraft", "ready"]);
   assert.equal(calls[0].input.expectedRevision, 0);
@@ -341,7 +372,7 @@ test("C8 AI recovery replays a persisted unconfirmed draft with its original exp
     confirmDraft: async (input: any) => { calls.push({ method: "confirmDraft", input }); },
     ready: async (input: any) => { calls.push({ method: "ready", input }); },
   };
-  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any, {} as any);
+  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any);
   await (service as any).prepareAiPlans(aiWindow());
   assert.deepEqual(calls.map((entry) => entry.method), ["saveDraft", "confirmDraft", "ready"]);
   assert.equal(calls[0].input.expectedRevision, 0, "replay must reuse the revision that originally created the draft");
@@ -377,7 +408,7 @@ test("C8 AI recovery preserves an already confirmed plan and only restores READY
     confirmDraft: async () => { calls.push("confirmDraft"); },
     ready: async () => { calls.push("ready"); },
   };
-  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any, {} as any);
+  const service = new B0SettlementPipelineService(prisma as any, {} as any, windows as any);
   await (service as any).prepareAiPlans(aiWindow());
   assert.deepEqual(calls, ["ready"]);
 });
@@ -458,138 +489,4 @@ test("concurrent B0 lazy creation recognizes the Nest WINDOW_ALREADY_ACTIVE resp
   assert.equal(b0ExceptionCode({ code: "P2002" }), "P2002");
   assert.equal(b0ExceptionCode(new ConflictException({ code: "OTHER_CONFLICT", message: "other" })), "OTHER_CONFLICT");
   assert.equal(b0ExceptionCode(new Error("WINDOW_ALREADY_ACTIVE")), "");
-});
-
-
-test("B0 narrative publication commits the entry and task terminal state atomically", async () => {
-  const visible = { taskStatus: "running", entryId: null as string | null, resultJson: null as unknown };
-  const operations: string[] = [];
-  const task = {
-    id: "task.narrative",
-    runId: "run.1",
-    nodeId: "node.1",
-    windowId: "window.1",
-    roleId: "role.a",
-    inputRefId: "batch.1",
-    taskType: "B0_NARRATIVE_GENERATION",
-    status: "running",
-    leaseOwner: "worker.1",
-    leaseVersion: 4,
-    leaseExpiresAt: new Date(Date.now() + 60_000),
-  };
-  let transactionOptions: any;
-  const prisma: any = {
-    storyTaskOutbox: { findUnique: async () => task },
-    narrativeEntry: { findUnique: async () => null },
-    storyRun: { findUnique: async () => ({ worldSequence: 2, stateJson: {} }) },
-    storyRole: { findMany: async () => [{ id: "role.a", roleKey: "role-a", roleName: "Role A" }] },
-    $transaction: async (callback: any, options: any) => {
-      transactionOptions = options;
-      const staged = { ...visible };
-      const tx = {
-        storyTaskOutbox: {
-updateMany: async (args: any) => {
-  operations.push("task.complete");
-  assert.equal(visible.taskStatus, "running");
-  assert.equal(visible.entryId, null);
-  assert.equal(args.where.status, "running");
-  assert.equal(args.where.leaseOwner, task.leaseOwner);
-  assert.equal(args.where.leaseVersion, task.leaseVersion);
-  staged.taskStatus = args.data.status;
-  return { count: 1 };
-},
-update: async (args: any) => {
-  operations.push("task.result");
-  staged.resultJson = args.data.resultJson;
-  return { id: task.id };
-},
-        },
-        narrativeEntry: {
-upsert: async () => {
-  operations.push("entry.upsert");
-  assert.equal(visible.taskStatus, "running", "transactional changes must remain invisible before commit");
-  assert.equal(visible.entryId, null, "NarrativeEntry must not become visible before task completion commits");
-  staged.entryId = "entry.1";
-  return { id: "entry.1" };
-},
-        },
-      };
-      const result = await callback(tx);
-      visible.taskStatus = staged.taskStatus;
-      visible.entryId = staged.entryId;
-      visible.resultJson = staged.resultJson;
-      return result;
-    },
-  };
-  const openNovel = { generateB0Narrative: async () => ({ publication: { prose: "The settlement is now visible." } }) };
-  const service = new B0SettlementPipelineService(prisma, {} as any, {} as any, openNovel as any);
-  (service as any).readCommitEnvelope = async () => ({
-    batchId: "batch.1",
-    manifest: { runId: "run.1", windowId: "window.1", committedWorldSequence: 2 },
-  });
-  (service as any).publicationPlan = async () => ({ deliveries: [{ recipientActorId: "role.a" }] });
-  const fence = { taskId: task.id, leaseOwner: task.leaseOwner, leaseVersion: task.leaseVersion };
-
-  const result = await service.executeNarrativeTask(task.id, fence);
-
-  assert.equal((result as any).outcome, "PUBLISHED");
-  assert.equal((result as any).narrativeEntryId, "entry.1");
-  assert.deepEqual((result as any).sourceFinalization, {
-    schemaVersion: STORY_TASK_SOURCE_FINALIZATION_SCHEMA_V1,
-    ...fence,
-  });
-  assert.deepEqual(operations, ["task.complete", "entry.upsert", "task.result"]);
-  assert.equal(visible.taskStatus, "completed");
-  assert.equal(visible.entryId, "entry.1");
-  assert.deepEqual(visible.resultJson, { outcome: "PUBLISHED", narrativeEntryId: "entry.1" });
-  assert.equal(transactionOptions.maxWait, 10_000);
-  assert.equal(transactionOptions.timeout, 30_000);
-});
-
-test("B0 narrative publication never creates an entry after losing the task lease", async () => {
-  let entryWrites = 0;
-  const task = {
-    id: "task.narrative.lost",
-    runId: "run.1",
-    nodeId: "node.1",
-    windowId: "window.1",
-    roleId: "role.a",
-    inputRefId: "batch.1",
-    taskType: "B0_NARRATIVE_GENERATION",
-    status: "running",
-    leaseOwner: "worker.old",
-    leaseVersion: 2,
-    leaseExpiresAt: new Date(Date.now() + 60_000),
-  };
-  const prisma: any = {
-    storyTaskOutbox: { findUnique: async () => task },
-    narrativeEntry: { findUnique: async () => null },
-    storyRun: { findUnique: async () => ({ worldSequence: 2, stateJson: {} }) },
-    storyRole: { findMany: async () => [{ id: "role.a", roleKey: "role-a", roleName: "Role A" }] },
-    $transaction: async (callback: any) => callback({
-      storyTaskOutbox: {
-        updateMany: async () => ({ count: 0 }),
-        update: async () => { throw new Error("result update must not run after lease loss"); },
-      },
-      narrativeEntry: {
-        upsert: async () => { entryWrites += 1; return { id: "entry.bad" }; },
-      },
-    }),
-  };
-  const openNovel = { generateB0Narrative: async () => ({ publication: { prose: "Late prose." } }) };
-  const service = new B0SettlementPipelineService(prisma, {} as any, {} as any, openNovel as any);
-  (service as any).readCommitEnvelope = async () => ({
-    batchId: "batch.1",
-    manifest: { runId: "run.1", windowId: "window.1", committedWorldSequence: 2 },
-  });
-  (service as any).publicationPlan = async () => ({ deliveries: [{ recipientActorId: "role.a" }] });
-
-  const result = await service.executeNarrativeTask(task.id, {
-    taskId: task.id,
-    leaseOwner: "worker.replacement",
-    leaseVersion: 3,
-  });
-
-  assert.equal((result as any).outcome, "LEASE_LOST");
-  assert.equal(entryWrites, 0, "a stale worker must not publish prose after losing its lease");
 });

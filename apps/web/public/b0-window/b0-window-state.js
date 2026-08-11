@@ -37,10 +37,13 @@ export function normalizeB0WindowProjection(input) {
         : []),
     }];
   });
-  const narrativeInput = record(input.narrative) || {};
-  const narrativeStatus = ["NOT_REQUESTED", "PENDING", "AVAILABLE", "FAILED_RETRYABLE"].includes(narrativeInput.status)
+  const narrativeInput = record(input.narrative);
+  const narrativeStatus = narrativeInput && ["PENDING", "GENERATING", "VALIDATING", "PUBLISHED", "FALLBACK_PUBLISHED", "FAILED_RETRYABLE"].includes(narrativeInput.status)
     ? narrativeInput.status
-    : "NOT_REQUESTED";
+    : null;
+  if (narrativeStatus && !text(narrativeInput.sourceCommitHash)) {
+    throw new TypeError("Narrative projection requires sourceCommitHash");
+  }
   return {
     schemaVersion: "b0-player-window-projection-v1",
     serverNow: iso(input.serverNow),
@@ -66,11 +69,16 @@ export function normalizeB0WindowProjection(input) {
     plan,
     settlement: { status: text(settlement.status) || "NOT_STARTED" },
     structuredResults: results,
-    narrative: {
+    narrative: narrativeStatus && narrativeInput ? {
+      schemaVersion: "openovel-narrative-projection-v1",
+      authoritativeResultStatus: "FINALIZED",
+      structuredResultReady: true,
       status: narrativeStatus,
-      content: narrativeStatus === "AVAILABLE" ? optionalText(narrativeInput.content) : null,
+      sourceCommitHash: text(narrativeInput.sourceCommitHash),
+      presentationHash: optionalText(narrativeInput.presentationHash),
+      content: ["PUBLISHED", "FALLBACK_PUBLISHED"].includes(narrativeStatus) ? optionalText(narrativeInput.content) : null,
       updatedAt: optionalIso(narrativeInput.updatedAt),
-    },
+    } : null,
   };
 }
 

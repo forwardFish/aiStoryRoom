@@ -248,7 +248,16 @@ test("C7 player projection contains only recipient-safe results and no hashes, a
       confirmLabel: "Confirm this plan",
     },
     structuredResults: [delivery("actor.a", "result.a"), delivery("actor.b", "result.b")],
-    narrative: { status: "PENDING", content: null, updatedAt: null },
+    narrative: {
+      schemaVersion: "openovel-narrative-projection-v1",
+      authoritativeResultStatus: "FINALIZED",
+      structuredResultReady: true,
+      status: "PENDING",
+      sourceCommitHash: "c".repeat(64),
+      presentationHash: null,
+      content: null,
+      updatedAt: "2026-08-07T00:03:00.000Z",
+    },
     serverNow: "2026-08-07T00:03:00.000Z",
   });
   assert.equal(projection.structuredResults.length, 1);
@@ -274,14 +283,23 @@ test("C7 projection reconstructs locked and completed server state after refresh
     participantVersion: 7,
     presentation: null,
     structuredResults: [],
-    narrative: { status: "AVAILABLE", content: "The settled scene is now available.", updatedAt: "2026-08-07T00:05:10.000Z" },
+    narrative: {
+      schemaVersion: "openovel-narrative-projection-v1",
+      authoritativeResultStatus: "FINALIZED",
+      structuredResultReady: true,
+      status: "PUBLISHED",
+      sourceCommitHash: "c".repeat(64),
+      presentationHash: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      content: "The settled scene is now available.",
+      updatedAt: "2026-08-07T00:05:10.000Z",
+    },
     serverNow: "2026-08-07T00:05:11.000Z",
   });
   assert.equal(projection.window.status, "COMPLETED");
   assert.equal(projection.plan?.status, "LOCKED");
   assert.equal(projection.settlement.status, "COMPLETED");
   assert.equal(projection.actor.ready, true);
-  assert.equal(projection.narrative.status, "AVAILABLE");
+  assert.equal(projection.narrative?.status, "PUBLISHED");
 });
 
 test("C7 player plan presentation rejects internal and unknown fields", () => {

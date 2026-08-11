@@ -1024,7 +1024,13 @@ model NarrativeEntry {
   sourceEventIdsJson Json
   worldSequence      Int?
   dedupeKey          String?  @unique
+  sourceCommitHash   String?
+  presentationHash   String?
+  projectionStatus   String?
+  projectionAttempt  Int      @default(0)
+  failureCode        String?
   createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   run        StoryRun            @relation(fields: [runId], references: [id], onDelete: Cascade)
   node       SceneNode?          @relation(fields: [nodeId], references: [id], onDelete: SetNull)
@@ -1035,6 +1041,8 @@ model NarrativeEntry {
   @@index([nodeId])
   @@index([roleId])
   @@index([runId, worldSequence])
+  @@index([sourceCommitHash, roleId])
+  @@index([projectionStatus, createdAt])
 }
 
 /// One role's independent story chain. It advances without consulting another

@@ -17,7 +17,7 @@ function deferred<T = void>() {
 }
 
 function pipeline() {
-  return new B0SettlementPipelineService({} as never, {} as never, {} as never, {} as never);
+  return new B0SettlementPipelineService({} as never, {} as never, {} as never);
 }
 
 function authoritativeWindow() {
@@ -165,7 +165,7 @@ test("an existing OPEN window resumes AI preparation once before concurrent wait
       findMany: async () => [dbWindow],
     },
   };
-  const service = new B0SettlementPipelineService(prisma as never, {} as never, {} as never, {} as never);
+  const service = new B0SettlementPipelineService(prisma as never, {} as never, {} as never);
   const preparationStarted = deferred();
   const releasePreparation = deferred();
   let preparationOwners = 0;

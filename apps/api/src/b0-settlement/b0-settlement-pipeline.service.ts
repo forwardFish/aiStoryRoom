@@ -16,9 +16,7 @@ import {
   type B0PublicationDeliveryV1,
   type B0PublicationPlanV1,
 } from "@ai-story/templates";
-import { OpenNovelRuntimeClient } from "../openovel-adapter/openovel-runtime.client";
 import { PrismaService } from "../prisma.service";
-import { STORY_TASK_SOURCE_FINALIZATION_SCHEMA_V1 } from "../story-task-outbox.contract";
 import { assertStoredManifestV1 } from "./b0-settlement-commit.core";
 import { B0SettlementCommitService } from "./b0-settlement-commit.prisma";
 import {
@@ -81,7 +79,6 @@ export class B0SettlementPipelineService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(B0SettlementCommitService) private readonly commits: B0SettlementCommitService,
     @Inject(B0WindowCoordinatorService) private readonly windows: B0WindowCoordinatorService,
-    @Inject(OpenNovelRuntimeClient) private readonly openNovel: OpenNovelRuntimeClient,
   ) {}
 
   async withBoundedPlayerRead<T>(key: string, operation: () => Promise<T>): Promise<T> {
@@ -239,160 +236,6 @@ export class B0SettlementPipelineService {
     };
   }
 
-  async executeNarrativeTask(taskId: string, fence: B0TaskFenceV1) {
-    const task = await this.loadTask(taskId, "B0_NARRATIVE_GENERATION");
-    const roleId = required(task.roleId, "roleId");
-    const windowId = required(task.windowId, "windowId");
-    const batchId = required(task.inputRefId, "batchId");
-    const dedupeKey = narrativeKey(batchId, roleId);
-    const existing = await this.prisma.narrativeEntry.findUnique({
-      where: { dedupeKey },
-      select: { id: true },
-    });
-    if (existing) {
-      return this.finalizeNarrativePublication({
-        taskId,
-        fence,
-        outcome: "ALREADY_PUBLISHED",
-        narrativeEntryId: existing.id,
-      });
-    }
-
-    const envelope = await this.readCommitEnvelope(windowId);
-    const plan = await this.publicationPlan(envelope);
-    if (!plan.deliveries.some((delivery) => delivery.recipientActorId === roleId)) {
-      throw hard("NARRATIVE_RECIPIENT_HAS_NO_DELIVERIES", "The narrative recipient has no structured delivery.");
-    }
-    const [run, roles] = await Promise.all([
-      this.prisma.storyRun.findUnique({
-        where: { id: envelope.manifest.runId },
-        select: { worldSequence: true, stateJson: true },
-      }),
-      this.prisma.storyRole.findMany({
-        where: { runId: envelope.manifest.runId },
-        select: { id: true, roleKey: true, roleName: true },
-        orderBy: { id: "asc" },
-      }),
-    ]);
-    if (!run) throw hard("ROOM_NOT_FOUND", "The narrative run no longer exists.");
-    const actorLabels = Object.fromEntries(roles.map((role) => [role.id, [role.roleName, role.roleKey]]));
-    const locale = b0Locale(run.stateJson);
-    const response = await this.openNovel.generateB0Narrative({
-      manifest: envelope.manifest,
-      publicationPlan: plan,
-      recipientActorId: roleId,
-      appliedWorldSequence: run.worldSequence,
-      guidance: {
-        schemaVersion: "b0-narrative-guidance-v1",
-        version: 1,
-        locale,
-        narrativeKind: "SETTLEMENT_ROLE_VIEW",
-        styleDirectives: [
-"Write a concise role-scoped account of the committed settlement.",
-"Preserve the supplied outcome and changes exactly.",
-"Do not infer hidden actors or undisclosed causes.",
-        ],
-        allowedActorLabels: roles.flatMap((role) => [role.roleName, role.roleKey]),
-        forbiddenPhrases: [],
-      },
-      actorLabels,
-    });
-    const publication = jsonRecord(response?.publication ?? response);
-    const prose = String(publication?.prose ?? "").trim();
-    if (!prose) throw new B0PipelineErrorV1("NARRATIVE_RUNTIME_EMPTY", "The narrative runtime returned no prose.");
-
-    return this.finalizeNarrativePublication({
-      taskId,
-      fence,
-      outcome: "PUBLISHED",
-      createNarrative: {
-        runId: envelope.manifest.runId,
-        nodeId: task.nodeId,
-        roleId,
-        entryType: "B0_NARRATIVE",
-        visibility: "private",
-        content: prose,
-        factKeysJson: [] as Prisma.InputJsonValue,
-        threadKeysJson: [] as Prisma.InputJsonValue,
-        sourceEventIdsJson: [] as Prisma.InputJsonValue,
-        worldSequence: envelope.manifest.committedWorldSequence,
-        dedupeKey,
-      },
-    });
-  }
-
-  private async finalizeNarrativePublication(input: {
-    taskId: string;
-    fence: B0TaskFenceV1;
-    outcome: "PUBLISHED" | "ALREADY_PUBLISHED";
-    narrativeEntryId?: string;
-    createNarrative?: {
-      runId: string;
-      nodeId: string;
-      roleId: string;
-      entryType: "B0_NARRATIVE";
-      visibility: "private";
-      content: string;
-      factKeysJson: Prisma.InputJsonValue;
-      threadKeysJson: Prisma.InputJsonValue;
-      sourceEventIdsJson: Prisma.InputJsonValue;
-      worldSequence: number;
-      dedupeKey: string;
-    };
-  }) {
-    const completedAt = new Date();
-    return this.prisma.$transaction(async (tx) => {
-      // The task row is the publication fence. Mark it completed first inside
-      // this transaction, then create the NarrativeEntry and result payload.
-      // PostgreSQL exposes neither change until the transaction commits, so a
-      // reader can never observe published prose while the task is still RUNNING.
-      const completed = await tx.storyTaskOutbox.updateMany({
-        where: {
-id: input.taskId,
-taskType: "B0_NARRATIVE_GENERATION",
-status: "running",
-leaseOwner: input.fence.leaseOwner,
-leaseVersion: input.fence.leaseVersion,
-leaseExpiresAt: { gt: completedAt },
-        },
-        data: {
-status: "completed",
-outcome: input.outcome,
-completedAt,
-leaseOwner: null,
-leaseExpiresAt: null,
-lastError: null,
-        },
-      });
-      if (completed.count !== 1) return { outcome: "LEASE_LOST" as const };
-
-      const entry = input.narrativeEntryId
-        ? { id: input.narrativeEntryId }
-        : await tx.narrativeEntry.upsert({
-  where: { dedupeKey: required(input.createNarrative?.dedupeKey, "dedupeKey") },
-  update: {},
-  create: input.createNarrative!,
-});
-      const result = { outcome: input.outcome, narrativeEntryId: entry.id };
-      await tx.storyTaskOutbox.update({
-        where: { id: input.taskId },
-        data: { resultJson: result as Prisma.InputJsonValue },
-      });
-      return {
-        ...result,
-        sourceFinalization: {
-schemaVersion: STORY_TASK_SOURCE_FINALIZATION_SCHEMA_V1,
-taskId: input.taskId,
-leaseOwner: input.fence.leaseOwner,
-leaseVersion: input.fence.leaseVersion,
-        },
-      };
-    }, {
-      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-      maxWait: 10_000,
-      timeout: 30_000,
-    });
-  }
 
   async executeWindowEventTask(taskId: string, _fence: B0TaskFenceV1) {
     const task = await this.loadTask(taskId, "B0_WINDOW_EVENT");
@@ -423,7 +266,11 @@ leaseVersion: input.fence.leaseVersion,
       select: { windowId: true, taskType: true },
     });
     if (!task?.windowId || !task.taskType.startsWith("B0_")) return;
-    const status = task.taskType === "B0_NARRATIVE_GENERATION" ? "COMPLETED" : "FAILED_RETRYABLE";
+    if (task.taskType === "B0_NARRATIVE_GENERATION") {
+      await this.recordNarrativeProjectionFailure(taskId, task.windowId, reason);
+      return;
+    }
+    const status = "FAILED_RETRYABLE";
     await this.prisma.actionWindow.updateMany({
       where: { id: task.windowId, status: { notIn: ["COMPLETED", "FAILED_HARD", "ABORTED"] } },
       data: {
@@ -444,6 +291,32 @@ leaseVersion: input.fence.leaseVersion,
         visibility: "internal",
         payloadJson: { taskId, taskType: task.taskType, reason } as Prisma.InputJsonValue,
         dedupeKey: `b0-task-failed:${taskId}`,
+        audienceType: "SYSTEM",
+        audienceRoleIdsJson: [] as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  private async recordNarrativeProjectionFailure(taskId: string, windowId: string, reason: string) {
+    const task = await this.prisma.storyTaskOutbox.findUnique({
+      where: { id: taskId },
+      select: { runId: true },
+    });
+    if (!task) return;
+    await this.prisma.storyEvent.upsert({
+      where: { dedupeKey: `b0-narrative-projection-failed:${taskId}` },
+      update: {
+        payloadJson: { taskId, windowId, reason } as Prisma.InputJsonValue,
+      },
+      create: {
+        id: stableId("b0.narrative.failure", taskId),
+        runId: task.runId,
+        day: 0,
+        type: "B0_NARRATIVE_PROJECTION_FAILED",
+        messageType: "system",
+        visibility: "internal",
+        payloadJson: { taskId, windowId, reason } as Prisma.InputJsonValue,
+        dedupeKey: `b0-narrative-projection-failed:${taskId}`,
         audienceType: "SYSTEM",
         audienceRoleIdsJson: [] as Prisma.InputJsonValue,
       },
@@ -712,18 +585,34 @@ leaseVersion: input.fence.leaseVersion,
     if (!task || !task.taskType.startsWith("B0_")) {
       throw new NotFoundException({ code: "B0_TASK_NOT_FOUND", message: "B0 task not found" });
     }
-    if (!["failed", "FAILED", "dead_letter"].includes(task.status)) {
-      throw new ConflictException({ code: "B0_TASK_NOT_RETRYABLE", message: "Only failed B0 tasks may be retried." });
+    const retryableFailure = ["failed", "FAILED", "dead_letter"].includes(task.status);
+    const retryableFallback = task.taskType === "B0_NARRATIVE_GENERATION"
+      && task.status === "completed"
+      && task.outcome === "FALLBACK_PUBLISHED";
+    if (!retryableFailure && !retryableFallback) {
+      throw new ConflictException({ code: "B0_TASK_NOT_RETRYABLE", message: "Only failed B0 tasks or fallback narrative projections may be retried." });
     }
+    const result = jsonRecord(task.resultJson) ?? {};
     return this.prisma.storyTaskOutbox.update({
       where: { id: task.id },
       data: {
         status: "pending",
         outcome: null,
+        completedAt: null,
         leaseOwner: null,
         leaseExpiresAt: null,
         nextRetryAt: new Date(),
         lastError: null,
+        ...(task.taskType === "B0_NARRATIVE_GENERATION" ? {
+          resultJson: {
+            ...result,
+            schemaVersion: "openovel-narrative-task-result-v1",
+            authoritativeResultStatus: "FINALIZED",
+            structuredResultReady: true,
+            narrativeStatus: "PENDING",
+            failureCode: null,
+          } as Prisma.InputJsonValue,
+        } : {}),
       },
     });
   }
@@ -899,10 +788,14 @@ leaseVersion: input.fence.leaseVersion,
           inputRefId: envelope.batchId,
           checkpointKey: "B0_STRUCTURED_RESULTS_PUBLISHED",
           resultJson: {
-            schemaVersion: "b0-narrative-request-v1",
+            schemaVersion: "openovel-narrative-task-result-v1",
+            authoritativeResultStatus: "FINALIZED",
+            structuredResultReady: true,
+            narrativeStatus: "PENDING",
+            sourceKind: "B0_SETTLEMENT",
+            sourceCommitHash: envelope.manifest.commitHash,
             batchId: envelope.batchId,
             roleId,
-            commitHash: envelope.manifest.commitHash,
             publicationPlanHash: plan.planHash,
           } as Prisma.InputJsonValue,
         },
@@ -1297,12 +1190,6 @@ function safeJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
-function b0Locale(stateValue: unknown): string {
-  const state = jsonRecord(stateValue);
-  const b0 = jsonRecord(state?.b0);
-  const locale = typeof b0?.locale === "string" ? b0.locale.trim() : "";
-  return locale || String(process.env.B0_NARRATIVE_LOCALE || "en").trim() || "en";
-}
 
 function narrativeKey(batchId: string, roleId: string) {
   return `b0-narrative:${batchId}:${roleId}:SETTLEMENT_ROLE_VIEW`;

@@ -206,3 +206,5 @@ function asStringArray(value: unknown): string[] {
 }
 
 export * from "./continuous-strategy";
+
+export * from "./narrative-projection";

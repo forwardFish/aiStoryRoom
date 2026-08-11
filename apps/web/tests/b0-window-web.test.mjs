@@ -53,7 +53,7 @@ function windowProjection({
   readyRevision = 1,
   readyCount = 0,
   results = [],
-  narrative = { status: "NOT_REQUESTED", content: null, updatedAt: null },
+  narrative = null,
   serverNow = "2026-08-07T00:02:00.000Z",
 } = {}) {
   return {
@@ -103,7 +103,17 @@ test("C7 browser state keeps only the player-safe B0 projection", () => {
   const normalized = normalizeB0WindowProjection(windowProjection({
     planValue: plan("CONFIRMED"),
     results: [result()],
-    narrative: { status: "PENDING", content: null, updatedAt: null, prompt: "secret" },
+    narrative: {
+    schemaVersion: "openovel-narrative-projection-v1",
+    authoritativeResultStatus: "FINALIZED",
+    structuredResultReady: true,
+    status: "PENDING",
+    sourceCommitHash: "d".repeat(64),
+    presentationHash: null,
+    content: null,
+    updatedAt: null,
+    prompt: "secret",
+  },
   }));
   const json = JSON.stringify(normalized);
   assert.equal(normalized.plan.status, "CONFIRMED");
@@ -148,13 +158,62 @@ test("C7 structured results precede Narrative and Narrative failure does not hid
     ready: true,
     readyCount: 3,
     results: [result()],
-    narrative: { status: "FAILED_RETRYABLE", content: null, updatedAt: "2026-08-07T00:05:06.000Z" },
+    narrative: {
+      schemaVersion: "openovel-narrative-projection-v1",
+      authoritativeResultStatus: "FINALIZED",
+      structuredResultReady: true,
+      status: "FAILED_RETRYABLE",
+      sourceCommitHash: "c".repeat(64),
+      presentationHash: null,
+      content: null,
+      updatedAt: "2026-08-07T00:05:06.000Z",
+    },
   }), Date.parse("2026-08-07T00:05:06.000Z"));
   const html = renderB0WindowResultsV1(state, "en");
   assert.match(html, /Another committed plan reduced your access/);
-  assert.match(html, /Narrative is temporarily unavailable/);
-  assert.match(html, /authoritative result and next window are unaffected/);
+  assert.match(html, /story presentation will retry in the background/);
+  assert.match(html, /authoritative result is final/);
   assert.doesNotMatch(html, /actor\.secret|originActorId|targetActorId|entityId/i);
+});
+
+test("authoritative results remain readable while narrative projection is pending or fallback-published", () => {
+  const pendingState = createB0WindowState();
+  applyB0WindowProjection(pendingState, windowProjection({
+    status: "COMPLETED",
+    results: [result()],
+    narrative: {
+      schemaVersion: "openovel-narrative-projection-v1",
+      authoritativeResultStatus: "FINALIZED",
+      structuredResultReady: true,
+      status: "PENDING",
+      sourceCommitHash: "e".repeat(64),
+      presentationHash: null,
+      content: null,
+      updatedAt: "2026-08-07T00:05:10.000Z",
+    },
+  }));
+  const pendingHtml = renderB0WindowResultsV1(pendingState, "zh");
+  assert.match(pendingHtml, /权威结局已确认，故事化结局正在生成。/);
+  assert.match(pendingHtml, /data-b0-authoritative-result-status="FINALIZED"/);
+
+  const fallbackState = createB0WindowState();
+  applyB0WindowProjection(fallbackState, windowProjection({
+    status: "COMPLETED",
+    results: [result()],
+    narrative: {
+      schemaVersion: "openovel-narrative-projection-v1",
+      authoritativeResultStatus: "FINALIZED",
+      structuredResultReady: true,
+      status: "FALLBACK_PUBLISHED",
+      sourceCommitHash: "e".repeat(64),
+      presentationHash: "f".repeat(64),
+      content: "The bounded authoritative facts remain available.",
+      updatedAt: "2026-08-07T00:05:12.000Z",
+    },
+  }));
+  const fallbackHtml = renderB0WindowResultsV1(fallbackState, "en");
+  assert.match(fallbackHtml, /The bounded authoritative facts remain available/);
+  assert.match(fallbackHtml, /data-b0-narrative-status="FALLBACK_PUBLISHED"/);
 });
 
 test("C7 HTTP client uses explicit B0 preview, confirm, ready and unready routes", async () => {
@@ -272,7 +331,16 @@ test("C7 completed replay opens the successor maneuver for a 390px player", asyn
     readyRevision: 3,
     readyCount: 6,
     results: [result()],
-    narrative: { status: "AVAILABLE", content: "Window one resolved.", updatedAt: "2026-08-07T00:05:10.000Z" },
+    narrative: {
+      schemaVersion: "openovel-narrative-projection-v1",
+      authoritativeResultStatus: "FINALIZED",
+      structuredResultReady: true,
+      status: "PUBLISHED",
+      sourceCommitHash: "c".repeat(64),
+      presentationHash: "d".repeat(64),
+      content: "Window one resolved.",
+      updatedAt: "2026-08-07T00:05:10.000Z",
+    },
   });
   completed.window.id = "window.one";
   completed.window.ordinal = 1;
