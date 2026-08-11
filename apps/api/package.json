@@ -24,7 +24,7 @@
     "test:openovel": "node --import tsx --test src/openovel-adapter/*.spec.ts",
     "test:maneuver-v1": "node --import tsx --test src/maneuver-v1/*.spec.ts",
     "test:b0-batch": "node --import tsx --test src/b0-settlement/b0-settlement-commit.core.spec.ts src/b0-settlement/b0-role-control-reason-contract.spec.ts src/b0-settlement/b0-runtime-database-vocabulary.spec.ts",
-    "test:b0-window": "node --import tsx --test src/b0-settlement/b0-window-coordinator.core.spec.ts src/b0-settlement/b0-window-coordinator.prisma.spec.ts",
+    "test:b0-window": "node --import tsx --test src/b0-settlement/b0-window-coordinator.core.spec.ts src/b0-settlement/b0-window-coordinator.prisma.spec.ts src/b0-settlement/b0-window-initialization-concurrency.spec.ts",
     "test:b0-player-window": "node --import tsx --test src/b0-settlement/b0-window-player.core.spec.ts",
     "test:b0-pipeline": "node --import tsx --test src/b0-settlement/b0-outbox-bridge.service.spec.ts",
     "test:b0-ops": "node --import tsx --test src/b0-settlement/b0-ops.controller.spec.ts src/b0-settlement/b0-settlement-pipeline.ops.spec.ts"

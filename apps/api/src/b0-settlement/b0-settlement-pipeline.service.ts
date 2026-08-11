@@ -71,6 +71,9 @@ export class B0PipelineErrorV1 extends Error {
 
 @Injectable()
 export class B0SettlementPipelineService {
+  private readonly runWindowInitializers = new Map<string, Promise<B0SettlementWindowV1 | null>>();
+  private readonly aiPlanPreparations = new Map<string, Promise<void>>();
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(B0SettlementCommitService) private readonly commits: B0SettlementCommitService,
@@ -349,6 +352,21 @@ export class B0SettlementPipelineService {
    * second creator before any authoritative settlement state is written.
    */
   async ensureRunWindow(runId: string): Promise<B0SettlementWindowV1 | null> {
+    const existing = this.runWindowInitializers.get(runId);
+    if (existing) return existing;
+
+    const initialization = this.ensureRunWindowOwned(runId);
+    this.runWindowInitializers.set(runId, initialization);
+    try {
+      return await initialization;
+    } finally {
+      if (this.runWindowInitializers.get(runId) === initialization) {
+        this.runWindowInitializers.delete(runId);
+      }
+    }
+  }
+
+  private async ensureRunWindowOwned(runId: string): Promise<B0SettlementWindowV1 | null> {
     const run = await this.prisma.storyRun.findUnique({
       where: { id: runId },
       include: {
@@ -372,7 +390,11 @@ export class B0SettlementPipelineService {
     const b0Windows = storedWindows.filter((window) => jsonRecord(window.configJson)?.schemaVersion === "b0-window-config-v1");
     const active = [...b0Windows].reverse().find((window) =>
       ACTIVE_B0_WINDOW_STATUSES.includes(window.status as typeof ACTIVE_B0_WINDOW_STATUSES[number]));
-    if (active) return mapStoredWindow(active);
+    if (active) {
+      const authoritative = mapStoredWindow(active);
+      if (authoritative.status === "OPEN") await this.prepareAiPlans(authoritative);
+      return authoritative;
+    }
     if (b0RunPaused(run.stateJson)) return null;
 
     const priorConfig = b0Windows.length
@@ -453,7 +475,9 @@ export class B0SettlementPipelineService {
       });
       const found = concurrent.find((window) => jsonRecord(window.configJson)?.schemaVersion === "b0-window-config-v1");
       if (!found) throw error;
-      return mapStoredWindow(found);
+      const authoritative = mapStoredWindow(found);
+      if (authoritative.status === "OPEN") await this.prepareAiPlans(authoritative);
+      return authoritative;
     }
     await this.prisma.storyRun.update({
       where: { id: runId },
@@ -793,7 +817,22 @@ export class B0SettlementPipelineService {
     }
   }
 
-  private async prepareAiPlans(window: B0SettlementWindowV1) {
+  private async prepareAiPlans(window: B0SettlementWindowV1): Promise<void> {
+    const existing = this.aiPlanPreparations.get(window.id);
+    if (existing) return existing;
+
+    const preparation = this.prepareAiPlansOwned(window);
+    this.aiPlanPreparations.set(window.id, preparation);
+    try {
+      await preparation;
+    } finally {
+      if (this.aiPlanPreparations.get(window.id) === preparation) {
+        this.aiPlanPreparations.delete(window.id);
+      }
+    }
+  }
+
+  private async prepareAiPlansOwned(window: B0SettlementWindowV1): Promise<void> {
     const storedWindow = await this.prisma.actionWindow.findUnique({
       where: { id: window.id },
       select: { nodeId: true, status: true },
