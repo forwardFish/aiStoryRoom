@@ -5,7 +5,7 @@ on:
     branches:
       - codex/chatgpt-pro-maneuver-evidence-v1
     paths:
-      - docs/auto-execute/evidence/b0/_tmp/bounded-pool-read-graph/product.patch
+      - .github/workflows/b0-one-shot-bounded-pool-read-graph-complete.yml
 
 permissions:
   contents: write
@@ -18,9 +18,9 @@ concurrency:
 env:
   B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
   B0_BASELINE: 63aec28b0b775eff924585f68827abe87b148a9e
-  B0_PATCH_PATH: docs/auto-execute/evidence/b0/_tmp/bounded-pool-read-graph/product.patch
-  B0_PATCH_BYTES: "32122"
-  B0_PATCH_SHA256: b223d4e124f560a5e8d601b0e5f661dc0db5b15c57cc38c928954d0b041db4c3
+  B0_PATCH_ROOT: docs/auto-execute/evidence/b0/_tmp/bounded-pool-read-graph
+  B0_PATCH_BYTES: "43949"
+  B0_PATCH_SHA256: d0c68a29e64d7de6ab9c11b01519f23ab6e62593a4cbba565eed1ccbdf1818fa
 
 jobs:
   repair:
@@ -37,7 +37,7 @@ jobs:
               sha: context.sha,
               state: "pending",
               context: "b0/bounded-pool-read-graph-complete",
-              description: `complete bounded-pool repair running in ${context.runId}`,
+              description: `verified chunk repair running in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -46,7 +46,7 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 50
 
-      - name: Verify and apply the complete immutable patch
+      - name: Reconstruct and verify the immutable patch
         shell: bash
         run: |
           set -euo pipefail
@@ -55,12 +55,112 @@ jobs:
           test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
           git merge-base --is-ancestor "$B0_BASELINE" HEAD
           test -z "$(git status --short)"
-          test -f "$B0_PATCH_PATH"
-          test "$(wc -c < "$B0_PATCH_PATH" | tr -d ' ')" = "$B0_PATCH_BYTES"
-          test "$(sha256sum "$B0_PATCH_PATH" | awk '{print $1}')" = "$B0_PATCH_SHA256"
-          git apply --check "$B0_PATCH_PATH"
-          git apply "$B0_PATCH_PATH"
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import base64
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["B0_PATCH_ROOT"])
+          paths = sorted(root.glob("chunk-*.b64"), key=lambda path: path.name)
+          expected_names = [
+              "chunk-00.b64", "chunk-01.b64", "chunk-02.b64", "chunk-03.b64",
+              "chunk-04a.b64", "chunk-04b.b64", "chunk-05a.b64", "chunk-05b.b64",
+              "chunk-06a.b64", "chunk-06b.b64", "chunk-07a.b64", "chunk-07b.b64",
+          ]
+          if [path.name for path in paths] != expected_names:
+              raise SystemExit(f"unexpected chunk set: {[path.name for path in paths]}")
+
+          parts = ["".join(path.read_text(encoding="ascii").split()) for path in paths]
+          raw_length = sum(map(len, parts))
+          expected_bytes = int(os.environ["B0_PATCH_BYTES"])
+          expected_sha = os.environ["B0_PATCH_SHA256"]
+          expected_b64_length = ((expected_bytes + 2) // 3) * 4
+          removal_target = raw_length - expected_b64_length
+
+          def overlap_lengths(left: str, right: str) -> list[int]:
+              probe = right + "\0" + left
+              prefix = [0] * len(probe)
+              for index in range(1, len(probe)):
+                  cursor = prefix[index - 1]
+                  while cursor and probe[index] != probe[cursor]:
+                      cursor = prefix[cursor - 1]
+                  if probe[index] == probe[cursor]:
+                      cursor += 1
+                  prefix[index] = cursor
+              lengths = [0]
+              cursor = prefix[-1]
+              while cursor:
+                  if cursor <= len(left) and cursor <= len(right):
+                      lengths.append(cursor)
+                  cursor = prefix[cursor - 1]
+              return sorted(set(lengths), reverse=True)
+
+          candidates = [overlap_lengths(parts[index], parts[index + 1]) for index in range(len(parts) - 1)]
+          states: dict[int, tuple[int, ...]] = {0: ()}
+          for options in candidates:
+              next_states: dict[int, tuple[int, ...]] = {}
+              for total, chosen in states.items():
+                  for overlap in options:
+                      new_total = total + overlap
+                      if new_total > removal_target:
+                          continue
+                      next_states.setdefault(new_total, chosen + (overlap,))
+              states = next_states
+
+          chosen = states.get(removal_target)
+          valid = False
+          decoded = b""
+          combined = ""
+          if chosen is not None:
+              combined = parts[0]
+              for part, overlap in zip(parts[1:], chosen):
+                  combined += part[overlap:]
+              try:
+                  decoded = base64.b64decode(combined, validate=True)
+                  valid = len(decoded) == expected_bytes and hashlib.sha256(decoded).hexdigest() == expected_sha
+              except Exception:
+                  valid = False
+
+          diagnostic = {
+              "schemaVersion": 1,
+              "chunkNames": expected_names,
+              "chunkLengths": [len(part) for part in parts],
+              "rawBase64Length": raw_length,
+              "expectedBase64Length": expected_b64_length,
+              "requiredOverlapRemoval": removal_target,
+              "candidateOverlapLengths": candidates,
+              "chosenOverlaps": list(chosen) if chosen is not None else None,
+              "reconstructedBase64Length": len(combined),
+              "decodedBytes": len(decoded),
+              "decodedSha256": hashlib.sha256(decoded).hexdigest() if decoded else None,
+              "valid": valid,
+          }
+          Path("/tmp/chunk-diagnostic.json").write_text(json.dumps(diagnostic, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(diagnostic, indent=2))
+          if not valid:
+              raise SystemExit("the overlap-aware reconstruction did not match the immutable patch contract")
+          Path("/tmp/b0.patch").write_bytes(decoded)
+          PY
+          test "$(wc -c < /tmp/b0.patch | tr -d ' ')" = "$B0_PATCH_BYTES"
+          test "$(sha256sum /tmp/b0.patch | awk '{print $1}')" = "$B0_PATCH_SHA256"
+          git apply --check /tmp/b0.patch
+          git apply /tmp/b0.patch
           git diff --check
+
+      - name: Upload reconstruction diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b0-bounded-pool-reconstruction-${{ github.sha }}
+          path: |
+            /tmp/chunk-diagnostic.json
+            /tmp/b0.patch
+          if-no-files-found: warn
+          retention-days: 3
 
       - uses: pnpm/action-setup@v4
         with:
@@ -96,12 +196,15 @@ jobs:
           import pathlib, re
           paths = [pathlib.Path(path) for path in """
           apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
-          apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts
-          apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts
           apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts
           apps/api/src/b0-settlement/b0-window-player.controller.ts
+          apps/api/src/b0-settlement/b0-window-player.service.ts
           apps/api/src/maneuver-v1/maneuver-v1.controller.ts
+          apps/api/src/maneuver-v1/maneuver-v1.prisma-read.spec.ts
           apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts
+          apps/api/src/maneuver-v1/maneuver-v1.service.ts
+          apps/web/public/maneuver-v1/maneuver-v1-controller.js
+          apps/web/tests/b0-window-web.test.mjs
           """.split()]
           patterns = [
               re.compile(r"postgres(?:ql)?://[^\s\"']+", re.I),
@@ -125,12 +228,15 @@ jobs:
           set -euo pipefail
           files=(
             apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
-            apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts
-            apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts
             apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts
             apps/api/src/b0-settlement/b0-window-player.controller.ts
+            apps/api/src/b0-settlement/b0-window-player.service.ts
             apps/api/src/maneuver-v1/maneuver-v1.controller.ts
+            apps/api/src/maneuver-v1/maneuver-v1.prisma-read.spec.ts
             apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts
+            apps/api/src/maneuver-v1/maneuver-v1.service.ts
+            apps/web/public/maneuver-v1/maneuver-v1-controller.js
+            apps/web/tests/b0-window-web.test.mjs
           )
           git fetch origin "$B0_BRANCH"
           remote_before="$(git rev-parse origin/$B0_BRANCH)"
@@ -169,7 +275,7 @@ jobs:
               context: "b0/bounded-pool-read-graph-complete",
               description: success
                 ? `product fix pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}`
-                : `complete repair failed in ${context.runId}`,
+                : `verified chunk repair failed in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            if (!success) core.setFailed("complete bounded-pool product repair failed");
+            if (!success) core.setFailed("verified bounded-pool product repair failed");
