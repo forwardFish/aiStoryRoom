@@ -128,6 +128,37 @@ jobs:
                       raise SystemExit(f"expected one controller match in {name}: {old[:80]!r}")
                   source = source.replace(old, new, 1)
               path.write_text(source, encoding="utf-8")
+
+          coordinator_path = Path("apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts")
+          coordinator = coordinator_path.read_text(encoding="utf-8")
+          serializable = "  private async serializable<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {"
+          helper = "\n".join([
+              "  private async projectionInTx(",
+              "    tx: Tx,",
+              "    record: B0WindowStoreRecordV1,",
+              "    actorId: string,",
+              "    freeze: B0FreezeEnvelopeV1 | null,",
+              "  ): Promise<B0WindowProjectionV1> {",
+              "    const row = await tx.playerAction.findUnique({",
+              "      where: { nodeId_roleId_actionSlot: {",
+              "        nodeId: await nodeIdForWindow(tx, record.window.id),",
+              "        roleId: actorId,",
+              "        actionSlot: \"B0_PRIMARY\",",
+              "      } },",
+              "    });",
+              "    return projectB0WindowV1({",
+              "      record,",
+              "      actorId,",
+              "      intent: row?.normalizedJson ? assertB0StoredIntentEnvelopeV1(row.normalizedJson) : null,",
+              "      freeze,",
+              "    });",
+              "  }",
+              "",
+              "",
+          ])
+          if coordinator.count(serializable) != 1 or "private async projectionInTx(" in coordinator:
+              raise SystemExit("unexpected projectionInTx restoration state")
+          coordinator_path.write_text(coordinator.replace(serializable, helper + serializable, 1), encoding="utf-8")
           PY2
           git diff --check
 
