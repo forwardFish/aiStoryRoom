@@ -79,6 +79,56 @@ jobs:
           test "$(sha256sum /tmp/b0.patch | awk '{print $1}')" = "$B0_PATCH_SHA256"
           git apply --check /tmp/b0.patch
           git apply /tmp/b0.patch
+          python3 - <<'PY2'
+          from pathlib import Path
+
+          replacements = {
+              "apps/api/src/b0-settlement/b0-window-player.controller.ts": [
+                  (
+                      '    return this.pipeline.withBoundedPlayerRead(`b0-window:${runId}:${user.id}`, async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.projection(user, runId);\n    });',
+                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerRead(`b0-window:${runId}:${user.id}`, () =>\n      this.windows.projection(user, runId));',
+                  ),
+                  (
+                      '    return this.pipeline.withBoundedPlayerOperation(async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.preview(user, runId, body);\n    });',
+                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerOperation(() => this.windows.preview(user, runId, body));',
+                  ),
+                  (
+                      '    return this.pipeline.withBoundedPlayerOperation(async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.confirm(user, runId, body);\n    });',
+                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerOperation(() => this.windows.confirm(user, runId, body));',
+                  ),
+                  (
+                      '    return this.pipeline.withBoundedPlayerOperation(async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.ready(user, runId, body);\n    });',
+                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerOperation(() => this.windows.ready(user, runId, body));',
+                  ),
+                  (
+                      '    return this.pipeline.withBoundedPlayerOperation(async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.unready(user, runId, body);\n    });',
+                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerOperation(() => this.windows.unready(user, runId, body));',
+                  ),
+              ],
+              "apps/api/src/maneuver-v1/maneuver-v1.controller.ts": [
+                  (
+                      '    return this.b0Pipeline.withBoundedPlayerRead(`maneuver-projection:${runId}:${user.id}`, async () => {\n      await this.b0Pipeline.ensureRunWindow(runId);\n      return this.maneuvers.projection(user, runId);\n    });',
+                      '    await this.b0Pipeline.ensureRunWindow(runId);\n    return this.b0Pipeline.withBoundedPlayerRead(`maneuver-projection:${runId}:${user.id}`, () =>\n      this.maneuvers.projection(user, runId));',
+                  ),
+                  (
+                      '    return this.b0Pipeline.withBoundedPlayerOperation(async () => {\n      await this.b0Pipeline.ensureRunWindow(runId);\n      return this.maneuvers.preview(user, runId, body);\n    });',
+                      '    await this.b0Pipeline.ensureRunWindow(runId);\n    return this.b0Pipeline.withBoundedPlayerOperation(() => this.maneuvers.preview(user, runId, body));',
+                  ),
+                  (
+                      '    return this.b0Pipeline.withBoundedPlayerOperation(async () => {\n      await this.b0Pipeline.ensureRunWindow(runId);\n      return this.maneuvers.commit(user, runId, body);\n    });',
+                      '    await this.b0Pipeline.ensureRunWindow(runId);\n    return this.b0Pipeline.withBoundedPlayerOperation(() => this.maneuvers.commit(user, runId, body));',
+                  ),
+              ],
+          }
+          for name, pairs in replacements.items():
+              path = Path(name)
+              source = path.read_text(encoding="utf-8")
+              for old, new in pairs:
+                  if source.count(old) != 1:
+                      raise SystemExit(f"expected one controller match in {name}: {old[:80]!r}")
+                  source = source.replace(old, new, 1)
+              path.write_text(source, encoding="utf-8")
+          PY2
           git diff --check
 
       - uses: pnpm/action-setup@v4
