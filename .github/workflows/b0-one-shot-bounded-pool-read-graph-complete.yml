@@ -1,0 +1,175 @@
+name: B0 One-Shot Complete Bounded Pool Read Graph Repair
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - docs/auto-execute/evidence/b0/_tmp/bounded-pool-read-graph/product.patch
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-complete-bounded-pool-read-graph
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+  B0_BASELINE: 63aec28b0b775eff924585f68827abe87b148a9e
+  B0_PATCH_PATH: docs/auto-execute/evidence/b0/_tmp/bounded-pool-read-graph/product.patch
+  B0_PATCH_BYTES: "32122"
+  B0_PATCH_SHA256: b223d4e124f560a5e8d601b0e5f661dc0db5b15c57cc38c928954d0b041db4c3
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Publish run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/bounded-pool-read-graph-complete",
+              description: `complete bounded-pool repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 50
+
+      - name: Verify and apply the complete immutable patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$B0_BASELINE" HEAD
+          test -z "$(git status --short)"
+          test -f "$B0_PATCH_PATH"
+          test "$(wc -c < "$B0_PATCH_PATH" | tr -d ' ')" = "$B0_PATCH_BYTES"
+          test "$(sha256sum "$B0_PATCH_PATH" | awk '{print $1}')" = "$B0_PATCH_SHA256"
+          git apply --check "$B0_PATCH_PATH"
+          git apply "$B0_PATCH_PATH"
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Run focused product gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-ops
+          pnpm --filter @apps/api test:maneuver-v1
+          pnpm --filter @apps/api typecheck
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web build
+
+      - name: Scan changed product files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, re
+          paths = [pathlib.Path(path) for path in """
+          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+          apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts
+          apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts
+          apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts
+          apps/api/src/b0-settlement/b0-window-player.controller.ts
+          apps/api/src/maneuver-v1/maneuver-v1.controller.ts
+          apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts
+          """.split()]
+          patterns = [
+              re.compile(r"postgres(?:ql)?://[^\s\"']+", re.I),
+              re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
+              re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),
+              re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+          ]
+          findings = []
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for pattern in patterns:
+                  if pattern.search(text): findings.append((str(path), pattern.pattern))
+          if findings: raise SystemExit(f"changed-file secret scan failed: {findings}")
+          print("changed-file secret scan: PASS")
+          PY
+
+      - name: Commit and push product files only
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
+            apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts
+            apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts
+            apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts
+            apps/api/src/b0-settlement/b0-window-player.controller.ts
+            apps/api/src/maneuver-v1/maneuver-v1.controller.ts
+            apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts
+          )
+          git fetch origin "$B0_BRANCH"
+          remote_before="$(git rev-parse origin/$B0_BRANCH)"
+          test "$remote_before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${files[@]}"
+          git diff --cached --check
+          printf '%s\n' "${files[@]}" | LC_ALL=C sort > /tmp/expected-files
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual-files
+          diff -u /tmp/expected-files /tmp/actual-files
+          git commit -m "fix(b0): bound repeated projection reads to the pool"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$B0_BRANCH"
+          remote_after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$remote_after" = "$local_head"
+          echo "local_head=$local_head" >> "$GITHUB_OUTPUT"
+          echo "remote_before=$remote_before" >> "$GITHUB_OUTPUT"
+          echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
+          echo "REMOTE_PRODUCT_FIX_PUSHED=$local_head"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOCAL_HEAD: ${{ steps.push.outputs.local_head }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/bounded-pool-read-graph-complete",
+              description: success
+                ? `product fix pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}`
+                : `complete repair failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("complete bounded-pool product repair failed");
