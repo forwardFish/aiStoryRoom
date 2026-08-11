@@ -13,6 +13,7 @@ import { RoleAgentTaskService } from "./continuous-strategy/role-agent-task.serv
 import { ContinuousStoryV2Service } from "./continuous-story-v2/continuous-story-v2.service";
 import { readCreditConsumptionConfig } from "./config/credit-consumption.config";
 import { SoloStoryEngineService } from "./solo-story-engine/solo-story-engine.service";
+import { isStoryTaskSourceFinalizationV1 } from "./story-task-outbox.contract";
 
 const LEASE_MS = normalizeStoryTaskLeaseMs(process.env.STORY_TASK_LEASE_MS);
 const POLL_MS = 250;
@@ -306,6 +307,7 @@ export class StoryTaskOutboxService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn(`Story task ${task.id} lost lease ${fence.leaseVersion}; completion suppressed`);
         return;
       }
+      if (isStoryTaskSourceFinalizationV1(resolution, fence)) return;
       const completed = await this.prisma.storyTaskOutbox.updateMany({
         where: {
           id: task.id,
