@@ -43,6 +43,7 @@ export function createManeuverV1Controller({ root, window: win, runId, fetchImpl
   let legacyPanelSnapshot = null;
   let countdownTimer = null;
   let pollTimer = null;
+  let b0PollFlight = null;
 
   async function boot() {
     ensureStyles(win.document);
@@ -112,9 +113,33 @@ export function createManeuverV1Controller({ root, window: win, runId, fetchImpl
     return b0State.projection;
   }
 
-  async function pollB0() {
-    if (destroyed || b0State.busy || !state.active) return;
-    await refreshB0({ suppressError: true, renderAfter: true });
+  function pollB0() {
+    if (destroyed || b0State.busy || !state.active) return Promise.resolve(null);
+    if (b0PollFlight) return b0PollFlight;
+
+    const flight = pollB0Owned().finally(() => {
+      if (b0PollFlight === flight) b0PollFlight = null;
+    });
+    b0PollFlight = flight;
+    return flight;
+  }
+
+  async function pollB0Owned() {
+    const beforeWindow = b0WindowIdentity(b0State.projection);
+    const beforeEditable = b0CanEdit(b0State);
+    await refreshB0({ suppressError: true, renderAfter: false });
+    if (destroyed || !state.active) return null;
+
+    const afterWindow = b0WindowIdentity(b0State.projection);
+    const successorChanged = Boolean(afterWindow && afterWindow !== beforeWindow);
+    const editingReopened = !beforeEditable && b0CanEdit(b0State);
+    if (successorChanged || editingReopened) {
+      await refreshManeuver({ suppressError: true });
+      render();
+    } else {
+      renderB0Surfaces();
+    }
+    return b0State.projection;
   }
 
   async function requestPreview() {
@@ -433,6 +458,11 @@ function ensureStyle(documentLike, id, href) {
   link.rel = "stylesheet";
   link.href = href;
   documentLike.head?.append(link);
+}
+function b0WindowIdentity(projection) {
+  const id = String(projection?.window?.id || "").trim();
+  if (!id) return "";
+  return `${id}:${Number(projection?.window?.ordinal || 0)}`;
 }
 function b0DraftRequestId() {
   const id = globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;

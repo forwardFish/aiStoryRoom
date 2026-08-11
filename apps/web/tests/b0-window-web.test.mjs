@@ -253,6 +253,91 @@ test("C7 real game controller previews and confirms through B0 without invoking 
   dom.window.close();
 });
 
+test("C7 completed replay opens the successor maneuver for a 390px player", async () => {
+  const dom = new JSDOM(`<!doctype html><html lang="en"><head></head><body><main id="game">
+    <aside class="causal-left"></aside>
+    <section class="causal-center"><div class="decision-zone" data-testid="decision-zone">Main decision</div></section>
+    <aside class="causal-right"><section data-testid="maneuver-panel">Legacy maneuver panel</section></aside>
+  </main></body></html>`, { url: "https://example.test/game?runId=run.successor" });
+  const win = dom.window;
+  Object.defineProperty(win, "innerWidth", { configurable: true, value: 390 });
+  const intervals = [];
+  win.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
+  win.clearInterval = () => undefined;
+
+  const completed = windowProjection({
+    status: "COMPLETED",
+    planValue: plan("LOCKED", 2),
+    ready: true,
+    readyRevision: 3,
+    readyCount: 6,
+    results: [result()],
+    narrative: { status: "AVAILABLE", content: "Window one resolved.", updatedAt: "2026-08-07T00:05:10.000Z" },
+  });
+  completed.window.id = "window.one";
+  completed.window.ordinal = 1;
+  completed.expectedCount = 6;
+
+  const successor = windowProjection({
+    status: "OPEN",
+    planValue: null,
+    ready: false,
+    readyRevision: 1,
+    readyCount: 3,
+    serverNow: "2026-08-07T00:05:12.000Z",
+  });
+  successor.window.id = "window.two";
+  successor.window.ordinal = 2;
+  successor.expectedCount = 6;
+
+  let b0 = completed;
+  let maneuver = { ...maneuverProjection(), windowState: "CLOSED", stateRevision: 8, turnRevision: 3 };
+  let b0ProjectionCalls = 0;
+  let maneuverProjectionCalls = 0;
+  const fetchImpl = async (url, init) => {
+    if (url.endsWith("/b0/window") && init.method === "GET") {
+      b0ProjectionCalls += 1;
+      return response(b0);
+    }
+    if (url.endsWith("/maneuvers/projection")) {
+      maneuverProjectionCalls += 1;
+      return response(maneuver);
+    }
+    return response({ code: "NOT_FOUND" }, 404);
+  };
+
+  const controller = createManeuverV1Controller({
+    root: win.document.querySelector("#game"),
+    window: win,
+    runId: "run.successor",
+    fetchImpl,
+  });
+  await controller.boot();
+  const poll = intervals.find(({ delay }) => delay === 2_500)?.callback;
+  assert.equal(typeof poll, "function");
+  assert.equal(win.document.querySelector('[data-mv1-kind="CONTACT"]').disabled, true);
+  assert.equal(maneuverProjectionCalls, 1);
+
+  await Promise.all([poll(), poll()]);
+  assert.equal(b0ProjectionCalls, 2, "overlapping interval ticks must share one B0 poll flight");
+  assert.equal(maneuverProjectionCalls, 1, "an idempotent completed-window replay must not reload maneuver context");
+
+  b0 = successor;
+  maneuver = { ...maneuverProjection(), windowState: "OPEN", stateRevision: 9, turnRevision: 1 };
+  await poll();
+  await settled();
+
+  const contact = win.document.querySelector('[data-mv1-kind="CONTACT"]');
+  assert.equal(contact.disabled, false, "the 390px player must receive the successor maneuver state");
+  assert.equal(maneuverProjectionCalls, 2, "a new B0 window must refresh the maneuver projection exactly once");
+  assert.equal(controller.getState().b0Window.status, "OPEN");
+  assert.equal(controller.getState().b0Window.readyCount, 3);
+  assert.equal(controller.getState().b0Window.expectedCount, 6);
+
+  controller.destroy();
+  dom.window.close();
+});
+
 function response(payload, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => payload };
 }
