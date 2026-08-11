@@ -1,5 +1,6 @@
 name: Patch Settled Reaction Contract V2 Runner
 
+# Trigger after transport and source hotfix are both present.
 on:
   push:
     branches:
