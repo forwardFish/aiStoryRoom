@@ -34,6 +34,8 @@ const MULTIPLAYER_MIN_HUMANS = 2;
 const MULTIPLAYER_MAX_HUMANS = 3;
 const LOBBY_WAIT_MS = 5 * 60 * 1000;
 const LOBBY_MAX_LIFETIME_MS = 30 * 60 * 1000;
+const PRESSURE_RUNTIME_PROFILE = "SANGTIAN_PRESSURE_SPINE_V1";
+const PRESSURE_STRATEGY_VERSION = "sangtian_pressure_v1_0";
 
 export function soloRunIdForRequest(userId: string, idempotencyKey: string) {
   return `solo_${createHash("sha256").update(`${userId}\0${idempotencyKey}`).digest("hex").slice(0, 32)}`;
@@ -227,6 +229,7 @@ export class RoomsService {
       activeActionBillingEligible?: boolean;
       billingPolicyVersion?: CreditPolicyVersion;
       billingPriceJson?: BillingPriceSnapshot;
+      runVersions?: { engineVersion: string; strategyVersion: string };
     } = {}
   ) {
     const worldId = String(input.worldId || "sangtian");
@@ -241,7 +244,7 @@ export class RoomsService {
     let deterministicRunId = internal.runId;
     let idempotentPublicRequest = false;
     const idempotencyKey = String(input.idempotencyKey || "").trim();
-    const versions = selectRunVersions({
+    const versions = internal.runVersions || selectRunVersions({
       templateKey: worldId,
       mode: "room",
       maxPlayers,
@@ -335,7 +338,7 @@ export class RoomsService {
   }
 
   /** A private one-player run that uses the same seven-node engine as rooms. */
-  async createSolo(user: AuthenticatedUser, input: { worldId?: string; roleKey?: string; idempotencyKey?: string; resumeExisting?: boolean }) {
+  async createSolo(user: AuthenticatedUser, input: { worldId?: string; roleKey?: string; idempotencyKey?: string; resumeExisting?: boolean; runtimeProfile?: string }) {
     const worldId = String(input.worldId || "caesar");
     const world = findGameDefinition(worldId);
     if (!world || world.status !== "playable" || !world.modes.solo) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "That world is not available for solo play" });
@@ -346,13 +349,24 @@ export class RoomsService {
     }
     const idempotencyKey = String(input.idempotencyKey || "").trim();
     if (idempotencyKey && !SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
-    const versions = selectRunVersions({
+    const requestedRuntimeProfile = String(input.runtimeProfile || "").trim();
+    if (requestedRuntimeProfile && requestedRuntimeProfile !== PRESSURE_RUNTIME_PROFILE) {
+      throw new BadRequestException({ code: "RUNTIME_PROFILE_UNSUPPORTED", message: "That Solo runtime profile is not supported" });
+    }
+    const usePressureRuntime = requestedRuntimeProfile === PRESSURE_RUNTIME_PROFILE;
+    if (usePressureRuntime && worldId !== "sangtian") {
+      throw new BadRequestException({ code: "RUNTIME_PROFILE_WORLD_MISMATCH", message: "The pressure runtime is only available for Sangtian" });
+    }
+    const selectedVersions = usePressureRuntime ? {
+      engineVersion: CONTINUOUS_ENGINE_VERSION,
+      strategyVersion: PRESSURE_STRATEGY_VERSION,
+    } : selectRunVersions({
       templateKey: worldId,
       mode: "room",
       maxPlayers: 1,
       enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
     });
-    const soloEngineVersion = configuredSoloEngine(worldId) || versions.engineVersion;
+    const soloEngineVersion = usePressureRuntime ? CONTINUOUS_ENGINE_VERSION : configuredSoloEngine(worldId) || selectedVersions.engineVersion;
     const useNewSoloEngine = soloEngineVersion === SOLO_STORY_ENGINE_VERSION;
     const useOpenNovel = soloEngineVersion === OPENOVEL_ENGINE_VERSION;
     const creditConfig = readCreditConsumptionConfig();
@@ -372,7 +386,7 @@ export class RoomsService {
     // lookup, including legacy records created before stateJson.room.solo was
     // added to the contract.
     if (shouldResumeExistingSolo(input)) {
-      const activeSolo = await this.findActiveSoloRun(user.id, worldId, requestedRole);
+      const activeSolo = await this.findActiveSoloRun(user.id, worldId, requestedRole, usePressureRuntime ? PRESSURE_STRATEGY_VERSION : undefined);
       if (activeSolo) return soloCreationResponse(activeSolo.id, await this.start(user, activeSolo.id));
     }
 
@@ -406,7 +420,7 @@ export class RoomsService {
       if (runCharge.kind === "insufficient") throw runCreationCreditsRequired(runCharge, `/worlds/${encodeURIComponent(worldId)}`);
     }
     if (deterministicRunId) {
-      const replay = await this.replaySoloCreation(user, deterministicRunId, worldId, requestedRole, false);
+      const replay = await this.replaySoloCreation(user, deterministicRunId, worldId, requestedRole, false, usePressureRuntime ? PRESSURE_STRATEGY_VERSION : undefined);
       if (replay) {
         if (runCharge?.kind === "reserved") runCharge.charge = await this.creditConsumption.commitCharge(runCharge.charge.id);
         return withBilling(replay, runCharge);
@@ -425,11 +439,11 @@ export class RoomsService {
         await this.prepareSoloLobby(user, created.id, role.id, worldId);
         await this.soloStory.activateNewRun(user, created.id);
         response = soloCreationResponse(created.id, await this.soloStory.start(user, created.id));
-      } else if (versions.engineVersion === CONTINUOUS_ENGINE_VERSION || versions.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
+      } else if (selectedVersions.engineVersion === CONTINUOUS_ENGINE_VERSION || selectedVersions.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) {
         const created = await this.create(
           user,
           { worldId, title: roomTitleForCreate(undefined, "solo"), maxPlayers: 1, visibility: "private" },
-          { runId: deterministicRunId, skipPublicIdempotency: true, skipRunCharge: true, billingPolicyVersion, billingPriceJson }
+          { runId: deterministicRunId, skipPublicIdempotency: true, skipRunCharge: true, billingPolicyVersion, billingPriceJson, runVersions: selectedVersions }
         );
         const role = created.roles.find((item: { roleKey: string }) => item.roleKey === requestedRole);
         if (!role) throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That role is not available in this world" });
@@ -439,7 +453,7 @@ export class RoomsService {
         const created = await this.story.createRun(
           user.openid,
           { templateId: world.templateId, mode: "room", maxPlayers: 1, aiPlayerCount: 0, ownerAsPlayer: true },
-          { ...versions, runId: deterministicRunId, billingPolicyVersion, billingPriceJson }
+          { ...selectedVersions, runId: deterministicRunId, billingPolicyVersion, billingPriceJson }
         );
         const role = created.roles.find((item: { roleKey: string }) => item.roleKey === requestedRole);
         if (!role) throw new BadRequestException({ code: "ROLE_NOT_FOUND", message: "That role is not available in this world" });
@@ -450,7 +464,7 @@ export class RoomsService {
       }
     } catch (error) {
       if (deterministicRunId && isSoloCreationRace(error)) {
-        const concurrentReplay = await this.replaySoloCreation(user, deterministicRunId, worldId, requestedRole, true);
+        const concurrentReplay = await this.replaySoloCreation(user, deterministicRunId, worldId, requestedRole, true, usePressureRuntime ? PRESSURE_STRATEGY_VERSION : undefined);
         if (concurrentReplay) {
           if (runCharge?.kind === "reserved") runCharge.charge = await this.creditConsumption.commitCharge(runCharge.charge.id);
           return withBilling(concurrentReplay, runCharge);
@@ -517,13 +531,14 @@ export class RoomsService {
   }
 
 
-  private async findActiveSoloRun(userId: string, worldId: string, roleKey: string) {
+  private async findActiveSoloRun(userId: string, worldId: string, roleKey: string, strategyVersion?: string) {
     const candidates = await this.prisma.storyRun.findMany({
       where: {
         id: { startsWith: "solo_" },
         ownerUserId: userId,
         templateKey: worldId,
         maxPlayers: 1,
+        ...(strategyVersion ? { strategyVersion } : {}),
         status: { in: ["playing", "resolving"] },
         players: { some: { userId, playerType: "human", role: { roleKey } } }
       },
@@ -540,7 +555,7 @@ export class RoomsService {
       .sort((left, right) => compareSoloProgress(left, right, roleKey))[0] || null;
   }
 
-  private async replaySoloCreation(user: AuthenticatedUser, runId: string, worldId: string, roleKey: string, waitForConcurrent: boolean) {
+  private async replaySoloCreation(user: AuthenticatedUser, runId: string, worldId: string, roleKey: string, waitForConcurrent: boolean, expectedStrategyVersion?: string) {
     const attempts = waitForConcurrent ? IDEMPOTENCY_REPLAY_ATTEMPTS : 1;
     for (let attempt = 0; attempt < attempts; attempt += 1) {
       const run = await this.prisma.storyRun.findUnique({
@@ -551,13 +566,16 @@ export class RoomsService {
       if (run.ownerUserId !== user.id || run.templateKey !== worldId) {
         throw new ConflictException({ code: "IDEMPOTENCY_KEY_REUSED", message: "The idempotency key belongs to a different Solo request" });
       }
+      if (expectedStrategyVersion && run.strategyVersion !== expectedStrategyVersion) {
+        throw new ConflictException({ code: "IDEMPOTENCY_KEY_REUSED", message: "The idempotency key belongs to another Solo runtime" });
+      }
       const claimedRole = run.players[0]?.role?.roleKey;
       if (claimedRole && claimedRole !== roleKey) {
         throw new ConflictException({ code: "IDEMPOTENCY_KEY_REUSED", message: "The idempotency key belongs to a different Solo role" });
       }
       if (run.status === "playing" && claimedRole === roleKey) {
         const payload = run.engineVersion === CONTINUOUS_ENGINE_VERSION
-          ? { gameProjection: await this.memberProjections.game(user, run.id) }
+          ? { gameProjection: run.strategyVersion === PRESSURE_STRATEGY_VERSION ? await this.commands.pressureGame(user, run.id) : await this.memberProjections.game(user, run.id) }
           : run.engineVersion === SOLO_STORY_ENGINE_VERSION
             ? await this.soloStory.start(user, run.id)
           : run.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION
@@ -670,7 +688,7 @@ export class RoomsService {
     // Story V2 owns an idempotent start/resume implementation.  Route it
     // before the legacy waiting-lobby guard so a playing Solo run can be
     // reopened without attempting lobby mutations again.
-    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true, strategyVersion: true } });
     if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) {
       return { gameProjection: await this.openNovel.game(user, roomId) };
     }
@@ -679,7 +697,7 @@ export class RoomsService {
     const room = await this.requireWaitingMember(user, roomId);
     if (room.engineVersion === CONTINUOUS_ENGINE_VERSION) {
       const started = await this.actionWindows.start(user, roomId);
-      return { ...started, gameProjection: await this.memberProjections.game(user, roomId) };
+      return { ...started, gameProjection: engine.strategyVersion === PRESSURE_STRATEGY_VERSION ? await this.commands.pressureGame(user, roomId) : await this.memberProjections.game(user, roomId) };
     }
     if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the host can start the game" });
     const state = roomState(room.stateJson);
@@ -755,10 +773,13 @@ export class RoomsService {
   }
 
   async game(user: AuthenticatedUser, roomId: string) {
-    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true, strategyVersion: true } });
     if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) return this.openNovel.game(user, roomId);
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.game(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.game(user, roomId);
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION && engine.strategyVersion === "sangtian_pressure_v1_0") {
+      return this.commands.pressureGame(user, roomId);
+    }
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.game(user, roomId);
     const room = await this.get(user, roomId);
     if (room.status === "chapter_generated") return { world: room.world, room, completed: true, currentNode: null, submittedRoleIds: [], access: this.access.roomAccessState(room, 7) };
@@ -784,11 +805,20 @@ export class RoomsService {
     };
   }
 
+  async previewPressureAction(user: AuthenticatedUser, roomId: string, command: unknown) {
+    return this.commands.previewPressureAction(user, roomId, command);
+  }
+
+  async confirmPressureAction(user: AuthenticatedUser, roomId: string, command: unknown) {
+    return this.commands.confirmPressureAction(user, roomId, command);
+  }
+
   async result(user: AuthenticatedUser, roomId: string) {
-    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true, strategyVersion: true } });
     if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) return this.openNovel.result(user, roomId);
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.result(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.result(user, roomId);
+    if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION && engine.strategyVersion === PRESSURE_STRATEGY_VERSION) return this.commands.pressureResult(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.result(user, roomId);
     const room = await this.get(user, roomId);
     if (room.status !== "chapter_generated") {

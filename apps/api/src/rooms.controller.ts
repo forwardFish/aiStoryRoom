@@ -15,11 +15,13 @@ export class RoomsController {
   @Get() list(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.list(worldId, user); }
   @Get("mine") mine(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.mine(user, worldId); }
   @Post() create(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; title?: string; visibility?: string; maxPlayers?: number; idempotencyKey?: string }) { return this.rooms.create(user, body); }
-  @Post("solo") createSolo(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; roleKey?: string; idempotencyKey?: string; resumeExisting?: boolean }) { return this.rooms.createSolo(user, body); }
+  @Post("solo") createSolo(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; roleKey?: string; idempotencyKey?: string; resumeExisting?: boolean; runtimeProfile?: string }) { return this.rooms.createSolo(user, body); }
   @Post("join-by-code") join(@CurrentUser() user: AuthenticatedUser, @Body() body: { inviteCode?: string; code?: string }) { return this.rooms.joinByCode(user, String(body.inviteCode || body.code || "")); }
   @Post(":roomId/waiting/extend") extendWaiting(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string }) { return this.rooms.extendWaiting(user, roomId, body); }
   @Post(":roomId/play-solo") playSolo(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string; confirmReadyPlayersChanged?: boolean }) { return this.rooms.playSoloFromWaitingRoom(user, roomId, body); }
   @Get(":roomId/game") game(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.game(user, roomId); }
+  @Post(":roomId/game/actions/preview") previewPressureAction(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: unknown) { return this.rooms.previewPressureAction(user, roomId, body); }
+  @Post(":roomId/game/actions/confirm") confirmPressureAction(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: unknown) { return this.rooms.confirmPressureAction(user, roomId, body); }
   @Get(":roomId/result") result(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.result(user, roomId); }
   @Post(":roomId/game/action") action(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) { return this.rooms.submitGameAction(user, roomId, body); }
   @Post(":roomId/game/actions/main") main(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: SlotCommandV1) { return this.rooms.submitMain(user, roomId, body); }
