@@ -23,4 +23,25 @@ with zipfile.ZipFile(sys.argv[1]) as z:
  const r=spawnSync(python(),["-c",script,path],{encoding:"utf8"});if(r.status!==0)throw new Error(`ZIP_INSPECTION_FAILED:${r.stderr}`);return JSON.parse(r.stdout);}
 function inputBoundary(){const b=JSON.parse(readFileSync(boundaryPath,"utf8"));if(b.originMainSha!=="8584867d20cc089126f458afa82636e5ad570cd4")throw new Error("INPUT_BASE_SHA_MISMATCH");const c=verify(locate(b.contextArchive.fileName,"SANGTIAN_PHASE2_CONTEXT_ZIP"),b.contextArchive,"contextArchive"),ci=inspect(c.path),total=Object.values(b.contextArchive.expectedGroups).reduce((a,v)=>a+Number(v),0);if(ci.fileCount!==total||ci.unsafe.length)throw new Error(`CONTEXT_ZIP_INVENTORY_INVALID:${JSON.stringify(ci)}`);for(const[g,n]of Object.entries(b.contextArchive.expectedGroups))if(Number(ci.groups[g]||0)!==Number(n))throw new Error(`CONTEXT_ZIP_GROUP_MISMATCH:${g}`);const a=verify(archive,b.acceptedContentArchive,"acceptedContentArchive"),ai=inspect(a.path);if(ai.fileCount!==95||ai.unsafe.length)throw new Error("ACCEPTED_ZIP_INVENTORY_INVALID");const artifacts=b.phase2Artifacts.map(x=>verify(locate(x.fileName,`SANGTIAN_PHASE2_${x.fileName.replace(/[^A-Za-z0-9]+/g,"_").toUpperCase()}`),x,x.fileName));console.log(JSON.stringify({verdict:"PASS",suite:"input-boundary",originMainSha:b.originMainSha,context:{...c,inventory:ci},acceptedContent:{...a,inventory:ai},phase2ArtifactCount:artifacts.length,phase2Artifacts:artifacts},null,2));}
 function contentSuite(){const t0=process.env.SANGTIAN_T0_PATH||resolve(root,"docs/剧本/嘉靖财政危局/大明王朝1566 (刘和平).txt"),args=["--import","tsx",importer,"--check","--output-root",artifact,"--registry-path",registry];if(existsSync(t0))args.push("--t0",t0);run(process.execPath,args);run(python(),[resolve(content,"tools/validate_package.py")],content);run(process.execPath,["--import","tsx","--test",resolve(root,"packages/templates/tests/pressure-spine.test.ts")],root,existsSync(t0)?{SANGTIAN_T0_PATH:t0}:{});const lock=JSON.parse(readFileSync(resolve(artifact,"manifest.lock.json"),"utf8")),index=JSON.parse(readFileSync(resolve(artifact,"runtime-index.json"),"utf8"));console.log(JSON.stringify({verdict:"PASS",suite:"content",registeredPackageVersion:lock.registeredPackageVersion,contentTreeSha256:lock.contentTreeSha256,runtimeIndexSha256:lock.runtimeIndexSha256,sourcePackageSha256:lock.sourcePackageSha256,sourceSha256:lock.sourceSha256,counts:index.counts},null,2));}
-try{if(suite==="input-boundary")inputBoundary();else if(suite==="content")contentSuite();else throw new Error(`SUITE_NOT_IMPLEMENTED_IN_D1:${suite||"<missing>"}`);}catch(e){console.error(JSON.stringify({verdict:"FAIL",suite:suite||null,error:e instanceof Error?e.message:String(e)},null,2));process.exitCode=1;}
+const d2Suites={
+  kernel:["packages/templates/tests/pressure-spine.test.ts","packages/templates/tests/pressure-spine-kernel.test.ts"],
+  determinism:["packages/templates/tests/pressure-spine-determinism.test.ts"],
+  integration:["packages/templates/tests/pressure-spine-integration.test.ts"],
+  security:["packages/templates/tests/pressure-spine-security.test.ts"],
+  recovery:["packages/templates/tests/pressure-spine-recovery.test.ts"],
+  api:["apps/api/src/continuous-strategy/pressure-spine-runtime.service.spec.ts"]
+};
+function d2Suite(name){
+ const relativeFiles=d2Suites[name];
+ if(!relativeFiles)throw new Error(`SUITE_NOT_IMPLEMENTED:${name||"<missing>"}`);
+ const files=relativeFiles.map(relative=>resolve(root,relative));
+ for(const [index,target] of files.entries())if(!existsSync(target))throw new Error(`D2_TEST_FILE_REQUIRED:${relativeFiles[index]}`);
+ const result=spawnSync(process.execPath,["--import","tsx","--test",...files],{cwd:root,encoding:"utf8",env:process.env,maxBuffer:64*1024*1024});
+ if(result.stdout)process.stdout.write(result.stdout);if(result.stderr)process.stderr.write(result.stderr);if(result.error)throw result.error;
+ const output=`${result.stdout||""}\n${result.stderr||""}`;
+ const count=(label)=>{const match=new RegExp(`# ${label}\\s+(\\d+)`).exec(output);return match?Number(match[1]):0;};
+ const counts={total:count("tests"),pass:count("pass"),fail:count("fail"),skip:count("skipped"),todo:count("todo")};
+ if(result.status!==0||counts.fail!==0||counts.total<1||counts.pass!==counts.total||counts.skip!==0||counts.todo!==0)throw new Error(`D2_TEST_FAILED:${name}:exit=${result.status}:counts=${JSON.stringify(counts)}`);
+ console.log(JSON.stringify({verdict:"PASS",suite:name,testFiles:relativeFiles,runner:"node --import tsx --test",counts},null,2));
+}
+try{if(suite==="input-boundary")inputBoundary();else if(suite==="content")contentSuite();else d2Suite(suite);}catch(e){console.error(JSON.stringify({verdict:"FAIL",suite:suite||null,error:e instanceof Error?e.message:String(e)},null,2));process.exitCode=1;}

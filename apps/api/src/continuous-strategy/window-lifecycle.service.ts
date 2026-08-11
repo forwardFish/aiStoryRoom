@@ -1,10 +1,11 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma.service";
 import { sha256Canonical } from "./canonical";
 import { ContinuousStrategyContentService, type BoundContinuousStrategyContent } from "./content.service";
 import { ContinuousEventDeliveryService } from "./event-delivery.service";
 import { RoleAgentTaskService } from "./role-agent-task.service";
+import { PressureSpineRuntimeService } from "./pressure-spine-runtime.service";
 
 type Tx = Prisma.TransactionClient;
 
@@ -16,12 +17,13 @@ export class WindowLifecycleService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ContinuousStrategyContentService) private readonly content: ContinuousStrategyContentService,
     @Inject(ContinuousEventDeliveryService) private readonly deliveries: ContinuousEventDeliveryService,
-    @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService
+    @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService,
+    @Optional() @Inject(PressureSpineRuntimeService) private readonly pressureRuntime?: PressureSpineRuntimeService
   ) {}
 
   async sweep(limit = 25) {
     const windows = await this.prisma.actionWindow.findMany({
-      where: { status: { in: ["MAIN_OPEN", "INTERACTION_GRACE", "CLOSING"] } },
+      where: { status: { in: ["MAIN_OPEN", "COMMIT_OPEN", "REACTION_OPEN", "INTERACTION_GRACE", "CLOSING"] } },
       orderBy: { updatedAt: "asc" }, take: Math.max(1, Math.min(100, limit)), select: { id: true }
     });
     const results = [];
@@ -33,6 +35,9 @@ export class WindowLifecycleService {
   }
 
   async advance(windowId: string, now = new Date()) {
+    if (this.pressureRuntime && await this.pressureRuntime.supportsWindow(windowId)) {
+      return this.pressureRuntime.advanceWindow(windowId, now);
+    }
     await this.applyPresenceTransitions(windowId, now);
     return this.lifecycleTransaction(async (tx) => {
       const window = await tx.actionWindow.findUnique({

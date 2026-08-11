@@ -8,6 +8,7 @@ import { MemberProjectionService } from "./member-projection.service";
 import { RoleAgentTaskService } from "./role-agent-task.service";
 import { WindowLifecycleService } from "./window-lifecycle.service";
 import { WindowResolutionService } from "./window-resolution.service";
+import { PressureSpineRuntimeService } from "./pressure-spine-runtime.service";
 
 /** One process-wide continuous engine graph.  Keeping these services in a
  * shared module lets room commands, access unlocks and the independent worker
@@ -23,6 +24,7 @@ import { WindowResolutionService } from "./window-resolution.service";
     ActionWindowService,
     ActionCommandService,
     WindowLifecycleService,
+    PressureSpineRuntimeService,
     WindowResolutionService
   ],
   exports: [
@@ -33,6 +35,7 @@ import { WindowResolutionService } from "./window-resolution.service";
     ActionWindowService,
     ActionCommandService,
     WindowLifecycleService,
+    PressureSpineRuntimeService,
     WindowResolutionService
   ]
 })

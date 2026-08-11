@@ -1,6 +1,7 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import { EVENT_DELIVERY_PAGE_SCHEMA_VERSION, type EventDeliveryPageV1 } from "@ai-story/shared";
+import { assertPressureRootEventBatch, isPressureRootEventType, type PressureRootEvent } from "@ai-story/templates";
 import type { AuthenticatedUser } from "../auth/current-user.decorator";
 import { PrismaService } from "../prisma.service";
 
@@ -16,7 +17,7 @@ export class ContinuousEventDeliveryService {
     type: string;
     messageType?: string;
     roleKey?: string;
-    visibility: "PUBLIC" | "OBSERVABLE" | "LIMITED" | "PRIVATE";
+    visibility: "PUBLIC" | "OBSERVABLE" | "LIMITED" | "PRIVATE" | "PRIVATE_SYSTEM";
     audienceType: "ALL_MEMBERS" | "ROLE" | "MEMBER";
     audienceUserIds: string[];
     audienceRoleIds?: string[];
@@ -85,6 +86,43 @@ export class ContinuousEventDeliveryService {
       });
     }
     return event;
+  }
+
+  async publishPressureRootEvents(tx: Tx, input: {
+    events: PressureRootEvent[];
+    audienceUserIds: string[];
+    roleIdBySeatId: Record<string, string>;
+    day: number;
+  }) {
+    assertPressureRootEventBatch(input.events);
+    const persisted: any[] = [];
+    for (const event of input.events) {
+      if (!isPressureRootEventType(event.type)) throw new Error(`PRESSURE_ROOT_EVENT_TYPE_INVALID:${String(event.type)}`);
+      const audienceRoleIds = event.audienceSeatIds.map((seatId) => input.roleIdBySeatId[seatId]).filter(Boolean);
+      const audienceUserIds = event.visibility === "PRIVATE_SYSTEM" ? [] : input.audienceUserIds;
+      persisted.push(await this.publish(tx, {
+        runId: event.runId,
+        nodeId: event.nodeId,
+        day: input.day,
+        type: event.type,
+        messageType: "pressure_runtime",
+        visibility: event.visibility,
+        audienceType: event.visibility === "PRIVATE_SYSTEM" ? "MEMBER" : "ALL_MEMBERS",
+        audienceUserIds,
+        audienceRoleIds,
+        payload: {
+          pressureEventId: event.eventId,
+          pressureEventSequence: event.sequence,
+          pressureEventCreatedAt: event.createdAt,
+          phase: event.phase,
+          sourceActionIds: event.sourceActionIds,
+          payload: event.payload,
+        },
+        dedupeKey: event.dedupeKey,
+        sourceActionId: event.sourceActionIds.length === 1 ? event.sourceActionIds[0] : undefined,
+      }));
+    }
+    return persisted;
   }
 
   async page(user: AuthenticatedUser, roomId: string, afterDeliverySequence = 0, pageSize = 100): Promise<EventDeliveryPageV1> {

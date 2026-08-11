@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma.service";
 import { CreditConsumptionService } from "../credits/credit-consumption.service";
@@ -12,6 +12,7 @@ import {
   RESOLUTION_PHASE_TRANSACTION_TIMEOUT_MS
 } from "../config/continuous-strategy.config";
 import { roomSerializableTransaction } from "./room-transaction";
+import { PressureSpineRuntimeService } from "./pressure-spine-runtime.service";
 
 type Tx = Prisma.TransactionClient;
 
@@ -22,10 +23,14 @@ export class WindowResolutionService {
     @Inject(ContinuousStrategyContentService) private readonly content: ContinuousStrategyContentService,
     @Inject(ContinuousEventDeliveryService) private readonly deliveries: ContinuousEventDeliveryService,
     @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService,
-    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService
+    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService,
+    @Optional() @Inject(PressureSpineRuntimeService) private readonly pressureRuntime?: PressureSpineRuntimeService
   ) {}
 
   async resolve(windowId: string, fence?: { taskId: string; leaseOwner: string; leaseVersion: number }) {
+    if (this.pressureRuntime && await this.pressureRuntime.supportsWindow(windowId)) {
+      return this.pressureRuntime.resolveWindow(windowId);
+    }
     const identity = await this.prisma.actionWindow.findUnique({ where: { id: windowId }, select: { runId: true } });
     if (!identity) throw new NotFoundException({ code: "WINDOW_NOT_FOUND", message: "Action window not found" });
     for (let phase = 0; phase < 256; phase += 1) {

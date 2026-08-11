@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Optional,
   NotFoundException
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
@@ -17,6 +18,7 @@ import type {
   LayoutCommandV1,
   SlotCommandV1
 } from "@ai-story/shared";
+import type { PressureActionIntentCommandV1 } from "@ai-story/templates";
 import { CONTINUOUS_ENGINE_VERSION } from "@ai-story/shared";
 import type { AuthenticatedUser } from "../auth/current-user.decorator";
 import { readCreditConsumptionConfig } from "../config/credit-consumption.config";
@@ -30,6 +32,7 @@ import { MemberProjectionService } from "./member-projection.service";
 import { RoleAgentTaskService } from "./role-agent-task.service";
 import { roomSerializableTransaction } from "./room-transaction";
 import { operationalMetrics } from "../observability/operational-metrics";
+import { PressureSpineRuntimeService } from "./pressure-spine-runtime.service";
 
 type Tx = Prisma.TransactionClient;
 type Slot = "MAIN" | "MANEUVER" | "REACTION";
@@ -42,8 +45,44 @@ export class ActionCommandService {
     @Inject(ContinuousEventDeliveryService) private readonly deliveries: ContinuousEventDeliveryService,
     @Inject(MemberProjectionService) private readonly projections: MemberProjectionService,
     @Inject(RoleAgentTaskService) private readonly roleAgents: RoleAgentTaskService,
-    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService
+    @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService,
+    @Optional() @Inject(PressureSpineRuntimeService) private readonly pressureRuntime?: PressureSpineRuntimeService
   ) {}
+
+  async previewPressureIntent(user: AuthenticatedUser, roomId: string, command: PressureActionIntentCommandV1) {
+    if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
+    return this.pressureRuntime.preview(user, roomId, command);
+  }
+
+  async confirmPressureIntent(
+    user: AuthenticatedUser,
+    roomId: string,
+    command: PressureActionIntentCommandV1,
+    previewToken: string,
+  ) {
+    if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
+    return this.pressureRuntime.confirm(user, roomId, command, previewToken);
+  }
+
+  async pressureGame(user: AuthenticatedUser, roomId: string) {
+    if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
+    return this.pressureRuntime.gameProjection(user, roomId);
+  }
+
+  async pressureResult(user: AuthenticatedUser, roomId: string) {
+    if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
+    return this.pressureRuntime.resultProjection(user, roomId);
+  }
+
+  async previewPressureAction(user: AuthenticatedUser, roomId: string, command: unknown) {
+    if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
+    return this.pressureRuntime.previewViewerAction(user, roomId, command);
+  }
+
+  async confirmPressureAction(user: AuthenticatedUser, roomId: string, command: unknown) {
+    if (!this.pressureRuntime) throw new ConflictException({ code: "PRESSURE_RUNTIME_NOT_REGISTERED", message: "Pressure runtime is unavailable" });
+    return this.pressureRuntime.confirmViewerAction(user, roomId, command);
+  }
 
   submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1): Promise<CommandResponseV1> {
     return this.submitSlot(user, roomId, "MAIN", command);

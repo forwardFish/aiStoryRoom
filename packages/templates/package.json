@@ -16,7 +16,13 @@
     "test:runtime-contract": "node --import tsx --test tests/runtime-contract.test.ts tests/settlement.test.ts tests/settlement.adversarial.test.ts tests/settlement.audience-adversarial.test.ts tests/settlement.round3-adversarial.test.ts tests/projection.test.ts",
     "import:pressure-spine": "node --import tsx scripts/import-sangtian-pressure-spine.mjs",
     "check:pressure-spine": "node --import tsx scripts/import-sangtian-pressure-spine.mjs --check",
-    "test:pressure-spine": "node --import tsx --test tests/pressure-spine.test.ts"
+    "test:pressure-spine": "node --import tsx --test tests/pressure-spine.test.ts",
+    "test:pressure-kernel": "node --import tsx --test tests/pressure-spine.test.ts tests/pressure-spine-kernel.test.ts",
+    "test:pressure-determinism": "node --import tsx --test tests/pressure-spine-determinism.test.ts",
+    "test:pressure-integration": "node --import tsx --test tests/pressure-spine-integration.test.ts",
+    "test:pressure-security": "node --import tsx --test tests/pressure-spine-security.test.ts",
+    "test:pressure-recovery": "node --import tsx --test tests/pressure-spine-recovery.test.ts",
+    "test:pressure-runtime": "node --import tsx --test tests/pressure-spine-kernel.test.ts tests/pressure-spine-determinism.test.ts tests/pressure-spine-integration.test.ts tests/pressure-spine-security.test.ts tests/pressure-spine-recovery.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
