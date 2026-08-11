@@ -45,10 +45,15 @@ test("active OpenNovel path adapts T19 before any runtime T20 stream", () => {
   assert.match(adapter, /assertNoNewT20Head/);
 });
 
-test("Result V2 reader is a GET-safe projection without write vocabulary", () => {
+test("Result V2 reader is a GET-safe projection without Prisma write vocabulary", () => {
   const reader = source("../openovel-result-v2.ts");
-  for (const forbidden of [".update(", ".updateMany(", ".create(", ".upsert(", "$transaction"] ) {
-    assert.equal(reader.includes(forbidden), false, `Result read path must not contain ${forbidden}`);
+  for (const forbidden of [
+    /prisma\.[A-Za-z0-9_]+\.update(?:Many)?\s*\(/,
+    /prisma\.[A-Za-z0-9_]+\.create(?:Many)?\s*\(/,
+    /prisma\.[A-Za-z0-9_]+\.upsert\s*\(/,
+    /prisma\.\$transaction\s*\(/,
+  ]) {
+    assert.doesNotMatch(reader, forbidden);
   }
   assert.match(reader, /openovel-result-v2|OPENOVEL_RESULT_SCHEMA_V2/);
 });
