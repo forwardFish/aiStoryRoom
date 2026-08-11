@@ -25,6 +25,8 @@ export type OpenNovelSeatResultV2 = Readonly<{
   title: string;
   summary: string;
   causes: readonly string[];
+  /** Historical read alias; new authority uses title. */
+  endingTitle?: string;
 }>;
 
 export type StoredOpenNovelResultV2 = Readonly<{
@@ -74,6 +76,14 @@ export type OpenNovelResultV2 = Readonly<{
     updatedAt: string | null;
     message: string | null;
   }>;
+  /** Read-only compatibility projection for completed historical clients. */
+  chapter?: Readonly<{
+    title: string;
+    content: string;
+    highlights: readonly string[];
+  }>;
+  /** Read-only compatibility projection for completed historical clients. */
+  completedNodes?: number;
 }>;
 
 export type OpenNovelNarrativeReadV2 = Readonly<{
