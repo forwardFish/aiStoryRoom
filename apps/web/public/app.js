@@ -156,6 +156,40 @@ export function createStoryApp({
     }
   }
 
+  async function acknowledgePressurePrologue() {
+    if (!isPressureGameProjection(state.view) || state.busy || state.view?.prologue?.status !== "AWAITING_ACK") return false;
+    state.error = "";
+    state.notice = "";
+    state.busy = true;
+    state.pressureAction.operation = "PROLOGUE";
+    render();
+    try {
+      const operation = pressureStorageOperation("acknowledgePressurePrologue");
+      const response = await operation(state.view, {
+        idempotencyKey: pressureRequestKey("prologue"),
+        expectedRunVersion: Number(state.view.run?.version),
+        expectedProjectionRevision: Number(state.view.projectionRevision)
+      });
+      const projection = pressureProjectionFromConfirmResponse(response);
+      if (!projection) throw new Error("序章确认成功，但没有返回 N1 的 viewer projection。");
+      acceptView(projection);
+      state.notice = `序章已封存，${projection?.prologue?.nextNodeTitle || projection?.run?.nodeId || "下一历史压力"}开始推进。`;
+      return true;
+    } catch (error) {
+      if (isPressureProjectionConflict(error)) {
+        state.busy = false;
+        await refresh({ conflict: true });
+        return false;
+      }
+      state.error = errorMessage(error);
+      return false;
+    } finally {
+      state.busy = false;
+      state.pressureAction.operation = "IDLE";
+      render();
+    }
+  }
+
   async function previewPressureAction() {
     if (!isPressureGameProjection(state.view) || state.busy) return false;
     const availability = pressureActionAvailability(state.view);
@@ -172,6 +206,7 @@ export function createStoryApp({
     state.error = "";
     state.notice = "";
     state.busy = true;
+    state.pressureAction.operation = "PREVIEW";
     render();
     try {
       const command = createPressurePreviewCommand(state.view, draft, {
@@ -195,6 +230,7 @@ export function createStoryApp({
       return false;
     } finally {
       state.busy = false;
+      state.pressureAction.operation = "IDLE";
       render();
     }
   }
@@ -205,6 +241,7 @@ export function createStoryApp({
     state.error = "";
     state.notice = "";
     state.busy = true;
+    state.pressureAction.operation = "SETTLING";
     render();
     try {
       const idempotencyKey = state.pressureAction.confirmIdempotencyKey || pressureRequestKey("confirm");
@@ -227,6 +264,7 @@ export function createStoryApp({
       return false;
     } finally {
       state.busy = false;
+      state.pressureAction.operation = "IDLE";
       render();
     }
   }
@@ -727,6 +765,7 @@ export function createStoryApp({
     });
     root.querySelector("#refreshBtn")?.addEventListener("click", () => refresh());
     root.querySelector("#pressureRefreshBtn")?.addEventListener("click", () => refresh());
+    root.querySelector("#pressureAcknowledgePrologueBtn")?.addEventListener("click", () => { void acknowledgePressurePrologue(); });
     root.querySelector("#pressurePreviewBtn")?.addEventListener("click", () => { void previewPressureAction(); });
     root.querySelector("#pressureConfirmBtn")?.addEventListener("click", () => { void confirmPressureAction(); });
     root.querySelectorAll("[data-pressure-suggestion-id]").forEach((button) => button.addEventListener("click", () => { void choosePressureSuggestion(button); }));
@@ -792,6 +831,7 @@ export function createStoryApp({
     boot,
     refresh,
     submitDecision,
+    acknowledgePressurePrologue,
     previewPressureAction,
     confirmPressureAction,
     advanceDay,

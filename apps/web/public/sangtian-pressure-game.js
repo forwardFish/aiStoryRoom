@@ -69,7 +69,8 @@ export function createPressureActionState() {
     preview: null,
     previewInput: "",
     confirmIdempotencyKey: "",
-    error: ""
+    error: "",
+    operation: "IDLE"
   };
 }
 
@@ -145,6 +146,8 @@ export function renderPressureGameShell(projection, actionState, { busy = false,
   const locked = busy || !availability.actionable;
   const latestFeedback = optionalRecord(projection.latestActionFeedback);
   const finale = optionalRecord(projection.finale);
+  const prologue = optionalRecord(projection.prologue);
+  const liveGeneration = optionalRecord(projection.liveGeneration);
   const phase = text(projection.run?.phase) || "UNKNOWN";
   const nodeId = text(projection.run?.nodeId) || "?";
 
@@ -166,8 +169,9 @@ export function renderPressureGameShell(projection, actionState, { busy = false,
     </aside>
     <main class="causal-center pressure-center">
       <section class="pressure-public-scene" data-testid="pressure-public-scene"><span>${escapeHtml(nodeId)} · 当前现场</span><p>${lineBreaks(publicScene.text || "")}</p></section>
+      ${renderPressureLiveStatus(liveGeneration, actionState, busy)}
       ${latestFeedback ? renderLatestActionFeedback(latestFeedback) : ""}
-      ${finale?.status === "COMPLETED" ? renderPressureFinale(finale, player.seatId) : validationErrors.length ? renderProjectionFailure(validationErrors) : renderPressureActionComposer(projection, actionState, { busy, locked, availability })}
+      ${finale?.status === "COMPLETED" ? renderPressureFinale(finale, player.seatId) : validationErrors.length ? renderProjectionFailure(validationErrors) : prologue?.status === "AWAITING_ACK" ? renderPressurePrologue(projection, { busy }) : renderPressureActionComposer(projection, actionState, { busy, locked, availability })}
     </main>
     <aside class="causal-right pressure-seats-column" aria-label="六席状态">
       ${renderPressureSeats(projection.seats, player.seatId)}
@@ -177,6 +181,39 @@ export function renderPressureGameShell(projection, actionState, { busy = false,
     ${error ? renderBanner("error", error) : ""}
     ${notice ? renderBanner("notice", notice) : ""}
   </div>`;
+}
+
+function renderPressurePrologue(projection, { busy }) {
+  const prologue = record(projection.prologue);
+  const title = text(prologue.title) || text(projection.publicScene?.title) || "不可操作序章";
+  const nextTitle = text(prologue.nextNodeTitle) || text(prologue.nextNodeId) || "下一历史压力";
+  return `<section class="decision-zone pressure-prologue" data-testid="pressure-prologue">
+    <div class="decision-zone-head"><span class="decision-kicker">不可操作序章</span><h2>${escapeHtml(title)}</h2><span>先读清你的身份、制度使命、私有开场与危机起点。确认后，世界将进入“${escapeHtml(nextTitle)}”。</span></div>
+    <div class="pressure-prologue-lock"><b>世界行动尚未开放</b><p>序章期间不能 Preview 或 Confirm，也不会因刷新、断线或重复确认跳过。</p></div>
+    <div class="actions pressure-actions"><span>确认只投影服务端已经验收的序章，不会替你作出世界行动。</span><button id="pressureAcknowledgePrologueBtn" type="button" ${busy ? "disabled" : ""}>${busy ? "正在进入局势……" : `我已了解，进入${escapeHtml(nextTitle)}`}</button></div>
+  </section>`;
+}
+
+function renderPressureLiveStatus(liveGeneration, actionState, busy) {
+  const ai = optionalRecord(liveGeneration?.aiSeats);
+  const narrative = optionalRecord(liveGeneration?.narrative);
+  const operation = text(actionState?.operation) || "IDLE";
+  const serverActive = Number(ai.pending || 0) > 0 || Number(ai.running || 0) > 0 || narrative.status === "GENERATING";
+  const active = operation !== "IDLE" || serverActive;
+  if (!active && !narrative.status) return "";
+  const label = operation === "PREVIEW"
+    ? "正在校验行动边界"
+    : operation === "PROLOGUE"
+      ? "正在封存序章并进入局势"
+      : operation === "SETTLING" || serverActive
+        ? `五席决策 ${Number(ai.completed || 0)}/5 · 结算与新现场生成中`
+        : narrative.status === "AUTHORED_FALLBACK"
+          ? "叙事服务已降级，正在展示受约束的作者后备场景"
+          : narrative.status === "FAILED"
+            ? "叙事生成失败，世界结算没有回滚"
+            : "本轮现场已生成";
+  const status = narrative.status || (active ? operation === "PREVIEW" ? "VALIDATING" : "GENERATING" : "IDLE");
+  return `<section class="pressure-live-status ${active ? "active" : ""}" data-testid="pressure-live-status" data-narrative-status="${escapeHtml(status)}"><span>${active ? "●" : "✓"}</span><b>${escapeHtml(label)}</b></section>`;
 }
 
 function renderPressureFinale(finale, viewerSeatId) {
@@ -194,7 +231,7 @@ function renderPressureFinale(finale, viewerSeatId) {
 
 export function pressureProjectionFromConfirmResponse(response) {
   if (isPressureGameProjection(response)) return response;
-  for (const candidate of [response?.projection, response?.game, response?.viewerProjection]) {
+  for (const candidate of [response?.projection, response?.gameProjection, response?.game, response?.viewerProjection]) {
     if (isPressureGameProjection(candidate)) return candidate;
   }
   return null;

@@ -1607,3 +1607,6 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .pressure-game-shell .pressure-finale-tracks article { display: grid; gap: 5px; padding: 10px; background: rgba(255,255,255,.035); }
 .pressure-game-shell .pressure-finale-tracks span { overflow-wrap: anywhere; font-size: 11px; color: var(--muted); }
 .pressure-game-shell .pressure-finale-tracks b { color: #ead9b6; }
+
+/* Pressure spine P0 and live generation states use the existing three-column shell. */
+.pressure-prologue-lock,.pressure-live-status{border:1px solid rgba(101,69,245,.18);border-radius:14px;background:#f8f7ff;padding:14px 16px;margin:12px 0}.pressure-prologue-lock b{display:block;margin-bottom:5px}.pressure-prologue-lock p{margin:0;color:#625d70}.pressure-live-status{display:flex;align-items:center;gap:10px;color:#51468a}.pressure-live-status.active span{animation:pressurePulse 1.1s ease-in-out infinite}.pressure-live-status b{font-weight:650}.pressure-prologue .pressure-actions button{min-width:220px}@keyframes pressurePulse{0%,100%{opacity:.35}50%{opacity:1}}

@@ -190,3 +190,104 @@ function suggestion(id, displayText, sourceKind) {
     requiresPreview: true
   };
 }
+
+export function createPressurePrologueProjectionFixture({ acknowledged = false } = {}) {
+  if (acknowledged) return createSleepPressureProjectionFixture();
+  return {
+    schemaVersion: "pressure_game_projection_v1",
+    runtimeProfile: "SANGTIAN_PRESSURE_SPINE_V1",
+    projectionRevision: 2,
+    run: {
+      runId: "run-prologue-fixture",
+      nodeId: "P0",
+      phase: "P0_PROJECTING",
+      version: 2,
+      status: "playing",
+    },
+    prologue: {
+      status: "AWAITING_ACK",
+      locked: true,
+      title: "桑田诏下",
+      nextNodeId: "N1",
+      nextNodeTitle: "九堰将决",
+      crisisLabel: "国库、军饷与浙江改桑压力已经落下",
+      acknowledgeEndpoint: "/api/v4/rooms/run-prologue-fixture/game/prologue/acknowledge",
+    },
+    worldClock: { minutes: 0, label: "序章 · 国策已下" },
+    pressure: { level: 0, triggerLabel: "历史前提已经成立，等待进入九堰汛前" },
+    player: {
+      seatId: "seat.zhejiang_governor",
+      roleKey: "zhejiang_governor",
+      displayName: "浙江总督",
+      mission: "在东南军务、浙江民生与朝廷财政之间承担总督职责。",
+      coreQuestion: "国策不能取消，但你能决定危机如何发生、由谁担责。",
+      currentActorId: "actor.hu-zongxian",
+    },
+    publicScene: {
+      sceneId: "scene.p0.opening.public",
+      title: "桑田诏下",
+      text: "国库亏空、军饷与丝绸任务把改稻为桑的压力推向浙江。诏令已下，这不是一场能够被自由输入取消的危机。",
+    },
+    currentScene: {
+      sceneId: "scene.p0.opening.public",
+      title: "桑田诏下",
+      text: "国库亏空、军饷与丝绸任务把改稻为桑的压力推向浙江。诏令已下，这不是一场能够被自由输入取消的危机。",
+    },
+    privateScene: {
+      sceneId: "scene.p0.opening.governor.private",
+      title: "总督的入场",
+      text: "你知道朝廷不会替浙江承担执行代价；地方一旦失序，军务、赈济和责任都会同时压到总督署。",
+    },
+    actionSurface: {
+      phase: null,
+      suggestedInputs: [],
+      locked: true,
+      lockedReason: "序章尚未确认，世界行动暂未开放。",
+    },
+    liveGeneration: {
+      aiSeats: { pending: 0, running: 0, completed: 0, failed: 0 },
+      narrative: { status: "IDLE", source: null },
+    },
+    seats: seats.map(([seatId, displayName, controller]) => ({ seatId, displayName, controller, publicStatus: "WAITING" })),
+    objects: [],
+    evidenceChain: [],
+    latestActionFeedback: null,
+    latestNarrative: null,
+    finale: null,
+    projectionHash: "fixture-prologue-projection-hash",
+  };
+}
+
+export class DeterministicPressurePrologueStorage {
+  constructor() {
+    this.currentProjection = createPressurePrologueProjectionFixture();
+    this.acknowledgeCalls = [];
+    this.getRunCalls = 0;
+  }
+
+  async restoreOrCreate() {
+    return structuredClone(this.currentProjection);
+  }
+
+  async getRun() {
+    this.getRunCalls += 1;
+    return structuredClone(this.currentProjection);
+  }
+
+  async acknowledgePressurePrologue(projection, command) {
+    assert.equal(projection.run.phase, "P0_PROJECTING");
+    assert.equal(command.expectedRunVersion, 2);
+    assert.equal(command.expectedProjectionRevision, 2);
+    this.acknowledgeCalls.push(structuredClone(command));
+    this.currentProjection = createPressurePrologueProjectionFixture({ acknowledged: true });
+    return { accepted: true, gameProjection: structuredClone(this.currentProjection) };
+  }
+
+  async previewPressureAction() {
+    throw new Error("P0 must not preview world actions");
+  }
+
+  async confirmPressureAction() {
+    throw new Error("P0 must not confirm world actions");
+  }
+}

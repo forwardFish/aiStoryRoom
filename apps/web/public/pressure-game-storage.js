@@ -1,13 +1,13 @@
-import { StoryApiError } from "./api-story-storage.js?v=20260721-story-access-error-v4";
-import { isPressureGameProjection, validatePressureGameProjection } from "./sangtian-pressure-game.js";
+import { isPressureGameProjection, pressureProjectionFromConfirmResponse } from "./sangtian-pressure-game.js";
 
 export class PressureGameStorage {
   constructor({ roomId, initialProjection = null, fetchImpl = globalThis.fetch?.bind(globalThis) } = {}) {
-    if (!String(roomId || "").trim()) throw new TypeError("PressureGameStorage requires a room id");
-    if (typeof fetchImpl !== "function") throw new TypeError("PressureGameStorage requires fetch");
-    this.roomId = String(roomId).trim();
+    this.roomId = String(roomId || "");
     this.initialProjection = initialProjection;
     this.fetchImpl = fetchImpl;
+    this.initialConsumed = false;
+    if (!this.roomId) throw new TypeError("PressureGameStorage requires roomId");
+    if (typeof this.fetchImpl !== "function") throw new TypeError("PressureGameStorage requires fetchImpl");
   }
 
   get savedRunId() {
@@ -15,103 +15,67 @@ export class PressureGameStorage {
   }
 
   async restoreOrCreate() {
-    if (this.initialProjection) {
-      const projection = this.initialProjection;
-      this.initialProjection = null;
-      this.assertProjection(projection);
-      return projection;
+    if (!this.initialConsumed && isPressureGameProjection(this.initialProjection)) {
+      this.initialConsumed = true;
+      return structuredClone(this.initialProjection);
     }
     return this.getRun();
   }
 
   async getRun() {
-    const projection = await this.request(this.gamePath());
-    this.assertProjection(projection);
-    return projection;
+    return this.request(`/api/v4/rooms/${encodeURIComponent(this.roomId)}/game`);
   }
 
   async previewPressureAction(_projection, command) {
-    return this.request(`${this.gamePath()}/actions/preview`, {
+    return this.request(`/api/v4/rooms/${encodeURIComponent(this.roomId)}/game/actions/preview`, {
       method: "POST",
-      body: command
+      body: JSON.stringify(command)
     });
   }
 
   async confirmPressureAction(_projection, command) {
-    const response = await this.request(`${this.gamePath()}/actions/confirm`, {
+    const response = await this.request(`/api/v4/rooms/${encodeURIComponent(this.roomId)}/game/actions/confirm`, {
       method: "POST",
-      body: command
+      body: JSON.stringify(command)
     });
-    const projection = pressureProjectionFromResponse(response);
-    if (!projection) {
-      throw new StoryApiError("确认行动后服务端没有返回 viewer projection。", {
-        code: "INVALID_PRESSURE_CONFIRM_RESPONSE",
-        details: response
-      });
+    if (!pressureProjectionFromConfirmResponse(response)) {
+      throw clientError("INVALID_PRESSURE_CONFIRM_RESPONSE", 502, "服务端未返回有效的桑田诏投影。");
     }
-    this.assertProjection(projection);
     return response;
   }
 
-  async request(path, { method = "GET", body } = {}) {
-    let response;
-    try {
-      response = await this.fetchImpl(path, {
-        method,
-        credentials: "include",
-        headers: {
-          accept: "application/json",
-          ...(body === undefined ? {} : { "content-type": "application/json" })
-        },
-        body: body === undefined ? undefined : JSON.stringify(body)
-      });
-    } catch (error) {
-      throw new StoryApiError("无法连接桑田诏运行时，请稍后重试。", {
-        code: "NETWORK_ERROR",
-        details: error instanceof Error ? error.message : String(error)
-      });
-    }
+  async acknowledgePressurePrologue(projection, command) {
+    if (projection?.prologue?.status !== "AWAITING_ACK") return { accepted: true, gameProjection: projection };
+    const response = await this.request(`/api/v4/rooms/${encodeURIComponent(this.roomId)}/game/prologue/acknowledge`, {
+      method: "POST",
+      body: JSON.stringify(command)
+    });
+    const next = pressureProjectionFromConfirmResponse(response);
+    if (!next) throw clientError("INVALID_PRESSURE_PROLOGUE_RESPONSE", 502, "序章已确认，但服务端未返回 N1 投影。");
+    return response;
+  }
 
-    const payload = await response.json().catch(() => null);
+  async request(url, init = {}) {
+    const response = await this.fetchImpl(url, {
+      credentials: "include",
+      headers: { "content-type": "application/json", ...(init.headers || {}) },
+      ...init
+    });
+    const body = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const nested = payload?.message && typeof payload.message === "object" ? payload.message : null;
-      throw new StoryApiError(
-        (typeof payload?.message === "string" ? payload.message : nested?.message) || payload?.reason || `桑田诏运行时请求失败（HTTP ${response.status}）。`,
-        {
-          status: response.status,
-          code: payload?.code || nested?.code || "HTTP_ERROR",
-          details: payload
-        }
-      );
+      throw clientError(String(body?.code || `HTTP_${response.status}`), response.status, String(body?.message || "请求失败。"), body);
     }
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      throw new StoryApiError("桑田诏运行时返回了无法识别的数据。", {
-        status: response.status,
-        code: "INVALID_RESPONSE"
-      });
+    if (!isPressureGameProjection(body) && !pressureProjectionFromConfirmResponse(body) && !body?.previewId) {
+      throw clientError("INVALID_PRESSURE_RESPONSE", 502, "服务端返回了无法识别的桑田诏数据。", body);
     }
-    return payload;
-  }
-
-  assertProjection(projection) {
-    const errors = validatePressureGameProjection(projection);
-    if (!isPressureGameProjection(projection) || errors.length) {
-      throw new StoryApiError("桑田诏运行时返回的 viewer projection 不完整。", {
-        code: "INVALID_PRESSURE_PROJECTION",
-        details: errors
-      });
-    }
-  }
-
-  gamePath() {
-    return `/api/v4/rooms/${encodeURIComponent(this.roomId)}/game`;
+    return body;
   }
 }
 
-function pressureProjectionFromResponse(response) {
-  if (isPressureGameProjection(response)) return response;
-  for (const candidate of [response?.projection, response?.game, response?.viewerProjection]) {
-    if (isPressureGameProjection(candidate)) return candidate;
-  }
-  return null;
+function clientError(code, status, message, details = {}) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  error.details = details;
+  return error;
 }

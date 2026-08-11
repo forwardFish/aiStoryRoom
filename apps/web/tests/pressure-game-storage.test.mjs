@@ -135,3 +135,26 @@ function json(value, status = 200) {
     headers: { "content-type": "application/json" }
   });
 }
+
+test("PressureGameStorage acknowledges P0 through the idempotent prologue endpoint and accepts gameProjection", async () => {
+  const prologue = (await import("./fixtures/sangtian-pressure-game.fixture.mjs")).createPressurePrologueProjectionFixture();
+  const next = createSleepPressureProjectionFixture();
+  const requests = [];
+  const storage = new PressureGameStorage({
+    roomId: "run-prologue-fixture",
+    initialProjection: prologue,
+    fetchImpl: async (path, init) => {
+      requests.push({ path, init, body: JSON.parse(String(init.body || "{}")) });
+      return json({ accepted: true, gameProjection: next });
+    }
+  });
+  const response = await storage.acknowledgePressurePrologue(prologue, {
+    idempotencyKey: "prologue:test:1",
+    expectedRunVersion: 2,
+    expectedProjectionRevision: 2
+  });
+  assert.equal(response.gameProjection.run.nodeId, "N1");
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].path, "/api/v4/rooms/run-prologue-fixture/game/prologue/acknowledge");
+  assert.equal(requests[0].init.method, "POST");
+});

@@ -223,3 +223,28 @@ test("Confirm retries reuse one idempotency key and do not require a second Prev
   assert.equal(storage.confirmAttempts[0].idempotencyKey, storage.confirmAttempts[1].idempotencyKey);
   harness.dom.window.close();
 });
+
+test("P0 is a real locked scene and acknowledge projects once into N1", async () => {
+  const { DeterministicPressurePrologueStorage } = await import("./fixtures/sangtian-pressure-game.fixture.mjs");
+  const storage = new DeterministicPressurePrologueStorage();
+  const harness = createHarness(storage);
+  await harness.app.boot();
+
+  assert.ok(harness.root.querySelector('[data-testid="pressure-prologue"]'));
+  assert.match(harness.root.querySelector('[data-testid="pressure-public-scene"]').textContent, /桑田诏下|国库亏空/);
+  assert.match(harness.root.querySelector('[data-testid="pressure-mission"]').textContent, /总督职责|东南军务/);
+  assert.match(harness.root.querySelector('[data-testid="pressure-private-opening"]').textContent, /总督署/);
+  assert.equal(harness.root.querySelector("#pressureActionInput"), null);
+  assert.equal(harness.root.querySelector("#pressurePreviewBtn"), null);
+  assert.equal(harness.root.querySelector("#pressureConfirmBtn"), null);
+
+  harness.root.querySelector("#pressureAcknowledgePrologueBtn").click();
+  await waitFor(() => assert.equal(harness.app.getState().view.run.nodeId, "N1"));
+  assert.equal(storage.acknowledgeCalls.length, 1);
+  assert.ok(harness.root.querySelector("#pressureActionInput"));
+  assert.equal(harness.root.querySelector('[data-testid="pressure-prologue"]'), null);
+
+  await harness.app.refresh();
+  assert.equal(storage.acknowledgeCalls.length, 1, "refresh must not project P0 again");
+  harness.dom.window.close();
+});
