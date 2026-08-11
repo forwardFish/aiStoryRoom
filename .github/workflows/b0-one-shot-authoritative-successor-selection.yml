@@ -1,0 +1,332 @@
+name: B0 One-Shot Authoritative Successor Selection
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-authoritative-successor-selection.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-authoritative-successor-selection
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+  B0_BASELINE: 12281045b8e50c13fb63b9d791a4b7d900aeecfe
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Publish run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/authoritative-successor-selection",
+              description: `successor selection repair running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 50
+
+      - name: Verify exact remote state and apply product fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$B0_BASELINE" HEAD
+          test -z "$(git status --short)"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          read_path = Path("apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts")
+          source = read_path.read_text(encoding="utf-8")
+
+          statuses = '''const ACTIVE_B0_WINDOW_STATUSES = [
+            "OPEN", "LOCKED", "SETTLING", "COMMITTED", "PUBLISHING", "COMPLETED", "FAILED_RETRYABLE", "FAILED_HARD",
+          ] as const;
+          '''
+          helper = '''const ACTIVE_B0_WINDOW_STATUSES = [
+            "OPEN", "LOCKED", "SETTLING", "COMMITTED", "PUBLISHING", "COMPLETED", "FAILED_RETRYABLE", "FAILED_HARD",
+          ] as const;
+
+          const CURRENT_B0_WINDOW_STATUSES = new Set<string>([
+            "OPEN", "LOCKED", "SETTLING", "COMMITTED", "PUBLISHING", "FAILED_RETRYABLE", "FAILED_HARD",
+          ]);
+
+          type B0WindowCandidateV1 = {
+            id: string;
+            nodeId: string;
+            status: string;
+            configJson: unknown;
+            node?: { chapterIndex?: number | null; nodeIndex?: number | null } | null;
+          };
+
+          export function selectCurrentB0WindowV1<T extends B0WindowCandidateV1>(
+            windows: readonly T[],
+            currentNodeId?: string | null,
+          ): T | null {
+            const candidates = windows
+              .filter((entry) => optionalRecord(entry.configJson)?.schemaVersion === "b0-window-config-v1")
+              .slice()
+              .sort(compareB0WindowPositionV1);
+            const current = currentNodeId
+              ? candidates.find((entry) => entry.nodeId === currentNodeId) ?? null
+              : null;
+            if (current && CURRENT_B0_WINDOW_STATUSES.has(current.status)) return current;
+            return candidates.find((entry) => CURRENT_B0_WINDOW_STATUSES.has(entry.status))
+              ?? current
+              ?? candidates[0]
+              ?? null;
+          }
+
+          function compareB0WindowPositionV1(left: B0WindowCandidateV1, right: B0WindowCandidateV1): number {
+            const chapter = Number(right.node?.chapterIndex ?? 0) - Number(left.node?.chapterIndex ?? 0);
+            if (chapter) return chapter;
+            const node = Number(right.node?.nodeIndex ?? 0) - Number(left.node?.nodeIndex ?? 0);
+            if (node) return node;
+            return right.id.localeCompare(left.id);
+          }
+          '''
+          if source.count(statuses) != 1 or "selectCurrentB0WindowV1" in source:
+              raise SystemExit("unexpected successor selector insertion state")
+          source = source.replace(statuses, helper, 1)
+
+          function_start = source.index("export async function readB0ManeuverContextV1(")
+          read_start = source.index("  const windows = await", function_start)
+          player_start = source.index("  const player = await", read_start)
+          replacement = '''  const run = await (db as any).storyRun.findUnique({
+            where: { id: runId },
+            select: { id: true, currentNodeId: true, currentChapter: true, worldSequence: true, status: true },
+          });
+          if (!run) throw domain("RUN_NOT_FOUND", "The story run was not found.", 404, false);
+
+          const windows = await (db as any).actionWindow.findMany({
+            where: { runId, status: { in: [...ACTIVE_B0_WINDOW_STATUSES] } },
+            select: {
+              id: true,
+              runId: true,
+              nodeId: true,
+              status: true,
+              openingSnapshotVersion: true,
+              projectionVersion: true,
+              version: true,
+              configJson: true,
+              node: { select: { chapterIndex: true, nodeIndex: true } },
+              participants: { select: { roleId: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 12,
+          });
+          const window = selectCurrentB0WindowV1(windows, run.currentNodeId);
+          if (!window) return null;
+
+          '''
+          source = source[:read_start] + replacement + source[player_start:]
+          read_path.write_text(source, encoding="utf-8")
+
+          player_path = Path("apps/api/src/b0-settlement/b0-window-player.service.ts")
+          player = player_path.read_text(encoding="utf-8")
+          old_import = '''import {
+            readB0ManeuverContextV1,
+            type B0AuthoritativeManeuverContextV1,
+          } from "../maneuver-v1/maneuver-v1.prisma-read";'''
+          new_import = '''import {
+            readB0ManeuverContextV1,
+            selectCurrentB0WindowV1,
+            type B0AuthoritativeManeuverContextV1,
+          } from "../maneuver-v1/maneuver-v1.prisma-read";'''
+          if player.count(old_import) != 1:
+              raise SystemExit("unexpected B0 player import state")
+          player = player.replace(old_import, new_import, 1)
+          old_selection = '    const window = windows.find((entry) => jsonRecord(entry.configJson)?.schemaVersion === "b0-window-config-v1");'
+          new_selection = '    const window = selectCurrentB0WindowV1(windows, windowId ?? null);'
+          if player.count(old_selection) != 1:
+              raise SystemExit("unexpected B0 player window selection state")
+          player = player.replace(old_selection, new_selection, 1)
+          player_path.write_text(player, encoding="utf-8")
+
+          spec_path = Path("apps/api/src/maneuver-v1/maneuver-v1.prisma-read.spec.ts")
+          spec = spec_path.read_text(encoding="utf-8")
+          if "successor OPEN window over a completed predecessor" in spec:
+              raise SystemExit("successor selection regression already exists")
+          regression = r'''
+
+          test("B0 projection selects the successor OPEN window over a completed predecessor", async () => {
+            const db = fakeB0Db() as any;
+            db.storyRun.findUnique = async () => ({
+              id: "run.1",
+              currentNodeId: "node.b0.one",
+              currentChapter: 1,
+              worldSequence: 5,
+              status: "playing",
+            });
+            db.actionWindow.findMany = async () => [
+              {
+                id: "window.b0.one",
+                runId: "run.1",
+                nodeId: "node.b0.one",
+                status: "COMPLETED",
+                openingSnapshotVersion: 4,
+                projectionVersion: 8,
+                version: 8,
+                configJson: { schemaVersion: "b0-window-config-v1" },
+                node: { chapterIndex: 1, nodeIndex: 1 },
+                participants: [{ roleId: "role.viewer" }, { roleId: "role.contact" }],
+              },
+              {
+                id: "window.b0.two",
+                runId: "run.1",
+                nodeId: "node.b0.two",
+                status: "OPEN",
+                openingSnapshotVersion: 5,
+                projectionVersion: 1,
+                version: 1,
+                configJson: { schemaVersion: "b0-window-config-v1" },
+                node: { chapterIndex: 1, nodeIndex: 2 },
+                participants: [{ roleId: "role.viewer" }, { roleId: "role.contact" }],
+              },
+            ];
+
+            const context = await readB0ManeuverContextV1(db, "user.viewer", "run.1");
+            assert.ok(context);
+            assert.equal(context.b0WindowId, "window.b0.two");
+            assert.equal(context.actorTurnId, "b0-window:window.b0.two");
+            assert.equal(context.windowState, "OPEN");
+            assert.equal(context.turnRevision, 1);
+
+            const projection = await readManeuverProjectionV1(db, "user.viewer", "run.1");
+            assert.equal(projection.windowState, "OPEN");
+            assert.equal(projection.stateRevision, 5);
+            assert.equal(projection.turnRevision, 1);
+            assert.equal(projection.contacts[0]?.id, "role.contact");
+          });
+          '''
+          spec_path.write_text(spec + regression, encoding="utf-8")
+          PY
+
+          node --check apps/api/src/maneuver-v1/maneuver-v1.prisma-read.spec.ts >/dev/null 2>&1 || true
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Run focused product gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api test:maneuver-v1
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api typecheck
+          pnpm typecheck:b0:real-acceptance
+          pnpm --filter @apps/api build
+          pnpm --filter @apps/web test:b0-window
+          pnpm --filter @apps/web typecheck
+          pnpm --filter @apps/web build
+
+      - name: Scan changed product files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import re
+          paths = [
+              pathlib.Path("apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts"),
+              pathlib.Path("apps/api/src/maneuver-v1/maneuver-v1.prisma-read.spec.ts"),
+              pathlib.Path("apps/api/src/b0-settlement/b0-window-player.service.ts"),
+          ]
+          patterns = [
+              re.compile(r"postgres(?:ql)?://[^\s\"']+", re.I),
+              re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
+              re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),
+              re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+          ]
+          findings = []
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for pattern in patterns:
+                  if pattern.search(text):
+                      findings.append({"path": str(path), "pattern": pattern.pattern})
+          if findings:
+              raise SystemExit(f"secret scan failed: {findings}")
+          print("changed-file secret scan: PASS")
+          PY
+
+      - name: Commit and push product files only
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts
+            apps/api/src/maneuver-v1/maneuver-v1.prisma-read.spec.ts
+            apps/api/src/b0-settlement/b0-window-player.service.ts
+          )
+          git fetch origin "$B0_BRANCH"
+          remote_before="$(git rev-parse origin/$B0_BRANCH)"
+          test "$remote_before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${files[@]}"
+          git diff --cached --check
+          printf '%s\n' "${files[@]}" | LC_ALL=C sort > /tmp/expected
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          diff -u /tmp/expected /tmp/actual
+          git commit -m "fix(b0): select the authoritative successor window"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$B0_BRANCH"
+          remote_after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$remote_after" = "$local_head"
+          echo "local_head=$local_head" >> "$GITHUB_OUTPUT"
+          echo "remote_before=$remote_before" >> "$GITHUB_OUTPUT"
+          echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
+          echo "REMOTE_PRODUCT_FIX_PUSHED=$local_head"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOCAL_HEAD: ${{ steps.push.outputs.local_head }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/authoritative-successor-selection",
+              description: success
+                ? `product fix pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}`
+                : `successor selection repair failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("authoritative successor selection repair failed");
