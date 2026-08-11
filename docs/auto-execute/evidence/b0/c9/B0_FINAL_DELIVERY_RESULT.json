@@ -1,50 +1,48 @@
 {
-  "schemaVersion": 2,
-  "generatedAtUtc": "2026-08-10T17:43:41.935825+00:00",
+  "schemaVersion": 3,
+  "generatedAtUtc": "2026-08-11T00:30:00Z",
   "repository": "forwardFish/aiStoryRoom",
   "branch": "codex/chatgpt-pro-maneuver-evidence-v1",
   "mainBaselineSha": "86da64eea18ab773312f40c7024ace9cb393344a",
-  "testableCandidateSha": "e7635c279e72ae8efaff614159447d88c7ba22d0",
-  "testedCodeSha": "14c1e871f75f3c597919f7cbcd1d035851ebf142",
-  "evidenceCommitSha": "d98c6ee983484b5ed0765ba7c0354ec5f95bcd44",
+  "testableCandidateSha": null,
+  "testedCodeSha": null,
+  "evidenceCommitSha": null,
   "finalRemoteSha": null,
-  "finalRemoteShaResolution": "external clean-clone readback",
+  "formalProbeSha": "df9deb4337260b7edc3c78bde480e4efe8d06f55",
   "status": "EXTERNAL_BLOCKED",
-  "classification": "ENGINEERING_PASS_FORMAL_C8_EXTERNAL_BLOCKED",
+  "classification": "FORMAL_MANAGED_SUPABASE_AND_PROVIDER_CREDENTIALS_MISSING",
+  "userTestReady": false,
   "candidateBranchReady": false,
   "completionMarkersAllowed": false,
   "formalC8": {
     "status": "EXTERNAL_BLOCKED",
     "passed": false,
-    "externalBlocked": true,
+    "executed": false,
+    "workflowRunId": 31445997490,
+    "completeCredentialPairFound": false,
     "managedNonProductionSupabaseRequired": true,
     "managedNonProductionSupabaseAvailable": false,
+    "realProviderRequired": true,
+    "realProviderAvailable": false,
     "randomSchemaRequired": true,
     "publicSchemaForbiddenAsTestSchema": true,
-    "selfHostedContainerMaySubstitute": false,
-    "credentialValuesPersisted": false,
-    "workflowRunId": 31414693756
+    "containerResultAcceptedAsFormalC8": false,
+    "credentialPresenceEvidence": "docs/auto-execute/evidence/b0/c8/formal-blockers/df9deb4337260b7edc3c78bde480e4efe8d06f55/credential-presence.json"
   },
-  "engineeringAcceptance": {
-    "status": "PASS_ENGINEERING_ONLY",
-    "passed": true,
-    "formalC8Substitute": false,
-    "realBrowserSessions": 3,
-    "synchronizedWindows": 6,
-    "desktopViewportCovered": true,
-    "narrow390ViewportCovered": true,
-    "screenshotCount": 9,
-    "workflowRunId": 31414693756
+  "engineeringAuxiliary": {
+    "previousFinalRemoteSha": "9c8297dacfc00d59b58ddd48d15834b2862983c5",
+    "status": "AUXILIARY_ONLY",
+    "acceptedAsUserTestReady": false,
+    "acceptedAsC8": false,
+    "acceptedAsC9": false,
+    "acceptedAsProductCompletion": false
   },
-  "crossPlatformSeed": {
-    "linux": {
-      "status": "PASS",
-      "workflowRunId": 31414693742
-    },
-    "windows": {
-      "status": "PASS",
-      "workflowRunId": 31414693761
-    }
+  "requiredExternalAction": {
+    "authorizationRequired": true,
+    "missingDatabaseSecretInAllProbedEnvironments": true,
+    "missingProviderSecretInAllProbedEnvironments": true,
+    "configureOneCompletePairInOneApprovedEnvironment": true,
+    "safeTrigger": "After authorized secret configuration, re-run all jobs for Actions run 31445997490."
   },
   "boundaries": {
     "forcePushUsed": false,
@@ -52,6 +50,7 @@
     "deploymentPerformed": false,
     "productionDatabaseTouched": false,
     "productionConfigurationChanged": false,
-    "realUserDataTouched": false
+    "realUserDataTouched": false,
+    "credentialValuesCaptured": false
   }
 }
