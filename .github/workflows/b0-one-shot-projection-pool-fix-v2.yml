@@ -1,0 +1,331 @@
+name: B0 One-Shot Projection Pool Fix V2
+
+on:
+  push:
+    branches:
+      - codex/chatgpt-pro-maneuver-evidence-v1
+    paths:
+      - .github/workflows/b0-one-shot-projection-pool-fix-v2.yml
+
+permissions:
+  contents: write
+  statuses: write
+
+concurrency:
+  group: b0-one-shot-projection-pool-fix-v2
+  cancel-in-progress: false
+
+env:
+  B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Publish run locator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "b0/projection-pool-fix-v2",
+              description: `projection pool fix v2 running in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify exact remote state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
+          test -z "$(git status --short)"
+
+      - name: Apply bounded read-transaction admission handling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          path = Path("apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts")
+          text = path.read_text(encoding="utf-8")
+
+          def replace_once(pattern: str, replacement: str, *, flags: int = 0) -> None:
+              global text
+              text, count = re.subn(pattern, replacement, text, count=1, flags=flags)
+              if count != 1:
+                  raise SystemExit(f"expected one regex match, found {count}: {pattern!r}")
+
+          replace_once(
+              r"type Tx = Prisma\.TransactionClient;\n",
+              "type Tx = Prisma.TransactionClient;\n\nconst B0_PROJECTION_TRANSACTION_OPTIONS = {\n  isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,\n  maxWait: 10_000,\n  timeout: 30_000,\n} as const;\n",
+          )
+          replace_once(
+              r"  async projection\(windowId: string, actorId: string\): Promise<B0WindowProjectionV1> \{.*?\n  \}\n\n  private async projectionInTx",
+              '''  async projection(windowId: string, actorId: string): Promise<B0WindowProjectionV1> {
+            return this.projectionTransaction(async (tx) => {
+              const store = new PrismaB0WindowFreezeStoreV1(tx);
+              const record = await store.readWindow(windowId);
+              if (!record) throw new NotFoundException({ code: "WINDOW_NOT_FOUND", message: "B0 window not found" });
+              return this.projectionInTx(tx, record, actorId, await store.readFreeze(windowId));
+            });
+          }
+
+          private async projectionInTx'''.replace("          ", ""),
+              flags=re.S,
+          )
+          replace_once(
+              r"  private async serializable<T>\(operation: \(tx: Tx\) => Promise<T>\): Promise<T> \{",
+              '''  private async projectionTransaction<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {
+            for (let attempt = 0; attempt < 4; attempt += 1) {
+              try {
+                return await this.prisma.$transaction(operation, B0_PROJECTION_TRANSACTION_OPTIONS);
+              } catch (error) {
+                if (!projectionAdmissionRetryable(error) || attempt === 3) throw error;
+                await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1) ** 2));
+              }
+            }
+            throw new Error("UNREACHABLE_B0_PROJECTION_RETRY");
+          }
+
+          private async serializable<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {'''.replace("          ", ""),
+          )
+          replace_once(
+              r"function retryable\(error: unknown\): boolean \{",
+              '''function projectionAdmissionRetryable(error: unknown): boolean {
+            const candidate = error as any;
+            if (String(candidate?.code || "") !== "P2028") return false;
+            const details = [candidate?.message, candidate?.meta?.error, candidate?.meta?.message]
+              .filter((value): value is string => typeof value === "string")
+              .join(" ");
+            return /Unable to start a transaction in the given time/i.test(details);
+          }
+
+          function retryable(error: unknown): boolean {'''.replace("          ", ""),
+          )
+          path.write_text(text, encoding="utf-8")
+
+          package_path = Path("apps/api/package.json")
+          package = json.loads(package_path.read_text(encoding="utf-8"))
+          old = "node --import tsx --test src/b0-settlement/b0-window-coordinator.core.spec.ts"
+          new = old + " src/b0-settlement/b0-window-coordinator.prisma.spec.ts"
+          if package["scripts"]["test:b0-window"] != old:
+              raise SystemExit("unexpected test:b0-window script")
+          package["scripts"]["test:b0-window"] = new
+          package_path.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
+          PY
+
+          cat > apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts <<'TS'
+          import assert from "node:assert/strict";
+          import test from "node:test";
+          import { Prisma } from "@prisma/client";
+          import { B0WindowCoordinatorService } from "./b0-window-coordinator.prisma";
+
+          type TransactionOptions = {
+            isolationLevel?: Prisma.TransactionIsolationLevel;
+            maxWait?: number;
+            timeout?: number;
+          };
+
+          type CoordinatorInternals = {
+            projectionTransaction<T>(operation: (tx: any) => Promise<T>): Promise<T>;
+            serializable<T>(operation: (tx: any) => Promise<T>): Promise<T>;
+          };
+
+          function internals(service: B0WindowCoordinatorService): CoordinatorInternals {
+            return service as unknown as CoordinatorInternals;
+          }
+
+          function admissionTimeout(): Error & { code: string } {
+            return Object.assign(
+              new Error("Transaction API error: Unable to start a transaction in the given time."),
+              { code: "P2028" },
+            );
+          }
+
+          test("projection delegates to the bounded read transaction wrapper", async () => {
+            const service = new B0WindowCoordinatorService({} as never);
+            const expected = { schemaVersion: "b0-window-projection-v1" } as never;
+            let wrapperCalls = 0;
+            (service as any).projectionTransaction = async () => {
+              wrapperCalls += 1;
+              return expected;
+            };
+
+            assert.equal(await service.projection("window.remote.pool", "actor.a"), expected);
+            assert.equal(wrapperCalls, 1);
+          });
+
+          test("projection read transactions use remote-pool options and retry only admission failures", async () => {
+            let transactionAttempts = 0;
+            let operationCalls = 0;
+            const observedOptions: TransactionOptions[] = [];
+            const service = new B0WindowCoordinatorService({
+              $transaction: async (operation: (tx: any) => Promise<string>, options: TransactionOptions) => {
+                transactionAttempts += 1;
+                observedOptions.push(options);
+                if (transactionAttempts < 3) throw admissionTimeout();
+                operationCalls += 1;
+                return operation({});
+              },
+            } as never);
+
+            const result = await internals(service).projectionTransaction(async () => "projection-ready");
+            assert.equal(result, "projection-ready");
+            assert.equal(transactionAttempts, 3, "read-only projection may retry bounded pool-admission failures");
+            assert.equal(operationCalls, 1, "failed admission attempts must not enter the transaction callback");
+            assert.deepEqual(observedOptions, Array.from({ length: 3 }, () => ({
+              isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+              maxWait: 10_000,
+              timeout: 30_000,
+            })));
+
+            let nonAdmissionAttempts = 0;
+            const nonAdmissionService = new B0WindowCoordinatorService({
+              $transaction: async () => {
+                nonAdmissionAttempts += 1;
+                throw Object.assign(new Error("Transaction API error: Transaction already closed."), { code: "P2028" });
+              },
+            } as never);
+            await assert.rejects(
+              () => internals(nonAdmissionService).projectionTransaction(async () => "unreachable"),
+              /Transaction already closed/,
+            );
+            assert.equal(nonAdmissionAttempts, 1, "unrelated P2028 failures must fail closed without retries");
+          });
+
+          test("write transactions do not retry P2028 after their callback may have run", async () => {
+            let transactionAttempts = 0;
+            let callbackCalls = 0;
+            let observedOptions: TransactionOptions | undefined;
+            const service = new B0WindowCoordinatorService({
+              $transaction: async (operation: (tx: any) => Promise<unknown>, options: TransactionOptions) => {
+                transactionAttempts += 1;
+                observedOptions = options;
+                await operation({});
+                throw admissionTimeout();
+              },
+            } as never);
+
+            await assert.rejects(
+              () => internals(service).serializable(async () => {
+                callbackCalls += 1;
+                return "write-result";
+              }),
+              /Unable to start a transaction/,
+            );
+            assert.equal(transactionAttempts, 1, "ambiguous write-transaction failures must not be retried");
+            assert.equal(callbackCalls, 1, "the write callback must not be invoked twice");
+            assert.deepEqual(observedOptions, {
+              isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+              maxWait: 10_000,
+              timeout: 30_000,
+            });
+          });
+          TS
+          sed -i 's/^          //' apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts
+          git diff --check
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Run focused regression, typecheck and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm --filter @apps/api test:b0-window
+          pnpm --filter @apps/api test:b0-player-window
+          pnpm --filter @apps/api typecheck
+          pnpm --filter @apps/api build
+          python3 - <<'PY'
+          import pathlib, re
+          paths = [
+              pathlib.Path("apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts"),
+              pathlib.Path("apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts"),
+              pathlib.Path("apps/api/package.json"),
+          ]
+          patterns = [
+              re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
+              re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),
+              re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+          ]
+          findings = []
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for pattern in patterns:
+                  if pattern.search(text): findings.append(str(path))
+          if findings: raise SystemExit(f"changed-file secret scan failed: {findings}")
+          print("changed-file secret scan: PASS")
+          PY
+
+      - name: Commit and push the product fix
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$B0_BRANCH"
+          remote_before="$(git rev-parse origin/$B0_BRANCH)"
+          test "$remote_before" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts \
+            apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts \
+            apps/api/package.json
+          git diff --cached --check
+          mapfile -t staged < <(git diff --cached --name-only | sort)
+          test "${#staged[@]}" -eq 3
+          test "${staged[0]}" = "apps/api/package.json"
+          test "${staged[1]}" = "apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts"
+          test "${staged[2]}" = "apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts"
+          git commit -m "fix(b0): tolerate projection pool admission pressure"
+          local_head="$(git rev-parse HEAD)"
+          git push origin "HEAD:$B0_BRANCH"
+          remote_after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
+          test "$remote_after" = "$local_head"
+          echo "local_head=$local_head" >> "$GITHUB_OUTPUT"
+          echo "remote_before=$remote_before" >> "$GITHUB_OUTPUT"
+          echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
+
+      - name: Publish outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOCAL_HEAD: ${{ steps.push.outputs.local_head }}
+        with:
+          script: |
+            const success = process.env.JOB_STATUS === "success";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? "success" : "failure",
+              context: "b0/projection-pool-fix-v2",
+              description: success
+                ? `projection pool fix pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}`
+                : `projection pool fix failed in ${context.runId}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+            if (!success) core.setFailed("B0 projection pool fix v2 failed");
