@@ -88,6 +88,13 @@ function click(win, element) {
 
 function wait(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
+function jsonResponse(value, status = 200) {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { "content-type": "application/json" }
+  });
+}
+
 test("real DOM feed renders 3/6 rows, uses internal scroll and emits durable seen receipts", async () => {
   const { dom, root } = fixture();
   let serverItems = Array.from({ length: 7 }, (_, index) => item(index + 1));

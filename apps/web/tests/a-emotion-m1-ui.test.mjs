@@ -110,6 +110,14 @@ test("world situation detail is read-only and preserves existing maneuver draft 
   const beforeTextarea = h.root.querySelector("#maneuverCustomText").value;
   const beforeCenter = h.root.querySelector(".causal-center")?.innerHTML || "";
 
+  // chooseManeuver() legitimately rerenders the complete /game root. Remount
+  // the independent read-only world-situation surface before exercising it,
+  // and prove that this transport refresh preserves the existing workbench.
+  await h.ui.refresh();
+  assert.deepEqual(h.app.getState().maneuverDraft, beforeDraft, "重新挂载世界局势不得改写工作台状态");
+  assert.equal(h.root.querySelector("#maneuverCustomText").value, beforeTextarea, "重新挂载世界局势不得改写 textarea");
+  assert.equal(h.root.querySelector(".causal-center")?.innerHTML || "", beforeCenter, "重新挂载世界局势不得改变中央区");
+
   h.root.querySelector("[data-aemotion-open]").click();
   const detail = h.root.querySelector('[data-testid="aemotion-m1-cross-impact"]');
   assert.ok(detail);
